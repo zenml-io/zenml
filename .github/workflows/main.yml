@@ -1,0 +1,36 @@
+# This is a basic workflow to help you get started with Actions
+name: CI
+
+# Controls when the action will run. Triggers the workflow on push of a tag
+on:
+  push:
+    tags:
+      - '*'
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  publish:
+    name: Build and publish Python 🐍 distributions 📦 to PyPI
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@master
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.7
+
+      # Runs a single command using the runners shell
+      - name: install requirements
+        run: sudo apt-get update && sudo apt-get install -y make && pip install twine
+
+      # Runs a set of commands using the runners shell
+      - name: publish
+        env: # Or as an environment variable
+          TWINE_NON_INTERACTIVE: ${{ secrets.TWINE_NON_INTERACTIVE }}
+          TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
+          TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
+        run: |
+          sed -i 's%__ZENML_VERSION__%'"$(echo ${GITHUB_REF} | sed 's|refs/tags/||g')"'%g' zenml/utils/version.py
+          cat zenml/utils/version.py
+          make publish
