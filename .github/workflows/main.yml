@@ -31,6 +31,4 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
           TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
         run: |
-          sed -i 's%__ZENML_VERSION__%'"$(echo ${GITHUB_REF} | sed 's|refs/tags/||g')"'%g' zenml/utils/version.py
-          cat zenml/utils/version.py
-          make publish
+          if [ "$(cat zenml/VERSION)" = "$(echo ${GITHUB_REF} | sed 's|refs/tags/||g')" ]; then make publish; fi
