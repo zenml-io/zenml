@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Wrapper class to handle Git integration"""
 
-import logging
 import os
 from typing import Text, List
 
@@ -21,6 +20,9 @@ from git import Repo as GitRepo
 
 from zenml.core.repo.constants import GIT_FOLDER_NAME
 from zenml.utils import path_utils
+from zenml.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class GitWrapper:
@@ -72,21 +74,64 @@ class GitWrapper:
         Args:
             file_path (str): Path to any file within the ZenML repo.
         """
-        for item in self.git_repo.index.diff(None):
+        uncommitted_files = [i.a_path for i in self.git_repo.index.diff(None)]
+        staged_files = [i.a_path for i in self.git_repo.index.diff('HEAD')]
+
+        # source: https://stackoverflow.com/questions/3801321/
+        untracked_files = self.git_repo.git.ls_files(
+            others=True, exclude_standard=True).split('\n')
+        for item in uncommitted_files + staged_files + untracked_files:
             # These are all changed files
-            if file_path == item.a_path:
+            if file_path == item:
                 return False
         return True
 
     def get_current_sha(self) -> Text:
         """
         Finds the git sha that each file within the module is currently on.
-
-        Args:
-            module_path (str): Path to any module within the ZenML repo.
         """
         # TODO: [HIGH] Check whether returning the head makes sense.
         return self.git_repo.head.object.hexsha
+
+    def check_module_clean(self, source_path: Text):
+        """
+        Returns True if all files within source_path module are committed.
+
+        Args:
+            source_path (str): relative module path pointing to a Class.
+        """
+        # import here to resolve circular dependency
+        from zenml.utils import source_utils
+
+        # Get the module path
+        module_path = source_utils.get_module_path_from_source(source_path)
+
+        # Get relative path of module because check_file_committed needs that
+        module_dir = source_utils.get_relative_path_from_module(module_path)
+
+        # Get absolute path of module because path_utils.list_dir needs that
+        mod_abs_dir = source_utils.get_absolute_path_from_module(module_path)
+        module_file_names = path_utils.list_dir(
+            mod_abs_dir, only_file_names=True)
+
+        # Go through each file in module and see if there are uncommitted ones
+        for file_path in module_file_names:
+            path = os.path.join(module_dir, file_path)
+
+            # if its .gitignored then continue and dont do anything
+            if len(self.git_repo.ignored(path)) > 0:
+                continue
+
+            if path_utils.is_dir(os.path.join(mod_abs_dir, file_path)):
+                raise Exception(
+                    f'The step {source_path} is contained inside a module '
+                    f'that '
+                    f'has sub-directories (the sub-directory {file_path} at '
+                    f'{mod_abs_dir}). For now, ZenML supports only a flat '
+                    f'directory structure in which to place Steps')
+            if not self.check_file_committed(path):
+                return False
+        return True
 
     def resolve_source_path(self, source_path: Text) -> Text:
         """
@@ -97,17 +142,13 @@ class GitWrapper:
         Args:
             source_path (str): relative module path pointing to a Class.
         """
-        # import here to resolve circular dependency
-        from zenml.utils.source_utils import get_path_from_source
-        file_path = get_path_from_source(source_path)
-
-        if not self.check_file_committed(file_path):
-            logging.warning(f'Found uncommitted file {file_path}. '
-                            f'Pipelines run with this configuration '
-                            f'may not be reproducible. Please commit all '
-                            f'files '
-                            f'in this module and then run the pipeline to '
-                            f'ensure reproducibility.')
+        if not self.check_module_clean(source_path):
+            # Return the source path if not clean
+            logger.warning(
+                f'Found uncommitted file. Pipelines run with this '
+                f'configuration may not be reproducible. Please commit '
+                f'all files in this module and then run the pipeline to '
+                f'ensure reproducibility.')
             return source_path
         return source_path + '@' + self.get_current_sha()
 
@@ -122,14 +163,36 @@ class GitWrapper:
         if git.stash('list') != '':
             git.stash('pop')
 
-    def checkout(self, sha_or_branch_name: Text):
+    def checkout(self, sha_or_branch: Text = None, directory: Text = None):
         """
         Wrapper for git checkout
 
         Args:
-            sha_or_branch_name: hex string of len 40 representing git sha OR
+            sha_or_branch: hex string of len 40 representing git sha OR
             name of branch
+            directory (str): relative path to directory to scope checkout
         """
-        # TODO: [HIGH] Implement exception handling
+        # TODO: [MEDIUM] Implement exception handling
         git = self.git_repo.git
-        git.checkout(sha_or_branch_name)
+        if sha_or_branch is None:
+            # Checks out directory at sha_or_branch
+            assert directory is not None
+            git.checkout('--', directory)
+        elif directory is not None:
+            assert sha_or_branch is not None
+            # Basically discards all changes in directory
+            git.checkout(sha_or_branch, '--', directory)
+        else:
+            # The case where sha_or_branch is not None and directory is None
+            # In this case, the whole repo is checked out at sha_or_branch
+            git.checkout(sha_or_branch)
+
+    def reset(self, directory: Text = None):
+        """
+        Wrapper for `git reset HEAD <directory>`.
+
+        Args:
+            directory (str): relative path to directory to scope checkout
+        """
+        git = self.git_repo.git
+        git.reset('HEAD', directory)

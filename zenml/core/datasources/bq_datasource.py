@@ -32,7 +32,7 @@ class BigQueryDatasource(BaseDatasource):
     def __init__(self, name: Text, query_project: Text, query_dataset: Text,
                  query_table: Text, gcs_location: Text,
                  query_limit: Optional[int] = None, dest_project: Text = None,
-                 schema: Dict = None):
+                 schema: Dict = None, **unused_kwargs):
         """
         Initialize BigQuery source. This creates a DataPipeline that
         essentially performs the following query using Apache Beam.
@@ -53,7 +53,7 @@ class BigQueryDatasource(BaseDatasource):
             gcs_location: google cloud storage location to store temp files.
             dest_project: project where gcs exists.
         """
-        super().__init__(name, schema)
+        super().__init__(name, schema, **unused_kwargs)
 
         # Check whether we can access this
         client = bigquery.Client(project=dest_project)

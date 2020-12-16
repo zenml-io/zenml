@@ -49,7 +49,13 @@ class BQDataStep(BaseDataStep):
                  query_table: Text, gcs_location: Text,
                  dest_project: Text = None, query_limit: int = None,
                  schema: Dict = None):
-        super().__init__(schema)
+        super().__init__(schema=schema,
+                         query_project=query_project,
+                         query_dataset=query_dataset,
+                         query_table=query_table,
+                         gcs_location=gcs_location,
+                         dest_project=dest_project,
+                         query_limit=query_limit)
         self.query_project = query_project
         self.query_dataset = query_dataset
         self.query_table = query_table

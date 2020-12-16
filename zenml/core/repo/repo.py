@@ -15,19 +15,22 @@
 
 import os
 from pathlib import Path
-from typing import Text, List, Dict, Any, Optional, Type
-
-import yaml
+from typing import Text, List, Dict, Any, Optional, Union, Type
 
 from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
 from zenml.core.repo.artifact_store import ArtifactStore
 from zenml.core.repo.git_wrapper import GitWrapper
 from zenml.core.repo.global_config import GlobalConfig
 from zenml.core.repo.zenml_config import ZenMLConfig
+from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils, yaml_utils
 from zenml.utils.enums import PipelineStatusTypes
+from zenml.utils.logger import get_logger
 from zenml.utils.zenml_analytics import track, CREATE_REPO, GET_PIPELINES, \
-    GET_DATASOURCES, GET_PIPELINE_ARTIFACTS, GET_STEPS, REGISTER_PIPELINE
+    GET_DATASOURCES, GET_PIPELINE_ARTIFACTS, GET_STEPS_VERSIONS, \
+    REGISTER_PIPELINE, GET_STEP_VERSION
+
+logger = get_logger(__name__)
 
 
 class Repository:
@@ -46,18 +49,26 @@ class Repository:
         """
         if Repository.__instance__ is None:
             if path is None:
-                # Start from cwd and traverse up until we find zenml config.
-                path = Repository.get_zenml_dir(os.getcwd())
+                try:
+                    # Start from cwd and traverse up until find zenml config.
+                    path = Repository.get_zenml_dir(os.getcwd())
+                except Exception:
+                    # If there isnt a zenml.config, use the cwd
+                    path = os.getcwd()
 
             if not path_utils.is_dir(path):
                 raise Exception(f'{path} does not exist or is not a dir!')
             self.path = path
 
-            # Hook up git
+            # Hook up git, path needs to have a git folder.
             self.git_wrapper = GitWrapper(self.path)
 
             # Load the ZenML config
-            self.zenml_config = ZenMLConfig(self.path)
+            try:
+                self.zenml_config = ZenMLConfig(self.path)
+            except AssertionError:
+                # We allow this because we of the GCP orchestrator for now
+                self.zenml_config = None
 
             Repository.__instance__ = self
         else:
@@ -82,16 +93,17 @@ class Repository:
         return Repository.get_zenml_dir(Path(path).parent)
 
     @staticmethod
-    def get_instance():
+    def get_instance(path: Text = None):
         """ Static method to fetch the current instance."""
+        logger.debug('Repository instance fetched.')
         if not Repository.__instance__:
-            Repository()
+            Repository(path)
         return Repository.__instance__
 
     @staticmethod
     @track(event=CREATE_REPO)
     def init_repo(repo_path: Text, artifact_store_path: Text = None,
-                  metadata_store: Optional[Type[ZenMLMetadataStore]] = None,
+                  metadata_store: Optional[ZenMLMetadataStore] = None,
                   pipelines_dir: Text = None,
                   analytics_opt_in: bool = None):
         """
@@ -120,51 +132,157 @@ class Repository:
         if analytics_opt_in is not None:
             global_config.set_analytics_opt_in(analytics_opt_in)
 
-    def get_artifact_store(self) -> ArtifactStore:
-        return self.zenml_config.get_artifact_store()
+    def get_artifact_store(self) -> Optional[ArtifactStore]:
+        if self.zenml_config:
+            return self.zenml_config.get_artifact_store()
 
     def get_metadata_store(self):
-        return self.zenml_config.get_metadata_store()
+        if self.zenml_config:
+            return self.zenml_config.get_metadata_store()
 
     def get_git_wrapper(self) -> GitWrapper:
-        return self.git_wrapper
+        if self.zenml_config:
+            return self.git_wrapper
 
-    @track(event=GET_STEPS)
-    def get_steps(self):
-        """List all registered steps in repository"""
-        pass
-
-    @track(event=GET_PIPELINES)
-    def get_pipelines(self, type_filter: List[Text] = None):
+    @track(event=GET_STEP_VERSION)
+    def get_step_by_version(self, step_type: Union[Type, Text], version: Text):
         """
-        Gets list of pipelines, optionally filtered by type.
+        Gets a Step object by version. There might be many objects of a
+        particular Step registered in many pipelines. This function just
+        returns the first configuration that it matches.
+
+        Args:
+            step_type: either a string specifying full path to the step or a
+            class path.
+            version: either sha pin or standard ZenML version pin.
+        """
+        from zenml.utils import source_utils
+        from zenml.core.steps.base_step import BaseStep
+
+        type_str = source_utils.get_module_path_from_class(step_type)
+
+        for file_path in self.get_pipeline_file_paths():
+            c = yaml_utils.read_yaml(file_path)
+            for step_name, step_config in c[keys.GlobalKeys.STEPS].items():
+                # Get version from source
+                class_ = source_utils.get_class_path_from_source(
+                    step_config[keys.StepKeys.SOURCE])
+                source_version = source_utils.get_version_from_source(
+                    step_config[keys.StepKeys.SOURCE])
+
+                if class_ == type_str and version == source_version:
+                    return BaseStep.from_config(step_config)
+        raise Exception(f'Step Type {type_str} does not exist with version '
+                        f'{version}!')
+
+    def get_step_versions_by_type(self, step_type: Union[Type, Text]):
+        """
+        List all registered steps in repository by step_type.
+
+        Args:
+            step_type: either a string specifying full path to the step or a
+            class path.
+        """
+        from zenml.utils import source_utils
+        type_str = source_utils.get_module_path_from_class(step_type)
+
+        steps_dict = self.get_step_versions()
+        if type_str not in steps_dict:
+            raise Exception(f'Type {type_str} not available. Available types: '
+                            f'{list(steps_dict.keys())}')
+        return steps_dict[type_str]
+
+    @track(event=GET_STEPS_VERSIONS)
+    def get_step_versions(self):
+        """List all registered steps in repository"""
+        from zenml.utils import source_utils
+        steps_dict = {}
+        for file_path in self.get_pipeline_file_paths():
+            c = yaml_utils.read_yaml(file_path)
+            for step_name, step_config in c[keys.GlobalKeys.STEPS].items():
+                # Get version from source
+                version = source_utils.get_version_from_source(
+                    step_config[keys.StepKeys.SOURCE])
+                class_ = source_utils.get_class_path_from_source(
+                    step_config[keys.StepKeys.SOURCE])
+
+                # Add to set of versions
+                if class_ in steps_dict:
+                    steps_dict[class_].add(version)
+                else:
+                    steps_dict[class_] = {version}
+        return steps_dict
+
+    def get_datasource_by_name(self, name: Text) -> List:
+        """
+        Get all datasources in this repo.
+
+        Returns: list of datasources used in this repo
+        """
+        all_datasources = self.get_datasources()
+        for d in all_datasources:
+            if name == d.name:
+                return d
+        raise Exception(f'Datasource {name} does not exist')
+
+    def get_datasource_names(self) -> List:
+        """
+        Get all datasources in this repo.
+
+        Returns: List of datasource names used in this repo.
+        """
+        n = []
+        for file_path in self.get_pipeline_file_paths():
+            c = yaml_utils.read_yaml(file_path)
+            n.append(c[keys.GlobalKeys.DATASOURCE][keys.DatasourceKeys.NAME])
+        return list(set(n))
+
+    @track(event=GET_DATASOURCES)
+    def get_datasources(self) -> List:
+        """
+        Get all datasources in this repo.
+
+        Returns: list of datasources used in this repo
+        """
+        from zenml.core.datasources.base_datasource import BaseDatasource
+
+        datasources = []
+        for file_path in self.get_pipeline_file_paths():
+            c = yaml_utils.read_yaml(file_path)
+            datasources.append(BaseDatasource.from_config(c))
+        return datasources
+
+    def get_pipeline_by_name(self, pipeline_name: Text = None):
+        """
+        Loads a pipeline just by its name.
+
+        Args:
+            pipeline_name (str): Name of pipeline.
+        """
+        from zenml.core.pipelines.base_pipeline import BasePipeline
+        yamls = self.get_pipeline_file_paths()
+        for y in yamls:
+            n = BasePipeline.get_name_from_pipeline_name(y)
+            if n == pipeline_name:
+                c = yaml_utils.read_yaml(y)
+                return BasePipeline.from_config(c)
+        raise Exception(f'No pipeline called {pipeline_name}')
+
+    def get_pipelines_by_type(self, type_filter: List[Text]) -> List:
+        """
+        Gets list of pipelines filtered by type.
 
         Args:
             type_filter (list): list of types to filter by.
         """
-        from zenml.core.pipelines.pipeline_factory import pipeline_factory
-        pipelines = []
-        for file_path in self.get_pipeline_file_paths():
-            file_name = Path(file_path).name
-            pipeline_type = pipeline_factory.get_type_from_file_name(file_name)
-            pipeline_class = pipeline_factory.get_single_type(pipeline_type)
-            with open(file_path, 'r') as f:
-                c = yaml.load(f)
-                pipelines.append(pipeline_class.from_config(c))
-
-        if type_filter:
-            # filter by type
-            return [p for p in pipelines if p.pipeline_type in type_filter]
-        else:
-            # return all
-            return pipelines
+        pipelines = self.get_pipelines()
+        return [p for p in pipelines if p.pipeline_type in type_filter]
 
     def get_pipeline_names(self) -> Optional[List[Text]]:
         """Gets list of pipeline (unique) names"""
-        store = self.zenml_config.get_metadata_store()
-
-        contexts = store.get_pipeline_contexts()
-        return [c.name for c in contexts]
+        from zenml.core.pipelines.base_pipeline import BasePipeline
+        yamls = self.get_pipeline_file_paths(only_file_names=True)
+        return [BasePipeline.get_name_from_pipeline_name(p) for p in yamls]
 
     def get_pipeline_file_paths(self, only_file_names: bool = False) -> \
             Optional[List[Text]]:
@@ -175,14 +293,36 @@ class Repository:
             return []
         return path_utils.list_dir(pipelines_dir, only_file_names)
 
-    @track(event=GET_DATASOURCES)
-    def get_datasources(self) -> List:
+    def get_pipelines_by_datasource(self, datasource):
         """
-        Get all datasources in this repo.
+        Gets list of pipelines associated with datasource.
 
-        Returns: list of datasources used in this repo
+        Args:
+            datasource (BaseDatasource): object of type BaseDatasource.
         """
-        pass
+        from zenml.core.pipelines.base_pipeline import BasePipeline
+        pipelines = []
+        for file_path in self.get_pipeline_file_paths():
+            c = yaml_utils.read_yaml(file_path)
+            if c[keys.GlobalKeys.DATASOURCE][keys.DatasourceKeys.ID] == \
+                    datasource._id:
+                pipelines.append(BasePipeline.from_config(c))
+        return pipelines
+
+    @track(event=GET_PIPELINES)
+    def get_pipelines(self) -> List:
+        """
+        Gets list of all pipelines.
+
+        Args:
+            type_filter (list): list of types to filter by.
+        """
+        from zenml.core.pipelines.base_pipeline import BasePipeline
+        pipelines = []
+        for file_path in self.get_pipeline_file_paths():
+            c = yaml_utils.read_yaml(file_path)
+            pipelines.append(BasePipeline.from_config(c))
+        return pipelines
 
     def get_hyperparameters(self):
         """
@@ -228,7 +368,7 @@ class Repository:
         Registers a pipeline in the artifact store as a YAML file.
 
         Args:
-            file_name (dict): file name of pipeline
+            file_name (str): file name of pipeline
             config (dict): dict representation of ZenML config
         """
         pipelines_dir = self.zenml_config.get_pipelines_dir()
@@ -238,6 +378,16 @@ class Repository:
 
         # Write
         yaml_utils.write_yaml(os.path.join(pipelines_dir, file_name), config)
+
+    def load_pipeline_config(self, file_name: Text) -> Dict[Text, Any]:
+        """
+        Loads a ZenML config from YAML.
+
+        Args:
+            file_name (str): file name of pipeline
+        """
+        pipelines_dir = self.zenml_config.get_pipelines_dir()
+        return yaml_utils.read_yaml(os.path.join(pipelines_dir, file_name))
 
     def compare_pipelines(self):
         pass

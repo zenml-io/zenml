@@ -15,7 +15,7 @@
 import click
 
 from zenml.cli.cli import cli
-from zenml.utils.version import __release__
+from zenml.utils.version import __version__
 
 
 @cli.command()
@@ -32,4 +32,4 @@ def version():
         |        ||  `---.|  | \   |   |  |   |  | |      |  
         `--------'`------'`--'  `--'   `--'   `--' `------' 
          """, fg='green'))
-    click.echo(click.style(f"version: {__release__}", bold=True))
+    click.echo(click.style(f"version: {__version__}", bold=True))

@@ -20,6 +20,7 @@ from typing import Text
 from zenml.core.repo.global_config import GlobalConfig
 from zenml.utils import path_utils
 from zenml.utils.enums import ArtifactStoreTypes
+from zenml.utils.print_utils import to_pretty_string, PrintStyles
 
 
 class ArtifactStore:
@@ -28,15 +29,24 @@ class ArtifactStore:
     Every ZenML datasource should override this class.
     """
 
-    def __init__(self, path: Text,
-                 store_type: Text = ArtifactStoreTypes.local.name):
+    def __init__(self, path: Text):
         self.path = path
-        self.store_type = store_type
+
+        if path_utils.is_gcs_path(path):
+            self.store_type = ArtifactStoreTypes.gcs.name
+        else:
+            self.store_type = ArtifactStoreTypes.local.name
 
         # unique_id based on path should be globally consistent
         self.unique_id = hashlib.md5(self.path.encode()).hexdigest()
 
         path_utils.create_dir_if_not_exists(path)
+
+    def __str__(self):
+        return to_pretty_string(self.path)
+
+    def __repr__(self):
+        return to_pretty_string(self.path, style=PrintStyles.PPRINT)
 
     @staticmethod
     def get_component_name_from_uri(artifact_uri: Text):
@@ -71,6 +81,6 @@ class ArtifactStore:
 
         # Create if not exists and download
         path_utils.create_dir_recursive_if_not_exists(path)
-        path_utils.copy_dir(artifact_uri, path)
+        path_utils.copy(artifact_uri, path)
 
         return path

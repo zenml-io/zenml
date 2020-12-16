@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Definition of the DataFlow Processing Backend"""
+"""Definition of the Spark Processing Backend"""
 
 from typing import Text
 
@@ -20,7 +20,7 @@ from zenml.core.backends.processing.processing_local_backend import \
 
 
 class ProcessingSparkBackend(ProcessingLocalBackend):
-    """Base class for all Processing ZenML backends.
+    """Use this to run pipelines on Apache Spark.
 
     Every ZenML pipeline runs in backends.
     """

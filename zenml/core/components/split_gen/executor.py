@@ -18,17 +18,37 @@ from typing import Any, Dict, List, Text
 import apache_beam as beam
 import tensorflow as tf
 from tfx import types
-from tfx.components.base.base_executor import BaseExecutor
+from tfx.dsl.components.base.base_executor import BaseExecutor
 from tfx.types import artifact_utils
 from tfx.types.artifact_utils import get_split_uri
 from tfx.utils import io_utils
 
 from zenml.core.components.data_gen.constants import DATA_SPLIT_NAME
-from zenml.core.components.split_gen.beam_transforms import WriteSplit
+from zenml.core.components.split_gen import constants
 from zenml.core.components.split_gen.utils import parse_schema, \
     parse_statistics
+from zenml.core.standards.standard_keys import StepKeys
 from zenml.core.steps.split.base_split_step import BaseSplitStep
 from zenml.utils import source_utils
+from zenml.utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+
+@beam.ptransform_fn
+@beam.typehints.with_input_types(bytes)
+@beam.typehints.with_output_types(beam.pvalue.PDone)
+def WriteSplit(example_split: beam.pvalue.PCollection,
+               output_split_path: Text) -> beam.pvalue.PDone:
+    """Shuffles and writes output split."""
+    out_dir = os.path.join(output_split_path, 'data_tfrecord')
+    logger.debug('Writing output TFRecords to {}'.format(
+        out_dir
+    ))
+    return (example_split
+            | 'Write' >> beam.io.WriteToTFRecord(
+                out_dir,
+                file_name_suffix='.gz'))
 
 
 class Executor(BaseExecutor):
@@ -47,15 +67,16 @@ class Executor(BaseExecutor):
 
         schema = parse_schema(input_dict=input_dict)
 
-        statistics = parse_statistics(split_name=DATA_SPLIT_NAME,
-                                      statistics=input_dict["statistics"])
+        statistics = parse_statistics(
+            split_name=DATA_SPLIT_NAME,
+            statistics=input_dict[constants.STATISTICS])
 
-        source = exec_properties['source']
-        args = exec_properties['args']
+        source = exec_properties[StepKeys.SOURCE]
+        args = exec_properties[StepKeys.ARGS]
 
         # pass the schema and stats straight to the Step
-        args['schema'] = schema
-        args['statistics'] = statistics
+        args[constants.SCHEMA] = schema
+        args[constants.STATISTICS] = statistics
 
         c = source_utils.load_source_path_class(source)
         split_step: BaseSplitStep = c(**args)
@@ -65,12 +86,12 @@ class Executor(BaseExecutor):
 
         # Get output split path
         examples_artifact = artifact_utils.get_single_instance(
-            output_dict['examples'])
+            output_dict[constants.OUTPUT_EXAMPLES])
         examples_artifact.split_names = artifact_utils.encode_split_names(
             split_names)
 
         split_uris = []
-        for artifact in input_dict['input_examples']:
+        for artifact in input_dict[constants.INPUT_EXAMPLES]:
             for split in artifact_utils.decode_split_names(
                     artifact.split_names):
                 uri = os.path.join(artifact.uri, split)
@@ -98,4 +119,5 @@ class Executor(BaseExecutor):
                      | 'Serialize.' + split_name >> beam.Map(
                                 lambda x: x.SerializeToString())
                      | 'WriteSplit_' + split_name >> WriteSplit(get_split_uri(
-                                output_dict['examples'], split_name)))
+                                output_dict[constants.OUTPUT_EXAMPLES],
+                                split_name)))

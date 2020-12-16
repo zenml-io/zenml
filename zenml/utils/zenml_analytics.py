@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Analytics code for ZenML"""
 
-import logging
 import platform
 import sys
 from typing import Text
@@ -23,7 +22,10 @@ import distro
 import requests
 
 from zenml.utils.constants import IS_DEBUG_ENV
-from zenml.utils.version import __release__
+from zenml.utils.logger import get_logger
+from zenml.utils.version import __version__
+
+logger = get_logger(__name__)
 
 # EVENTS
 
@@ -37,7 +39,9 @@ CREATE_DATASOURCE = "Datasource created"
 
 CREATE_STEP = "Step created"
 
-GET_STEPS = "Steps listed"
+GET_STEPS_VERSIONS = "Step Versions listed"
+
+GET_STEP_VERSION = "Step listed"
 
 # Pipelines
 
@@ -68,7 +72,7 @@ def get_segment_key() -> Text:
         r = requests.get(url, headers=headers, timeout=5)
         return r.json()['id']
     except requests.exceptions.RequestException:
-        logging.debug("Failed to get segment write key", exc_info=True)
+        logger.debug("Failed to get segment write key", exc_info=True)
 
 
 analytics.write_key = get_segment_key()
@@ -106,7 +110,7 @@ def get_system_info():
 def get_runtime_info():
     """Gather information from the environment where ZenML runs."""
     metadata = {
-        "zenml_version": __release__,
+        "zenml_version": __version__,
     }
     metadata.update(get_system_info())
 
@@ -123,7 +127,7 @@ def track_event(event, metadata=None):
         from zenml.core.repo.global_config import GlobalConfig
         config = GlobalConfig.get_instance()
         opt_in = config.get_analytics_opt_in()
-        logging.debug(f"Analytics opt-in: {opt_in}.")
+        logger.debug(f"Analytics opt-in: {opt_in}.")
 
         if opt_in is False:
             return
@@ -136,12 +140,12 @@ def track_event(event, metadata=None):
         # add basics
         metadata.update(get_system_info())
         analytics.track(user_id, event, metadata)
-        logging.debug(
+        logger.debug(
             f'Analytics sent: User: {user_id}, Event: {event}, Metadata: '
             f'{metadata}')
     except Exception as e:
         # We should never fail main thread
-        logging.debug(f'Analytics failed due to: {e}')
+        logger.debug(f'Analytics failed due to: {e}')
         return
 
 

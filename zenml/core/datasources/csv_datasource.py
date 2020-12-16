@@ -27,7 +27,8 @@ class CSVDatasource(BaseDatasource):
     """
     DATA_STEP = CSVDataStep
 
-    def __init__(self, name: Text, path: Text, schema: Dict = None):
+    def __init__(self, name: Text, path: Text, schema: Dict = None,
+                 **unused_kwargs):
         """
         Create a CSV datasource. Creating this datasource creates a Beam
         pipeline that converts the CSV file into TFRecords for pipelines to
@@ -43,8 +44,6 @@ class CSVDatasource(BaseDatasource):
             path (str): path to csv file.
             schema (str): optional schema for data to conform to.
         """
-        super().__init__(name, schema)
+        super().__init__(name, schema, **unused_kwargs)
         self.path = path
 
-        if not path_utils.file_exists(path):
-            raise Exception(f'{path} does not exist!')

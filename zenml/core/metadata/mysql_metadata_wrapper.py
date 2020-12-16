@@ -14,6 +14,8 @@
 
 from typing import Text
 
+from tfx.orchestration import metadata
+
 from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
 from zenml.utils.enums import MLMetadataTypes
 
@@ -24,14 +26,17 @@ class MySQLMetadataStore(ZenMLMetadataStore):
     def __init__(self, host: Text, port: int, database: Text, username: Text,
                  password: Text):
         """Constructor for MySQL MetadataStore for ZenML"""
-        super().__init__()
         self.host = host
-        self.port = port
+        self.port = int(port)  # even if its a string, it should be casted
         self.database = database
         self.username = username
         self.password = password
-        self.store = self.initiate_store_mysql(self.host,
-                                               self.port,
-                                               self.database,
-                                               self.username,
-                                               self.password)
+        super().__init__()
+
+    def get_tfx_metadata_config(self):
+        return metadata.mysql_metadata_connection_config(
+            host=self.host,
+            port=self.port,
+            database=self.database,
+            username=self.username,
+            password=self.password)

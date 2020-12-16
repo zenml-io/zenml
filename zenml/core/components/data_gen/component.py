@@ -1,20 +1,20 @@
 from typing import Text, Dict, Any, Optional
 
-from tfx.components.base.base_component import BaseComponent
+from tfx.dsl.components.base.base_component import BaseComponent
 from tfx.dsl.components.base.executor_spec import ExecutorClassSpec
 from tfx.types import standard_artifacts, Channel
 from tfx.types.component_spec import ComponentSpec, ExecutionParameter, \
     ChannelParameter
 
-from zenml.core.components.data_gen.constants import SpecParamKeys, \
-    DATA_SPLIT_NAME
+from zenml.core.components.data_gen.constants import DATA_SPLIT_NAME
 from zenml.core.components.data_gen.executor import DataExecutor
+from zenml.core.standards.standard_keys import StepKeys
 
 
 class DataGenSpec(ComponentSpec):
     PARAMETERS = {
-        SpecParamKeys.SOURCE: ExecutionParameter(type=Text),
-        SpecParamKeys.SOURCE_ARGS: ExecutionParameter(type=Dict[Text, Any]),
+        StepKeys.SOURCE: ExecutionParameter(type=Text),
+        StepKeys.ARGS: ExecutionParameter(type=Dict[Text, Any]),
     }
     INPUTS = {}
     OUTPUTS = {

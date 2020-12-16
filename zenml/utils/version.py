@@ -21,5 +21,5 @@ This module contains project version information.
 .. moduleauthor:: maiot GmbH <support@maiot.io>
 """
 
-__version__ = "__ZENML_VERSION__"  #: the working version
-__release__ = "1.0.0"  #: the release version
+__version__ = "0.0.1rc1"  #: the working version
+__release__ = "__ZENML_RELEASE__"  #: the release version

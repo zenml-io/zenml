@@ -22,29 +22,6 @@ class PipelineStatusTypes(Enum):
     Running = 4
 
 
-class PipelineRunTypes(Enum):
-    training = 1
-    datagen = 2
-    infer = 3
-    test = 4
-    eval = 5
-
-
-class FunctionTypes(Enum):
-    transform = 1
-    model = 2
-
-
-class TrainingTypes(Enum):
-    gcaip = 1
-    local = 2
-
-
-class ServingTypes(Enum):
-    gcaip = 1
-    local = 2
-
-
 class GDPComponent(Enum):
     SplitGen = 1
     SplitStatistics = 2
@@ -63,13 +40,27 @@ class GDPComponent(Enum):
     Deployer = 15
     DataGen = 16
     Inferrer = 17
+    DataStatistics = 18
+    DataSchema = 19
 
 
 class MLMetadataTypes(Enum):
     sqlite = 1
     mysql = 2
+    mock = 3
 
 
 class ArtifactStoreTypes(Enum):
     local = 1
     gcs = 2
+
+
+class StepTypes(Enum):
+    base = 1
+    data = 2
+    timeseries = 3
+    preprocesser = 4
+    split = 5
+    trainer = 6
+    evaluator = 7
+    deployer = 8

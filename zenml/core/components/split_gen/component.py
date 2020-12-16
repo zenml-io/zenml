@@ -15,29 +15,33 @@
 from typing import Dict, Any, Text
 
 from tfx import types
-from tfx.components.base.base_component import BaseComponent
 from tfx.dsl.components.base import executor_spec
+from tfx.dsl.components.base.base_component import BaseComponent
 from tfx.types import standard_artifacts
 from tfx.types.component_spec import ComponentSpec, ExecutionParameter, \
     ChannelParameter
 
+from zenml.core.components.split_gen import constants
 from zenml.core.components.split_gen import executor
+from zenml.core.standards.standard_keys import StepKeys
 
 
 class SplitGenComponentSpec(ComponentSpec):
     """SplitGen ExampleGen component spec."""
     PARAMETERS = {
-        'source': ExecutionParameter(type=Text),
-        'args': ExecutionParameter(type=Dict[Text, Any]),
+        StepKeys.SOURCE: ExecutionParameter(type=Text),
+        StepKeys.ARGS: ExecutionParameter(type=Dict[Text, Any]),
     }
     INPUTS = {
-        'input_examples': ChannelParameter(type=standard_artifacts.Examples),
-        'statistics': ChannelParameter(
+        constants.INPUT_EXAMPLES: ChannelParameter(
+            type=standard_artifacts.Examples),
+        constants.STATISTICS: ChannelParameter(
             type=standard_artifacts.ExampleStatistics),
-        'schema': ChannelParameter(type=standard_artifacts.Schema)
+        constants.SCHEMA: ChannelParameter(type=standard_artifacts.Schema)
     }
     OUTPUTS = {
-        'examples': ChannelParameter(type=standard_artifacts.Examples)
+        constants.OUTPUT_EXAMPLES: ChannelParameter(
+            type=standard_artifacts.Examples)
     }
 
 
@@ -52,7 +56,6 @@ class SplitGen(BaseComponent):
                  examples: types.Channel = None,  # output
                  statistics: types.Channel = None,
                  schema: types.Channel = None):
-
         examples = examples or types.Channel(
             type=standard_artifacts.Examples)
 

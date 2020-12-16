@@ -13,11 +13,13 @@
 #  permissions and limitations under the License.
 """Base Step Interface definition"""
 
-from typing import Dict, Type
+from typing import Dict
 
+from zenml.core.standards.standard_keys import StepKeys
+from zenml.utils.enums import StepTypes
+from zenml.utils.print_utils import to_pretty_string, PrintStyles
 from zenml.utils.source_utils import resolve_source_path, \
     load_source_path_class
-from zenml.utils.zenml_analytics import track, CREATE_STEP
 
 
 class BaseStep:
@@ -25,9 +27,23 @@ class BaseStep:
 
     These are 'windows' into the base components for simpler overrides.
     """
+    STEP_TYPE = StepTypes.base.name
+
+    def __init__(self, **kwargs):
+        self._kwargs = kwargs
+        self._immutable = False
+        self._source = resolve_source_path(
+            self.__class__.__module__ + '.' + self.__class__.__name__
+        )
+
+    def __str__(self):
+        return to_pretty_string(self.to_config())
+
+    def __repr__(self):
+        return to_pretty_string(self.to_config(), style=PrintStyles.PPRINT)
 
     @staticmethod
-    def from_config(config_block: Dict) -> Type:
+    def from_config(config_block: Dict):
         """
         Takes config block that represents a Step and converts it back into
         its Python equivalent. This functionality is similar for most steps,
@@ -42,11 +58,16 @@ class BaseStep:
             config_block: config block representing source and args of step.
         """
         # resolve source path
-        if 'source' in config_block:
-            source = config_block['source']
+        if StepKeys.SOURCE in config_block:
+            source = config_block[StepKeys.SOURCE]
             class_ = load_source_path_class(source)
-            args = config_block['args']
-            return class_(**args)
+            args = config_block[StepKeys.ARGS]
+            obj = class_(**args)
+
+            # If we load from config, its immutable
+            obj._immutable = True
+            obj._source = source
+            return obj
         else:
             raise AssertionError("Cannot create config_block without source "
                                  "key.")
@@ -61,12 +82,7 @@ class BaseStep:
             'args': {}  # whatever is used in the constructor for BaseStep
         }
         """
-        # resolve git
-        source_path = resolve_source_path(
-            self.__class__.__module__ + '.' + self.__class__.__name__
-        )
-
         return {
-            'source': source_path,
-            'args': self.__dict__  # everything in init
+            StepKeys.SOURCE: self._source,
+            StepKeys.ARGS: self._kwargs  # everything to be recorded
         }

@@ -10,15 +10,16 @@ This file is used to create the package we'll publish to PyPI.
 
 import importlib.util
 import os
-from pathlib import Path
-from setuptools import setup, find_packages
 from codecs import open  # Use a consistent encoding.
 from os import path
+from pathlib import Path
+
+from setuptools import setup, find_packages
 
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the relevant file
-with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
+with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 # Get the base version from the library.  (We'll find it in the `version.py`
@@ -44,8 +45,10 @@ setup(
     name='zenml',
     description="ZenML: Write production-ready ML code.",
     long_description=long_description,
+    long_description_content_type='text/markdown',
     packages=find_packages(
-        exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
+        exclude=["*.tests", "*.tests.*", "tests.*", "tests", "examples",
+                 "docs"]),
     version=version,
     install_requires=[
         "pip-check-reqs>=2.0.1,<3",
@@ -67,13 +70,13 @@ setup(
     [console_scripts]
     zenml=zenml.cli.cli:cli
     """,
-    python_requires=">=3.5.*",
+    python_requires=">=3.6.*",
     license='Apache License 2.0',  # noqa
     author='maiot GmbH',
     author_email='support@maiot.io',
     url='https://docs.zenml.io/',
     keywords=[
-        "deep", "learning", "production", "machine", "pipeline"
+        "deep", "learning", "production", "machine", "pipeline", "mlops"
     ],
     # See https://PyPI.python.org/PyPI?%3Aaction=list_classifiers
     classifiers=[
@@ -93,7 +96,7 @@ setup(
         # noqa
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.6',
     ],
     include_package_data=True
 )

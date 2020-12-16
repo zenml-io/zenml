@@ -21,5 +21,5 @@ class TrainingLocalBackend(BaseBackend):
 
     Every ZenML pipeline runs in backends
     """
-    BACKEND_TYPE = 'cpu'
+    BACKEND_TYPE = 'local'
     BACKEND_KEY = 'training'

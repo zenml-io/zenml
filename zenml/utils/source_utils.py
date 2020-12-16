@@ -12,20 +12,24 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import logging
-from typing import Text, Type
+import importlib
+import inspect
+from typing import Text, Type, Optional, Union
 
 from tfx.utils.import_utils import import_class_by_path
 
 from zenml.core.repo.git_wrapper import GitWrapper
 from zenml.core.repo.repo import Repository
 from zenml.utils.constants import APP_NAME
-from zenml.utils.version import __release__
+from zenml.utils.logger import get_logger
+from zenml.utils.version import __version__
+
+logger = get_logger(__name__)
 
 
 def create_zenml_pin():
     """Creates a ZenML pin for source pinning from release version."""
-    return f'{APP_NAME}_{__release__}'
+    return f'{APP_NAME}_{__version__}'
 
 
 def resolve_standard_source_path(source_path: Text) -> Text:
@@ -69,6 +73,84 @@ def get_path_from_source(source_path):
     return file_path
 
 
+def get_version_from_source(source: Text) -> Optional[Text]:
+    """
+    Gets version from source, i.e. module.path@version, returns version.
+
+    Args:
+        source: source pointing to potentially pinned sha.
+    """
+    if '@' in source:
+        pin = source.split('@')[-1]
+        return pin
+    return 'unversioned'
+
+
+def get_class_path_from_source(source: Text) -> Optional[Text]:
+    """
+    Gets class path from source, i.e. module.path@version, returns version.
+
+    Args:
+        source: source pointing to potentially pinned sha.
+    """
+    return source.split('@')[0]
+
+
+def get_module_path_from_source(source: Text) -> Text:
+    """
+    Gets class path from source. E.g. some.module.file.class@version, returns
+    some.module.
+
+    Args:
+        source: source pointing to potentially pinned sha.
+    """
+    class_path = get_class_path_from_source(source)
+    return '.'.join(class_path.split('.')[:-2])
+
+
+def get_relative_path_from_module(module: Text):
+    """
+    Get a directory path from module, relative to root of repository.
+
+    E.g. zenml.core.step will return zenml/core/step.
+
+    Args:
+        module (str): A module e.g. zenml.core.step
+    """
+    return module.replace('.', '/')
+
+
+def get_absolute_path_from_module(module: Text):
+    """
+    Get a directory path from module.
+
+    E.g. zenml.core.step will return full/path/to/zenml/core/step.
+
+    Args:
+        module (str): A module e.g. zenml.core.step
+    """
+    mod = importlib.import_module(module)
+    return mod.__path__[0]
+
+
+def get_module_path_from_class(class_: Union[Type, Text]) -> Optional[Text]:
+    """
+    Takes class input and returns module_path. If class is already string
+    then returns the same.
+
+    Args:
+        class_: object of type class.
+    """
+    if type(class_) == str:
+        module_path_str = class_
+    else:
+        # Infer it from the class provided
+        if not inspect.isclass(class_):
+            raise Exception('step_type is neither string nor class.')
+        module_path_str = class_.__module__ + '.' + class_.__name__
+    return module_path_str
+
+
 def resolve_source_path(source_path: Text) -> Text:
     """
     Resolves source path with an optional sha using Git.
@@ -81,8 +163,7 @@ def resolve_source_path(source_path: Text) -> Text:
         return resolve_standard_source_path(source_path)
 
     # otherwise use Git resolution
-    r: Repository = Repository.get_instance()
-    wrapper: GitWrapper = r.get_git_wrapper()
+    wrapper: GitWrapper = Repository.get_instance().get_git_wrapper()
     source_path = wrapper.resolve_source_path(source_path)
     return source_path
 
@@ -94,46 +175,48 @@ def load_source_path_class(source_path: Text) -> Type:
     Args:
         source_path (str): relative module path e.g. this.module.Class[@sha]
     """
-    r: Repository = Repository.get_instance()
-    pin = source_path.split('@')[-1]
     source = source_path.split('@')[0]
+    pin = source_path.split('@')[-1]
     is_standard = is_standard_pin(pin)
 
     if '@' in source_path and not is_standard:
-        logging.info('Pinned step found with git sha. '
+        logger.debug('Pinned step found with git sha. '
                      'Loading class from git history.')
-        wrapper: GitWrapper = r.get_git_wrapper()
+        wrapper: GitWrapper = Repository.get_instance().get_git_wrapper()
 
-        # Get reference to current sha
-        active_branch = wrapper.git_repo.active_branch.name
+        module_path = get_module_path_from_source(source_path)
+        relative_module_path = get_relative_path_from_module(module_path)
+
+        logger.warning('Found source with a pinned sha. Will now checkout '
+                       f'module: {module_path}')
 
         # critical step
-        logging.warning('Found source with a pinned sha. Will now stash '
-                        'current changes and keep executing.')
-        try:
-            wrapper.stash()
-        except Exception:
-            # we need to make sure that an unsafe operation did not happen
-            # TODO: [HIGH] Implement proper exception handling here.
-            raise Exception
+        if not wrapper.check_module_clean(source_path):
+            raise Exception(f'One of the files at {relative_module_path} '
+                            f'is not committed and we '
+                            f'are trying to load that directory from git '
+                            f'history due to a pinned step in the pipeline. '
+                            f'Please commit the file and then run the '
+                            f'pipeline.')
 
-        try:
-            wrapper.checkout(pin)
-        except Exception:
-            # popping needs to happen in any case
-            wrapper.checkout(active_branch)
-            wrapper.stash_pop()
-            raise Exception
+        # Check out the directory at that sha
+        wrapper.checkout(sha_or_branch=pin, directory=relative_module_path)
 
-        class_ = import_class_by_path(source)
-        wrapper.checkout(active_branch)
-        wrapper.stash_pop()
+        # After this point, all exceptions will first undo the above
+        try:
+            class_ = import_class_by_path(source)
+            wrapper.reset(relative_module_path)
+            wrapper.checkout(directory=relative_module_path)
+        except Exception:
+            wrapper.reset(relative_module_path)
+            wrapper.checkout(directory=relative_module_path)
+            raise Exception
     elif '@' in source_path and is_standard:
-        logging.info(f'Default {APP_NAME} class used. Loading directly.')
+        logger.debug(f'Default {APP_NAME} class used. Loading directly.')
         # TODO: [LOW] Check if ZenML version is installed before loading.
         class_ = import_class_by_path(source)
     else:
-        logging.info('Unpinned step found with no git sha. Attempting to '
+        logger.debug('Unpinned step found with no git sha. Attempting to '
                      'load class from current repository state.')
         class_ = import_class_by_path(source)
 

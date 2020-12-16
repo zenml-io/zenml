@@ -12,13 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from tfx.utils import import_utils
-
-
-# from zenml.utils.source_utils import load_source_path_class
-
+from zenml.utils.source_utils import load_source_path_class
+from zenml.core.standards.standard_keys import StepKeys
 
 def run_fn(fn_args):
-    # c = load_source_path_class(fn_args['params']['fn'])
-    c = import_utils.import_class_by_path(fn_args['fn'])
-    return c(fn_args).get_run_fn()()
+    c = load_source_path_class(fn_args.pop(StepKeys.SOURCE))
+
+    # Pop unnecessary args
+    args = fn_args.pop(StepKeys.ARGS)
+
+    # TODO: [LOW] Hard-coded
+    fn_args.pop('data_accessor')
+
+    # We update users args first, because fn_args might have overlaps
+    args.update(fn_args)
+
+    return c(**args).get_run_fn()()

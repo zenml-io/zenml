@@ -24,67 +24,42 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from abc import abstractmethod
 from typing import Text, List, Dict
 
 import pandas as pd
 from ml_metadata.metadata_store import metadata_store
-from ml_metadata.proto import metadata_store_pb2
 
+from zenml.core.standards.standard_keys import MLMetadataKeys
+from zenml.utils.enums import MLMetadataTypes
 from zenml.utils.enums import PipelineStatusTypes
+from zenml.utils.logger import get_logger
+from zenml.utils.print_utils import to_pretty_string, PrintStyles
+
+logger = get_logger(__name__)
 
 
 class ZenMLMetadataStore:
     STORE_TYPE = None
 
     def __init__(self, **kwargs):
-        pass
-
-    @staticmethod
-    def initiate_store_mysql(
-            host: Text,
-            port: int,
-            database: Text,
-            username: Text,
-            password: Text
-    ) -> metadata_store_pb2.ConnectionConfig:
-        """Initiates the configuration of the store. :param host: The name or
-        network address of the instance of MySQL to :param connect to.: :param
-        port: The port MySQL is using to listen for connections. :param
-        database: The name of the database to use. :param username: The MySQL
-        login account being used. :param password: The password for the MySQL
-        account being used.
+        """
+        All sub-classes must call this AFTER their own constructor.
 
         Args:
-            host (Text):
-            port (int):
-            database (Text):
-            username (Text):
-            password (Text):
-
-        Returns:
-            the instance of the MD Store
+            **kwargs: free-form parameters of the metadata store.
         """
-        config = metadata_store_pb2.ConnectionConfig(
-            mysql=metadata_store_pb2.MySQLDatabaseConfig(
-                host=host,
-                port=port,
-                database=database,
-                user=username,
-                password=password))
+        if 'store' in kwargs:
+            self.store = kwargs['store']
+        else:
+            self.store = metadata_store.MetadataStore(
+                self.get_tfx_metadata_config())
 
-        return metadata_store.MetadataStore(config)
+    def __str__(self):
+        return to_pretty_string(self.to_config())
 
-    @staticmethod
-    def initiate_store_sqlite(uri: Text):
-        """Initiates the configuration of the store :param uri: path the the
-        metadata store :return: the instance of the MD Store
-
-        Args:
-            uri (Text):
-        """
-        config = metadata_store_pb2.ConnectionConfig()
-        config.sqlite.filename_uri = uri
-        return metadata_store.MetadataStore(config)
+    def __repr__(self):
+        return to_pretty_string(self.to_config(), style=PrintStyles.PPRINT)
 
     @classmethod
     def from_config(cls, config: Dict):
@@ -96,11 +71,26 @@ class ZenMLMetadataStore:
         """
         from zenml.core.metadata.metadata_wrapper_factory import \
             wrapper_factory
-        store_type = config['type']
-        args = config['args']
+        store_type = config[MLMetadataKeys.TYPE]
+        store_types = list(MLMetadataTypes.__members__.keys())
+        if store_type not in store_types:
+            raise Exception(f'store_type must be one of: {store_types}')
+        args = config[MLMetadataKeys.ARGS]
         class_ = wrapper_factory.get_single_metadata_wrapper(store_type)
-        obj = class_(**args)
+
+        try:
+            obj = class_(**args)
+        except TypeError as e:
+            logger.error(str(e))
+            import inspect
+            args = inspect.getfullargspec(class_).args
+            args.remove('self')
+            raise Exception(f'args must include only: {args}')
         return obj
+
+    @abstractmethod
+    def get_tfx_metadata_config(self):
+        pass
 
     def to_config(self) -> Dict:
         """
@@ -109,8 +99,8 @@ class ZenMLMetadataStore:
         args_dict = self.__dict__.copy()
         args_dict.pop('store')  # TODO: [LOW] Again a hack
         return {
-            'type': self.STORE_TYPE,
-            'args': args_dict
+            MLMetadataKeys.TYPE: self.STORE_TYPE,
+            MLMetadataKeys.ARGS: args_dict
         }
 
     def get_pipeline_status(self, pipeline_name: Text) -> Text:
@@ -139,10 +129,19 @@ class ZenMLMetadataStore:
         return self.store.get_executions_by_context(c.id)
 
     def get_pipeline_context(self, pipeline_name: Text):
-        return self.store.get_context_by_type_and_name(
-            type_name='pipeline',
-            context_name=pipeline_name
+        # We rebuild context for ml metadata here.
+        from zenml.core.repo.repo import Repository
+        repo: Repository = Repository.get_instance()
+        run_id = f'{repo.get_artifact_store().unique_id}.{pipeline_name}'
+        run_context = self.store.get_context_by_type_and_name(
+            type_name='run',
+            context_name=run_id
         )
+        if run_context is None:
+            raise Exception(f'{pipeline_name} does not exist in Metadata '
+                            f'store. This might be due to the fact that it '
+                            f'has not run yet!')
+        return run_context
 
     def get_artifacts_by_component(self, pipeline_name: Text,
                                    component_name: Text):
@@ -153,6 +152,11 @@ class ZenMLMetadataStore:
         """
         # First , you get the execution associated with the component
         e = self.get_component_execution(pipeline_name, component_name)
+
+        if e is None:
+            raise Exception(f'{component_name} not found! This might be due '
+                            f'to the fact that the pipeline does not have '
+                            f'the associated {component_name} Step.')
 
         # Second, you will get artifacts
         return self.get_artifacts_by_execution(e.id)
@@ -189,58 +193,6 @@ class ZenMLMetadataStore:
     def get_pipeline_contexts(self) -> List:
         """Gets list of pipeline contexts"""
         return self.store.get_contexts_by_type(type_name='pipeline')
-
-    # old
-    def get_run_context_by_comp_execution_id(self, comp_exec_id):
-        """
-        Args:
-            comp_exec_id:
-        """
-        all_cs = self.store.get_contexts_by_execution(comp_exec_id)
-        for c in all_cs:
-            if 'run_id' in c.properties:
-                return c
-
-    def get_execution_ids_by_value(self, param, value):
-        """
-        Args:
-            param:
-            value:
-        """
-        if self.store:
-            db_uri = 'mysql+pymysql://{user}:{password}@{host}/{db}'.format(
-                user=self.username,
-                password=self.password,
-                host=self.host,
-                db=self.database,
-            )
-            engine = create_engine(db_uri)
-            with engine.connect() as con:
-                query = """
-                SELECT * FROM ExecutionProperty
-                WHERE (name='{}' and string_value='{}')
-                """.format(param, value)
-                rs = con.execute(query)
-                return [r.execution_id for r in rs]
-        else:
-            raise AssertionError("Metadata store does not exist.")
-
-    # old stuff
-    def visualize_contexts(self):
-        """Creates a DataFrame of the available contexts :return:
-        pd.DataFrame
-        """
-        context_df = pd.DataFrame(columns=['run_id',
-                                           'pipeline_name',
-                                           'context_name',
-                                           'context_id'])
-        for c in self.store.get_contexts():
-            context_df.loc[c.id] = pd.Series({
-                'context_id': c.id,
-                'context_name': c.name,
-                'run_id': c.properties['run_id'].string_value,
-                'pipeline_name': c.properties['pipeline_name'].string_value})
-        return context_df
 
     def get_executions_by_context(self, context: str):
         """

@@ -13,26 +13,23 @@
 #  permissions and limitations under the License.
 """Pipeline to create data sources"""
 
-from typing import Dict, Text, Any, Type
+from typing import Dict, Text, Any, List
 
 from tfx.components.schema_gen.component import SchemaGen
 from tfx.components.statistics_gen.component import StatisticsGen
-from tfx.orchestration import pipeline
 
-from zenml.core.backends.orchestrator.orchestrator_local_backend import \
+from zenml.core.backends.orchestrator.local.orchestrator_local_backend import \
     OrchestratorLocalBackend
 from zenml.core.backends.processing.processing_local_backend import \
     ProcessingLocalBackend
 from zenml.core.components.data_gen.component import DataGen
-from zenml.core.components.data_gen.constants import SpecParamKeys
 from zenml.core.pipelines.base_pipeline import BasePipeline
-from zenml.core.pipelines.standards.standard_training_pipeline import \
-    GlobalKeys
-from zenml.core.steps.data.base_data_step import BaseDataStep
+from zenml.core.standards import standard_keys as keys
+from zenml.core.standards.standard_keys import StepKeys
 from zenml.utils.enums import GDPComponent
-from zenml.utils.post_training_utils import view_statistics, \
-    get_schema_proto, \
-    evaluate_single_pipeline
+from zenml.utils.post_training.post_training_utils import \
+    get_statistics_artifact, \
+    get_schema_artifact, view_statistics, view_schema
 
 
 class DataPipeline(BasePipeline):
@@ -42,98 +39,50 @@ class DataPipeline(BasePipeline):
     creates a snapshot of the datasource in time. All datasources are consumed
     by different ZenML pipelines like the TrainingPipeline.
     """
+    PIPELINE_TYPE = 'data'
 
-    def get_tfx_pipeline(self, config: Dict[Text, Any]) -> pipeline.Pipeline:
+    def get_tfx_component_list(self, config: Dict[Text, Any]) -> List:
         """
         Creates a data tfx pipeline.
 
         Args:
             config: a ZenML config as a dict
         """
-        data_config = config[GlobalKeys.STEPS]['data']
-        data_gen = DataGen(source=data_config[SpecParamKeys.SOURCE],
-                           source_args=data_config[SpecParamKeys.SOURCE_ARGS],
-                           instance_name=GDPComponent.DataGen.name)
+        data_config = config[keys.GlobalKeys.STEPS][keys.DataSteps.DATA]
+        data_gen = DataGen(
+            source=data_config[StepKeys.SOURCE],
+            source_args=data_config[StepKeys.ARGS]).with_id(
+            GDPComponent.DataGen.name
+        )
 
         datapoints = data_gen.outputs.examples
 
         statistics_split = StatisticsGen(
-            examples=datapoints,
-            instance_name=GDPComponent.SplitStatistics.name)
+            examples=datapoints).with_id(GDPComponent.SplitStatistics.name)
 
         schema_split = SchemaGen(
             statistics=statistics_split.outputs.output,
-            infer_feature_shape=False,
-            instance_name=GDPComponent.SplitSchema.name)
+            infer_feature_shape=True).with_id(GDPComponent.SplitSchema.name)
 
-        from zenml.core.components.split_gen.component import SplitGen
-        split_config = config[GlobalKeys.STEPS]['split']
-        split_gen = SplitGen(
-            input_examples=datapoints,
-            source=split_config[SpecParamKeys.SOURCE],
-            source_args=split_config[SpecParamKeys.SOURCE_ARGS],
-            schema=schema_split.outputs.schema,
-            statistics=statistics_split.outputs.output,
-        )
+        return [data_gen, statistics_split, schema_split]
 
-        # TODO: [HIGH] Temporary hack to get splitgen tested
-        # from zenml.core.components.split_gen.component import SplitGen
-        # splits = SplitGen(
-        #     data=datapoints,
-        #     statistics=statistics_split.outputs.output,
-        #     schema=schema_split.outputs.schema,
-        #     config=config,
-        #     instance_name=GDPComponent.SplitGen.name)
+    def view_statistics(self, magic: bool = False):
+        """
+        View statistics for data pipeline in HTML.
 
-        component_list = [data_gen, statistics_split, schema_split, split_gen]
-
-        # TODO: [HIGH] Temp hack to get it going
-        from zenml.core.repo.repo import Repository
-        from tfx.orchestration import metadata
-        repo: Repository = Repository.get_instance()
-        return pipeline.Pipeline(
-            pipeline_name=config['environment']['pipeline_name'],
-            pipeline_root=repo.zenml_config.get_artifact_store().path,
-            metadata_connection_config=metadata
-                .sqlite_metadata_connection_config(
-                repo.get_metadata_store().uri),
-            components=component_list,
-            enable_cache=False
-        )
-
-    def add_data_step(self, data_step: Type[BaseDataStep]):
-        self.steps_dict['data'] = data_step
-
-    def add_split_step(self, split_step):
-        self.steps_dict['split'] = split_step
-
-    def view_statistics(self):
-        """View statistics for training pipeline."""
-        # TODO: [HIGH] Remove hard-coded StatisticsGen name
-        artifact_uris = self.repo.get_artifacts_uri_by_component(
-            self.pipeline_name, 'StatisticsGen')
-        view_statistics(artifact_uris[0])
+        Args:
+            magic (bool): Creates HTML page if False, else
+            creates a notebook cell.
+        """
+        uri = get_statistics_artifact(
+            self.pipeline_name, GDPComponent.DataStatistics.name)
+        view_statistics(uri, magic)
 
     def view_schema(self):
         """View schema of data flowing in pipeline."""
-        # TODO: [HIGH] Remove hard-coded SchemaGen name
-        artifact_uris = self.repo.get_artifacts_uri_by_component(
-            self.pipeline_name, 'SchemaGen')
-        return get_schema_proto(artifact_uris[0])
-
-    def evaluate(self):
-        """Evaluate pipeline."""
-        trainer_paths = self.repo.get_artifacts_uri_by_component(
-            'penguin_local_no_tuning_4', 'Trainer')
-        eval_paths = self.repo.get_artifacts_uri_by_component(
-            'penguin_local_no_tuning_4', 'Evaluator')
-        evaluate_single_pipeline(self.name, trainer_paths[0], eval_paths[0])
-
-    def download_model(self):
-        """Download model."""
-        model_paths = self.repo.get_artifacts_uri_by_component(
-            'penguin_local_no_tuning_4', 'Pusher')
-        print(f'Model: {model_paths[0]}')
+        uri = get_schema_artifact(
+            self.pipeline_name, GDPComponent.DataSchema.name)
+        view_schema(uri)
 
     def get_default_backends(self) -> Dict:
         """Gets list of default backends for this pipeline."""
@@ -143,8 +92,8 @@ class DataPipeline(BasePipeline):
             ProcessingLocalBackend.BACKEND_KEY: ProcessingLocalBackend()
         }
 
-    def is_completed(self) -> bool:
-        mandatory_steps = ['data']
+    def steps_completed(self) -> bool:
+        mandatory_steps = [keys.DataSteps.DATA]
         for step_name in mandatory_steps:
             if step_name not in self.steps_dict.keys():
                 raise AssertionError(

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Base interface for CSV Data Step"""
 
-import logging
 import os
 from typing import Text, Any, Dict
 
@@ -22,6 +21,9 @@ from tfx_bsl.coders import csv_decoder
 
 from zenml.core.steps.data.base_data_step import BaseDataStep
 from zenml.utils import path_utils
+from zenml.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 @beam.ptransform_fn
@@ -49,12 +51,12 @@ def read_files_from_disk(pipeline: beam.Pipeline,
     csv_files = [uri for uri in csv_files if os.path.splitext(uri)[1]
                  in allowed_file_exts]
 
-    logging.info(f'Matched {len(csv_files)}: {csv_files}')
+    logger.info(f'Matched {len(csv_files)}: {csv_files}')
 
     # Always use header from file
-    logging.info(f'Using header from file: {csv_files[0]}.')
+    logger.info(f'Using header from file: {csv_files[0]}.')
     column_names = path_utils.load_csv_header(csv_files[0])
-    logging.info(f'Header: {column_names}.')
+    logger.info(f'Header: {column_names}.')
 
     parsed_csv_lines = (
             pipeline
@@ -70,7 +72,7 @@ def read_files_from_disk(pipeline: beam.Pipeline,
 
 class CSVDataStep(BaseDataStep):
     def __init__(self, path, schema: Dict = None):
-        super().__init__(schema)
+        super().__init__(schema=schema, path=path)
         self.path = path
 
     def read_from_source(self):

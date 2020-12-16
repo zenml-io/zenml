@@ -16,18 +16,17 @@
 import os
 from typing import Text, Optional, Dict, Type
 
-import yaml
-
 from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
 from zenml.core.repo.artifact_store import ArtifactStore
 from zenml.core.repo.constants import ZENML_CONFIG_NAME, \
     ARTIFACT_STORE_DEFAULT_DIR, PIPELINES_DEFAULT_DIR_NAME, \
     ML_METADATA_SQLITE_DEFAULT_NAME, ZENML_DIR_NAME
 from zenml.core.repo.git_wrapper import GitWrapper
+from zenml.core.standards.standard_keys import EnvironmentKeys
 from zenml.utils import path_utils, yaml_utils
 
-ARTIFACT_STORE_KEY = 'artifact_store'
-METADATA_KEY = 'metadata'
+ARTIFACT_STORE_KEY = EnvironmentKeys.ARTIFACT_STORE
+METADATA_KEY = EnvironmentKeys.METADATA_STORE
 PIPELINES_DIR_KEY = 'pipelines_dir'
 
 
@@ -51,16 +50,13 @@ class ZenMLConfig:
                                  f'config file. Please initialize your repo '
                                  f'with `zenml init` with the ZenML CLI.')
 
-        self.config_path = os.path.join(repo_path, ZENML_DIR_NAME,
-                                        ZENML_CONFIG_NAME)
+        self.config_dir = os.path.join(repo_path, ZENML_DIR_NAME)
+        self.config_path = os.path.join(self.config_dir, ZENML_CONFIG_NAME)
 
-        with open(self.config_path) as f:
-            # The FullLoader parameter handles the conversion from YAML
-            # scalar values to Python the dictionary format
-            self.raw_config = yaml.load(f, Loader=yaml.FullLoader)
+        self.raw_config = yaml_utils.read_yaml(self.config_path)
 
         # Load self vars in init to be clean
-        self.metadata_store: Optional[Type[ZenMLMetadataStore]] = None
+        self.metadata_store: Optional[ZenMLMetadataStore] = None
         self.artifact_store: Optional[ArtifactStore] = None
         self.pipelines_dir: Text = ''
 
@@ -137,15 +133,11 @@ class ZenMLConfig:
             pipelines_dir = path_utils.resolve_relative_path(pipelines_dir)
 
         path_utils.create_dir_if_not_exists(pipelines_dir)
-
         config_dict = {
             ARTIFACT_STORE_KEY: artifact_store_path,
             METADATA_KEY: metadata_dict,
             PIPELINES_DIR_KEY: pipelines_dir,
         }
-
-        print(config_dict)
-
         # Write initial config
         yaml_utils.write_yaml(config_path, config_dict)
 
@@ -160,14 +152,13 @@ class ZenMLConfig:
         assert ARTIFACT_STORE_KEY in config_path
         assert PIPELINES_DIR_KEY in config_path
 
-        # TODO: [HIGH] Refactor when @bcdurak is done with setting standards.
         self.artifact_store = ArtifactStore(config_path[ARTIFACT_STORE_KEY])
         self.metadata_store = ZenMLMetadataStore.from_config(
             config=config_path[METADATA_KEY]
         )
         self.pipelines_dir = config_path[PIPELINES_DIR_KEY]
 
-    def get_metadata_store(self) -> Type[ZenMLMetadataStore]:
+    def get_metadata_store(self) -> ZenMLMetadataStore:
         """Get metadata store from config."""
         return self.metadata_store
 
@@ -178,3 +169,44 @@ class ZenMLConfig:
     def get_pipelines_dir(self) -> Text:
         """Get absolute path of pipelines dir from config"""
         return self.pipelines_dir
+
+    def set_artifact_store(self, artifact_store_path: Text):
+        """
+        Updates artifact store to point to path.
+
+        Args:
+            artifact_store_path: new path to artifact store
+        """
+        self.artifact_store = ArtifactStore(artifact_store_path)
+        self.save()
+
+    def set_metadata_store(self, metadata_store: ZenMLMetadataStore):
+        """
+        Updates artifact store to point to path.
+
+        Args:
+            metadata_store: metadata store
+        """
+        self.metadata_store = metadata_store
+        self.save()
+
+    def set_pipelines_dir(self, pipelines_dir: Text):
+        """
+        Updates artifact store to point to path.
+
+        Args:
+            pipelines_dir: new path to pipelines dir
+        """
+        path_utils.create_dir_if_not_exists(pipelines_dir)
+        self.pipelines_dir = pipelines_dir
+        self.save()
+
+    def save(self):
+        config_dict = {
+            ARTIFACT_STORE_KEY: self.artifact_store.path,
+            METADATA_KEY: self.metadata_store.to_config(),
+            PIPELINES_DIR_KEY: self.pipelines_dir,
+        }
+
+        # Write initial config
+        yaml_utils.write_yaml(self.config_path, config_dict)

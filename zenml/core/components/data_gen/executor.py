@@ -16,14 +16,14 @@ from typing import Dict, Text, Any, List
 
 import apache_beam as beam
 from tfx import types
-from tfx.components.base import base_executor
 from tfx.components.example_gen.base_example_gen_executor import _WriteSplit
+from tfx.dsl.components.base import base_executor
 from tfx.types import artifact_utils
 
 from zenml.core.components.data_gen.constants import DATA_SPLIT_NAME
-from zenml.core.components.data_gen.constants import SpecParamKeys
 from zenml.core.components.data_gen.utils import DtypeInferrer
 from zenml.core.components.data_gen.utils import append_tf_example
+from zenml.core.standards.standard_keys import StepKeys
 from zenml.core.steps.data.base_data_step import BaseDataStep
 from zenml.utils import source_utils
 
@@ -65,15 +65,15 @@ class DataExecutor(base_executor.BaseExecutor):
             output_dict:
             exec_properties:
         """
-        source = exec_properties[SpecParamKeys.SOURCE]
-        args = exec_properties[SpecParamKeys.SOURCE_ARGS]
+        source = exec_properties[StepKeys.SOURCE]
+        args = exec_properties[StepKeys.ARGS]
 
         c = source_utils.load_source_path_class(source)
         data_step: BaseDataStep = c(**args)
 
         # Get output split path
         examples_artifact = artifact_utils.get_single_instance(
-            output_dict['examples'])
+            output_dict[DATA_SPLIT_NAME])
         split_names = [DATA_SPLIT_NAME]
         examples_artifact.split_names = artifact_utils.encode_split_names(
             split_names)

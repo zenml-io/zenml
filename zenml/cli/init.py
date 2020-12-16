@@ -13,23 +13,21 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import Text, Dict
+from typing import Text
 
 import click
+import git
 
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation
 from zenml.core.repo.repo import Repository
 
 
-@cli.command()
+@cli.command('init')
 @click.option('--repo_path', type=click.Path(exists=True))
-@click.option('--artifact_store_path', type=click.Path(exists=True))
-@click.option('--metadata_dict', type=dict)
 @click.option('--pipelines_dir', type=click.Path(exists=True))
 @click.option('--analytics_opt_in', '-a', type=click.BOOL)
-def init(repo_path: Text, artifact_store_path: Text = None,
-         metadata_dict: Dict = None, pipelines_dir: Text = None,
+def init(repo_path: Text, pipelines_dir: Text = None,
          analytics_opt_in: bool = None):
     """Initialize ZenML on given path."""
     if repo_path is None:
@@ -43,12 +41,15 @@ def init(repo_path: Text, artifact_store_path: Text = None,
             "what information we collect on: . "
             "Would you like to opt-in to usage analytics?")
 
-    metadata_store = None
-    Repository.init_repo(
-        repo_path,
-        artifact_store_path,
-        metadata_store,
-        pipelines_dir,
-        analytics_opt_in,
-    )
-    click.echo(f'ZenML repo initialized at {repo_path}')
+    try:
+        Repository.init_repo(
+            repo_path,
+            None,
+            None,
+            pipelines_dir,
+            analytics_opt_in,
+        )
+        click.echo(f'ZenML repo initialized at {repo_path}')
+    except git.InvalidGitRepositoryError:
+        click.echo(f'{repo_path} is not a valid git repository! Please '
+                   f'initialize ZenML within a git repository.')

@@ -11,33 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of a random split of the input data set."""
 
-from typing import Text, List
+import bisect
+from typing import Text, List, Dict, Any
 
-import apache_beam as beam
-import tensorflow as tf
+import numpy as np
 
 from zenml.core.steps.split import constants
 from zenml.core.steps.split.base_split_step import BaseSplitStep
 
 
-def get_categorical_value(example: tf.train.Example, cat_col: Text):
-    cat_feature = example.features.feature[cat_col]
-
-    possible_types = ["bytes", "float", "int64"]
-
-    for datatype in possible_types:
-        value_list = getattr(cat_feature, datatype + "_list")
-
-        if value_list.value:
-            value = value_list.value[0]
-            if hasattr(value, "decode"):
-                return value.decode()
-            else:
-                return value
-
-
-def lint_split_map(split_map):
+def lint_split_map(split_map: Dict[Text, float]):
     """Small utility to lint the split_map"""
     if constants.TRAIN not in split_map.keys():
         raise AssertionError(f'You have to define some values for '
@@ -46,62 +31,60 @@ def lint_split_map(split_map):
         raise AssertionError('Please specify more than 1 split name in the '
                              'split_map!')
 
+    if not all(isinstance(v, float) for v in split_map.values()):
+        raise AssertionError("Only float values are allowed when specifying "
+                             "a random split!")
 
-def CategoricalPartitionFn(
-        element,
-        num_partitions: int,
-        categorical_column,
-        split_map,
-):
-    category_value = get_categorical_value(element, cat_col=categorical_column)
 
-    # The following code produces a dict: { split_name: unique_integer }
-    # However 'train' always maps to 0
-    enumerated_splits = {constants.TRAIN: 0}
-    enumerated_splits.update(
-        {name: i for i, name in enumerate(split_map.keys())
-         if name != constants.TRAIN}
-    )
+def RandomSplitPartitionFn(element: Any,
+                           num_partitions: int,
+                           split_map: Dict[Text, float]) -> int:
+    """
+    Function for a random split of the data; to be used in a beam.Partition.
+    Args:
+        element: Data point, in format tf.train.Example.
+        num_partitions: Number of splits, unused here.
+        split_map: Dict mapping {split_name: percentage of data in split}.
 
-    for split_name, category_value_list in split_map.items():
-        # if the value is in the list, then just return
-        if category_value in category_value_list:
-            # return the index of that split
-            return enumerated_splits[split_name]
+    Returns: An integer n, where 0 <= n <= num_partitions - 1.
+    """
 
-    # This is the default behavior for category_values that dont belong to 
-    #  any split in the split_map. We assign it to index '1'
-    return 1
+    # calculates probability mass of each split (= interval on [0,1))
+    probability_mass = np.cumsum(list(split_map.values()))
+
+    # excludes the right bound 1 as it is redundant
+    brackets = probability_mass[:-1]
+
+    return bisect.bisect(brackets, np.random.rand())
 
 
 class RandomSplitStep(BaseSplitStep):
 
     def __init__(
             self,
-            categorical_column,
-            split_map,
-            statistics = None,
-            schema = None,
+            split_map: Dict[Text, float],
+            statistics=None,
+            schema=None,
     ):
         """
+        Randomly split the data based on split_map.
 
         Args:
-            statistics:
-            schema:
-            categorical_column:
-            split_map: a dict { split_name: [category_values] }
+            statistics: Parsed statistics from a preceding StatisticsGen.
+            schema: Parsed schema from a preceding SchemaGen.
+            split_map: A dict { split_name: percentage of data in split }.
         """
-        self.categorical_column = categorical_column
 
         lint_split_map(split_map)
         self.split_map = split_map
 
-        super().__init__(statistics, schema)
+        super().__init__(statistics=statistics,
+                         schema=schema,
+                         split_map=split_map)
 
     def partition_fn(self):
-        return CategoricalPartitionFn, {
-            'split_map': self.split_map,
-            'categorical_column': self.categorical_column
+        return RandomSplitPartitionFn, {
+            'split_map': self.split_map
         }
 
     def get_split_names(self) -> List[Text]:

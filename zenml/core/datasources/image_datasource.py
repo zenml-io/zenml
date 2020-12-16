@@ -26,13 +26,13 @@ class ImageDatasource(BaseDatasource):
     """
     DATA_STEP = ImageDataStep
 
-    def __init__(self, name: Text = None, path=''):
+    def __init__(self, name: Text = None, base_path='', **unused_kwargs):
         """
         Create a Image datasource.
 
         Args:
             name (str): Name of datasource
-            path (str): Path to folder of images
+            base_path (str): Path to folder of images
         """
-        super().__init__(name)
-        self.path = path
+        super().__init__(name, **unused_kwargs)
+        self.base_path = base_path

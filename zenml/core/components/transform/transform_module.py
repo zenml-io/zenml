@@ -12,13 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from tfx.utils import import_utils
-
-
-# from zenml.utils.source_utils import load_source_path_class
+from zenml.core.standards.standard_keys import StepKeys
+from zenml.utils.source_utils import load_source_path_class
 
 
 def preprocessing_fn(inputs, custom_config):
-    # c = load_source_path_class(custom_config['fn'])
-    c = import_utils.import_class_by_path(custom_config['fn'])
-    return c(custom_config['args']).get_preprocessing_fn()(inputs)
+    c = load_source_path_class(custom_config[StepKeys.SOURCE])
+    args = custom_config[StepKeys.ARGS]
+    return c(**args).get_preprocessing_fn()(inputs)

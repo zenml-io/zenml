@@ -20,7 +20,7 @@ from zenml.core.backends.processing.processing_local_backend import \
 
 
 class ProcessingDataFlowBackend(ProcessingLocalBackend):
-    """Base class for all Processing ZenML backends.
+    """Use this to run the pipeline on Google Dataflow.
 
     Every ZenML pipeline runs in backends.
     """
@@ -33,6 +33,7 @@ class ProcessingDataFlowBackend(ProcessingLocalBackend):
             disk_size_gb: int = 100,
             autoscaling_algorithm: Text = 'THROUGHPUT_BASED',
             **kwargs):
+        raise NotImplementedError('Its coming soon!')
         self.worker_machine_type = worker_machine_type
         self.num_workers = num_workers
         self.max_num_workers = max_num_workers

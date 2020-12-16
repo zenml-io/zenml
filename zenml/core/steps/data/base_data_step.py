@@ -20,6 +20,7 @@ from typing import Text, Any
 import apache_beam as beam
 
 from zenml.core.steps.base_step import BaseStep
+from zenml.utils.enums import StepTypes
 
 
 @beam.ptransform_fn
@@ -30,7 +31,10 @@ def identity_ptransform(pipeline: beam.Pipeline):
 
 
 class BaseDataStep(BaseStep):
-    def __init__(self, schema: Dict = None):
+    STEP_TYPE = StepTypes.data.name
+
+    def __init__(self, schema: Dict = None, **kwargs):
+        super().__init__(schema=schema, **kwargs)
         self.schema = schema
 
     @abc.abstractmethod

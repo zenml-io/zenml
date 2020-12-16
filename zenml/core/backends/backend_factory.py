@@ -13,13 +13,16 @@
 #  permissions and limitations under the License.
 """Factory to register backend classes to backends"""
 
-from zenml.core.backends.orchestrator.orchestrator_dataflow_backend import \
-    OrchestratorDataFlowBackend
-from zenml.core.backends.orchestrator.orchestrator_gcp_backend import \
+from zenml.core.backends.orchestrator.beam.orchestrator_beam_backend import \
+    OrchestratorBeamBackend
+from zenml.core.backends.orchestrator.gcp.orchestrator_gcp_backend import \
     OrchestratorGCPBackend
-from zenml.core.backends.orchestrator.orchestrator_kubeflow_backend import \
-    OrchestratorKubeFlowBackend
-from zenml.core.backends.orchestrator.orchestrator_local_backend import \
+from zenml.core.backends.orchestrator.kubeflow.orchestrator_kubeflow_backend \
+    import OrchestratorKubeFlowBackend
+from zenml.core.backends.orchestrator.kubernetes \
+    .orchestrator_kubernetes_backend import \
+    OrchestratorKubernetesBackend
+from zenml.core.backends.orchestrator.local.orchestrator_local_backend import \
     OrchestratorLocalBackend
 from zenml.core.backends.processing.processing_dataflow_backend import \
     ProcessingDataFlowBackend
@@ -45,30 +48,24 @@ class BackendFactory:
     def get_backends(self):
         return self.backends
 
-    def get_single_backend(self, key):
-        return self.backends[key]
+    def register_backend(self, backend):
+        if backend.BACKEND_KEY not in self.backends:
+            self.backends[backend.BACKEND_KEY] = {}
+        self.backends[backend.BACKEND_KEY][backend.BACKEND_TYPE] = backend
 
-    def register_backend(self, key, backend_):
-        self.backends[key] = backend_
+    def get_backend(self, key, type_):
+        return self.backends[key][type_]
 
 
 # Register the injections into the factory
 backend_factory = BackendFactory()
-backend_factory.register_backend(OrchestratorDataFlowBackend.BACKEND_TYPE,
-                                 OrchestratorDataFlowBackend)
-backend_factory.register_backend(OrchestratorLocalBackend.BACKEND_TYPE,
-                                 OrchestratorLocalBackend)
-backend_factory.register_backend(OrchestratorGCPBackend.BACKEND_TYPE,
-                                 OrchestratorGCPBackend)
-backend_factory.register_backend(OrchestratorKubeFlowBackend.BACKEND_TYPE,
-                                 OrchestratorKubeFlowBackend)
-backend_factory.register_backend(ProcessingDataFlowBackend.BACKEND_TYPE,
-                                 ProcessingDataFlowBackend)
-backend_factory.register_backend(ProcessingLocalBackend.BACKEND_TYPE,
-                                 ProcessingLocalBackend)
-backend_factory.register_backend(ProcessingSparkBackend.BACKEND_TYPE,
-                                 ProcessingSparkBackend)
-backend_factory.register_backend(TrainingGCAIPBackend.BACKEND_TYPE,
-                                 TrainingGCAIPBackend)
-backend_factory.register_backend(TrainingLocalBackend.BACKEND_TYPE,
-                                 TrainingLocalBackend)
+backend_factory.register_backend(OrchestratorBeamBackend)
+backend_factory.register_backend(OrchestratorLocalBackend)
+backend_factory.register_backend(OrchestratorGCPBackend)
+backend_factory.register_backend(OrchestratorKubeFlowBackend)
+backend_factory.register_backend(OrchestratorKubernetesBackend)
+backend_factory.register_backend(ProcessingDataFlowBackend)
+backend_factory.register_backend(ProcessingLocalBackend)
+backend_factory.register_backend(ProcessingSparkBackend)
+backend_factory.register_backend(TrainingGCAIPBackend)
+backend_factory.register_backend(TrainingLocalBackend)

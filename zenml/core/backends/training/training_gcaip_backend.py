@@ -28,11 +28,14 @@ class TrainingGCAIPBackend(TrainingLocalBackend):
 
     def __init__(
             self,
+            image: Text = '',
             scale_tier: Text = 'BASIC',
             runtime_version: Text = '2.2',
             python_version: Text = '3.7',
             max_running_time: Text = '7200s',
             **kwargs):
+        raise NotImplementedError('Its coming soon!')
+        self.image = image
         self.scale_tier = scale_tier
         self.runtime_version = runtime_version
         self.python_version = python_version

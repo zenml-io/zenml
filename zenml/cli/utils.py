@@ -13,8 +13,6 @@
 #  permissions and limitations under the License.
 
 
-import os
-
 import click
 from dateutil import tz
 
@@ -84,8 +82,6 @@ def warning(text):
     click.echo(click.style(text, fg='yellow', bold=True))
 
 
-
-
 def format_date(dt, format='%Y-%m-%d %H:%M:%S'):
     """
     Args:
@@ -113,35 +109,12 @@ def format_timedelta(td):
     return '{:02}:{:02}:{:02}'.format(int(hours), int(minutes), int(seconds))
 
 
-def format_uuid(uuid: str, limit: int = 8):
-    """
-    Args:
-        uuid (str):
-        limit (int):
-    """
-    return uuid[0:limit]
-
-
-def find_closest_uuid(substr: str, options):
-    """
-    Args:
-        substr (str):
-        options:
-    """
-    candidates = [x.id for x in options if x.id.startswith(substr)]
-    if len(candidates) == 1:
-        return candidates[0]
-    elif len(candidates) == 0:
-        error('No matching IDs found!')
-    error('Too many matching IDs.')
-
-
 def parse_unknown_options(args):
     """
     Args:
         args:
     """
-    warning_message = 'Please provide the additional optional with a proper ' \
+    warning_message = 'Please provide args with a proper ' \
                       'identifier as the key and the following structure: ' \
                       '--custom_argument="value"'
 

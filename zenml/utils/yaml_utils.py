@@ -29,12 +29,12 @@ def write_yaml(file_path: Text, contents: Dict):
         file_path (str): Path to YAML file.
         contents (dict): Contents of YAML file as dict.
     """
-    dir_ = str(Path(file_path).parent)
-    if not path_utils.is_dir(dir_):
-        raise Exception(f'Directory {dir_} does not exist.')
-
-    with open(file_path, 'w') as f:
-        f.write(yaml.dump(contents))
+    if not path_utils.is_remote(file_path):
+        dir_ = str(Path(file_path).parent)
+        if not path_utils.is_dir(dir_):
+            # If it is a local path and it doesnt exist, raise Exception.
+            raise Exception(f'Directory {dir_} does not exist.')
+    path_utils.write_file_contents(file_path, yaml.dump(contents))
 
 
 def read_yaml(file_path: Text):
@@ -59,12 +59,12 @@ def write_json(file_path: Text, contents: Dict):
         file_path (str): Path to JSON file.
         contents (dict): Contents of JSON file as dict.
     """
-    dir_ = str(Path(file_path).parent)
-    if not path_utils.is_dir(dir_):
-        raise Exception(f'Directory {dir_} does not exist.')
-
-    with open(file_path, 'w') as f:
-        f.write(json.dumps(contents))
+    if not path_utils.is_remote(file_path):
+        dir_ = str(Path(file_path).parent)
+        if not path_utils.is_dir(dir_):
+            # If it is a local path and it doesnt exist, raise Exception.
+            raise Exception(f'Directory {dir_} does not exist.')
+    path_utils.write_file_contents(file_path, json.dumps(contents))
 
 
 def read_json(file_path: Text):

@@ -20,13 +20,16 @@ from tensorflow_metadata.proto.v0.statistics_pb2 import \
     DatasetFeatureStatisticsList
 
 from zenml.core.steps.base_step import BaseStep
+from zenml.utils.enums import StepTypes
 
 
 class BaseSplitStep(BaseStep):
+    STEP_TYPE = StepTypes.split.name
 
     def __init__(self,
                  statistics: DatasetFeatureStatisticsList = None,
-                 schema: Schema = None):
+                 schema: Schema = None,
+                 **kwargs):
         """
         Constructor for BaseSplitStep.
 
@@ -34,6 +37,7 @@ class BaseSplitStep(BaseStep):
             statistics: output of a preceding StatisticsGen
             schema: output of a preceding SchemaGen
         """
+        super().__init__(**kwargs)
         self.statistics = statistics
         self.schema = schema
 

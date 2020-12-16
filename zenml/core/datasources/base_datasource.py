@@ -13,12 +13,21 @@
 #  permissions and limitations under the License.
 """Base Class for all ZenML datasources"""
 
-from typing import Text, Optional, List, Type, Dict
+import os
+from typing import Text, Dict
+from uuid import uuid4
 
-from zenml.core.backends.base_backend import BaseBackend
-from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
-from zenml.core.repo.artifact_store import ArtifactStore
-from zenml.utils.enums import PipelineStatusTypes
+import tensorflow as tf
+
+from zenml.core.repo.repo import Repository
+from zenml.core.standards import standard_keys as keys
+from zenml.utils import path_utils
+from zenml.utils import source_utils
+from zenml.utils.enums import GDPComponent
+from zenml.utils.post_training.post_training_utils import \
+    get_schema_artifact, view_schema, get_feature_spec_from_schema, \
+    convert_raw_dataset_to_pandas
+from zenml.utils.print_utils import to_pretty_string, PrintStyles
 from zenml.utils.zenml_analytics import track, CREATE_DATASOURCE
 
 
@@ -28,60 +37,152 @@ class BaseDatasource:
     Every ZenML datasource should override this class.
     """
     DATA_STEP = None
+    PREFIX = 'pipeline_'
 
     @track(event=CREATE_DATASOURCE)
-    def __init__(self, name: Text, schema: Dict = None, *args, **kwargs):
+    def __init__(self, name: Text, schema: Dict = None, _id: Text = None,
+                 _source: Text = None, *args, **kwargs):
         """
         Construct the datasource
 
         Args:
             name (str): name of datasource
+            schema (dict): schema of datasource
+            _id: unique ID (for internal use)
         """
+        if _id:
+            # Its loaded from config
+            self._id = _id
+            self._source = _source
+            self._immutable = True
+        else:
+            # If none, then this is assumed to be 'new'. Check dupes.
+            all_names = Repository.get_instance().get_datasource_names()
+            if any(d == name for d in all_names):
+                raise Exception(
+                    f'Datasource {name} already exists! Please '
+                    f'use Repository.get_datasource_by_name("{name}") '
+                    f'to fetch.')
+            self._id = str(uuid4())
+            self._immutable = False
+            self._source = source_utils.resolve_source_path(
+                self.__class__.__module__ + '.' + self.__class__.__name__
+            )
+
         self.name = name
         self.schema = schema
-        self.data_pipeline = None
 
-    def _create_pipeline_name(self):
-        return 'pipeline_' + self.name
+    def __str__(self):
+        return to_pretty_string(self.to_config())
 
-    def get_name_from_pipeline_name(self, pipeline_name: Text):
-        return pipeline_name.replace('pipeline_', '')
+    def __repr__(self):
+        return to_pretty_string(self.to_config(), style=PrintStyles.PPRINT)
 
-    def run(self,
-            backends: Optional[List[Type[BaseBackend]]] = None,
-            metadata_store: Optional[ZenMLMetadataStore] = None,
-            artifact_store: Optional[ArtifactStore] = None):
+    @classmethod
+    def get_name_from_pipeline_name(cls, pipeline_name: Text):
+        return pipeline_name[len(cls.PREFIX)]
+
+    @classmethod
+    def from_config(cls, config: Dict):
         """
-        Run the pipeline associated with the datasource.
+        Convert from Data Step config to ZenML Datasource object.
+
+        Data step is also populated and configuration set to parameters set
+        in the config file.
 
         Args:
-            backends (list): list of backends to use for this
-            metadata_store: chosen metadata store, if None use default
-            artifact_store: chosen artifact store, if None use default
+            config: a DataStep config in dict-form (probably loaded from YAML).
         """
-        # Use everything in constructor to create data step
-        from zenml.core.pipelines.data_pipeline import DataPipeline
-        self.data_pipeline = DataPipeline(self._create_pipeline_name())
+        if keys.DataSteps.DATA not in config[keys.GlobalKeys.STEPS]:
+            raise Exception("Cant have datasource without data step.")
 
+        # this is the data step config block
+        step_config = config[keys.GlobalKeys.STEPS][keys.DataSteps.DATA]
+        source = config[keys.GlobalKeys.DATASOURCE][keys.DatasourceKeys.SOURCE]
+        datasource_class = source_utils.load_source_path_class(source)
+        datasource_name = config[keys.GlobalKeys.DATASOURCE][
+            keys.DatasourceKeys.NAME]
+        _id = config[keys.GlobalKeys.DATASOURCE][keys.DatasourceKeys.ID]
+        return datasource_class(
+            name=datasource_name, _id=_id, _source=source,
+            **step_config[keys.StepKeys.ARGS])
+
+    def to_config(self):
+        """Converts datasource to ZenML config block."""
+        return {
+            keys.DatasourceKeys.NAME: self.name,
+            keys.DatasourceKeys.SOURCE: self._source,
+            keys.DatasourceKeys.ID: self._id
+        }
+
+    def get_pipeline_name_from_name(self):
+        return self.PREFIX + self.name
+
+    def get_data_step(self):
         params = self.__dict__.copy()
         # TODO: [HIGH] Figure out if there is a better way to do this
-        params.pop('data_pipeline')
         params.pop('name')
-        data_step = self.DATA_STEP(**params)
-        self.data_pipeline.add_data_step(data_step)
+        params.pop('_id')
+        params.pop('_source')
+        params.pop('_immutable')
+        return self.DATA_STEP(**params)
 
-        # TODO: Temporary
-        from zenml.core.steps.split.categorical_split_step import CategoricalDomainSplitStep
-        self.data_pipeline.add_split_step(CategoricalDomainSplitStep(
-            categorical_column='payment_type',
-            split_map={'train': ['Cash'], 'nicholasisdaman': ['Credit Card']}
-        ))
+    def _get_one_pipeline(self):
+        """Gets representative pipeline from all pipelines associated."""
+        pipelines = \
+            Repository.get_instance().get_pipelines_by_datasource(self)
 
-        self.data_pipeline.run(backends, metadata_store, artifact_store)
+        if len(pipelines) == 0:
+            raise Exception('This datasource is not associated with any '
+                            'pipelines, therefore there is no data!')
+        return pipelines[0]
 
-    def has_run(self) -> bool:
-        """Returns true if datasource's pipeline has finished successfully."""
-        if self.data_pipeline:
-            return self.data_pipeline.get_status() == \
-                   PipelineStatusTypes.Succeeded.name
-        return False
+    def _get_data_file_paths(self, pipeline):
+        """
+        Gets path where data is stored as list of file paths.
+
+        Args:
+            pipeline: a pipeline with this datasource embedded
+        """
+        if pipeline.datasource._id != self._id:
+            raise AssertionError('This pipeline does not belong to this '
+                                 'datasource.')
+        repo: Repository = Repository.get_instance()
+        # Take any pipeline and get the datagen
+        data_uri = os.path.join(repo.get_artifacts_uri_by_component(
+            pipeline.pipeline_name,
+            GDPComponent.DataGen.name
+        )[0], 'examples')
+        data_files = path_utils.list_dir(data_uri)
+        return data_files
+
+    def sample_data(self, sample_size: int = 100000):
+        """
+        Sampels data from datasource as a pandas DataFrame.
+
+        Args:
+            sample_size: # of rows to sample.
+        """
+        pipeline = self._get_one_pipeline()
+        data_files = self._get_data_file_paths(pipeline)
+
+        spec = get_feature_spec_from_schema(
+            pipeline.pipeline_name, GDPComponent.DataSchema.name)
+
+        dataset = tf.data.TFRecordDataset(data_files, compression_type='GZIP')
+        return convert_raw_dataset_to_pandas(dataset, spec, sample_size)
+
+    def get_datapoints(self):
+        """Gets total number of datapoints in datasource"""
+        # TODO: [HIGH] Refactor this
+        pipeline = self._get_one_pipeline()
+        data_files = self._get_data_file_paths(pipeline)
+        return sum(1 for _ in tf.data.TFRecordDataset(data_files,
+                                                      compression_type='GZIP'))
+
+    def view_schema(self):
+        """View schema of data flowing in pipeline."""
+        pipeline = self._get_one_pipeline()
+        uri = get_schema_artifact(
+            pipeline.pipeline_name, GDPComponent.DataSchema.name)
+        view_schema(uri)

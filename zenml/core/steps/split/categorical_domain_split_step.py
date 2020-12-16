@@ -11,33 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the categorical domain split."""
 
-from typing import Text, List
-
-import apache_beam as beam
-import tensorflow as tf
+from typing import Text, Dict, List, Any
 
 from zenml.core.steps.split import constants
 from zenml.core.steps.split.base_split_step import BaseSplitStep
+from zenml.core.steps.split.utils import get_categorical_value
 
 
-def get_categorical_value(example: tf.train.Example, cat_col: Text):
-    cat_feature = example.features.feature[cat_col]
-
-    possible_types = ["bytes", "float", "int64"]
-
-    for datatype in possible_types:
-        value_list = getattr(cat_feature, datatype + "_list")
-
-        if value_list.value:
-            value = value_list.value[0]
-            if hasattr(value, "decode"):
-                return value.decode()
-            else:
-                return value
-
-
-def lint_split_map(split_map):
+def lint_split_map(split_map: Dict[Text, List[Text]]):
     """Small utility to lint the split_map"""
     if constants.TRAIN not in split_map.keys():
         raise AssertionError(f'You have to define some values for '
@@ -47,12 +30,23 @@ def lint_split_map(split_map):
                              'split_map!')
 
 
-def CategoricalPartitionFn(
-        element,
-        num_partitions: int,
-        categorical_column,
-        split_map,
-):
+def CategoricalPartitionFn(element: Any,
+                           num_partitions: int,
+                           categorical_column: Text,
+                           split_map: Dict[Text, List[Text]]) -> int:
+    """
+    Function for a categorical split on data to be used in a beam.Partition.
+    Args:
+        element: Data point, given as a tf.train.Example.
+        num_partitions: Number of splits, unused here.
+        categorical_column: Name of the categorical column in the data on which
+        to perform the split.
+        split_map: Dict {split_name: [category_list]} mapping the categorical
+        values in categorical_column to their respective splits.
+
+    Returns: An integer n, where 0 <= n <= num_partitions - 1.
+
+    """
     category_value = get_categorical_value(element, cat_col=categorical_column)
 
     # The following code produces a dict: { split_name: unique_integer }
@@ -78,25 +72,30 @@ class CategoricalDomainSplitStep(BaseSplitStep):
 
     def __init__(
             self,
-            categorical_column,
-            split_map,
-            statistics = None,
-            schema = None,
+            categorical_column: Text,
+            split_map: Dict[Text, List[Text]],
+            statistics=None,
+            schema=None,
     ):
         """
 
         Args:
-            statistics:
-            schema:
-            categorical_column:
-            split_map: a dict { split_name: [category_values] }
+            statistics: Parsed statistics artifact from a preceding
+            StatisticsGen.
+            schema: Parsed schema artifact from a preceding SchemaGen.
+            categorical_column: Name of the categorical column in the data on
+            which to split.
+            split_map: a dict { split_name: [category_values] }.
         """
         self.categorical_column = categorical_column
 
         lint_split_map(split_map)
         self.split_map = split_map
 
-        super().__init__(statistics, schema)
+        super().__init__(statistics=statistics,
+                         schema=schema,
+                         categorical_column=categorical_column,
+                         split_map=split_map)
 
     def partition_fn(self):
         return CategoricalPartitionFn, {

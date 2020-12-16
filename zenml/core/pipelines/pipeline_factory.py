@@ -33,42 +33,19 @@ class PipelineFactory:
     def get_pipeline_types(self) -> Dict:
         return self.pipeline_types
 
-    def get_single_type(self, pipeline_type: Text):
+    def get_pipeline_by_type(self, pipeline_type: Text):
         if pipeline_type in self.pipeline_types:
             return self.pipeline_types[pipeline_type]
-
-    def get_type_from_pipeline(self, pipeline: Type):
-        inverted_dict = dict((v, k) for k, v in self.pipeline_types.items())
-        if pipeline in inverted_dict:
-            return inverted_dict[pipeline]
 
     def register_type(self, pipeline_type: Text, pipeline: Type):
         self.pipeline_types[pipeline_type] = pipeline
 
-    # TODO: [MED] These two functions might not belong here.
-    def create_file_name(self, pipeline_object: BasePipeline):
-        """
-        Creates pipeline YAML file name from pipeline object.
-
-        Args:
-            pipeline_object: Object of type BasePipeline.
-        """
-        pipeline_type = self.get_type_from_pipeline(pipeline_object.__class__)
-        return pipeline_type.lower() + '_' + pipeline_object.name + '.yaml'
-
-    def get_type_from_file_name(self, file_name: Text):
-        """
-        Gets type of pipeline from file name.
-
-        Args:
-            file_name: YAML file name of pipeline.
-        """
-        return file_name.replace('.yaml', "").split('_')[0]
-
 
 # Register the injections into the factory
 pipeline_factory = PipelineFactory()
-pipeline_factory.register_type('base', BasePipeline)
-pipeline_factory.register_type('data', DataPipeline)
-pipeline_factory.register_type('training', TrainingPipeline)
-pipeline_factory.register_type('infer', BatchInferencePipeline)
+pipeline_factory.register_type(BasePipeline.PIPELINE_TYPE, BasePipeline)
+pipeline_factory.register_type(DataPipeline.PIPELINE_TYPE, DataPipeline)
+pipeline_factory.register_type(TrainingPipeline.PIPELINE_TYPE,
+                               TrainingPipeline)
+pipeline_factory.register_type(BatchInferencePipeline.PIPELINE_TYPE,
+                               BatchInferencePipeline)

@@ -14,6 +14,7 @@
 """File utilities"""
 
 import os
+import tarfile
 from pathlib import Path
 from typing import Text
 
@@ -144,15 +145,61 @@ def file_exists(path: Text):
     return file_io.file_exists_v2(path)
 
 
-def copy_dir(source: Text, destination: Text):
+def copy(source: Text, destination: Text, overwrite: bool = False):
     """
     Copies dir from source to destination.
 
     Args:
-        dir_path (str): Local path to copy from.
+        source (str): Local path to copy from.
         destination (str): Local path to copy to.
+        overwrite: boolean, if false, then throws an error before overwrite.
     """
-    return copy_dir(source, destination)
+    return file_io.copy_v2(source, destination, overwrite)
+
+
+def move(source: Text, destination: Text, overwrite: bool = False):
+    """
+    Moves dir from source to destination. Can be used to rename.
+
+    Args:
+        source (str): Local path to copy from.
+        destination (str): Local path to copy to.
+        overwrite: boolean, if false, then throws an error before overwrite.
+    """
+    return file_io.rename_v2(source, destination, overwrite)
+
+
+def rm_dir(dir_path: Text):
+    """
+    Deletes dir recursively. Dangerous operation.
+
+    Args:
+        dir_path (str): Dir to delete.
+    """
+    file_io.delete_recursively_v2(dir_path)
+
+
+def read_file_contents(file_path: Text):
+    """
+    Reads contents of file.
+
+    Args:
+        file_path (str): Path to file.
+    """
+    if not file_exists(file_path):
+        raise Exception(f'{file_path} does not exist!')
+    return file_io.read_file_to_string(file_path)
+
+
+def write_file_contents(file_path: Text, content: Text):
+    """
+    Writes contents of file.
+
+    Args:
+        file_path (str): Path to file.
+        content (str): Contents of file.
+    """
+    return file_io.write_string_to_file(file_path, content)
 
 
 def get_grandparent(dir_path: Text):
@@ -183,3 +230,30 @@ def load_csv_header(csv_path: Text):
         csv_path (str): Path to csv file.
     """
     return load_csv_column_names(csv_path)
+
+
+def create_tarfile(source_dir: Text, output_filename: Text = 'zipped.tar.gz'):
+    """
+    Create a compressed representation of source_dir.
+
+    Args:
+        source_dir: path to source dir
+        output_filename: name of outputted gz
+    """
+    with tarfile.open(output_filename, "w:gz") as tar:
+        tar.add(source_dir, arcname=os.path.basename(source_dir))
+
+
+def extract_tarfile(source_tar: Text, output_dir: Text):
+    """
+    Untars a compressed tar file to output_dir.
+
+    Args:
+        source_tar: path to a tar compressed file
+        output_dir: directory where to uncompress
+    """
+    if is_remote(source_tar):
+        raise NotImplementedError('Use local tars for now.')
+
+    with tarfile.open(source_tar, "w:gz") as tar:
+        tar.extractall(output_dir)

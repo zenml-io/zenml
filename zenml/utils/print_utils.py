@@ -41,9 +41,11 @@ def to_pretty_string(d, style=PrintStyles.YAML):
 
 def format_date(dt, format='%Y-%m-%d %H:%M:%S'):
     """
+    Formatting a datetime object nicely.
+
     Args:
-        dt:
-        format:
+        dt: datetime object
+        format: format
     """
     if dt is None:
         return ''
@@ -56,8 +58,10 @@ def format_date(dt, format='%Y-%m-%d %H:%M:%S'):
 
 def format_timedelta(td):
     """
+    Format timedelta object nicely.
+
     Args:
-        td:
+        td: timedelta object
     """
     if td is None:
         return ''

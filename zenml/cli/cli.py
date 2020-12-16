@@ -19,24 +19,10 @@
 .. moduleauthor:: maiot GmbH <support@maiot.io>
 """
 
-import logging
-import os
-import sys
-
 import click
 
 from zenml.cli.utils import pass_config
-
-# set tensorflow logging level
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
-LOGGING_LEVELS = {
-    0: logging.NOTSET,
-    1: logging.ERROR,
-    2: logging.WARN,
-    3: logging.INFO,
-    4: logging.DEBUG,
-}
+from zenml.utils.logger import set_verbosity
 
 
 @click.group()
@@ -46,22 +32,7 @@ LOGGING_LEVELS = {
 def cli(info, verbose: int):
     """maiot ZenML"""
     info.load()
-    if verbose > 0:
-        logging.basicConfig(
-            level=LOGGING_LEVELS[verbose]
-            if verbose in LOGGING_LEVELS
-            else logging.DEBUG
-        )
-        click.echo(
-            click.style(
-                f"Verbose logging is enabled. "
-                f"(LEVEL={logging.getLogger().getEffectiveLevel()})",
-                fg="yellow",
-            )
-        )
-    else:
-        logging.disable(sys.maxsize)
-        logging.getLogger().disabled = True
+    set_verbosity(verbose)
 
 
 if __name__ == '__main__':

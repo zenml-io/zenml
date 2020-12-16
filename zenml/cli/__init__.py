@@ -12,6 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+from .config import *
 from .init import *
 from .version import *
-from .analytics import *
