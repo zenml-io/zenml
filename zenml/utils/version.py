@@ -21,5 +21,9 @@ This module contains project version information.
 .. moduleauthor:: maiot GmbH <support@maiot.io>
 """
 
-__version__ = "0.0.1rc1"  #: the working version
-__release__ = "__ZENML_RELEASE__"  #: the release version
+import os
+
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+with open(os.path.join(ROOT_DIR, '../VERSION')) as version_file:
+    __version__ = version_file.read().strip()
