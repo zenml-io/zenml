@@ -127,3 +127,15 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+# JetBrains
+.idea
+__pycache__
+
+# zenml
+*.yaml
+*.csv
+temp/*
+local_test/
+.zenml/
