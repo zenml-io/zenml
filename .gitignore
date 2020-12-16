@@ -139,3 +139,4 @@ __pycache__
 temp/*
 local_test/
 .zenml/
+test.py
