@@ -491,7 +491,7 @@ class BasePipeline:
             logger.warning('Changing the metadata_store or artifact_store '
                            'might cause your pipelines to be '
                            'non-reproducible and non-comparable.')
-            self.metadata_store = metadata_store
+            self.artifact_store = artifact_store
 
         # We do not allow ml metadata to get polluted by repeated runs
         if self.is_executed_in_metadata_store:
