@@ -1,0 +1,14 @@
+steps:
+  # build base image with tag
+  - name : 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'eu.gcr.io/maiot-zenml/zenml:base-$TAG_NAME', '-f', 'zenml/docker/base.Dockerfile', '.']
+  # push base image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'eu.gcr.io/maiot-zenml/zenml:base-$TAG_NAME']
+  # build CUDA image with tag
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'eu.gcr.io/maiot-zenml/zenml:cuda-$TAG_NAME', '-f', 'zenml/docker/cuda.Dockerfile', '.']
+  # push CUDA image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'eu.gcr.io/maiot-zenml/zenml:cuda-$TAG_NAME']
+timeout: 3600s
