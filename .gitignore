@@ -140,3 +140,4 @@ temp/*
 local_test/
 .zenml/
 test.py
+!cloudbuild.yaml
