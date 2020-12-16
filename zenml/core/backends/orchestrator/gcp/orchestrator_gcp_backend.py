@@ -28,19 +28,26 @@ from zenml.core.backends.orchestrator.local.orchestrator_local_backend import \
 from zenml.core.repo.repo import Repository
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils
-from zenml.utils.constants import ZENML_BASE_IMAGE_NAME
+from zenml.utils.constants import ZENML_BASE_IMAGE_NAME, GCP_ENTRYPOINT
 
 EXTRACTED_TAR_DIR_NAME = 'zenml_working.tar.gz'
 TAR_PATH_ARG = 'TAR_PATH'
-
+SOURCE_DISK_IMAGE = "projects/cos-cloud/global/images/cos-85-13310-1041-38"
+STAGING_AREA = 'staging'
 
 class OrchestratorGCPBackend(OrchestratorLocalBackend):
-    """Orchestrates pipeline in a VM.
+    """Orchestrates pipeline in a GCP Compute Instance.
 
-    Every ZenML pipeline runs in backends.
+    This orchestrator creates a .tar.gz of the current ZenML repository, sends
+    it over to the artifact store, then launches a VM with the specified image.
+    After pipeline is done, the VM automatically gets brought down, regardless
+    of whether the pipeline failed or not. To see logs of the pipeline, use
+    Logs Explorer <https://console.cloud.google.com/logs/> and filter for
+    `logName="projects/<project_name>/logs/gcplogs-docker-driver"`. After
+    running the VM, the launch response is returned as a dict, where the
+    `targetId` can be used to even further filter for logs.
     """
     BACKEND_TYPE = 'gcp'
-    SOURCE_DISK_IMAGE = "projects/cos-cloud/global/images/cos-85-13310-1041-38"
 
     def __init__(self,
                  project,
@@ -94,10 +101,8 @@ class OrchestratorGCPBackend(OrchestratorLocalBackend):
             os.path.join(
                 os.path.dirname(__file__), 'startup-script.sh'), 'r').read()
 
-        entrypoint = 'zenml.core.backends.orchestrator.gcp.entrypoint'
-
         config_encoded = base64.b64encode(json.dumps(config).encode())
-        c_params = f'python -m {entrypoint} run_pipeline --config_b64 ' \
+        c_params = f'python -m {GCP_ENTRYPOINT} run_pipeline --config_b64 ' \
                    f'{config_encoded}'
 
         compute_config = {
@@ -118,7 +123,7 @@ class OrchestratorGCPBackend(OrchestratorLocalBackend):
                     'boot': True,
                     'autoDelete': True,
                     'initializeParams': {
-                        'sourceImage': self.SOURCE_DISK_IMAGE,
+                        'sourceImage': SOURCE_DISK_IMAGE,
                         'diskSizeGb': '100'
                     }
                 }
@@ -203,7 +208,8 @@ class OrchestratorGCPBackend(OrchestratorLocalBackend):
         # Upload tar to artifact store
         store_path = \
             config[keys.GlobalKeys.ENV][keys.EnvironmentKeys.ARTIFACT_STORE]
-        store_path_to_tar = os.path.join(store_path, tar_file_name)
+        store_staging_area = os.path.join(store_path, STAGING_AREA)
+        store_path_to_tar = os.path.join(store_staging_area, tar_file_name)
         path_utils.copy(path_to_tar, store_path_to_tar)
         path_utils.rm_dir(path_to_tar)
 
