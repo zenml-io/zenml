@@ -63,46 +63,55 @@ pip install git+https://github.com/maiot-io/zenml.git@master --upgrade
 
 #### Step 1: Import your requirements
 ```python
-
-from zenml import TrainerStep, SplitStep, PreprocesserStep, DeployerStep, \
-   EvaluatorStep, CSVDatasource, Repository
-from typing import Dict
-import tensorflow as tf
+from zenml.core.datasources.csv_datasource import CSVDatasource
+from zenml.core.pipelines.training_pipeline import TrainingPipeline
+from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
+from zenml.core.steps.preprocesser.standard_preprocesser \
+    .standard_preprocesser import \
+    StandardPreprocessor
+from zenml.core.steps.split.categorical_domain_split_step import \
+    CategoricalDomainSplitStep
 ```
 
 #### Step 2: Define your model
 ```python
-class MyAwesomeTrainer(TrainerStep):
+import tensorflow as tf
+from zenml.core.steps.trainer.feedforward_trainer import FeedForwardTrainer
 
-   def __init__(self, batch_size=32, lr=0.0001):
-       """Everything in the constructor is tracked for later."""
-       self.batch_size = batch_size
-       self.lr = lr
+class MyAwesomeTrainer(FeedForwardTrainer):
+    def __init__(self, batch_size: int = 32, **kwargs):
+        self.batch_size = batch_size
+        # Batch_size will be tracked
+        super().__init__(**kwargs, batch_size=batch_size)
 
-   def model_fn(self,
-                train_dataset: tf.data.Dataset,
-                eval_dataset: tf.data.Dataset,
-                schema: Dict,
-                log_dir: str, ):
-       """Put all your main training loop here"""
-       train_dataset = train_dataset.batch(self.batch_size,
-                                           drop_remainder=True)
-       eval_dataset = eval_dataset.batch(self.batch_size, drop_remainder=True)
-       input_layer = tf.keras.layers.Dense(10)
-       output_layer = tf.keras.layers.Dense(1, activation='softmax')(
-           input_layer)
-       model = tf.keras.Model(inputs=input_layer,
-                              outputs=output_layer)
-       model.compile(loss='binary_crossentropy',
-                     optimizer=tf.keras.optimizers.Adam(lr=self.lr))
-       tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir)
+    def model_fn(self,
+                 train_dataset: tf.data.Dataset,
+                 eval_dataset: tf.data.Dataset):
+        train_dataset = train_dataset.batch(self.batch_size,
+                                            drop_remainder=True)
+        eval_dataset = eval_dataset.batch(self.batch_size, drop_remainder=True)
 
-       model.fit(
-           train_dataset,
-           epochs=1,
-           validation_data=eval_dataset,
-           callbacks=[tensorboard_callback])
-       return model
+        input_layers = [tf.keras.layers.Input(shape=(1,), name=k)
+                        for k in train_dataset.element_spec[0].keys()]
+        d = tf.keras.layers.Concatenate()(input_layers)
+
+        output_layer = tf.keras.layers.Dense(1,
+                                             activation='sigmoid',
+                                             name='label')(d)
+
+        model = tf.keras.Model(inputs=input_layers, outputs=output_layer)
+
+        model.compile(loss='mse', optimizer=tf.keras.optimizers.Adam())
+
+        tensorboard_callback = tf.keras.callbacks.TensorBoard(
+            log_dir=self.log_dir)
+
+        model.fit(train_dataset,
+                  steps_per_epoch=2,
+                  epochs=10,
+                  validation_data=eval_dataset,
+                  callbacks=[tensorboard_callback])
+        return model
 ```
 
 #### Step 3: Assemble, run and evaluate your pipeline locally
@@ -115,22 +124,19 @@ ds = CSVDatasource(name='My CSV Datasource', path='data/simple/data.csv')
 training_pipeline.add_datasource(ds)
 
 # Add a random 70/30 train-eval split
-training_pipeline.add_split(SplitStep(train=0.7, eval=0.3))
+training_pipeline.add_split(RandomSplitStep(train=0.7, eval=0.3))
 
 # Using an empty PreprocessorStep() will default to no preprocessing
-training_pipeline.add_preprocesser(PreprocesserStep())
+training_pipeline.add_preprocesser(StandardPreprocessor(features=[], labels=[]))
 
 # Add a trainer
 training_pipeline.add_trainer(MyAwesomeTrainer(batch_size=32, lr=0.0001))
 
 # Evaluate using standard metrics library TFMA
-training_pipeline.add_evaluator(EvaluatorStep(metrics='accuracy'))
+training_pipeline.add_evaluator(TFMAEvaluator(metrics='accuracy'))
 
 # Run the pipeline locally
 training_pipeline.run()
-
-# See statistics of train and eval
-training_pipeline.view_statistics()
 ```
 
 Of course, each of these interfaces can be [extended quite easily](#...) to accommodate more complex scenarios and use-cases. There is a steadily-growing number of integrations available, for example Google Dataflow for [distributed preprocessing](#...) or Google Cloud AI Platform as [training](#...) and [serving](#...) backend.
