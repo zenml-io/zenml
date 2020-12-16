@@ -31,7 +31,7 @@ from zenml.utils import path_utils
 from zenml.utils.constants import ZENML_BASE_IMAGE_NAME, GCP_ENTRYPOINT
 
 EXTRACTED_TAR_DIR_NAME = 'zenml_working.tar.gz'
-TAR_PATH_ARG = 'TAR_PATH'
+TAR_PATH_ARG = 'tar_path'
 SOURCE_DISK_IMAGE = "projects/cos-cloud/global/images/cos-85-13310-1041-38"
 STAGING_AREA = 'staging'
 

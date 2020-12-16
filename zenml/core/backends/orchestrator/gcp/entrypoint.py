@@ -45,7 +45,7 @@ class PipelineRunner(object):
         tar_path = orch_args[TAR_PATH_ARG]
 
         # Copy it over locally because it will be remote
-        path_utils.move(tar_path, EXTRACTED_TAR_FILE_PATH)
+        path_utils.copy(tar_path, EXTRACTED_TAR_FILE_PATH)
 
         # Extract it to EXTRACTED_TAR_DIR
         path_utils.extract_tarfile(EXTRACTED_TAR_FILE_PATH, EXTRACTED_TAR_DIR)

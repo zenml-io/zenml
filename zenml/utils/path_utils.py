@@ -241,7 +241,7 @@ def create_tarfile(source_dir: Text, output_filename: Text = 'zipped.tar.gz'):
         output_filename: name of outputted gz
     """
     with tarfile.open(output_filename, "w:gz") as tar:
-        tar.add(source_dir, arcname=os.path.basename(source_dir))
+        tar.add(source_dir, arcname='')
 
 
 def extract_tarfile(source_tar: Text, output_dir: Text):
