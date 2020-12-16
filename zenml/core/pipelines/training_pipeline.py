@@ -178,7 +178,9 @@ class TrainingPipeline(BasePipeline):
         #############
         if keys.TrainingSteps.EVALUATION in steps:
             from zenml.utils import source_utils
-            eval_module, eval_module_file = constants.EVALUATOR_MODULE_FN
+            eval_module = '.'.join(
+                constants.EVALUATOR_MODULE_FN.split('.')[:-1])
+            eval_module_file = constants.EVALUATOR_MODULE_FN.split('.')[-1]
             abs_path = source_utils.get_absolute_path_from_module(eval_module)
             custom_extractor_path = os.path.join(abs_path,
                                                  eval_module_file) + '.py'
