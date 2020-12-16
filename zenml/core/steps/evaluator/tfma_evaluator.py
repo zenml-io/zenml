@@ -47,7 +47,7 @@ class TFMAEvaluator(BaseStep):
     def __init__(self,
                  slices: List[List[Text]] = None,
                  metrics: Dict[Text, List[Text]] = None):
-        super().__init__()
+        super().__init__(slices=slices, metrics=metrics)
         self.slices = slices or list()
         self.metrics = metrics or dict()
 
