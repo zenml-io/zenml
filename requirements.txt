@@ -7,8 +7,11 @@ plotly==4.0.0
 tabulate==0.8.7
 numpy==1.18.0
 httplib2==0.17.0
+tensorflow==2.3.0
 tfx==0.25.0
 fire==0.3.1
 gitpython==3.1.11
 analytics-python==1.2.9
 distro==1.5.0
+absl-py==0.10.0
+tensorflow-serving-api==2.3.0
