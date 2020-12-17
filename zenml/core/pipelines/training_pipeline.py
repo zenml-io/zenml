@@ -114,7 +114,7 @@ class TrainingPipeline(BasePipeline):
 
         schema_split = SchemaGen(
             statistics=statistics_split.outputs.output,
-            infer_feature_shape=False,
+            infer_feature_shape=True,
         ).with_id(GDPComponent.SplitSchema.name)
 
         schema = schema_split.outputs.schema
@@ -200,8 +200,18 @@ class TrainingPipeline(BasePipeline):
         # SERVING #
         ###########
         if keys.TrainingSteps.DEPLOYMENT in steps:
-            gcaip_deployer: GCAIPDeployer = GCAIPDeployer.from_config(
-                steps[keys.TrainingSteps.DEPLOYMENT])
+            serving_args = specs[keys.TrainingSteps.DEPLOYMENT]['args']
+
+            project_id = serving_args['project_id']
+            output_base_dir = self.artifact_store.path
+            if 'model_name' in serving_args:
+                model_name = serving_args['model_name']
+            else:
+                model_name = self.pipeline_name().replace('-', '_')
+
+            gcaip_deployer = GCAIPDeployer(output_base_dir=output_base_dir,
+                                           project_id=project_id,
+                                           model_name=model_name)
 
             pusher_config = gcaip_deployer.build_pusher_config()
             pusher_executor_spec = gcaip_deployer.get_executor_spec()

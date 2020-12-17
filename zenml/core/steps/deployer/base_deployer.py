@@ -31,10 +31,10 @@ from zenml.core.steps.base_step import BaseStep
 class BaseDeployerStep(BaseStep):
 
     def __init__(self,
-                 serving_model_dir: Text = None,
+                 output_base_dir: Text = None,
                  **kwargs):
-        self.serving_model_dir = serving_model_dir
+        self.output_base_dir = output_base_dir
 
         super(BaseDeployerStep, self).__init__(
-            serving_model_dir=serving_model_dir,
+            serving_model_dir=output_base_dir,
             **kwargs)

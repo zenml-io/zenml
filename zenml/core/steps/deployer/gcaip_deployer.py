@@ -23,25 +23,32 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from datetime import datetime
 from typing import Text
 
 from tfx.proto import pusher_pb2
 
 from zenml.core.steps.deployer.base_deployer import BaseDeployerStep
 
+import os
+
 
 class GCAIPDeployer(BaseDeployerStep):
 
     def __init__(self,
-                 project_id: Text = None,
+                 project_id: Text,
                  model_name: Text = None,
                  **kwargs):
-        self.project_id = project_id
-        self.model_name = model_name
 
         super(GCAIPDeployer, self).__init__(project_id=project_id,
                                             model_name=model_name,
                                             **kwargs)
+
+        self.project_id = project_id
+        self.model_name = model_name
+        self.serving_model_dir = os.path.join(self.output_base_dir,
+                                              'serving_model_dir',
+                                              model_name)
 
     def build_pusher_config(self):
         ai_platform_serving_args = {'model_name': self.model_name,
