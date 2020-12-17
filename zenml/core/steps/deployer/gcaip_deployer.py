@@ -27,22 +27,21 @@ from typing import Text
 
 from tfx.proto import pusher_pb2
 
-from zenml.core.steps.base_step import BaseStep
+from zenml.core.steps.deployer.base_deployer import BaseDeployerStep
 
 
-class GCAIPDeployer(BaseStep):
+class GCAIPDeployer(BaseDeployerStep):
 
     def __init__(self,
                  project_id: Text = None,
                  experiment_name: Text = None,
-                 serving_model_dir: Text = None):
+                 **kwargs):
         self.project_id = project_id
         self.experiment_name = experiment_name
-        self.serving_model_dir = serving_model_dir
 
-        super().__init__(project_id=project_id,
-                         experiment_name=experiment_name,
-                         serving_model_dir=serving_model_dir)
+        super(GCAIPDeployer, self).__init__(project_id=project_id,
+                                            experiment_name=experiment_name,
+                                            **kwargs)
 
     def build_pusher_config(self):
         ai_platform_serving_args = {
@@ -58,7 +57,8 @@ class GCAIPDeployer(BaseStep):
                 'custom_config': {
                     'ai_platform_serving_args': ai_platform_serving_args}}
 
-    def get_executor_spec(self):
+    @staticmethod
+    def get_executor_spec():
         from tfx.dsl.components.base import executor_spec
         from tfx.extensions.google_cloud_ai_platform.pusher import \
             executor as ai_platform_pusher_executor
