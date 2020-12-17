@@ -215,6 +215,8 @@ class OrchestratorGCPBackend(OrchestratorLocalBackend):
         store_staging_area = os.path.join(store_path, STAGING_AREA)
         store_path_to_tar = os.path.join(store_staging_area, tar_file_name)
         path_utils.copy(path_to_tar, store_path_to_tar)
+
+        # Remove tar
         path_utils.rm_dir(path_to_tar)
 
         # Append path of tar in config orchestrator utils

@@ -265,5 +265,5 @@ def extract_tarfile(source_tar: Text, output_dir: Text):
     if is_remote(source_tar):
         raise NotImplementedError('Use local tars for now.')
 
-    with tarfile.open(source_tar, "w:gz") as tar:
+    with tarfile.open(source_tar, "r:gz") as tar:
         tar.extractall(output_dir)
