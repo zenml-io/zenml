@@ -34,20 +34,18 @@ class GCAIPDeployer(BaseDeployerStep):
 
     def __init__(self,
                  project_id: Text = None,
-                 experiment_name: Text = None,
+                 model_name: Text = None,
                  **kwargs):
         self.project_id = project_id
-        self.experiment_name = experiment_name
+        self.model_name = model_name
 
         super(GCAIPDeployer, self).__init__(project_id=project_id,
-                                            experiment_name=experiment_name,
+                                            model_name=model_name,
                                             **kwargs)
 
     def build_pusher_config(self):
-        ai_platform_serving_args = {
-            'model_name': 'model_' + self.experiment_name.replace('-', '_'),
-            'project_id': self.project_id
-        }
+        ai_platform_serving_args = {'model_name': self.model_name,
+                                    'project_id': self.project_id}
 
         destination = pusher_pb2.PushDestination(
             filesystem=pusher_pb2.PushDestination.Filesystem(
