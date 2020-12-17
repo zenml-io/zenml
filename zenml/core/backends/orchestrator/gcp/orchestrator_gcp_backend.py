@@ -207,7 +207,7 @@ class OrchestratorGCPBackend(OrchestratorLocalBackend):
         path_to_tar = os.path.join(config_dir, tar_file_name)
 
         # Create tarfile but excluse .zenml folder if exists
-        path_utils.create_tarfile(repo_path, path_to_tar, exclude=['.zenml'])
+        path_utils.create_tarfile(repo_path, path_to_tar)
 
         # Upload tar to artifact store
         store_path = \
