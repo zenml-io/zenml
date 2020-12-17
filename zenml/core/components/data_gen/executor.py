@@ -21,8 +21,7 @@ from tfx.dsl.components.base import base_executor
 from tfx.types import artifact_utils
 
 from zenml.core.components.data_gen.constants import DATA_SPLIT_NAME
-from zenml.core.components.data_gen.utils import DtypeInferrer
-from zenml.core.components.data_gen.utils import append_tf_example
+from zenml.core.components.data_gen import utils
 from zenml.core.standards.standard_keys import StepKeys
 from zenml.core.steps.data.base_data_step import BaseDataStep
 from zenml.utils import source_utils
@@ -37,17 +36,14 @@ def WriteToTFRecord(datapoints: Dict[Text, Any],
     """Infers schema and writes to TFRecord"""
     # Obtain the schema
     if schema:
-        schema_dict = schema
-        assert all(v in ['STRING', 'INTEGER', 'FLOAT']
-                   for _, v in schema.items())
+        schema_dict = {k: utils.SCHEMA_MAPPING[v] for k, v in schema.items()}
     else:
         schema = (datapoints
-                  | 'InferSchema' >> beam.CombineGlobally(
-                    DtypeInferrer()))
+                  | 'Schema' >> beam.CombineGlobally(utils.DtypeInferrer()))
         schema_dict = beam.pvalue.AsSingleton(schema)
 
     return (datapoints
-            | 'ToTFExample' >> beam.Map(append_tf_example, schema_dict)
+            | 'ToTFExample' >> beam.Map(utils.append_tf_example, schema_dict)
             | 'WriteToTFRecord' >> _WriteSplit(
                 output_split_path=output_split_path
             ))

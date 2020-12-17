@@ -18,64 +18,56 @@ from abc import ABC
 from typing import Dict, List, Text, Any
 
 import apache_beam as beam
-import numpy as np
 import tensorflow as tf
-from dateutil.parser import parse
 
 from zenml.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-def is_date(string, fuzzy=False):
-    """
-    Return whether the string can be interpreted as a date.
-
-    :param string: str, string to check for date
-    :param fuzzy: bool, ignore unknown tokens in string if True
-    """
-    try:
-        parse(tf.compat.as_text(string), fuzzy=fuzzy)
-        return True
-    except ValueError:
-        return False
-    except TypeError:
-        return False
-
-
-def is_bytes(data):
-    """
-
-    Parameters
-    ----------
-    data: Bytes-like, checking if it is a string
-
-    Returns: bool, if data is bytes-like
-    -------
-
-    """
-    return type(data) is bytes
-
-
 class DataType(enum.IntEnum):
     UNKNOWN = -1
     INT = 0
     FLOAT = 1
-    TIMESTAMP = 2
-    STRING = 3
-    BYTES = 4
+    BYTES = 2
+
+
+def _int_converter(value):
+    if value is None or value is '' or value is b'':
+        return []
+    else:
+        return [int(value)]
+
+
+def _float_converter(value):
+    if value is None or value is '' or value is b'':
+        return []
+    else:
+        return [float(value)]
+
+
+def _bytes_converter(value):
+    if value is None:
+        return []
+    else:
+        return [tf.compat.as_bytes(value)]
 
 
 SCHEMA_MAPPING = {
-    DataType.STRING: 'STRING',
-    DataType.INT: 'INTEGER',
-    DataType.FLOAT: 'FLOAT',
-    DataType.TIMESTAMP: 'TIMESTAMP',
-    DataType.BYTES: 'BYTES'
+    'INTEGER': DataType.INT,
+    'FLOAT': DataType.FLOAT,
+    'STRING': DataType.BYTES,
+    'BYTES': DataType.BYTES,
+    'TIMESTAMP': DataType.BYTES,
+    'DATETIME': DataType.BYTES
 }
 
-_INT64_MIN = np.iinfo(np.int64).min
-_INT64_MAX = np.iinfo(np.int64).max
+CONVERTER_MAPPING = {
+    DataType.UNKNOWN: lambda x: [],
+    DataType.INT: _int_converter,
+    DataType.FLOAT: _float_converter,
+    DataType.BYTES: _bytes_converter,
+}
 
 
 @beam.typehints.with_output_types(beam.typehints.Dict[Text, DataType])
@@ -87,13 +79,11 @@ class DtypeInferrer(beam.CombineFn, ABC):
         try:
             float(value)
         except ValueError:
-            # TODO: Check for string here, if not return UNKNOWN
-            if is_date(value):
-                return DataType.TIMESTAMP
-            elif is_bytes(value):
+            if not value:
+                return DataType.UNKNOWN
+
+            elif type(value) is bytes or type(value) is str:
                 return DataType.BYTES
-            elif isinstance(value, str):
-                return DataType.STRING
             else:
                 return DataType.UNKNOWN
 
@@ -135,61 +125,35 @@ class DtypeInferrer(beam.CombineFn, ABC):
                     result[feature_name] = feature_type
         return result
 
-    def extract_output(self, accumulator: Dict[Text, Any], **kwargs) -> \
-            Dict[Text, Text]:
-        final_schema = {}
-        for feature, dtype in accumulator.items():
-            if dtype in SCHEMA_MAPPING:
-                final_schema[feature] = SCHEMA_MAPPING[dtype]
-            else:
-                final_schema[feature] = 'STRING'
-                logger.error(f'Feature {feature} has UNKNOWN dtype {dtype}')
-
-        return final_schema
+    def extract_output(self,
+                       accumulator: Dict[Text, Any],
+                       **kwargs) -> Dict[Text, Text]:
+        for k in accumulator:
+            if k == DataType.UNKNOWN:
+                logger.warning(f'Unknown data type in the schema '
+                               f'for feature {k}!')
+        return accumulator
 
 
 def append_tf_example(data: Dict[Text, Any],
                       schema: Dict[Text, Any]) -> tf.train.Example:
     """Add tf example to row"""
     feature = {}
-    new_data = data.copy()  # copy of the data
-
     for key, value in data.items():
         data_type = schema[key]
-        kwargs = {}
-        if data_type == SCHEMA_MAPPING[DataType.INT]:
-            if value is not None:
-                kwargs = {'value': [int(value)]}
+        value = CONVERTER_MAPPING[data_type](value)
+        if data_type == DataType.INT:
             feature[key] = tf.train.Feature(
-                int64_list=tf.train.Int64List(**kwargs))
-        elif data_type == SCHEMA_MAPPING[DataType.FLOAT]:
-            if value is not None:
-                kwargs = {'value': [float(value)]}
+                int64_list=tf.train.Int64List(value=value))
+        elif data_type == DataType.FLOAT:
             feature[key] = tf.train.Feature(
-                float_list=tf.train.FloatList(**kwargs))
-        elif data_type == SCHEMA_MAPPING[DataType.TIMESTAMP]:
-            if value is not None:
-                ts = parse(tf.compat.as_text(value), fuzzy=True)
-                ts = ts.strftime('%Y-%m-%dT%H:%M:%S.%f %Z')
-                new_data[key] = ts
-                kwargs = {'value': [tf.compat.as_bytes(ts)]}
+                float_list=tf.train.FloatList(value=value))
+        elif data_type == DataType.BYTES:
             feature[key] = tf.train.Feature(
-                bytes_list=tf.train.BytesList(**kwargs))
-        elif data_type == SCHEMA_MAPPING[DataType.STRING]:
-            if value is not None:
-                kwargs = {'value': [tf.compat.as_bytes(str(value))]}
-            feature[key] = tf.train.Feature(
-                bytes_list=tf.train.BytesList(**kwargs))
-        elif data_type == SCHEMA_MAPPING[DataType.BYTES]:
-            val = tf.compat.as_bytes(value)
-            # val.replace('''''')
-            if value is not None:
-                kwargs = {'value': [val]}
-            feature[key] = tf.train.Feature(
-                bytes_list=tf.train.BytesList(**kwargs))
+                bytes_list=tf.train.BytesList(value=value))
         else:
-            raise RuntimeError(f'Unknown data type {data_type} in the schema '
-                               f'for value {value}!')
+            feature[key] = tf.train.Feature(
+                bytes_list=tf.train.BytesList(value=value))
 
     tf_example = tf.train.Example(features=tf.train.Features(feature=feature))
     return tf_example
