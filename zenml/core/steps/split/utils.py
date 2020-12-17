@@ -13,9 +13,12 @@
 #  permissions and limitations under the License.
 """Some split step utilities are implemented here."""
 
-from typing import Text, List, Dict, Any
+from typing import Text, List, Dict, Union
 
 import tensorflow as tf
+
+
+CategoricalValue = Union[Text, int]
 
 
 def get_categorical_value(example: tf.train.Example, cat_col: Text):
@@ -45,7 +48,8 @@ def get_categorical_value(example: tf.train.Example, cat_col: Text):
                          f"this data.")
 
 
-def partition_cat_list(cat_list: List[Text], c_ratio: Dict[Text, Any]):
+def partition_cat_list(cat_list: List[CategoricalValue],
+                       c_ratio: Dict[Text, float]):
     """
     Helper to split a category list by the entries in a category split dict.
 

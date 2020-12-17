@@ -13,14 +13,16 @@
 #  permissions and limitations under the License.
 """Implementation of the categorical domain split."""
 
-from typing import Text, Dict, List, Any
+from typing import Text, Dict, List, Any, Union
 
 from zenml.core.steps.split import constants
 from zenml.core.steps.split.base_split_step import BaseSplitStep
 from zenml.core.steps.split.utils import get_categorical_value
 
+CategoricalValue = Union[Text, int]
 
-def lint_split_map(split_map: Dict[Text, List[Text]]):
+
+def lint_split_map(split_map: Dict[Text, List[CategoricalValue]]):
     """Small utility to lint the split_map"""
     if constants.TRAIN not in split_map.keys():
         raise AssertionError(f'You have to define some values for '
@@ -33,7 +35,8 @@ def lint_split_map(split_map: Dict[Text, List[Text]]):
 def CategoricalPartitionFn(element: Any,
                            num_partitions: int,
                            categorical_column: Text,
-                           split_map: Dict[Text, List[Text]]) -> int:
+                           split_map: Dict[Text, List[CategoricalValue]]) \
+        -> int:
     """
     Function for a categorical split on data to be used in a beam.Partition.
     Args:
@@ -73,7 +76,7 @@ class CategoricalDomainSplitStep(BaseSplitStep):
     def __init__(
             self,
             categorical_column: Text,
-            split_map: Dict[Text, List[Text]],
+            split_map: Dict[Text, List[CategoricalValue]],
             statistics=None,
             schema=None,
     ):
