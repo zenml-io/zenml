@@ -17,6 +17,7 @@ import os
 from typing import Dict, Text, Any, List
 
 from tfx.components.evaluator.component import Evaluator
+from tfx.components.pusher.component import Pusher
 from tfx.components.schema_gen.component import SchemaGen
 from tfx.components.statistics_gen.component import StatisticsGen
 from tfx.components.trainer.component import Trainer
@@ -37,7 +38,7 @@ from zenml.core.components.split_gen.component import SplitGen
 from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.pipelines.utils import sanitize_name_for_ai_platform
 from zenml.core.standards import standard_keys as keys
-from zenml.core.steps.deployer.base_deployer import BaseDeployerStep
+from zenml.core.steps.deployer.gcaip_deployer import GCAIPDeployer
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
 from zenml.core.steps.preprocesser.base_preprocesser import \
     BasePreprocesserStep
@@ -198,31 +199,19 @@ class TrainingPipeline(BasePipeline):
         ###########
         # SERVING #
         ###########
+        if keys.TrainingSteps.DEPLOYMENT in steps:
+            gcaip_deployer: GCAIPDeployer = GCAIPDeployer.from_config(
+                steps[keys.TrainingSteps.DEPLOYMENT])
 
-        # from tfx.components.pusher.component import Pusher
-        # from tfx.extensions.google_cloud_ai_platform.pusher import \
-        #     executor as ai_platform_pusher_executor
-        # from tfx.proto import pusher_pb2
-        #
-        # # pusher
-        # pusher_kwargs = {
-        #     'model_export': trainer.outputs.output,
-        #     'push_destination': pusher_pb2.PushDestination(
-        #         filesystem=pusher_pb2.PushDestination.Filesystem(
-        #             base_directory=spec['serving_model_dir']))
-        # }
-        #
-        # if spec['serving_type'] == ServingTypes.gcaip.name:
-        #     pusher_kwargs.update(
-        #         {'custom_executor_spec': executor_spec.ExecutorClassSpec(
-        #             ai_platform_pusher_executor.Executor)})
-        # pusher_kwargs['custom_config'] = {
-        #     'ai_platform_serving_args': spec['ai_platform_serving_args']
-        # }
-        # pusher_kwargs['instance_name'] = GDPComponent.Deployer.name
-        #
-        # pusher = Pusher(**pusher_kwargs)
-        # component_list.append(pusher)
+            pusher_config = gcaip_deployer.build_pusher_config()
+            pusher_executor_spec = gcaip_deployer.get_executor_spec()
+
+            pusher = Pusher(model_export=trainer.outputs.output,
+                            custom_executor_spec=pusher_executor_spec,
+                            **pusher_config).with_id(
+                GDPComponent.Deployer.name)
+
+            component_list.append(pusher)
 
         return component_list
 
@@ -238,7 +227,7 @@ class TrainingPipeline(BasePipeline):
     def add_evaluator(self, evaluator_step: TFMAEvaluator):
         self.steps_dict[keys.TrainingSteps.EVALUATION] = evaluator_step
 
-    def add_deployment(self, deployment_step: BaseDeployerStep):
+    def add_deployment(self, deployment_step: GCAIPDeployer):
         self.steps_dict[keys.TrainingSteps.DEPLOYMENT] = deployment_step
 
     def view_statistics(self, magic: bool = False):

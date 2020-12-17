@@ -23,15 +23,45 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import Text
+
+from tfx.proto import pusher_pb2
+
+from zenml.core.steps.base_step import BaseStep
 
 
-from zenml.core.steps.deployer.base_deployer import BaseDeployerStep
+class GCAIPDeployer(BaseStep):
 
+    def __init__(self,
+                 project_id: Text = None,
+                 experiment_name: Text = None,
+                 serving_model_dir: Text = None):
+        self.project_id = project_id
+        self.experiment_name = experiment_name
+        self.serving_model_dir = serving_model_dir
 
-class GCAIPDeployer(BaseDeployerStep):
+        super().__init__(project_id=project_id,
+                         experiment_name=experiment_name,
+                         serving_model_dir=serving_model_dir)
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def build_pusher_config(self):
+        ai_platform_serving_args = {
+            'model_name': 'model_' + self.experiment_name.replace('-', '_'),
+            'project_id': self.project_id
+        }
 
-    def tbd(self):
-        pass
+        destination = pusher_pb2.PushDestination(
+            filesystem=pusher_pb2.PushDestination.Filesystem(
+                base_directory=self.serving_model_dir))
+
+        return {'push_destination': destination,
+                'custom_config': {
+                    'ai_platform_serving_args': ai_platform_serving_args}}
+
+    def get_executor_spec(self):
+        from tfx.dsl.components.base import executor_spec
+        from tfx.extensions.google_cloud_ai_platform.pusher import \
+            executor as ai_platform_pusher_executor
+
+        return executor_spec.ExecutorClassSpec(
+            ai_platform_pusher_executor.Executor)
