@@ -64,7 +64,8 @@ setup(
         "fire==0.3.1",
         "gitpython==3.1.11",
         "analytics-python==1.2.9",
-        "distro==1.5.0"
+        "distro==1.5.0",
+        "tensorflow==2.3.0"
     ],
     entry_points="""
     [console_scripts]
