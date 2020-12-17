@@ -233,7 +233,7 @@ class BasePipeline:
 
         # Execution
         # TODO: [MEDIUM] Refactor this into execution backends?
-        execution = env_dict[keys.EnvironmentKeys.BACKENDS]['orchestrator']
+        execution = env_dict[keys.EnvironmentKeys.BACKENDS]['processing']
 
         exec_type = execution[keys.BackendKeys.TYPE]
         exec_args = execution[keys.BackendKeys.ARGS]
@@ -252,10 +252,6 @@ class BasePipeline:
             exec_args['temp_location'] = pipeline_temp
             exec_args['staging_location'] = pipeline_temp
             exec_args = parse_yaml_beam_args(exec_args)
-        elif exec_type == 'local':
-            pass
-        else:
-            raise AssertionError('Unknown orchestrator!')
 
         # Training
         # TODO: [MEDIUM] Refactor this into training backends?
