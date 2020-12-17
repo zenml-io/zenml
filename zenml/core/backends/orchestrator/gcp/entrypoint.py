@@ -36,7 +36,6 @@ EXTRACTED_TAR_DIR = os.path.join(os.getcwd(), 'zenml_working')
 class PipelineRunner(object):
 
     def run_pipeline(self, config_b64: str):
-        Repository.get_instance()
         # Load config from base64
         config = json.loads(base64.b64decode(config_b64))
 
@@ -45,7 +44,7 @@ class PipelineRunner(object):
         tar_path = orch_args[TAR_PATH_ARG]
 
         # Copy it over locally because it will be remote
-        path_utils.move(tar_path, EXTRACTED_TAR_FILE_PATH)
+        path_utils.copy(tar_path, EXTRACTED_TAR_FILE_PATH)
 
         # Extract it to EXTRACTED_TAR_DIR
         path_utils.extract_tarfile(EXTRACTED_TAR_FILE_PATH, EXTRACTED_TAR_DIR)

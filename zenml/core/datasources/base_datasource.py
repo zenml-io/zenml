@@ -39,7 +39,6 @@ class BaseDatasource:
     DATA_STEP = None
     PREFIX = 'pipeline_'
 
-    @track(event=CREATE_DATASOURCE)
     def __init__(self, name: Text, schema: Dict = None, _id: Text = None,
                  _source: Text = None, *args, **kwargs):
         """
@@ -68,7 +67,7 @@ class BaseDatasource:
             self._source = source_utils.resolve_source_path(
                 self.__class__.__module__ + '.' + self.__class__.__name__
             )
-
+            track(event=CREATE_DATASOURCE)
         self.name = name
         self.schema = schema
 

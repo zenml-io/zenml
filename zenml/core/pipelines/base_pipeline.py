@@ -47,7 +47,6 @@ class BasePipeline:
     """
     PIPELINE_TYPE = 'base'
 
-    @track(event=CREATE_PIPELINE)
     def __init__(self,
                  name: Text,
                  enable_cache: Optional[bool] = True,
@@ -103,6 +102,7 @@ class BasePipeline:
                 raise AssertionError(
                     f'Pipeline names must be unique in the repository. There '
                     f'is already a pipeline called {self.name}')
+            track(event=CREATE_PIPELINE)
 
         self.enable_cache = enable_cache
 

@@ -16,7 +16,7 @@
 import os
 import tarfile
 from pathlib import Path
-from typing import Text
+from typing import Text, Callable
 
 from tfx.utils.io_utils import file_io, _REMOTE_FS_PREFIX, \
     load_csv_column_names
@@ -232,16 +232,26 @@ def load_csv_header(csv_path: Text):
     return load_csv_column_names(csv_path)
 
 
-def create_tarfile(source_dir: Text, output_filename: Text = 'zipped.tar.gz'):
+def create_tarfile(source_dir: Text, output_filename: Text = 'zipped.tar.gz',
+                   exclude_function: Callable = None):
     """
     Create a compressed representation of source_dir.
 
     Args:
         source_dir: path to source dir
         output_filename: name of outputted gz
+        exclude_function: function that determines whether to exclude file
     """
+    if exclude_function is None:
+        # default is to exclude the .zenml directory
+        def exclude_function(filename):
+            if '/.zenml/' in filename:
+                return True
+            else:
+                return False
+
     with tarfile.open(output_filename, "w:gz") as tar:
-        tar.add(source_dir, arcname=os.path.basename(source_dir))
+        tar.add(source_dir, arcname='', exclude=exclude_function)
 
 
 def extract_tarfile(source_tar: Text, output_dir: Text):
@@ -255,5 +265,5 @@ def extract_tarfile(source_tar: Text, output_dir: Text):
     if is_remote(source_tar):
         raise NotImplementedError('Use local tars for now.')
 
-    with tarfile.open(source_tar, "w:gz") as tar:
+    with tarfile.open(source_tar, "r:gz") as tar:
         tar.extractall(output_dir)
