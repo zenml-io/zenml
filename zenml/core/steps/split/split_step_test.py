@@ -101,7 +101,7 @@ def test_random_split(create_random_dummy_data):
     bogus_entries = {"train": 0.5,
                      "eval": "testest"}
 
-    # only one argument present in split map
+    # not all entries in split map are floats
     with pytest.raises(AssertionError):
         _ = RandomSplitStep(split_map=bogus_entries)
 
@@ -202,14 +202,13 @@ def test_categorical_ratio_split(create_structured_dummy_data):
 
     one_fold = {"train": 1.0}
 
-    # only one argument present in split map
+    # only one fold present in split map
     with pytest.raises(AssertionError):
         _ = CategoricalRatioSplitStep(categorical_column=cat_col,
                                       categories=categories,
                                       split_ratio=one_fold)
 
     # real logic begins here
-
     categories = ["value{}".format(i + 1) for i in range(3)]
 
     split_ratio = {"train": 0.33,
