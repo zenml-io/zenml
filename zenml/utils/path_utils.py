@@ -16,7 +16,7 @@
 import os
 import tarfile
 from pathlib import Path
-from typing import Text
+from typing import Text, List
 
 from tfx.utils.io_utils import file_io, _REMOTE_FS_PREFIX, \
     load_csv_column_names
@@ -232,16 +232,18 @@ def load_csv_header(csv_path: Text):
     return load_csv_column_names(csv_path)
 
 
-def create_tarfile(source_dir: Text, output_filename: Text = 'zipped.tar.gz'):
+def create_tarfile(source_dir: Text, output_filename: Text = 'zipped.tar.gz',
+                   exclude: List[Text] = None):
     """
     Create a compressed representation of source_dir.
 
     Args:
         source_dir: path to source dir
         output_filename: name of outputted gz
+        exclude: list of filenames to exclude in tar
     """
     with tarfile.open(output_filename, "w:gz") as tar:
-        tar.add(source_dir, arcname='')
+        tar.add(source_dir, arcname='', exclude=exclude)
 
 
 def extract_tarfile(source_tar: Text, output_dir: Text):

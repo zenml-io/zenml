@@ -30,10 +30,11 @@ from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils
 from zenml.utils.constants import ZENML_BASE_IMAGE_NAME, GCP_ENTRYPOINT
 
-EXTRACTED_TAR_DIR_NAME = 'zenml_working.tar.gz'
+EXTRACTED_TAR_DIR_NAME = 'zenml_working'
 TAR_PATH_ARG = 'tar_path'
 SOURCE_DISK_IMAGE = "projects/cos-cloud/global/images/cos-85-13310-1041-38"
 STAGING_AREA = 'staging'
+
 
 class OrchestratorGCPBackend(OrchestratorLocalBackend):
     """Orchestrates pipeline in a GCP Compute Instance.
@@ -201,9 +202,12 @@ class OrchestratorGCPBackend(OrchestratorLocalBackend):
         repo: Repository = Repository.get_instance()
         repo_path = repo.path
         config_dir = repo.zenml_config.config_dir
-        tar_file_name = f'{EXTRACTED_TAR_DIR_NAME}_{str(int(time.time()))}'
+        tar_file_name = \
+            f'{EXTRACTED_TAR_DIR_NAME}_{str(int(time.time()))}.tar.gz'
         path_to_tar = os.path.join(config_dir, tar_file_name)
-        path_utils.create_tarfile(repo_path, path_to_tar)
+
+        # Create tarfile but excluse .zenml folder if exists
+        path_utils.create_tarfile(repo_path, path_to_tar, exclude=['.zenml'])
 
         # Upload tar to artifact store
         store_path = \

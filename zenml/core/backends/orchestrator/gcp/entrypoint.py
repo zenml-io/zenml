@@ -36,7 +36,6 @@ EXTRACTED_TAR_DIR = os.path.join(os.getcwd(), 'zenml_working')
 class PipelineRunner(object):
 
     def run_pipeline(self, config_b64: str):
-        Repository.get_instance()
         # Load config from base64
         config = json.loads(base64.b64decode(config_b64))
 
