@@ -19,7 +19,7 @@ from typing import Dict, List, Text, Any
 
 import apache_beam as beam
 import tensorflow as tf
-
+import numpy as np
 from zenml.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -34,21 +34,21 @@ class DataType(enum.IntEnum):
 
 def _int_converter(value):
     if value is None or value is '' or value is b'':
-        return []
+        return [np.nan]
     else:
         return [int(value)]
 
 
 def _float_converter(value):
     if value is None or value is '' or value is b'':
-        return []
+        return [np.nan]
     else:
         return [float(value)]
 
 
 def _bytes_converter(value):
     if value is None:
-        return []
+        return [b'']
     else:
         return [tf.compat.as_bytes(value)]
 
@@ -144,7 +144,7 @@ def append_tf_example(data: Dict[Text, Any],
         value = CONVERTER_MAPPING[data_type](value)
         if data_type == DataType.INT:
             feature[key] = tf.train.Feature(
-                int64_list=tf.train.Int64List(value=value))
+                float_list=tf.train.FloatList(value=value))
         elif data_type == DataType.FLOAT:
             feature[key] = tf.train.Feature(
                 float_list=tf.train.FloatList(value=value))

@@ -37,8 +37,6 @@ from zenml.core.steps.preprocesser.standard_preprocesser.methods \
 
 XF_SUFFIX = '_xf'
 
-
-
 DEFAULT_DICT = {
     'boolean': {
         'filling': [{'method': 'max', 'parameters': {}}],
@@ -141,9 +139,9 @@ class StandardPreprocessor(BasePreprocesserStep):
             if key in self.features or key in self.labels:
 
                 # TODO: Investigate the implications of disabling this
-                # if key not in self.f_dict:
-                #     self.f_dict[key] = self.f_d_dict[schema[key]]
-                # value = self.apply_filling(value, self.f_dict[key])
+                if key not in self.f_dict:
+                    self.f_dict[key] = self.f_d_dict[schema[key]]
+                value = self.apply_filling(value, self.f_dict[key])
 
                 if key not in self.t_dict:
                     self.t_dict[key] = self.t_d_dict[schema[key]]
