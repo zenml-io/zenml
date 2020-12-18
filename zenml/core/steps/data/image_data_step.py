@@ -21,7 +21,7 @@ import apache_beam as beam
 from apache_beam.io import fileio
 
 from zenml.core.components.data_gen.constants import BINARY_DATA, FILE_NAME, \
-    FILE_EXT, METADATA, LABEL
+    FILE_EXT, METADATA, LABEL, IMAGE
 from zenml.core.steps.data.base_data_step import BaseDataStep
 
 
@@ -41,7 +41,8 @@ def read_file_content(file: beam.io.fileio.ReadableFile):
     return data_dict
 
 
-def add_label_and_metadata(image_dict: Dict[Text, Any], label_dict: Text):
+def add_label_and_metadata(image_dict: Dict[Text, Any],
+                           label_dict: Dict[Text, Any]):
     """Add label and metadata information to an image.
 
     Args:
@@ -55,6 +56,11 @@ def add_label_and_metadata(image_dict: Dict[Text, Any], label_dict: Text):
 
     image_dict.update(metadata)
     image_dict[LABEL] = label
+
+    # pop binary image data and reinsert as "image"
+    # for a more intuitive image feature name
+    image_raw = image_dict.pop(BINARY_DATA)
+    image_dict[IMAGE] = image_raw
 
     return image_dict
 
@@ -129,7 +135,7 @@ def ReadImagesFromDisk(pipeline: beam.Pipeline,
         base_path (Text): Base directory containing images and labels.
     """
 
-    wildcard_qualifier = "**"
+    wildcard_qualifier = "*"
 
     # ingest all the files from the base path by supplying the wildcard
     file_pattern = os.path.join(base_path, wildcard_qualifier)

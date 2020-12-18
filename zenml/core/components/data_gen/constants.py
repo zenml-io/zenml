@@ -20,6 +20,7 @@ BINARY_DATA = 'binary_data'
 METADATA = 'metadata'
 FILE_EXT = 'file_ext'
 FILE_NAME = 'file_name'
+IMAGE = "image"
 
 # image data constants
 LABEL = 'label'
