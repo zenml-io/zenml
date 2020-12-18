@@ -18,26 +18,18 @@ import tensorflow_transform as tft
 
 
 def _impute(tensor, replacement):
-
-    # this only works if tensor is a SparseTensor
     """
     Args:
         tensor:
         replacement:
     """
     if isinstance(tensor, tf.sparse.SparseTensor):
-        sparse = tf.sparse.SparseTensor(
-            tensor.indices, tensor.values, [tensor.dense_shape[0], 1]
-        )
-
-        dense = tf.sparse.to_dense(sp_input=sparse, default_value=replacement)
+        sparse = tf.sparse.SparseTensor(tensor.indices,
+                                        tensor.values,
+                                        [tensor.dense_shape[0], 1])
+        return tf.sparse.to_dense(sp_input=sparse, default_value=replacement)
     else:
-        constant = tf.fill(tf.shape(tensor), replacement)
-        dense = tf.where(tf.math.is_nan(tf.cast(tensor, tf.float32)),
-                         constant,
-                         tensor)
-
-    return dense
+        return tensor
 
 
 def custom_f(custom_value):
@@ -45,6 +37,7 @@ def custom_f(custom_value):
     Args:
         custom_value:
     """
+
     def apply(x):
         x = _impute(x, custom_value)
         return x

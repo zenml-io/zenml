@@ -144,7 +144,7 @@ def append_tf_example(data: Dict[Text, Any],
         value = CONVERTER_MAPPING[data_type](value)
         if data_type == DataType.INT:
             feature[key] = tf.train.Feature(
-                int64_list=tf.train.Int64List(value=value))
+                float_list=tf.train.FloatList(value=value))
         elif data_type == DataType.FLOAT:
             feature[key] = tf.train.Feature(
                 float_list=tf.train.FloatList(value=value))
