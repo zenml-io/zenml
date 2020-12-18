@@ -34,8 +34,7 @@ from zenml.utils.constants import APP_NAME, EVALUATION_NOTEBOOK, \
 from zenml.utils.enums import GDPComponent
 from zenml.utils.path_utils import read_file_contents
 from zenml.utils.post_training.evaluation_utils import get_eval_block, \
-    get_tensorboard_block, \
-    import_block, info_block, application_block, interface_block
+    get_tensorboard_block
 
 
 def get_statistics_html(stats_dict):
@@ -323,20 +322,20 @@ def compare_multiple_pipelines():
     Args:
         workspace_id (Text):
     """
-    info = {}
+    # assumes compare.py in the same folder
+    template = \
+        os.path.join(os.path.abspath(os.path.dirname(__file__)), 'compare.py')
+    compare_cell = read_file_contents(template)
 
     # generate notebook
     nb = nbf.v4.new_notebook()
     nb['cells'] = [
-        nbf.v4.new_code_cell(import_block()),
-        nbf.v4.new_code_cell(info_block(info)),
-        nbf.v4.new_code_cell(application_block()),
-        nbf.v4.new_code_cell(interface_block()),
+        nbf.v4.new_code_cell(compare_cell),
     ]
 
-    # write notebook
+    # TODO: [LOW] Check if we can centralize this along with the one used in
+    #  evaluate_single_pipeline()
     config_folder = click.get_app_dir(APP_NAME)
-
     if not (os.path.exists(config_folder) and os.path.isdir(
             config_folder)):
         os.makedirs(config_folder)

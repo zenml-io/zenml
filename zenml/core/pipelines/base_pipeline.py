@@ -74,10 +74,10 @@ class BasePipeline:
 
         # Metadata store
         if metadata_store:
-            self.metadata_store = metadata_store
+            self.metadata_store: ZenMLMetadataStore = metadata_store
         else:
             # use default
-            self.metadata_store = \
+            self.metadata_store: ZenMLMetadataStore = \
                 Repository.get_instance().get_metadata_store()
 
         if pipeline_name:

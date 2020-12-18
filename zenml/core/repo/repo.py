@@ -276,7 +276,7 @@ class Repository:
             type_filter (list): list of types to filter by.
         """
         pipelines = self.get_pipelines()
-        return [p for p in pipelines if p.pipeline_type in type_filter]
+        return [p for p in pipelines if p.PIPELINE_TYPE in type_filter]
 
     def get_pipeline_names(self) -> Optional[List[Text]]:
         """Gets list of pipeline (unique) names"""
@@ -390,4 +390,6 @@ class Repository:
         return yaml_utils.read_yaml(os.path.join(pipelines_dir, file_name))
 
     def compare_pipelines(self):
-        pass
+        from zenml.utils.post_training.post_training_utils import \
+            compare_multiple_pipelines
+        compare_multiple_pipelines()

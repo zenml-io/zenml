@@ -111,8 +111,8 @@ class ZenMLMetadataStore:
             pipeline_name (str): name of pipeline
         """
         components_status = self.get_components_status(pipeline_name)
-        for status in components_status:
-            if status != 'complete' or status != 'cached':
+        for status in components_status.values():
+            if status != 'complete' and status != 'cached':
                 return PipelineStatusTypes.Running.name
         return PipelineStatusTypes.Succeeded.name
 

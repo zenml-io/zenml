@@ -14,6 +14,7 @@
 """Training pipeline step to create a pipeline that trains on data."""
 
 import os
+import json
 from typing import Dict, Text, Any, List
 
 from tfx.components.evaluator.component import Evaluator
@@ -301,3 +302,26 @@ class TrainingPipeline(BasePipeline):
             if step_name not in self.steps_dict.keys():
                 raise AssertionError(f'Mandatory step {step_name} not added.')
         return True
+
+    def get_hyperparameters(self) -> Dict:
+        """
+        Gets all hyperparameters of pipeline
+        """
+        # TODO: [LOW] Check if this is necessary
+        if not self.is_executed_in_metadata_store:
+            raise Exception('This pipeline has not been run yet.')
+
+        executions = self.metadata_store.get_pipeline_executions(
+            pipeline_name=self.pipeline_name)
+
+        hparams = {}
+        for e in executions:
+            component_id = e.properties['component_id'].string_value
+            if component_id == GDPComponent.Trainer.name:
+                custom_config = json.loads(
+                    e.properties['custom_config'].string_value)
+                trainer_fn = custom_config['source']
+                trainer_params = custom_config['args']
+                hparams['trainer_fn'] = trainer_fn
+                hparams.update(trainer_params)
+        return hparams
