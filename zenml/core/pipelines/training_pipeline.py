@@ -84,7 +84,6 @@ class TrainingPipeline(BasePipeline):
 
         schema_data = SchemaGen(
             statistics=statistics_data.outputs.output,
-            infer_feature_shape=True,
         ).with_id(GDPComponent.DataSchema.name)
 
         component_list.extend([data,
@@ -114,7 +113,6 @@ class TrainingPipeline(BasePipeline):
 
         schema_split = SchemaGen(
             statistics=statistics_split.outputs.output,
-            infer_feature_shape=True,
         ).with_id(GDPComponent.SplitSchema.name)
 
         schema = schema_split.outputs.schema

@@ -137,8 +137,6 @@ class StandardPreprocessor(BasePreprocesserStep):
         output = {}
         for key, value in inputs.items():
             if key in self.features or key in self.labels:
-
-                # TODO: Investigate the implications of disabling this
                 if key not in self.f_dict:
                     self.f_dict[key] = self.f_d_dict[schema[key]]
                 value = self.apply_filling(value, self.f_dict[key])

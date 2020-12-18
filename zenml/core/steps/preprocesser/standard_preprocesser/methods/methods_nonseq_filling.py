@@ -29,16 +29,7 @@ def _impute(tensor, replacement):
                                         [tensor.dense_shape[0], 1])
         return tf.sparse.to_dense(sp_input=sparse, default_value=replacement)
     else:
-        constant = tf.fill(tf.shape(tensor), replacement)
-
-        if tensor.dtype == tf.dtypes.string:
-            return tf.where(tf.not_equal(tf.strings.length(tensor), 0),
-                            constant,
-                            tensor)
-        else:
-            return tf.where(tf.math.is_nan(tensor),
-                            constant,
-                            tensor)
+        return tensor
 
 
 def custom_f(custom_value):

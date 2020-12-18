@@ -19,7 +19,7 @@ from typing import Dict, List, Text, Any
 
 import apache_beam as beam
 import tensorflow as tf
-import numpy as np
+
 from zenml.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -34,21 +34,21 @@ class DataType(enum.IntEnum):
 
 def _int_converter(value):
     if value is None or value is '' or value is b'':
-        return [np.nan]
+        return []
     else:
         return [int(value)]
 
 
 def _float_converter(value):
     if value is None or value is '' or value is b'':
-        return [np.nan]
+        return []
     else:
         return [float(value)]
 
 
 def _bytes_converter(value):
     if value is None:
-        return [b'']
+        return []
     else:
         return [tf.compat.as_bytes(value)]
 
