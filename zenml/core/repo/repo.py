@@ -133,16 +133,16 @@ class Repository:
             global_config.set_analytics_opt_in(analytics_opt_in)
 
     def get_artifact_store(self) -> Optional[ArtifactStore]:
-        if self.zenml_config:
-            return self.zenml_config.get_artifact_store()
+        self._check_if_initialized()
+        return self.zenml_config.get_artifact_store()
 
     def get_metadata_store(self):
-        if self.zenml_config:
-            return self.zenml_config.get_metadata_store()
+        self._check_if_initialized()
+        self.zenml_config.get_metadata_store()
 
     def get_git_wrapper(self) -> GitWrapper:
-        if self.zenml_config:
-            return self.git_wrapper
+        self._check_if_initialized()
+        return self.git_wrapper
 
     @track(event=GET_STEP_VERSION)
     def get_step_by_version(self, step_type: Union[Type, Text], version: Text):
@@ -287,6 +287,8 @@ class Repository:
     def get_pipeline_file_paths(self, only_file_names: bool = False) -> \
             Optional[List[Text]]:
         """Gets list of pipeline file path"""
+        self._check_if_initialized()
+
         pipelines_dir = self.zenml_config.get_pipelines_dir()
 
         if not path_utils.is_dir(pipelines_dir):
@@ -371,6 +373,8 @@ class Repository:
             file_name (str): file name of pipeline
             config (dict): dict representation of ZenML config
         """
+        self._check_if_initialized()
+
         pipelines_dir = self.zenml_config.get_pipelines_dir()
 
         # Create dir
@@ -386,6 +390,7 @@ class Repository:
         Args:
             file_name (str): file name of pipeline
         """
+        self._check_if_initialized()
         pipelines_dir = self.zenml_config.get_pipelines_dir()
         return yaml_utils.read_yaml(os.path.join(pipelines_dir, file_name))
 
@@ -393,3 +398,7 @@ class Repository:
         from zenml.utils.post_training.post_training_utils import \
             compare_multiple_pipelines
         compare_multiple_pipelines()
+
+    def _check_if_initialized(self):
+        if self.zenml_config is None:
+            raise Exception('ZenML config is none. Did you do `zenml init`?')
