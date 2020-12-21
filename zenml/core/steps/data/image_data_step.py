@@ -129,9 +129,12 @@ def SplitByFileName(element: Dict[Text, Any],
 def ReadImagesFromDisk(pipeline: beam.Pipeline,
                        base_path: Text) -> beam.pvalue.PCollection:
     """
+    The Beam PTransform used to load a collection of images and metadata
+    from a local file system or a remote cloud storage bucket.
+
     Args:
-        pipeline (beam.Pipeline): Pipeline object built by the DataGen
-        executor.
+        pipeline (beam.Pipeline): Input beam.Pipeline object coming
+         from a TFX Executor.
         base_path (Text): Base directory containing images and labels.
     """
 
@@ -162,7 +165,44 @@ def ReadImagesFromDisk(pipeline: beam.Pipeline,
 
 
 class ImageDataStep(BaseDataStep):
+    """
+    Image data step used to load and process a collection of images along with
+    additional labels and metadata.
+    """
+
     def __init__(self, base_path, schema: Dict = None):
+        """
+        Image data step constructor. Use this data step in image
+        classification tasks with a single, scalar label.
+
+        This data step expects a directory containing the images as input,
+        along with a single, JSON-readable file containing the
+        two keys `label` and `metadata` for each image file in the directory.
+        In these keys, you can store additional label and metadata information
+        like date, copyright or GPS tags.
+
+        The entries of the JSON file should look like this:
+
+        ``# Single JSON record of an image in the base directory called
+        img123.jpg`` ::
+
+             {"img123.jpg": {
+                "label": 0,
+                 "metadata": {
+                    "height": 256,
+                     "width": 256,
+                    "num_channels": 3
+                }
+             }
+
+        Note that the label and metadata have to be present in the same
+        single file for all the images in the folder.
+
+        Args:
+            base_path: Base directory containing the images and the label file.
+            schema: Optional schema providing data type information about the
+             data source.
+        """
         super().__init__(base_path=base_path, schema=schema)
         self.base_path = base_path
 
