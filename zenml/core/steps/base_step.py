@@ -23,13 +23,22 @@ from zenml.utils.source_utils import resolve_source_path, \
 
 
 class BaseStep:
-    """Base class for all ZenML steps.
+    """
+    Base class for all ZenML steps.
 
     These are 'windows' into the base components for simpler overrides.
     """
     STEP_TYPE = StepTypes.base.name
 
     def __init__(self, **kwargs):
+        """
+        Base data step constructor.
+
+        Args:
+            **kwargs: Keyword arguments used in the construction of a step
+            from a configuration file.
+        """
+
         self._kwargs = kwargs
         self._immutable = False
         self._source = resolve_source_path(
