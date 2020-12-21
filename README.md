@@ -62,84 +62,72 @@ pip install git+https://github.com/maiot-io/zenml.git@master --upgrade
 ```
 
 #### Step 1: Import your requirements
+
 ```python
 from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
 from zenml.core.steps.preprocesser.standard_preprocesser \
     .standard_preprocesser import \
-    StandardPreprocessor
-from zenml.core.steps.split.categorical_domain_split_step import \
-    CategoricalDomainSplitStep
-```
-
-#### Step 2: Define your model
-```python
-import tensorflow as tf
+    StandardPreprocesser
+from zenml.core.steps.split.random_split import RandomSplitStep
 from zenml.core.steps.trainer.feedforward_trainer import FeedForwardTrainer
-
-class MyAwesomeTrainer(FeedForwardTrainer):
-    def __init__(self, batch_size: int = 32, **kwargs):
-        self.batch_size = batch_size
-        # Batch_size will be tracked
-        super().__init__(**kwargs, batch_size=batch_size)
-
-    def model_fn(self,
-                 train_dataset: tf.data.Dataset,
-                 eval_dataset: tf.data.Dataset):
-        train_dataset = train_dataset.batch(self.batch_size,
-                                            drop_remainder=True)
-        eval_dataset = eval_dataset.batch(self.batch_size, drop_remainder=True)
-
-        input_layers = [tf.keras.layers.Input(shape=(1,), name=k)
-                        for k in train_dataset.element_spec[0].keys()]
-        d = tf.keras.layers.Concatenate()(input_layers)
-
-        output_layer = tf.keras.layers.Dense(1,
-                                             activation='sigmoid',
-                                             name='label')(d)
-
-        model = tf.keras.Model(inputs=input_layers, outputs=output_layer)
-
-        model.compile(loss='mse', optimizer=tf.keras.optimizers.Adam())
-
-        tensorboard_callback = tf.keras.callbacks.TensorBoard(
-            log_dir=self.log_dir)
-
-        model.fit(train_dataset,
-                  steps_per_epoch=2,
-                  epochs=10,
-                  validation_data=eval_dataset,
-                  callbacks=[tensorboard_callback])
-        return model
 ```
 
-#### Step 3: Assemble, run and evaluate your pipeline locally
+#### Step 2: Assemble, run and evaluate your pipeline locally
 
 ```python
-training_pipeline = TrainingPipeline(name='Experiment 1')
+training_pipeline = TrainingPipeline(name='Quickstart')
 
 # Add a datasource. This will automatically track and version it.
-ds = CSVDatasource(name='My CSV Datasource', path='data/simple/data.csv')
+ds = CSVDatasource(name='Pima Indians Diabetes', path='data/simple/data.csv')
 training_pipeline.add_datasource(ds)
 
 # Add a random 70/30 train-eval split
-training_pipeline.add_split(RandomSplitStep(train=0.7, eval=0.3))
+training_pipeline.add_split(RandomSplit(split_map={'train': 0.7, 'eval': 0.3}))
 
 # Using an empty PreprocessorStep() will default to no preprocessing
-training_pipeline.add_preprocesser(StandardPreprocessor(features=[], labels=[]))
+training_pipeline.add_preprocesser(
+    StandardPreprocesser(
+        features=['times_pregnant', 'pgc', 'dbp', 'tst', 'insulin', 'bmi',
+                  'pedigree', 'age'],
+        labels=['has_diabetes'],
+        overwrite={'has_diabetes': {
+            'transform': [{'method': 'no_transform', 'parameters': {}}]}}
+    ))
 
 # Add a trainer
-training_pipeline.add_trainer(MyAwesomeTrainer(batch_size=32, lr=0.0001))
+training_pipeline.add_trainer(FeedForwardTrainer(
+    loss='binary_crossentropy',
+    last_activation='sigmoid',
+    output_units=1,
+    metrics=['accuracy'],
+    epochs=20))
 
-# Evaluate using standard metrics library TFMA
-training_pipeline.add_evaluator(TFMAEvaluator(metrics='accuracy'))
+
+# Add an evaluator
+training_pipeline.add_evaluator(
+    TFMAEvaluator(slices=[['has_diabetes']],
+                  metrics={'has_diabetes': ['binary_crossentropy',
+                                            'binary_accuracy']}))
 
 # Run the pipeline locally
 training_pipeline.run()
 ```
 
-Of course, each of these interfaces can be [extended quite easily](#...) to accommodate more complex scenarios and use-cases. There is a steadily-growing number of integrations available, for example Google Dataflow for [distributed preprocessing](#...) or Google Cloud AI Platform as [training](#...) and [serving](#...) backend.
+#### Step 3: Leverage powerful integrations
+```python
+# See schema of data
+training_pipeline.view_schema()
+
+# See statistics of train and eval
+training_pipeline.view_statistics()
+
+# Creates a notebook for evaluation
+training_pipeline.evaluate()
+```
+
+Of course, each of these steps can be [extended quite easily](#...) to accommodate more complex scenarios and use-cases. There is a steadily-growing number of integrations available, for example Google Dataflow for [distributed preprocessing](#...) or Google Cloud AI Platform as [training](#...) and [serving](#...) backend.
 
 ## ZenML Concepts
 
@@ -265,6 +253,13 @@ Every ZenML pipeline yields a servable model, ready to be used in your existing 
 <Align this with the ZenML landing page about competition, redo the analysis>
 <This might very well be added at a later stage!>
 -->
+
+## Current limitations
+Currently, ZenML only supports Tensorflow 2.3.0 based models.
+
+Please see our [roadmap](https://docs.zenml.io/misc/roadmap) for details on how we plan to extned ZenML.
+Please also let us know what aspects of ZenML you are struggling with via email: support@zenml.io),
+or chat with us on our [Slack channel directly](https://zenml.io/slack-invite/).
 
 ## Contributing
 
