@@ -19,3 +19,4 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from .config import *
 from .init import *
 from .version import *
+from .pipeline import *

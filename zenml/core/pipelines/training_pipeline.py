@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """Training pipeline step to create a pipeline that trains on data."""
 
-import os
 import json
+import os
 from typing import Dict, Text, Any, List
 
 from tfx.components.evaluator.component import Evaluator
@@ -320,8 +320,10 @@ class TrainingPipeline(BasePipeline):
             if component_id == GDPComponent.Trainer.name:
                 custom_config = json.loads(
                     e.properties['custom_config'].string_value)
-                trainer_fn = custom_config['source']
-                trainer_params = custom_config['args']
-                hparams['trainer_fn'] = trainer_fn
-                hparams.update(trainer_params)
+                fn = custom_config[keys.StepKeys.SOURCE]
+                params = custom_config[keys.StepKeys.ARGS]
+                # filter out None values to not break compare tool
+                params = {k: v for k, v in params.items() if v is not None}
+                hparams[f'{component_id}_fn'] = fn
+                hparams.update(params)
         return hparams
