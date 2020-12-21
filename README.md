@@ -146,7 +146,7 @@ Let us introduce some of the concepts we use to make this focus a reality.
 ZenML is built with reproducibility in mind. Reproducibility is a core motivation of DevOps methodologies: Builds need to be reproducible. Commonly, this is achieved by version control of code, version pinning of dependencies and automation of workflows. ZenML bundles these practises into a coherent framework for Machine Learning.
 Machine Learning brings an added level of complexity to version control, beyond versioning code: Data is inherently hard to version. 
 #### Versioning of data
-ZenML takes an easy, yet effective approach to version controlling data. When sourcing data, either via dedicated [data pipelines](link-to-docs!) or within your [training pipelines](link-to-sourcing-data-in-training-pipelines), ZenML creates an immutable snapshot of the data (TFRecords) used for your specific pipeline. This snapshot is tracked, just like any other pipeline step, and becomes available as a starting point to subsequent pipelines when using the same parameters for sourcing data.
+ZenML takes an easy, yet effective approach to version controlling data. When sourcing data, either via dedicated data pipelines or within your training pipelines, ZenML creates an immutable snapshot of the data (TFRecords) used for your specific pipeline. This snapshot is tracked, just like any other pipeline step, and becomes available as a starting point to subsequent pipelines when using the same parameters for sourcing data.
 
 **NOTE:** The principles behind versioning data in ZenML is a variation of the method used for caching pipeline steps.
 #### Versioning of code
