@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""CLI for manipulating ZenML local config file."""
+"""CLI for manipulating ZenML local and global config file."""
 
 from typing import Text
 
@@ -25,7 +25,7 @@ from zenml.core.repo.repo import Repository
 
 @cli.group()
 def config():
-    """Config"""
+    """Config group"""
     pass
 
 

@@ -395,6 +395,7 @@ class Repository:
         return yaml_utils.read_yaml(os.path.join(pipelines_dir, file_name))
 
     def compare_pipelines(self):
+        """Launch the compare app for all pipelines in repo"""
         from zenml.utils.post_training.post_training_utils import \
             compare_multiple_pipelines
         compare_multiple_pipelines()
