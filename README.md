@@ -147,8 +147,8 @@ At its core, ZenML will orchestrate your experiment pipelines from **sourcing da
 
 While there are other pipelining solutions for Machine Learning experiments, ZenML is focussed on two unique approaches:
 
-Reproducibility.
-Integrations.
+* Reproducibility.
+* Integrations.
 
 Let us introduce some of the concepts we use to make this focus a reality.
 ### Reproducibility
