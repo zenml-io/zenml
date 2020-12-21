@@ -31,6 +31,11 @@ def to_camel_case(s):
 
 
 class TFMAEvaluator(BaseStep):
+    """
+    Custom TFMA Evaluator step. This step does not get its own derived class,
+    it derives directly from the BaseStep class.
+    """
+
     STEP_TYPE = StepTypes.evaluator.name
 
     def __init__(self,

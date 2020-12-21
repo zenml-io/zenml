@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Base interface for Data Step"""
+"""Base interface for the Data Step."""
 
 import abc
 from typing import Dict
@@ -31,9 +31,24 @@ def identity_ptransform(pipeline: beam.Pipeline):
 
 
 class BaseDataStep(BaseStep):
+    """
+    Base class for all data steps. These steps are used to specify a data
+    source that is read from in a data or a training pipeline.
+    """
+
     STEP_TYPE = StepTypes.data.name
 
     def __init__(self, schema: Dict = None, **kwargs):
+        """
+        Base data step constructor. Custom data sources can be implemented
+        by defining classes that inherit from this class. Any custom data
+        source must implement the `read_from_source` method.
+
+        Args:
+            schema: Optional schema of the data, a dict mapping feature names
+             in the data to their respective data types.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(schema=schema, **kwargs)
         self.schema = schema
 

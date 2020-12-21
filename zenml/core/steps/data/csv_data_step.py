@@ -31,6 +31,19 @@ logger = get_logger(__name__)
 @beam.typehints.with_output_types(beam.typehints.Dict[Text, Any])
 def read_files_from_disk(pipeline: beam.Pipeline,
                          base_path: Text) -> beam.pvalue.PCollection:
+    """
+    The Beam PTransform used to read data from a collection of CSV files
+    on a local file system.
+    Args:
+        pipeline: Input beam.Pipeline object coming from a TFX Executor.
+        base_path: Base path pointing either to the directory containing the
+         CSV files, or to a (single) CSV file.
+
+    Returns:
+        A beam.PCollection of data points. Each row in the collection of
+         CSV tables represents a single data point.
+
+    """
     wildcard_qualifier = "*"
     file_pattern = os.path.join(base_path, wildcard_qualifier)
 
@@ -71,7 +84,21 @@ def read_files_from_disk(pipeline: beam.Pipeline,
 
 
 class CSVDataStep(BaseDataStep):
+    """
+    CSV data step to load local tabular data from disk or a remote cloud
+    storage bucket.
+    """
+
     def __init__(self, path, schema: Dict = None):
+        """
+        CSV data step constructor.
+
+        Args:
+            path: Base path pointing either to the directory containing the
+             CSV files, or to a (single) CSV file.
+            schema: Optional schema providing data type information about the
+             data source.
+        """
         super().__init__(schema=schema, path=path)
         self.path = path
 

@@ -31,6 +31,27 @@ def ReadFromBigQuery(pipeline: beam.Pipeline,
                      gcs_location: Text,
                      dest_project: Text,
                      query_limit: int = None) -> beam.pvalue.PCollection:
+    """
+    The Beam PTransform used to read data from a specific BQ table.
+
+    Args:
+        pipeline: Input beam.Pipeline object coming from a TFX Executor.
+        query_project: Google Cloud project where the target table is
+         located.
+        query_dataset: Google Cloud project where the target dataset is
+         located.
+        query_table: Name of the target BigQuery table.
+        gcs_location: Name of the Google Cloud Storage bucket where
+         the extracted table should be written as a string.
+        dest_project: Additional Google Cloud Project identifier.
+        query_limit: Optional, maximum limit of how many datapoints
+         to read from the specified BQ table.
+
+    Returns:
+        A beam.PCollection of data points. Each row in the BigQuery table
+         represents a single data point.
+
+    """
     query = f'SELECT * FROM `{query_project}.{query_dataset}.{query_table}`'
 
     if query_limit is not None:
@@ -45,10 +66,41 @@ def ReadFromBigQuery(pipeline: beam.Pipeline,
 
 
 class BQDataStep(BaseDataStep):
+    """
+    A step that reads in data from a Google BigQuery table supplied on
+    construction.
+    """
+
     def __init__(self, query_project: Text, query_dataset: Text,
                  query_table: Text, gcs_location: Text,
                  dest_project: Text = None, query_limit: int = None,
                  schema: Dict = None):
+        """
+        BigQuery (BQ) data step constructor. Targets a single BigQuery table
+        within a public or private project and dataset. In order to use
+        private BQ tables in your pipelines, you may be required to set the
+        GOOGLE_APPLICATION_CREDENTIALS environment variable within your code,
+        e.g. like so:
+
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/path/to/file.json",
+
+        pointing to a valid service account file for your project and dataset
+        that has the necessary permissions.
+
+        Args:
+            query_project: Google Cloud project where the target table
+             is located.
+            query_dataset: Google Cloud project where the target dataset
+             is located.
+            query_table: Name of the target BigQuery table.
+            gcs_location: Name of the Google Cloud Storage bucket where the
+             extracted table should be written as a string.
+            dest_project: Additional Google Cloud Project identifier.
+            query_limit: Optional, maximum limit of how many datapoints
+             to read from the specified BQ table.
+            schema: Optional schema providing data type information about
+             the data source.
+        """
         super().__init__(schema=schema,
                          query_project=query_project,
                          query_dataset=query_dataset,
