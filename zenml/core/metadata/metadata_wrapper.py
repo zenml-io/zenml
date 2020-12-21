@@ -16,7 +16,6 @@
 from abc import abstractmethod
 from typing import Text, List, Dict
 
-import pandas as pd
 from ml_metadata.metadata_store import metadata_store
 
 from zenml.core.standards.standard_keys import MLMetadataKeys
@@ -31,24 +30,15 @@ logger = get_logger(__name__)
 class ZenMLMetadataStore:
     STORE_TYPE = None
 
-    def __init__(self, **kwargs):
-        """
-        All sub-classes must call this AFTER their own constructor.
-
-        Args:
-            **kwargs: free-form parameters of the metadata store.
-        """
-        if 'store' in kwargs:
-            self.store = kwargs['store']
-        else:
-            self.store = metadata_store.MetadataStore(
-                self.get_tfx_metadata_config())
-
     def __str__(self):
         return to_pretty_string(self.to_config())
 
     def __repr__(self):
         return to_pretty_string(self.to_config(), style=PrintStyles.PPRINT)
+
+    @property
+    def store(self):
+        return metadata_store.MetadataStore(self.get_tfx_metadata_config())
 
     @classmethod
     def from_config(cls, config: Dict):
@@ -86,7 +76,6 @@ class ZenMLMetadataStore:
         Converts from ZenML Metadata store back to config.
         """
         args_dict = self.__dict__.copy()
-        args_dict.pop('store')  # TODO: [LOW] Again a hack
         return {
             MLMetadataKeys.TYPE: self.STORE_TYPE,
             MLMetadataKeys.ARGS: args_dict
