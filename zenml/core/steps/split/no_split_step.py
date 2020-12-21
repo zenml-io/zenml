@@ -16,7 +16,7 @@
 from typing import Text, List, Any
 
 from zenml.core.steps.split import constants
-from zenml.core.steps.split.base_split_step import BaseSplitStep
+from zenml.core.steps.split.base_split_step import BaseSplit
 
 
 def NoSplitPartitionFn(element: Any,
@@ -32,7 +32,7 @@ def NoSplitPartitionFn(element: Any,
     return 0
 
 
-class NoSplitStep(BaseSplitStep):
+class NoSplit(BaseSplit):
 
     def __init__(
             self,

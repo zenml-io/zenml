@@ -23,7 +23,7 @@ from zenml.core.steps.base_step import BaseStep
 from zenml.utils.enums import StepTypes
 
 
-class BaseSplitStep(BaseStep):
+class BaseSplit(BaseStep):
     STEP_TYPE = StepTypes.split.name
 
     def __init__(self,

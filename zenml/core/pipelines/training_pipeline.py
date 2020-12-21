@@ -44,7 +44,7 @@ from zenml.core.steps.deployer.gcaip_deployer import GCAIPDeployer
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
 from zenml.core.steps.preprocesser.base_preprocesser import \
     BasePreprocesserStep
-from zenml.core.steps.split.base_split_step import BaseSplitStep
+from zenml.core.steps.split.base_split_step import BaseSplit
 from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
 from zenml.utils import constants
 from zenml.utils import path_utils
@@ -242,7 +242,7 @@ class TrainingPipeline(BasePipeline):
 
         return component_list
 
-    def add_split(self, split_step: BaseSplitStep):
+    def add_split(self, split_step: BaseSplit):
         self.steps_dict[keys.TrainingSteps.SPLIT] = split_step
 
     def add_preprocesser(self, preprocessor_step: BasePreprocesserStep):

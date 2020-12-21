@@ -81,7 +81,7 @@ def infer_schema(schema):
     return schema_dict
 
 
-class StandardPreprocessor(BasePreprocesserStep):
+class StandardPreprocesser(BasePreprocesserStep):
 
     def __init__(self,
                  features: List[Text] = None,

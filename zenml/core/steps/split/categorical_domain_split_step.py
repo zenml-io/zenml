@@ -16,7 +16,7 @@
 from typing import Text, Dict, List, Any, Union
 
 from zenml.core.steps.split import constants
-from zenml.core.steps.split.base_split_step import BaseSplitStep
+from zenml.core.steps.split.base_split_step import BaseSplit
 from zenml.core.steps.split.utils import get_categorical_value
 
 CategoricalValue = Union[Text, int]
@@ -71,7 +71,7 @@ def CategoricalPartitionFn(element: Any,
     return 1
 
 
-class CategoricalDomainSplitStep(BaseSplitStep):
+class CategoricalDomainSplit(BaseSplit):
 
     def __init__(
             self,
