@@ -24,6 +24,12 @@ from zenml.utils.enums import StepTypes
 
 
 class BaseSplitStep(BaseStep):
+    """
+    Base split step class. Each custom data split step should derive
+    from this. In order to define a custom split, override the split step
+    partition_fn method.
+    """
+
     STEP_TYPE = StepTypes.split.name
 
     def __init__(self,
@@ -31,11 +37,11 @@ class BaseSplitStep(BaseStep):
                  schema: Schema = None,
                  **kwargs):
         """
-        Constructor for BaseSplitStep.
+        BaseSplitStep constructor.
 
         Args:
-            statistics: output of a preceding StatisticsGen
-            schema: output of a preceding SchemaGen
+            statistics: Parsed statistics output of a preceding StatisticsGen.
+            schema: Parsed schema output of a preceding SchemaGen.
         """
         super().__init__(**kwargs)
         self.statistics = statistics
