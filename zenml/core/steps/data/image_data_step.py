@@ -188,9 +188,9 @@ class ImageDataStep(BaseDataStep):
 
              {"img123.jpg": {
                 "label": 0,
-                 "metadata": {
+                "metadata": {
                     "height": 256,
-                     "width": 256,
+                    "width": 256,
                     "num_channels": 3
                 }
              }

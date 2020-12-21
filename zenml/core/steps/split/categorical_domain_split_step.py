@@ -43,9 +43,9 @@ def CategoricalPartitionFn(element: Any,
         element: Data point, given as a tf.train.Example.
         num_partitions: Number of splits, unused here.
         categorical_column: Name of the categorical column in the data on which
-        to perform the split.
+         to perform the split.
         split_map: Dict {split_name: [category_list]} mapping the categorical
-        values in categorical_column to their respective splits.
+         values in categorical_column to their respective splits.
 
     Returns: An integer n, where 0 <= n <= num_partitions - 1.
 
@@ -72,6 +72,11 @@ def CategoricalPartitionFn(element: Any,
 
 
 class CategoricalDomainSplit(BaseSplit):
+    """
+    Categorical domain split step. Use this to split data based on values in
+    a single categorical column. A categorical column is defined here as a
+    column with finitely many values of type `integer` or `string`.
+    """
 
     def __init__(
             self,
@@ -87,8 +92,9 @@ class CategoricalDomainSplit(BaseSplit):
             StatisticsGen.
             schema: Parsed schema artifact from a preceding SchemaGen.
             categorical_column: Name of the categorical column in the data on
-            which to split.
-            split_map: a dict { split_name: [category_values] }.
+             which to split.
+            split_map: A dict { split_name: [categorical_values] } mapping
+             categorical values to their respective splits.
         """
         self.categorical_column = categorical_column
 

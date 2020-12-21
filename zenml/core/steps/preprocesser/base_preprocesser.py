@@ -19,9 +19,22 @@ from zenml.utils.enums import StepTypes
 
 
 class BasePreprocesserStep(BaseStep):
+    """
+    Base class for all preprocessing steps. These steps are used to
+    specify transformation and filling operations on data that occur before
+    the machine learning model is trained.
+    """
+
     STEP_TYPE = StepTypes.preprocesser.name
 
     def __init__(self, **kwargs):
+        """
+        Base preprocessing step constructor. Custom preprocessing steps need
+        to override the `preprocessing_fn` class method.
+        Args:
+            **kwargs: Additional keyword arguments.
+        """
+
         super().__init__(**kwargs)
 
     def get_preprocessing_fn(self):
