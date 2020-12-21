@@ -183,7 +183,12 @@ More advanced configurations might want to centralize both the Metadata as well 
 
 The Metadata Store can be simply configured to use any MySQL server (=>5.6):
 ```bash
-zenml config metadata set mysql --host 127.0.0.1  --port 3306 --username USER --passwd PASSWD --database DATABASE
+zenml config metadata set mysql \
+    --host 127.0.0.1 \ 
+    --port 3306 \
+    --username USER \
+    --passwd PASSWD \
+    --database DATABASE
 ```
 
 The Artifact Store offers native support for Google Cloud Storage:
