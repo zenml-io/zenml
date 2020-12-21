@@ -13,6 +13,7 @@ from zenml.utils.enums import PipelineStatusTypes, GDPComponent
 
 pn.extension('plotly')
 
+
 def parse_metrics(d):
     tmp = d.copy()
     for x in d:
@@ -42,7 +43,6 @@ class Application(param.Parameterized):
         all_pipelines: List[TrainingPipeline] = repo.get_pipelines_by_type([
             TrainingPipeline.PIPELINE_TYPE])
 
-
         # get a dataframe of all results + all hyperparameter combinations
         for p in all_pipelines:
             # This is slowing the comparison down but
@@ -67,7 +67,6 @@ class Application(param.Parameterized):
         self.results = pd.DataFrame([parse_metrics(r) for r in
                                      result_list])
         self.hparam_info = pd.DataFrame(hparam_list)
-
 
         # set params
         self.param.pipeline_run_selector.objects = self.results[

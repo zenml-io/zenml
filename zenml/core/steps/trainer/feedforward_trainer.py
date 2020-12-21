@@ -248,7 +248,6 @@ class FeedForwardTrainer(BaseTrainerStep):
             log_dir=self.log_dir)
 
         model.fit(train_dataset,
-                  steps_per_epoch=2,
                   epochs=self.epochs,
                   validation_data=eval_dataset,
                   callbacks=[tensorboard_callback])

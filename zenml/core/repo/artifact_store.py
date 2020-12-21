@@ -40,8 +40,6 @@ class ArtifactStore:
         # unique_id based on path should be globally consistent
         self.unique_id = hashlib.md5(self.path.encode()).hexdigest()
 
-        path_utils.create_dir_if_not_exists(path)
-
     def __str__(self):
         return to_pretty_string(self.path)
 

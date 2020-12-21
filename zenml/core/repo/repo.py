@@ -138,7 +138,7 @@ class Repository:
 
     def get_metadata_store(self):
         self._check_if_initialized()
-        self.zenml_config.get_metadata_store()
+        return self.zenml_config.get_metadata_store()
 
     def get_git_wrapper(self) -> GitWrapper:
         self._check_if_initialized()
