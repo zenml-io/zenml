@@ -13,12 +13,23 @@
 #  permissions and limitations under the License.
 """Some split step utilities are implemented here."""
 
-from typing import Text, List, Dict, Any
+from typing import Text, List, Dict, Union
 
 import tensorflow as tf
 
 
+CategoricalValue = Union[Text, int]
+
+
 def get_categorical_value(example: tf.train.Example, cat_col: Text):
+    """
+    Helper function to get the categorical value from a tf.train.Example.
+    Args:
+        example: tf.train.Example, data point in proto format.
+        cat_col: Name of the categorical feature of which to extract the
+        value from.
+    """
+
     cat_feature = example.features.feature[cat_col]
 
     possible_types = ["bytes", "float", "int64"]
@@ -33,15 +44,21 @@ def get_categorical_value(example: tf.train.Example, cat_col: Text):
             else:
                 return value
 
-    # TODO: Should we raise here? This could happen in a NULL type situation
-    return None
+    raise AssertionError(f"Error: Feature {cat_col} does not exist in "
+                         f"this data.")
 
 
-def partition_cat_list(cat_list: List[Text], c_ratio: Dict[Text, Any]):
+def partition_cat_list(cat_list: List[CategoricalValue],
+                       c_ratio: Dict[Text, float]):
     """
     Helper to split a category list by the entries in a category split dict.
-    Scales well in the number of folds
+
+    Args:
+        cat_list: List of categorical values found in the categorical column.
+        c_ratio: Dict {fold: percentage} mapping the percentage of all
+        categories to split folds.
     """
+
     cat_dict = {}
 
     num_cats = len(cat_list)

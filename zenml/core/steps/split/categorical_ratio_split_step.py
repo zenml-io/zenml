@@ -13,13 +13,15 @@
 #  permissions and limitations under the License.
 """Implementation of the ratio-based categorical split."""
 
-from typing import Text, List, Dict
+from typing import Text, List, Dict, Union
 
 from zenml.core.steps.split import constants
 from zenml.core.steps.split.base_split_step import BaseSplitStep
 from zenml.core.steps.split.categorical_domain_split_step import \
     CategoricalPartitionFn
 from zenml.core.steps.split.utils import partition_cat_list
+
+CategoricalValue = Union[Text, int]
 
 
 def lint_split_map(split_map: Dict[Text, float]):
@@ -37,7 +39,7 @@ class CategoricalRatioSplitStep(BaseSplitStep):
     def __init__(
             self,
             categorical_column: Text,
-            categories: List[Text],
+            categories: List[CategoricalValue],
             split_ratio: Dict[Text, float],
             statistics=None,
             schema=None,
