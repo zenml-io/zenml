@@ -28,7 +28,7 @@ from zenml.core.components.split_gen import constants
 from zenml.core.components.split_gen.utils import parse_schema, \
     parse_statistics
 from zenml.core.standards.standard_keys import StepKeys
-from zenml.core.steps.split.base_split_step import BaseSplitStep
+from zenml.core.steps.split.base_split_step import BaseSplit
 from zenml.utils import source_utils
 from zenml.utils.logger import get_logger
 
@@ -79,7 +79,7 @@ class Executor(BaseExecutor):
         args[constants.STATISTICS] = statistics
 
         c = source_utils.load_source_path_class(source)
-        split_step: BaseSplitStep = c(**args)
+        split_step: BaseSplit = c(**args)
 
         # infer the names of the splits from the config
         split_names = split_step.get_split_names()

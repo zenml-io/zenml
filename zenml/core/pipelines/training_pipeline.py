@@ -17,6 +17,7 @@ import json
 import os
 from typing import Dict, Text, Any, List
 
+import tensorflow as tf
 from tfx.components.evaluator.component import Evaluator
 from tfx.components.pusher.component import Pusher
 from tfx.components.schema_gen.component import SchemaGen
@@ -43,15 +44,19 @@ from zenml.core.steps.deployer.gcaip_deployer import GCAIPDeployer
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
 from zenml.core.steps.preprocesser.base_preprocesser import \
     BasePreprocesserStep
-from zenml.core.steps.split.base_split_step import BaseSplitStep
+from zenml.core.steps.split.base_split_step import BaseSplit
 from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
 from zenml.utils import constants
+from zenml.utils import path_utils
 from zenml.utils.enums import GDPComponent
 from zenml.utils.logger import get_logger
 from zenml.utils.post_training.post_training_utils import \
     get_statistics_artifact, \
     get_schema_artifact, get_pusher_artifact, \
     evaluate_single_pipeline, view_statistics, view_schema, detect_anomalies
+from zenml.utils.post_training.post_training_utils import \
+    get_transform_schema_artifact, get_transform_data_artifact, \
+    get_feature_spec_from_schema, convert_raw_dataset_to_pandas
 
 logger = get_logger(__name__)
 
@@ -237,7 +242,7 @@ class TrainingPipeline(BasePipeline):
 
         return component_list
 
-    def add_split(self, split_step: BaseSplitStep):
+    def add_split(self, split_step: BaseSplit):
         self.steps_dict[keys.TrainingSteps.SPLIT] = split_step
 
     def add_preprocesser(self, preprocessor_step: BasePreprocesserStep):
@@ -340,3 +345,23 @@ class TrainingPipeline(BasePipeline):
                 hparams[f'{component_id}_fn'] = fn
                 hparams.update(params)
         return hparams
+
+    def sample_transformed_data(self,
+                                split_name: Text = 'eval',
+                                sample_size: int = 100000):
+        """
+        Samples transformed data as a pandas DataFrame.
+
+        Args:
+            split_name: name of split to see
+            sample_size: # of rows to sample.
+        """
+        transform_schema = get_transform_schema_artifact(
+            self.pipeline_name, GDPComponent.Transform.name)
+        spec = get_feature_spec_from_schema(transform_schema)
+        transform_data_path = get_transform_data_artifact(
+            self.pipeline_name, GDPComponent.Transform.name)
+        split_data_path = os.path.join(transform_data_path, split_name)
+        data_files = path_utils.list_dir(split_data_path)
+        dataset = tf.data.TFRecordDataset(data_files, compression_type='GZIP')
+        return convert_raw_dataset_to_pandas(dataset, spec, sample_size)

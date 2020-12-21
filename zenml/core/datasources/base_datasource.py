@@ -165,8 +165,9 @@ class BaseDatasource:
         pipeline = self._get_one_pipeline()
         data_files = self._get_data_file_paths(pipeline)
 
-        spec = get_feature_spec_from_schema(
+        schema_uri = get_schema_artifact(
             pipeline.pipeline_name, GDPComponent.DataSchema.name)
+        spec = get_feature_spec_from_schema(schema_uri)
 
         dataset = tf.data.TFRecordDataset(data_files, compression_type='GZIP')
         return convert_raw_dataset_to_pandas(dataset, spec, sample_size)

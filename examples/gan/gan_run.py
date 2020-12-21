@@ -15,7 +15,7 @@
 from zenml.core.datasources.image_datasource import ImageDatasource
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
 from zenml.core.steps.split.categorical_domain_split_step import \
-    CategoricalDomainSplitStep
+    CategoricalDomainSplit
 from zenml.core.repo.repo import Repository
 from examples.gan.gan_functions import CycleGANTrainer
 from examples.gan.preprocessing import GANPreprocessor
@@ -33,8 +33,8 @@ except:
 
 gan_pipeline.add_datasource(ds)
 
-gan_pipeline.add_split(CategoricalDomainSplitStep(categorical_column="label",
-                                                  split_map={"train": [0],
+gan_pipeline.add_split(CategoricalDomainSplit(categorical_column="label",
+                                              split_map={"train": [0],
                                                              "eval": [1]}))
 
 gan_pipeline.add_preprocesser(GANPreprocessor())

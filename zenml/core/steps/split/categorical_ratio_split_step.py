@@ -16,7 +16,7 @@
 from typing import Text, List, Dict, Union
 
 from zenml.core.steps.split import constants
-from zenml.core.steps.split.base_split_step import BaseSplitStep
+from zenml.core.steps.split.base_split_step import BaseSplit
 from zenml.core.steps.split.categorical_domain_split_step import \
     CategoricalPartitionFn
 from zenml.core.steps.split.utils import partition_cat_list
@@ -34,7 +34,7 @@ def lint_split_map(split_map: Dict[Text, float]):
                              'split_map!')
 
 
-class CategoricalRatioSplitStep(BaseSplitStep):
+class CategoricalRatioSplit(BaseSplit):
 
     def __init__(
             self,

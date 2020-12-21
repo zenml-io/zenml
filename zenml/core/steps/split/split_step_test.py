@@ -17,11 +17,11 @@ import pytest
 import tensorflow as tf
 import random
 from zenml.core.steps.split.categorical_domain_split_step import \
-    CategoricalDomainSplitStep
+    CategoricalDomainSplit
 from zenml.core.steps.split.categorical_ratio_split_step import \
-    CategoricalRatioSplitStep
-from zenml.core.steps.split.no_split_step import NoSplitStep
-from zenml.core.steps.split.random_split import RandomSplitStep
+    CategoricalRatioSplit
+from zenml.core.steps.split.no_split_step import NoSplit
+from zenml.core.steps.split.random_split import RandomSplit
 
 
 @pytest.fixture
@@ -68,7 +68,7 @@ def create_structured_dummy_data():
 
 
 def test_no_split(create_random_dummy_data):
-    nosplit = NoSplitStep()
+    nosplit = NoSplit()
     nosplit_func = nosplit.partition_fn()[0]
 
     # test defaults
@@ -90,25 +90,25 @@ def test_random_split(create_random_dummy_data):
 
     # no train argument present in split map
     with pytest.raises(AssertionError):
-        _ = RandomSplitStep(split_map=no_train)
+        _ = RandomSplit(split_map=no_train)
 
     one_fold = {"train": 1.0}
 
     # only one argument present in split map
     with pytest.raises(AssertionError):
-        _ = RandomSplitStep(split_map=one_fold)
+        _ = RandomSplit(split_map=one_fold)
 
     bogus_entries = {"train": 0.5,
                      "eval": "testest"}
 
     # not all entries in split map are floats
     with pytest.raises(AssertionError):
-        _ = RandomSplitStep(split_map=bogus_entries)
+        _ = RandomSplit(split_map=bogus_entries)
 
     split_map = {"train": 1.0,
                  "eval": 0.0}
 
-    random_split = RandomSplitStep(split_map=split_map)
+    random_split = RandomSplit(split_map=split_map)
     random_split_func = random_split.partition_fn()[0]
 
     # test defaults
@@ -133,23 +133,23 @@ def test_categorical_domain_split(create_structured_dummy_data):
 
     # no train argument present in split map
     with pytest.raises(AssertionError):
-        _ = CategoricalDomainSplitStep(categorical_column=cat_col,
-                                       split_map=no_train)
+        _ = CategoricalDomainSplit(categorical_column=cat_col,
+                                   split_map=no_train)
 
     one_fold = {"train": []}
 
     # only one argument present in split map
     with pytest.raises(AssertionError):
-        _ = CategoricalDomainSplitStep(categorical_column=cat_col,
-                                       split_map=one_fold)
+        _ = CategoricalDomainSplit(categorical_column=cat_col,
+                                   split_map=one_fold)
 
     # real logic begins here
     split_map = {"train": ["value1"],
                  "eval": ["value2"],
                  "test": ["value3"]}
 
-    domain_split = CategoricalDomainSplitStep(categorical_column=cat_col,
-                                              split_map=split_map)
+    domain_split = CategoricalDomainSplit(categorical_column=cat_col,
+                                          split_map=split_map)
 
     # test defaults
     assert not domain_split.schema
@@ -196,17 +196,17 @@ def test_categorical_ratio_split(create_structured_dummy_data):
 
     # no train argument present in split map
     with pytest.raises(AssertionError):
-        _ = CategoricalRatioSplitStep(categorical_column=cat_col,
-                                      categories=categories,
-                                      split_ratio=no_train)
+        _ = CategoricalRatioSplit(categorical_column=cat_col,
+                                  categories=categories,
+                                  split_ratio=no_train)
 
     one_fold = {"train": 1.0}
 
     # only one fold present in split map
     with pytest.raises(AssertionError):
-        _ = CategoricalRatioSplitStep(categorical_column=cat_col,
-                                      categories=categories,
-                                      split_ratio=one_fold)
+        _ = CategoricalRatioSplit(categorical_column=cat_col,
+                                  categories=categories,
+                                  split_ratio=one_fold)
 
     # real logic begins here
     categories = ["value{}".format(i + 1) for i in range(3)]
@@ -215,9 +215,9 @@ def test_categorical_ratio_split(create_structured_dummy_data):
                    "eval": 0.33,
                    "test": 0.34}
 
-    ratio_split = CategoricalRatioSplitStep(categorical_column=cat_col,
-                                            categories=categories,
-                                            split_ratio=split_ratio)
+    ratio_split = CategoricalRatioSplit(categorical_column=cat_col,
+                                        categories=categories,
+                                        split_ratio=split_ratio)
 
     # test defaults
     assert not ratio_split.schema

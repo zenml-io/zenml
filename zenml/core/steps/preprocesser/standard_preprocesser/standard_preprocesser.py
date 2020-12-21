@@ -87,7 +87,7 @@ def infer_schema(schema):
     return schema_dict
 
 
-class StandardPreprocessor(BasePreprocesserStep):
+class StandardPreprocesser(BasePreprocesserStep):
     """
     Standard Preprocessor step. This step can be used to apply a variety of
     standard preprocessing techniques from the field of Machine Learning,

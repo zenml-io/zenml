@@ -19,7 +19,7 @@ from typing import Text, List, Dict, Any
 import numpy as np
 
 from zenml.core.steps.split import constants
-from zenml.core.steps.split.base_split_step import BaseSplitStep
+from zenml.core.steps.split.base_split_step import BaseSplit
 
 
 def lint_split_map(split_map: Dict[Text, float]):
@@ -58,7 +58,7 @@ def RandomSplitPartitionFn(element: Any,
     return bisect.bisect(brackets, np.random.rand())
 
 
-class RandomSplitStep(BaseSplitStep):
+class RandomSplit(BaseSplit):
 
     def __init__(
             self,
