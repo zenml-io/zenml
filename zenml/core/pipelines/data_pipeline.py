@@ -49,22 +49,20 @@ class DataPipeline(BasePipeline):
             config: a ZenML config as a dict
         """
         data_config = config[keys.GlobalKeys.STEPS][keys.DataSteps.DATA]
-        data_gen = DataGen(
+        data = DataGen(
             source=data_config[StepKeys.SOURCE],
             source_args=data_config[StepKeys.ARGS]).with_id(
             GDPComponent.DataGen.name
         )
+        statistics_data = StatisticsGen(
+            examples=data.outputs.examples
+        ).with_id(GDPComponent.DataStatistics.name)
 
-        datapoints = data_gen.outputs.examples
+        schema_data = SchemaGen(
+            statistics=statistics_data.outputs.output,
+        ).with_id(GDPComponent.DataSchema.name)
 
-        statistics_split = StatisticsGen(
-            examples=datapoints).with_id(GDPComponent.SplitStatistics.name)
-
-        schema_split = SchemaGen(
-            statistics=statistics_split.outputs.output,
-            infer_feature_shape=True).with_id(GDPComponent.SplitSchema.name)
-
-        return [data_gen, statistics_split, schema_split]
+        return [data, statistics_data, schema_data]
 
     def view_statistics(self, magic: bool = False):
         """
