@@ -47,6 +47,9 @@
 ## Quickstart 
 
 Let’s get you started with a simple pipeline. Please make sure to also check out the [advanced concepts](#zenml-concepts). It uses some built-ins and a very simple model. 
+The dataset used is the [Pima Indians Diabetes Dataset](https://storage.googleapis.com/zenml_quickstart/diabetes.csv), originally from the National Institute of Diabetes 
+and Digestive and Kidney Diseases. It is a binary classification problem.
+
 
 #### Step 0: Installation
 
@@ -67,10 +70,8 @@ pip install git+https://github.com/maiot-io/zenml.git@master --upgrade
 from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
-from zenml.core.steps.preprocesser.standard_preprocesser \
-    .standard_preprocesser import \
-    StandardPreprocesser
-from zenml.core.steps.split.random_split import RandomSplitStep
+from zenml.core.steps.preprocesser.standard_preprocesser.standard_preprocesser import StandardPreprocesser
+from zenml.core.steps.split.random_split import RandomSplit
 from zenml.core.steps.trainer.feedforward_trainer import FeedForwardTrainer
 ```
 
@@ -80,7 +81,8 @@ from zenml.core.steps.trainer.feedforward_trainer import FeedForwardTrainer
 training_pipeline = TrainingPipeline(name='Quickstart')
 
 # Add a datasource. This will automatically track and version it.
-ds = CSVDatasource(name='Pima Indians Diabetes', path='data/simple/data.csv')
+ds = CSVDatasource(name='Pima Indians Diabetes Dataset', 
+                   path='gs://zenml_quickstart/diabetes.csv')
 training_pipeline.add_datasource(ds)
 
 # Add a random 70/30 train-eval split
@@ -144,7 +146,7 @@ Let us introduce some of the concepts we use to make this focus a reality.
 ZenML is built with reproducibility in mind. Reproducibility is a core motivation of DevOps methodologies: Builds need to be reproducible. Commonly, this is achieved by version control of code, version pinning of dependencies and automation of workflows. ZenML bundles these practises into a coherent framework for Machine Learning.
 Machine Learning brings an added level of complexity to version control, beyond versioning code: Data is inherently hard to version. 
 #### Versioning of data
-ZenML takes an easy, yet effective approach to version controlling data. When sourcing data, either via dedicated [data pipelines](link-to-docs!) or within your [training pipelines](link-to-sourcing-data-in-training-pipelines), ZenML creates an immutable snapshot of the data (TFRecords) used for your specific pipeline. This snapshot is tracked, just like any other pipeline step, and becomes available as a starting point to subsequent pipelines when using the same parameters for sourcing data.
+ZenML takes an easy, yet effective approach to version controlling data. When sourcing data, either via dedicated data pipelines or within your training pipelines, ZenML creates an immutable snapshot of the data (TFRecords) used for your specific pipeline. This snapshot is tracked, just like any other pipeline step, and becomes available as a starting point to subsequent pipelines when using the same parameters for sourcing data.
 
 **NOTE:** The principles behind versioning data in ZenML is a variation of the method used for caching pipeline steps.
 #### Versioning of code
