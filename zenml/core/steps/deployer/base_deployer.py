@@ -23,16 +23,32 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base deployer step implementation."""
 from typing import Text
 
 from zenml.core.steps.base_step import BaseStep
 
 
 class BaseDeployerStep(BaseStep):
+    """
+    Base class for all deployer steps. These steps are used to specify a
+    configuration for a Pusher component that uploads the model to a selected
+    location and opens an endpoint to it from where it serves predictions upon
+    request.
+    """
 
     def __init__(self,
                  output_base_dir: Text = None,
                  **kwargs):
+        """
+        Base deployer step constructor. In order to create custom model
+        serving logic, implement deployer steps that inherit from this class.
+
+        Args:
+            output_base_dir: Directory where the output model of a
+             preceding trainer component was written to.
+            **kwargs: Additional keyword arguments.
+        """
         self.output_base_dir = output_base_dir
 
         super(BaseDeployerStep, self).__init__(
