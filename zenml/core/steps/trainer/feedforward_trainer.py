@@ -23,7 +23,7 @@ from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
 
 class FeedForwardTrainer(BaseTrainerStep):
     def __init__(self,
-                 batch_size: int = 32,
+                 batch_size: int = 8,
                  lr: float = 0.001,
                  epochs: int = 1,
                  dropout_chance: int = 0.2,
@@ -107,7 +107,7 @@ class FeedForwardTrainer(BaseTrainerStep):
             batch_size=self.batch_size,
             features=xf_feature_spec,
             reader=self._gzip_reader_fn,
-            num_epochs=self.epochs)
+            num_epochs=1)
 
         dataset = dataset.unbatch()
 

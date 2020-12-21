@@ -15,6 +15,7 @@
 import base64
 import json
 import os
+from pathlib import Path
 from typing import Text
 
 import click
@@ -156,7 +157,20 @@ def get_schema_artifact(pipeline_name: Text, component_name: Text):
         pipeline_name, component_name)[0]
 
 
-def get_feature_spec_from_schema(pipeline_name: Text, component_name: Text):
+def get_transform_schema_artifact(pipeline_name: Text, component_name: Text):
+    """
+    Get schema artifact from pipeline.
+
+    Args:
+        pipeline_name: name of pipeline
+        component_name: name of schema component
+    """
+    base_uri = Repository.get_instance().get_artifacts_uri_by_component(
+        pipeline_name, component_name)[0]
+    return os.path.join(base_uri, 'transformed_metadata')
+
+
+def get_transform_data_artifact(pipeline_name: Text, component_name: Text):
     """
     Get schema artifact from pipeline
 
@@ -164,8 +178,22 @@ def get_feature_spec_from_schema(pipeline_name: Text, component_name: Text):
         pipeline_name: name of pipeline
         component_name: name of schema component
     """
-    schema_proto = get_schema_proto(
-        get_schema_artifact(pipeline_name, component_name))
+    base_uri = Repository.get_instance().get_artifacts_uri_by_component(
+        pipeline_name, component_name)[0]
+    base_uri = Path(base_uri)
+    id_ = base_uri.name
+    return os.path.join(
+        str(base_uri.parent.parent), 'transformed_examples', id_)
+
+
+def get_feature_spec_from_schema(schema_uri):
+    """
+    Get schema artifact from pipeline
+
+    Args:
+        schema_uri: path to schema
+    """
+    schema_proto = get_schema_proto(schema_uri)
     spec = schema_utils.schema_as_feature_spec(schema_proto).feature_spec
     return spec
 
