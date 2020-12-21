@@ -38,7 +38,7 @@ ENV_ZENML_DEBUG = 'ZENML_DEBUG'
 # Logging variables
 ENV_ZENML_LOGGING_VERBOSITY = 'ZENML_LOGGING_VERBOSITY'
 # TODO: [HIGH] Switch to default False before release
-IS_DEBUG_ENV = handle_bool_env_var(ENV_ZENML_DEBUG, default=True)
+IS_DEBUG_ENV = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
 if IS_DEBUG_ENV:
     ZENML_LOGGING_VERBOSITY = os.getenv(ENV_ZENML_LOGGING_VERBOSITY, 4)
 else:
