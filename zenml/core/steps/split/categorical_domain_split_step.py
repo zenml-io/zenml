@@ -86,6 +86,22 @@ class CategoricalDomainSplit(BaseSplit):
             schema=None,
     ):
         """
+        Categorical domain split step constructor.
+
+        Use this class to split your data based on values in
+        a single categorical column. A categorical column is defined here as a
+        column with finitely many values of type `integer` or `string`.
+
+        Example usage:
+        # Split on a categorical attribute called "color"
+
+        # red and blue datapoints go into the train set,
+           green and yellow ones go into the eval set
+
+        >>> split = CategoricalDomainSplitStep(
+        ... categorical_column="color",
+        ... split_map = {"train": ["red", "blue"],
+        ...              "eval": ["green", "yellow"]})
 
         Args:
             statistics: Parsed statistics artifact from a preceding
