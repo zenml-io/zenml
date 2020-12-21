@@ -47,6 +47,9 @@
 ## Quickstart 
 
 Let’s get you started with a simple pipeline. Please make sure to also check out the [advanced concepts](#zenml-concepts). It uses some built-ins and a very simple model. 
+The dataset used is the [Pima Indians Diabetes Dataset](https://storage.googleapis.com/zenml_quickstart/diabetes.csv), originally from the National Institute of Diabetes 
+and Digestive and Kidney Diseases. It is a binary classification problem.
+
 
 #### Step 0: Installation
 
@@ -67,10 +70,8 @@ pip install git+https://github.com/maiot-io/zenml.git@master --upgrade
 from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
-from zenml.core.steps.preprocesser.standard_preprocesser \
-    .standard_preprocesser import \
-    StandardPreprocesser
-from zenml.core.steps.split.random_split import RandomSplitStep
+from zenml.core.steps.preprocesser.standard_preprocesser.standard_preprocesser import StandardPreprocesser
+from zenml.core.steps.split.random_split import RandomSplit
 from zenml.core.steps.trainer.feedforward_trainer import FeedForwardTrainer
 ```
 
@@ -80,7 +81,8 @@ from zenml.core.steps.trainer.feedforward_trainer import FeedForwardTrainer
 training_pipeline = TrainingPipeline(name='Quickstart')
 
 # Add a datasource. This will automatically track and version it.
-ds = CSVDatasource(name='Pima Indians Diabetes', path='data/simple/data.csv')
+ds = CSVDatasource(name='Pima Indians Diabetes', 
+                   path='gs://zenml_quickstart/diabetes.csv')
 training_pipeline.add_datasource(ds)
 
 # Add a random 70/30 train-eval split
