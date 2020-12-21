@@ -147,8 +147,8 @@ At its core, ZenML will orchestrate your experiment pipelines from **sourcing da
 
 While there are other pipelining solutions for Machine Learning experiments, ZenML is focussed on two unique approaches:
 
-Reproducibility.
-Integrations.
+* Reproducibility.
+* Integrations.
 
 Let us introduce some of the concepts we use to make this focus a reality.
 ### Reproducibility
@@ -183,7 +183,12 @@ More advanced configurations might want to centralize both the Metadata as well 
 
 The Metadata Store can be simply configured to use any MySQL server (=>5.6):
 ```bash
-zenml config metadata set mysql --host 127.0.0.1  --port 3306 --username USER --passwd PASSWD --database DATABASE
+zenml config metadata set mysql \
+    --host 127.0.0.1 \ 
+    --port 3306 \
+    --username USER \
+    --passwd PASSWD \
+    --database DATABASE
 ```
 
 The Artifact Store offers native support for Google Cloud Storage:
