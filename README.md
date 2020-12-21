@@ -81,7 +81,7 @@ from zenml.core.steps.trainer.feedforward_trainer import FeedForwardTrainer
 training_pipeline = TrainingPipeline(name='Quickstart')
 
 # Add a datasource. This will automatically track and version it.
-ds = CSVDatasource(name='Pima Indians Diabetes', 
+ds = CSVDatasource(name='Pima Indians Diabetes Dataset', 
                    path='gs://zenml_quickstart/diabetes.csv')
 training_pipeline.add_datasource(ds)
 
