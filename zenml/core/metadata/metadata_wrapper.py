@@ -29,6 +29,7 @@ logger = get_logger(__name__)
 
 class ZenMLMetadataStore:
     STORE_TYPE = None
+    RUN_TYPE_PROPERTY_NAME = 'run'
 
     def __str__(self):
         return to_pretty_string(self.to_config())
@@ -111,8 +112,10 @@ class ZenMLMetadataStore:
         from zenml.core.repo.repo import Repository
         repo: Repository = Repository.get_instance()
         run_id = f'{repo.get_artifact_store().unique_id}.{pipeline_name}'
+        logger.debug(f'Looking for run_id {run_id} in metadata store: '
+                     f'{self.to_config()}')
         run_context = self.store.get_context_by_type_and_name(
-            type_name='run',
+            type_name=self.RUN_TYPE_PROPERTY_NAME,
             context_name=run_id
         )
         if run_context is None:
@@ -168,17 +171,13 @@ class ZenMLMetadataStore:
         # Get artifacts
         return self.store.get_artifacts_by_id(artifact_ids)
 
-    def get_pipeline_contexts(self) -> List:
-        """Gets list of pipeline contexts"""
-        return self.store.get_contexts_by_type(type_name='pipeline')
-
     def get_executions_by_context(self, context: str):
         """
         Args:
             context (str):
         """
         context_id = self.store.get_context_by_type_and_name(
-            type_name='run',
+            type_name=self.RUN_TYPE_PROPERTY_NAME,
             context_name=context,
         ).id
         return self.store.get_executions_by_context(context_id)
@@ -246,7 +245,7 @@ class ZenMLMetadataStore:
             output_ids = self.list_registered_components()
 
         context_id = self.store.get_context_by_type_and_name(
-            type_name='run',
+            type_name=self.RUN_TYPE_PROPERTY_NAME,
             context_name=context,
         ).id
 
@@ -283,8 +282,9 @@ class ZenMLMetadataStore:
 
         if contexts:
             target_context_ids = [
-                self.store.get_context_by_type_and_name(type_name='run',
-                                                        context_name=c).id for
+                self.store.get_context_by_type_and_name(
+                    type_name=self.RUN_TYPE_PROPERTY_NAME,
+                    context_name=c).id for
                 c in contexts]
         elif context_names:
             target_contexts = self.store.get_contexts()
@@ -325,7 +325,7 @@ class ZenMLMetadataStore:
             component_id:
         """
         context_id = self.store.get_context_by_type_and_name(
-            type_name='run',
+            type_name=self.RUN_TYPE_PROPERTY_NAME,
             context_name=context,
         ).id
         execs = self.store.get_executions_by_context(context_id)
@@ -342,7 +342,7 @@ class ZenMLMetadataStore:
             component_id:
         """
         context_id = self.store.get_context_by_type_and_name(
-            type_name='run',
+            type_name=self.RUN_TYPE_PROPERTY_NAME,
             context_name=context,
         ).id
         execs = self.store.get_executions_by_context(context_id)
