@@ -58,17 +58,21 @@ class BasePipeline:
                  pipeline_name: Optional[Text] = None,
                  *args, **kwargs):
         """
-        Construct a base pipeline.
+        Construct a base pipeline. This is a base interface that is meant
+        to be overridden in multiple other pipeline use cases.
 
         Args:
-            name: outwards-facing name of the pipeline
-            pipeline_name: unique name that identifies the pipeline after
-            its run
-            enable_cache: boolean indicator whether caching should be used
-            steps_dict: optional dict of steps
-            backends_dict: optional dict of backends
-            metadata_store: chosen metadata store, if None use default
-            artifact_store: chosen artifact store, if None use default
+            name: Outward-facing name of the pipeline.
+            pipeline_name: A unique name that identifies the pipeline after
+             it is run.
+            enable_cache: Boolean, indicates whether or not caching
+             should be used.
+            steps_dict: Optional dict of steps.
+            backends_dict: Optional dict of backends
+            metadata_store: Configured metadata store. If None,
+             the default metadata store is used.
+            artifact_store: Configured artifact store. If None,
+             the default artifact store is used.
         """
         self.name = name
 
