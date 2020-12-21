@@ -63,7 +63,8 @@ class CategoricalRatioSplitStep(BaseSplitStep):
         super().__init__(statistics=statistics,
                          schema=schema,
                          categorical_column=categorical_column,
-                         split_map=split_map)
+                         split_ratio=split_ratio,
+                         categories=categories)
 
     def partition_fn(self):
         return CategoricalPartitionFn, {

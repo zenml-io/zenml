@@ -24,7 +24,7 @@ from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
 class FeedForwardTrainer(BaseTrainerStep):
     def __init__(self,
                  batch_size: int = 32,
-                 lr: float = 0.0001,
+                 lr: float = 0.001,
                  epochs: int = 1,
                  dropout_chance: int = 0.2,
                  loss: str = 'mse',
@@ -32,7 +32,6 @@ class FeedForwardTrainer(BaseTrainerStep):
                  hidden_layers: List[int] = None,
                  hidden_activation: str = 'relu',
                  last_activation: str = 'sigmoid',
-                 input_units: int = 11,
                  output_units: int = 1,
                  **kwargs):
 
@@ -42,10 +41,9 @@ class FeedForwardTrainer(BaseTrainerStep):
         self.dropout_chance = dropout_chance
         self.loss = loss
         self.metrics = metrics or []
-        self.hidden_layers = hidden_layers or [64, 32, 16]
+        self.hidden_layers = hidden_layers or [10]
         self.hidden_activation = hidden_activation
         self.last_activation = last_activation
-        self.input_units = input_units
         self.output_units = output_units
 
         super(FeedForwardTrainer, self).__init__(
@@ -58,7 +56,6 @@ class FeedForwardTrainer(BaseTrainerStep):
             hidden_layers=hidden_layers,
             hidden_activation=hidden_activation,
             last_activation=last_activation,
-            input_units=input_units,
             output_units=output_units,
             **kwargs
         )
@@ -107,10 +104,10 @@ class FeedForwardTrainer(BaseTrainerStep):
 
         dataset = tf.data.experimental.make_batched_features_dataset(
             file_pattern=file_pattern,
-            batch_size=32,
+            batch_size=self.batch_size,
             features=xf_feature_spec,
             reader=self._gzip_reader_fn,
-            num_epochs=10)
+            num_epochs=self.epochs)
 
         dataset = dataset.unbatch()
 
@@ -231,12 +228,12 @@ class FeedForwardTrainer(BaseTrainerStep):
                                       activation=self.hidden_activation)(d)
             d = tf.keras.layers.Dropout(self.dropout_chance)(d)
 
-        output_layers = {l: tf.keras.layers.Dense(self.output_units,
-                                                  activation=self.last_activation,
-                                                  name=l)(d) for l in labels}
+        output_layers = {l: tf.keras.layers.Dense(
+            self.output_units,
+            activation=self.last_activation,
+            name=l)(d) for l in labels}
 
-        model = tf.keras.Model(inputs=input_layers,
-                               outputs=output_layers)
+        model = tf.keras.Model(inputs=input_layers, outputs=output_layers)
 
         model.compile(loss=self.loss,
                       optimizer=tf.keras.optimizers.Adam(lr=self.lr),
