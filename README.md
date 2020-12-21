@@ -23,12 +23,12 @@
 ## What is ZenML?
 **ZenML** is an extensible, open-source MLOps framework for using production-ready Machine Learning pipelines - in a simple way. The key features of ZenML are:
 
-Guaranteed reproducibility of your training experiments. Your pipelines are versioned from data to model, experiments automatically tracked and all pipeline configs are declarative by default.
-Guaranteed comparability between experiments.
-Ability to quickly switch between local and cloud environments (e.g. Kubernetes, Apache Beam).
-Built-in and extensible abstractions for all MLOps needs - from distributed processing on large datasets to Cloud-integrations and model serving backends.
-Pre-built helpers to compare and visualize input parameters as well as pipeline results (e.g. Tensorboard, TFMA, TFDV).
-Cached pipeline states for faster experiment iterations.
+* Guaranteed reproducibility of your training experiments. Your pipelines are versioned from data to model, experiments automatically tracked and all pipeline configs are declarative by default.
+* Guaranteed comparability between experiments.
+* Ability to quickly switch between local and cloud environments (e.g. Kubernetes, Apache Beam).
+* Built-in and extensible abstractions for all MLOps needs - from distributed processing on large datasets to Cloud-integrations and model serving backends.
+* Pre-built helpers to compare and visualize input parameters as well as pipeline results (e.g. Tensorboard, TFMA, TFDV).
+* Cached pipeline states for faster experiment iterations.
 
 **ZenML** is built to take your experiments all the way from data versioning to a deployed model. It replaces fragile glue-code and scripts to automate Jupyter Notebooks for **production-ready Machine Learning**. The core design is centered around **extensible interfaces** to accommodate **complex pipeline** scenarios, while providing a **batteries-included, straightforward “happy path”** to achieve success in common use-cases **without unnecessary boiler-plate code**.
 
