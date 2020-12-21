@@ -52,16 +52,22 @@ DEFAULT_DICT = {
 
 def transformed_name(key):
     """
+    Appends a suffix to a feature name, indicating that it has been
+     transformed in a preprocessing step.
     Args:
-        key:
+        key: Name of the feature.
     """
     return key + XF_SUFFIX
 
 
 def infer_schema(schema):
     """
+    Function to infer a schema from input data.
     Args:
-        schema:
+        schema: Input dict mapping features to tf.Tensors.
+
+    Returns:
+        schema_dict: Dict mapping features to their respective data types.
     """
     schema_dict = dict()
     for feature, descriptions in schema.items():
@@ -82,6 +88,11 @@ def infer_schema(schema):
 
 
 class StandardPreprocessor(BasePreprocesserStep):
+    """
+    Standard Preprocessor step. This step can be used to apply a variety of
+    standard preprocessing techniques from the field of Machine Learning,
+    which are predefined in ZenML, to the data.
+    """
 
     def __init__(self,
                  features: List[Text] = None,
@@ -89,13 +100,30 @@ class StandardPreprocessor(BasePreprocesserStep):
                  overwrite: Dict[Text, Any] = None,
                  **unused_kwargs):
         """
-        Standard preprocesser step for generic preprocessing.
+        Standard preprocessing step for generic preprocessing. Preprocessing
+        steps are inferred on a feature-by-feature basis from its data type,
+        and different standard preprocessing methods are applied based on the
+        data type of the feature.
+
+        The overwrite argument can also be used to overwrite the data
+        type-specific standard preprocessing functions and apply other
+        functions instead, given that they are registered in the default
+        preprocessing method dictionary defined at the top of this file.
         
         Args:
-            features:
-            labels:
-            overwrite:
-            **unused_kwargs:
+            features: List of data features to be preprocessed.
+            labels: List of features in the data that are to be predicted.
+            overwrite: Dict of dicts, mapping features to a list of
+             custom preprocessing and filling methods to be used.
+                 An entry in the `overwrite` dict could look like this:
+
+                 {feature_name:
+                    {"transform": [{"method": "scale_to_z_score",
+                                               "parameters": {}}],
+                     "filling": [{"method": "max", "parameters": {}}]
+                 }
+            **unused_kwargs: Additional unused keyword arguments. Their usage
+             might change in the future.
         """
         super().__init__(features=features, labels=labels, overwrite=overwrite)
 
@@ -120,6 +148,16 @@ class StandardPreprocessor(BasePreprocesserStep):
                                       NonSeqFillingMethods)
 
     def preprocessing_fn(self, inputs: Dict):
+        """
+        Standard preprocessing function.
+        Args:
+            inputs: Dict mapping features to their respective data.
+
+        Returns:
+            output: Dict mapping transformed features to their respective
+             transformed data.
+
+        """
         schema = infer_schema(inputs)
 
         output = {}
@@ -146,6 +184,18 @@ class StandardPreprocessor(BasePreprocesserStep):
 
     @staticmethod
     def apply_transform(key, data, transform_list):
+        """
+        Apply a list of transformations to input data.
+        Args:
+            key: Key argument specific to vocabulary computation.
+            data: Data to be input into the transform functions.
+            transform_list: List of transforms to apply to the data.
+
+        Returns:
+            data: Transformed data after each of the transforms in
+             transform_list have been applied.
+
+        """
         for transform in transform_list:
             method_name = transform[MethodKeys.METHOD]
             method_params = transform[MethodKeys.PARAMETERS]
@@ -159,6 +209,18 @@ class StandardPreprocessor(BasePreprocesserStep):
 
     @staticmethod
     def apply_filling(data, filling_list):
+        """
+        Apply a list of fillings to input data.
+        Args:
+            data: Data to be input into the transform functions.
+            filling_list: List of fillings to apply to the data. As of now,
+             only the first filling in the list will be applied.
+
+        Returns:
+            data: Imputed data after the first filling in filling_list
+            has been applied.
+
+        """
         method_name = filling_list[0][MethodKeys.METHOD]
         method_params = filling_list[0][MethodKeys.PARAMETERS]
         return NonSeqFillingMethods.get_method(method_name)(**method_params)(
