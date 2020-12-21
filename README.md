@@ -64,7 +64,13 @@ Alternatively, if you’re feeling brave, feel free to install the bleeding edge
 pip install git+https://github.com/maiot-io/zenml.git@master --upgrade
 ```
 
-#### Step 1: Import your requirements
+#### Step 1: Initialize a ZenML repo from within a git repo
+
+```bash
+zenml init
+```
+
+#### Step 2: Assemble, run and evaluate your pipeline locally
 
 ```python
 from zenml.core.datasources.csv_datasource import CSVDatasource
@@ -73,11 +79,7 @@ from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
 from zenml.core.steps.preprocesser.standard_preprocesser.standard_preprocesser import StandardPreprocesser
 from zenml.core.steps.split.random_split import RandomSplit
 from zenml.core.steps.trainer.feedforward_trainer import FeedForwardTrainer
-```
 
-#### Step 2: Assemble, run and evaluate your pipeline locally
-
-```python
 training_pipeline = TrainingPipeline(name='Quickstart')
 
 # Add a datasource. This will automatically track and version it.
