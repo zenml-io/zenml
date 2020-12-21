@@ -57,14 +57,27 @@ logger = get_logger(__name__)
 
 
 class TrainingPipeline(BasePipeline):
-    """Training Pipeline definition to
+    """
+    Definition of the Training Pipeline class.
 
     TrainingPipeline is a general-purpose training pipeline for most ML
-    training runs. One pipeline runs one experiment on a datasource.
+    training runs. One pipeline runs one experiment on a single datasource.
     """
+
     PIPELINE_TYPE = 'training'
 
     def get_tfx_component_list(self, config: Dict[Text, Any]) -> List:
+        """
+        Builds the training pipeline as a series of TFX components.
+
+        Args:
+            config: A ZenML configuration in dictionary format.
+
+        Returns:
+            A chronological list of TFX components making up the training
+             pipeline.
+
+        """
         specs = self.get_pipeline_spec(config)
         steps = config[keys.GlobalKeys.STEPS]
 
