@@ -105,7 +105,7 @@ class CategoricalDomainSplitStep(BaseSplitStep):
 
         Args:
             statistics: Parsed statistics artifact from a preceding
-            StatisticsGen.
+             StatisticsGen.
             schema: Parsed schema artifact from a preceding SchemaGen.
             categorical_column: Name of the categorical column in the data on
              which to split.
