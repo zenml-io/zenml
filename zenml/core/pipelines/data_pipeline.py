@@ -43,10 +43,18 @@ class DataPipeline(BasePipeline):
 
     def get_tfx_component_list(self, config: Dict[Text, Any]) -> List:
         """
-        Creates a data tfx pipeline.
+        Creates a data pipeline out of TFX components.
+
+        A data pipeline is used to ingest data from a configured source, e.g.
+        local files or cloud storage. In addition, a schema and statistics are
+        also computed immediately afterwards for the processed data points.
 
         Args:
-            config: a ZenML config as a dict
+            config: Dict. Contains a ZenML configuration used to build the
+             data pipeline.
+
+        Returns:
+            A list of TFX components making up the data pipeline.
         """
         data_config = config[keys.GlobalKeys.STEPS][keys.DataSteps.DATA]
         data_gen = DataGen(
