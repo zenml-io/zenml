@@ -26,7 +26,7 @@ from zenml.utils import source_utils
 from zenml.utils.enums import GDPComponent
 from zenml.utils.post_training.post_training_utils import \
     get_schema_artifact, view_schema, get_feature_spec_from_schema, \
-    convert_raw_dataset_to_pandas
+    convert_raw_dataset_to_pandas, get_statistics_artifact, view_statistics
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
 from zenml.utils.zenml_analytics import track, CREATE_DATASOURCE
 
@@ -185,3 +185,10 @@ class BaseDatasource:
         uri = get_schema_artifact(
             pipeline.pipeline_name, GDPComponent.DataSchema.name)
         view_schema(uri)
+
+    def view_statistics(self):
+        """View statistics of data flowing in pipeline."""
+        pipeline = self._get_one_pipeline()
+        uri = get_statistics_artifact(
+            pipeline.pipeline_name, GDPComponent.DataStatistics.name)
+        view_statistics(uri)
