@@ -23,6 +23,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Google Cloud AI Platform deployer step implementation."""
 from datetime import datetime
 from typing import Text
 
@@ -34,11 +35,27 @@ import os
 
 
 class GCAIPDeployer(BaseDeployerStep):
+    """
+    Step class for deploying models on Google Cloud AI Platform.
+    """
 
     def __init__(self,
                  project_id: Text,
                  model_name: Text = None,
                  **kwargs):
+        """
+        Google Cloud AI Platform Deployer Step constructor.
+
+        Use this step to push your trained model to Google Cloud AI Platform,
+        where it gets assigned an endpoint that you can query for evaluations
+        and predictions.
+
+        Args:
+            project_id: Name of the Google Cloud project which the model
+             should be pushed to.
+            model_name: Name given to the trained model.
+            **kwargs: Additional keyword arguments.
+        """
 
         super(GCAIPDeployer, self).__init__(project_id=project_id,
                                             model_name=model_name,
