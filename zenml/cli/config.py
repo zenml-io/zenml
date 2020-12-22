@@ -92,7 +92,7 @@ def get_metadata_store():
     """Print metadata store from local config."""
     repo: Repository = Repository.get_instance()
     click.echo(f'Metadata store: '
-               f'{repo.get_metadata_store().to_config()}')
+               f'{repo.get_default_metadata_store().to_config()}')
 
 
 # Artifact Store
@@ -115,4 +115,4 @@ def set_artifact_store(path: Text = None):
 def get_artifact_store():
     """Print artifact store from local config."""
     repo: Repository = Repository.get_instance()
-    click.echo(f'Artifact store points to: {repo.get_artifact_store().path}')
+    click.echo(f'Artifact store points to: {repo.get_default_artifact_store().path}')

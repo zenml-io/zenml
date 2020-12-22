@@ -82,7 +82,7 @@ class BasePipeline:
         else:
             # use default
             self.metadata_store: ZenMLMetadataStore = \
-                Repository.get_instance().get_metadata_store()
+                Repository.get_instance().get_default_metadata_store()
 
         if pipeline_name:
             # This means its been loaded in through YAML, try to get context
@@ -132,7 +132,7 @@ class BasePipeline:
         else:
             # use default
             self.artifact_store = \
-                Repository.get_instance().get_artifact_store()
+                Repository.get_instance().get_default_artifact_store()
 
         # Datasource
         if datasource:

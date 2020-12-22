@@ -132,11 +132,11 @@ class Repository:
         if analytics_opt_in is not None:
             global_config.set_analytics_opt_in(analytics_opt_in)
 
-    def get_artifact_store(self) -> Optional[ArtifactStore]:
+    def get_default_artifact_store(self) -> Optional[ArtifactStore]:
         self._check_if_initialized()
         return self.zenml_config.get_artifact_store()
 
-    def get_metadata_store(self):
+    def get_default_metadata_store(self):
         self._check_if_initialized()
         return self.zenml_config.get_metadata_store()
 
@@ -326,12 +326,6 @@ class Repository:
             pipelines.append(BasePipeline.from_config(c))
         return pipelines
 
-    def get_hyperparameters(self):
-        """
-        Hyper-parameter list of all pipelines in repo
-        """
-        pass
-
     @track(event=GET_PIPELINE_ARTIFACTS)
     def get_artifacts_uri_by_component(self, pipeline_name: Text,
                                        component_name: Text):
@@ -344,7 +338,7 @@ class Repository:
             component_name (str): name of component
         """
         # mlmd
-        metadata_store = self.get_metadata_store()
+        metadata_store = self.get_default_metadata_store()
         status = metadata_store.get_pipeline_status(pipeline_name)
         if status != PipelineStatusTypes.Succeeded.name:
             AssertionError('Cannot retrieve as pipeline is not succeeded.')
@@ -356,13 +350,10 @@ class Repository:
         # Download if not local
         uris = []
         for a in artifacts:
-            artifact_store = self.get_artifact_store()
+            artifact_store = self.get_default_artifact_store()
             uris.append(artifact_store.resolve_uri_locally(a.uri))
 
         return uris
-
-    def get_hyperparameters_pipeline(self):
-        pass
 
     @track(event=REGISTER_PIPELINE)
     def register_pipeline(self, file_name: Text, config: Dict[Text, Any]):

@@ -111,7 +111,7 @@ class ZenMLMetadataStore:
         # We rebuild context for ml metadata here.
         from zenml.core.repo.repo import Repository
         repo: Repository = Repository.get_instance()
-        run_id = f'{repo.get_artifact_store().unique_id}.{pipeline_name}'
+        run_id = f'{repo.get_default_artifact_store().unique_id}.{pipeline_name}'
         logger.debug(f'Looking for run_id {run_id} in metadata store: '
                      f'{self.to_config()}')
         run_context = self.store.get_context_by_type_and_name(
