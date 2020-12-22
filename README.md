@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://zenml.io/assets/social/oss-header.svg">
+<img src="https://zenml.io/assets/social/github.svg">
 
 ---
 
