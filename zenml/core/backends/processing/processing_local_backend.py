@@ -17,7 +17,8 @@ from zenml.core.backends.base_backend import BaseBackend
 
 
 class ProcessingLocalBackend(BaseBackend):
-    """Base class for all Processing ZenML backends.
+    """
+    Use this class to run a ZenML pipeline locally.
 
     Every ZenML pipeline runs in backends.
     """

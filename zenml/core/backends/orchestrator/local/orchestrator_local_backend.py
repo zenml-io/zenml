@@ -24,9 +24,9 @@ from zenml.core.standards.standard_keys import EnvironmentKeys
 
 
 class OrchestratorLocalBackend(BaseBackend):
-    """Base class for all ZenML orchestrator backends.
-
-    Every ZenML pipeline runs in backends
+    """
+    Local ZenML orchestrator backend. Use this to run a ZenML pipeline
+    locally on a machine.
     """
     BACKEND_TYPE = 'local'
     BACKEND_KEY = 'orchestrator'
@@ -37,9 +37,10 @@ class OrchestratorLocalBackend(BaseBackend):
         Converts ZenML config dict to TFX pipeline.
 
         Args:
-            config: a ZenML config dict
+            config: A ZenML config dict
 
-        Returns: a TFX pipeline object.
+        Returns:
+            tfx_pipeline: A TFX pipeline object.
         """
         from zenml.core.pipelines.base_pipeline import BasePipeline
         zenml_pipeline = BasePipeline.from_config(config)

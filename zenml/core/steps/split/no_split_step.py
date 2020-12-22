@@ -33,6 +33,10 @@ def NoSplitPartitionFn(element: Any,
 
 
 class NoSplit(BaseSplit):
+    """
+    No split function. Use this to pass your entire data forward completely
+    unchanged.
+    """
 
     def __init__(
             self,
@@ -40,7 +44,10 @@ class NoSplit(BaseSplit):
             schema=None,
     ):
         """
-        Use this to not split the data at all.
+        No split constructor.
+
+        Use this to pass your entire data forward completely
+        unchanged.
 
         Args:
             statistics: Parsed statistics from a preceding StatisticsGen.

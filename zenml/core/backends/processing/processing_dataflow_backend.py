@@ -20,9 +20,10 @@ from zenml.core.backends.processing.processing_local_backend import \
 
 
 class ProcessingDataFlowBackend(ProcessingLocalBackend):
-    """Use this to run the pipeline on Google Dataflow.
+    """
+    Use this to run a ZenML pipeline on Google Dataflow.
 
-    Every ZenML pipeline runs in backends.
+    This backend is not implemented yet.
     """
     BACKEND_TYPE = 'dataflow'
 

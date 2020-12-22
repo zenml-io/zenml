@@ -24,7 +24,7 @@ from zenml.core.pipelines.utils import parse_yaml_beam_args
 
 
 class OrchestratorBeamBackend(OrchestratorLocalBackend):
-    """Uses Beam as an orchestrator."""
+    """Uses Apache Beam as a Pipeline orchestrator."""
     BACKEND_TYPE = 'beam'
 
     def __init__(

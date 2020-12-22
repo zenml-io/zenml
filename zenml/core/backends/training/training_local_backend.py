@@ -17,9 +17,11 @@ from zenml.core.backends.base_backend import BaseBackend
 
 
 class TrainingLocalBackend(BaseBackend):
-    """Base class for all Training ZenML backends.
-
-    Every ZenML pipeline runs in backends
     """
+    Base class for all local Training ZenML backends.
+
+    Every ZenML pipeline runs in backends.
+    """
+
     BACKEND_TYPE = 'local'
     BACKEND_KEY = 'training'

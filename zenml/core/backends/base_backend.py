@@ -20,9 +20,11 @@ from zenml.utils.print_utils import to_pretty_string, PrintStyles
 
 
 class BaseBackend:
-    """Base class for all ZenML backends.
+    """
+    Base class for all ZenML backends.
 
-    Every ZenML pipeline runs in backends
+    Every ZenML pipeline runs in backends. Override this base class to define
+    your own custom Pipeline running backend.
     """
     BACKEND_TYPE = None
     BACKEND_KEY = None

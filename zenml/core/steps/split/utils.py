@@ -24,10 +24,19 @@ CategoricalValue = Union[Text, int]
 def get_categorical_value(example: tf.train.Example, cat_col: Text):
     """
     Helper function to get the categorical value from a tf.train.Example.
+
     Args:
         example: tf.train.Example, data point in proto format.
         cat_col: Name of the categorical feature of which to extract the
         value from.
+
+    Returns:
+        value: The categorical value found in the `cat_col` feature inside
+        the tf.train.Example.
+
+    Raises:
+        AssertionError: If the `cat_col` feature is not present in the
+        tf.train.Example.
     """
 
     cat_feature = example.features.feature[cat_col]
@@ -56,7 +65,11 @@ def partition_cat_list(cat_list: List[CategoricalValue],
     Args:
         cat_list: List of categorical values found in the categorical column.
         c_ratio: Dict {fold: percentage} mapping the percentage of all
-        categories to split folds.
+         categories to split folds.
+
+    Returns:
+        cat_dict: Dict {fold: categorical_list} mapping lists of categorical
+         values in the data to their designated split folds.
     """
 
     cat_dict = {}

@@ -22,9 +22,10 @@ from zenml.core.backends.orchestrator.local.orchestrator_local_backend import \
 
 
 class OrchestratorKubernetesBackend(OrchestratorLocalBackend):
-    """Runs pipeline on a Kubeflow cluster.
+    """
+    Runs pipeline on a Kubernetes cluster.
 
-    Every ZenML pipeline runs in backends.
+    This backend is not implemented yet.
     """
     BACKEND_TYPE = 'kubernetes'
 
