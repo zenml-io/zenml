@@ -24,11 +24,14 @@ from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils
 from zenml.utils import source_utils
 from zenml.utils.enums import GDPComponent
+from zenml.utils.logger import get_logger
 from zenml.utils.post_training.post_training_utils import \
     get_schema_artifact, view_schema, get_feature_spec_from_schema, \
     convert_raw_dataset_to_pandas, get_statistics_artifact, view_statistics
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
 from zenml.utils.zenml_analytics import track, CREATE_DATASOURCE
+
+logger = get_logger(__name__)
 
 
 class BaseDatasource:
@@ -54,20 +57,23 @@ class BaseDatasource:
             self._id = _id
             self._source = _source
             self._immutable = True
+            logger.debug(f'Datasource {name} loaded.')
         else:
             # If none, then this is assumed to be 'new'. Check dupes.
             all_names = Repository.get_instance().get_datasource_names()
             if any(d == name for d in all_names):
                 raise Exception(
                     f'Datasource {name} already exists! Please '
-                    f'use Repository.get_datasource_by_name("{name}") '
-                    f'to fetch.')
+                    f'use Repository.get_instance().'
+                    f'get_datasource_by_name("{name}") to fetch it.')
             self._id = str(uuid4())
             self._immutable = False
             self._source = source_utils.resolve_source_path(
                 self.__class__.__module__ + '.' + self.__class__.__name__
             )
             track(event=CREATE_DATASOURCE)
+            logger.info(f'Datasource {name} created.')
+
         self.name = name
         self.schema = schema
 

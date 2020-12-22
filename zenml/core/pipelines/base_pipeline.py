@@ -88,10 +88,13 @@ class BasePipeline:
             # This means its been loaded in through YAML, try to get context
             if self.is_executed_in_metadata_store:
                 self._immutable = True
+                logger.debug(f'Pipeline {name} is loaded and and is immutable.')
             else:
                 # if metadata store does not have the pipeline_name, then we
                 # can safely execute this again.
                 self._immutable = False
+                logger.debug(f'Pipeline {name} is loaded and can be run.')
+
             self.pipeline_name = pipeline_name
             self.file_name = self.pipeline_name + '.yaml'
         else:
@@ -107,6 +110,7 @@ class BasePipeline:
                     f'Pipeline names must be unique in the repository. There '
                     f'is already a pipeline called {self.name}')
             track(event=CREATE_PIPELINE)
+            logger.info(f'Pipeline {name} created.')
 
         self.enable_cache = enable_cache
 
