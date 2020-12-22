@@ -26,8 +26,8 @@ from zenml.utils import source_utils
 from zenml.utils.enums import GDPComponent
 from zenml.utils.logger import get_logger
 from zenml.utils.post_training.post_training_utils import \
-    get_schema_artifact, view_schema, get_feature_spec_from_schema, \
-    convert_raw_dataset_to_pandas, get_statistics_artifact, view_statistics
+    view_schema, get_feature_spec_from_schema, \
+    convert_raw_dataset_to_pandas, view_statistics
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
 from zenml.utils.zenml_analytics import track, CREATE_DATASOURCE
 
@@ -152,10 +152,8 @@ class BaseDatasource:
         if pipeline.datasource._id != self._id:
             raise AssertionError('This pipeline does not belong to this '
                                  'datasource.')
-        repo: Repository = Repository.get_instance()
         # Take any pipeline and get the datagen
-        data_uri = os.path.join(repo.get_artifacts_uri_by_component(
-            pipeline.pipeline_name,
+        data_uri = os.path.join(pipeline.get_artifacts_uri_by_component(
             GDPComponent.DataGen.name
         )[0], 'examples')
         data_files = path_utils.list_dir(data_uri)
@@ -171,8 +169,8 @@ class BaseDatasource:
         pipeline = self._get_one_pipeline()
         data_files = self._get_data_file_paths(pipeline)
 
-        schema_uri = get_schema_artifact(
-            pipeline.pipeline_name, GDPComponent.DataSchema.name)
+        schema_uri = pipeline.get_artifacts_uri_by_component(
+            GDPComponent.DataSchema.name)[0]
         spec = get_feature_spec_from_schema(schema_uri)
 
         dataset = tf.data.TFRecordDataset(data_files, compression_type='GZIP')
@@ -189,13 +187,13 @@ class BaseDatasource:
     def view_schema(self):
         """View schema of data flowing in pipeline."""
         pipeline = self._get_one_pipeline()
-        uri = get_schema_artifact(
-            pipeline.pipeline_name, GDPComponent.DataSchema.name)
+        uri = pipeline.get_artifacts_uri_by_component(
+            GDPComponent.DataSchema.name)[0]
         view_schema(uri)
 
     def view_statistics(self):
         """View statistics of data flowing in pipeline."""
         pipeline = self._get_one_pipeline()
-        uri = get_statistics_artifact(
-            pipeline.pipeline_name, GDPComponent.DataStatistics.name)
+        uri = pipeline.get_artifacts_uri_by_component(
+            GDPComponent.DataStatistics.name)[0]
         view_statistics(uri)

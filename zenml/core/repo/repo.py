@@ -24,10 +24,9 @@ from zenml.core.repo.global_config import GlobalConfig
 from zenml.core.repo.zenml_config import ZenMLConfig
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils, yaml_utils
-from zenml.utils.enums import PipelineStatusTypes
 from zenml.utils.logger import get_logger
 from zenml.utils.zenml_analytics import track, CREATE_REPO, GET_PIPELINES, \
-    GET_DATASOURCES, GET_PIPELINE_ARTIFACTS, GET_STEPS_VERSIONS, \
+    GET_DATASOURCES, GET_STEPS_VERSIONS, \
     REGISTER_PIPELINE, GET_STEP_VERSION
 
 logger = get_logger(__name__)
@@ -325,35 +324,6 @@ class Repository:
             c = yaml_utils.read_yaml(file_path)
             pipelines.append(BasePipeline.from_config(c))
         return pipelines
-
-    @track(event=GET_PIPELINE_ARTIFACTS)
-    def get_artifacts_uri_by_component(self, pipeline_name: Text,
-                                       component_name: Text):
-        """
-        Gets the artifacts of any component within a pipeline. All artifacts
-        are resolved locally, even if artifact store is remote.
-
-        Args:
-            pipeline_name (str): name of pipeline
-            component_name (str): name of component
-        """
-        # mlmd
-        metadata_store = self.get_default_metadata_store()
-        status = metadata_store.get_pipeline_status(pipeline_name)
-        if status != PipelineStatusTypes.Succeeded.name:
-            AssertionError('Cannot retrieve as pipeline is not succeeded.')
-        # if component_name not in GDPCOmponents:
-        #     raise AssertionError('Component must be one of {}')
-        artifacts = metadata_store.get_artifacts_by_component(pipeline_name,
-                                                              component_name)
-
-        # Download if not local
-        uris = []
-        for a in artifacts:
-            artifact_store = self.get_default_artifact_store()
-            uris.append(artifact_store.resolve_uri_locally(a.uri))
-
-        return uris
 
     @track(event=REGISTER_PIPELINE)
     def register_pipeline(self, file_name: Text, config: Dict[Text, Any]):

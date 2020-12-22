@@ -15,7 +15,6 @@
 import base64
 import json
 import os
-from pathlib import Path
 from textwrap import dedent
 from typing import Text
 
@@ -30,7 +29,6 @@ from tensorflow_metadata.proto.v0 import statistics_pb2
 from tensorflow_transform.tf_metadata import schema_utils
 from tfx.utils import io_utils
 
-from zenml.core.repo.repo import Repository
 from zenml.utils.constants import APP_NAME, EVALUATION_NOTEBOOK, \
     COMPARISON_NOTEBOOK
 from zenml.utils.enums import GDPComponent
@@ -65,18 +63,6 @@ def get_statistics_html(stats_dict):
     # pylint: enable=line-too-long
     html = html_template.replace('protostr', protostr)
     return html
-
-
-def get_statistics_artifact(pipeline_name: Text, component_name: Text):
-    """
-    Get statistics artifact from pipeline
-
-    Args:
-        pipeline_name: name of pipeline
-        component_name: name of statistics component
-    """
-    return Repository.get_instance().get_artifacts_uri_by_component(
-        pipeline_name, component_name)[0]
 
 
 def get_statistics_dataset_dict(stats_uri: Text):
@@ -145,47 +131,6 @@ def get_schema_proto(artifact_uri: Text):
     schema_path = os.path.join(artifact_uri, 'schema.pbtxt')
     schema = io_utils.SchemaReader().read(schema_path)
     return schema
-
-
-def get_schema_artifact(pipeline_name: Text, component_name: Text):
-    """
-    Get schema artifact from pipeline
-
-    Args:
-        pipeline_name: name of pipeline
-        component_name: name of schema component
-    """
-    return Repository.get_instance().get_artifacts_uri_by_component(
-        pipeline_name, component_name)[0]
-
-
-def get_transform_schema_artifact(pipeline_name: Text, component_name: Text):
-    """
-    Get schema artifact from pipeline.
-
-    Args:
-        pipeline_name: name of pipeline
-        component_name: name of schema component
-    """
-    base_uri = Repository.get_instance().get_artifacts_uri_by_component(
-        pipeline_name, component_name)[0]
-    return os.path.join(base_uri, 'transformed_metadata')
-
-
-def get_transform_data_artifact(pipeline_name: Text, component_name: Text):
-    """
-    Get schema artifact from pipeline
-
-    Args:
-        pipeline_name: name of pipeline
-        component_name: name of schema component
-    """
-    base_uri = Repository.get_instance().get_artifacts_uri_by_component(
-        pipeline_name, component_name)[0]
-    base_uri = Path(base_uri)
-    id_ = base_uri.name
-    return os.path.join(
-        str(base_uri.parent.parent), 'transformed_examples', id_)
 
 
 def get_feature_spec_from_schema(schema_uri):
@@ -263,20 +208,6 @@ def convert_raw_dataset_to_pandas(dataset, spec, sample_size):
     return pd.DataFrame(data)
 
 
-def get_pusher_artifact(pipeline_name: Text, component_name: Text = None):
-    """
-    Get schema artifact from pipeline
-
-    Args:
-        pipeline_name: name of pipeline
-        component_name: name of pusher component
-    """
-    component_name = component_name \
-        if component_name else GDPComponent.Deployer.name
-    return Repository.get_instance().get_artifacts_uri_by_component(
-        pipeline_name, component_name)[0]
-
-
 def create_new_cell(contents):
     """
     Creates new cell in jupyter notebook.
@@ -340,14 +271,13 @@ def get_eval_block(eval_dir):
 
 
 def evaluate_single_pipeline(
-        pipeline_name: Text,
+        pipeline,
         trainer_component_name: Text = None,
         evaluator_component_name: Text = None,
         magic: bool = False):
     """
-
     Args:
-        pipeline_name: name of pipeline.
+        pipeline: A ZenML pipeline
         trainer_component_name: name of trainer component.
         evaluator_component_name: name of evaluator component.
         magic:
@@ -358,10 +288,10 @@ def evaluate_single_pipeline(
     evaluator_component_name = evaluator_component_name \
         if evaluator_component_name else GDPComponent.Evaluator.name
 
-    trainer_path = Repository.get_instance().get_artifacts_uri_by_component(
-        pipeline_name, trainer_component_name)[0]
-    eval_path = Repository.get_instance().get_artifacts_uri_by_component(
-        pipeline_name, evaluator_component_name)[0]
+    trainer_path = pipeline.get_artifacts_uri_by_component(
+        trainer_component_name)[0]
+    eval_path = pipeline.get_artifacts_uri_by_component(
+        evaluator_component_name)[0]
 
     # Patch to make it work locally
     with open(os.path.join(eval_path, 'eval_config.json'), 'r') as f:

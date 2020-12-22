@@ -15,6 +15,7 @@
 
 import json
 import os
+from pathlib import Path
 from typing import Dict, Text, Any, List
 
 import tensorflow as tf
@@ -51,11 +52,8 @@ from zenml.utils import path_utils
 from zenml.utils.enums import GDPComponent
 from zenml.utils.logger import get_logger
 from zenml.utils.post_training.post_training_utils import \
-    get_statistics_artifact, \
-    get_schema_artifact, get_pusher_artifact, \
     evaluate_single_pipeline, view_statistics, view_schema, detect_anomalies
 from zenml.utils.post_training.post_training_utils import \
-    get_transform_schema_artifact, get_transform_data_artifact, \
     get_feature_spec_from_schema, convert_raw_dataset_to_pandas
 
 logger = get_logger(__name__)
@@ -265,14 +263,14 @@ class TrainingPipeline(BasePipeline):
             magic (bool): Creates HTML page if False, else
             creates a notebook cell.
         """
-        uri = get_statistics_artifact(
-            self.pipeline_name, GDPComponent.SplitStatistics.name)
+        uri = self.get_artifacts_uri_by_component(
+            GDPComponent.SplitStatistics.name)[0]
         view_statistics(uri, magic)
 
     def view_schema(self):
         """View schema of data flowing in pipeline."""
-        uri = get_schema_artifact(
-            self.pipeline_name, GDPComponent.SplitSchema.name)
+        uri = self.get_artifacts_uri_by_component(
+            GDPComponent.SplitSchema.name)[0]
         view_schema(uri)
 
     def evaluate(self):
@@ -281,13 +279,16 @@ class TrainingPipeline(BasePipeline):
 
     def download_model(self, out_path: Text = None, overwrite: bool = False):
         """Download model to out_path"""
-        model_path = get_pusher_artifact(self.pipeline_name)
-        if out_path:
-            from zenml.utils.path_utils import move
-            move(model_path, out_path, overwrite)
-        else:
-            out_path = model_path
-        logger.debug(f'Model: {out_path}')
+        # TODO: [LOW] Implement when Deployer logic figured out
+        raise NotImplementedError('Not implemented!')
+        # model_path = self.get_artifacts_uri_by_component(
+        #     GDPComponent.Deployer.name)
+        # if out_path:
+        #     from zenml.utils.path_utils import move
+        #     move(model_path, out_path, overwrite)
+        # else:
+        #     out_path = model_path
+        # logger.debug(f'Model: {out_path}')
 
     def view_anomalies(self, split_name='eval'):
         """
@@ -296,10 +297,10 @@ class TrainingPipeline(BasePipeline):
         Args:
             split_name: name of split to detect anomalies on
         """
-        stats_uri = get_statistics_artifact(
-            self.pipeline_name, GDPComponent.SplitStatistics.name)
-        schema_uri = get_schema_artifact(
-            self.pipeline_name, GDPComponent.SplitSchema.name)
+        stats_uri = self.get_artifacts_uri_by_component(
+            GDPComponent.SplitStatistics.name)
+        schema_uri = self.get_artifacts_uri_by_component(
+            GDPComponent.SplitSchema.name)[0]
         detect_anomalies(stats_uri, schema_uri, split_name)
 
     def get_default_backends(self) -> Dict:
@@ -356,11 +357,16 @@ class TrainingPipeline(BasePipeline):
             split_name: name of split to see
             sample_size: # of rows to sample.
         """
-        transform_schema = get_transform_schema_artifact(
-            self.pipeline_name, GDPComponent.Transform.name)
+        base_uri = self.get_artifacts_uri_by_component(
+            GDPComponent.Transform.name)[0]
+        transform_schema = os.path.join(base_uri, 'transformed_metadata')
         spec = get_feature_spec_from_schema(transform_schema)
-        transform_data_path = get_transform_data_artifact(
-            self.pipeline_name, GDPComponent.Transform.name)
+
+        base_uri = Path(base_uri)
+        id_ = base_uri.name
+        transform_data_path = os.path.join(
+            str(base_uri.parent.parent), 'transformed_examples', id_)
+
         split_data_path = os.path.join(transform_data_path, split_name)
         data_files = path_utils.list_dir(split_data_path)
         dataset = tf.data.TFRecordDataset(data_files, compression_type='GZIP')

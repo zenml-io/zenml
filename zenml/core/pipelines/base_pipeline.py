@@ -35,7 +35,8 @@ from zenml.utils.constants import CONFIG_VERSION, APP_NAME
 from zenml.utils.logger import get_logger
 from zenml.utils.print_utils import to_pretty_string
 from zenml.utils.version import __version__
-from zenml.utils.zenml_analytics import track, CREATE_PIPELINE, RUN_PIPELINE
+from zenml.utils.zenml_analytics import track, CREATE_PIPELINE, RUN_PIPELINE, GET_PIPELINE_ARTIFACTS
+from zenml.utils.enums import PipelineStatusTypes
 
 logger = get_logger(__name__)
 
@@ -436,6 +437,26 @@ class BasePipeline:
         return {
             OrchestratorLocalBackend.BACKEND_KEY: OrchestratorLocalBackend()
         }
+
+    @track(event=GET_PIPELINE_ARTIFACTS)
+    def get_artifacts_uri_by_component(self, component_name: Text):
+        """
+        Gets the artifacts of any component within a pipeline. All artifacts
+        are resolved locally, even if artifact store is remote.
+
+        Args:
+            component_name (str): name of component
+        """
+        status = self.metadata_store.get_pipeline_status(self.pipeline_name)
+        if status != PipelineStatusTypes.Succeeded.name:
+            AssertionError('Cannot retrieve as pipeline is not succeeded.')
+        artifacts = self.metadata_store.get_artifacts_by_component(
+            self.pipeline_name, component_name)
+        # Download if not local
+        uris = []
+        for a in artifacts:
+            uris.append(self.artifact_store.resolve_uri_locally(a.uri))
+        return uris
 
     def copy(self, new_name: Text):
         """
