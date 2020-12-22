@@ -86,7 +86,7 @@ class CategoricalDomainSplit(BaseSplit):
             schema=None,
     ):
         """
-        Categorical domain split step constructor.
+        Categorical domain split constructor.
 
         Use this class to split your data based on values in
         a single categorical column. A categorical column is defined here as a
