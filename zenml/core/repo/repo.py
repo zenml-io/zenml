@@ -246,9 +246,13 @@ class Repository:
         from zenml.core.datasources.base_datasource import BaseDatasource
 
         datasources = []
+        datasources_name = set()
         for file_path in self.get_pipeline_file_paths():
             c = yaml_utils.read_yaml(file_path)
-            datasources.append(BaseDatasource.from_config(c))
+            ds = BaseDatasource.from_config(c)
+            if ds.name not in datasources_name:
+                datasources.append(ds)
+                datasources_name.add(ds.name)
         return datasources
 
     def get_pipeline_by_name(self, pipeline_name: Text = None):
