@@ -73,7 +73,7 @@ def CategoricalPartitionFn(element: Any,
 
 class CategoricalDomainSplit(BaseSplit):
     """
-    Categorical domain split step. Use this to split data based on values in
+    Categorical domain split. Use this to split data based on values in
     a single categorical column. A categorical column is defined here as a
     column with finitely many values of type `integer` or `string`.
     """
@@ -93,12 +93,13 @@ class CategoricalDomainSplit(BaseSplit):
         column with finitely many values of type `integer` or `string`.
 
         Example usage:
+
         # Split on a categorical attribute called "color"
 
         # red and blue datapoints go into the train set,
            green and yellow ones go into the eval set
 
-        >>> split = CategoricalDomainSplitStep(
+        >>> split = CategoricalDomainSplit(
         ... categorical_column="color",
         ... split_map = {"train": ["red", "blue"],
         ...              "eval": ["green", "yellow"]})
