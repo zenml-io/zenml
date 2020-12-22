@@ -22,6 +22,11 @@ from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
 
 
 class FeedForwardTrainer(BaseTrainerStep):
+    """
+    Basic Feedforward Neural Network trainer. This step serves as an example
+    of how to define your training logic to integrate well with TFX and
+    Tensorflow Serving.
+    """
     def __init__(self,
                  batch_size: int = 8,
                  lr: float = 0.001,
@@ -34,6 +39,27 @@ class FeedForwardTrainer(BaseTrainerStep):
                  last_activation: str = 'sigmoid',
                  output_units: int = 1,
                  **kwargs):
+        """
+        Basic feedforward neural network constructor.
+
+        Args:
+            batch_size: Input data batch size.
+            lr: Learning rate of the optimizer.
+            epochs: Number of training epochs (whole passes through the data).
+            dropout_chance: Dropout chance, i.e. probability of a neuron not
+             propagating its weights into the prediction at a dropout layer.
+            loss: Name of the loss function to use.
+            metrics: List of metrics to log in training.
+            hidden_layers: List of sizes to use in consecutive hidden layers.
+             Length determines the number of hidden layers in the network.
+            hidden_activation: Name of the activation function to use in the
+             hidden layers.
+            last_activation: Name of the final activation function creating
+             the class probability distribution.
+            output_units: Number of output units, corresponding to the number
+             of classes.
+            **kwargs: Additional keyword arguments.
+        """
 
         self.batch_size = batch_size
         self.lr = lr
@@ -95,6 +121,18 @@ class FeedForwardTrainer(BaseTrainerStep):
     def input_fn(self,
                  file_pattern: List[Text],
                  tf_transform_output: tft.TFTransformOutput):
+        """
+        Feedforward input_fn for loading data from TFRecords saved to a
+        location on disk.
+
+        Args:
+            file_pattern: File pattern matching saved TFRecords on disk.
+            tf_transform_output: Output of the preceding Transform /
+             Preprocessing component.
+
+        Returns:
+            dataset: tf.data.Dataset created out of the input files.
+        """
 
         xf_feature_spec = tf_transform_output.transformed_feature_spec()
 
@@ -134,11 +172,13 @@ class FeedForwardTrainer(BaseTrainerStep):
 
     @staticmethod
     def _get_serve_tf_examples_fn(model, tf_transform_output):
-        """Returns a function that parses a serialized tf.Example.
+        """
+        Returns a function that parses a serialized tf.Example for prediction.
 
         Args:
-            model:
-            tf_transform_output:
+            model: Trained model, output of the model_fn.
+            tf_transform_output: Output of the preceding Transform /
+             Preprocessing component.
         """
 
         model.tft_layer = tf_transform_output.transform_features_layer()
@@ -164,11 +204,14 @@ class FeedForwardTrainer(BaseTrainerStep):
 
     @staticmethod
     def _get_zen_eval_tf_examples_fn(model, tf_transform_output):
-        """Returns a function that parses a serialized tf.Example.
+        """
+        Returns a function that parses a serialized tf.Example for
+        evaluation.
 
         Args:
-            model:
-            tf_transform_output:
+            model: Trained model, output of the model_fn.
+            tf_transform_output: Output of the preceding Transform /
+             Preprocessing component.
         """
 
         model.tft_layer = tf_transform_output.transform_features_layer()
@@ -200,16 +243,28 @@ class FeedForwardTrainer(BaseTrainerStep):
 
     @staticmethod
     def _gzip_reader_fn(filenames):
-        """Small utility returning a record reader that can read gzip'ed files.
+        """
+        Small utility returning a record reader that can read gzipped files.
 
         Args:
-            filenames:
+            filenames: Names of the compressed TFRecord data files.
         """
         return tf.data.TFRecordDataset(filenames, compression_type='GZIP')
 
     def model_fn(self,
                  train_dataset: tf.data.Dataset,
                  eval_dataset: tf.data.Dataset):
+        """
+        Function defining the training flow of the feedforward neural network
+        model.
+
+        Args:
+            train_dataset: tf.data.Dataset containing the training data.
+            eval_dataset: tf.data.Dataset containing the evaluation data.
+
+        Returns:
+            model: A trained feedforward neural network model.
+        """
 
         train_dataset = train_dataset.batch(self.batch_size,
                                             drop_remainder=True)
