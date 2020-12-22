@@ -48,8 +48,8 @@ class Application(param.Parameterized):
             # This is slowing the comparison down but
             # necessary to update the status of each run
             if p.get_status() == PipelineStatusTypes.Succeeded.name:
-                eval_path = repo.get_artifacts_uri_by_component(
-                    p.pipeline_name, GDPComponent.Evaluator.name)[0]
+                eval_path = p.get_artifacts_uri_by_component(
+                    GDPComponent.Evaluator.name)[0]
 
                 evaluation = tfma.load_eval_result(eval_path)
                 for s, m in evaluation.slicing_metrics:

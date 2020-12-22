@@ -24,9 +24,20 @@ from zenml.core.standards.standard_keys import EnvironmentKeys
 
 
 class OrchestratorLocalBackend(BaseBackend):
-    """Base class for all ZenML orchestrator backends.
+    """
+    Local ZenML orchestrator backend. Use this to run a ZenML pipeline
+    locally on a machine.
 
-    Every ZenML pipeline runs in backends
+    An orchestrator backend is responsible for scheduling, initializing and
+    running different pipeline components. Examples of orchestrators are
+    Apache Beam, Kubeflow or (here) Local Orchestration.
+
+    Abstracting the pipeline logic from the orchestrator backend enables
+    machine learning workloads to be run in different kinds of environments.
+    For larger, decentralized data processing applications, a cloud-based
+    backend can be used to distribute work across multiple machines.
+    For quick prototyping and local tests, a single-machine direct backend can
+    be selected to execute an ML Pipeline with minimal orchestration overhead.
     """
     BACKEND_TYPE = 'local'
     BACKEND_KEY = 'orchestrator'
@@ -37,9 +48,10 @@ class OrchestratorLocalBackend(BaseBackend):
         Converts ZenML config dict to TFX pipeline.
 
         Args:
-            config: a ZenML config dict
+            config: A ZenML config dict
 
-        Returns: a TFX pipeline object.
+        Returns:
+            tfx_pipeline: A TFX pipeline object.
         """
         from zenml.core.pipelines.base_pipeline import BasePipeline
         zenml_pipeline = BasePipeline.from_config(config)

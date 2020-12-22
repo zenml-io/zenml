@@ -24,10 +24,9 @@ from zenml.core.repo.global_config import GlobalConfig
 from zenml.core.repo.zenml_config import ZenMLConfig
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils, yaml_utils
-from zenml.utils.enums import PipelineStatusTypes
 from zenml.utils.logger import get_logger
 from zenml.utils.zenml_analytics import track, CREATE_REPO, GET_PIPELINES, \
-    GET_DATASOURCES, GET_PIPELINE_ARTIFACTS, GET_STEPS_VERSIONS, \
+    GET_DATASOURCES, GET_STEPS_VERSIONS, \
     REGISTER_PIPELINE, GET_STEP_VERSION
 
 logger = get_logger(__name__)
@@ -132,11 +131,11 @@ class Repository:
         if analytics_opt_in is not None:
             global_config.set_analytics_opt_in(analytics_opt_in)
 
-    def get_artifact_store(self) -> Optional[ArtifactStore]:
+    def get_default_artifact_store(self) -> Optional[ArtifactStore]:
         self._check_if_initialized()
         return self.zenml_config.get_artifact_store()
 
-    def get_metadata_store(self):
+    def get_default_metadata_store(self):
         self._check_if_initialized()
         return self.zenml_config.get_metadata_store()
 
@@ -213,7 +212,7 @@ class Repository:
                     steps_dict[class_] = {version}
         return steps_dict
 
-    def get_datasource_by_name(self, name: Text) -> List:
+    def get_datasource_by_name(self, name: Text):
         """
         Get all datasources in this repo.
 
@@ -247,9 +246,13 @@ class Repository:
         from zenml.core.datasources.base_datasource import BaseDatasource
 
         datasources = []
+        datasources_name = set()
         for file_path in self.get_pipeline_file_paths():
             c = yaml_utils.read_yaml(file_path)
-            datasources.append(BaseDatasource.from_config(c))
+            ds = BaseDatasource.from_config(c)
+            if ds.name not in datasources_name:
+                datasources.append(ds)
+                datasources_name.add(ds.name)
         return datasources
 
     def get_pipeline_by_name(self, pipeline_name: Text = None):
@@ -325,44 +328,6 @@ class Repository:
             c = yaml_utils.read_yaml(file_path)
             pipelines.append(BasePipeline.from_config(c))
         return pipelines
-
-    def get_hyperparameters(self):
-        """
-        Hyper-parameter list of all pipelines in repo
-        """
-        pass
-
-    @track(event=GET_PIPELINE_ARTIFACTS)
-    def get_artifacts_uri_by_component(self, pipeline_name: Text,
-                                       component_name: Text):
-        """
-        Gets the artifacts of any component within a pipeline. All artifacts
-        are resolved locally, even if artifact store is remote.
-
-        Args:
-            pipeline_name (str): name of pipeline
-            component_name (str): name of component
-        """
-        # mlmd
-        metadata_store = self.get_metadata_store()
-        status = metadata_store.get_pipeline_status(pipeline_name)
-        if status != PipelineStatusTypes.Succeeded.name:
-            AssertionError('Cannot retrieve as pipeline is not succeeded.')
-        # if component_name not in GDPCOmponents:
-        #     raise AssertionError('Component must be one of {}')
-        artifacts = metadata_store.get_artifacts_by_component(pipeline_name,
-                                                              component_name)
-
-        # Download if not local
-        uris = []
-        for a in artifacts:
-            artifact_store = self.get_artifact_store()
-            uris.append(artifact_store.resolve_uri_locally(a.uri))
-
-        return uris
-
-    def get_hyperparameters_pipeline(self):
-        pass
 
     @track(event=REGISTER_PIPELINE)
     def register_pipeline(self, file_name: Text, config: Dict[Text, Any]):

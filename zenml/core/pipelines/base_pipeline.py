@@ -32,10 +32,12 @@ from zenml.core.repo.zenml_config import METADATA_KEY
 from zenml.core.standards import standard_keys as keys
 from zenml.core.steps.base_step import BaseStep
 from zenml.utils.constants import CONFIG_VERSION, APP_NAME
+from zenml.utils.enums import PipelineStatusTypes
 from zenml.utils.logger import get_logger
 from zenml.utils.print_utils import to_pretty_string
 from zenml.utils.version import __version__
-from zenml.utils.zenml_analytics import track, CREATE_PIPELINE, RUN_PIPELINE
+from zenml.utils.zenml_analytics import track, CREATE_PIPELINE, RUN_PIPELINE, \
+    GET_PIPELINE_ARTIFACTS
 
 logger = get_logger(__name__)
 
@@ -82,16 +84,19 @@ class BasePipeline:
         else:
             # use default
             self.metadata_store: ZenMLMetadataStore = \
-                Repository.get_instance().get_metadata_store()
+                Repository.get_instance().get_default_metadata_store()
 
         if pipeline_name:
             # This means its been loaded in through YAML, try to get context
             if self.is_executed_in_metadata_store:
                 self._immutable = True
+                logger.debug(f'Pipeline {name} loaded and and is immutable.')
             else:
                 # if metadata store does not have the pipeline_name, then we
                 # can safely execute this again.
                 self._immutable = False
+                logger.debug(f'Pipeline {name} loaded and can be run.')
+
             self.pipeline_name = pipeline_name
             self.file_name = self.pipeline_name + '.yaml'
         else:
@@ -107,6 +112,7 @@ class BasePipeline:
                     f'Pipeline names must be unique in the repository. There '
                     f'is already a pipeline called {self.name}')
             track(event=CREATE_PIPELINE)
+            logger.info(f'Pipeline {name} created.')
 
         self.enable_cache = enable_cache
 
@@ -128,7 +134,7 @@ class BasePipeline:
         else:
             # use default
             self.artifact_store = \
-                Repository.get_instance().get_artifact_store()
+                Repository.get_instance().get_default_artifact_store()
 
         # Datasource
         if datasource:
@@ -157,7 +163,7 @@ class BasePipeline:
     def is_executed_in_metadata_store(self):
         try:
             # if we find context, then it has been executed
-            self.metadata_store.get_pipeline_context(self.pipeline_name)
+            self.metadata_store.get_pipeline_context(self)
             return True
         except Exception as _:
             return False
@@ -409,7 +415,7 @@ class BasePipeline:
     def get_status(self) -> Text:
         """Get status of pipeline."""
         store = self.metadata_store
-        return store.get_pipeline_status(self.pipeline_name)
+        return store.get_pipeline_status(self)
 
     def register_pipeline(self, config: Dict[Text, Any]):
         """
@@ -432,6 +438,26 @@ class BasePipeline:
         return {
             OrchestratorLocalBackend.BACKEND_KEY: OrchestratorLocalBackend()
         }
+
+    @track(event=GET_PIPELINE_ARTIFACTS)
+    def get_artifacts_uri_by_component(self, component_name: Text):
+        """
+        Gets the artifacts of any component within a pipeline. All artifacts
+        are resolved locally, even if artifact store is remote.
+
+        Args:
+            component_name (str): name of component
+        """
+        status = self.metadata_store.get_pipeline_status(self)
+        if status != PipelineStatusTypes.Succeeded.name:
+            AssertionError('Cannot retrieve as pipeline is not succeeded.')
+        artifacts = self.metadata_store.get_artifacts_by_component(
+            self, component_name)
+        # Download if not local
+        uris = []
+        for a in artifacts:
+            uris.append(self.artifact_store.resolve_uri_locally(a.uri))
+        return uris
 
     def copy(self, new_name: Text):
         """

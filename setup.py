@@ -65,18 +65,18 @@ setup(
         "gitpython==3.1.11",
         "analytics-python==1.2.9",
         "distro==1.5.0",
-        "tensorflow==2.3.0",
+        "tensorflow>=2.3.0,<2.4.0",
         "tensorflow-serving-api==2.3.0"
     ],
     entry_points="""
     [console_scripts]
     zenml=zenml.cli.cli:cli
     """,
-    python_requires=">=3.6.*",
+    python_requires=">=3.6, <3.9",
     license='Apache License 2.0',  # noqa
     author='maiot GmbH',
     author_email='support@maiot.io',
-    url='https://docs.zenml.io/',
+    url='https://zenml.io/',
     keywords=[
         "deep", "learning", "production", "machine", "pipeline", "mlops"
     ],
@@ -100,5 +100,8 @@ setup(
         # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python :: 3.6',
     ],
+    # add .html file for statistics
+    data_files=[('zenml/utils/post_training/stats.html',
+                 ['zenml/utils/post_training/stats.html'])],
     include_package_data=True
 )

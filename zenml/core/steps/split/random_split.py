@@ -41,6 +41,10 @@ def RandomSplitPartitionFn(element: Any,
                            split_map: Dict[Text, float]) -> int:
     """
     Function for a random split of the data; to be used in a beam.Partition.
+    This function implements a simple random split algorithm by drawing
+    integers from a categorical distribution defined by the values in
+    split_map.
+
     Args:
         element: Data point, in format tf.train.Example.
         num_partitions: Number of splits, unused here.
@@ -59,6 +63,10 @@ def RandomSplitPartitionFn(element: Any,
 
 
 class RandomSplit(BaseSplit):
+    """
+    Random split. Use this to randomly split data based on a cumulative
+    distribution function defined by a split_map dict.
+    """
 
     def __init__(
             self,
@@ -67,7 +75,30 @@ class RandomSplit(BaseSplit):
             schema=None,
     ):
         """
-        Randomly split the data based on split_map.
+        Random split constructor.
+
+        Randomly split the data based on a cumulative distribution function
+        defined by split_map.
+
+        Example usage:
+
+        # Split data randomly, but evenly into train, eval and test
+
+        >>> split = RandomSplit(
+        ... split_map = {"train": 0.334,
+        ...              "eval": 0.333,
+        ...              "test": 0.333})
+
+        Here, each data split gets assigned about one third of the probability
+        mass. The split is carried out by sampling from the categorical
+        distribution defined by the values p_i in the split map, i.e.
+
+        P(index = i) = p_i, i = 1,...,n ;
+
+        where n is the number of splits defined in the split map. Hence, the
+        values in the split map must sum up to 1. For more information, see
+        https://en.wikipedia.org/wiki/Categorical_distribution.
+
 
         Args:
             statistics: Parsed statistics from a preceding StatisticsGen.

@@ -17,9 +17,18 @@ from zenml.core.backends.base_backend import BaseBackend
 
 
 class TrainingLocalBackend(BaseBackend):
-    """Base class for all Training ZenML backends.
-
-    Every ZenML pipeline runs in backends
     """
+    Base class for all local Training ZenML backends.
+
+    Every ZenML pipeline runs in backends.
+
+    A training backend can be used to efficiently train a machine learning
+    model on large amounts of data. Since most common machine learning models
+    leverage mainly linear algebra operations under the hood, they can
+    potentially benefit a lot from dedicated training hardware like Graphics
+    Processing Units (GPUs) or application-specific integrated circuits
+    (ASICs).
+    """
+
     BACKEND_TYPE = 'local'
     BACKEND_KEY = 'training'

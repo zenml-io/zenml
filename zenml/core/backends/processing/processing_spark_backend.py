@@ -20,9 +20,17 @@ from zenml.core.backends.processing.processing_local_backend import \
 
 
 class ProcessingSparkBackend(ProcessingLocalBackend):
-    """Use this to run pipelines on Apache Spark.
+    """
+    Use this to run pipelines on Apache Spark.
 
-    Every ZenML pipeline runs in backends.
+    A dedicated processing backend can be used to efficiently process large
+    amounts of incoming data in parallel, potentially distributed across
+    multiple machines. This can happen on local processing backends as well
+    as cloud-based variants like Google Cloud Dataflow. More powerful machines
+    with higher core counts and clock speeds can be leveraged to increase
+    processing throughput significantly.
+
+    This backend is not implemented yet.
     """
     BACKEND_TYPE = 'spark'
 

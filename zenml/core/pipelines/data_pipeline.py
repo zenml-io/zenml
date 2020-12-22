@@ -28,8 +28,7 @@ from zenml.core.standards import standard_keys as keys
 from zenml.core.standards.standard_keys import StepKeys
 from zenml.utils.enums import GDPComponent
 from zenml.utils.post_training.post_training_utils import \
-    get_statistics_artifact, \
-    get_schema_artifact, view_statistics, view_schema
+    view_statistics, view_schema
 
 
 class DataPipeline(BasePipeline):
@@ -80,14 +79,14 @@ class DataPipeline(BasePipeline):
             magic (bool): Creates HTML page if False, else
             creates a notebook cell.
         """
-        uri = get_statistics_artifact(
-            self.pipeline_name, GDPComponent.DataStatistics.name)
+        uri = self.get_artifacts_uri_by_component(
+            GDPComponent.DataStatistics.name)[0]
         view_statistics(uri, magic)
 
     def view_schema(self):
         """View schema of data flowing in pipeline."""
-        uri = get_schema_artifact(
-            self.pipeline_name, GDPComponent.DataSchema.name)
+        uri = self.get_artifacts_uri_by_component(
+            GDPComponent.DataSchema.name)[0]
         view_schema(uri)
 
     def get_default_backends(self) -> Dict:

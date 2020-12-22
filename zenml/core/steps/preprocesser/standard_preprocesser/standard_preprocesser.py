@@ -109,19 +109,20 @@ class StandardPreprocesser(BasePreprocesserStep):
         type-specific standard preprocessing functions and apply other
         functions instead, given that they are registered in the default
         preprocessing method dictionary defined at the top of this file.
+
+        An entry in the `overwrite` dict could look like this: ::
+
+            {feature_name:
+                {"transform": [{"method": "scale_to_z_score",
+                                           "parameters": {}}],
+                 "filling": [{"method": "max", "parameters": {}}]
+            }
         
         Args:
             features: List of data features to be preprocessed.
             labels: List of features in the data that are to be predicted.
             overwrite: Dict of dicts, mapping features to a list of
              custom preprocessing and filling methods to be used.
-                 An entry in the `overwrite` dict could look like this:
-
-                 {feature_name:
-                    {"transform": [{"method": "scale_to_z_score",
-                                               "parameters": {}}],
-                     "filling": [{"method": "max", "parameters": {}}]
-                 }
             **unused_kwargs: Additional unused keyword arguments. Their usage
              might change in the future.
         """

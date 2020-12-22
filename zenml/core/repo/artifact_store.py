@@ -79,6 +79,6 @@ class ArtifactStore:
 
         # Create if not exists and download
         path_utils.create_dir_recursive_if_not_exists(path)
-        path_utils.copy(artifact_uri, path)
+        path_utils.copy_dir(artifact_uri, path, overwrite=True)
 
         return path

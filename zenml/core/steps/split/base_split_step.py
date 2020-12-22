@@ -37,7 +37,7 @@ class BaseSplit(BaseStep):
                  schema: Schema = None,
                  **kwargs):
         """
-        BaseSplitStep constructor.
+        Base Split constructor.
 
         Args:
             statistics: Parsed statistics output of a preceding StatisticsGen.
@@ -49,11 +49,43 @@ class BaseSplit(BaseStep):
 
     @abstractmethod
     def partition_fn(self):
+        """
+        Returns the partition function associated with the current split type,
+        along with keyword arguments used in the signature of the partition
+        function.
+
+        To be eligible in use in a Split Step, the partition_fn has to adhere
+        to the following design contract:
+
+        1. The signature is of the following type:
+
+            >>> def partition_fn(element, n, **kwargs) -> int,
+
+            where n is the number of splits;
+        2. The partition_fn only returns signed integers i less than n, i.e.
+           0 <= i <= n - 1.
+
+        Returns:
+            A tuple (partition_fn, kwargs) of the partition function and its
+             additional keyword arguments (see above).
+        """
         pass
 
     @abstractmethod
     def get_split_names(self) -> List[Text]:
+        """
+        Returns the names of the splits associated with this split step.
+
+        Returns:
+            A list of strings, which are the split names.
+        """
         pass
 
     def get_num_splits(self):
+        """
+        Returns the total number of splits.
+
+        Returns:
+            A positive integer, the number of splits.
+        """
         return len(self.get_split_names())

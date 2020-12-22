@@ -150,11 +150,31 @@ def copy(source: Text, destination: Text, overwrite: bool = False):
     Copies dir from source to destination.
 
     Args:
-        source (str): Local path to copy from.
-        destination (str): Local path to copy to.
+        source (str): Path to copy from.
+        destination (str): Path to copy to.
         overwrite: boolean, if false, then throws an error before overwrite.
     """
     return file_io.copy_v2(source, destination, overwrite)
+
+
+def copy_dir(source_dir: Text, destination_dir: Text, overwrite: bool = False):
+    """
+    Copies dir from source to destination.
+
+    Args:
+        source_dir (str): Path to copy from.
+        destination_dir (str): Path to copy to.
+        overwrite: boolean, if false, then throws an error before overwrite.
+    """
+    for f in list_dir(source_dir):
+        p = Path(f)
+        destination_name = os.path.join(destination_dir, p.name)
+        if is_dir(f):
+            copy_dir(f, destination_name, overwrite)
+        else:
+            create_dir_recursive_if_not_exists(
+                str(Path(destination_name).parent))
+            copy(f, destination_name, overwrite)
 
 
 def move(source: Text, destination: Text, overwrite: bool = False):

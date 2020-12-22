@@ -38,7 +38,8 @@ def init(repo_path: Text, pipelines_dir: Text = None,
             "ZenML collects anonymized usage information. This data helps us "
             "create a better product and understand the needs of the "
             "community better. You can find more information about exactly "
-            "what information we collect on: . "
+            "why, what and how we collect usage analytics statistics at: "
+            "https://docs.zenml.io/misc/usage-analytics. "
             "Would you like to opt-in to usage analytics?")
 
     try:

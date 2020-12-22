@@ -15,7 +15,7 @@
 import base64
 import json
 import os
-from pathlib import Path
+from textwrap import dedent
 from typing import Text
 
 import click
@@ -29,13 +29,13 @@ from tensorflow_metadata.proto.v0 import statistics_pb2
 from tensorflow_transform.tf_metadata import schema_utils
 from tfx.utils import io_utils
 
-from zenml.core.repo.repo import Repository
 from zenml.utils.constants import APP_NAME, EVALUATION_NOTEBOOK, \
     COMPARISON_NOTEBOOK
 from zenml.utils.enums import GDPComponent
+from zenml.utils.logger import get_logger
 from zenml.utils.path_utils import read_file_contents
-from zenml.utils.post_training.evaluation_utils import get_eval_block, \
-    get_tensorboard_block
+
+logger = get_logger(__name__)
 
 
 def get_statistics_html(stats_dict):
@@ -63,18 +63,6 @@ def get_statistics_html(stats_dict):
     # pylint: enable=line-too-long
     html = html_template.replace('protostr', protostr)
     return html
-
-
-def get_statistics_artifact(pipeline_name: Text, component_name: Text):
-    """
-    Get statistics artifact from pipeline
-
-    Args:
-        pipeline_name: name of pipeline
-        component_name: name of statistics component
-    """
-    return Repository.get_instance().get_artifacts_uri_by_component(
-        pipeline_name, component_name)[0]
 
 
 def get_statistics_dataset_dict(stats_uri: Text):
@@ -145,47 +133,6 @@ def get_schema_proto(artifact_uri: Text):
     return schema
 
 
-def get_schema_artifact(pipeline_name: Text, component_name: Text):
-    """
-    Get schema artifact from pipeline
-
-    Args:
-        pipeline_name: name of pipeline
-        component_name: name of schema component
-    """
-    return Repository.get_instance().get_artifacts_uri_by_component(
-        pipeline_name, component_name)[0]
-
-
-def get_transform_schema_artifact(pipeline_name: Text, component_name: Text):
-    """
-    Get schema artifact from pipeline.
-
-    Args:
-        pipeline_name: name of pipeline
-        component_name: name of schema component
-    """
-    base_uri = Repository.get_instance().get_artifacts_uri_by_component(
-        pipeline_name, component_name)[0]
-    return os.path.join(base_uri, 'transformed_metadata')
-
-
-def get_transform_data_artifact(pipeline_name: Text, component_name: Text):
-    """
-    Get schema artifact from pipeline
-
-    Args:
-        pipeline_name: name of pipeline
-        component_name: name of schema component
-    """
-    base_uri = Repository.get_instance().get_artifacts_uri_by_component(
-        pipeline_name, component_name)[0]
-    base_uri = Path(base_uri)
-    id_ = base_uri.name
-    return os.path.join(
-        str(base_uri.parent.parent), 'transformed_examples', id_)
-
-
 def get_feature_spec_from_schema(schema_uri):
     """
     Get schema artifact from pipeline
@@ -222,12 +169,25 @@ def convert_data_to_numpy(dataset, sample_size):
         dataset: a tf.data.Dataset object
         sample_size: number of rows to limit to
     """
+
+    # TODO: [MEDIUM] Check if this conversion to dense tensor makes sense
+    def convert_if_sparse(element):
+        return {k: tf.sparse.to_dense(tf.sparse.reorder(v))
+        if type(v) == tf.sparse.SparseTensor else v
+                for k, v in element.items()}
+
+    dataset = dataset.map(convert_if_sparse)
+
     np_dataset = tfds.as_numpy(dataset)
     data = []
     for i, d in enumerate(np_dataset):
         if i == sample_size:
             break
-        new_row = {k: v[0] for k, v in d.items()}
+
+        # usually v[0] has the data, but sometimes its an empty list
+        new_row = {k: v[0] if len(v) != 0 else None for k, v in d.items()}
+
+        # convert the bytes to strings for easier use
         new_row = {k: v if type(v) != bytes else v.decode()
                    for k, v in new_row.items()}
         data.append(new_row)
@@ -243,23 +203,10 @@ def convert_raw_dataset_to_pandas(dataset, spec, sample_size):
         spec: the spec to parse from
         sample_size: number of rows to limit to
     """
+    logger.info('Converting dataset to Pandas DataFrame..')
     dataset = get_parsed_dataset(dataset, spec)
     data = convert_data_to_numpy(dataset, sample_size)
     return pd.DataFrame(data)
-
-
-def get_pusher_artifact(pipeline_name: Text, component_name: Text = None):
-    """
-    Get schema artifact from pipeline
-
-    Args:
-        pipeline_name: name of pipeline
-        component_name: name of pusher component
-    """
-    component_name = component_name \
-        if component_name else GDPComponent.Deployer.name
-    return Repository.get_instance().get_artifacts_uri_by_component(
-        pipeline_name, component_name)[0]
 
 
 def create_new_cell(contents):
@@ -286,15 +233,52 @@ def create_new_cell(contents):
     shell.payload_manager.write_payload(payload, single=False)
 
 
+def get_tensorboard_block(log_dir):
+    block = '''\
+    import os
+
+    model_path = '"{evaluation}"'
+    logdir = os.path.join(model_path, 'logs')
+    %load_ext tensorboard
+    '''.format(evaluation=log_dir)
+    block = dedent(block)
+    block += '%tensorboard --logdir {logdir}'
+    return block
+
+
+def get_eval_block(eval_dir):
+    block = '''\
+    # If the visualization does not appear after running this block, please 
+    # run the same cell again
+
+    import tensorflow_model_analysis as tfma
+
+    evaluation_path = '{evaluation}'
+    evaluation = tfma.load_eval_result(output_path=evaluation_path)
+
+    # find slicing metrics
+    slicing_columns = set([x.feature_keys[0] for x in 
+    evaluation.config.slicing_specs if len(x.feature_keys) == 1])
+    print("")
+    print("Available slicing columns: ")
+    print(slicing_columns)
+
+    tfma.view.render_slicing_metrics(evaluation)
+
+    # in order to view sliced results, pass in the `slicing_column` parameter:
+    # tfma.view.render_slicing_metrics(evaluation, slicing_column='col_name')
+    '''.format(evaluation=eval_dir)
+    return dedent(block)[:-1]
+
+
 def evaluate_single_pipeline(
-        pipeline_name: Text,
+        pipeline,
         trainer_component_name: Text = None,
         evaluator_component_name: Text = None,
         magic: bool = False):
     """
-
     Args:
-        pipeline_name: name of pipeline.
+        pipeline: A ZenML pipeline
         trainer_component_name: name of trainer component.
         evaluator_component_name: name of evaluator component.
         magic:
@@ -305,10 +289,10 @@ def evaluate_single_pipeline(
     evaluator_component_name = evaluator_component_name \
         if evaluator_component_name else GDPComponent.Evaluator.name
 
-    trainer_path = Repository.get_instance().get_artifacts_uri_by_component(
-        pipeline_name, trainer_component_name)[0]
-    eval_path = Repository.get_instance().get_artifacts_uri_by_component(
-        pipeline_name, evaluator_component_name)[0]
+    trainer_path = pipeline.get_artifacts_uri_by_component(
+        trainer_component_name)[0]
+    eval_path = pipeline.get_artifacts_uri_by_component(
+        evaluator_component_name)[0]
 
     # Patch to make it work locally
     with open(os.path.join(eval_path, 'eval_config.json'), 'r') as f:

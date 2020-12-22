@@ -41,7 +41,7 @@ def read_files_from_disk(pipeline: beam.Pipeline,
 
     Returns:
         A beam.PCollection of data points. Each row in the collection of
-         CSV tables represents a single data point.
+         CSV files represents a single data point.
 
     """
     wildcard_qualifier = "*"
