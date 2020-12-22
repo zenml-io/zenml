@@ -20,9 +20,10 @@ from zenml.core.backends.training.training_local_backend import \
 
 
 class TrainingGCAIPBackend(TrainingLocalBackend):
-    """Runs TrainerStep on Google Cloud AI Platform.
+    """
+    Runs a TrainerStep on Google Cloud AI Platform.
 
-    Every ZenML pipeline runs in backends
+    This backend is not implemented yet.
     """
     BACKEND_TYPE = 'gcaip'
 
