@@ -72,7 +72,7 @@ setup(
     [console_scripts]
     zenml=zenml.cli.cli:cli
     """,
-    python_requires=">=3.6.*",
+    python_requires=">=3.6, <3.9",
     license='Apache License 2.0',  # noqa
     author='maiot GmbH',
     author_email='support@maiot.io',
@@ -100,5 +100,8 @@ setup(
         # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python :: 3.6',
     ],
+    # add .html file for statistics
+    data_files=[('zenml/utils/post_training/stats.html',
+                 ['zenml/utils/post_training/stats.html'])],
     include_package_data=True
 )
