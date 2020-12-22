@@ -76,7 +76,7 @@ setup(
     license='Apache License 2.0',  # noqa
     author='maiot GmbH',
     author_email='support@maiot.io',
-    url='https://docs.zenml.io/',
+    url='https://zenml.io/',
     keywords=[
         "deep", "learning", "production", "machine", "pipeline", "mlops"
     ],
