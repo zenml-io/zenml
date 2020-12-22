@@ -20,9 +20,10 @@ from zenml.core.backends.processing.processing_local_backend import \
 
 
 class ProcessingSparkBackend(ProcessingLocalBackend):
-    """Use this to run pipelines on Apache Spark.
+    """
+    Use this to run pipelines on Apache Spark.
 
-    Every ZenML pipeline runs in backends.
+    This backend is not implemented yet.
     """
     BACKEND_TYPE = 'spark'
 
