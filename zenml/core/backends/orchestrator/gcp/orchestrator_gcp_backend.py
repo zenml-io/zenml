@@ -37,7 +37,8 @@ STAGING_AREA = 'staging'
 
 
 class OrchestratorGCPBackend(OrchestratorLocalBackend):
-    """Orchestrates pipeline in a GCP Compute Instance.
+    """
+    Orchestrates pipeline in a GCP Compute Instance.
 
     This orchestrator creates a .tar.gz of the current ZenML repository, sends
     it over to the artifact store, then launches a VM with the specified image.
