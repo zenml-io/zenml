@@ -32,7 +32,7 @@ jobs:
           cd ./zenml-testing
           git init
           zenml init --analytics_opt_in False
-          echo "I am a placeholder for running a pipeline"
+          python ../smoke_test.py
           exit 1  # fail until further notice
 
       # Runs a set of commands using the runners shell
