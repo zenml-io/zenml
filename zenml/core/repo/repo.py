@@ -212,7 +212,7 @@ class Repository:
                     steps_dict[class_] = {version}
         return steps_dict
 
-    def get_datasource_by_name(self, name: Text) -> List:
+    def get_datasource_by_name(self, name: Text):
         """
         Get all datasources in this repo.
 

@@ -89,7 +89,11 @@ class ZenMLMetadataStore:
         Args:
             pipeline (BasePipeline): a ZenML pipeline object
         """
-        components_status = self.get_components_status(pipeline)
+        try:
+            components_status = self.get_components_status(pipeline)
+        except:
+            return PipelineStatusTypes.NotStarted.name
+
         for status in components_status.values():
             if status != 'complete' and status != 'cached':
                 return PipelineStatusTypes.Running.name
