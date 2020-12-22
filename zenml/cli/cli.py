@@ -22,7 +22,7 @@
 import click
 
 from zenml.cli.utils import pass_config
-from zenml.utils.logger import set_verbosity
+from zenml.utils.logger import set_root_verbosity
 
 
 @click.group()
@@ -32,7 +32,7 @@ from zenml.utils.logger import set_verbosity
 def cli(info, verbose: int):
     """maiot ZenML"""
     info.load()
-    set_verbosity(verbose)
+    set_root_verbosity(verbose)
 
 
 if __name__ == '__main__':

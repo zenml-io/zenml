@@ -19,7 +19,8 @@ from logging.handlers import TimedRotatingFileHandler
 
 from absl import logging as absl_logging
 
-from zenml.utils.constants import ZENML_LOGGING_VERBOSITY
+from zenml.utils.constants import ZENML_LOGGING_VERBOSITY, APP_NAME, \
+    ABSL_LOGGING_VERBOSITY
 
 # Mute tensorflow cuda warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -34,19 +35,28 @@ LOGGING_LEVELS = {
 
 FORMATTING_STRING = "%(asctime)s — %(name)s — %(levelname)s — %(message)s"
 FORMATTER = logging.Formatter(FORMATTING_STRING)
-LOG_FILE = "zenml_logs.log"
+LOG_FILE = f'{APP_NAME}_logs.log'
 
 
-def set_verbosity(verbose=0):
-    if verbose > 0:
-        logging.basicConfig(
-            level=LOGGING_LEVELS[verbose]
-            if verbose in LOGGING_LEVELS
-            else logging.DEBUG
-        )
+def resolve_logging_level():
+    if ZENML_LOGGING_VERBOSITY > 0:
+        level = LOGGING_LEVELS[ZENML_LOGGING_VERBOSITY] \
+            if ZENML_LOGGING_VERBOSITY in LOGGING_LEVELS else logging.DEBUG
+    else:
+        level = logging.NOTSET
+    return level
+
+
+def set_root_verbosity():
+    level = resolve_logging_level()
+    if level > logging.NOTSET:
+        logging.basicConfig(level=level)
+        get_logger(__name__).info(f'Logging set to level: '
+                                  f'{logging.getLevelName(level)}')
     else:
         logging.disable(sys.maxsize)
         logging.getLogger().disabled = True
+        get_logger(__name__).info('Logging NOTSET')
 
 
 def get_console_handler():
@@ -63,8 +73,7 @@ def get_file_handler():
 
 def get_logger(logger_name):
     logger = logging.getLogger(logger_name)
-    logger.setLevel(
-        logging.DEBUG)  # better to have too much log than not enough
+    logger.setLevel(resolve_logging_level())
     logger.addHandler(get_console_handler())
 
     # TODO: [LOW] Add a file handler for persistent handling
@@ -77,6 +86,7 @@ def get_logger(logger_name):
 
 def init_logging():
     logging.basicConfig(format=FORMATTING_STRING)
-    # TODO: [LOW] Check whether to turn off absl logging
-    absl_logging.set_verbosity(ZENML_LOGGING_VERBOSITY)
-    set_verbosity(ZENML_LOGGING_VERBOSITY)
+    set_root_verbosity()
+
+    # set absl logging
+    absl_logging.set_verbosity(ABSL_LOGGING_VERBOSITY)
