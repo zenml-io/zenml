@@ -16,6 +16,7 @@ import base64
 import json
 import os
 from pathlib import Path
+from textwrap import dedent
 from typing import Text
 
 import click
@@ -34,8 +35,6 @@ from zenml.utils.constants import APP_NAME, EVALUATION_NOTEBOOK, \
     COMPARISON_NOTEBOOK
 from zenml.utils.enums import GDPComponent
 from zenml.utils.path_utils import read_file_contents
-from zenml.utils.post_training.evaluation_utils import get_eval_block, \
-    get_tensorboard_block
 
 
 def get_statistics_html(stats_dict):
@@ -284,6 +283,44 @@ def create_new_cell(contents):
         replace=False,
     )
     shell.payload_manager.write_payload(payload, single=False)
+
+
+def get_tensorboard_block(log_dir):
+    block = '''\
+    import os
+
+    model_path = '"{evaluation}"'
+    logdir = os.path.join(model_path, 'logs')
+    %load_ext tensorboard
+    '''.format(evaluation=log_dir)
+    block = dedent(block)
+    block += '%tensorboard --logdir {logdir}'
+    return block
+
+
+def get_eval_block(eval_dir):
+    block = '''\
+    # If the visualization does not appear after running this block, please 
+    # run the same cell again
+
+    import tensorflow_model_analysis as tfma
+
+    evaluation_path = '{evaluation}'
+    evaluation = tfma.load_eval_result(output_path=evaluation_path)
+
+    # find slicing metrics
+    slicing_columns = set([x.feature_keys[0] for x in 
+    evaluation.config.slicing_specs if len(x.feature_keys) == 1])
+    print("")
+    print("Available slicing columns: ")
+    print(slicing_columns)
+
+    tfma.view.render_slicing_metrics(evaluation)
+
+    # in order to view sliced results, pass in the `slicing_column` parameter:
+    # tfma.view.render_slicing_metrics(evaluation, slicing_column='col_name')
+    '''.format(evaluation=eval_dir)
+    return dedent(block)[:-1]
 
 
 def evaluate_single_pipeline(
