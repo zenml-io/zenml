@@ -27,9 +27,15 @@ from zenml.core.steps.data.base_data_step import BaseDataStep
 
 def read_file_content(file: beam.io.fileio.ReadableFile):
     """
+    Read contents from a file handle in binary and return it along with some
+    file metadata as a dict.
+
     Args:
         file (beam.io.fileio.ReadableFile): Beam ReadableFile object,
         corresponds to an image file read from disk.
+
+    Returns:
+        data_dict: Dict with binary data and file metadata.
     """
     file_path = file.metadata.path
     base = os.path.basename(file_path)
@@ -43,11 +49,16 @@ def read_file_content(file: beam.io.fileio.ReadableFile):
 
 def add_label_and_metadata(image_dict: Dict[Text, Any],
                            label_dict: Dict[Text, Any]):
-    """Add label and metadata information to an image.
+    """
+    Add label and metadata information to an image.
 
     Args:
         image_dict: Dict with image features.
         label_dict (Text): JSON-readable string with label information.
+
+    Returns:
+        image_dict: Updated image feature dict with label and metadata
+         information.
     """
     filename = image_dict[FILE_NAME]
 
@@ -66,15 +77,16 @@ def add_label_and_metadata(image_dict: Dict[Text, Any],
 
 
 def get_matching_label(label_data: Text, img_filename: Text):
-    """ Get a label matching an image file name from a
-        JSON-readable label file.
+    """
+    Get a label matching an image file name from a JSON-readable label file.
+
     Args:
         label_data (Text): Label string, needs to be JSON-readable.
         img_filename (Text): File name of the image.
 
     Returns:
-        * **label** (*Str, label key*)
-        * **metadata** (*Dict, additional metadata information*)
+        label: Label key of the image.
+        metadata: Dict, additional metadata information.
     """
 
     # This can potentially go bad if the JSON is too big
@@ -107,6 +119,9 @@ def get_matching_label(label_data: Text, img_filename: Text):
 def SplitByFileName(element: Dict[Text, Any],
                     num_partitions: int) -> int:
     """
+    Helper function to identify the label file in a beam.Partition applied
+    to the PCollection of input files.
+
     Args:
         element: Dict with image features.
         num_partitions (int): Number of partitions, unused.
