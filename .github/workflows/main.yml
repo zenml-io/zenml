@@ -32,8 +32,7 @@ jobs:
           cd ./zenml-testing
           git init
           zenml init --analytics_opt_in False
-          python ../smoke_test.py
-          exit 1  # fail until further notice
+          python ../smoke_test.py && echo "Finished smoke test successfully" || echo "Smoke test failed"
 
       # Runs a set of commands using the runners shell
       - name: publish
