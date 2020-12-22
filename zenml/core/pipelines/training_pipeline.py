@@ -275,7 +275,7 @@ class TrainingPipeline(BasePipeline):
 
     def evaluate(self):
         """Evaluate pipeline."""
-        return evaluate_single_pipeline(self.pipeline_name)
+        return evaluate_single_pipeline(self)
 
     def download_model(self, out_path: Text = None, overwrite: bool = False):
         """Download model to out_path"""
@@ -330,8 +330,7 @@ class TrainingPipeline(BasePipeline):
         if not self.is_executed_in_metadata_store:
             raise Exception('This pipeline has not been run yet.')
 
-        executions = self.metadata_store.get_pipeline_executions(
-            pipeline_name=self.pipeline_name)
+        executions = self.metadata_store.get_pipeline_executions(self)
 
         hparams = {}
         for e in executions:

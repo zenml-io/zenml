@@ -173,6 +173,7 @@ def convert_data_to_numpy(dataset, sample_size):
     # TODO: [MEDIUM] Check if this conversion to dense tensor makes sense
     def convert_if_sparse(element):
         return {k: tf.sparse.to_dense(tf.sparse.reorder(v))
+        if type(v) == tf.sparse.SparseTensor else v
                 for k, v in element.items()}
 
     dataset = dataset.map(convert_if_sparse)

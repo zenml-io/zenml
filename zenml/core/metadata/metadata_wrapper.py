@@ -82,40 +82,53 @@ class ZenMLMetadataStore:
             MLMetadataKeys.ARGS: args_dict
         }
 
-    def get_pipeline_status(self, pipeline_name: Text) -> Text:
+    def get_pipeline_status(self, pipeline) -> Text:
         """
         Query metadata store to find status of pipeline.
 
         Args:
-            pipeline_name (str): name of pipeline
+            pipeline (BasePipeline): a ZenML pipeline object
         """
-        components_status = self.get_components_status(pipeline_name)
+        components_status = self.get_components_status(pipeline)
         for status in components_status.values():
             if status != 'complete' and status != 'cached':
                 return PipelineStatusTypes.Running.name
         return PipelineStatusTypes.Succeeded.name
 
-    def get_pipeline_executions(self, pipeline_name: Text):
-        c = self.get_pipeline_context(pipeline_name)
+    def get_pipeline_executions(self, pipeline):
+        """
+        Get executions of pipeline.
+
+        Args:
+            pipeline (BasePipeline): a ZenML pipeline object
+        """
+        c = self.get_pipeline_context(pipeline)
         return self.store.get_executions_by_context(c.id)
 
-    def get_components_status(self, pipeline_name: Text):
-        pipeline_executions = self.get_pipeline_executions(pipeline_name)
+    def get_components_status(self, pipeline):
+        """
+        Returns status of components in pipeline.
+
+        Args:
+            pipeline (BasePipeline): a ZenML pipeline object
+
+        Returns: dict of type { component_name : component_status }
+        """
+        pipeline_executions = self.get_pipeline_executions(pipeline)
         return {
             e.properties['component_id'].string_value: e.properties[
                 'state'].string_value for e in
             pipeline_executions
         }
 
-    def get_artifacts_by_component(self, pipeline_name: Text,
-                                   component_name: Text):
+    def get_artifacts_by_component(self, pipeline, component_name: Text):
         """
         Args:
-            pipeline_name:
+            pipeline (BasePipeline): a ZenML pipeline object
             component_name:
         """
         # First , you get the execution associated with the component
-        e = self.get_component_execution(pipeline_name, component_name)
+        e = self.get_component_execution(pipeline, component_name)
 
         if e is None:
             raise Exception(f'{component_name} not found! This might be due '
@@ -125,17 +138,17 @@ class ZenMLMetadataStore:
         # Second, you will get artifacts
         return self.get_artifacts_by_execution(e.id)
 
-    def get_component_execution(self, pipeline_name: Text,
-                                component_name: Text):
-        pipeline_executions = self.get_pipeline_executions(pipeline_name)
+    def get_component_execution(self, pipeline, component_name: Text):
+        pipeline_executions = self.get_pipeline_executions(pipeline)
         for e in pipeline_executions:
             # TODO: [LOW] Create a more refined way to find components.
             if component_name in e.properties['component_id'].string_value:
                 return e
 
-    def get_pipeline_context(self, pipeline_name: Text):
+    def get_pipeline_context(self, pipeline):
         # We rebuild context for ml metadata here.
-        run_id = f'{self.context_prefix}.{pipeline_name}'
+        prefix = pipeline.artifact_store.unique_id
+        run_id = f'{prefix}.{pipeline.pipeline_name}'
         logger.debug(f'Looking for run_id {run_id} in metadata store: '
                      f'{self.to_config()}')
         run_context = self.store.get_context_by_type_and_name(
@@ -143,9 +156,9 @@ class ZenMLMetadataStore:
             context_name=run_id
         )
         if run_context is None:
-            raise Exception(f'{pipeline_name} does not exist in Metadata '
-                            f'store. This might be due to the fact that it '
-                            f'has not run yet!')
+            raise Exception(f'{pipeline.pipeline_name} does not exist in '
+                            f'Metadata store. This might be due to the fact '
+                            f'that it has not run yet!')
         return run_context
 
     def get_artifacts_by_execution(self, execution_id):
