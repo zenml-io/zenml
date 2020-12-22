@@ -31,7 +31,7 @@ jobs:
           mkdir ./zenml-testing
           cd ./zenml-testing
           git init
-          zenml init --analytics_opt_in
+          zenml init --analytics_opt_in False
           echo "I am a placeholder for running a pipeline"
           exit 1  # fail until further notice
 
