@@ -183,8 +183,8 @@ class ImageDataStep(BaseDataStep):
 
         The entries of the JSON file should look like this:
 
-        ``# Single JSON record of an image in the base directory called
-        img123.jpg`` ::
+        # Single JSON record of an image in the base directory called
+        img123.jpg ::
 
              {"img123.jpg": {
                 "label": 0,
