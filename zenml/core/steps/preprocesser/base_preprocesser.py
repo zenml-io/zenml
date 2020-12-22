@@ -31,6 +31,7 @@ class BasePreprocesserStep(BaseStep):
         """
         Base preprocessing step constructor. Custom preprocessing steps need
         to override the `preprocessing_fn` class method.
+
         Args:
             **kwargs: Additional keyword arguments.
         """
@@ -46,7 +47,12 @@ class BasePreprocesserStep(BaseStep):
         preprocessing logic.
 
         Args:
-            inputs (dict): inputs where keys are feature names and values are
-            tensors which represent the value of the feature.
+            inputs (dict): Inputs where keys are feature names and values are
+            tensors which represent the values of the features.
+
+        Returns:
+            outputs (dict): Inputs where keys are transformed feature names
+             and values are tensors with the transformed values of the
+             features.
         """
         pass
