@@ -50,6 +50,6 @@ class ZenMLLocalDagRunner(LocalDagRunner):
                 additional_pipeline_args=tfx_pipeline
                     .additional_pipeline_args,
                 component_config=component_config)
-            logger.debug('Component %s is running.', component.id)
+            logger.info('Component %s is running.', component.id)
             component_launcher.launch()
-            logger.debug('Component %s is finished.', component.id)
+            logger.info('Component %s is finished.', component.id)

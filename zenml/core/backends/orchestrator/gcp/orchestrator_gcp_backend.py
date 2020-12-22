@@ -29,6 +29,9 @@ from zenml.core.repo.repo import Repository
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils
 from zenml.utils.constants import ZENML_BASE_IMAGE_NAME, GCP_ENTRYPOINT
+from zenml.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 EXTRACTED_TAR_DIR_NAME = 'zenml_working'
 TAR_PATH_ARG = 'tar_path'
@@ -179,15 +182,30 @@ class OrchestratorGCPBackend(OrchestratorLocalBackend):
             }
         }
 
+        logger.info(
+            f'Launching instance {self.instance_name} of type '
+            f'{self.machine_type} in project: {self.project} in zone '
+            f'{self.zone}')
+
         try:
             res = compute.instances().insert(
                 project=self.project,
                 zone=self.zone,
                 body=compute_config).execute()
-            print(res)
         except Exception as e:
             raise AssertionError(f"GCP VM failed to launch with the following "
                                  f"error: {str(e)}")
+
+        logger.info(f'Launched instance {self.instance_name} with ID: '
+                    f'{res["targetId"]}')
+        log_link = \
+            f'https://console.cloud.google.com/logs/query;query=logName%3D' \
+            f'%22projects%2F{self.project}%2Flogs%2Fgcplogs-docker-driver%22' \
+            f'%0Aresource.labels.instance_id%3D%22' \
+            f'{res["targetId"]}%22?' \
+            f'project={self.project}&folder=true&query=%0A'
+        logger.info(f"View logs at: {log_link}")
+        return res
 
     def run(self, config: Dict[Text, Any]):
         """
@@ -199,6 +217,8 @@ class OrchestratorGCPBackend(OrchestratorLocalBackend):
             config: a ZenML config dict
         """
         # Extract the paths to create the tar
+        logger.info('Orchestarting pipeline on GCP..')
+
         repo: Repository = Repository.get_instance()
         repo_path = repo.path
         config_dir = repo.zenml_config.config_dir
@@ -208,6 +228,7 @@ class OrchestratorGCPBackend(OrchestratorLocalBackend):
 
         # Create tarfile but excluse .zenml folder if exists
         path_utils.create_tarfile(repo_path, path_to_tar)
+        logger.info(f'Created tar of current repository at: {path_to_tar}')
 
         # Upload tar to artifact store
         store_path = \
@@ -215,9 +236,11 @@ class OrchestratorGCPBackend(OrchestratorLocalBackend):
         store_staging_area = os.path.join(store_path, STAGING_AREA)
         store_path_to_tar = os.path.join(store_staging_area, tar_file_name)
         path_utils.copy(path_to_tar, store_path_to_tar)
+        logger.info(f'Copied tar to artifact store at: {store_path_to_tar}')
 
         # Remove tar
         path_utils.rm_dir(path_to_tar)
+        logger.info(f'Removed tar at: {path_to_tar}')
 
         # Append path of tar in config orchestrator utils
         config[keys.GlobalKeys.ENV][keys.EnvironmentKeys.BACKENDS][

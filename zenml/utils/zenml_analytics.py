@@ -165,7 +165,6 @@ def track(func, event=None):
     metadata = {}
 
     # TODO: [LOW] See if we can get anonymized data from func
-
     # if func.__name__:
     #     metadata['function'] = func.__name__
     # if func.__module__:
