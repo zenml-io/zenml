@@ -34,7 +34,10 @@ from zenml.core.repo.repo import Repository
 from zenml.utils.constants import APP_NAME, EVALUATION_NOTEBOOK, \
     COMPARISON_NOTEBOOK
 from zenml.utils.enums import GDPComponent
+from zenml.utils.logger import get_logger
 from zenml.utils.path_utils import read_file_contents
+
+logger = get_logger(__name__)
 
 
 def get_statistics_html(stats_dict):
@@ -221,12 +224,24 @@ def convert_data_to_numpy(dataset, sample_size):
         dataset: a tf.data.Dataset object
         sample_size: number of rows to limit to
     """
+
+    # TODO: [MEDIUM] Check if this conversion to dense tensor makes sense
+    def convert_if_sparse(element):
+        return {k: tf.sparse.to_dense(tf.sparse.reorder(v))
+                for k, v in element.items()}
+
+    dataset = dataset.map(convert_if_sparse)
+
     np_dataset = tfds.as_numpy(dataset)
     data = []
     for i, d in enumerate(np_dataset):
         if i == sample_size:
             break
-        new_row = {k: v[0] for k, v in d.items()}
+
+        # usually v[0] has the data, but sometimes its an empty list
+        new_row = {k: v[0] if len(v) != 0 else None for k, v in d.items()}
+
+        # convert the bytes to strings for easier use
         new_row = {k: v if type(v) != bytes else v.decode()
                    for k, v in new_row.items()}
         data.append(new_row)
@@ -242,6 +257,7 @@ def convert_raw_dataset_to_pandas(dataset, spec, sample_size):
         spec: the spec to parse from
         sample_size: number of rows to limit to
     """
+    logger.info('Converting dataset to Pandas DataFrame..')
     dataset = get_parsed_dataset(dataset, spec)
     data = convert_data_to_numpy(dataset, sample_size)
     return pd.DataFrame(data)
