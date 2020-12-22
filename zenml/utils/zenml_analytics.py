@@ -107,14 +107,6 @@ def get_system_info():
     return {"os": "unknown"}
 
 
-def get_runtime_info():
-    """Gather information from the environment where ZenML runs."""
-    metadata = {
-        "zenml_version": __version__,
-    }
-    metadata.update(get_system_info())
-
-
 def track_event(event, metadata=None):
     """
     Track segment event if user opted-in.
@@ -139,6 +131,8 @@ def track_event(event, metadata=None):
 
         # add basics
         metadata.update(get_system_info())
+        metadata.update({'version': __version__})
+
         analytics.track(user_id, event, metadata)
         logger.debug(
             f'Analytics sent: User: {user_id}, Event: {event}, Metadata: '

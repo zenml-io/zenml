@@ -51,12 +51,12 @@ def set_root_verbosity():
     level = resolve_logging_level()
     if level > logging.NOTSET:
         logging.basicConfig(level=level)
-        get_logger(__name__).info(f'Logging set to level: '
+        get_logger(__name__).debug(f'Logging set to level: '
                                   f'{logging.getLevelName(level)}')
     else:
         logging.disable(sys.maxsize)
         logging.getLogger().disabled = True
-        get_logger(__name__).info('Logging NOTSET')
+        get_logger(__name__).debug('Logging NOTSET')
 
 
 def get_console_handler():

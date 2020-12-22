@@ -26,13 +26,11 @@ from zenml.utils.logger import set_root_verbosity
 
 
 @click.group()
-@click.option("--verbose", "-v", default=0, count=True,
-              help="Enable verbose output.")
 @pass_config
-def cli(info, verbose: int):
+def cli(info):
     """maiot ZenML"""
     info.load()
-    set_root_verbosity(verbose)
+    set_root_verbosity()
 
 
 if __name__ == '__main__':
