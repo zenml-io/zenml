@@ -27,6 +27,17 @@ class OrchestratorLocalBackend(BaseBackend):
     """
     Local ZenML orchestrator backend. Use this to run a ZenML pipeline
     locally on a machine.
+
+    An orchestrator backend is responsible for scheduling, initializing and
+    running different pipeline components. Examples of orchestrators are
+    Apache Beam, Kubeflow or (here) Local Orchestration.
+
+    Abstracting the pipeline logic from the orchestrator backend enables
+    machine learning workloads to be run in different kinds of environments.
+    For larger, decentralized data processing applications, a cloud-based
+    backend can be used to distribute work across multiple machines.
+    For quick prototyping and local tests, a single-machine direct backend can
+    be selected to execute an ML Pipeline with minimal orchestration overhead.
     """
     BACKEND_TYPE = 'local'
     BACKEND_KEY = 'orchestrator'
