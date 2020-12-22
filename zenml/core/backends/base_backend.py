@@ -24,7 +24,29 @@ class BaseBackend:
     Base class for all ZenML backends.
 
     Every ZenML pipeline runs in backends. Override this base class to define
-    your own custom Pipeline running backend.
+    your own custom Pipeline backend.
+
+    There are three types of backends available in ZenML: Orchestration
+    backends, processing backends and training backends. Each of them serve
+    different purposes in different stages of the pipeline.
+    An orchestration backend is useful for scheduling and executing the
+    different pipeline components.
+
+    A dedicated processing backend can be used to efficiently process large
+    amounts of incoming data in parallel, potentially distributed across
+    multiple machines. This can happen on local processing backends as well
+    as cloud-based variants like Google Cloud Dataflow. More powerful machines
+    with higher core counts and clock speeds can be leveraged to increase
+    processing throughput significantly.
+
+    A training backend can be used to efficiently train a machine learning
+    model on large amounts of data. Since most common machine learning models
+    leverage mainly linear algebra operations under the hood, they can
+    potentially benefit a lot from dedicated training hardware like Graphics
+    Processing Units (GPUs) or application-specific integrated circuits
+    (ASICs). Again, local training backends or cloud-based training backends
+    like Google Cloud AI Platform (GCAIP) with or without GPU/ASIC support
+    can be used.
     """
     BACKEND_TYPE = None
     BACKEND_KEY = None

@@ -23,6 +23,15 @@ class TrainingGCAIPBackend(TrainingLocalBackend):
     """
     Runs a TrainerStep on Google Cloud AI Platform.
 
+    A training backend can be used to efficiently train a machine learning
+    model on large amounts of data. Since most common machine learning models
+    leverage mainly linear algebra operations under the hood, they can
+    potentially benefit a lot from dedicated training hardware like Graphics
+    Processing Units (GPUs) or application-specific integrated circuits
+    (ASICs). Local training backends or cloud-based training backends
+    like Google Cloud AI Platform (GCAIP) with or without GPU/ASIC support
+    can be used.
+
     This backend is not implemented yet.
     """
     BACKEND_TYPE = 'gcaip'
