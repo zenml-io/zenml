@@ -49,7 +49,7 @@ class CategoricalRatioSplit(BaseSplit):
             categorical_column: Text,
             categories: List[CategoricalValue],
             split_ratio: Dict[Text, float],
-            unknown_category_policy: Text = "skip",
+            unknown_category_policy: Text = constants.SKIP,
             statistics=None,
             schema=None,
     ):
