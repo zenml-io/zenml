@@ -83,7 +83,7 @@ class CategoricalDomainSplit(BaseSplit):
             self,
             categorical_column: Text,
             split_map: Dict[Text, List[CategoricalValue]],
-            unknown_category_policy: Text = "skip",
+            unknown_category_policy: Text = constants.SKIP,
             statistics=None,
             schema=None,
     ):
