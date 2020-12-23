@@ -263,6 +263,10 @@ class TrainingPipeline(BasePipeline):
             magic (bool): Creates HTML page if False, else
             creates a notebook cell.
         """
+        logger.info(
+            'Viewing statistics. If magic=False then a new window will open '
+            'up with a notebook for evaluation. If magic=True, then an '
+            'attempt will be made to append to the current notebook.')
         uri = self.get_artifacts_uri_by_component(
             GDPComponent.SplitStatistics.name)[0]
         view_statistics(uri, magic)
@@ -273,9 +277,29 @@ class TrainingPipeline(BasePipeline):
             GDPComponent.SplitSchema.name)[0]
         view_schema(uri)
 
-    def evaluate(self):
-        """Evaluate pipeline."""
-        return evaluate_single_pipeline(self)
+    def evaluate(self, magic: bool = False):
+        """
+        Evaluate pipeline from the evaluator steps artifacts.
+
+        Args:
+            magic: Creates new window if False, else creates notebook cells.
+        """
+        from zenml.utils.enums import PipelineStatusTypes
+        if self.get_status() != PipelineStatusTypes.Succeeded.name:
+            logger.info(
+                "Cannot evaluate a pipeline that has not executed "
+                "successfully. Please run the pipeline and ensure it "
+                "completes successfully to evaluate it.")
+            return
+        if keys.TrainingSteps.EVALUATION not in self.steps_dict:
+            logger.info("This pipeline does not contain an evaluation step.")
+            return
+
+        logger.info(
+            'Evaluating pipeline. If magic=False then a new window will open '
+            'up with a notebook for evaluation. If magic=True, then an '
+            'attempt will be made to append to the current notebook.')
+        return evaluate_single_pipeline(self, magic=magic)
 
     def download_model(self, out_path: Text = None, overwrite: bool = False):
         """Download model to out_path"""
