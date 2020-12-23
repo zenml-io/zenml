@@ -293,3 +293,56 @@ def test_categorical_ratio_split(create_structured_dummy_data):
 
     # default behavior is eval (index 1)
     assert split_folds == [0, 1, 2, 1]
+
+
+def test_categorical_split_ordering(create_structured_dummy_data):
+    cat_col = "my_cat_col"
+
+    # real logic begins here
+    split_map = {"train": ["value1"],
+                 "eval": ["value2"]}
+
+    domain_split = CategoricalDomainSplit(categorical_column=cat_col,
+                                          split_map=split_map)
+
+    ratio_split_func, kwargs = domain_split.partition_fn()
+
+    # each categorical value in the split map above gets one example
+    counts = [3, 1]
+
+    dummy_data = create_structured_dummy_data(counts)
+
+    split_folds = [ratio_split_func(ex,
+                                    domain_split.get_num_splits(),
+                                    **kwargs) for ex in dummy_data]
+
+    # expected: first 3 are 0 (value1, going into train),
+    # last is 1 (value2, going into eval)
+    assert split_folds == [0, 0, 0, 1]
+    assert domain_split.get_split_names() == ["train", "eval", "skip"]
+
+    ################################################
+    # NOW: Order reversed, eval comes before train #
+    ################################################
+
+    # same split map, fold orders reversed
+    split_map = {"eval": ["value2"],
+                 "train": ["value1"]}
+
+    domain_split = CategoricalDomainSplit(categorical_column=cat_col,
+                                          split_map=split_map)
+
+    ratio_split_func, kwargs = domain_split.partition_fn()
+
+    # value_1 gets 3 examples, value_2 gets 1 example
+    counts = [3, 1]
+
+    dummy_data = create_structured_dummy_data(counts)
+
+    split_folds = [ratio_split_func(ex,
+                                    domain_split.get_num_splits(),
+                                    **kwargs) for ex in dummy_data]
+
+    # expected: first 3 are 1 (value1, going into train), last is 0 (eval)
+    assert split_folds == [1, 1, 1, 0]
+    assert domain_split.get_split_names() == ["eval", "train", "skip"]

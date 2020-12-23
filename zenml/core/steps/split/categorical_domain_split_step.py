@@ -56,12 +56,7 @@ def CategoricalPartitionFn(element: Any,
     category_value = get_categorical_value(element, cat_col=categorical_column)
 
     # The following code produces a dict: { split_name: unique_integer }
-    # However 'train' always maps to 0
-    enumerated_splits = {constants.TRAIN: 0}
-    enumerated_splits.update(
-        {name: i for i, name in enumerate(split_map.keys())
-         if name != constants.TRAIN}
-    )
+    enumerated_splits = {name: i for i, name in enumerate(split_map.keys())}
 
     if unknown_category_policy not in enumerated_splits:
         enumerated_splits.update({unknown_category_policy: num_partitions - 1})
