@@ -45,6 +45,8 @@
 
 ## Quickstart 
 
+If you're more of a visual learner, you can also watch the [quickstart video](https://www.youtube.com/watch?v=Stg5rA_0oa8) where the below is explained in more depth.
+
 Let’s get you started with a simple pipeline. Please make sure to also check out the [advanced concepts](#zenml-concepts). It uses some built-ins and a very simple model. 
 The dataset used is the [Pima Indians Diabetes Dataset](https://storage.googleapis.com/zenml_quickstart/diabetes.csv), originally from the National Institute of Diabetes 
 and Digestive and Kidney Diseases. It is a binary classification problem.
@@ -89,7 +91,7 @@ training_pipeline.add_datasource(ds)
 # Add a random 70/30 train-eval split
 training_pipeline.add_split(RandomSplit(split_map={'train': 0.7, 'eval': 0.3}))
 
-# Using an empty PreprocessorStep() will default to no preprocessing
+# StandardPreprocesser() has sane defaults for normal preprocessing methods
 training_pipeline.add_preprocesser(
     StandardPreprocesser(
         features=['times_pregnant', 'pgc', 'dbp', 'tst', 'insulin', 'bmi',
@@ -132,7 +134,9 @@ training_pipeline.evaluate()
 
 Of course, each of these steps can be [extended quite easily](https://docs.zenml.io/steps/creating-custom-steps) to accommodate more complex scenarios and use-cases. There is a steadily-growing number of integrations available, 
 for example Google Dataflow for [distributed preprocessing](https://docs.zenml.io/backends/processing-backends) or Google Cloud AI Platform as a 
-[training](https://docs.zenml.io/backends/training-backends) backend.
+[training](https://docs.zenml.io/backends/training-backends) backend. 
+
+You can also run these pipelines on a cloud VM, for example on a Google Cloud Platform VM, [with a few more lines of code](https://docs.zenml.io/tutorials/running-a-pipeline-on-a-google-cloud-vm).
 
 ## ZenML Concepts
 
