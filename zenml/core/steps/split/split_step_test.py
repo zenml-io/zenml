@@ -77,7 +77,8 @@ def test_no_split(create_random_dummy_data):
 
     dummy_data = create_random_dummy_data()
 
-    split_folds = [nosplit_func(ex, 1) for ex in dummy_data]
+    split_folds = [nosplit_func(ex,
+                                nosplit.get_num_splits()) for ex in dummy_data]
 
     # assert nosplit returns only one index
     assert all(fold == 0 for fold in split_folds)
@@ -109,7 +110,7 @@ def test_random_split(create_random_dummy_data):
                  "eval": 0.0}
 
     random_split = RandomSplit(split_map=split_map)
-    random_split_func = random_split.partition_fn()[0]
+    random_split_func, kwargs = random_split.partition_fn()
 
     # test defaults
     assert not random_split.schema
@@ -117,8 +118,9 @@ def test_random_split(create_random_dummy_data):
 
     dummy_data = create_random_dummy_data()
 
-    split_folds = [random_split_func(ex, 2, split_map=split_map)
-                   for ex in dummy_data]
+    split_folds = [random_split_func(ex,
+                                     random_split.get_num_splits(),
+                                     **kwargs) for ex in dummy_data]
 
     # artificial no split result tests, everything else is random
     assert all(fold == 0 for fold in split_folds)
@@ -155,17 +157,16 @@ def test_categorical_domain_split(create_structured_dummy_data):
     assert not domain_split.schema
     assert not domain_split.statistics
 
-    domain_split_func = domain_split.partition_fn()[0]
+    domain_split_func, kwargs = domain_split.partition_fn()
 
     # each categorical value in the split map above gets one example
     counts = [1, 1, 1]
 
     dummy_data = create_structured_dummy_data(counts)
 
-    split_folds = [domain_split_func(ex, 3,
-                                     categorical_column=cat_col,
-                                     split_map=split_map)
-                   for ex in dummy_data]
+    split_folds = [domain_split_func(ex,
+                                     domain_split.get_num_splits(),
+                                     **kwargs) for ex in dummy_data]
 
     # fold indices, zero-based, should correspond to their dict counterparts
     assert split_folds == [0, 1, 2]
@@ -176,12 +177,33 @@ def test_categorical_domain_split(create_structured_dummy_data):
 
     dummy_data = create_structured_dummy_data(counts)
 
-    split_folds = [domain_split_func(ex, 3,
-                                     categorical_column=cat_col,
-                                     split_map=split_map)
-                   for ex in dummy_data]
+    split_folds = [domain_split_func(ex,
+                                     domain_split.get_num_splits(),
+                                     **kwargs) for ex in dummy_data]
 
-    # default behavior is assigning everything into eval (index 1)
+    assert domain_split.get_num_splits() == 4
+
+    # default behavior is skipping (index n-1 = 3)
+    assert split_folds == [0, 1, 2, 3]
+
+    # test whether eval assignment works
+    domain_split.unknown_category_policy = "eval"
+
+    domain_split_func, kwargs = domain_split.partition_fn()
+
+    # each categorical value in the split map above gets one example,
+    # plus one out-of-split-map (unseen example)
+    counts = [1, 1, 1, 1]
+
+    dummy_data = create_structured_dummy_data(counts)
+
+    split_folds = [domain_split_func(ex,
+                                     domain_split.get_num_splits(),
+                                     **kwargs) for ex in dummy_data]
+
+    assert domain_split.get_num_splits() == 3
+
+    # default behavior is eval (index 1)
     assert split_folds == [0, 1, 2, 1]
 
 
@@ -223,19 +245,16 @@ def test_categorical_ratio_split(create_structured_dummy_data):
     assert not ratio_split.schema
     assert not ratio_split.statistics
 
-    ratio_split_func, args = ratio_split.partition_fn()
-
-    split_map = args["split_map"]
+    ratio_split_func, kwargs = ratio_split.partition_fn()
 
     # each categorical value in the split map above gets one example
     counts = [1, 1, 1]
 
     dummy_data = create_structured_dummy_data(counts)
 
-    split_folds = [ratio_split_func(ex, 3,
-                                    categorical_column=cat_col,
-                                    split_map=split_map)
-                   for ex in dummy_data]
+    split_folds = [ratio_split_func(ex,
+                                    ratio_split.get_num_splits(),
+                                    **kwargs) for ex in dummy_data]
 
     # fold indices, zero-based, should correspond to their dict counterparts
     assert split_folds == [0, 1, 2]
@@ -246,10 +265,31 @@ def test_categorical_ratio_split(create_structured_dummy_data):
 
     dummy_data = create_structured_dummy_data(counts)
 
-    split_folds = [ratio_split_func(ex, 3,
-                                    categorical_column=cat_col,
-                                    split_map=split_map)
-                   for ex in dummy_data]
+    split_folds = [ratio_split_func(ex,
+                                    ratio_split.get_num_splits(),
+                                    **kwargs) for ex in dummy_data]
+
+    assert ratio_split.get_num_splits() == 4
 
     # default behavior is assigning everything into eval (index 1)
+    assert split_folds == [0, 1, 2, 3]
+
+    # test whether eval assignment works
+    ratio_split.unknown_category_policy = "eval"
+
+    domain_split_func, kwargs = ratio_split.partition_fn()
+
+    # each categorical value in the split map above gets one example,
+    # plus one out-of-split-map (unseen example)
+    counts = [1, 1, 1, 1]
+
+    dummy_data = create_structured_dummy_data(counts)
+
+    split_folds = [domain_split_func(ex,
+                                     ratio_split.get_num_splits(),
+                                     **kwargs) for ex in dummy_data]
+
+    assert ratio_split.get_num_splits() == 3
+
+    # default behavior is eval (index 1)
     assert split_folds == [0, 1, 2, 1]
