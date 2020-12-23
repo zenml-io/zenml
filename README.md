@@ -37,7 +37,6 @@
 * [Quickstart](#quickstart)
 * [Installation](#step-0-installation)
 * [ZenML Concepts](#zenml-concepts)
-<!-- * [Comparison](#comparison) -->
 * [Contributing](#contributing)
 * [Copyright](#copyright)
 * [Credit](#credit)
@@ -131,7 +130,9 @@ training_pipeline.view_statistics()
 training_pipeline.evaluate()
 ```
 
-Of course, each of these steps can be [extended quite easily](#...) to accommodate more complex scenarios and use-cases. There is a steadily-growing number of integrations available, for example Google Dataflow for [distributed preprocessing](#...) or Google Cloud AI Platform as [training](#...) and [serving](#...) backend.
+Of course, each of these steps can be [extended quite easily](https://docs.zenml.io/steps/creating-custom-steps) to accommodate more complex scenarios and use-cases. There is a steadily-growing number of integrations available, 
+for example Google Dataflow for [distributed preprocessing](https://docs.zenml.io/backends/processing-backends) or Google Cloud AI Platform as a 
+[training](https://docs.zenml.io/backends/training-backends) backend.
 
 ## ZenML Concepts
 
@@ -204,7 +205,7 @@ A quick overview of the currently supported backends:
 | Kubernetes 	| Q1/2021 	|
 | Kubeflow 	| WIP 	|
 
-Integrating custom orchestration backends is fairly straightforward. Check out our example implementation of [Google Cloud VMs](/path/to/pgo.py) to learn more about building your own integrations.
+Integrating custom orchestration backends is fairly straightforward. Check out our example implementation of [Google Cloud VMs](https://github.com/maiot-io/zenml/blob/main/zenml/core/backends/orchestrator/gcp/orchestrator_gcp_backend.py) to learn more about building your own integrations.
 
 <!-- INSERT INFO ABOUT CONFIGURING ORCHESTRATION INTERFACES -->
 <!-- INSERT LINK TO DOCS -->
@@ -278,7 +279,7 @@ Any contribution made to this project will be licensed under the Apache License 
 ## Credit
 
 ZenML is built on the shoulders of giants: We leverage, and would like to give credit to, existing open-source libraries like [TFX](https://github.com/tensorflow/tfx/). The goal of our framework is neither to replace these libraries, nor to diminish their usage. ZenML is simply an opinionated, higher level interface with the focus being purely on easy-of-use and coherent intuitive design.
-You can read more about why we actually started building ZenML at our [blog](https://blog.maiot.io).
+You can read more about why we actually started building ZenML at our [blog](https://blog.maiot.io/why-zenml/).
 
 
 ## Citation
