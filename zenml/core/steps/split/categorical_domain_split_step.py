@@ -101,11 +101,11 @@ class CategoricalDomainSplit(BaseSplit):
 
         Example usage:
 
-        # Split on a categorical attribute called "color"
+        # Split on a categorical attribute called "color".
 
         # red and blue datapoints go into the train set,
-           green and yellow ones go into the eval set. other colors like
-           e.g. "purple" are thrown out by the "skip" flag
+           green and yellow ones go into the eval set. Other colors,
+           e.g. "purple", are discarded due to the "skip" flag.
 
         >>> split = CategoricalDomainSplit(
         ... categorical_column="color",

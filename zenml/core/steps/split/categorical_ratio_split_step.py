@@ -66,10 +66,8 @@ class CategoricalRatioSplit(BaseSplit):
         of categories of interest
 
         # half of the categories go entirely into the train set,
-          the other half into the eval set
-
-        # other colors like e.g. "purple" are thrown out by the "skip" flag
-           in unknown_category_policy
+          the other half into the eval set. Other colors, e.g. "purple",
+           are discarded due to the "skip" flag.
 
         >>> split = CategoricalRatioSplit(
         ... categorical_column="color",
