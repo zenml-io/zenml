@@ -72,7 +72,7 @@ setup(
     [console_scripts]
     zenml=zenml.cli.cli:cli
     """,
-    python_requires=">=3.6, <3.9",
+    python_requires=">=3.6, <3.9.0",
     license='Apache License 2.0',  # noqa
     author='maiot GmbH',
     author_email='support@maiot.io',
