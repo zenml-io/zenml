@@ -49,6 +49,7 @@ class CategoricalRatioSplit(BaseSplit):
             categorical_column: Text,
             categories: List[CategoricalValue],
             split_ratio: Dict[Text, float],
+            unknown_category_policy: Text = "skip",
             statistics=None,
             schema=None,
     ):
@@ -67,14 +68,29 @@ class CategoricalRatioSplit(BaseSplit):
         # half of the categories go entirely into the train set,
           the other half into the eval set
 
+        # other colors like e.g. "purple" are thrown out by the "skip" flag
+           in unknown_category_policy
+
         >>> split = CategoricalRatioSplit(
         ... categorical_column="color",
         ... categories = ["red", "green", "blue", "yellow"],
         ... split_ratio = {"train": 0.5,
-        ...                "eval": 0.5})
+        ...                "eval": 0.5},
+        ... unknown_category_policy="skip")
 
-        Any data point with a categorical value that is not present in the
-        `categories` list will by default be put into the eval set.
+        Supply the unknown_category_policy flag to set the unknown category
+        handling policy. There are two main options:
+
+        Setting unknown_category_policy to any key in the split map indicates
+        that any missing categories should be put into that particular split.
+        For example, supplying ``unknown_category_policy="train"`` indicates
+        that all missing categories should go into the training dataset, while
+        ``unknown_category_policy="eval"`` indicates that all missing
+        categories should go into the evaluation dataset.
+
+        Setting ``unknown_category_policy="skip"`` indicates that data points
+        with unknown categorical values (i.e., values not present in the
+        categorical value list) should be taken out of the data set.
 
         Args:
             statistics: Parsed statistics from a preceding StatisticsGen.
@@ -85,6 +101,8 @@ class CategoricalRatioSplit(BaseSplit):
              column on which to split.
             split_ratio: A dict mapping { split_name: percentage of categories
                                     in split }.
+            unknown_category_policy: String, indicates how to handle categories
+             in the data that are not present in the supplied category list.
         """
         self.categorical_column = categorical_column
 
@@ -92,17 +110,28 @@ class CategoricalRatioSplit(BaseSplit):
         lint_split_map(split_map)
         self.split_map = split_map
 
+        if unknown_category_policy in self.split_map:
+            self.unknown_category_policy = unknown_category_policy
+        else:
+            self.unknown_category_policy = constants.SKIP
+
         super().__init__(statistics=statistics,
                          schema=schema,
                          categorical_column=categorical_column,
                          split_ratio=split_ratio,
-                         categories=categories)
+                         categories=categories,
+                         unknown_category_policy=unknown_category_policy)
 
     def partition_fn(self):
         return CategoricalPartitionFn, {
             'split_map': self.split_map,
-            'categorical_column': self.categorical_column
+            'categorical_column': self.categorical_column,
+            'unknown_category_policy': self.unknown_category_policy
         }
 
     def get_split_names(self) -> List[Text]:
-        return list(self.split_map.keys())
+        split_names = list(self.split_map.keys())
+        if self.unknown_category_policy in self.split_map:
+            return split_names
+        else:
+            return split_names + [constants.SKIP]
