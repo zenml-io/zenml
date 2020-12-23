@@ -50,7 +50,8 @@ def RandomSplitPartitionFn(element: Any,
         num_partitions: Number of splits, unused here.
         split_map: Dict mapping {split_name: percentage of data in split}.
 
-    Returns: An integer n, where 0 <= n <= num_partitions - 1.
+    Returns:
+        An integer n, where 0 ≤ n ≤ num_partitions - 1.
     """
 
     # calculates probability mass of each split (= interval on [0,1))

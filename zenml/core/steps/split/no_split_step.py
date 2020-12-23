@@ -27,7 +27,8 @@ def NoSplitPartitionFn(element: Any,
         element: Data point, given as a tf.train.Example.
         num_partitions: Number of splits, unused here.
 
-    Returns: An integer n, where 0 <= n <= num_partitions - 1.
+    Returns:
+        An integer n, where 0 ≤ n ≤ num_partitions - 1.
     """
     return 0
 
