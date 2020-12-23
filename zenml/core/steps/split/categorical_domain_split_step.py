@@ -124,8 +124,8 @@ class CategoricalDomainSplit(BaseSplit):
         ``unknown_category_policy="eval"`` indicates that all missing
         categories should go into the evaluation dataset.
 
-        Setting ``unknown_category_policy="skip"`` indicates that data points with
-        unknown categorical values (i.e., values not present in any of the
+        Setting ``unknown_category_policy="skip"`` indicates that data points
+        with unknown categorical values (i.e., values not present in any of the
         categorical value lists inside the split map) should be taken out of
         the data set.
 
