@@ -83,7 +83,7 @@ class Executor(BaseExecutor):
         split_step: BaseSplit = c(**args)
 
         # infer the names of the splits from the config
-        split_names = split_step.get_split_names_ordered()
+        split_names = split_step.get_split_names()
 
         # Get output split path
         examples_artifact = artifact_utils.get_single_instance(
