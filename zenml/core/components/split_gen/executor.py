@@ -29,6 +29,7 @@ from zenml.core.components.split_gen.utils import parse_schema, \
     parse_statistics
 from zenml.core.standards.standard_keys import StepKeys
 from zenml.core.steps.split.base_split_step import BaseSplit
+from zenml.core.steps.split.constants import SKIP
 from zenml.utils import source_utils
 from zenml.utils.logger import get_logger
 
@@ -112,12 +113,15 @@ class Executor(BaseExecutor):
                     split_step.get_num_splits(),
                     **split_step.partition_fn()[1])
                 )
+
                 for split_name, new_split in zip(split_names,
                                                  list(new_splits)):
-                    # WriteSplit function writes to TFRecord again
-                    (new_split
-                     | 'Serialize.' + split_name >> beam.Map(
-                                lambda x: x.SerializeToString())
-                     | 'WriteSplit_' + split_name >> WriteSplit(get_split_uri(
-                                output_dict[constants.OUTPUT_EXAMPLES],
-                                split_name)))
+                    if split_name != SKIP:
+                        # WriteSplit function writes to TFRecord again
+                        (new_split
+                         | 'Serialize.' + split_name >> beam.Map(
+                                    lambda x: x.SerializeToString())
+                         | 'WriteSplit_' + split_name >> WriteSplit(
+                                    get_split_uri(
+                                        output_dict[constants.OUTPUT_EXAMPLES],
+                                        split_name)))
