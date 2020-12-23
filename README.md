@@ -61,7 +61,7 @@ pip install zenml
 Alternatively, if you’re feeling brave, feel free to install the bleeding edge:
 **NOTE:** Do so on your own risk, no guarantees given!
 ```bash
-pip install git+https://github.com/maiot-io/zenml.git@master --upgrade
+pip install git+https://github.com/maiot-io/zenml.git@main --upgrade
 ```
 
 #### Step 1: Initialize a ZenML repo from within a git repo
