@@ -35,8 +35,8 @@ def lint_split_map(split_map: Dict[Text, List[CategoricalValue]]):
 def CategoricalPartitionFn(element: Any,
                            num_partitions: int,
                            categorical_column: Text,
-                           split_map: Dict[Text, List[CategoricalValue]]) \
-        -> int:
+                           split_map: Dict[Text, List[CategoricalValue]],
+                           unknown_category_policy: Text) -> int:
     """
     Function for a categorical split on data to be used in a beam.Partition.
     Args:
@@ -46,19 +46,20 @@ def CategoricalPartitionFn(element: Any,
          to perform the split.
         split_map: Dict {split_name: [category_list]} mapping the categorical
          values in categorical_column to their respective splits.
+        unknown_category_policy: Text, identifier on how to handle categorical
+         values not present in the split_map.
 
-    Returns: An integer n, where 0 <= n <= num_partitions - 1.
+    Returns:
+        An integer n, where 0 ≤ n ≤ num_partitions - 1.
 
     """
     category_value = get_categorical_value(element, cat_col=categorical_column)
 
     # The following code produces a dict: { split_name: unique_integer }
-    # However 'train' always maps to 0
-    enumerated_splits = {constants.TRAIN: 0}
-    enumerated_splits.update(
-        {name: i for i, name in enumerate(split_map.keys())
-         if name != constants.TRAIN}
-    )
+    enumerated_splits = {name: i for i, name in enumerate(split_map.keys())}
+
+    if unknown_category_policy not in enumerated_splits:
+        enumerated_splits.update({unknown_category_policy: num_partitions - 1})
 
     for split_name, category_value_list in split_map.items():
         # if the value is in the list, then just return
@@ -66,9 +67,9 @@ def CategoricalPartitionFn(element: Any,
             # return the index of that split
             return enumerated_splits[split_name]
 
-    # This is the default behavior for category_values that dont belong to 
-    #  any split in the split_map. We assign it to index '1'
-    return 1
+    # This is the default behavior for category_values that dont belong to
+    #  any split in the split_map.
+    return enumerated_splits[unknown_category_policy]
 
 
 class CategoricalDomainSplit(BaseSplit):
@@ -82,6 +83,7 @@ class CategoricalDomainSplit(BaseSplit):
             self,
             categorical_column: Text,
             split_map: Dict[Text, List[CategoricalValue]],
+            unknown_category_policy: Text = constants.SKIP,
             statistics=None,
             schema=None,
     ):
@@ -94,15 +96,33 @@ class CategoricalDomainSplit(BaseSplit):
 
         Example usage:
 
-        # Split on a categorical attribute called "color"
+        # Split on a categorical attribute called "color".
 
         # red and blue datapoints go into the train set,
-           green and yellow ones go into the eval set
+           green and yellow ones go into the eval set. Other colors,
+           e.g. "purple", are discarded due to the "skip" flag.
 
         >>> split = CategoricalDomainSplit(
         ... categorical_column="color",
         ... split_map = {"train": ["red", "blue"],
-        ...              "eval": ["green", "yellow"]})
+        ...              "eval": ["green", "yellow"]},
+        ... unknown_category_policy="skip")
+
+        Supply the ``unknown_category_policy`` flag to set the unknown
+        category handling policy. There are two main options:
+
+        Setting ``unknown_category_policy`` to any key in the split map
+        indicates that any missing categories should be put into that
+        particular split. For example, supplying
+        ``unknown_category_policy="train"`` indicates that all missing
+        categories should go into the training dataset, while
+        ``unknown_category_policy="eval"`` indicates that all missing
+        categories should go into the evaluation dataset.
+
+        Setting ``unknown_category_policy="skip"`` indicates that data points
+        with unknown categorical values (i.e., values not present in any of the
+        categorical value lists inside the split map) should be taken out of
+        the data set.
 
         Args:
             statistics: Parsed statistics artifact from a preceding
@@ -112,22 +132,35 @@ class CategoricalDomainSplit(BaseSplit):
              which to split.
             split_map: A dict { split_name: [categorical_values] } mapping
              categorical values to their respective splits.
+            unknown_category_policy: String, indicates how to handle categories
+             in the data that are not present in the split map.
         """
         self.categorical_column = categorical_column
 
         lint_split_map(split_map)
         self.split_map = split_map
 
+        if unknown_category_policy in self.split_map:
+            self.unknown_category_policy = unknown_category_policy
+        else:
+            self.unknown_category_policy = constants.SKIP
+
         super().__init__(statistics=statistics,
                          schema=schema,
                          categorical_column=categorical_column,
-                         split_map=split_map)
+                         split_map=split_map,
+                         unknown_category_policy=unknown_category_policy)
 
     def partition_fn(self):
         return CategoricalPartitionFn, {
             'split_map': self.split_map,
-            'categorical_column': self.categorical_column
+            'categorical_column': self.categorical_column,
+            'unknown_category_policy': self.unknown_category_policy
         }
 
     def get_split_names(self) -> List[Text]:
-        return list(self.split_map.keys())
+        split_names = list(self.split_map.keys())
+        if self.unknown_category_policy in self.split_map:
+            return split_names
+        else:
+            return split_names + [constants.SKIP]

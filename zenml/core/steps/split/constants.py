@@ -18,3 +18,5 @@ TRAIN = 'train'
 EVAL = 'eval'
 TEST = 'test'  # new test split name
 NOSPLIT = 'nosplit'  # nosplit
+
+SKIP = 'skip'  # skip category

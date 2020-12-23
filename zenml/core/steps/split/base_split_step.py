@@ -25,9 +25,9 @@ from zenml.utils.enums import StepTypes
 
 class BaseSplit(BaseStep):
     """
-    Base split step class. Each custom data split step should derive
-    from this. In order to define a custom split, override the split step
-    partition_fn method.
+    Base split class. Each custom data split should derive from this.
+    In order to define a custom split, override the base split's partition_fn
+    method.
     """
 
     STEP_TYPE = StepTypes.split.name
@@ -62,8 +62,9 @@ class BaseSplit(BaseStep):
             >>> def partition_fn(element, n, **kwargs) -> int,
 
             where n is the number of splits;
-        2. The partition_fn only returns signed integers i less than n, i.e.
-           0 <= i <= n - 1.
+        2. The partition_fn only returns signed integers i less than n, i.e. ::
+
+                0 ≤ i ≤ n - 1.
 
         Returns:
             A tuple (partition_fn, kwargs) of the partition function and its
@@ -80,6 +81,24 @@ class BaseSplit(BaseStep):
             A list of strings, which are the split names.
         """
         pass
+
+    # def get_split_names_ordered(self) -> List[Text]:
+    #     """
+    #     Internal function to order the get_split_names function.
+    #
+    #     Returns:
+    #        A list of strings, which are the split names. The split names will
+    #          be ordered as follows:
+    #
+    #             * Index 0 will be train
+    #             * Index n-1 will be skip
+    #             * Everything in between will be arbitrarily ordered
+    #     """
+    #     original_order = self.get_split_names()
+    #     # TODO: [HIGH] enforce order
+    #     reordered = original_order
+    #
+    #     return reordered
 
     def get_num_splits(self):
         """
