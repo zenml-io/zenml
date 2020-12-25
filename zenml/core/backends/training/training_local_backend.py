@@ -13,6 +13,9 @@
 #  permissions and limitations under the License.
 """Definition of the base Training Backend"""
 
+from tfx.components.trainer.executor import GenericExecutor
+from tfx.dsl.components.base import executor_spec
+
 from zenml.core.backends.base_backend import BaseBackend
 
 
@@ -32,3 +35,11 @@ class TrainingLocalBackend(BaseBackend):
 
     BACKEND_TYPE = 'local'
     BACKEND_KEY = 'training'
+
+    def get_executor_spec(self):
+        """Return a TFX Executor spec for the Trainer Component."""
+        return executor_spec.ExecutorClassSpec(GenericExecutor)
+
+    def get_custom_config(self):
+        """Return a dict to be passed as a custom_config to the Trainer."""
+        return {}

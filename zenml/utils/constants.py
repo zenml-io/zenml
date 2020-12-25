@@ -41,7 +41,7 @@ ZENML_LOGGING_VERBOSITY = os.getenv(ENV_ZENML_LOGGING_VERBOSITY, 3)
 ABSL_LOGGING_VERBOSITY = os.getenv(ENV_ABSL_LOGGING_VERBOSITY, -100)
 
 # Base images for zenml
-ZENML_REGISTRY = 'eu.gcr.io/maiot-zenml/'
+ZENML_REGISTRY = 'eu.gcr.io/maiot-zenml'
 ZENML_BASE_IMAGE_NAME = f'{ZENML_REGISTRY}/zenml:base-{__version__}'
 ZENML_TRAINER_IMAGE_NAME = f'{ZENML_REGISTRY}/zenml:cuda-{__version__}'
 

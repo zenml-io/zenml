@@ -263,50 +263,12 @@ class BasePipeline:
             exec_args['staging_location'] = pipeline_temp
             exec_args = parse_yaml_beam_args(exec_args)
 
-        # Training
-        # TODO: [MEDIUM] Refactor this into training backends?
-        if 'training' in env_dict[keys.EnvironmentKeys.BACKENDS]:
-            training = env_dict[keys.EnvironmentKeys.BACKENDS]['training']
-
-            training_type = training[keys.BackendKeys.TYPE]
-            training_args = training[keys.BackendKeys.ARGS]
-
-            train_args = dict()
-            if training_type == 'gcaip':
-                train_args = {'project': training_args['project_id'],
-                              'region': training_args['gcp_region'],
-                              'jobDir': pipeline_temp,
-                              # TODO: where is the image?
-                              # 'masterConfig': {'imageUri': TRAINER_IMAGE},
-                              'scaleTier': training_args['scale_tier']}
-
-                if 'runtime_version' in training_args:
-                    train_args['runtimeVersion'] = training_args[
-                        'runtime_version']
-
-                if 'python_version' in training_args:
-                    train_args['pythonVersion'] = training_args[
-                        'python_version']
-
-                if 'max_running_time' in training_args:
-                    train_args['scheduling'] = {
-                        'maxRunningTime': training_args['max_running_time']}
-
-            # TODO: [LOW] Hard-coded (spec)
-            training_dict = {
-                'type': training_type,
-                'args': training_args,
-            }
-        else:
-            training_dict = {}
-
         return {'repo_id': repo_id,
                 'pipeline_root': pipeline_root,
                 keys.EnvironmentKeys.ENABLE_CACHE: pipeline_enable_cache,
                 'pipeline_log_root': pipeline_log,
                 'metadata_connection_config': metadata_connection_config,
-                'execution_args': exec_args,
-                'training_args': training_dict}
+                'execution_args': exec_args}
 
     @classmethod
     def from_config(cls, config: Dict):

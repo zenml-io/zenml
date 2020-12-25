@@ -31,7 +31,7 @@ from zenml.core.backends.processing.processing_local_backend import \
 from zenml.core.backends.processing.processing_spark_backend import \
     ProcessingSparkBackend
 from zenml.core.backends.training.training_gcaip_backend import \
-    TrainingGCAIPBackend
+    SingleGPUTrainingGCAIPBackend
 from zenml.core.backends.training.training_local_backend import \
     TrainingLocalBackend
 
@@ -67,5 +67,5 @@ backend_factory.register_backend(OrchestratorKubernetesBackend)
 backend_factory.register_backend(ProcessingDataFlowBackend)
 backend_factory.register_backend(ProcessingLocalBackend)
 backend_factory.register_backend(ProcessingSparkBackend)
-backend_factory.register_backend(TrainingGCAIPBackend)
+backend_factory.register_backend(SingleGPUTrainingGCAIPBackend)
 backend_factory.register_backend(TrainingLocalBackend)

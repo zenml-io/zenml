@@ -25,9 +25,6 @@ from tfx.components.schema_gen.component import SchemaGen
 from tfx.components.statistics_gen.component import StatisticsGen
 from tfx.components.trainer.component import Trainer
 from tfx.components.transform.component import Transform
-from tfx.dsl.components.base import executor_spec
-from tfx.extensions.google_cloud_ai_platform.trainer import \
-    executor as ai_platform_trainer_executor
 from tfx.proto import trainer_pb2
 
 from zenml.core.backends.orchestrator.local.orchestrator_local_backend import \
@@ -39,7 +36,6 @@ from zenml.core.backends.training.training_local_backend import \
 from zenml.core.components.data_gen.component import DataGen
 from zenml.core.components.split_gen.component import SplitGen
 from zenml.core.pipelines.base_pipeline import BasePipeline
-from zenml.core.pipelines.utils import sanitize_name_for_ai_platform
 from zenml.core.standards import standard_keys as keys
 from zenml.core.steps.deployer.gcaip_deployer import GCAIPDeployer
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
@@ -153,29 +149,14 @@ class TrainingPipeline(BasePipeline):
         ############
         # TRAINING #
         ############
-        # TODO: [LOW] Hard-coded
-        training_type = specs['training_args']['type']
-        training_args = specs['training_args']['args']
-
-        kwargs = {'custom_config': steps[keys.TrainingSteps.TRAINING]}
-
-        if training_type == 'gcaip':
-            kwargs.update({
-                'custom_executor_spec': executor_spec.ExecutorClassSpec(
-                    ai_platform_trainer_executor.GenericExecutor)})
-
-            # TODO: [LOW] Fix the constant issue
-            cloud_job_prefix = 'some_constant'
-
-            from tfx.extensions.google_cloud_ai_platform.trainer.executor \
-                import TRAINING_ARGS_KEY, JOB_ID_KEY
-            kwargs['custom_config'].update(
-                {TRAINING_ARGS_KEY: training_args,
-                 JOB_ID_KEY: sanitize_name_for_ai_platform(cloud_job_prefix)})
-
-        from tfx.components.trainer.executor import GenericExecutor
-        Trainer.EXECUTOR_SPEC = executor_spec.ExecutorClassSpec(
-            GenericExecutor)
+        training_backend: TrainingLocalBackend = \
+            self.backends_dict[TrainingLocalBackend.BACKEND_KEY]
+        training_kwargs = {
+            'custom_executor_spec': training_backend.get_executor_spec(),
+            'custom_config': steps[keys.TrainingSteps.TRAINING]
+        }
+        training_kwargs['custom_config'].update(
+            training_backend.get_custom_config())
 
         trainer = Trainer(
             transformed_examples=transform.outputs.transformed_examples,
@@ -184,7 +165,7 @@ class TrainingPipeline(BasePipeline):
             schema=schema,
             train_args=trainer_pb2.TrainArgs(),
             eval_args=trainer_pb2.EvalArgs(),
-            **kwargs
+            **training_kwargs
         ).with_id(GDPComponent.Trainer.name)
 
         component_list.extend([trainer])
