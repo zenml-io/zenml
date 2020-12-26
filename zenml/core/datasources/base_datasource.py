@@ -178,7 +178,6 @@ class BaseDatasource:
 
     def get_datapoints(self):
         """Gets total number of datapoints in datasource"""
-        # TODO: [HIGH] Refactor this
         pipeline = self._get_one_pipeline()
         data_files = self._get_data_file_paths(pipeline)
         return sum(1 for _ in tf.data.TFRecordDataset(data_files,

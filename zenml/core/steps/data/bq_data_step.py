@@ -62,7 +62,7 @@ def ReadFromBigQuery(pipeline: beam.Pipeline,
                 project=dest_project,
                 gcs_location=gcs_location,
                 query=query,
-                use_standard_sql=True))  # TODO: [LOW] Whats this for?
+                use_standard_sql=True))
 
 
 class BQDataStep(BaseDataStep):

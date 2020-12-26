@@ -82,24 +82,6 @@ class BaseSplit(BaseStep):
         """
         pass
 
-    # def get_split_names_ordered(self) -> List[Text]:
-    #     """
-    #     Internal function to order the get_split_names function.
-    #
-    #     Returns:
-    #        A list of strings, which are the split names. The split names will
-    #          be ordered as follows:
-    #
-    #             * Index 0 will be train
-    #             * Index n-1 will be skip
-    #             * Everything in between will be arbitrarily ordered
-    #     """
-    #     original_order = self.get_split_names()
-    #     # TODO: [HIGH] enforce order
-    #     reordered = original_order
-    #
-    #     return reordered
-
     def get_num_splits(self):
         """
         Returns the total number of splits.

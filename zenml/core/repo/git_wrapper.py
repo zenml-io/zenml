@@ -90,7 +90,6 @@ class GitWrapper:
         """
         Finds the git sha that each file within the module is currently on.
         """
-        # TODO: [HIGH] Check whether returning the head makes sense.
         return self.git_repo.head.object.hexsha
 
     def check_module_clean(self, source_path: Text):
