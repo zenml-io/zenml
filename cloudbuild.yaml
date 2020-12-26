@@ -11,4 +11,10 @@ steps:
   # push CUDA image
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'eu.gcr.io/maiot-zenml/zenml:cuda-$TAG_NAME']
+  # build dataflow image with tag
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'build', '-t', 'eu.gcr.io/maiot-zenml/zenml:dataflow-$TAG_NAME', '-f', 'zenml/docker/dataflow.Dockerfile', '.' ]
+  # push dataflow image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'push', 'eu.gcr.io/maiot-zenml/zenml:dataflow-$TAG_NAME' ]
 timeout: 3600s

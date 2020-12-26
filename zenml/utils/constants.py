@@ -44,6 +44,7 @@ ABSL_LOGGING_VERBOSITY = os.getenv(ENV_ABSL_LOGGING_VERBOSITY, -100)
 ZENML_REGISTRY = 'eu.gcr.io/maiot-zenml'
 ZENML_BASE_IMAGE_NAME = f'{ZENML_REGISTRY}/zenml:base-{__version__}'
 ZENML_TRAINER_IMAGE_NAME = f'{ZENML_REGISTRY}/zenml:cuda-{__version__}'
+ZENML_DATAFLOW_IMAGE_NAME = f'{ZENML_REGISTRY}/zenml:dataflow-{__version__}'
 
 # Evaluation utils constants
 COMPARISON_NOTEBOOK = 'comparison_notebook.ipynb'

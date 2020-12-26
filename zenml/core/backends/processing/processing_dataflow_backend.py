@@ -19,9 +19,8 @@ from typing import Optional, List, Text
 
 from zenml.core.backends.processing.processing_local_backend import \
     ProcessingLocalBackend
-from zenml.utils import path_utils
+from zenml.utils.constants import ZENML_DATAFLOW_IMAGE_NAME
 from zenml.utils.logger import get_logger
-from zenml.utils.version import __version__
 
 logger = get_logger(__name__)
 
@@ -30,7 +29,8 @@ class ProcessingDataFlowBackend(ProcessingLocalBackend):
     """
     Use this to run a ZenML pipeline on Google Dataflow.
 
-    This backend is not implemented yet.
+    This backend utilizes the beam v2 runner to run a custom docker image on
+    the Dataflow job.
     """
     BACKEND_TYPE = 'dataflow'
 
@@ -39,13 +39,29 @@ class ProcessingDataFlowBackend(ProcessingLocalBackend):
             project: Text,
             region: Text = 'europe-west1',
             job_name: Text = f'zen_{int(time.time())}',
-            requirements_file: Text = None,
+            image: Text = ZENML_DATAFLOW_IMAGE_NAME,
             machine_type: Text = 'n1-standard-4',
             num_workers: int = 4,
             max_num_workers: int = 10,
             disk_size_gb: int = 50,
             autoscaling_algorithm: Text = 'THROUGHPUT_BASED',
             **kwargs):
+        """
+        Adding this Backend will cause all 'Beam'-supported Steps in the
+        pipeline to run on Google Dataflow.
+
+        Args:
+            project: GCP project to launch dataflow job.
+            region: GCP region to launch dataflow job.
+            job_name: Name of dataflow job.
+            image: Docker Image to use. Must inherit from the beam base image.
+            machine_type: Type of machine to run workload.
+            num_workers: Number of workers on that machine.
+            max_num_workers: Max number of workers in the workload.
+            disk_size_gb: Disk size per worker.
+            autoscaling_algorithm: Autoscaling algorithm to use.
+            **kwargs:
+        """
         self.project = project
         self.region = region
         self.job_name = job_name
@@ -54,27 +70,7 @@ class ProcessingDataFlowBackend(ProcessingLocalBackend):
         self.max_num_workers = max_num_workers
         self.disk_size_gb = disk_size_gb
         self.autoscaling_algorithm = autoscaling_algorithm
-
-        # Resolve requirements.txt
-        if requirements_file:
-            self.requirements_file = requirements_file
-        else:
-            from zenml.core.repo.repo import Repository
-            config_dir = Repository.get_instance().zenml_config.config_dir
-            self.requirements_file = os.path.join(
-                config_dir, 'requirements.txt')
-
-        if not path_utils.file_exists(self.requirements_file):
-            logger.info(f'Creating requirements file at: '
-                        f'{self.requirements_file}')
-            path_utils.write_file_contents(self.requirements_file,
-                                           f'zenml=={__version__}')
-        else:
-            logger.info(
-                f'requirements.txt found at {self.requirements_file}. Please '
-                f'make sure that one of the requirements is zenml=='
-                f'{__version__} otherwise the dataflow jobs will fail.')
-
+        self.image = image
         super().__init__(**kwargs)
 
     def get_beam_args(self,
@@ -95,6 +91,8 @@ class ProcessingDataFlowBackend(ProcessingLocalBackend):
             '--max_num_workers=' + str(self.max_num_workers),
 
             # Specifying dependencies
+            # TODO: [LOW] Perhaps add an empty requirements.txt to avoid the
+            #  tfx ephemeral package addition
             # '--extra_package=' + self.extra_package,
             # '--requirements_file=' + self.requirements_file,
             # '--setup_file=' + self.setup_file,
@@ -103,4 +101,8 @@ class ProcessingDataFlowBackend(ProcessingLocalBackend):
             '--disk_size_gb=' + str(self.disk_size_gb),
             '--experiments=shuffle_mode=auto',
             '--machine_type=' + self.machine_type,
+
+            # Using docker
+            '--experiment=use_runner_v2',
+            f'--worker_harness_container_image={ZENML_DATAFLOW_IMAGE_NAME}'
         ]
