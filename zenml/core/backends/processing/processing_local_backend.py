@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Definition of the data Processing Backend"""
 
+from typing import Optional, List, Text
+
 from zenml.core.backends.base_backend import BaseBackend
 
 
@@ -31,3 +33,22 @@ class ProcessingLocalBackend(BaseBackend):
     """
     BACKEND_TYPE = 'local'
     BACKEND_KEY = 'processing'
+
+    def get_beam_args(self,
+                      pipeline_name: Text = None,
+                      pipeline_root: Text = None) -> \
+            Optional[List[Text]]:
+        """
+        Returns a list of beam args for the pipeline.
+
+        Args:
+            pipeline_name: Name of the pipeline.
+            pipeline_root: Root dir of pipeline.
+        """
+        # TODO: [LOW] Check if multiprocessing slows pipeline down or not.
+        return [
+            # '--direct_running_mode=multi_processing',
+            # # 0 means auto-detect based on on the number of CPUs available
+            # # during execution time.
+            # '--direct_num_workers=0',
+        ]
