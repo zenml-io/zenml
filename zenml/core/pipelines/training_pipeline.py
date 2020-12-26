@@ -77,7 +77,6 @@ class TrainingPipeline(BasePipeline):
              pipeline.
 
         """
-        specs = self.get_pipeline_spec(config)
         steps = config[keys.GlobalKeys.STEPS]
 
         component_list = []
@@ -196,7 +195,7 @@ class TrainingPipeline(BasePipeline):
         # SERVING #
         ###########
         if keys.TrainingSteps.DEPLOYMENT in steps:
-            serving_args = specs[keys.TrainingSteps.DEPLOYMENT]['args']
+            serving_args = steps[keys.TrainingSteps.DEPLOYMENT]['args']
 
             project_id = serving_args['project_id']
             output_base_dir = self.artifact_store.path

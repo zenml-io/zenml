@@ -13,29 +13,24 @@
 #  permissions and limitations under the License.
 """Base High-level ZenML Pipeline definition"""
 
-import os
 from abc import abstractmethod
 from typing import Dict, Text, Any, Optional, List
 from uuid import uuid4
-
-from tfx.utils import io_utils
 
 from zenml.core.backends.base_backend import BaseBackend
 from zenml.core.backends.orchestrator.local.orchestrator_local_backend import \
     OrchestratorLocalBackend
 from zenml.core.datasources.base_datasource import BaseDatasource
 from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
-from zenml.core.pipelines.utils import parse_yaml_beam_args
 from zenml.core.repo.artifact_store import ArtifactStore
 from zenml.core.repo.repo import Repository
 from zenml.core.repo.zenml_config import METADATA_KEY
 from zenml.core.standards import standard_keys as keys
 from zenml.core.steps.base_step import BaseStep
-from zenml.utils.constants import CONFIG_VERSION, APP_NAME
+from zenml.utils.constants import CONFIG_VERSION
 from zenml.utils.enums import PipelineStatusTypes
 from zenml.utils.logger import get_logger
 from zenml.utils.print_utils import to_pretty_string
-from zenml.utils.version import __version__
 from zenml.utils.zenml_analytics import track, CREATE_PIPELINE, RUN_PIPELINE, \
     GET_PIPELINE_ARTIFACTS
 
@@ -213,62 +208,6 @@ class BasePipeline:
             pipeline_name (str): simple string name.
         """
         return pipeline_name.split('_')[1]
-
-    @staticmethod
-    def get_pipeline_spec(pipeline_dict: Dict[Text, Any]):
-        env_dict = pipeline_dict[keys.GlobalKeys.ENV]
-
-        # Dataset, experiment
-        # Using the artifact store ID makes sense
-        # It is used currently to make all pipelines have the same base
-        # context in ML metadata store.
-        repo_id = ArtifactStore(
-            env_dict[keys.EnvironmentKeys.ARTIFACT_STORE]).unique_id
-        pipeline_name = env_dict[keys.EnvironmentKeys.EXPERIMENT_NAME]
-
-        # Artifact- and metadata store
-        artifact_store = env_dict[keys.EnvironmentKeys.ARTIFACT_STORE]
-        if not artifact_store.startswith('gs://'):
-            artifact_store = os.path.abspath(artifact_store)
-
-        metadata_store: ZenMLMetadataStore = ZenMLMetadataStore.from_config(
-            env_dict[keys.EnvironmentKeys.METADATA_STORE])
-        metadata_connection_config = metadata_store.get_tfx_metadata_config()
-
-        # Pipeline settings
-        pipeline_enable_cache = env_dict[keys.EnvironmentKeys.ENABLE_CACHE]
-        pipeline_root = os.path.join(artifact_store, repo_id)
-        pipeline_log = os.path.join(pipeline_root, 'logs', pipeline_name)
-        pipeline_temp = os.path.join(pipeline_root, 'tmp', pipeline_name)
-
-        # Execution
-        # TODO: [MEDIUM] Refactor this into execution backends?
-        execution = env_dict[keys.EnvironmentKeys.BACKENDS]['processing']
-
-        exec_type = execution[keys.BackendKeys.TYPE]
-        exec_args = execution[keys.BackendKeys.ARGS]
-
-        if exec_type == 'beam':
-            dist_path = os.path.join(os.getcwd(), 'dist')
-            req_path = os.path.join(dist_path, 'requirements.txt')
-            io_utils.write_string_file(req_path, '')
-            gz_path = os.path.join(dist_path, '{}-{}.tar.gz'.format(
-                APP_NAME, __version__))
-
-            exec_args['extra_package'] = gz_path
-            exec_args['requirements_file'] = req_path
-            exec_args['setup_file'] = os.path.join(os.getcwd(), 'setup.py')
-            exec_args['job_name'] = 'gdp-' + pipeline_name
-            exec_args['temp_location'] = pipeline_temp
-            exec_args['staging_location'] = pipeline_temp
-            exec_args = parse_yaml_beam_args(exec_args)
-
-        return {'repo_id': repo_id,
-                'pipeline_root': pipeline_root,
-                keys.EnvironmentKeys.ENABLE_CACHE: pipeline_enable_cache,
-                'pipeline_log_root': pipeline_log,
-                'metadata_connection_config': metadata_connection_config,
-                'execution_args': exec_args}
 
     @classmethod
     def from_config(cls, config: Dict):
