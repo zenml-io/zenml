@@ -1,5 +1,5 @@
-from zenml.core.backends.orchestrator.gcp.orchestrator_gcp_backend import \
-    OrchestratorGCPBackend
+from zenml.core.backends.processing.processing_dataflow_backend import \
+    ProcessingDataFlowBackend
 from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.metadata.mysql_metadata_wrapper import MySQLMetadataStore
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
@@ -54,15 +54,15 @@ training_pipeline.add_evaluator(
                   metrics={'has_diabetes': ['binary_crossentropy',
                                             'binary_accuracy']}))
 
-# Run the pipeline on a Google Cloud VM.
-# The metadata store and artifact store should be accessible by the
-# orchestrator VM.
+# Run the pipeline locally but distribute the beam-compatible steps, i.e.,
+# the Data, Statistics, Preprocessing and Evaluator Steps.
+# Note: If any of these steps are non-standard, custom steps, then you need
+# to build a new Docker image based on the ZenML Dataflow image, and pass that
+# into the `image` parameter in the ProcessingDataFlowBackend
 
 
-# Define the orchestrator backend
-orchestrator_backend = OrchestratorGCPBackend(
-    cloudsql_connection_name=cloudsql_connection_name,
-    project=project)
+# Define the processing backend
+processing_backend = ProcessingDataFlowBackend(project=project)
 
 # Define the metadata store
 metadata_store = MySQLMetadataStore(
@@ -78,7 +78,7 @@ artifact_store = ArtifactStore(artifact_store_path)
 
 # Run the pipeline
 training_pipeline.run(
-    backends=[orchestrator_backend],
+    backends=[processing_backend],
     metadata_store=metadata_store,
     artifact_store=artifact_store,
 )

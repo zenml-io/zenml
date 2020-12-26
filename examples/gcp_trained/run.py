@@ -1,5 +1,7 @@
 from zenml.core.backends.orchestrator.gcp.orchestrator_gcp_backend import \
     OrchestratorGCPBackend
+from zenml.core.backends.training.training_gcaip_backend import \
+    SingleGPUTrainingGCAIPBackend
 from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.metadata.mysql_metadata_wrapper import MySQLMetadataStore
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
@@ -54,15 +56,25 @@ training_pipeline.add_evaluator(
                   metrics={'has_diabetes': ['binary_crossentropy',
                                             'binary_accuracy']}))
 
-# Run the pipeline on a Google Cloud VM.
-# The metadata store and artifact store should be accessible by the
-# orchestrator VM.
+# Run the pipeline on a Google Cloud VM and train on GCP as well
+# In order for this to work, the orchestrator and the backend should be in the
+# same GCP project. Also, the metadata store and artifact store should be
+# accessible by the orchestrator VM and the GCAIP worker VM.
+
+# Note: If you are using a custom Trainer, then you need
+# to build a new Docker image based on the ZenML Trainer image, and pass that
+# into the `image` parameter in the SingleGPUTrainingGCAIPBackend.
 
 
 # Define the orchestrator backend
 orchestrator_backend = OrchestratorGCPBackend(
     cloudsql_connection_name=cloudsql_connection_name,
     project=project)
+
+# Define the training backend
+training_backend = SingleGPUTrainingGCAIPBackend(
+    project=project,
+    job_dir=training_job_dir)
 
 # Define the metadata store
 metadata_store = MySQLMetadataStore(
@@ -78,7 +90,7 @@ artifact_store = ArtifactStore(artifact_store_path)
 
 # Run the pipeline
 training_pipeline.run(
-    backends=[orchestrator_backend],
+    backends=[orchestrator_backend, training_backend],
     metadata_store=metadata_store,
     artifact_store=artifact_store,
 )
