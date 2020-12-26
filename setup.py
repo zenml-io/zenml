@@ -66,7 +66,8 @@ setup(
         "analytics-python==1.2.9",
         "distro==1.5.0",
         "tensorflow>=2.3.0,<2.4.0",
-        "tensorflow-serving-api==2.3.0"
+        "tensorflow-serving-api==2.3.0",
+        "apache-beam==2.26.0",  # temporary for dataflow runner
     ],
     entry_points="""
     [console_scripts]
