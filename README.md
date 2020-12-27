@@ -8,6 +8,7 @@
   <a href="https://zenml.io">ZenML.io</a> •
   <a href="https://docs.zenml.io">docs.ZenML.io</a> •
   <a href="#quickstart">Quickstart</a> •
+  <a href="https://github.com/maiot-io/zenml/discussions">GitHub Community</a> •
   <a href="https://zenml.io/slack-invite/">Join Slack</a>
 </p>
 
@@ -37,6 +38,7 @@
 * [Quickstart](#quickstart)
 * [Installation](#step-0-installation)
 * [ZenML Concepts](#zenml-concepts)
+* [Community](#community)
 * [Contributing](#contributing)
 * [Copyright](#copyright)
 * [Credit](#credit)
@@ -264,11 +266,15 @@ Every ZenML pipeline yields a servable model, ready to be used in your existing 
 -->
 
 ## Current limitations
-Currently, ZenML only supports Tensorflow 2.3.0 based models.
+Currently, ZenML only supports Tensorflow 2.3.0 based models. However, the vision of the framework is to be library and dependency agnostic.
 
-Please see our [roadmap](https://docs.zenml.io/misc/roadmap) for details on how we plan to extned ZenML.
-Please also let us know what aspects of ZenML you are struggling with via email: support@zenml.io),
-or chat with us on our [Slack channel directly](https://zenml.io/slack-invite/).
+Please see our [roadmap](https://docs.zenml.io/misc/roadmap) for details on how and when we plan to extend ZenML moving forward.
+
+## Community
+Our community is the backbone of making ZenML a success! We are currently actively maintaining two main channels for community discussions:
+
+* Our Slack Channel: Chat with us [here](https://zenml.io/slack-invite/).
+* The GitHub Community: Create your first thread [here](https://github.com/maiot-io/zenml/discussions).
 
 ## Contributing
 
