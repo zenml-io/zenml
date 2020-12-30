@@ -218,7 +218,7 @@ class OrchestratorGCPBackend(OrchestratorLocalBackend):
             config: a ZenML config dict
         """
         # Extract the paths to create the tar
-        logger.info('Orchestarting pipeline on GCP..')
+        logger.info('Orchestrating pipeline on GCP..')
 
         repo: Repository = Repository.get_instance()
         repo_path = repo.path
