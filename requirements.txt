@@ -16,3 +16,8 @@ tensorflow>=2.3.0,<2.4.0
 tensorflow-serving-api==2.3.0
 apache-beam==2.26.0
 google-apitools==0.5.31
+
+# docs
+jupyter-book==0.9.1
+matplotlib==3.3.3
+ghp-import==1.0.0
