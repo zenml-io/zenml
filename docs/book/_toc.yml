@@ -1,7 +1,112 @@
-# Table of contents
-# Learn more at https://jupyterbook.org/customize/toc.html
 - file: intro
-- file: content
-  sections:
-    - file: markdown
-    - file: notebooks
+  title: Intro
+
+- part: Getting Started
+  chapters:
+  - file: getting-started/core-concepts
+    title: Core Concepts
+  - file: getting-started/architectural-overview
+    title: Architectural Overview
+  - file: getting-started/quickstart
+    title: Quickstart
+  - file: getting-started/installation
+    title: Installation
+
+- part: Repository
+  chapters:
+  - file: repository/repository-singleton
+    title: What is a ZenML Repository
+  - file: repository/the-zenml-repository-instance
+    title: The ZenML Repository Instance
+  - file: repository/integration-with-git
+    title: Integration with Git
+  - file: repository/metadata-store
+    title: Metadata Store
+  - file: repository/artifact-store
+    title: Artifact Store
+  - file: repository/pipeline-directory
+    title: Pipeline Directory
+
+- part: Datasources
+  chapters:
+  - file: datasources/what-is-a-datasource
+    title: What is a datasource
+  - file: datasources/google-bigquery
+    title: Google Bigquery
+  - file: datasources/local-images
+    title: Local Images
+  - file: datasources/csv-files-locally
+    title: CSV files [WIP]
+  - file: datasources/create-your-own-datasource
+    title: Create your own datasource
+
+- part: Pipelines
+  chapters:
+  - file: pipelines/zenml-pipeline-config
+    title: What is a pipeline?
+  - file: pipelines/training-pipeline
+    title: Training
+  - file: pipelines/data
+    title: Data [WIP]
+  - file: pipelines/batch-inference
+    title: Batch Inference [WIP]
+  - file: pipelines/caching
+    title: Caching
+
+- part: Steps
+  chapters:
+  - file: steps/what-is-a-step
+    title: What is a step?
+  - file: steps/split
+    title: Split
+  - file: steps/preprocess
+    title: Preprocess
+  - file: steps/trainer
+    title: Trainer
+  - file: steps/evaluator
+    title: Evaluator
+  - file: steps/deployer
+    title: Deployer
+
+
+- part: Backends
+  chapters:
+  - file: backends/backends-overview
+    title: What is a backend?
+  - file: backends/orchestrator-backends
+    title: Orchestrator Backends
+  - file: backends/training-backends
+    title: Training Backends
+    sections:
+    - file: backends/processing-backends/google-dataflow-processing
+      title: Google Dataflow
+
+
+- part: Tutorials
+  chapters:
+    - file: tutorials/running-a-pipeline-on-a-google-cloud-vm
+      title: Running a training pipeline on a Google Cloud VM
+    - file: tutorials/team-collaboration-with-zenml-and-google-cloud
+      title: Team collaboration with ZenML and Google Cloud
+    - file: tutorials/style-transfer-using-a-cyclegan-wip
+      title: Style Transfer using a CycleGAN [WIP]
+    - file: tutorials/building-a-classifier-on-33m-samples
+      title: Classification with 59M samples [WIP]
+
+- part: Misc
+  chapters:
+  - file: misc/roadmap
+    title: Roadmap
+  - file: misc/changelogs
+    title: Changelogs
+  - file: misc/usage-analytics
+    title: Usage Analytics
+
+- part: Support
+  chapters:
+  - file: support/contact
+    title: Contact
+  - file: support/faq-wip
+    title: FAQ
+
+
