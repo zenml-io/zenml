@@ -6,7 +6,7 @@ Let’s get you started with a simple pipeline. Please make sure to also check o
 If you are here just to see the code, you can find it on [GitHub](https://github.com/maiot-io/zenml#quickstart).
 {% endhint %}
 
-### **For visual learners**
+## **For visual learners**
 
 If you don't feel like reading right now, please watch this video for a visual explanation of the quickstart:
 
