@@ -1,7 +1,3 @@
----
-description: ZenML pipeline config standard
----
-
 # What is a pipeline?
 
 A ZenML pipeline is represented by a standard config written in YAML. A sample config looks like this:

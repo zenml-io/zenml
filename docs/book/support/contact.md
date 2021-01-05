@@ -1,7 +1,3 @@
----
-description: 'If you don''t find what you''re looking for, reach out to us!'
----
-
 # Contact
 
 ## FAQs

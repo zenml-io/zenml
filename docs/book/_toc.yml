@@ -42,7 +42,7 @@
 
 - part: Pipelines
   chapters:
-  - file: pipelines/zenml-pipeline-config
+  - file: pipelines/what-is-a-pipeline
     title: What is a pipeline?
   - file: pipelines/training-pipeline
     title: Training
@@ -71,7 +71,7 @@
 
 - part: Backends
   chapters:
-  - file: backends/backends-overview
+  - file: backends/what-is-a-backend
     title: What is a backend?
   - file: backends/orchestrator-backends
     title: Orchestrator Backends
