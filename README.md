@@ -17,12 +17,15 @@
 [![PyPI Status](https://pepy.tech/badge/zenml)](https://pepy.tech/project/zenml)
 ![GitHub](https://img.shields.io/github/license/maiot-io/zenml)
 </div>
+---
 
-<div align="center"><a href="https://www.producthunt.com/posts/zenml-1?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-zenml-1" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=279529&theme=light" alt="ZenML - Create reproducible machine learning pipelines | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+<div> Please join our
+<a href="https://zenml.io/slack-invite" target="_blank">
+    <img src="docs/img/01_slack.svg" alt="Slack"/>
+<b>Slack Community</b> </a> to be the first to get involved in the ZenML community
 </div>
 
 ---
-
 
 ## What is ZenML?
 **ZenML** is an extensible, open-source MLOps framework for using production-ready Machine Learning pipelines - in a simple way. The key features of ZenML are:
