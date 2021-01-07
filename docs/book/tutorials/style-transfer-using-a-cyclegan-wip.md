@@ -10,5 +10,5 @@ A visually appealing example of this type of architecture is the **CycleGAN.** C
 
 Now we want to take real photographs and use a CycleGAN network to turn it into something that looks just like a Monet painting. This concept is commonly called Style Transfer - with it, you could for example take any painter's style and apply it to your heart's content on any image, creating a perfectly realistic rendition of that image in that painter's style, provided you have enough real sample paintings to sufficiently train such a network.
 
-![Monet&apos;s lost work?!?](../.gitbook/assets/index.png)
+![Monet&apos;s lost work?!?](../assets/monet.png)
 
