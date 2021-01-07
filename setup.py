@@ -51,6 +51,7 @@ setup(
                  "docs"]),
     version=version,
     install_requires=[
+        "absl-py==0.10.0",
         "pip-check-reqs>=2.0.1,<3",
         "click>=7.0,<8",
         "setuptools>=38.4.0",
