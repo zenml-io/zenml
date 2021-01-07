@@ -1,4 +1,4 @@
-# Adding custom splits in ZenML
+# Data splits in ZenML
 
 ## Motivation
 
@@ -147,8 +147,45 @@ Then, the class method `partition_fn` returns the tuple `(my_partition, kwargs)`
 function and its keyword arguments.
 
 The second method `get_split_names` needs to return a list of data split names used in your ZenML pipeline. These can be
-different depending on your target workload; we recommend that you infer them dynamically, e.g. from constructor
-arguments that specify splits such as the `split_map` argument found in the builtin splits.
+different depending on your target workload.
+
+## A quick example
+
+Now that the theoretical flow is in place, we can quickly give an example by building a partition function that splits
+data into `train` and `eval` sets based on whether an integer feature in the data is odd or even.
+
+```
+from zenml.core.steps.split.base_split_step import BaseSplit
+from zenml.core.steps.split.utils import get_categorical_value
+
+def OddEvenPartitionFn(element, num_partitions, int_feature):
+
+    # get integer value of int_feature from the element
+    int_value = get_categorical_value(element, int_feature)
+    
+    return int_value % 2
+
+class OddEvenSplit(BaseSplit):
+    def __init__(self, 
+                 int_feature: Text,
+                 statistics=None,
+                 schema=None):
+                 
+        self.int_feature = int_feature
+        super().__init__(statistics=statistics,
+                         schema=schema,
+                         int_feature=int_feature)
+        
+    def partition_fn(self):
+        return OddEvenPartitionFn, {"int_feature": self.int_feature}
+    
+    def get_split_names(self):
+        return ["train", "eval"]
+```
+
+Note that we could **not** have done the same logic with a categorical split, since the split above does not assume 
+any knowledge about which integers are present beforehand. For a categorical split to work as built into ZenML, prior
+knowledge about the categorical domain of the feature has to be present.
 
 ## Summary
 
