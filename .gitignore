@@ -128,7 +128,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-
 # JetBrains
 .idea
 __pycache__
@@ -141,7 +140,6 @@ local_test/
 .zenml/
 test.py
 !cloudbuild.yaml
-
 
 # ZenML
 .zenml/
