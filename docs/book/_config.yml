@@ -9,3 +9,5 @@ title                       : ZenML Docs  # The title of the book. Will be place
 author                      : maiot GmbH  # The author of the book
 copyright                   : "2021"  # Copyright year to be placed in the footer
 logo                        : logo.png  # A path to the book logo
+html:
+  google_analytics_id: UA-103217419-2
