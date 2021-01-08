@@ -17,11 +17,12 @@
 [![PyPI Status](https://pepy.tech/badge/zenml)](https://pepy.tech/project/zenml)
 ![GitHub](https://img.shields.io/github/license/maiot-io/zenml)
 </div>
+
 ---
 
 <div> Please join our
 <a href="https://zenml.io/slack-invite" target="_blank">
-    <img src="docs/img/01_slack.svg" alt="Slack"/>
+    <img width="25" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
 <b>Slack Community</b> </a> to be the first to get involved in the ZenML community
 </div>
 
