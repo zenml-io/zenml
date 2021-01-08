@@ -67,7 +67,11 @@
     title: Evaluator
   - file: steps/deployer
     title: Deployer
-
+  - file: steps/custom_steps/custom-steps
+    title: Custom Steps
+    sections:
+      - file: steps/custom_steps/custom-split
+        title: Custom Split
 
 - part: Backends
   chapters:
@@ -77,9 +81,11 @@
     title: Orchestrator Backends
   - file: backends/training-backends
     title: Training Backends
+  - file: backends/processing-backends/processing-backends.md
+    title: Processing Backends
     sections:
-    - file: backends/processing-backends/google-dataflow-processing
-      title: Google Dataflow
+      - file: backends/processing-backends/google-dataflow-processing
+        title: Google Dataflow
 
 
 - part: Tutorials

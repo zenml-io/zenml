@@ -1,12 +1,12 @@
 # Data splits in ZenML
 
-## Motivation
+### Motivation
 
 Data splits are a well-known mechanic in Deep Learning workflows. The main reason behind splitting your data is to
 validate that your trained model is indeed improving by obtaining its predictions and measuring its performance on
 unseen data.
 
-## Internals
+### Internals
 
 In ZenML, we are applying the same split paradigm on datasets of potentially enormous sizes. As a result, any code that
 we write for splitting data has to work for datasets of different sizes, regardless of whether they are in the order of
@@ -20,9 +20,9 @@ care of internally.
 ZenML supports some of the most common splitting schemes, like the random split and the categorical split, where you
 split data based on the value of a categorical attribute.
 
-# Getting started with split steps
+## Getting started with split steps
 
-## The random split
+### The random split
 
 The simplest possible way to split your data is the **random split**. This is usually a good option for when you do not
 have any special features that need careful selection, enough data is available, and the distribution of categorical
@@ -41,7 +41,7 @@ maps the names of your data splits to their respective data percentages. The abo
 50% of all data points to the `train` set and 50% to the `eval` set. The last line in the block above adds the split to
 your pipeline object.
 
-## The categorical split
+### The categorical split
 
 Now we turn to a slightly different use case. Suppose you have a very interesting categorical attribute in your data
 that you want to investigate further. A categorical attribute is defined here as a data feature either of type string or
@@ -51,7 +51,7 @@ If you want to partition your data based on the values of your categorical colum
 CategoricalSplit as the tool of choice for you. You can define a categorical split in two ways, either by assigning
 categories to splits by hand or by percentage (like in the random split above).
 
-### 1. Creating a categorical domain split
+#### 1. Creating a categorical domain split
 
 The first way of defining a categorical split is by explicitly assigning all values in the _categorical domain_ into
 different data splits. By the word categorical domain, we mean the set of all possible values that your categorical
@@ -89,7 +89,7 @@ assign any categorical values not in the split map to that particular split.
 
 Example: `unknown_category_policy="train"` will assign any unknown categorical value to the "train" split.
 
-### 2. Creating a categorical ratio split
+#### 2. Creating a categorical ratio split
 
 The second way of specifying a categorical split is by supplying a list of categories of interest, and a split ratio
 object that indicates what percentage of the categories in the list should go into which split.
@@ -113,7 +113,7 @@ as the categorical values of interest. The `split_ratio` map indicates that thes
 into `train` and `eval` sets, with 50% of these categories assigned to either split. The `unknown_category_policy` flag
 works just as in the domain split.
 
-## Creating your own split logic
+### Creating your own split logic
 
 If the above options are not what you are looking for, there is also the option of implementing your own!
 
@@ -149,7 +149,7 @@ function and its keyword arguments.
 The second method `get_split_names` needs to return a list of data split names used in your ZenML pipeline. These can be
 different depending on your target workload.
 
-## A quick example
+### A quick example
 
 Now that the theoretical flow is in place, we can quickly give an example by building a partition function that splits
 data into `train` and `eval` sets based on whether an integer feature in the data is odd or even.
