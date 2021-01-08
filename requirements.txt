@@ -15,6 +15,6 @@ analytics-python==1.2.9
 distro==1.5.0
 tensorflow>=2.3.0,<2.4.0
 tensorflow-serving-api==2.3.0
+apache-beam[gcp]==2.26.0
 apache-beam==2.26.0
 google-apitools==0.5.31
-apache-beam[gcp]==2.26.0

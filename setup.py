@@ -68,9 +68,9 @@ setup(
         "distro==1.5.0",
         "tensorflow>=2.3.0,<2.4.0",
         "tensorflow-serving-api==2.3.0",
+        "apache-beam[gcp]==2.26.0",
         "apache-beam==2.26.0",  # temporary for dataflow runner
         "google-apitools==0.5.31",  # temporary for dataflow runner
-        "apache-beam[gcp]==2.26.0",
     ],
     entry_points="""
     [console_scripts]
