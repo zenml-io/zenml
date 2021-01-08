@@ -140,6 +140,4 @@ local_test/
 .zenml/
 test.py
 !cloudbuild.yaml
-
-# ZenML
-.zenml/
+docs/book/_build/
