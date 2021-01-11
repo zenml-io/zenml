@@ -35,6 +35,7 @@ from zenml.core.backends.training.training_local_backend import \
     TrainingLocalBackend
 from zenml.core.components.data_gen.component import DataGen
 from zenml.core.components.split_gen.component import SplitGen
+from zenml.core.components.sequencer.component import Sequencer
 from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.standards import standard_keys as keys
 from zenml.core.steps.deployer.gcaip_deployer import GCAIPDeployer
@@ -132,6 +133,33 @@ class TrainingPipeline(BasePipeline):
         component_list.extend([splits,
                                statistics_split,
                                schema_split])
+
+        ##############
+        # SEQUENCING #
+        ##############
+        if keys.TrainingSteps.SEQUENCER in steps:
+            sequencer_config = steps[keys.TrainingSteps.SEQUENCER]
+            sequencer = Sequencer(
+                examples=datapoints,
+                schema=schema,
+                source=sequencer_config[keys.StepKeys.SOURCE],
+                source_args=sequencer_config[keys.StepKeys.ARGS]
+            ).with_id(GDPComponent.Sequencer.name)
+
+            sequencer_statistics = StatisticsGen(
+                examples=sequencer.outputs.output
+            ).with_id(GDPComponent.SequenceStatistics.name)
+
+            sequencer_schema = SchemaGen(
+                statistics=sequencer_statistics.outputs.output,
+            ).with_id(GDPComponent.SequenceSchema.name)
+
+            datapoints = sequencer.outputs.output
+            schema = sequencer_schema.outputs.schema
+
+            component_list.extend([sequencer,
+                                   sequencer_statistics,
+                                   sequencer_schema])
 
         #################
         # PREPROCESSING #
