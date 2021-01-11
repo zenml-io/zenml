@@ -89,8 +89,9 @@ class Executor(BaseExecutor):
         examples_artifact = artifact_utils.get_single_instance(
             output_dict[constants.OUTPUT_EXAMPLES])
         if SKIP in split_names:
+            sanitized_names = [name for name in split_names if name != SKIP]
             examples_artifact.split_names = artifact_utils.encode_split_names(
-                split_names[:-1])
+                sanitized_names)
         else:
             examples_artifact.split_names = artifact_utils.encode_split_names(
                 split_names)
