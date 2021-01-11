@@ -71,6 +71,10 @@ setup(
         "apache-beam[gcp]==2.26.0",
         "apache-beam==2.26.0",  # temporary for dataflow runner
         "google-apitools==0.5.31",  # temporary for dataflow runner
+        "jupyter-book==0.9.1",
+        "matplotlib==3.3.3",
+        "ghp-import==1.0.0",
+        "jedi==0.17.2",
     ],
     entry_points="""
     [console_scripts]
