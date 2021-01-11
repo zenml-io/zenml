@@ -78,16 +78,14 @@ In the above example, all data points that have either `value_1` or `value_2` as
 will be put into the `train` split, while all data points with either `value_3` or `value_4` will be put into the
 `eval` split.
 
-An important thing to note is the `unknown_category_policy="skip"` flag. This setting controls how categorical values
-are handled that appear in the data but were not specified in the `split_map` argument on construction. A value
-of `"skip"`
+An important thing to note is the `unknown_category_policy` flag. This setting controls how categorical values are
+handled that appear in the data but were not specified in the `split_map` argument on construction. A value of `"skip"`
 denotes that those categories are meant to be discarded from the data set, and will not appear in any of the resulting
 splits as a result.
 
 Setting `unknown_category_policy` to any split name (i.e. so that it equals any of the keys in the split map) will
-assign any categorical values not in the split map to that particular split.
-
-Example: `unknown_category_policy="train"` will assign any unknown categorical value to the "train" split.
+assign any categorical values not in the split map to that particular split. For
+example, `unknown_category_policy="train"` will assign any unknown categorical value to the `"train"` split.
 
 #### 2. Creating a categorical ratio split
 
@@ -113,10 +111,34 @@ as the categorical values of interest. The `split_ratio` map indicates that thes
 into `train` and `eval` sets, with 50% of these categories assigned to either split. The `unknown_category_policy` flag
 works just as in the domain split.
 
+### The importance of the `unknown_category_policy` flag
+
+The categorical split is a powerful tool when you need to group your data by an important categorical feature. In
+addition to data grouping, it serves the additional purpose of _data selection_: By using
+the `unknown_category_policy="skip"` option, you are effectively filtering the data you pass on to your machine learning
+pipeline based on your categorical attribute, by selecting only data with the specific values that you defined in your
+split step. This mimics data selection mechanisms such as `WHERE` clauses in SQL, and can potentially not only save you
+a lot of time and computational effort in pre-processing and model training, but also improve the predicting power of
+your resulting model.
+
+If you want to keep data with unknown / uninteresting categorical values out of your training/eval datasets, but you do
+not want to just throw it away completely, either, then you can also make a completely new split with all excess data by
+specifying your split_map like this:
+
+```
+split = CategoricalDomainSplit(categorical_column="my_categorical_column",
+                               split_map = {"train": ["value_1", "value_2"],
+                                            "eval": ["value_3", "value_4"],
+                                            "test": []},
+                               unknown_category_policy="test")
+```
+
+This way, all data with values for `my_categorical_column` other than `value_{1-4}` will go into the test split and
+still be available for other components downstream.
 
 ## Summary
 
 This concludes our small documentation piece on splitting data with ZenML. Both random, percentage-based splits and
 categorical value-based splits are implemented in ZenML and immediately ready for use. If those do not meet your needs,
-there is also the option of [creating your own custom split](custom-split.md) by overriding the `BaseSplit` class methods. And with that,
-happy splitting!
+there is also the option of [creating your own custom split](custom-split.md) by overriding the `BaseSplit` class
+methods. And with that, happy splitting!
