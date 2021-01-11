@@ -88,8 +88,12 @@ class Executor(BaseExecutor):
         # Get output split path
         examples_artifact = artifact_utils.get_single_instance(
             output_dict[constants.OUTPUT_EXAMPLES])
-        examples_artifact.split_names = artifact_utils.encode_split_names(
-            split_names)
+        if SKIP in split_names:
+            examples_artifact.split_names = artifact_utils.encode_split_names(
+                split_names[:-1])
+        else:
+            examples_artifact.split_names = artifact_utils.encode_split_names(
+                split_names)
 
         split_uris = []
         for artifact in input_dict[constants.INPUT_EXAMPLES]:
