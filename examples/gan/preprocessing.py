@@ -45,14 +45,12 @@ class GANPreprocessor(BasePreprocesserStep):
         outputs = {}
 
         for k, v in inputs.items():
-            if k == "binary_data":
+            if k == "image":
                 result = decode_and_reshape_image(v)
                 result = tf.cast(result, dtype=tf.float32)
                 outputs[transformed_name(k)] = result
 
             if k == "label":
                 outputs[transformed_name('label_' + k)] = v
-
-            # outputs[k] = v
 
         return outputs

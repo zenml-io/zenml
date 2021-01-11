@@ -22,12 +22,13 @@ from examples.gan.preprocessing import GANPreprocessor
 
 repo: Repository = Repository().get_instance()
 
-gan_pipeline = TrainingPipeline(name="whynotletitfly",
-                                enable_cache=False)
+gan_pipeline = TrainingPipeline(name="gan_test",
+                                enable_cache=True)
 
 try:
     ds = ImageDatasource(name="gan_images",
-                         base_path="/Users/nicholasjunge/workspaces/maiot/ce_project/images_mini")
+                         base_path="/Users/nicholasjunge/workspaces/maiot/"
+                                   "ce_project/images_mini")
 except:
     ds = repo.get_datasource_by_name('gan_images')
 
@@ -35,11 +36,9 @@ gan_pipeline.add_datasource(ds)
 
 gan_pipeline.add_split(CategoricalDomainSplit(categorical_column="label",
                                               split_map={"train": [0],
-                                                             "eval": [1]}))
+                                                         "eval": [1]}))
 
 gan_pipeline.add_preprocesser(GANPreprocessor())
-
-# gan_pipeline.add_preprocesser(transform_step)
 
 gan_pipeline.add_trainer(CycleGANTrainer(epochs=5))
 

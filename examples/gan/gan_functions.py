@@ -13,11 +13,11 @@
 #  permissions and limitations under the License.
 
 
-import tensorflow as tf
-import tensorflow_transform as tft
-import tensorflow_addons as tfa
-
 from typing import List, Text
+
+import tensorflow as tf
+import tensorflow_addons as tfa
+import tensorflow_transform as tft
 
 from zenml.core.steps.trainer.feedforward_trainer import BaseTrainerStep
 
@@ -45,11 +45,15 @@ class CycleGANTrainer(BaseTrainerStep):
         photo_discriminator_optimizer = tf.keras.optimizers.Adam(2e-4,
                                                                  beta_1=0.5)
 
-        monet_generator = Generator()  # transforms photos to Monet-esque paintings
-        photo_generator = Generator()  # transforms Monet paintings to be more like photos
+        # transforms photos to Monet-esque paintings
+        monet_generator = Generator()
+        # transforms Monet paintings to be more like photos
+        photo_generator = Generator()
 
-        monet_discriminator = Discriminator()  # differentiates real Monet paintings and generated Monet paintings
-        photo_discriminator = Discriminator()  # differentiates real photos and generated photos
+        # differentiates real Monet paintings and generated Monet paintings
+        monet_discriminator = Discriminator()
+        # differentiates real photos and generated photos
+        photo_discriminator = Discriminator()
 
         cycle_gan_model = CycleGan(
             monet_generator, photo_generator, monet_discriminator,
@@ -231,16 +235,26 @@ class CycleGan(tf.keras.Model):
         self.p_disc = photo_discriminator
         self.lambda_cycle = lambda_cycle
 
+        self.m_gen_optimizer = None
+        self.p_gen_optimizer = None
+        self.m_disc_optimizer = None
+        self.p_disc_optimizer = None
+        self.gen_loss_fn = None
+        self.disc_loss_fn = None
+        self.cycle_loss_fn = None
+        self.identity_loss_fn = None
+
     def compile(
             self,
-            m_gen_optimizer,
-            p_gen_optimizer,
-            m_disc_optimizer,
-            p_disc_optimizer,
-            gen_loss_fn,
-            disc_loss_fn,
-            cycle_loss_fn,
-            identity_loss_fn):
+            m_gen_optimizer=None,
+            p_gen_optimizer=None,
+            m_disc_optimizer=None,
+            p_disc_optimizer=None,
+            gen_loss_fn=None,
+            disc_loss_fn=None,
+            cycle_loss_fn=None,
+            identity_loss_fn=None):
+
         super(CycleGan, self).compile()
         self.m_gen_optimizer = m_gen_optimizer
         self.p_gen_optimizer = p_gen_optimizer
@@ -253,8 +267,8 @@ class CycleGan(tf.keras.Model):
 
     def train_step(self, batch_data):
         real_monet, real_photo = batch_data
-        real_monet = real_monet.pop("binary_data_xf")
-        real_photo = real_photo.pop("binary_data_xf")
+        real_monet = real_monet.pop("image_xf")
+        real_photo = real_photo.pop("image_xf")
 
         with tf.GradientTape(persistent=True) as tape:
             # photo to monet back to photo
@@ -282,15 +296,19 @@ class CycleGan(tf.keras.Model):
             photo_gen_loss = self.gen_loss_fn(disc_fake_photo)
 
             # evaluates total cycle consistency loss
-            total_cycle_loss = self.cycle_loss_fn(real_monet, cycled_monet,
-                                                  self.lambda_cycle) + self.cycle_loss_fn(
+            total_cycle_loss = self.cycle_loss_fn(
+                real_monet, cycled_monet, self.lambda_cycle) + \
+                self.cycle_loss_fn(
                 real_photo, cycled_photo, self.lambda_cycle)
 
             # evaluates total generator loss
-            total_monet_gen_loss = monet_gen_loss + total_cycle_loss + self.identity_loss_fn(
-                real_monet, same_monet, self.lambda_cycle)
-            total_photo_gen_loss = photo_gen_loss + total_cycle_loss + self.identity_loss_fn(
-                real_photo, same_photo, self.lambda_cycle)
+            total_monet_gen_loss = monet_gen_loss + total_cycle_loss + \
+                self.identity_loss_fn(real_monet, same_monet,
+                                      self.lambda_cycle)
+
+            total_photo_gen_loss = photo_gen_loss + total_cycle_loss + \
+                self.identity_loss_fn(real_photo, same_photo,
+                                      self.lambda_cycle)
 
             # evaluates discriminator loss
             monet_disc_loss = self.disc_loss_fn(disc_real_monet,
@@ -299,30 +317,30 @@ class CycleGan(tf.keras.Model):
                                                 disc_fake_photo)
 
         # Calculate the gradients for generator and discriminator
-        monet_generator_gradients = tape.gradient(total_monet_gen_loss,
-                                                  self.m_gen.trainable_variables)
-        photo_generator_gradients = tape.gradient(total_photo_gen_loss,
-                                                  self.p_gen.trainable_variables)
+        monet_generator_gradients = tape.gradient(
+            total_monet_gen_loss, self.m_gen.trainable_variables)
 
-        monet_discriminator_gradients = tape.gradient(monet_disc_loss,
-                                                      self.m_disc.trainable_variables)
-        photo_discriminator_gradients = tape.gradient(photo_disc_loss,
-                                                      self.p_disc.trainable_variables)
+        photo_generator_gradients = tape.gradient(
+            total_photo_gen_loss, self.p_gen.trainable_variables)
+
+        monet_discriminator_gradients = tape.gradient(
+            monet_disc_loss, self.m_disc.trainable_variables)
+
+        photo_discriminator_gradients = tape.gradient(
+            photo_disc_loss, self.p_disc.trainable_variables)
 
         # Apply the gradients to the optimizer
-        self.m_gen_optimizer.apply_gradients(zip(monet_generator_gradients,
-                                                 self.m_gen.trainable_variables))
+        self.m_gen_optimizer.apply_gradients(zip(
+            monet_generator_gradients, self.m_gen.trainable_variables))
 
-        self.p_gen_optimizer.apply_gradients(zip(photo_generator_gradients,
-                                                 self.p_gen.trainable_variables))
+        self.p_gen_optimizer.apply_gradients(zip(
+            photo_generator_gradients, self.p_gen.trainable_variables))
 
-        self.m_disc_optimizer.apply_gradients(
-            zip(monet_discriminator_gradients,
-                self.m_disc.trainable_variables))
+        self.m_disc_optimizer.apply_gradients(zip(
+            monet_discriminator_gradients, self.m_disc.trainable_variables))
 
-        self.p_disc_optimizer.apply_gradients(
-            zip(photo_discriminator_gradients,
-                self.p_disc.trainable_variables))
+        self.p_disc_optimizer.apply_gradients(zip(
+            photo_discriminator_gradients, self.p_disc.trainable_variables))
 
         return {
             "monet_gen_loss": total_monet_gen_loss,
@@ -341,10 +359,12 @@ def downsample(filters, size, apply_instancenorm=True):
 
     result = tf.keras.Sequential()
     result.add(tf.keras.layers.Conv2D(filters, size, strides=2, padding='same',
-                             kernel_initializer=initializer, use_bias=False))
+                                      kernel_initializer=initializer,
+                                      use_bias=False))
 
     if apply_instancenorm:
-        result.add(tfa.layers.InstanceNormalization(gamma_initializer=gamma_init))
+        result.add(
+            tfa.layers.InstanceNormalization(gamma_initializer=gamma_init))
 
     result.add(tf.keras.layers.LeakyReLU())
 
@@ -357,9 +377,9 @@ def upsample(filters, size, apply_dropout=False):
 
     result = tf.keras.Sequential()
     result.add(tf.keras.layers.Conv2DTranspose(filters, size, strides=2,
-                                      padding='same',
-                                      kernel_initializer=initializer,
-                                      use_bias=False))
+                                               padding='same',
+                                               kernel_initializer=initializer,
+                                               use_bias=False))
 
     result.add(tfa.layers.InstanceNormalization(gamma_initializer=gamma_init))
 
@@ -372,36 +392,37 @@ def upsample(filters, size, apply_dropout=False):
 
 
 def Generator():
-    inputs = tf.keras.layers.Input(shape=[256,256,3])
+    inputs = tf.keras.layers.Input(shape=[256, 256, 3])
 
     # bs = batch size
     down_stack = [
-        downsample(64, 4, apply_instancenorm=False), # (bs, 128, 128, 64)
-        downsample(128, 4), # (bs, 64, 64, 128)
-        downsample(256, 4), # (bs, 32, 32, 256)
-        downsample(512, 4), # (bs, 16, 16, 512)
-        downsample(512, 4), # (bs, 8, 8, 512)
-        downsample(512, 4), # (bs, 4, 4, 512)
-        downsample(512, 4), # (bs, 2, 2, 512)
-        downsample(512, 4), # (bs, 1, 1, 512)
+        downsample(64, 4, apply_instancenorm=False),  # (bs, 128, 128, 64)
+        downsample(128, 4),  # (bs, 64, 64, 128)
+        downsample(256, 4),  # (bs, 32, 32, 256)
+        downsample(512, 4),  # (bs, 16, 16, 512)
+        downsample(512, 4),  # (bs, 8, 8, 512)
+        downsample(512, 4),  # (bs, 4, 4, 512)
+        downsample(512, 4),  # (bs, 2, 2, 512)
+        downsample(512, 4),  # (bs, 1, 1, 512)
     ]
 
     up_stack = [
-        upsample(512, 4, apply_dropout=True), # (bs, 2, 2, 1024)
-        upsample(512, 4, apply_dropout=True), # (bs, 4, 4, 1024)
-        upsample(512, 4, apply_dropout=True), # (bs, 8, 8, 1024)
-        upsample(512, 4), # (bs, 16, 16, 1024)
-        upsample(256, 4), # (bs, 32, 32, 512)
-        upsample(128, 4), # (bs, 64, 64, 256)
-        upsample(64, 4), # (bs, 128, 128, 128)
+        upsample(512, 4, apply_dropout=True),  # (bs, 2, 2, 1024)
+        upsample(512, 4, apply_dropout=True),  # (bs, 4, 4, 1024)
+        upsample(512, 4, apply_dropout=True),  # (bs, 8, 8, 1024)
+        upsample(512, 4),  # (bs, 16, 16, 1024)
+        upsample(256, 4),  # (bs, 32, 32, 512)
+        upsample(128, 4),  # (bs, 64, 64, 256)
+        upsample(64, 4),  # (bs, 128, 128, 128)
     ]
 
     initializer = tf.random_normal_initializer(0., 0.02)
+    # (bs, 256, 256, 3)
     last = tf.keras.layers.Conv2DTranspose(OUTPUT_CHANNELS, 4,
-                                  strides=2,
-                                  padding='same',
-                                  kernel_initializer=initializer,
-                                  activation='tanh') # (bs, 256, 256, 3)
+                                           strides=2,
+                                           padding='same',
+                                           kernel_initializer=initializer,
+                                           activation='tanh')
 
     x = inputs
 
@@ -431,31 +452,39 @@ def Discriminator():
 
     x = inp
 
-    down1 = downsample(64, 4, False)(x) # (bs, 128, 128, 64)
-    down2 = downsample(128, 4)(down1) # (bs, 64, 64, 128)
-    down3 = downsample(256, 4)(down2) # (bs, 32, 32, 256)
+    down1 = downsample(64, 4, False)(x)  # (bs, 128, 128, 64)
+    down2 = downsample(128, 4)(down1)  # (bs, 64, 64, 128)
+    down3 = downsample(256, 4)(down2)  # (bs, 32, 32, 256)
 
-    zero_pad1 = tf.keras.layers.ZeroPadding2D()(down3) # (bs, 34, 34, 256)
+    zero_pad1 = tf.keras.layers.ZeroPadding2D()(down3)  # (bs, 34, 34, 256)
     conv = tf.keras.layers.Conv2D(512, 4, strides=1,
-                         kernel_initializer=initializer,
-                         use_bias=False)(zero_pad1) # (bs, 31, 31, 512)
+                                  kernel_initializer=initializer,
+                                  use_bias=False)(
+        zero_pad1)  # (bs, 31, 31, 512)
 
-    norm1 = tfa.layers.InstanceNormalization(gamma_initializer=gamma_init)(conv)
+    norm1 = tfa.layers.InstanceNormalization(gamma_initializer=gamma_init)(
+        conv)
 
     leaky_relu = tf.keras.layers.LeakyReLU()(norm1)
 
-    zero_pad2 = tf.keras.layers.ZeroPadding2D()(leaky_relu) # (bs, 33, 33, 512)
+    zero_pad2 = tf.keras.layers.ZeroPadding2D()(
+        leaky_relu)  # (bs, 33, 33, 512)
 
     last = tf.keras.layers.Conv2D(1, 4, strides=1,
-                         kernel_initializer=initializer)(zero_pad2) # (bs, 30, 30, 1)
+                                  kernel_initializer=initializer)(
+        zero_pad2)  # (bs, 30, 30, 1)
 
     return tf.keras.Model(inputs=inp, outputs=last)
 
 
 def discriminator_loss(real, generated):
-    real_loss = tf.keras.losses.BinaryCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)(tf.ones_like(real), real)
+    real_loss = tf.keras.losses.BinaryCrossentropy(
+        from_logits=True, reduction=tf.keras.losses.Reduction.NONE)(
+        tf.ones_like(real), real)
 
-    generated_loss = tf.keras.losses.BinaryCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)(tf.zeros_like(generated), generated)
+    generated_loss = tf.keras.losses.BinaryCrossentropy(
+        from_logits=True, reduction=tf.keras.losses.Reduction.NONE)(
+        tf.zeros_like(generated), generated)
 
     total_disc_loss = real_loss + generated_loss
 
@@ -463,14 +492,16 @@ def discriminator_loss(real, generated):
 
 
 def generator_loss(generated):
-    return tf.keras.losses.BinaryCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)(tf.ones_like(generated), generated)
+    return tf.keras.losses.BinaryCrossentropy(
+        from_logits=True, reduction=tf.keras.losses.Reduction.NONE)(
+        tf.ones_like(generated), generated)
 
 
-def calc_cycle_loss(real_image, cycled_image, LAMBDA):
+def calc_cycle_loss(real_image, cycled_image, lamb):
     loss1 = tf.reduce_mean(tf.abs(real_image - cycled_image))
-    return LAMBDA * loss1
+    return lamb * loss1
 
 
-def identity_loss(real_image, same_image, LAMBDA):
+def identity_loss(real_image, same_image, lamb):
     loss = tf.reduce_mean(tf.abs(real_image - same_image))
-    return LAMBDA * 0.5 * loss
+    return lamb * 0.5 * loss
