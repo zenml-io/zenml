@@ -74,10 +74,10 @@ The config above can be split into 4 distinct keys:
 
 * `version`: The version of the YAML standard to maintain backwards compatibility
 * `datasource`: The datasource details to represent the data flowing through the pipeline
-* `environment`: The configuration of the environment in which pipeline is executed, including  details like the [Artifact Store](../repository/artifact-store.md), [Metadata Store](../repository/metadata-store.md) and the [Backends](../backends/backends-overview.md) used.
+* `environment`: The configuration of the environment in which pipeline is executed, including  details like the [Artifact Store](../repository/artifact-store.md), [Metadata Store](../repository/metadata-store.md) and the [Backends](../backends/what-is-a-backend.md) used.
 * `steps`: The steps used that define what processing the data underwent as it went through the pipeline.
 
-The most interesting key is perhaps the last one, i.e., `steps`. Each [`Step`](../steps/creating-custom-steps.md) contains a `source` sub-key that points to a git-sha pinned version of the file in which it resides. It also contains all the parameters used in the constructors of these classes, to track them and use them later for comparability and repeatability. [Read more about steps here](../steps/creating-custom-steps.md).
+The most interesting key is perhaps the last one, i.e., `steps`. Each [`Step`](../steps/what-is-a-step.md) contains a `source` sub-key that points to a git-sha pinned version of the file in which it resides. It also contains all the parameters used in the constructors of these classes, to track them and use them later for comparability and repeatability. [Read more about steps here](../steps/what-is-a-step.md).
 
 ### Relation to Tensorflow Extended \(TFX\) pipelines
 

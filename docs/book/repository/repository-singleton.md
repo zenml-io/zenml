@@ -14,7 +14,7 @@ zenml init
 Please make sure to be inside a valid git repository before executing the above!
 {% endhint %}
 
-This creates a default SQLite Metadata Store and local Artifact Store inside a `.zenml` folder in the root of your repository. It also creates a `pipelines` directory at the root as well, which is the path where all your [pipeline configurations](../pipelines/zenml-pipeline-config.md) will be stored. Finally, it adds a `.zenml_config` YAML inside the `.zenml` folder that tracks all this.
+This creates a default SQLite Metadata Store and local Artifact Store inside a `.zenml` folder in the root of your repository. It also creates a `pipelines` directory at the root as well, which is the path where all your [pipeline configurations](../pipelines/what-is-a-pipeline.md) will be stored. Finally, it adds a `.zenml_config` YAML inside the `.zenml` folder that tracks all this.
 
 If you want to change your Metadata Store, Artifact Store, or Pipelines Directory, please use the `zenml config` CLI group.
 
