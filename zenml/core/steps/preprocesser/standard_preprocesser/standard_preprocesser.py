@@ -20,8 +20,8 @@ from zenml.core.standards.standard_keys import MethodKeys, DefaultKeys
 from zenml.core.steps.preprocesser.base_preprocesser import \
     BasePreprocesserStep
 from zenml.core.steps.preprocesser.standard_preprocesser.methods \
-    .standard_methods import NonSeqFillingMethods, TransformMethods, \
-    parse_methods
+    .standard_methods import NonSeqFillingMethods, TransformMethods
+from zenml.utils.method_utils import parse_methods
 
 XF_SUFFIX = '_xf'
 
