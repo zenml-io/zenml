@@ -104,5 +104,5 @@ class ProcessingDataFlowBackend(ProcessingLocalBackend):
 
             # Using docker
             '--experiment=use_runner_v2',
-            f'--worker_harness_container_image={ZENML_DATAFLOW_IMAGE_NAME}'
+            f'--worker_harness_container_image={self.image}'
         ]
