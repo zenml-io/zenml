@@ -27,7 +27,9 @@ class CycleGANTrainer(BaseTrainerStep):
 
         self.batch_size = batch_size
         self.epochs = epochs
-        super(CycleGANTrainer, self).__init__(**kwargs)
+        super(CycleGANTrainer, self).__init__(batch_size=batch_size,
+                                              epochs=epochs,
+                                              **kwargs)
 
         self.log_dir = "./logs"
 
@@ -73,6 +75,7 @@ class CycleGANTrainer(BaseTrainerStep):
 
         cycle_gan_model.fit(
             dataset,
+            batch_size=self.batch_size,
             epochs=self.epochs,
             callbacks=tf.keras.callbacks.TensorBoard(log_dir=self.log_dir)
         )
