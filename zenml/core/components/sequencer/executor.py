@@ -15,7 +15,7 @@
 from typing import Any, Dict, List, Text
 
 import apache_beam as beam
-from apache_beam.transforms.window import Sessions, GlobalWindows
+from apache_beam.transforms.window import GlobalWindows
 from tensorflow_data_validation.coders import tf_example_decoder
 from tfx import types
 from tfx.dsl.components.base.base_executor import BaseExecutor
@@ -26,6 +26,8 @@ from tfx.utils import io_utils
 from zenml.core.components.sequencer import constants
 from zenml.core.components.sequencer import utils
 from zenml.core.standards.standard_keys import StepKeys
+from zenml.core.steps.sequencer.base_sequencer import BaseSequencerStep
+from zenml.utils import source_utils
 
 
 class Executor(BaseExecutor):
@@ -44,6 +46,19 @@ class Executor(BaseExecutor):
         source = exec_properties[StepKeys.SOURCE]
         args = exec_properties[StepKeys.ARGS]
 
+        c = source_utils.load_source_path_class(source)
+
+        # Get the schema
+        schema_path = io_utils.get_only_uri_in_dir(
+            artifact_utils.get_single_uri(input_dict[constants.SCHEMA]))
+        schema = io_utils.SchemaReader().read(schema_path)
+
+        # TODO: Get the statistics perhaps
+
+        sequence_step: BaseSequencerStep = c(schema=schema,
+                                             statistics=None,
+                                             **args)
+
         # Get split names
         input_artifact = artifact_utils.get_single_instance(
             input_dict[constants.INPUT_EXAMPLES])
@@ -55,13 +70,6 @@ class Executor(BaseExecutor):
             output_dict[constants.OUTPUT_EXAMPLES])
         output_artifact.split_names = artifact_utils.encode_split_names(
             split_names)
-
-        # Get the schema
-        schema_path = io_utils.get_only_uri_in_dir(
-            artifact_utils.get_single_uri(input_dict[constants.SCHEMA]))
-        schema = io_utils.SchemaReader().read(schema_path)
-
-        # TODO: Get the statistics perhaps
 
         with self._make_beam_pipeline() as p:
             for s in split_names:
@@ -79,22 +87,18 @@ class Executor(BaseExecutor):
                 # Window into sessions
                 s_data = \
                     (data
-                     | 'AddCategory_' + s >> beam.ParDo(self.AddKey(),
-                                                        category_column)
-                     | 'AddTimestamp_' + s >> beam.ParDo(self.AddTimestamp(),
-                                                         timestamp_column)
+                     | 'AddCategory_' + s >> beam.ParDo(
+                                sequence_step.get_category_do_fn())
+                     | 'AddTimestamp_' + s >> beam.ParDo(
+                                sequence_step.get_timestamp_do_fn())
                      | 'Sessions_' + s >> beam.WindowInto(
-                                Sessions(trip_gap_threshold))
-                     )
+                                sequence_step.get_window()))
 
                 # Combine and transform
                 p_data = \
                     (s_data
                      | 'Combine_' + s >> beam.CombinePerKey(
-                                self.get_combiner()(),
-                                exec_properties,
-                                schema)
-                     )
+                                sequence_step.get_combine_fn()))
 
                 # Write the results
                 _ = \
