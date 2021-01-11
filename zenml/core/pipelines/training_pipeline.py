@@ -104,9 +104,9 @@ class TrainingPipeline(BasePipeline):
 
         datapoints = data.outputs.examples
 
-        #################
-        #   SPLITTING   #
-        #################
+        #############
+        # SPLITTING #
+        #############
         # Block to read the data from the corresponding BQ table
         split_config = steps[keys.TrainingSteps.SPLIT]
         splits = SplitGen(
@@ -140,7 +140,7 @@ class TrainingPipeline(BasePipeline):
             preprocessing_fn=constants.PREPROCESSING_FN,
             examples=datapoints,
             schema=schema,
-            custom_config=steps[keys.TrainingSteps.PREPROCESSING]
+            custom_config=steps[keys.TrainingSteps.PREPROCESSER]
         ).with_id(GDPComponent.Transform.name)
 
         component_list.extend([transform])
@@ -152,7 +152,7 @@ class TrainingPipeline(BasePipeline):
             self.backends_dict[TrainingLocalBackend.BACKEND_KEY]
         training_kwargs = {
             'custom_executor_spec': training_backend.get_executor_spec(),
-            'custom_config': steps[keys.TrainingSteps.TRAINING]
+            'custom_config': steps[keys.TrainingSteps.TRAINER]
         }
         training_kwargs['custom_config'].update(
             training_backend.get_custom_config())
@@ -172,7 +172,7 @@ class TrainingPipeline(BasePipeline):
         #############
         # EVALUATOR #
         #############
-        if keys.TrainingSteps.EVALUATION in steps:
+        if keys.TrainingSteps.EVALUATOR in steps:
             from zenml.utils import source_utils
             eval_module = '.'.join(
                 constants.EVALUATOR_MODULE_FN.split('.')[:-1])
@@ -181,7 +181,7 @@ class TrainingPipeline(BasePipeline):
             custom_extractor_path = os.path.join(abs_path,
                                                  eval_module_file) + '.py'
             eval_step: TFMAEvaluator = TFMAEvaluator.from_config(
-                steps[keys.TrainingSteps.EVALUATION])
+                steps[keys.TrainingSteps.EVALUATOR])
             eval_config = eval_step.build_eval_config()
             evaluator = Evaluator(
                 examples=transform.outputs.transformed_examples,
@@ -194,8 +194,8 @@ class TrainingPipeline(BasePipeline):
         ###########
         # SERVING #
         ###########
-        if keys.TrainingSteps.DEPLOYMENT in steps:
-            serving_args = steps[keys.TrainingSteps.DEPLOYMENT]['args']
+        if keys.TrainingSteps.DEPLOYER in steps:
+            serving_args = steps[keys.TrainingSteps.DEPLOYER]['args']
 
             project_id = serving_args['project_id']
             output_base_dir = self.artifact_store.path
@@ -224,16 +224,16 @@ class TrainingPipeline(BasePipeline):
         self.steps_dict[keys.TrainingSteps.SPLIT] = split_step
 
     def add_preprocesser(self, preprocessor_step: BasePreprocesserStep):
-        self.steps_dict[keys.TrainingSteps.PREPROCESSING] = preprocessor_step
+        self.steps_dict[keys.TrainingSteps.PREPROCESSER] = preprocessor_step
 
     def add_trainer(self, trainer_step: BaseTrainerStep):
-        self.steps_dict[keys.TrainingSteps.TRAINING] = trainer_step
+        self.steps_dict[keys.TrainingSteps.TRAINER] = trainer_step
 
     def add_evaluator(self, evaluator_step: TFMAEvaluator):
-        self.steps_dict[keys.TrainingSteps.EVALUATION] = evaluator_step
+        self.steps_dict[keys.TrainingSteps.EVALUATOR] = evaluator_step
 
     def add_deployment(self, deployment_step: GCAIPDeployer):
-        self.steps_dict[keys.TrainingSteps.DEPLOYMENT] = deployment_step
+        self.steps_dict[keys.TrainingSteps.DEPLOYER] = deployment_step
 
     def view_statistics(self, magic: bool = False):
         """
@@ -271,7 +271,7 @@ class TrainingPipeline(BasePipeline):
                 "successfully. Please run the pipeline and ensure it "
                 "completes successfully to evaluate it.")
             return
-        if keys.TrainingSteps.EVALUATION not in self.steps_dict:
+        if keys.TrainingSteps.EVALUATOR not in self.steps_dict:
             logger.info("This pipeline does not contain an evaluation step.")
             return
 
@@ -318,8 +318,8 @@ class TrainingPipeline(BasePipeline):
 
     def steps_completed(self) -> bool:
         mandatory_steps = [keys.TrainingSteps.SPLIT,
-                           keys.TrainingSteps.PREPROCESSING,
-                           keys.TrainingSteps.TRAINING,
+                           keys.TrainingSteps.PREPROCESSER,
+                           keys.TrainingSteps.TRAINER,
                            keys.TrainingSteps.DATA]
         for step_name in mandatory_steps:
             if step_name not in self.steps_dict.keys():
