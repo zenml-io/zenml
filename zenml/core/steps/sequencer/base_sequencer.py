@@ -12,6 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from abc import abstractmethod
+
+from tensorflow_metadata.proto.v0.schema_pb2 import Schema
+from tensorflow_metadata.proto.v0.statistics_pb2 import \
+    DatasetFeatureStatisticsList
+
 from zenml.core.steps.base_step import BaseStep
 from zenml.utils.enums import StepTypes
 
@@ -25,12 +31,43 @@ class BaseSequencerStep(BaseStep):
 
     STEP_TYPE = StepTypes.sequencer.name
 
-    def __init__(self, **kwargs):
-        """
-        Base sequencer step constructor.
-
-        Args:
-            **kwargs: Additional keyword arguments.
-        """
-
+    def __init__(self,
+                 statistics: DatasetFeatureStatisticsList = None,
+                 schema: Schema = None,
+                 **kwargs):
         super().__init__(**kwargs)
+
+        self.statistics = statistics
+        self.schema = schema
+
+    @abstractmethod
+    def get_category_do_fn(self):
+        """
+
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    def get_timestamp_do_fn(self):
+        """
+
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    def get_combine_fn(self):
+        """
+
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    def get_window(self):
+        """
+
+        :return:
+        """
+        pass
