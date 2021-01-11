@@ -26,7 +26,7 @@ zenml config PROPERTY get
 zenml config PROPERTY set [OPTIONS] ARGUMENTS
 ```
 
-### ZenML Local Config vs ZenML Global Config
+## ZenML Local Config vs ZenML Global Config
 
 Similar to other tools like Git, ZenML both maintains a per-repository configuration as well as a global configuration on your machine. As mentioned above, the local configuration is stored in a `.zenml/` directory at the root of your repository. This configuration is written in YAML and may look like this:
 

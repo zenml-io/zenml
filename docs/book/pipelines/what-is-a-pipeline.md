@@ -79,7 +79,7 @@ The config above can be split into 4 distinct keys:
 
 The most interesting key is perhaps the last one, i.e., `steps`. Each [`Step`](../steps/what-is-a-step.md) contains a `source` sub-key that points to a git-sha pinned version of the file in which it resides. It also contains all the parameters used in the constructors of these classes, to track them and use them later for comparability and repeatability. [Read more about steps here](../steps/what-is-a-step.md).
 
-### Relation to Tensorflow Extended \(TFX\) pipelines
+## Relation to Tensorflow Extended \(TFX\) pipelines
 
 A ZenML pipeline in the current version is a higher-level abstraction of an opinionated [TFX pipeline](https://www.tensorflow.org/tfx). ZenML steps are in turn higher-level abstractions of TFX components. 
 
