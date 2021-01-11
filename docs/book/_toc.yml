@@ -57,8 +57,11 @@
   chapters:
   - file: steps/what-is-a-step
     title: What is a step?
-  - file: steps/split
+  - file: steps/split/built-in.md
     title: Split
+    sections:
+      - file: steps/split/custom-split
+        title: Custom Split
   - file: steps/preprocess
     title: Preprocess
   - file: steps/trainer
@@ -67,11 +70,7 @@
     title: Evaluator
   - file: steps/deployer
     title: Deployer
-  - file: steps/custom_steps/custom-steps
-    title: Custom Steps
-    sections:
-      - file: steps/custom_steps/custom-split
-        title: Custom Split
+
 
 - part: Backends
   chapters:
