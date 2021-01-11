@@ -18,7 +18,7 @@ from zenml.core.steps.sequencer.base_sequencer import BaseSequencerStep
 
 from zenml.core.steps.sequencer.standard_sequencer.methods \
     .standard_methods import ResamplingMethods, FillingMethods
-from zenml.utils.method_utils import parse_methods
+from zenml.utils.preprocessing_utils import parse_methods
 
 
 class StandardSequencer(BaseSequencerStep):
@@ -33,6 +33,7 @@ class StandardSequencer(BaseSequencerStep):
                  sequence_shift: int = 1,
                  category_column: Text = None,
                  **kwargs):
+
         self.timestamp_column = timestamp_column
         self.category_column = category_column
         self.gap_threshold = gap_threshold

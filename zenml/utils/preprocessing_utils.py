@@ -58,3 +58,28 @@ class MethodDescriptions:
             method_name:
         """
         return cls.MODES[method_name][0]
+
+
+DEFAULT_DICT = {
+    'boolean': {
+        'filling': [{'method': 'max', 'parameters': {}}],
+        'resampling': [{'method': 'threshold',
+                        'parameters': {'c_value': 0,
+                                       'cond': 'greater',
+                                       'set_value': 1,
+                                       'threshold': 0}}],
+        'transform': [{'method': 'no_transform', 'parameters': {}}]},
+    'float': {
+        'filling': [{'method': 'max', 'parameters': {}}],
+        'resampling': [{'method': 'mean', 'parameters': {}}],
+        'transform': [{'method': 'scale_to_z_score', 'parameters': {}}]},
+    'integer': {
+        'filling': [{'method': 'max', 'parameters': {}}],
+        'resampling': [{'method': 'mean', 'parameters': {}}],
+        'transform': [{'method': 'scale_to_z_score', 'parameters': {}}]},
+    'string': {
+        'filling': [{'method': 'custom', 'parameters': {'custom_value': ''}}],
+        'resampling': [{'method': 'mode', 'parameters': {}}],
+        'transform': [{'method': 'compute_and_apply_vocabulary',
+                       'parameters': {}}]
+    }}

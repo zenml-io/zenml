@@ -21,33 +21,9 @@ from zenml.core.steps.preprocesser.base_preprocesser import \
     BasePreprocesserStep
 from zenml.core.steps.preprocesser.standard_preprocesser.methods \
     .standard_methods import NonSeqFillingMethods, TransformMethods
-from zenml.utils.method_utils import parse_methods
+from zenml.utils.preprocessing_utils import parse_methods, DEFAULT_DICT
 
 XF_SUFFIX = '_xf'
-
-DEFAULT_DICT = {
-    'boolean': {
-        'filling': [{'method': 'max', 'parameters': {}}],
-        'resampling': [{'method': 'threshold',
-                        'parameters': {'c_value': 0,
-                                       'cond': 'greater',
-                                       'set_value': 1,
-                                       'threshold': 0}}],
-        'transform': [{'method': 'no_transform', 'parameters': {}}]},
-    'float': {
-        'filling': [{'method': 'max', 'parameters': {}}],
-        'resampling': [{'method': 'mean', 'parameters': {}}],
-        'transform': [{'method': 'scale_to_z_score', 'parameters': {}}]},
-    'integer': {
-        'filling': [{'method': 'max', 'parameters': {}}],
-        'resampling': [{'method': 'mean', 'parameters': {}}],
-        'transform': [{'method': 'scale_to_z_score', 'parameters': {}}]},
-    'string': {
-        'filling': [{'method': 'custom', 'parameters': {'custom_value': ''}}],
-        'resampling': [{'method': 'mode', 'parameters': {}}],
-        'transform': [{'method': 'compute_and_apply_vocabulary',
-                       'parameters': {}}]
-    }}
 
 
 def transformed_name(key):
