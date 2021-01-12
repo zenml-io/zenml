@@ -95,7 +95,7 @@ class StandardSequencer(BaseSequencerStep):
                     element = element.set_index(default_category)
                 return element.iterrows()
 
-        return AddKey
+        return AddKey()
 
     def get_timestamp_do_fn(self):
 
@@ -111,7 +111,7 @@ class StandardSequencer(BaseSequencerStep):
                 unix_timestamp = Timestamp.from_utc_datetime(timestamp_utc)
                 yield TimestampedValue(element, unix_timestamp)
 
-        return AddTimestamp
+        return AddTimestamp()
 
     def get_window(self):
         return Sessions(self.gap_threshold)
@@ -121,11 +121,9 @@ class StandardSequencer(BaseSequencerStep):
 
         timestamp_column = self.timestamp_column
         category_column = self.category_column
-        overwrite = self.overwrite
         sequence_length = self.sequence_length
         sequence_shift = self.sequence_shift
         resampling_rate = self.resampling_rate
-        gap_threshold = self.gap_threshold
         resampling_dict = self.resampling_dict
         resampling_default_dict = self.resampling_default_dict
         filling_dict = self.filling_dict
@@ -226,4 +224,4 @@ class StandardSequencer(BaseSequencerStep):
                                                resampling_rate,
                                                sequence_shift)
 
-        return SequenceCombine
+        return SequenceCombine()
