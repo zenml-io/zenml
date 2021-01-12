@@ -140,7 +140,7 @@ class TrainingPipeline(BasePipeline):
         if keys.TrainingSteps.SEQUENCER in steps:
             sequencer_config = steps[keys.TrainingSteps.SEQUENCER]
             sequencer = Sequencer(
-                examples=datapoints,
+                input_examples=datapoints,
                 schema=schema,
                 source=sequencer_config[keys.StepKeys.SOURCE],
                 source_args=sequencer_config[keys.StepKeys.ARGS]
@@ -154,7 +154,7 @@ class TrainingPipeline(BasePipeline):
                 statistics=sequencer_statistics.outputs.output,
             ).with_id(GDPComponent.SequenceSchema.name)
 
-            datapoints = sequencer.outputs.output
+            datapoints = sequencer.outputs.output_example
             schema = sequencer_schema.outputs.schema
 
             component_list.extend([sequencer,
