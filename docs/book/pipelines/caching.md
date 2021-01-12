@@ -6,7 +6,7 @@ description: Get 80% faster with caching!
 
 # Caching
 
-Caching is an important mechanism for ZenML. Whenever, you [execute a pipeline](zenml-pipeline-config.md) in the same workspace, the ZenML tracks all the `source` and `args` of your [`Steps`](../steps/creating-custom-steps.md). The outputs of these steps are stored as they are computed. Whenever another pipeline is run afterwards that has a similar configuration to a previously run pipeline, the Core Engine simply uses the previously computed output to **warm start** the pipeline, rather then recomputing the output.
+Caching is an important mechanism for ZenML. Whenever, you [execute a pipeline](what-is-a-pipeline.md) in the same workspace, the ZenML tracks all the `source` and `args` of your [`Steps`](../steps/what-is-a-step.md). The outputs of these steps are stored as they are computed. Whenever another pipeline is run afterwards that has a similar configuration to a previously run pipeline, the Core Engine simply uses the previously computed output to **warm start** the pipeline, rather then recomputing the output.
 
 This not only makes each subsequent run potentially much faster but also saves on computing cost.
 

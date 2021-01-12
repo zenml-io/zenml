@@ -94,5 +94,5 @@ training_pipeline.view_statistics()
 training_pipeline.evaluate()
 ```
 
-Of course, each of these steps can be [extended quite easily](../steps/creating-custom-steps.md) to accommodate more complex scenarios and use-cases. There is a steadily-growing number of integrations available, for example, Google Dataflow for [distributed preprocessing](https://github.com/maiot-io/zenml/tree/staging#...) or Google Cloud AI Platform as a [training](https://github.com/maiot-io/zenml/tree/staging#...)  backend.
+Of course, each of these steps can be [extended quite easily](../steps/what-is-a-step.md) to accommodate more complex scenarios and use-cases. There is a steadily-growing number of integrations available, for example, Google Dataflow for [distributed preprocessing](https://github.com/maiot-io/zenml/tree/staging#...) or Google Cloud AI Platform as a [training](https://github.com/maiot-io/zenml/tree/staging#...)  backend.
 
