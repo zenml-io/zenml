@@ -58,7 +58,7 @@ def generate_toc(target='docs/book/reference', toc_file='docs/book/_toc.yml'):
     new_toc = '''
 - part: Reference
   chapters:
-'''
+    '''
     skip_header = 'file: index\nsections:\n'
 
     with open(f'{target}/_toc.yml', 'r') as raw_toc:
