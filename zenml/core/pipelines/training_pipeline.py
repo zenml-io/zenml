@@ -143,19 +143,20 @@ class TrainingPipeline(BasePipeline):
             sequencer = Sequencer(
                 input_examples=datapoints,
                 schema=schema,
+                statistics=statistics_split.outputs.statistics,
                 source=sequencer_config[keys.StepKeys.SOURCE],
                 source_args=sequencer_config[keys.StepKeys.ARGS]
             ).with_id(GDPComponent.Sequencer.name)
 
             sequencer_statistics = StatisticsGen(
-                examples=sequencer.outputs.output
-            ).with_id(GDPComponent.SequenceStatistics.name)
+                examples=sequencer.outputs.output_examples
+            ).with_id(GDPComponent.SequencerStatistics.name)
 
             sequencer_schema = SchemaGen(
                 statistics=sequencer_statistics.outputs.output,
-            ).with_id(GDPComponent.SequenceSchema.name)
+            ).with_id(GDPComponent.SequencerSchema.name)
 
-            datapoints = sequencer.outputs.output_example
+            datapoints = sequencer.outputs.output_examples
             schema = sequencer_schema.outputs.schema
 
             component_list.extend([sequencer,
