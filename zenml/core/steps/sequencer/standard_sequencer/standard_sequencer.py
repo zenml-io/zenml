@@ -12,10 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from datetime import datetime
 from typing import Dict, Text
 
 import apache_beam as beam
-import dateutil
 import pandas as pd
 import pytz
 from apache_beam.transforms.window import Sessions
@@ -106,9 +106,9 @@ class StandardSequencer(BaseSequencerStep):
                 """
                 Parse the timestamp and add it to the datapoints
                 """
-                timestamp = dateutil.parser.parse(element[timestamp_column][0])
-                timestamp_utc = timestamp.astimezone(pytz.utc)
-                unix_timestamp = Timestamp.from_utc_datetime(timestamp_utc)
+                t = element[1][timestamp_column][0]
+                timestamp = datetime.fromtimestamp(t, pytz.utc)
+                unix_timestamp = Timestamp.from_utc_datetime(timestamp)
                 yield TimestampedValue(element, unix_timestamp)
 
         return AddTimestamp()
@@ -141,8 +141,8 @@ class StandardSequencer(BaseSequencerStep):
 
             def extract_output(self, accumulator, *args, **kwargs):
                 # Get the required args
-                config_dict = args[0]
-                s = schema_utils.schema_as_feature_spec(args[1]).feature_spec
+                s = schema_utils.schema_as_feature_spec(
+                    self.schema).feature_spec
                 schema = utils.infer_schema(s)
 
                 # Extract the values from the arrays within the cells
