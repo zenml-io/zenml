@@ -30,7 +30,17 @@ from zenml.core.steps.sequencer.base_sequencer import BaseSequencerStep
 from zenml.utils import source_utils
 
 
+class RemoveKey(beam.DoFn):
+    def process(self, element):
+        """
+        Remove the key from the output of the CombineFn and return the
+        resulting datapoints
+        """
+        return element[1]
+
+
 class Executor(BaseExecutor):
+
     def Do(self,
            input_dict: Dict[Text, List[types.Artifact]],
            output_dict: Dict[Text, List[types.Artifact]],
@@ -74,7 +84,8 @@ class Executor(BaseExecutor):
         with self._make_beam_pipeline() as p:
             for s in split_names:
                 input_uri = io_utils.all_files_pattern(
-                    artifact_utils.get_split_uri(input_dict['input'], s))
+                    artifact_utils.get_split_uri(
+                        input_dict[constants.INPUT_EXAMPLES], s))
 
                 # Read and decode the data
                 data = \
@@ -104,7 +115,7 @@ class Executor(BaseExecutor):
                 _ = \
                     (p_data
                      | 'Global_' + s >> beam.WindowInto(GlobalWindows())
-                     | 'RemoveKey_' + s >> beam.ParDo(self.RemoveKey())
+                     | 'RemoveKey_' + s >> beam.ParDo(RemoveKey())
                      | 'ToExample_' + s >> beam.Map(utils.df_to_example)
                      | 'Serialize_' + s >> beam.Map(utils.serialize)
                      | 'Write_' + s >> beam.io.WriteToTFRecord(
