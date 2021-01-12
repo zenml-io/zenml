@@ -40,11 +40,11 @@ def list_datasources():
 
 
 @datasource.command("get")
-@click.argument('datasource_id')
-def get_datasource_by_id(datasource_id):
+@click.argument('datasource_name')
+def get_datasource_by_name(datasource_name):
     """
-    Gets pipeline from current repository by matching a (partial) identifier
-    against the data source ID.
+    Gets pipeline from current repository by matching a name identifier
+    against the data source name.
 
     """
     try:
@@ -53,12 +53,4 @@ def get_datasource_by_id(datasource_id):
         error(e)
         return
 
-    try:
-        ds = next(ds for ds in repo.get_datasources()
-                  if datasource_id in ds._id)
-    except StopIteration:
-        error(f"No datasource matching the identifier {datasource_id} "
-              f"was found.")
-        return
-
-    click.echo(str(ds))
+    click.echo(str(repo.get_datasource_by_name(datasource_name)))
