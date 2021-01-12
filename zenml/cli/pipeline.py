@@ -22,6 +22,10 @@ from zenml.cli.utils import error
 from zenml.core.repo.repo import Repository
 from zenml.utils.yaml_utils import read_yaml
 from zenml.utils.print_utils import to_pretty_string
+from zenml.core.pipelines.training_pipeline import TrainingPipeline
+from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
+from zenml.core.repo.artifact_store import ArtifactStore
+
 
 @cli.group()
 def pipeline():
@@ -50,26 +54,76 @@ def list_pipelines():
     cache_enabled = [p.enable_cache for p in pipelines]
     filenames = [p.file_name for p in pipelines]
 
-    print(tabulate(zip(names, types, cache_enabled, statuses, filenames),
-                   headers=["name", "type", "cache enabled", "status", "file name"]))
+    headers = ["name", "type", "cache enabled", "status", "file name"]
+
+    click.echo(tabulate(zip(names, types, cache_enabled, statuses, filenames),
+                        headers=headers))
 
 
 @pipeline.command('get')
 @click.argument('pipeline_id')
 def get_pipeline_by_id(pipeline_id: Text):
     """
-    Gets pipeline from current repository by name.
+    Gets pipeline from current repository by matching a (partial) identifier
+    against the pipeline yaml name.
 
     """
-    repo: Repository = Repository.get_instance()
-
-    file_paths = repo.get_pipeline_file_paths()
     try:
+        repo: Repository = Repository.get_instance()
+    except Exception as e:
+        error(e)
+        return
+
+    try:
+        file_paths = repo.get_pipeline_file_paths()
         path = next(y for y in file_paths if pipeline_id in y)
     except StopIteration:
         error(f"No pipeline matching the identifier {pipeline_id} "
               f"was found.")
-        # assignment to disable pycharm warning
-        path = ""
+        return
 
     click.echo(to_pretty_string(read_yaml(path)))
+
+
+@pipeline.command('run')
+@click.argument('pipeline_id')
+@click.option("--metadata_store", default=None,
+              help="Path to a custom metadata store to use.")
+@click.option("--artifact_store", default=None,
+              help="Path to a custom metadata store to use.")
+def run_pipeline_by_id(pipeline_id: Text,
+                       metadata_store: Text,
+                       artifact_store: Text):
+    """
+    Gets pipeline from current repository by matching a (partial) identifier
+    against the pipeline yaml name.
+    """
+    try:
+        repo: Repository = Repository.get_instance()
+    except Exception as e:
+        error(e)
+        return
+
+    try:
+        file_paths = repo.get_pipeline_file_paths()
+        path = next(y for y in file_paths if pipeline_id in y)
+    except StopIteration:
+        error(f"No pipeline matching the identifier {pipeline_id} "
+              f"was found.")
+        return
+
+    if metadata_store is not None:
+        # TODO[MEDIUM]: Figure out how to configure an alternative
+        #  metadata store from a command line string
+        click.echo("The option to configure the metadata store "
+                   "from the command line is not yet implemented.")
+
+    if artifact_store is not None:
+        path = artifact_store
+        repo.zenml_config.set_artifact_store(artifact_store_path=path)
+    try:
+        c = read_yaml(path)
+        p: TrainingPipeline = TrainingPipeline.from_config(c)
+        p.run(artifact_store=artifact_store)
+    except Exception as e:
+        error(e)
