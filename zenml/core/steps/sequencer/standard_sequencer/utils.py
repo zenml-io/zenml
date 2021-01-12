@@ -19,6 +19,12 @@ import numpy as np
 import pandas as pd
 import pytz
 
+from zenml.core.standards.standard_keys import MethodKeys, DefaultKeys
+from zenml.core.steps.sequencer.standard_sequencer.methods.standard_methods import \
+    ResamplingMethods
+from zenml.core.steps.sequencer.standard_sequencer.methods import \
+    methods_resampling
+
 
 def convert_datetime_to_secs(dt):
     delta = dt - datetime(year=1970, month=1, day=1, tzinfo=pytz.utc)
@@ -37,13 +43,24 @@ def get_resample_output_dtype(resampling_config, schema):
         method = description[0][MethodKeys.METHOD]
         params = description[0][MethodKeys.PARAMETERS]
 
-        output_dtype_map[
-            feature] = methods_resampling.get_output_dtype(
+        output_dtype_map[feature] = get_output_dtype(
             input_dtype=schema[feature],
             method=ResamplingMethods.get_method(method),
             params=params)
 
     return output_dtype_map
+
+
+def get_output_dtype(input_dtype, method, params):
+    if method == methods_resampling.resample_thresholding:
+        if type(params['set_value']) is str:
+            return str
+        else:
+            return float
+    if input_dtype == 'string':
+        if method == methods_resampling.resample_mode:
+            return str
+    return float
 
 
 def extract_sequences(session, seq_length, window_t, shift):
@@ -61,6 +78,14 @@ def extract_sequences(session, seq_length, window_t, shift):
 
 
 def infer_schema(schema):
+    """
+    Function to infer a schema from input data.
+    Args:
+        schema: Input dict mapping features to tf.Tensors.
+
+    Returns:
+        schema_dict: Dict mapping features to their respective data types.
+    """
     schema_dict = dict()
     for feature, descriptions in schema.items():
         dtype = descriptions.dtype
@@ -80,7 +105,6 @@ def infer_schema(schema):
 
 
 def fill_defaults(config, default_config, schema):
-    # Creating a feature spec for easier access
     for feature, descriptions in config.items():
         if len(descriptions) == 0:
             config[feature] = default_config[schema[feature]]
