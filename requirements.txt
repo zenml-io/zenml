@@ -24,3 +24,4 @@ jupyter-book==0.9.1
 matplotlib==3.3.3
 ghp-import==1.0.0
 jedi==0.17.2
+git+https://github.com/maiot-io/sphinx-book-theme.git

@@ -4,7 +4,7 @@ description: A single place to store all your pipelines
 
 # Pipeline Directory
 
-All pipelines you create in code will generate a [declarative pipeline configuration](../pipelines/zenml-pipeline-config.md). This configuration is representative of the pipeline itself, and thanks to [version-pinning](integration-with-git.md#versioning-custom-code) and a declarative style, these configurations can be executed reproducibly across environments.
+All pipelines you create in code will generate a [declarative pipeline configuration](../pipelines/what-is-a-pipeline.md). This configuration is representative of the pipeline itself, and thanks to [version-pinning](integration-with-git.md#versioning-custom-code) and a declarative style, these configurations can be executed reproducibly across environments.
 
 The generated configurations will be persisted in a local directory at the root of your repository called `pipelines` by default. These configurations will be[ referenced in your local `.zenml_config`](repository-singleton.md#zenml-local-config-vs-zenml-global-config) , located in the `.zenml` folder within your experiment directory.
 

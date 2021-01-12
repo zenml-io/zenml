@@ -143,13 +143,13 @@ The GCP orchestrator follows a simple mechanism to orchestrate the pipeline work
 * It then launches a VM using the Google Cloud python client.
 * The VM is bootstrapped with a [startup-script](https://github.com/maiot-io/zenml/blob/main/zenml/core/backends/orchestrator/gcp/startup-script.sh) that does the following:
   * Pulls the relevant docker image \(see below\).
-  * Receives the [pipeline config YAML](../pipelines/zenml-pipeline-config.md) that has the path of the `tar` source-code. It uses this to download and extract the contents on a local directory. This is why the artifact store needs to be a Google Cloud bucket that is accessible to the VM.
+  * Receives the [pipeline config YAML](../pipelines/what-is-a-pipeline.md) that has the path of the `tar` source-code. It uses this to download and extract the contents on a local directory. This is why the artifact store needs to be a Google Cloud bucket that is accessible to the VM.
   * Executes the pipeline with the [LocalOrchestrator](https://github.com/maiot-io/zenml/tree/main/zenml/core/backends/orchestrator/local) locally on the VM.
   * Shuts down when that process exits.
 
 ### Customize your orchestration
 
-Every ZenML [`Pipeline`](../pipelines/zenml-pipeline-config.md) has a `run` method that takes a list of [`Backends`](../backends/backends-overview.md) as input. If you pass in an [`OrchestratorBackend`](../backends/orchestrator-backends.md) , then the default local orchestrator is replaced by whatever you send in. In this case we sent in the [`OrchestratorGCPBackend`](https://github.com/maiot-io/zenml/blob/main/zenml/core/backends/orchestrator/gcp/orchestrator_gcp_backend.py) which takes certain parameters. They are:
+Every ZenML [`Pipeline`](../pipelines/what-is-a-pipeline.md) has a `run` method that takes a list of [`Backends`](../backends/what-is-a-backend.md) as input. If you pass in an [`OrchestratorBackend`](../backends/orchestrator-backends.md) , then the default local orchestrator is replaced by whatever you send in. In this case we sent in the [`OrchestratorGCPBackend`](https://github.com/maiot-io/zenml/blob/main/zenml/core/backends/orchestrator/gcp/orchestrator_gcp_backend.py) which takes certain parameters. They are:
 
 * `cloudsql_connection_name`: The [connection name](https://cloud.google.com/sql/docs/mysql/instance-info) of the Cloud SQL instance.
 * `project`: The GCP project name.
