@@ -129,6 +129,8 @@ class StandardSequencer(BaseSequencerStep):
         filling_dict = self.filling_dict
         filling_default_dict = self.filling_default_dict
 
+        schema = self.schema
+
         class SequenceCombine(beam.CombineFn):
             def create_accumulator(self, *args, **kwargs):
                 return pd.DataFrame()
@@ -141,9 +143,8 @@ class StandardSequencer(BaseSequencerStep):
 
             def extract_output(self, accumulator, *args, **kwargs):
                 # Get the required args
-                s = schema_utils.schema_as_feature_spec(
-                    self.schema).feature_spec
-                schema = utils.infer_schema(s)
+                feature_spec = schema_utils.schema_as_feature_spec(schema).feature_spec
+                schema_dict = utils.infer_schema(feature_spec)
 
                 # Extract the values from the arrays within the cells
                 session = accumulator.applymap(utils.array_to_value)
@@ -161,7 +162,7 @@ class StandardSequencer(BaseSequencerStep):
                 # RESAMPLING
                 r_config = utils.fill_defaults(resampling_dict,
                                                resampling_default_dict,
-                                               schema)
+                                               schema_dict)
 
                 resample_functions = utils.get_function_dict(
                     r_config, ResamplingMethods)
@@ -189,13 +190,13 @@ class StandardSequencer(BaseSequencerStep):
                 # Resolving the dtype conflicts after resampling
                 output_dt_map = utils.get_resample_output_dtype(
                     resampling_dict,
-                    schema)
+                    schema_dict)
                 session = session.astype(output_dt_map)
 
                 # FILLING
                 f_config = utils.fill_defaults(filling_dict,
                                                filling_default_dict,
-                                               schema)
+                                               schema_dict)
 
                 filling_functions = utils.get_function_dict(f_config,
                                                             FillingMethods)
