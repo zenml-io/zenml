@@ -23,8 +23,6 @@ from zenml.core.repo.repo import Repository
 from zenml.utils.yaml_utils import read_yaml
 from zenml.utils.print_utils import to_pretty_string
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
-from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
-from zenml.core.repo.artifact_store import ArtifactStore
 
 
 @cli.group()
@@ -44,7 +42,11 @@ def set_metadata_store():
 @pipeline.command('list')
 def list_pipelines():
     """Lists pipelines in the current repository."""
-    repo: Repository = Repository.get_instance()
+    try:
+        repo: Repository = Repository.get_instance()
+    except Exception as e:
+        error(e)
+        return
 
     pipelines = repo.get_pipelines()
 
@@ -87,8 +89,8 @@ def run_pipeline_by_id(pipeline_id: Text,
     Gets pipeline from current repository by matching a (partial) identifier
     against the pipeline yaml name.
     """
-    repo: Repository = Repository.get_instance()
     config = return_pipeline_config_by_id(pipeline_id)
+    repo: Repository = Repository.get_instance()
 
     if metadata_store is not None:
         # TODO[MEDIUM]: Figure out how to configure an alternative
