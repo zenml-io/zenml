@@ -61,4 +61,4 @@ def get_datasource_by_id(datasource_id):
               f"was found.")
         return
 
-    print(ds)
+    click.echo(str(ds))
