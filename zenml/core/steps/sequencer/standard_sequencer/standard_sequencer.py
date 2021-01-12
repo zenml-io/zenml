@@ -143,8 +143,8 @@ class StandardSequencer(BaseSequencerStep):
 
             def extract_output(self, accumulator, *args, **kwargs):
                 # Get the required args
-                feature_spec = schema_utils.schema_as_feature_spec(schema).feature_spec
-                schema_dict = utils.infer_schema(feature_spec)
+                spec = schema_utils.schema_as_feature_spec(schema).feature_spec
+                schema_dict = utils.infer_schema(spec)
 
                 # Extract the values from the arrays within the cells
                 session = accumulator.applymap(utils.array_to_value)
@@ -156,7 +156,8 @@ class StandardSequencer(BaseSequencerStep):
 
                 # Set the timestamp as the index
                 session[timestamp_column] = session[timestamp_column].apply(
-                    lambda x: pd.to_datetime(x.decode('utf-8')))
+                    lambda x: pd.to_datetime(datetime.fromtimestamp(x,
+                                                                    pytz.utc)))
                 session = session.set_index(timestamp_column)
 
                 # RESAMPLING
@@ -211,7 +212,7 @@ class StandardSequencer(BaseSequencerStep):
                 if category_column:
                     session[category_column] = cat
 
-                index_s = session.index.to_series(keep_tz=True)
+                index_s = session.index.to_series()
                 session[timestamp_column] = index_s.apply(
                     lambda x: x.strftime("%Y-%m-%d %H:%M:%S.%f %Z"))
 
