@@ -22,7 +22,7 @@ from tfx.dsl.components.base.base_executor import BaseExecutor
 from tfx.types import artifact_utils
 from tfx.types.artifact_utils import get_split_uri
 from tfx.utils import io_utils
-
+import os
 from zenml.core.components.sequencer import constants
 from zenml.core.components.sequencer import utils
 from zenml.core.standards.standard_keys import StepKeys
@@ -40,6 +40,7 @@ class RemoveKey(beam.DoFn):
 
 
 class Executor(BaseExecutor):
+    _DEFAULT_FILENAME = 'sequencer_output'
 
     def Do(self,
            input_dict: Dict[Text, List[types.Artifact]],
@@ -87,6 +88,11 @@ class Executor(BaseExecutor):
                     artifact_utils.get_split_uri(
                         input_dict[constants.INPUT_EXAMPLES], s))
 
+                output_uri = artifact_utils.get_split_uri(
+                    output_dict[constants.OUTPUT_EXAMPLES],
+                    s)
+                output_path = os.path.join(output_uri, self._DEFAULT_FILENAME)
+
                 # Read and decode the data
                 data = \
                     (p
@@ -119,5 +125,5 @@ class Executor(BaseExecutor):
                      | 'ToExample_' + s >> beam.Map(utils.df_to_example)
                      | 'Serialize_' + s >> beam.Map(utils.serialize)
                      | 'Write_' + s >> beam.io.WriteToTFRecord(
-                                get_split_uri([output_artifact], s),
+                                output_path,
                                 file_name_suffix='.gz'))
