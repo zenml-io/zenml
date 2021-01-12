@@ -68,21 +68,10 @@ def get_pipeline_by_id(pipeline_id: Text):
     against the pipeline yaml name.
 
     """
-    try:
-        repo: Repository = Repository.get_instance()
-    except Exception as e:
-        error(e)
-        return
+    config = return_pipeline_config_by_id(pipeline_id)
 
-    try:
-        file_paths = repo.get_pipeline_file_paths()
-        path = next(y for y in file_paths if pipeline_id in y)
-    except StopIteration:
-        error(f"No pipeline matching the identifier {pipeline_id} "
-              f"was found.")
-        return
-
-    click.echo(to_pretty_string(read_yaml(path)))
+    if config is not None:
+        click.echo(to_pretty_string(config))
 
 
 @pipeline.command('run')
@@ -98,19 +87,8 @@ def run_pipeline_by_id(pipeline_id: Text,
     Gets pipeline from current repository by matching a (partial) identifier
     against the pipeline yaml name.
     """
-    try:
-        repo: Repository = Repository.get_instance()
-    except Exception as e:
-        error(e)
-        return
-
-    try:
-        file_paths = repo.get_pipeline_file_paths()
-        path = next(y for y in file_paths if pipeline_id in y)
-    except StopIteration:
-        error(f"No pipeline matching the identifier {pipeline_id} "
-              f"was found.")
-        return
+    repo: Repository = Repository.get_instance()
+    config = return_pipeline_config_by_id(pipeline_id)
 
     if metadata_store is not None:
         # TODO[MEDIUM]: Figure out how to configure an alternative
@@ -122,8 +100,37 @@ def run_pipeline_by_id(pipeline_id: Text,
         path = artifact_store
         repo.zenml_config.set_artifact_store(artifact_store_path=path)
     try:
-        c = read_yaml(path)
-        p: TrainingPipeline = TrainingPipeline.from_config(c)
+        p: TrainingPipeline = TrainingPipeline.from_config(config)
         p.run(artifact_store=artifact_store)
     except Exception as e:
         error(e)
+
+
+def return_pipeline_config_by_id(pipeline_id: Text):
+    """
+    Utility to get a pipeline object by matching a supplied ID against the
+    pipeline YAML configuration associated with it.
+
+    Args:
+        pipeline_id: ID of the designated pipeline. Has to be partially
+        matching the YAML file name.
+
+    Returns:
+        A Pipeline config object built from the matched config
+
+    """
+    try:
+        repo: Repository = Repository.get_instance()
+    except Exception as e:
+        error(e)
+        return None
+
+    try:
+        file_paths = repo.get_pipeline_file_paths()
+        path = next(y for y in file_paths if pipeline_id in y)
+    except StopIteration:
+        error(f"No pipeline matching the identifier {pipeline_id} "
+              f"was found.")
+        return None
+
+    return read_yaml(path)
