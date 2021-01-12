@@ -25,6 +25,12 @@ jobs:
     - name: Install dependencies
       run: |
         pip install -r requirements.txt
+        pip install pdoc3==0.9.2
+
+    # Generate docstring documentation
+    - name: Generate DocString documentation
+      run: |
+        python docs/generate.py
 
     # Build the book
     - name: Build the book
@@ -44,7 +50,7 @@ jobs:
         SOURCE_DIR: 'docs/book/_build/html'
 
     # Invalidate Cloudfront
-    - name: invalidate
+    - name: Invalidate Cloudfront
       uses: chetan/invalidate-cloudfront-action@master
       env:
         DISTRIBUTION: ${{ secrets.AWS_CF_DISTRIBUTION }}
