@@ -17,7 +17,7 @@ import tensorflow_transform as tft
 
 from zenml.core.steps.preprocesser.standard_preprocesser.methods import \
     methods_nonseq_filling, methods_transform
-from zenml.utils.method_utils import MethodDescriptions
+from zenml.utils.preprocessing_utils import MethodDescriptions
 
 
 class NonSeqFillingMethods(MethodDescriptions):

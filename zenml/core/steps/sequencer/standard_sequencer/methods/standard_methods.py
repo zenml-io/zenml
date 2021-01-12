@@ -14,7 +14,7 @@
 
 from zenml.core.steps.sequencer.standard_sequencer.methods import \
     methods_filling, methods_resampling
-from zenml.utils.method_utils import MethodDescriptions
+from zenml.utils.preprocessing_utils import MethodDescriptions
 
 
 class ResamplingMethods(MethodDescriptions):
