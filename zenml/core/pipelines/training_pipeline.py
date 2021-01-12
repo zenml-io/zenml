@@ -43,6 +43,7 @@ from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
 from zenml.core.steps.preprocesser.base_preprocesser import \
     BasePreprocesserStep
 from zenml.core.steps.split.base_split_step import BaseSplit
+from zenml.core.steps.sequencer.base_sequencer import BaseSequencerStep
 from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
 from zenml.utils import constants
 from zenml.utils import path_utils
@@ -250,6 +251,9 @@ class TrainingPipeline(BasePipeline):
 
     def add_split(self, split_step: BaseSplit):
         self.steps_dict[keys.TrainingSteps.SPLIT] = split_step
+
+    def add_sequencer(self, sequencer_step: BaseSequencerStep):
+        self.steps_dict[keys.TrainingSteps.SEQUENCER] = sequencer_step
 
     def add_preprocesser(self, preprocessor_step: BasePreprocesserStep):
         self.steps_dict[keys.TrainingSteps.PREPROCESSER] = preprocessor_step
