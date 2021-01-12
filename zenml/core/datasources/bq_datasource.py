@@ -15,9 +15,6 @@
 
 from typing import Text, Optional, Dict
 
-from google.cloud import bigquery
-from google.cloud.exceptions import NotFound
-
 from zenml.core.datasources.base_datasource import BaseDatasource
 from zenml.core.steps.data.bq_data_step import BQDataStep
 
@@ -54,17 +51,6 @@ class BigQueryDatasource(BaseDatasource):
             dest_project: project where gcs exists.
         """
         super().__init__(name, schema, **unused_kwargs)
-
-        # Check whether we can access this
-        client = bigquery.Client(project=dest_project)
-        dataset_ref = bigquery.DatasetReference(
-            project=query_project, dataset_id=query_dataset)
-        table_ref = dataset_ref.table(query_table)
-
-        try:
-            client.get_table(table_ref)
-        except NotFound:
-            Exception(f'Table {query_table} not found.')
 
         # Check whether gcs_location is a valid one
         if not gcs_location.startswith('gs://'):
