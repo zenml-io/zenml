@@ -18,6 +18,7 @@ from typing import List, Text
 import tensorflow as tf
 import tensorflow_addons as tfa
 import tensorflow_transform as tft
+from datetime import datetime
 
 from zenml.core.steps.trainer.feedforward_trainer import BaseTrainerStep
 
@@ -31,7 +32,9 @@ class CycleGANTrainer(BaseTrainerStep):
                                               epochs=epochs,
                                               **kwargs)
 
-        self.log_dir = "./logs"
+        self.time_suffix = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+        self.log_dir = "./logs/train_data/" + self.time_suffix
 
     def model_fn(self,
                  train_dataset: tf.data.Dataset,
@@ -77,7 +80,10 @@ class CycleGANTrainer(BaseTrainerStep):
             dataset,
             batch_size=self.batch_size,
             epochs=self.epochs,
-            callbacks=tf.keras.callbacks.TensorBoard(log_dir=self.log_dir)
+            callbacks=[tf.keras.callbacks.TensorBoard(log_dir=self.log_dir),
+                       TensorBoardImage(test_data=eval_dataset,
+                                        log_dir="./logs/gan_test/" +
+                                                self.time_suffix)]
         )
 
         return cycle_gan_model
@@ -121,35 +127,13 @@ class CycleGANTrainer(BaseTrainerStep):
                            for x in xf_feature_spec
                            if x.endswith('_xf')}
 
-        dataset = tf.data.experimental.make_batched_features_dataset(
+        return tf.data.experimental.make_batched_features_dataset(
             file_pattern=file_pattern,
             batch_size=self.batch_size,
+            shuffle=False,
+            num_epochs=1,
             features=xf_feature_spec,
-            reader=self._gzip_reader_fn,
-            num_epochs=self.epochs)
-
-        def split_inputs_labels(x):
-            inputs = {}
-            labels = {}
-            for e in x:
-                if not e.startswith('label'):
-                    inputs[e] = x[e]
-                else:
-                    labels[e] = x[e]
-
-            labels = {
-                label[len('label_'):-len('_xf')]:
-                    labels[label]
-                for label in labels.keys()
-            }
-
-            return inputs, labels
-
-        dataset = dataset.map(split_inputs_labels)
-
-        dataset = dataset.map(lambda x, y: x)
-
-        return dataset
+            reader=self._gzip_reader_fn)
 
     @staticmethod
     def _get_serve_tf_examples_fn(model, tf_transform_output):
@@ -225,11 +209,11 @@ class CycleGANTrainer(BaseTrainerStep):
 class CycleGan(tf.keras.Model):
     def __init__(
             self,
-            monet_generator,
-            photo_generator,
-            monet_discriminator,
-            photo_discriminator,
-            lambda_cycle=10,
+            monet_generator: tf.keras.Model,
+            photo_generator: tf.keras.Model,
+            monet_discriminator: tf.keras.Model,
+            photo_discriminator: tf.keras.Model,
+            lambda_cycle: int = 10,
     ):
         super(CycleGan, self).__init__()
         self.m_gen = monet_generator
@@ -246,6 +230,8 @@ class CycleGan(tf.keras.Model):
         self.disc_loss_fn = None
         self.cycle_loss_fn = None
         self.identity_loss_fn = None
+
+        self.tft_layer = None
 
     def compile(
             self,
@@ -267,6 +253,9 @@ class CycleGan(tf.keras.Model):
         self.disc_loss_fn = disc_loss_fn
         self.cycle_loss_fn = cycle_loss_fn
         self.identity_loss_fn = identity_loss_fn
+
+    def call(self, inputs, training=None, mask=None):
+        return self.m_gen(inputs, training=training, mask=mask)
 
     def train_step(self, batch_data):
         real_monet, real_photo = batch_data
@@ -353,9 +342,6 @@ class CycleGan(tf.keras.Model):
         }
 
 
-OUTPUT_CHANNELS = 3
-
-
 def downsample(filters, size, apply_instancenorm=True):
     initializer = tf.random_normal_initializer(0., 0.02)
     gamma_init = tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.02)
@@ -421,7 +407,7 @@ def Generator():
 
     initializer = tf.random_normal_initializer(0., 0.02)
     # (bs, 256, 256, 3)
-    last = tf.keras.layers.Conv2DTranspose(OUTPUT_CHANNELS, 4,
+    last = tf.keras.layers.Conv2DTranspose(3, 4,
                                            strides=2,
                                            padding='same',
                                            kernel_initializer=initializer,
@@ -508,3 +494,24 @@ def calc_cycle_loss(real_image, cycled_image, lamb):
 def identity_loss(real_image, same_image, lamb):
     loss = tf.reduce_mean(tf.abs(real_image - same_image))
     return lamb * 0.5 * loss
+
+
+class TensorBoardImage(tf.keras.callbacks.Callback):
+    def __init__(self, test_data: tf.data.Dataset, log_dir):
+        super().__init__()
+        self.log_dir = log_dir
+        self.test_data = test_data
+        self.writer = tf.summary.create_file_writer(self.log_dir)
+
+    def on_epoch_end(self, epoch, logs=None):
+        # Get image by transforming dataset to numpy iterator,
+        # requires eager execution mode
+        data = self.test_data.take(1).as_numpy_iterator()
+
+        for element in data:
+            output = self.model(element)
+            normal_output = (output + 1) * 127.5
+            with self.writer.as_default():
+                tf.summary.image("GAN Example image",
+                                 tf.cast(normal_output, tf.uint8),
+                                 step=epoch)
