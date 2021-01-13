@@ -39,10 +39,10 @@
     title: What is a datasource
   - file: datasources/google-bigquery
     title: Google Bigquery
-  - file: datasources/local-images
-    title: Local Images
+  - file: datasources/images
+    title: Images
   - file: datasources/csv-files-locally
-    title: CSV files [WIP]
+    title: CSV files
 
 - part: Pipelines
   chapters:
