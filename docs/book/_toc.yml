@@ -1,5 +1,5 @@
-- file: intro
-  title: Intro
+- file: index
+  title: Introduction
 
 - part: Getting Started
   chapters:
@@ -121,3 +121,417 @@
     title: Contact
   - file: support/faq-wip
     title: FAQ
+
+- part: Reference
+  chapters:
+    - file: reference/core/index
+      sections:
+      - file: reference/core/datasources/index
+        sections:
+        - file: reference/core/datasources/image_datasource
+        - file: reference/core/datasources/json_datasource
+        - file: reference/core/datasources/csv_datasource
+        - file: reference/core/datasources/pandas_datasource
+        - file: reference/core/datasources/base_datasource
+        - file: reference/core/datasources/numpy_datasource
+        - file: reference/core/datasources/bq_datasource
+      - file: reference/core/backends/index
+        sections:
+        - file: reference/core/backends/base_backend
+        - file: reference/core/backends/backend_factory
+        - file: reference/core/backends/processing/index
+          sections:
+          - file: reference/core/backends/processing/processing_local_backend
+          - file: reference/core/backends/processing/processing_spark_backend
+          - file: reference/core/backends/processing/processing_dataflow_backend
+        - file: reference/core/backends/training/index
+          sections:
+          - file: reference/core/backends/training/training_gcaip_backend
+          - file: reference/core/backends/training/training_local_backend
+        - file: reference/core/backends/orchestrator/index
+          sections:
+          - file: reference/core/backends/orchestrator/gcp/index
+            sections:
+            - file: reference/core/backends/orchestrator/gcp/entrypoint
+            - file: reference/core/backends/orchestrator/gcp/orchestrator_gcp_backend
+          - file: reference/core/backends/orchestrator/local/index
+            sections:
+            - file: reference/core/backends/orchestrator/local/zenml_local_orchestrator
+            - file: reference/core/backends/orchestrator/local/orchestrator_local_backend
+          - file: reference/core/backends/orchestrator/beam/index
+            sections:
+            - file: reference/core/backends/orchestrator/beam/orchestrator_beam_backend
+            - file: reference/core/backends/orchestrator/beam/zenml_beam_orchestrator
+          - file: reference/core/backends/orchestrator/kubernetes/index
+            sections:
+            - file: reference/core/backends/orchestrator/kubernetes/orchestrator_kubernetes_backend
+          - file: reference/core/backends/orchestrator/kubeflow/index
+            sections:
+            - file: reference/core/backends/orchestrator/kubeflow/orchestrator_kubeflow_backend
+      - file: reference/core/pipelines/index
+        sections:
+        - file: reference/core/pipelines/base_pipeline
+        - file: reference/core/pipelines/utils
+        - file: reference/core/pipelines/infer_pipeline
+        - file: reference/core/pipelines/data_pipeline
+        - file: reference/core/pipelines/pipeline_factory
+        - file: reference/core/pipelines/training_pipeline
+      - file: reference/core/components/index
+        sections:
+        - file: reference/core/components/evaluator/index
+          sections:
+          - file: reference/core/components/evaluator/evaluator_module
+        - file: reference/core/components/split_gen/index
+          sections:
+          - file: reference/core/components/split_gen/utils
+          - file: reference/core/components/split_gen/executor
+          - file: reference/core/components/split_gen/component
+          - file: reference/core/components/split_gen/constants
+        - file: reference/core/components/data_gen/index
+          sections:
+          - file: reference/core/components/data_gen/utils
+          - file: reference/core/components/data_gen/executor
+          - file: reference/core/components/data_gen/component
+          - file: reference/core/components/data_gen/constants
+        - file: reference/core/components/transform/index
+          sections:
+          - file: reference/core/components/transform/transform_module
+        - file: reference/core/components/trainer/index
+          sections:
+          - file: reference/core/components/trainer/trainer_module
+      - file: reference/core/steps/index
+        sections:
+        - file: reference/core/steps/base_step
+        - file: reference/core/steps/split/index
+          sections:
+          - file: reference/core/steps/split/no_split_step
+          - file: reference/core/steps/split/utils
+          - file: reference/core/steps/split/categorical_domain_split_step
+          - file: reference/core/steps/split/random_split
+          - file: reference/core/steps/split/base_split_step
+          - file: reference/core/steps/split/categorical_ratio_split_step
+          - file: reference/core/steps/split/constants
+        - file: reference/core/steps/evaluator/index
+          sections:
+          - file: reference/core/steps/evaluator/tfma_evaluator
+        - file: reference/core/steps/deployer/index
+          sections:
+          - file: reference/core/steps/deployer/gcaip_deployer
+          - file: reference/core/steps/deployer/base_deployer
+        - file: reference/core/steps/data/index
+          sections:
+          - file: reference/core/steps/data/image_data_step
+          - file: reference/core/steps/data/bq_data_step
+          - file: reference/core/steps/data/csv_data_step
+          - file: reference/core/steps/data/base_data_step
+        - file: reference/core/steps/preprocesser/index
+          sections:
+          - file: reference/core/steps/preprocesser/base_preprocesser
+          - file: reference/core/steps/preprocesser/standard_preprocesser/index
+            sections:
+            - file: reference/core/steps/preprocesser/standard_preprocesser/standard_preprocesser
+            - file: reference/core/steps/preprocesser/standard_preprocesser/methods/index
+              sections:
+              - file: reference/core/steps/preprocesser/standard_preprocesser/methods/methods_nonseq_filling
+              - file: reference/core/steps/preprocesser/standard_preprocesser/methods/standard_methods
+              - file: reference/core/steps/preprocesser/standard_preprocesser/methods/methods_transform
+        - file: reference/core/steps/trainer/index
+          sections:
+          - file: reference/core/steps/trainer/feedforward_trainer
+          - file: reference/core/steps/trainer/base_trainer
+      - file: reference/core/metadata/index
+        sections:
+        - file: reference/core/metadata/mock_metadata_wrapper
+        - file: reference/core/metadata/sqlite_metadata_wrapper
+        - file: reference/core/metadata/metadata_wrapper_factory
+        - file: reference/core/metadata/metadata_wrapper
+        - file: reference/core/metadata/mysql_metadata_wrapper
+      - file: reference/core/repo/index
+        sections:
+        - file: reference/core/repo/repo
+        - file: reference/core/repo/git_wrapper
+        - file: reference/core/repo/artifact_store
+        - file: reference/core/repo/zenml_config
+        - file: reference/core/repo/global_config
+        - file: reference/core/repo/constants
+      - file: reference/core/standards/index
+        sections:
+        - file: reference/core/standards/standard_keys
+    
+
+
+- part: Reference
+  chapters:
+    - file: reference/core/index
+      sections:
+      - file: reference/core/datasources/index
+        sections:
+        - file: reference/core/datasources/image_datasource
+        - file: reference/core/datasources/json_datasource
+        - file: reference/core/datasources/csv_datasource
+        - file: reference/core/datasources/pandas_datasource
+        - file: reference/core/datasources/base_datasource
+        - file: reference/core/datasources/numpy_datasource
+        - file: reference/core/datasources/bq_datasource
+      - file: reference/core/backends/index
+        sections:
+        - file: reference/core/backends/base_backend
+        - file: reference/core/backends/backend_factory
+        - file: reference/core/backends/processing/index
+          sections:
+          - file: reference/core/backends/processing/processing_local_backend
+          - file: reference/core/backends/processing/processing_spark_backend
+          - file: reference/core/backends/processing/processing_dataflow_backend
+        - file: reference/core/backends/training/index
+          sections:
+          - file: reference/core/backends/training/training_gcaip_backend
+          - file: reference/core/backends/training/training_local_backend
+        - file: reference/core/backends/orchestrator/index
+          sections:
+          - file: reference/core/backends/orchestrator/gcp/index
+            sections:
+            - file: reference/core/backends/orchestrator/gcp/entrypoint
+            - file: reference/core/backends/orchestrator/gcp/orchestrator_gcp_backend
+          - file: reference/core/backends/orchestrator/local/index
+            sections:
+            - file: reference/core/backends/orchestrator/local/zenml_local_orchestrator
+            - file: reference/core/backends/orchestrator/local/orchestrator_local_backend
+          - file: reference/core/backends/orchestrator/beam/index
+            sections:
+            - file: reference/core/backends/orchestrator/beam/orchestrator_beam_backend
+            - file: reference/core/backends/orchestrator/beam/zenml_beam_orchestrator
+          - file: reference/core/backends/orchestrator/kubernetes/index
+            sections:
+            - file: reference/core/backends/orchestrator/kubernetes/orchestrator_kubernetes_backend
+          - file: reference/core/backends/orchestrator/kubeflow/index
+            sections:
+            - file: reference/core/backends/orchestrator/kubeflow/orchestrator_kubeflow_backend
+      - file: reference/core/pipelines/index
+        sections:
+        - file: reference/core/pipelines/base_pipeline
+        - file: reference/core/pipelines/utils
+        - file: reference/core/pipelines/infer_pipeline
+        - file: reference/core/pipelines/data_pipeline
+        - file: reference/core/pipelines/pipeline_factory
+        - file: reference/core/pipelines/training_pipeline
+      - file: reference/core/components/index
+        sections:
+        - file: reference/core/components/evaluator/index
+          sections:
+          - file: reference/core/components/evaluator/evaluator_module
+        - file: reference/core/components/split_gen/index
+          sections:
+          - file: reference/core/components/split_gen/utils
+          - file: reference/core/components/split_gen/executor
+          - file: reference/core/components/split_gen/component
+          - file: reference/core/components/split_gen/constants
+        - file: reference/core/components/data_gen/index
+          sections:
+          - file: reference/core/components/data_gen/utils
+          - file: reference/core/components/data_gen/executor
+          - file: reference/core/components/data_gen/component
+          - file: reference/core/components/data_gen/constants
+        - file: reference/core/components/transform/index
+          sections:
+          - file: reference/core/components/transform/transform_module
+        - file: reference/core/components/trainer/index
+          sections:
+          - file: reference/core/components/trainer/trainer_module
+      - file: reference/core/steps/index
+        sections:
+        - file: reference/core/steps/base_step
+        - file: reference/core/steps/split/index
+          sections:
+          - file: reference/core/steps/split/no_split_step
+          - file: reference/core/steps/split/utils
+          - file: reference/core/steps/split/categorical_domain_split_step
+          - file: reference/core/steps/split/random_split
+          - file: reference/core/steps/split/base_split_step
+          - file: reference/core/steps/split/categorical_ratio_split_step
+          - file: reference/core/steps/split/constants
+        - file: reference/core/steps/evaluator/index
+          sections:
+          - file: reference/core/steps/evaluator/tfma_evaluator
+        - file: reference/core/steps/deployer/index
+          sections:
+          - file: reference/core/steps/deployer/gcaip_deployer
+          - file: reference/core/steps/deployer/base_deployer
+        - file: reference/core/steps/data/index
+          sections:
+          - file: reference/core/steps/data/image_data_step
+          - file: reference/core/steps/data/bq_data_step
+          - file: reference/core/steps/data/csv_data_step
+          - file: reference/core/steps/data/base_data_step
+        - file: reference/core/steps/preprocesser/index
+          sections:
+          - file: reference/core/steps/preprocesser/base_preprocesser
+          - file: reference/core/steps/preprocesser/standard_preprocesser/index
+            sections:
+            - file: reference/core/steps/preprocesser/standard_preprocesser/standard_preprocesser
+            - file: reference/core/steps/preprocesser/standard_preprocesser/methods/index
+              sections:
+              - file: reference/core/steps/preprocesser/standard_preprocesser/methods/methods_nonseq_filling
+              - file: reference/core/steps/preprocesser/standard_preprocesser/methods/standard_methods
+              - file: reference/core/steps/preprocesser/standard_preprocesser/methods/methods_transform
+        - file: reference/core/steps/trainer/index
+          sections:
+          - file: reference/core/steps/trainer/feedforward_trainer
+          - file: reference/core/steps/trainer/base_trainer
+      - file: reference/core/metadata/index
+        sections:
+        - file: reference/core/metadata/mock_metadata_wrapper
+        - file: reference/core/metadata/sqlite_metadata_wrapper
+        - file: reference/core/metadata/metadata_wrapper_factory
+        - file: reference/core/metadata/metadata_wrapper
+        - file: reference/core/metadata/mysql_metadata_wrapper
+      - file: reference/core/repo/index
+        sections:
+        - file: reference/core/repo/repo
+        - file: reference/core/repo/git_wrapper
+        - file: reference/core/repo/artifact_store
+        - file: reference/core/repo/zenml_config
+        - file: reference/core/repo/global_config
+        - file: reference/core/repo/constants
+      - file: reference/core/standards/index
+        sections:
+        - file: reference/core/standards/standard_keys
+    
+
+
+- part: Reference
+  chapters:
+    - file: reference/core/index
+      sections:
+      - file: reference/core/datasources/index
+        sections:
+        - file: reference/core/datasources/image_datasource
+        - file: reference/core/datasources/json_datasource
+        - file: reference/core/datasources/csv_datasource
+        - file: reference/core/datasources/pandas_datasource
+        - file: reference/core/datasources/base_datasource
+        - file: reference/core/datasources/numpy_datasource
+        - file: reference/core/datasources/bq_datasource
+      - file: reference/core/backends/index
+        sections:
+        - file: reference/core/backends/base_backend
+        - file: reference/core/backends/backend_factory
+        - file: reference/core/backends/processing/index
+          sections:
+          - file: reference/core/backends/processing/processing_local_backend
+          - file: reference/core/backends/processing/processing_spark_backend
+          - file: reference/core/backends/processing/processing_dataflow_backend
+        - file: reference/core/backends/training/index
+          sections:
+          - file: reference/core/backends/training/training_gcaip_backend
+          - file: reference/core/backends/training/training_local_backend
+        - file: reference/core/backends/orchestrator/index
+          sections:
+          - file: reference/core/backends/orchestrator/gcp/index
+            sections:
+            - file: reference/core/backends/orchestrator/gcp/entrypoint
+            - file: reference/core/backends/orchestrator/gcp/orchestrator_gcp_backend
+          - file: reference/core/backends/orchestrator/local/index
+            sections:
+            - file: reference/core/backends/orchestrator/local/zenml_local_orchestrator
+            - file: reference/core/backends/orchestrator/local/orchestrator_local_backend
+          - file: reference/core/backends/orchestrator/beam/index
+            sections:
+            - file: reference/core/backends/orchestrator/beam/orchestrator_beam_backend
+            - file: reference/core/backends/orchestrator/beam/zenml_beam_orchestrator
+          - file: reference/core/backends/orchestrator/kubernetes/index
+            sections:
+            - file: reference/core/backends/orchestrator/kubernetes/orchestrator_kubernetes_backend
+          - file: reference/core/backends/orchestrator/kubeflow/index
+            sections:
+            - file: reference/core/backends/orchestrator/kubeflow/orchestrator_kubeflow_backend
+      - file: reference/core/pipelines/index
+        sections:
+        - file: reference/core/pipelines/base_pipeline
+        - file: reference/core/pipelines/utils
+        - file: reference/core/pipelines/infer_pipeline
+        - file: reference/core/pipelines/data_pipeline
+        - file: reference/core/pipelines/pipeline_factory
+        - file: reference/core/pipelines/training_pipeline
+      - file: reference/core/components/index
+        sections:
+        - file: reference/core/components/evaluator/index
+          sections:
+          - file: reference/core/components/evaluator/evaluator_module
+        - file: reference/core/components/split_gen/index
+          sections:
+          - file: reference/core/components/split_gen/utils
+          - file: reference/core/components/split_gen/executor
+          - file: reference/core/components/split_gen/component
+          - file: reference/core/components/split_gen/constants
+        - file: reference/core/components/data_gen/index
+          sections:
+          - file: reference/core/components/data_gen/utils
+          - file: reference/core/components/data_gen/executor
+          - file: reference/core/components/data_gen/component
+          - file: reference/core/components/data_gen/constants
+        - file: reference/core/components/transform/index
+          sections:
+          - file: reference/core/components/transform/transform_module
+        - file: reference/core/components/trainer/index
+          sections:
+          - file: reference/core/components/trainer/trainer_module
+      - file: reference/core/steps/index
+        sections:
+        - file: reference/core/steps/base_step
+        - file: reference/core/steps/split/index
+          sections:
+          - file: reference/core/steps/split/no_split_step
+          - file: reference/core/steps/split/utils
+          - file: reference/core/steps/split/categorical_domain_split_step
+          - file: reference/core/steps/split/random_split
+          - file: reference/core/steps/split/base_split_step
+          - file: reference/core/steps/split/categorical_ratio_split_step
+          - file: reference/core/steps/split/constants
+        - file: reference/core/steps/evaluator/index
+          sections:
+          - file: reference/core/steps/evaluator/tfma_evaluator
+        - file: reference/core/steps/deployer/index
+          sections:
+          - file: reference/core/steps/deployer/gcaip_deployer
+          - file: reference/core/steps/deployer/base_deployer
+        - file: reference/core/steps/data/index
+          sections:
+          - file: reference/core/steps/data/image_data_step
+          - file: reference/core/steps/data/bq_data_step
+          - file: reference/core/steps/data/csv_data_step
+          - file: reference/core/steps/data/base_data_step
+        - file: reference/core/steps/preprocesser/index
+          sections:
+          - file: reference/core/steps/preprocesser/base_preprocesser
+          - file: reference/core/steps/preprocesser/standard_preprocesser/index
+            sections:
+            - file: reference/core/steps/preprocesser/standard_preprocesser/standard_preprocesser
+            - file: reference/core/steps/preprocesser/standard_preprocesser/methods/index
+              sections:
+              - file: reference/core/steps/preprocesser/standard_preprocesser/methods/methods_nonseq_filling
+              - file: reference/core/steps/preprocesser/standard_preprocesser/methods/standard_methods
+              - file: reference/core/steps/preprocesser/standard_preprocesser/methods/methods_transform
+        - file: reference/core/steps/trainer/index
+          sections:
+          - file: reference/core/steps/trainer/feedforward_trainer
+          - file: reference/core/steps/trainer/base_trainer
+      - file: reference/core/metadata/index
+        sections:
+        - file: reference/core/metadata/mock_metadata_wrapper
+        - file: reference/core/metadata/sqlite_metadata_wrapper
+        - file: reference/core/metadata/metadata_wrapper_factory
+        - file: reference/core/metadata/metadata_wrapper
+        - file: reference/core/metadata/mysql_metadata_wrapper
+      - file: reference/core/repo/index
+        sections:
+        - file: reference/core/repo/repo
+        - file: reference/core/repo/git_wrapper
+        - file: reference/core/repo/artifact_store
+        - file: reference/core/repo/zenml_config
+        - file: reference/core/repo/global_config
+        - file: reference/core/repo/constants
+      - file: reference/core/standards/index
+        sections:
+        - file: reference/core/standards/standard_keys
+    
+
