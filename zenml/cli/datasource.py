@@ -15,8 +15,11 @@
 import click
 from tabulate import tabulate
 from zenml.cli.cli import cli
-from zenml.cli.utils import error
+from zenml.cli.utils import error, parse_unknown_options
 from zenml.core.repo.repo import Repository
+from zenml.core.datasources.bq_datasource import BigQueryDatasource
+from zenml.core.datasources.image_datasource import ImageDatasource
+from zenml.core.datasources.csv_datasource import CSVDatasource
 
 
 @cli.group()
@@ -54,3 +57,38 @@ def get_datasource_by_name(datasource_name):
         return
 
     click.echo(str(repo.get_datasource_by_name(datasource_name)))
+
+
+@datasource.command("create")
+@click.argument('type', nargs=1)
+@click.argument("name", nargs=1)
+@click.argument('args', nargs=-1, type=click.UNPROCESSED)
+def create_datasource(type, name, args):
+    """
+    Creates a datasource in the current repository of the given type
+    with the given name and args.
+
+    Args:
+        type: Type of the datasource to create.
+        name: Name of the datasource in the repo.
+        args: Constructor arguments necessary for creating the chosen
+        datasource.
+
+    """
+    # TODO[HIGH]: Hardcoded, better to instantiate a datasource factory in
+    #  the datasource click group
+    source_dict = {"bq": BigQueryDatasource,
+                   "csv": CSVDatasource,
+                   "image": ImageDatasource,
+                   }
+
+    if type.lower() not in source_dict:
+        error("Unknown datasource type was given. Available types are: "
+              "{}".format(",".join(k for k in source_dict.keys())))
+
+    try:
+        source_args = parse_unknown_options(args)
+        ds = source_dict.get(type.lower())(name=name, **source_args)
+    except Exception as e:
+        error(e)
+        return
