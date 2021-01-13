@@ -1,10 +1,7 @@
----
-description: A Singleton oracle that knows all
----
-
 # The ZenML Repository Instance
 
-In order to access information about your ZenML repository in code, you need to access the ZenML [Repository instance](https://github.com/maiot-io/zenml/blob/main/zenml/core/repo/repo.py). This object is a Singleton and can be fetched any time from within your Python code simply by executing:
+In order to access information about your ZenML repository in code, you need to access the ZenML [Repository instance](https://github.com/maiot-io/zenml/blob/main/zenml/core/repo/repo.py). 
+This object is a Singleton and can be fetched any time from within your Python code simply by executing:
 
 ```python
 from zenml.core.repo.repo import Repository

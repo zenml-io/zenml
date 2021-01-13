@@ -1,18 +1,16 @@
----
-description: A ZenML repository has lots to offer
----
-
 # What is a ZenML Repository?
 
-Every ZenML project starts inside a ZenML repository. Think of it just like a normal Git repository, except that there are some added bonuses on top! To create a ZenML repository, do the following after [having installed ZenML](../getting-started/installation.md).
+Every ZenML project starts inside a ZenML repository. Think of it just like a normal Git repository, except that there are 
+some added bonuses on top! To create a ZenML repository, do the following after 
+[having installed ZenML](../getting-started/installation.md).
 
-```text
+```bash
 zenml init
 ```
 
-{% hint style="warning" %}
+```{warning}
 Please make sure to be inside a valid git repository before executing the above!
-{% endhint %}
+```
 
 This creates a default SQLite Metadata Store and local Artifact Store inside a `.zenml` folder in the root of your repository. It also creates a `pipelines` directory at the root as well, which is the path where all your [pipeline configurations](../pipelines/what-is-a-pipeline.md) will be stored. Finally, it adds a `.zenml_config` YAML inside the `.zenml` folder that tracks all this.
 

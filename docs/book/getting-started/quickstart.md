@@ -2,15 +2,15 @@
 Get up and running in (almost) 3 steps.
 Let’s get you started with a simple pipeline. Please make sure to also check out the [advanced concepts.](core-concepts.md) This quickstart uses some built-ins and a very simple model.
 
-{% hint style="info" %}
+```{hint}
 If you are here just to see the code, you can find it on [GitHub](https://github.com/maiot-io/zenml#quickstart).
-{% endhint %}
+```
 
 ## **For visual learners**
 
 If you don't feel like reading right now, please watch this video for a visual explanation of the quickstart:
 
-{% embed url="https://www.youtube.com/watch?v=Stg5rA\_0oa8" %}
+<iframe width="560" height="315" src="https://www.youtube.com/embed/Stg5rA_0oa8" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 ### **Step 0: Installation**
 

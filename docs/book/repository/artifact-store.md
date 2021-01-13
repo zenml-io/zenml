@@ -22,7 +22,7 @@ Using the default Artifact Store can be a limitation to the integrations you mig
 
 Many experiments and many ZenML integrations require a remote Artifact Store to reliable retrieve and persist pipeline step artifacts. Especially dynamic scenarios with heterogenous environments will be only possible when using a remote Artifact Store.
 
-Configuring a remote Artifact Store or ZenML is a one-liner using the CLI:
+Configuring a remote Artifact Store for ZenML is a one-liner using the CLI:
 
 ```text
 zenml config artifacts set gs://your-bucket/sub/dir

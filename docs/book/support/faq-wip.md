@@ -1,10 +1,8 @@
----
-description: Frequently asked questions for our product
----
+# FAQ
 
-# FAQ \(WIP\)
+Please chat with us on [Slack](https://zenml.io/slack-invite/) if you have more questions we didn't cover here.
 
-No FAQ's yet \[we just launched\]. Please chat with us on [Slack](https://zenml.io/slack-invite/) so we can generate some questions for here!
-
-
-
+## Where do I specify my requirements?
+Any requirement can be specified, just as you would normally do e.g. using a `requirements.txt` file. The only 
+thing to take care of is not to clash with libraries ZenML itself comes installed. 
+See a list of these [here](https://github.com/maiot-io/zenml/blob/main/setup.py#L53).

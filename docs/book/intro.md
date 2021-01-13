@@ -1,29 +1,41 @@
 # Introduction
 
 ## What is ZenML?
-
 **ZenML** is an extensible, open-source MLOps framework for using production-ready Machine Learning pipelines - in a simple way. 
 
-### Key Features
+## Why do I need ZenML?
+ZenML exists to solve the following problems in Machine Learning development. This includes facing difficulties with:
+
+* **Reproducing** training results in production.
+* Managing ML **metadata**, including data, code, and model versioning.
+* Getting (and keeping) ML models in **production**.
+* **Reusing** code/data and reducing waste.
+* Maintaining **comparability** between ML models.
+* **Scaling ML** training/inference to large datasets.
+* Retaining code **quality** alongside development velocity.
+* Keeping up with the ML **tooling landscape** in a coherent manner.
+
+## Key Features
+If you/your team struggle with ZenML struggle with the above problems, ZenML solves them via:
 
 * Guaranteed reproducibility of your training experiments. Your pipelines are versioned from data to model, experiments automatically tracked and all pipeline configs are declarative by default.
+* Automatic tracking of ML metadata. All runs are tracked in a human-readable, immutable, declarative config.
+* Version data, code, and models in one simple interface.
+* Re-use code and interim artifacts across experiments and users.
 * Guaranteed comparability between experiments.
-* Ability to quickly switch between local and cloud environments \(e.g. Kubernetes, Apache Beam\).
+* Ability to quickly switch between local and cloud environments \(e.g. Kubernetes \).
+* Easily integrate with all popular tools including Git, Apache Beam, Kubernetes, PyTorch, TensorFlow.
+
+In addition, ZenML provides some goodies on top:
+
 * Built-in and extensible abstractions for all MLOps needs - from distributed processing on large datasets to Cloud-integrations and model serving backends.
 * Pre-built helpers to compare and visualize input parameters as well as pipeline results \(e.g. Tensorboard, TFMA, TFDV\).
 * Cached pipeline states for faster experiment iterations.
 
-**ZenML** is built to take your experiments all the way from data versioning to a deployed model. It replaces fragile glue-code and scripts to automate Jupyter Notebooks for **production-ready Machine Learning**. The core design is centered around **extensible interfaces** to accommodate **complex pipeline** scenarios while providing a **batteries-included, straightforward “happy path”** to achieve success in common use-cases **without unnecessary boiler-plate code**. 
+## List of all benefits
 
-## In a nutshell
-
-### For Data Science people...
-
-For the people who actually create models and do experiments, you get exposed to simple interfaces to plug and play your models and data with. You can run experiments remotely as easily as possible, and use the built-in automatic evaluation mechanisms to analyze precisely what happened. The goal is for you to follow as closely as possible the pandas/numpy/scikit paradigm you are familiar with, but to end-up with production-ready, scalable, and deployable models at the end. Every parameter is tracked and all artifacts are reproducible.
-
-### For Ops people...
-
-For the people who are responsible for managing the infrastructure and tasked with negotiating the ever-changing ML eco-system, ZenML should be seen as a platform that provides high-level integrations to various backends that are tedious to build and maintain. If you want to swap out some components with others, then you are free to do so! For example, if you want to deploy on different cloud providers \(AWS, GCP, Azure\), or a different data processing backend \(Spark, Dataflow, etc\), then ZenML provides this ability natively.
-
-To get started with ZenML, head on over to the [quickstart](getting-started/quickstart.md) to create your first ZenML pipeline.
-
+## What to do next?
+* Get up and running with your first pipeline [with the Quickstart](getting-started/quickstart.md).
+* Read more about [core concepts](getting-started/core-concepts.md) to inform your decision about using ZenML.
+* Check out how to [convert your old ML code](getting-started/organizing-zenml.md) into ZenML pipelines, or start from scratch with our [tutorials](tutorials/creating-first-pipeline.ipynb)
+* If you are working as a team, see how to [collaborate using ZenML in a team setting](repository/team-collaboration-with-zenml.md).

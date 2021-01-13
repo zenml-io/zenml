@@ -9,12 +9,14 @@
     title: Architectural Overview
   - file: getting-started/quickstart
     title: Quickstart
+  - file: getting-started/organizing-zenml
+    title: Organizing ML Code with ZenML
   - file: getting-started/installation
     title: Installation
 
 - part: Repository
   chapters:
-  - file: repository/repository-singleton
+  - file: repository/what-is-a-repository
     title: What is a ZenML Repository
   - file: repository/the-zenml-repository-instance
     title: The ZenML Repository Instance
@@ -26,6 +28,10 @@
     title: Artifact Store
   - file: repository/pipeline-directory
     title: Pipeline Directory
+  - file: repository/adding-your-code
+    title: Adding Your Custom Code
+  - file: repository/team-collaboration-with-zenml
+    title: Team Collaboration
 
 - part: Datasources
   chapters:
@@ -50,7 +56,7 @@
     title: Data [WIP]
   - file: pipelines/batch-inference
     title: Batch Inference [WIP]
-  - file: pipelines/caching
+  - file: pipelines/reusing-artifacts
     title: Caching
 
 - part: Steps
@@ -89,7 +95,7 @@
 
 - part: Tutorials
   chapters:
-    - file: tutorials/simple-classification.ipynb
+    - file: tutorials/creating-first-pipeline.ipynb
       title: Creating your first pipeline
     - file: tutorials/running-a-pipeline-on-a-google-cloud-vm
       title: Running a training pipeline on a Google Cloud VM
