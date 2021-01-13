@@ -105,8 +105,8 @@ def infer_schema(schema):
 
 
 def fill_defaults(config, default_config, schema):
-    for feature, descriptions in config.items():
-        if len(descriptions) == 0:
+    for feature in schema:
+        if feature not in config:
             config[feature] = default_config[schema[feature]]
     return config
 
