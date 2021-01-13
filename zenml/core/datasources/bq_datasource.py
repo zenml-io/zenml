@@ -26,9 +26,14 @@ class BigQueryDatasource(BaseDatasource):
     """
     DATA_STEP = BQDataStep
 
-    def __init__(self, name: Text, query_project: Text, query_dataset: Text,
-                 query_table: Text, gcs_location: Text,
-                 query_limit: Optional[int] = None, dest_project: Text = None,
+    def __init__(self,
+                 name: Text,
+                 query_project: Text,
+                 query_dataset: Text,
+                 query_table: Text,
+                 gcs_location: Text,
+                 query_limit: Optional[int] = None,
+                 dest_project: Text = None,
                  schema: Dict = None, **unused_kwargs):
         """
         Initialize BigQuery source. This creates a DataPipeline that
@@ -42,13 +47,14 @@ class BigQueryDatasource(BaseDatasource):
         specified through dest_project.
 
         Args:
-            name: Name of datasource.
+            name: name of datasource. Must be globally unique in the repo.
             query_project: name of gcp project.
             query_dataset: name of dataset.
             query_table: name of table in dataset.
             query_limit: how many rows, from the top, to be queried.
-            gcs_location: google cloud storage location to store temp files.
-            dest_project: project where gcs exists.
+            gcs_location: google cloud storage (bucket) location to store temp.
+            dest_project: name of destination project. If None is specified,
+            then dest_project is set to the same as query_project.
         """
         super().__init__(name, schema, **unused_kwargs)
 
