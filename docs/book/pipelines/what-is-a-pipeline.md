@@ -123,6 +123,26 @@ The `copy()` paradigm also helps in *re-usability* of code across pipelines. E.g
 then the corresponding `pipeline_b` pipeline run will skip splitting, preprocessing and re-use all the artifacts already produced by `pipeline_a`. 
 Read more about [caching here](reusing-artifacts.md).
 
+## Repository functionalities
+You can get all your pipelines using the [Repository](../repository/what-is-a-repository.md) class:
+
+```python
+from zenml.core.repo.repo import Repository
+
+repo: Repository = Repository.get_instance()
+
+# Get all names of pipelines in repo
+pipeline_names = repo.get_pipeline_names()
+
+# Load previously run pipelines
+pipelines = repo.get_pipelines()
+
+# Get pipelines by datasource
+pipelines = repo.get_pipelines_by_datasource(ds)
+
+# Get pipelines by type
+train_pipelines = repo.get_pipelines_by_type(type_filter=['train'])
+```
 
 ## Relation to Tensorflow Extended \(TFX\) pipelines
 

@@ -32,4 +32,3 @@ repo.compare_pipelines()
 Using these commands, one can always look back at what actions have been performed in this repository. 
 
 It is important to note that most of the methods listed above involve parsing the [config YAML files](../pipelines/what-is-a-pipeline.md) in your [Pipelines Directory](pipeline-directory.md). Therefore, by changing the pipelines directory or manipulating it, you may lose a lot of valuable information regarding how the repository developed over time.
-

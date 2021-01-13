@@ -1,8 +1,23 @@
-
-# Google BigQuery \[WIP\]
+# Google BigQuery
 Connect public and private Google BigQuery tables.
 
-Please refer to docstring at `zenml.core.datasources.bq_datasource` until we write this out.
+Please refer to docstring at `zenml.core.datasources.bq_datasource` for details.
+
+## Example
+```python
+from zenml.core.datasources.bq_datasource import BigQueryDatasource
+
+ds = BigQueryDatasource(
+    name=f'Name',
+    query_dataset='chicago_taxi_trips',
+    query_table='taxi_trips',
+    query_project='bigquery-public-data',
+    dest_project='gcp-project',
+    gcs_location='gs://path/to/dump/directory',
+)
+```
+
+
 
 ## Supported data types
 
