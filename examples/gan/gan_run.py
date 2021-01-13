@@ -26,17 +26,17 @@ gan_pipeline = TrainingPipeline(name="gan_test",
                                 enable_cache=True)
 
 try:
-    ds = ImageDatasource(name="gan_images",
+    ds = ImageDatasource(name="gan_images2",
                          base_path="/Users/nicholasjunge/workspaces/maiot/"
-                                   "ce_project/images_mini")
+                                   "ce_project/images_mini_test")
 except:
     ds = repo.get_datasource_by_name('gan_images')
 
 gan_pipeline.add_datasource(ds)
 
 gan_pipeline.add_split(CategoricalDomainSplit(categorical_column="label",
-                                              split_map={"train": [0],
-                                                         "eval": [1]}))
+                                              split_map={"train": ["monet"],
+                                                         "eval": ["real"]}))
 
 gan_pipeline.add_preprocesser(GANPreprocessor())
 
