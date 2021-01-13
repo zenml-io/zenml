@@ -123,6 +123,7 @@ The `copy()` paradigm also helps in *re-usability* of code across pipelines. E.g
 then the corresponding `pipeline_b` pipeline run will skip splitting, preprocessing and re-use all the artifacts already produced by `pipeline_a`. 
 Read more about [caching here](reusing-artifacts.md).
 
+
 ## Relation to Tensorflow Extended \(TFX\) pipelines
 
 A ZenML pipeline in the current version is a higher-level abstraction of an opinionated [TFX pipeline](https://www.tensorflow.org/tfx). [ZenML Steps](../steps/what-is-a-step.md) are in turn higher-level abstractions of TFX components. 

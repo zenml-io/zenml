@@ -43,8 +43,6 @@
     title: Local Images
   - file: datasources/csv-files-locally
     title: CSV files [WIP]
-  - file: datasources/create-your-own-datasource
-    title: Create your own datasource
 
 - part: Pipelines
   chapters:
