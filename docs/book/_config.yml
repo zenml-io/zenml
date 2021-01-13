@@ -22,3 +22,9 @@ html:
   use_repository_button: true
   use_edit_page_button: true
   baseurl: https://docs.zenml.io
+sphinx:
+  extra_extensions:
+    - sphinxext.opengraph
+  config:
+    ogp_site_url: "https://docs.zenml.io/"
+    ogp_image: "https://docs.zenml.io/_static/og.png"

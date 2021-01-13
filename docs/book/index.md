@@ -1,4 +1,4 @@
-# Introduction
+# ZenML Documentation
 
 ## What is ZenML?
 
