@@ -29,7 +29,7 @@ from zenml.core.components.sequencer import executor
 
 
 class SequencerComponentSpec(ComponentSpec):
-    """SplitGen ExampleGen component spec."""
+    """Sequencer component spec."""
     PARAMETERS = {
         StepKeys.SOURCE: ExecutionParameter(type=Text),
         StepKeys.ARGS: ExecutionParameter(type=Dict[Text, Any]),

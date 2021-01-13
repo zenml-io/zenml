@@ -18,11 +18,22 @@ import tensorflow as tf
 
 
 class ToDataframe(beam.DoFn):
+    """
+    Beam PTransform responsible for converting the incoming Arrow table into
+    a pandas dataframe
+    """
+
     def process(self, element, *args, **kwargs):
         return [element.to_pandas()]
 
 
 def df_to_example(instance) -> tf.train.Example:
+    """
+    Auxiliary function to create a tf.train.Example from a pandas dataframe
+
+    :param instance: pd.DataFrame, the datapoint
+    :return: tf.train.Example, the result
+    """
     d = {col: instance[col] for col in instance.columns}
 
     feature = {}
@@ -45,4 +56,10 @@ def df_to_example(instance) -> tf.train.Example:
 
 
 def serialize(instance):
+    """
+    Helper function to serialize a tf.train.Example in the beam pipeline
+
+    :param instance: the input, tf.train.Example
+    :return: serialized version of the input
+    """
     return instance.SerializeToString(deterministic=True)

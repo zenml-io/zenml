@@ -47,11 +47,11 @@ class Executor(BaseExecutor):
            output_dict: Dict[Text, List[types.Artifact]],
            exec_properties: Dict[Text, Any]) -> None:
         """
+        Main execution logic for the Sequencer component
 
-        :param input_dict:
-        :param output_dict:
-        :param exec_properties:
-        :return:
+        :param input_dict: input channels
+        :param output_dict: output channels
+        :param exec_properties: the execution properties defined in the spec
         """
 
         source = exec_properties[StepKeys.SOURCE]
@@ -64,7 +64,7 @@ class Executor(BaseExecutor):
             artifact_utils.get_single_uri(input_dict[constants.SCHEMA]))
         schema = io_utils.SchemaReader().read(schema_path)
 
-        # TODO: Get the statistics perhaps
+        # TODO: Getting the statistics might help the future implementations
 
         sequence_step: BaseSequencerStep = c(schema=schema,
                                              statistics=None,
