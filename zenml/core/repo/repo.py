@@ -139,6 +139,10 @@ class Repository:
         self._check_if_initialized()
         return self.zenml_config.get_metadata_store()
 
+    def get_default_pipelines_dir(self) -> Text:
+        self._check_if_initialized()
+        return self.zenml_config.get_pipelines_dir()
+
     def get_git_wrapper(self) -> GitWrapper:
         self._check_if_initialized()
         return self.git_wrapper
