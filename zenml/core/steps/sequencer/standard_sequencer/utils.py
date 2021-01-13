@@ -63,13 +63,11 @@ def get_output_dtype(input_dtype, method, params):
     return float
 
 
-def extract_sequences(session, seq_length, window_t, shift):
+def extract_sequences(session, seq_length, freq, shift):
     sequence_list = []
     for i in range(0, len(session.index), shift):
         start = session.index[i]
-        end = session.index[i] + pd.to_timedelta(
-            (seq_length - 1) * window_t,
-            unit='ms')
+        end = session.index[i] + (seq_length - 1) * pd.to_timedelta(freq)
         ex_sequence = session.loc[start:end, :]
 
         if len(ex_sequence.index) == seq_length:
