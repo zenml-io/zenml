@@ -36,9 +36,9 @@ class StandardSequencer(BaseSequencerStep):
                  timestamp_column: Text,
                  category_column: Text = None,
                  overwrite: Dict[Text, Text] = None,
-                 resampling_rate: int = 1000,
+                 resampling_freq: Text = '1D',
                  gap_threshold: int = 60000,
-                 sequence_length: int = 16,
+                 sequence_length: int = 4,
                  sequence_shift: int = 1,
                  **kwargs):
 
@@ -47,7 +47,7 @@ class StandardSequencer(BaseSequencerStep):
         self.overwrite = overwrite
         self.sequence_length = sequence_length
         self.sequence_shift = sequence_shift
-        self.resampling_rate = resampling_rate
+        self.resampling_freq = resampling_freq
         self.gap_threshold = gap_threshold
 
         self.resampling_dict = parse_methods(overwrite or {},
@@ -70,7 +70,7 @@ class StandardSequencer(BaseSequencerStep):
             timestamp_column=timestamp_column,
             category_column=category_column,
             overwrite=overwrite,
-            resampling_rate=resampling_rate,
+            resampling_freq=resampling_freq,
             gap_threshold=gap_threshold,
             sequence_length=sequence_length,
             sequence_shift=sequence_shift,
@@ -123,7 +123,7 @@ class StandardSequencer(BaseSequencerStep):
         category_column = self.category_column
         sequence_length = self.sequence_length
         sequence_shift = self.sequence_shift
-        resampling_rate = self.resampling_rate
+        resampling_freq = self.resampling_freq
         resampling_dict = self.resampling_dict
         resampling_default_dict = self.resampling_default_dict
         filling_dict = self.filling_dict
@@ -178,9 +178,7 @@ class StandardSequencer(BaseSequencerStep):
                     if feature not in session:
                         session[feature] = None
 
-                resampler = session[feature_list].resample(
-                    '{}L'.format(resampling_rate))
-
+                resampler = session[feature_list].resample(resampling_freq)
                 session = resampler.agg(resample_functions)
 
                 # TODO: Investigate the outcome of disabling this
@@ -223,7 +221,7 @@ class StandardSequencer(BaseSequencerStep):
 
                 return utils.extract_sequences(session,
                                                sequence_length,
-                                               resampling_rate,
+                                               resampling_freq,
                                                sequence_shift)
 
         return SequenceCombine()
