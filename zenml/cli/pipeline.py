@@ -88,6 +88,10 @@ def run_pipeline_by_id(pipeline_id: Text,
     """
     Gets pipeline from current repository by matching a (partial) identifier
     against the pipeline yaml name.
+
+    Args:
+        pipeline_id: ID of the designated pipeline. Has to be partially
+        matching the YAML file name.
     """
     config = return_pipeline_config_by_id(pipeline_id)
     repo: Repository = Repository.get_instance()
