@@ -24,11 +24,8 @@ from zenml.core.steps.preprocesser.standard_preprocesser \
 
 
 def decode_and_reshape_image(input_):
-    image = tf.map_fn(
-        lambda x: tf.io.decode_image(x[0], channels=3),
-        input_,
-        dtype=tf.uint8)
-    # image = tf.image.decode_image(input_, channels=3)
+    image = tf.map_fn(lambda x: tf.io.decode_image(x[0], channels=3),
+                      input_, dtype=tf.uint8)
     image = (tf.cast(image, tf.float32) / 127.5) - 1
     image = tf.reshape(image, [-1, 256, 256, 3])
     return image
@@ -49,8 +46,5 @@ class GANPreprocessor(BasePreprocesserStep):
                 result = decode_and_reshape_image(v)
                 result = tf.cast(result, dtype=tf.float32)
                 outputs[transformed_name(k)] = result
-
-            if k == "label":
-                outputs[transformed_name('label_' + k)] = v
 
         return outputs
