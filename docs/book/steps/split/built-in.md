@@ -20,9 +20,9 @@ care of internally.
 ZenML supports some of the most common splitting schemes, like the random split and the categorical split, where you
 split data based on the value of a categorical attribute.
 
-# Getting started with split steps
+## Getting started with split steps
 
-## The random split
+### The random split
 
 The simplest possible way to split your data is the **random split**. This is usually a good option for when you do not
 have any special features that need careful selection, enough data is available, and the distribution of categorical
@@ -41,7 +41,7 @@ maps the names of your data splits to their respective data percentages. The abo
 50% of all data points to the `train` set and 50% to the `eval` set. The last line in the block above adds the split to
 your pipeline object.
 
-## The categorical split
+### The categorical split
 
 Now we turn to a slightly different use case. Suppose you have a very interesting categorical attribute in your data
 that you want to investigate further. A categorical attribute is defined here as a data feature either of type string or
@@ -51,7 +51,7 @@ If you want to partition your data based on the values of your categorical colum
 CategoricalSplit as the tool of choice for you. You can define a categorical split in two ways, either by assigning
 categories to splits by hand or by percentage (like in the random split above).
 
-### 1. Creating a categorical domain split
+#### 1. Creating a categorical domain split
 
 The first way of defining a categorical split is by explicitly assigning all values in the _categorical domain_ into
 different data splits. By the word categorical domain, we mean the set of all possible values that your categorical
@@ -78,18 +78,16 @@ In the above example, all data points that have either `value_1` or `value_2` as
 will be put into the `train` split, while all data points with either `value_3` or `value_4` will be put into the
 `eval` split.
 
-An important thing to note is the `unknown_category_policy="skip"` flag. This setting controls how categorical values
-are handled that appear in the data but were not specified in the `split_map` argument on construction. A value
-of `"skip"`
+An important thing to note is the `unknown_category_policy` flag. This setting controls how categorical values are
+handled that appear in the data but were not specified in the `split_map` argument on construction. A value of `"skip"`
 denotes that those categories are meant to be discarded from the data set, and will not appear in any of the resulting
 splits as a result.
 
 Setting `unknown_category_policy` to any split name (i.e. so that it equals any of the keys in the split map) will
-assign any categorical values not in the split map to that particular split.
+assign any categorical values not in the split map to that particular split. For
+example, `unknown_category_policy="train"` will assign any unknown categorical value to the `"train"` split.
 
-Example: `unknown_category_policy="train"` will assign any unknown categorical value to the "train" split.
-
-### 2. Creating a categorical ratio split
+#### 2. Creating a categorical ratio split
 
 The second way of specifying a categorical split is by supplying a list of categories of interest, and a split ratio
 object that indicates what percentage of the categories in the list should go into which split.
@@ -113,83 +111,34 @@ as the categorical values of interest. The `split_ratio` map indicates that thes
 into `train` and `eval` sets, with 50% of these categories assigned to either split. The `unknown_category_policy` flag
 works just as in the domain split.
 
-## Creating your own split logic
+### The importance of the `unknown_category_policy` flag
 
-If the above options are not what you are looking for, there is also the option of implementing your own!
+The categorical split is a powerful tool when you need to group your data by an important categorical feature. In
+addition to data grouping, it serves the additional purpose of _data selection_: By using
+the `unknown_category_policy="skip"` option, you are effectively filtering the data you pass on to your machine learning
+pipeline based on your categorical attribute, by selecting only data with the specific values that you defined in your
+split step. This mimics data selection mechanisms such as `WHERE` clauses in SQL, and can potentially not only save you
+a lot of time and computational effort in pre-processing and model training, but also improve the predicting power of
+your resulting model.
 
-For this, ZenML provides the `BaseSplit` interface that you can subclass in a standard object-oriented manner to define
-your own custom split logic.
-
-```
-from zenml.core.steps.split.base_split_step import BaseSplit
-
-class MyCustomSplit(BaseSplit):
-
-(... your custom split logic follows)
-```
-
-There are two main abstract methods that you have to implement to be able to use your custom split with ZenML's own
-split component, `partition_fn` and `get_split_names`. The former returns your custom partition function along with its
-keyword arguments for use in ZenML's split component. To be eligible in use in a Split Step, the partition function
-needs to adhere to the following design contract:
-
-1. The signature is of the following type:
+If you want to keep data with unknown / uninteresting categorical values out of your training/eval datasets, but you do
+not want to just throw it away completely, either, then you can also make a completely new split with all excess data by
+specifying your split_map like this:
 
 ```
-def my_partition(element, n, **kwargs) -> int,
+split = CategoricalDomainSplit(categorical_column="my_categorical_column",
+                               split_map = {"train": ["value_1", "value_2"],
+                                            "eval": ["value_3", "value_4"],
+                                            "test": []},
+                               unknown_category_policy="test")
 ```
 
-where n is the number of splits.
-
-2. The partition_fn only returns signed integers i less than n, i.e. 0 ≤ i ≤ n - 1.
-
-Then, the class method `partition_fn` returns the tuple `(my_partition, kwargs)` consisting of your custom partition
-function and its keyword arguments.
-
-The second method `get_split_names` needs to return a list of data split names used in your ZenML pipeline. These can be
-different depending on your target workload.
-
-## A quick example
-
-Now that the theoretical flow is in place, we can quickly give an example by building a partition function that splits
-data into `train` and `eval` sets based on whether an integer feature in the data is odd or even.
-
-```
-from zenml.core.steps.split.base_split_step import BaseSplit
-from zenml.core.steps.split.utils import get_categorical_value
-
-def OddEvenPartitionFn(element, num_partitions, int_feature):
-
-    # get integer value of int_feature from the element
-    int_value = get_categorical_value(element, int_feature)
-    
-    return int_value % 2
-
-class OddEvenSplit(BaseSplit):
-    def __init__(self, 
-                 int_feature: Text,
-                 statistics=None,
-                 schema=None):
-                 
-        self.int_feature = int_feature
-        super().__init__(statistics=statistics,
-                         schema=schema,
-                         int_feature=int_feature)
-        
-    def partition_fn(self):
-        return OddEvenPartitionFn, {"int_feature": self.int_feature}
-    
-    def get_split_names(self):
-        return ["train", "eval"]
-```
-
-Note that we could **not** have done the same logic with a categorical split, since the split above does not assume 
-any knowledge about which integers are present beforehand. For a categorical split to work as built into ZenML, prior
-knowledge about the categorical domain of the feature has to be present.
+This way, all data with values for `my_categorical_column` other than `value_{1-4}` will go into the test split and
+still be available for other components downstream.
 
 ## Summary
 
 This concludes our small documentation piece on splitting data with ZenML. Both random, percentage-based splits and
 categorical value-based splits are implemented in ZenML and immediately ready for use. If those do not meet your needs,
-there is also the option of creating your own custom split by overriding the `BaseSplit` class methods. And with that,
-happy splitting!
+there is also the option of [creating your own custom split](custom-split.md) by overriding the `BaseSplit` class
+methods. And with that, happy splitting!

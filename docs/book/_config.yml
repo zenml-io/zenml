@@ -1,0 +1,24 @@
+#######################################################################################
+# A default configuration that will be loaded for all jupyter books
+# See the documentation for help and more options: 
+# https://jupyterbook.org/customize/config.html
+
+#######################################################################################
+# Book settings
+title                       : ZenML Docs  # The title of the book. Will be placed in the left navbar.
+author                      : maiot GmbH  # The author of the book
+copyright                   : "2021"  # Copyright year to be placed in the footer
+logo                        : logo.png  # A path to the book logo
+launch_buttons:
+  colab_url: "https://colab.research.google.com"
+repository:
+  url: https://github.com/maiot-io/zenml
+  path_to_book: docs/book
+  branch: main
+execute:
+  execute_notebooks         : off  # Whether to execute notebooks at build time. Must be one of ("auto", "force", "cache", "off")
+html:
+  use_issues_button: true
+  use_repository_button: true
+  use_edit_page_button: true
+  google_analytics_id: UA-103217419-2
