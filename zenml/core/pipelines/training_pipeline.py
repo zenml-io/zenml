@@ -154,6 +154,7 @@ class TrainingPipeline(BasePipeline):
 
             sequencer_schema = SchemaGen(
                 statistics=sequencer_statistics.outputs.output,
+                infer_feature_shape=True,
             ).with_id(GDPComponent.SequencerSchema.name)
 
             datapoints = sequencer.outputs.output_examples
