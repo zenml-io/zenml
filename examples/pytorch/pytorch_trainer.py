@@ -28,16 +28,26 @@ from zenml.utils.post_training.post_training_utils import \
     convert_raw_dataset_to_pandas
 
 
+"""
+TODO:
+    * Currently, we convert TFRecords to Pandas by loading them in first. Not 
+    optimal. We should use a native interface to TFRecords, such as this 
+    library does: https://github.com/vahidk/tfrecord . We can use the library 
+    or use some of the logic in it for our use-case.
+    * PyTorchDataset expects a Pandas DataFrame. Should expect a TFRecords.
+    * Once all this is done, we should provide a nice interface similar to 
+    FeedForwardTrainer. I would advocate to rename FeedForwardTrainerStep to
+    TensorflowTrainerStep and this to PyTorchStep so that they are the base 
+    steps to inherit from for these libraries. We can make a sci-kit learn one 
+    as well.
+"""
+
 class PyTorchDataset(data.Dataset):
     """Face Landmarks dataset."""
 
     def __init__(self, df):
         """
         Args:
-            csv_file (string): Path to the csv file with annotations.
-            root_dir (string): Directory with all the images.
-            transform (callable, optional): Optional transform to be applied
-                on a sample.
         """
         self.df = df
 
