@@ -1,6 +1,6 @@
 # CSV Datasource
 Add a CSV file to your pipeline.
-Details to be found at `zenml.core.datasources.csv_datasource`.
+Details to be found at `CSVDatasource`.
     
 ## Example
 ```python

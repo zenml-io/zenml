@@ -11,10 +11,15 @@ zenml init
 ```{warning}
 Please make sure to be inside a valid git repository before executing the above!
 ```
+The initialization does the following:
 
-This creates a default SQLite Metadata Store and local Artifact Store inside a `.zenml` folder in the root of your repository. It also creates a `pipelines` directory at the root as well, which is the path where all your [pipeline configurations](../pipelines/what-is-a-pipeline.md) will be stored. Finally, it adds a `.zenml_config` YAML inside the `.zenml` folder that tracks all this.
+* Creates a default SQLite [Metadata Store](metadata-store.md) and local [Artifact Store](artifact-store.md) inside a 
+  `.zenml` folder in the root of your repository. 
+* Creates an empty `pipelines` directory at the root as well, which is 
+  the path where all your [pipeline configurations](../pipelines/what-is-a-pipeline.md) will be stored. 
+* Adds a `.zenml_config` YAML configuration file inside the `.zenml` folder that tracks defaults.
 
-If you want to change your Metadata Store, Artifact Store, or Pipelines Directory, please use the `zenml config` CLI group.
+If you want to change your default Metadata Store, Artifact Store, or Pipelines Directory, please use the `zenml config` CLI group.
 
 ```bash
 # Display the current property
@@ -24,7 +29,7 @@ zenml config PROPERTY get
 zenml config PROPERTY set [OPTIONS] ARGUMENTS
 ```
 
-## ZenML Local Config vs ZenML Global Config
+## Local vs Global Config
 
 Similar to other tools like Git, ZenML both maintains a per-repository configuration as well as a global configuration on your machine. As mentioned above, the local configuration is stored in a `.zenml/` directory at the root of your repository. This configuration is written in YAML and may look like this:
 
@@ -41,3 +46,7 @@ As you can see this file stores the `default` [Artifact Store](artifact-store.md
 
 The global config on the other hand stores `global` information such as if a unique anonymous UUID for your zenml installation as well as metadata regarding usage of your ZenML package. It can be found in most systems in the `.config` directory at the path `zenml/info.json`.
 
+## What next
+Within the context of a ZenML repository, a user gets access to all the historical runs, results, artifacts and metadata 
+associated with that repository. This can be done via the CLI or by accessing the [Repository Singleton](the-zenml-repository-instance.md) 
+in Python.

@@ -28,6 +28,9 @@ step_object = get_step_by_version(step_type, version)
 # Compare all pipelines in the repository
 repo.compare_pipelines()
 ```
+```{note}
+The full list of commands can be found within the Repository class definition.
+```
 
 Using these commands, one can always look back at what actions have been performed in this repository. 
 

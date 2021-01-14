@@ -3,16 +3,18 @@
 
 - part: Getting Started
   chapters:
+  - file: getting-started/installation
+    title: Installation
+  - file: getting-started/quickstart
+    title: Quickstart
   - file: getting-started/core-concepts
     title: Core Concepts
   - file: getting-started/architectural-overview
     title: Architectural Overview
-  - file: getting-started/quickstart
-    title: Quickstart
   - file: getting-started/organizing-zenml
     title: Organizing ML Code with ZenML
-  - file: getting-started/installation
-    title: Installation
+  - file: getting-started/creating-custom-logic
+    title: Creating custom logic
 
 - part: Repository
   chapters:
@@ -28,8 +30,6 @@
     title: Artifact Store
   - file: repository/pipeline-directory
     title: Pipeline Directory
-  - file: repository/adding-your-code
-    title: Adding Your Custom Code
   - file: repository/team-collaboration-with-zenml
     title: Team Collaboration
 

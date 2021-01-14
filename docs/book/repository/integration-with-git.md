@@ -7,7 +7,7 @@ that means a solid integration into Git.
 
 In short: ZenML **optionally** uses Git SHAs to resolve your version-pinned pipeline code. 
 
-When you [add custom code](../repository/adding-your-code.md) to ZenML, you have the ability to specify a specific Git SHA for your code.
+When you [add custom code](creating-custom-logic.md) to ZenML, you have the ability to specify a specific Git SHA for your code.
 ZenML ties into your local Git history and will automatically try to resolve the SHA into usable code. 
 Every pipeline configuration will persist the combination of the class used, and the related SHA in the 
 [pipeline config](../pipelines/what-is-a-pipeline.md). 

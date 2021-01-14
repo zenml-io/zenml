@@ -95,3 +95,7 @@ training_pipeline.add_evaluator(
 training_pipeline.run()
 
 ```
+
+## What to do next?
+Now what would be a great time to see what ZenML has to offer with standard powerful abstractions like [Pipelines](../pipelines/what-is-a-pipeline.md), 
+[Steps](../steps/what-is-a-step.md), [Datasources](../datasources/what-is-a-datasource.md) and [Backends](../backends/what-is-a-backend.md).
