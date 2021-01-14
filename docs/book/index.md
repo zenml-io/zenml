@@ -35,3 +35,10 @@ If one of the above links are too hands-on, then a good place to go from this po
 * Check out how to [convert your old ML code](getting-started/organizing-zenml.md) into ZenML pipelines, or start from scratch with our [tutorials](tutorials/creating-first-pipeline.ipynb)
 * If you are working as a team, see how to [collaborate using ZenML in a team setting](repository/team-collaboration-with-zenml.md).
 
+## Get involved
+If you're just not ready to use ZenML for whatever reason, but still would like to stay updated, then the best way 
+is to [star the GitHub repository](https://github.com/maiot-io/zenml)! You can then keep up with the latest going-on's 
+of ZenML, and it would help us tremendously to get more people using it.
+
+Contributions are also welcome! Please read out [contributing guide](https://github.com/maiot-io/zenml/blob/main/CONTRIBUTING.md) to 
+get started.
