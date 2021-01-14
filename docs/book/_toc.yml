@@ -84,14 +84,10 @@
     title: What is a backend?
   - file: backends/orchestrator-backends
     title: Orchestrator Backends
+  - file: backends/processing-backends.md
+    title: Processing Backends
   - file: backends/training-backends
     title: Training Backends
-  - file: backends/processing-backends/processing-backends.md
-    title: Processing Backends
-    sections:
-      - file: backends/processing-backends/google-dataflow-processing
-        title: Google Dataflow
-
 
 - part: Tutorials
   chapters:

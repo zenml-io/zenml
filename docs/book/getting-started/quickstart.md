@@ -96,7 +96,7 @@ training_pipeline.evaluate()
 
 Of course, each of these steps can be [extended quite easily](../steps/what-is-a-step.md) to accommodate more complex 
 scenarios and use-cases. There is a steadily-growing number of integrations available, for example, 
-[Google Dataflow for distributed preprocessing](../backends/processing-backends/google-dataflow-processing.md) 
+[Google Dataflow for distributed preprocessing](../backends/what-is-a-backend.md) 
 or Google Cloud AI Platform as a [training(../backends/training-backends.md)  backend].
 
 ## What to do next?
