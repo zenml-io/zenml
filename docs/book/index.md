@@ -36,7 +36,9 @@ In addition, ZenML provides some goodies on top:
 * Cached pipeline states for faster experiment iterations.
 
 ## Detailed list of benefits
-If the above benefits were to high-level or vague, here is a list of all benefits in concrete terms.
+If the above benefits were too high-level or vague, here is a list of all benefits in concrete terms.
+
+* Train a model
 
 ## What to do next?
 * Get up and running with your first pipeline [with the Quickstart](getting-started/quickstart.md).

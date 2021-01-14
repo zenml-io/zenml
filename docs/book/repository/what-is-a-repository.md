@@ -46,6 +46,88 @@ As you can see this file stores the `default` [Artifact Store](artifact-store.md
 
 The global config on the other hand stores `global` information such as if a unique anonymous UUID for your zenml installation as well as metadata regarding usage of your ZenML package. It can be found in most systems in the `.config` directory at the path `zenml/info.json`.
 
+## Recommended Repository Structure
+The only requirement for the structure of any ZenML repository is that it should be a Git enabled repository.
+However, we recommend structuring a ZenML repo as follows. Not everything here is required, it is simply an organization 
+that maximizes the effectiveness of ZenML.
+
+```
+repository
+│   requirements.txt
+│   pipeline_run_script.py
+|   .gitignore
+|   Dockerfile
+|
+└───.git 
+|    
+└───.zenml
+|       .zenml_config
+|       local_store/    
+|
+└───notebooks
+|       pipeline_exploration.ipynb
+|       pipeline_evaluation.ipynb 
+|
+└───pipelines
+|       pipeline_1.yaml
+|       pipeline_2.yaml
+|       pipeline_n.yaml
+|
+└───split
+|   │   __init__.py
+|   |
+|   └───my_split_module
+|       │   step.py
+|       |   __init__.py
+|
+└───preprocessing
+|   │   __init__.py
+|   |
+|   └───my_preprocessing_module
+|       │   step.py
+|       |   __init__.py
+|
+└───trainers
+|   │   __init__.py
+|   |
+|   └───my_trainer_module
+|       │   step.py
+|       |   __init__.py
+|
+└───other_step
+    │   __init__.py
+    |
+    └───my_step_module
+        │   step.py
+        |   __init__.py
+```
+
+Some things to note:
+
+There can be many scripts of the type **pipeline_run_script.py**, and can potentially 
+be placed in their own directory. These sorts of files are where the actual ZenML 
+pipeline is constructed. When using ZenML in a CI/CD setting with automated runs, these files can 
+be checked into source control as well.
+
+```{note}
+You can put pipeline construction files anywhere within a ZenML repo, and not just the root.
+ZenML figures out automatically from which context you are executing and always finds a reference to 
+the root of the repository!
+```
+
+The **Dockerfile** is necessary in case [custom images](../backends/using-docker.md) are required for 
+non-local pipeline runs. This too can be automated via a simple CI/CD scheme.
+
+The **notebook directory** is for pre and post pipeline run analysis, to analyze what  went right (or wrong) as 
+the experiments develop. Whenever decisions are made and realized, the code developed here should be refactored 
+into appropriate Step directories to be persisted and tracked by ZenML.
+
+Notice that each type of **Step** has its own root folder, which contains individual modules for different 
+implementations of it. This allows for flexible [git pinning](integration-with-git.md) and easier development 
+as this repository grows.
+
+Let us know your structuring via [Slack](https://github.com/maiot-io/zenml) so we can improve this recommendation!
+
 ## What next
 Within the context of a ZenML repository, a user gets access to all the historical runs, results, artifacts and metadata 
 associated with that repository. This can be done via the CLI or by accessing the [Repository Singleton](the-zenml-repository-instance.md) 
