@@ -1,12 +1,13 @@
----
-description: A simple tutorial to transition your pipeline to train on a Google Cloud VM
----
-
 # Running a training pipeline on a Google Cloud VM
 
 Not all experiments are best-suited to local execution. Sometimes, you just need that additional power of a dedicated VM in the cloud - or just the ability to close your laptop and walk off, while the experiment continues to run.
 
 ZenML, with it's strong focus on integrations, provides a convenient way to achieve this with the built-in Google Cloud VM orchestration.
+
+An added plus to this integration is the ability to use [preemptible](https://cloud.google.com/compute/docs/instances/preemptible) instances, 
+which is a type of instance on GCP that you can create and run at a much lower price than normal instances. Usually, preemptible 
+instances come with a big disadvantage of being shut down at any point within 24 hours by GCP. However, most ZenML pipelines are done 
+well before that.
 
 To directly see the code, head over to [GitHub](https://github.com/maiot-io/zenml/tree/main/examples/gcp_orchestrated). Otherwise, follow along here.
 

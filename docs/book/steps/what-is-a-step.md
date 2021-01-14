@@ -47,7 +47,7 @@ enough to extend one of the standard step interfaces in your pipelines. These ar
 * [PreprocessStep](split/built-in.md) interface for custom preprocessing logic.
 * [TrainerStep](split/built-in.md) interface for custom training logic.
 * [EvaluatorStep](evaluator.md) interface for custom evaluation logic.
-* [DepoloyerStep](deployer.md) interface for custom deployment logic.
+* [DeployerStep](deployer.md) interface for custom deployment logic.
 
 Each StepInterface has its own functions to override and details can be found on their individual doc pages referenced above.
 

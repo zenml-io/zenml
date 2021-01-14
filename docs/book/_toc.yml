@@ -99,10 +99,15 @@
     - file: tutorials/team-collaboration-with-zenml-and-google-cloud
       title: Team collaboration with ZenML and Google Cloud
     - file: tutorials/style-transfer-using-a-cyclegan-wip
-      title: Style Transfer using a CycleGAN [WIP]
+      title: Style Transfer using a CycleGAN
     - file: tutorials/building-a-classifier-on-33m-samples
-      title: Classification with 59M samples [WIP]
-
+      title: Classification with 59M samples
+    - file: tutorials/training-on-gcp-gpu
+      title: Training with GPUs on the Cloud
+    - file: tutorials/ensuring-ml-reproducibility
+      title: Ensuring ML reproducibility with ZenML
+    - file: tutorials/deploying-on-gcp
+      title: Deploying a model to the cloud
 - part: Misc
   chapters:
   - file: misc/roadmap
