@@ -77,7 +77,6 @@
   - file: steps/deployer
     title: Deployer
 
-
 - part: Backends
   chapters:
   - file: backends/what-is-a-backend
@@ -88,6 +87,8 @@
     title: Processing Backends
   - file: backends/training-backends
     title: Training Backends
+  - file: backends/using-docker
+    title: Using Docker
 
 - part: Tutorials
   chapters:
