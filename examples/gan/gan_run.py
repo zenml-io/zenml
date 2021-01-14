@@ -17,8 +17,8 @@ from zenml.core.pipelines.training_pipeline import TrainingPipeline
 from zenml.core.steps.split.categorical_domain_split_step import \
     CategoricalDomainSplit
 from zenml.core.repo.repo import Repository
-from examples.gan.gan_functions import CycleGANTrainer
-from examples.gan.preprocessing import GANPreprocessor
+from examples.gan.trainer.trainer_step import CycleGANTrainer
+from examples.gan.preprocessing.preprocessor import GANPreprocessor
 
 repo: Repository = Repository().get_instance()
 
@@ -26,9 +26,9 @@ gan_pipeline = TrainingPipeline(name="gan_test",
                                 enable_cache=True)
 
 try:
-    ds = ImageDatasource(name="gan_images2",
+    ds = ImageDatasource(name="gan_images",
                          base_path="/Users/nicholasjunge/workspaces/maiot/"
-                                   "ce_project/images_mini_test")
+                                   "ce_project/images_mini")
 except:
     ds = repo.get_datasource_by_name('gan_images')
 
@@ -40,6 +40,6 @@ gan_pipeline.add_split(CategoricalDomainSplit(categorical_column="label",
 
 gan_pipeline.add_preprocesser(GANPreprocessor())
 
-gan_pipeline.add_trainer(CycleGANTrainer(epochs=5))
+gan_pipeline.add_trainer(CycleGANTrainer(epochs=100))
 
 gan_pipeline.run()

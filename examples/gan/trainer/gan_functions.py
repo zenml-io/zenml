@@ -1,4 +1,16 @@
-#  Copyright (c) maiot GmbH 2020. All Rights Reserved.
+#  Copyright (c) maiot GmbH 2021. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,198 +24,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-
-from typing import List, Text
-
 import tensorflow as tf
 import tensorflow_addons as tfa
-import tensorflow_transform as tft
-from datetime import datetime
-
-from zenml.core.steps.trainer.feedforward_trainer import BaseTrainerStep
-
-
-class CycleGANTrainer(BaseTrainerStep):
-    def __init__(self, batch_size=1, epochs=25, **kwargs):
-
-        self.batch_size = batch_size
-        self.epochs = epochs
-        super(CycleGANTrainer, self).__init__(batch_size=batch_size,
-                                              epochs=epochs,
-                                              **kwargs)
-
-        self.time_suffix = datetime.now().strftime("%Y%m%d-%H%M%S")
-
-        self.log_dir = "./logs/train_data/" + self.time_suffix
-
-    def model_fn(self,
-                 train_dataset: tf.data.Dataset,
-                 eval_dataset: tf.data.Dataset):
-
-        dataset = tf.data.Dataset.zip((train_dataset, eval_dataset))
-
-        monet_generator_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
-        photo_generator_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
-
-        monet_discriminator_optimizer = tf.keras.optimizers.Adam(2e-4,
-                                                                 beta_1=0.5)
-        photo_discriminator_optimizer = tf.keras.optimizers.Adam(2e-4,
-                                                                 beta_1=0.5)
-
-        # transforms photos to Monet-esque paintings
-        monet_generator = Generator()
-        # transforms Monet paintings to be more like photos
-        photo_generator = Generator()
-
-        # differentiates real Monet paintings and generated Monet paintings
-        monet_discriminator = Discriminator()
-        # differentiates real photos and generated photos
-        photo_discriminator = Discriminator()
-
-        cycle_gan_model = CycleGan(
-            monet_generator, photo_generator, monet_discriminator,
-            photo_discriminator
-        )
-
-        cycle_gan_model.compile(
-            m_gen_optimizer=monet_generator_optimizer,
-            p_gen_optimizer=photo_generator_optimizer,
-            m_disc_optimizer=monet_discriminator_optimizer,
-            p_disc_optimizer=photo_discriminator_optimizer,
-            gen_loss_fn=generator_loss,
-            disc_loss_fn=discriminator_loss,
-            cycle_loss_fn=calc_cycle_loss,
-            identity_loss_fn=identity_loss
-        )
-
-        cycle_gan_model.fit(
-            dataset,
-            batch_size=self.batch_size,
-            epochs=self.epochs,
-            callbacks=[tf.keras.callbacks.TensorBoard(log_dir=self.log_dir),
-                       TensorBoardImage(test_data=eval_dataset,
-                                        log_dir="./logs/gan_test/" +
-                                                self.time_suffix)]
-        )
-
-        return cycle_gan_model
-
-    def run_fn(self):
-        tf_transform_output = tft.TFTransformOutput(self.transform_output)
-
-        train_dataset = self.input_fn(self.train_files, tf_transform_output)
-        eval_dataset = self.input_fn(self.eval_files, tf_transform_output)
-
-        model = self.model_fn(train_dataset=train_dataset,
-                              eval_dataset=eval_dataset)
-
-        signatures = {
-            'serving_default':
-                self._get_serve_tf_examples_fn(
-                    model,
-                    tf_transform_output
-                ).get_concrete_function(tf.TensorSpec(shape=[None],
-                                                      dtype=tf.string,
-                                                      name='examples')),
-            'ce_eval':
-                self._get_ce_eval_tf_examples_fn(
-                    model,
-                    tf_transform_output
-                ).get_concrete_function(tf.TensorSpec(shape=[None],
-                                                      dtype=tf.string,
-                                                      name='examples'))}
-
-        model.save(self.serving_model_dir,
-                   save_format='tf',
-                   signatures=signatures)
-
-    def input_fn(self,
-                 file_pattern: List[Text],
-                 tf_transform_output: tft.TFTransformOutput):
-
-        xf_feature_spec = tf_transform_output.transformed_feature_spec()
-
-        xf_feature_spec = {x: xf_feature_spec[x]
-                           for x in xf_feature_spec
-                           if x.endswith('_xf')}
-
-        return tf.data.experimental.make_batched_features_dataset(
-            file_pattern=file_pattern,
-            batch_size=self.batch_size,
-            shuffle=False,
-            num_epochs=1,
-            features=xf_feature_spec,
-            reader=self._gzip_reader_fn)
-
-    @staticmethod
-    def _get_serve_tf_examples_fn(model, tf_transform_output):
-        """Returns a function that parses a serialized tf.Example.
-
-        Args:
-            model:
-            tf_transform_output:
-        """
-
-        model.tft_layer = tf_transform_output.transform_features_layer()
-
-        @tf.function
-        def serve_tf_examples_fn(serialized_tf_examples):
-            """Returns the output to be used in the serving signature."""
-            raw_feature_spec = tf_transform_output.raw_feature_spec()
-            parsed_features = tf.io.parse_example(serialized_tf_examples,
-                                                  raw_feature_spec)
-
-            xf_feature_spec = tf_transform_output.transformed_feature_spec()
-            transformed_features = model.tft_layer(parsed_features)
-            for f in xf_feature_spec:
-                if f.startswith('label_'):
-                    transformed_features.pop(f)
-                if not f.endswith('_xf'):
-                    transformed_features.pop(f)
-
-            return model(transformed_features)
-
-        return serve_tf_examples_fn
-
-    @staticmethod
-    def _get_ce_eval_tf_examples_fn(model, tf_transform_output):
-        """Returns a function that parses a serialized tf.Example.
-
-        Args:
-            model:
-            tf_transform_output:
-        """
-
-        model.tft_layer = tf_transform_output.transform_features_layer()
-
-        @tf.function
-        def ce_eval_tf_examples_fn(serialized_tf_examples):
-            """Returns the output to be used in the ce_eval signature."""
-            xf_feature_spec = tf_transform_output.transformed_feature_spec()
-
-            label_spec = [f for f in xf_feature_spec if f.startswith('label_')]
-            eval_spec = [f for f in xf_feature_spec if not f.endswith('_xf')]
-
-            transformed_features = tf.io.parse_example(serialized_tf_examples,
-                                                       xf_feature_spec)
-
-            for f in label_spec + eval_spec:
-                transformed_features.pop(f)
-
-            outputs = model(transformed_features)
-
-            return outputs
-
-        return ce_eval_tf_examples_fn
-
-    @staticmethod
-    def _gzip_reader_fn(filenames):
-        """Small utility returning a record reader that can read gzip'ed files.
-
-        Args:
-            filenames:
-        """
-        return tf.data.TFRecordDataset(filenames, compression_type='GZIP')
 
 
 class CycleGan(tf.keras.Model):
@@ -275,11 +97,11 @@ class CycleGan(tf.keras.Model):
             same_monet = self.m_gen(real_monet, training=True)
             same_photo = self.p_gen(real_photo, training=True)
 
-            # discriminator used to check, inputing real images
+            # discriminator used to check input real images
             disc_real_monet = self.m_disc(real_monet, training=True)
             disc_real_photo = self.p_disc(real_photo, training=True)
 
-            # discriminator used to check, inputing fake images
+            # discriminator used to check input fake images
             disc_fake_monet = self.m_disc(fake_monet, training=True)
             disc_fake_photo = self.p_disc(fake_photo, training=True)
 
