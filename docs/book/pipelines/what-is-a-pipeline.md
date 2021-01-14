@@ -112,7 +112,7 @@ ZenML is designed in a way that the starting point to use it is to [create custo
 Pipelines defined above. However, there will always be use-cases which do no match these opiniated general Standard pipelines, therefore one can always 
 create custom pipelines with arbitrary Steps.
 
-The mechanism to create a custom Pipeline will be published in more detail soon in this space. In short, it would be involve overriding the `BasePipeline` class.
+The mechanism to create a custom Pipeline will be published in more detail soon in this space. As a teaser, it will involve overriding the `BasePipeline` class.
 However, the details of this are currently being worked out and will be made available in future releases.
 
 If you need this functionality earlier, then ping us on our [Slack](https://zenml.io/slack-invite) or [create an issue on GitHub](https://https://github.com/maiot-io/zenml) 
