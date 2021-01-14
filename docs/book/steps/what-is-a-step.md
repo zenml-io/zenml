@@ -52,5 +52,4 @@ enough to extend one of the standard step interfaces in your pipelines. These ar
 Each StepInterface has its own functions to override and details can be found on their individual doc pages referenced above.
 
 ## Relation to TFX Components
-
 Most standard steps are currently higher-level abstractions to [TFX components](https://github.com/tensorflow/tfx/tree/master/tfx/components), just like ZenML pipelines are higher-level abstractions of TFX pipelines.

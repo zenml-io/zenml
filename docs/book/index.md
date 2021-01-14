@@ -21,24 +21,45 @@ Talk here about the timing in the ML journey. Whether at the very start or at 'd
 ## Key Features
 If you/your team struggle with ZenML struggle with the above problems, ZenML solves them via:
 
-* Guaranteed reproducibility of your training experiments. Your pipelines are versioned from data to model, experiments automatically tracked and all pipeline configs are declarative by default.
-* Automatic tracking of ML metadata. All runs are tracked in a human-readable, immutable, declarative config.
-* Version data, code, and models in one simple interface.
-* Re-use code and interim artifacts across experiments and users.
-* Guaranteed comparability between experiments.
-* Ability to quickly switch between local and cloud environments \(e.g. Kubernetes \).
-* Easily integrate with all popular tools including Git, Apache Beam, Kubernetes, PyTorch, TensorFlow.
+* **Guaranteed reproducibility** of your training experiments. Your pipelines are versioned from data to model, 
+  experiments automatically tracked and all pipeline configs are **declarative** by default.
+* **Automatic tracking** of ML metadata. All runs are tracked in a human-readable, immutable, declarative config.
+* **Version** data, code, and models in one simple interface.
+* **Re-use** code and interim artifacts across experiments and users.
+* Guaranteed **comparability** between experiments.
+* Ability to quickly switch between **local and cloud environments \(e.g. Kubernetes\)**.
+* Easily **integrate** with all popular tools including Git, Apache Beam, Kubernetes, PyTorch, TensorFlow.
 
-In addition, ZenML provides some goodies on top:
-
-* Built-in and extensible abstractions for all MLOps needs - from distributed processing on large datasets to Cloud-integrations and model serving backends.
-* Pre-built helpers to compare and visualize input parameters as well as pipeline results \(e.g. Tensorboard, TFMA, TFDV\).
-* Cached pipeline states for faster experiment iterations.
 
 ## Detailed list of benefits
 If the above benefits were too high-level or vague, here is a list of all benefits in concrete terms.
 
-* Train a model
+### The Data science side
+* Run ML code in the cloud with one command.
+  * Run preprocessing and training on big VM's on the cloud without setting it up.
+  * Train automatically on GPUs just by setting a flag.
+  * Launch preemptible/spot instances to reduce cost of experimentation by 1/4.
+* Distribute preprocessing without having to learn complex distributed paradigms.
+  * ZenML automatically scales your code to potentially hundreds of workers for millions of datapoints.
+* Organize and version code.
+  * Re-use code steps between pipeline steps.
+* Version data automatically. Each step automatically produces a snapshot of the result.
+* Track metadata like hyper-parameters of a model automatically.
+  * Persisted in the SQL ML Metadata database defined by Google.
+  * Complete provenance of what processing step results in what step.
+  * Never lose track of where interim artifacts are stored.
+* Combining above two points allows for warm-starting pipeline with caching of pipeline steps.
+* Compare results of pipeline runs using the compare tool.
+* Automatically evaluate models using integrations such as Tensorboard and Tensorflow Model Analysis.
+
+### The Ops side
+* Infrastructure is a first-class citizen defined within the system.
+  * Backends to define `where` and `how` pipelines are executed.
+* Separate code from configuration.
+* Each ML experiment is stored in a human-friendly, declarative YAMl config, that is natively executable via CLI.
+* All pipelines are reproducible. All code is versioned and pipeline artifacts are linked directly to commit sha's.
+* Scale to the cloud using easy template docker images.
+* Easy integration into CI/CD paradigm with CLI capability.
 
 ## What to do next?
 * Get up and running with your first pipeline [with the Quickstart](getting-started/quickstart.md).

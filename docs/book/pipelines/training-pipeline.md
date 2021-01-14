@@ -1,4 +1,4 @@
-# Training \[WIP\]
+# Training Pipeline
 
 A Training Pipeline is a general-purpose training pipeline for most ML training runs. One pipeline runs one experiment on a single datasource. It contains the following mandatory steps:
 
