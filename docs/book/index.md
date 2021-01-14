@@ -15,6 +15,9 @@ ZenML exists to solve the following problems in Machine Learning development. Th
 * Retaining code **quality** alongside development velocity.
 * Keeping up with the ML **tooling landscape** in a coherent manner.
 
+## When should use ZenML?
+Talk here about the timing in the ML journey. Whether at the very start or at 'day 2'.
+
 ## Key Features
 If you/your team struggle with ZenML struggle with the above problems, ZenML solves them via:
 
@@ -32,7 +35,8 @@ In addition, ZenML provides some goodies on top:
 * Pre-built helpers to compare and visualize input parameters as well as pipeline results \(e.g. Tensorboard, TFMA, TFDV\).
 * Cached pipeline states for faster experiment iterations.
 
-## List of all benefits
+## Detailed list of benefits
+If the above benefits were to high-level or vague, here is a list of all benefits in concrete terms.
 
 ## What to do next?
 * Get up and running with your first pipeline [with the Quickstart](getting-started/quickstart.md).

@@ -3,6 +3,11 @@ There is a good chance as a data scientist, you might already have code lying ar
 to start using ZenML. The following is a step-by-step guide on how to refactor Jupyter notebook PoC model training code into a 
 production-ready ZenML pipeline.
 
+## Why should I do this?
+Putting machine learning models in production is hard. Going from PoC quick scripting to actually having a model 
+deployed and staying healthy is usually a long an arduous journey for any ML team. By putting your ML code in the form 
+of ZenML pipelines, that journey is cut significantly shorter and is much easier.
+
 ## A familar story
 As a data scientist the following (pseudo-)code might seem familiar:
 
@@ -95,6 +100,7 @@ training_pipeline.add_evaluator(
 training_pipeline.run()
 
 ```
+
 
 ## What to do next?
 Now what would be a great time to see what ZenML has to offer with standard powerful abstractions like [Pipelines](../pipelines/what-is-a-pipeline.md), 
