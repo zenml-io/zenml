@@ -1,7 +1,6 @@
 # Running a training pipeline on a Google Cloud VM
 
 Not all experiments are best-suited to local execution. Sometimes, you just need that additional power of a dedicated VM in the cloud - or just the ability to close your laptop and walk off, while the experiment continues to run.
-
 ZenML, with it's strong focus on integrations, provides a convenient way to achieve this with the built-in Google Cloud VM orchestration.
 
 An added plus to this integration is the ability to use [preemptible](https://cloud.google.com/compute/docs/instances/preemptible) instances, 

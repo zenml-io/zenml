@@ -1,3 +1,18 @@
+---
+jupytext:
+  cell_metadata_filter: -all
+  formats: md:myst
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.12
+    jupytext_version: 1.9.1
+kernelspec:
+  display_name: Python 3
+  language: python
+  name: python3
+---
+
 # Quickstart
 Get up and running in (almost) 3 steps.
 Let’s get you started with a simple pipeline. Please make sure to also check out the [advanced concepts.](core-concepts.md) This quickstart uses some built-ins and a very simple model.
@@ -16,25 +31,27 @@ If you don't feel like reading right now, please watch this video for a visual e
 
 ZenML is available for easy installation into your environment via PyPI:
 
-```bash
+```{code-cell}
+%%bash
 pip install zenml
 ```
 
 Alternatively, if you’re feeling brave, feel free to install the bleeding edge: **NOTE:** Do so on your own risk, no guarantees given!
 
-```bash
+```{code-cell}
+%%bash
 pip install git+https://github.com/maiot-io/zenml.git@main --upgrade
 ```
 
 ### Step 1: Initialize a ZenML repo from within a git repo
 
-```python
+```{code-cell}
 zenml init
 ```
 
 ### **Step 2: Assemble, run and evaluate your pipeline locally**
 
-```python
+```{code-cell}
 from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
@@ -83,7 +100,7 @@ training_pipeline.run()
 
 ### **Step 3: Leverage powerful integrations**
 
-```python
+```{code-cell}
 # See schema of data
 training_pipeline.view_schema()
 

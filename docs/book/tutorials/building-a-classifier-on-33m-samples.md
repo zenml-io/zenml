@@ -1,4 +1,4 @@
-# Training a ML classifier on 33M samples
+# Training a ML classifier on 59M samples
 
 In this tutorial, we'll go through the step-by-step process of building a simple feedforward classifier trained on a 
 public BigQuery datasource. 
