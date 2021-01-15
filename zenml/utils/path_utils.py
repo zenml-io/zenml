@@ -264,16 +264,17 @@ def create_tarfile(source_dir: Text, output_filename: Text = 'zipped.tar.gz',
     """
     if exclude_function is None:
         # default is to exclude the .zenml directory
-        def exclude_function(filename):
+        def exclude_function(tarinfo):
+            filename = tarinfo.name
             if '/.zenml/' in filename:
-                return True
+                return None
             elif '/venv/' in filename:
-                return True
+                return None
             else:
-                return False
+                return tarinfo
 
     with tarfile.open(output_filename, "w:gz") as tar:
-        tar.add(source_dir, arcname='', exclude=exclude_function)
+        tar.add(source_dir, arcname='', filter=exclude_function)
 
 
 def extract_tarfile(source_tar: Text, output_dir: Text):
