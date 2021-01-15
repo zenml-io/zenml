@@ -1,6 +1,45 @@
 # What is a pipeline?
+A pipeline defines a sequence of (usually data) processing steps. Pipelines consist of [Steps](../steps/what-is-a-step.md) and 
+each step is an independent entity that gets input and creates output. The output can potentially feed into other 
+steps as inputs, and that's how the order of execution is decided.
 
-A ZenML pipeline is represented by a standard config written in YAML. A sample config looks like this:
+Every pipeline step produces `Artifacts` that are stored in the [Artifact Store](../repository/artifact-store.md) and tracked by 
+the [Metadata Store](../repository/metadata-store.md) associated with the pipeline. These artifacts can be fetched directly or via 
+helper methods. E.g. The `view_statistics()` and `view_schema()` are helper methods to easily view the artifacts from interim steps in 
+a pipeline.
+
+Every pipeline has an environment in which it executes, the so called `Orchestration` environment. This is defined by 
+the [Orchestrator Backend](../backends/orchestrator-backends.md). Read more in the [Backends docs](../backends/what-is-a-backend.md).
+
+## Types of pipelines
+In ZenML, pipelines can be `Standard` and `Custom`. In case of using the Standard pipelines, the order of the Step execution 
+need not be defined, as these are higher-level abstractions for standard ML tasks. E.g. A [TrainingPipeline](training-pipeline.md) 
+is used to run a training experiment and deploy the resulting model.
+
+Custom pipelines however are more involved and require a more involved definition.
+
+### Standard Pipelines
+Currently, there are three standard types of pipelines that should be used for different use-cases for ML in production.
+
+* [TrainingPipeline](training-pipeline.md): To train a ML model and deploy it
+* [DataPipeline](data.md): To create an immutable snapshot/version of a datasource.
+* [BatchInferencePipeline](batch-inference.md): To run Batch Inference with new data on a trained ML model.
+
+
+### Custom pipelines
+ZenML is designed in a way that the starting point to use it is to [create custom `Steps`](../steps/what-is-a-step.md) and use them in the Standard 
+Pipelines defined above. However, there will always be use-cases which do no match these opinionated general Standard pipelines, therefore one can always 
+create custom pipelines with arbitrary Steps.
+
+The mechanism to create a custom Pipeline will be published in more detail soon in this space. As a teaser, it will involve overriding the `BasePipeline` class.
+However, the details of this are currently being worked out and will be made available in future releases.
+
+If you need this functionality earlier, then ping us on our [Slack](https://zenml.io/slack-invite) or [create an issue on GitHub](https://https://github.com/maiot-io/zenml) 
+so that we know about it!
+
+
+## Declarative Config
+Regardless of type, a ZenML pipeline is represented by a declarative config written in YAML. A sample config looks like this:
 
 ```yaml
 version: '1'
@@ -79,12 +118,6 @@ The config above can be split into 4 distinct keys:
 
 The most interesting key is perhaps the last one, i.e., `steps`. Each [`Step`](../steps/what-is-a-step.md) contains a `source` sub-key that points to a git-sha pinned version of the file in which it resides. It also contains all the parameters used in the constructors of these classes, to track them and use them later for comparability and repeatability. [Read more about steps here](../steps/what-is-a-step.md).
 
-## Standard Pipelines
-Currently, there are three standard types of pipelines that should be used for different use-cases for ML in production.
-
-* [TrainingPipeline](training-pipeline.md): To train a ML model and deploy it
-* [DataPipeline](data.md): To create an immutable snapshot/version of a datasource.
-* [BatchInferencePipeline](batch-inference.md): To run Batch Inference with new data on a trained ML model.
 
 ## Immutability and Reusing Pipeline Logic
 After pipelines are run, they are marked as being `immutable`. This  means that the internal [Steps](../steps/what-is-a-step.md) of these pipelines can no longer be changed.
@@ -106,17 +139,6 @@ pipeline_b = pipeline_a.copy(new_name='Pipeline B')
 ```
 Ensuring that run pipelines are immutable is crucial to maintain reproducibility in the ZenML design. Using the `copy()` paradigm allows 
 the freedom of re-using steps with ease, and keeps reproducibility intact.
-
-## Creating custom pipelines
-ZenML is designed in a way that the starting point to use it is to [create custom `Steps`](../steps/what-is-a-step.md) and use them in the Standard 
-Pipelines defined above. However, there will always be use-cases which do no match these opiniated general Standard pipelines, therefore one can always 
-create custom pipelines with arbitrary Steps.
-
-The mechanism to create a custom Pipeline will be published in more detail soon in this space. As a teaser, it will involve overriding the `BasePipeline` class.
-However, the details of this are currently being worked out and will be made available in future releases.
-
-If you need this functionality earlier, then ping us on our [Slack](https://zenml.io/slack-invite) or [create an issue on GitHub](https://https://github.com/maiot-io/zenml) 
-so that we know about it!
 
 ## Caching
 The `copy()` paradigm also helps in *re-usability* of code across pipelines. E.g. If now only the TrainerStep is changed in `pipeline_b` above, 

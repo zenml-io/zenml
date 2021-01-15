@@ -13,7 +13,7 @@ with ZenML](../getting-started/creating-custom-logic.md).
 
 Some examples of when a Docker image is required:
 * When orchestrating a pipeline on a [GCP VM instance](orchestrator-backends.md).
-* While pecifying a GPU [training backend](training-backends.md) on the cloud.
+* While specifying a GPU [training backend](training-backends.md) on the cloud.
 * Configuring a [distributed processing backend](processing-backends.md) like Google Cloud Dataflow.
 
 ## Creating custom images
