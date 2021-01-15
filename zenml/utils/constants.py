@@ -58,3 +58,4 @@ EVALUATOR_MODULE_FN = 'zenml.core.components.evaluator.evaluator_module'
 
 # GCP Orchestration
 GCP_ENTRYPOINT = 'zenml.core.backends.orchestrator.gcp.entrypoint'
+K8S_ENTRYPOINT = 'zenml.core.backends.orchestrator.kubernetes.entrypoint'
