@@ -300,7 +300,8 @@ class Repository:
 
         if not path_utils.is_dir(pipelines_dir):
             return []
-        return path_utils.list_dir(pipelines_dir, only_file_names)
+        all_files = path_utils.list_dir(pipelines_dir, only_file_names)
+        return [x for x in all_files if yaml_utils.is_yaml(x)]
 
     def get_pipelines_by_datasource(self, datasource):
         """
