@@ -34,6 +34,7 @@ from zenml.utils import path_utils
 from zenml.utils.string_utils import to_dns1123, get_id
 from zenml.utils.constants import ZENML_BASE_IMAGE_NAME, K8S_ENTRYPOINT
 from zenml.utils.logger import get_logger
+from zenml.utils.enums import ImagePullPolicy
 
 logger = get_logger(__name__)
 
@@ -73,7 +74,7 @@ class OrchestratorKubernetesBackend(OrchestratorLocalBackend):
                  extra_labels: Dict[Text, Any] = None,
                  extra_annotations: Dict[Text, Any] = None,
                  namespace: Text = None,
-                 image_pull_policy: Text = 'IfNotPresent',
+                 image_pull_policy: Text = ImagePullPolicy.IfNotPresent.name,
                  kubernetes_config_path: Text = DEFAULT_K8S_CONFIG,
                  **kwargs):
         self.image = image
@@ -82,7 +83,7 @@ class OrchestratorKubernetesBackend(OrchestratorLocalBackend):
         self.extra_annotations = extra_annotations  # custom k8s annotations
         self.namespace = namespace
         self.image_pull_policy = image_pull_policy
-        assert image_pull_policy in ['Always', 'Never', 'IfNotPresent']
+        assert image_pull_policy in ImagePullPolicy.__members__.keys()
         self.kubernetes_config_path = kubernetes_config_path
 
         super().__init__(**kwargs)
