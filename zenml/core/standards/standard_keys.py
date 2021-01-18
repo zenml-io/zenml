@@ -98,11 +98,11 @@ class StepKeys(ConfigKeys):
 class TrainingSteps(ConfigKeys):
     DATA = 'data'
     SPLIT = 'split'
-    SEQUENCING = 'sequencing'
-    PREPROCESSING = 'preprocessing'
-    TRAINING = 'training'
-    EVALUATION = 'evaluation'
-    DEPLOYMENT = 'deployment'
+    SEQUENCER = 'sequencer'
+    PREPROCESSER = 'preprocesser'
+    TRAINER = 'trainer'
+    EVALUATOR = 'evaluator'
+    DEPLOYER = 'deployer'
 
 
 class DataSteps(ConfigKeys):

@@ -1,4 +1,4 @@
-#  Copyright (c) maiot GmbH 2020. All Rights Reserved.
+#  Copyright (c) maiot GmbH 2021. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,8 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-# Namings for execution params
+
 INPUT_EXAMPLES = 'input_examples'
 STATISTICS = 'statistics'
 SCHEMA = 'schema'
-OUTPUT_EXAMPLES = 'examples'
+OUTPUT_EXAMPLES = 'output_examples'
