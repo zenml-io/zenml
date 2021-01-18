@@ -40,7 +40,7 @@ logger = get_logger(__name__)
 EXTRACTED_TAR_DIR_NAME = 'zenml_working'
 TAR_PATH_ARG = 'tar_path'
 STAGING_AREA = 'staging'
-DEFAULT_K8S_CONFIG = os.path.join(os.environ["HOME"], '.kube/config-lol')
+DEFAULT_K8S_CONFIG = os.path.join(os.environ["HOME"], '.kube/config')
 
 
 class OrchestratorKubernetesBackend(OrchestratorLocalBackend):
