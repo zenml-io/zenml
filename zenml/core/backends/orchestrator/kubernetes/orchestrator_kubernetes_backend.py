@@ -50,6 +50,20 @@ class OrchestratorKubernetesBackend(OrchestratorLocalBackend):
     This orchestrator creates a .tar.gz of the current ZenML repository, sends
     it over to the artifact store, then launches a job in a Kubernetes cluster
     taken from your environment or specified via a passed-on kubectl config.
+
+    Args:
+        image: the Docker Image to be used for this ZenML pipeline
+        job_prefix: a custom prefix for your Jobs in Kubernetes
+            (default: 'zenml-')
+        extra_labels: additional labels for your Jobs in Kubernetes
+        extra_annotations: additional annotations for your Jobs in Kubernetes
+        namespace: a custom Kubernetes namespace for this pipeline
+            (default: 'default')
+        image_pull_policy: Kubernetes image pull policy.
+            One of ['Always', 'Never', 'IfNotPresent'].
+            (default: 'IfNotPresent')
+        kubernetes_config_path: Path to your Kubernetes cluster connection config.
+            (default: '~/.kube/config'
     """
     BACKEND_TYPE = 'kubernetes'
 
