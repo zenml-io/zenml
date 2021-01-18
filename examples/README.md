@@ -1,3 +1,5 @@
+## Examples
+
 This `example` folder is dedicated to provide our users with some practical examples.
 
 Here you can find a list with brief descriptions for each example:
