@@ -41,6 +41,44 @@ class StandardSequencer(BaseSequencerStep):
                  sequence_length: int = 4,
                  sequence_shift: int = 1,
                  **kwargs):
+        """
+        Initializing the StandardSequencer step, which is responsible for
+        extracting sequences from any timeseries dataset.
+
+        The main logic behind this step can be summed up in a few steps
+        as follows:
+
+        1. First, we define how to add the corresponding timestamp to
+        each datapoint by using the function `get_timestamp_do_fn`. In this
+        implementation, the timestamp is expected to be a unix timestamp.
+
+        2. Similarly, we define how to add a categorical key to each
+        datapoint if a categorical column is provided.
+
+        3. Following that, we use the timestamp, the categorical key and
+        the gap threshold to split the data into so-called 'sessions'
+
+        4. Once the data is split into sessions, we resample the sessions
+        based on the `resampling_freq` to create equidistant timestamps,
+        fill the missing values and extract the finalized sequences based on
+        the `sequence_length` and `sequence_shift`
+
+        :param timestamp_column: string, the name of the column for the
+        timestamp resides
+        :param category_column: string, the name of the column of a possible
+        categorical feature
+        :param overwrite: dict, used to overwrite any of the default resampling
+        and filling behaviour
+        :param resampling_freq: string, the resampling frequency as an
+        Offset Alias
+        :param gap_threshold: int, the minimum gap between two sessions in
+        seconds
+        :param sequence_length: int, the desired length of a sequence in terms
+        of datapoints
+        :param sequence_shift: int, the number steps to shift before extracting
+        the next sequence
+        :param kwargs: additional params
+        """
 
         self.timestamp_column = timestamp_column
         self.category_column = category_column
@@ -77,6 +115,12 @@ class StandardSequencer(BaseSequencerStep):
             **kwargs)
 
     def get_category_do_fn(self):
+        """
+        Creates a class which inherits from beam.DoFn to add a categorical key
+        to each datapoint
+
+        :return: an instance of the beam.DoFn
+        """
         default_category = '__default__'
         category_column = self.category_column
 
@@ -98,6 +142,12 @@ class StandardSequencer(BaseSequencerStep):
         return AddKey()
 
     def get_timestamp_do_fn(self):
+        """
+        Creates a class which inherits from beam.DoFn to add the timestamp
+        to each datapoint
+
+        :return: an instance of the beam.DoFn
+        """
 
         timestamp_column = self.timestamp_column
 
@@ -114,9 +164,20 @@ class StandardSequencer(BaseSequencerStep):
         return AddTimestamp()
 
     def get_window(self):
+        """
+        Returns a selected beam windowing strategy
+
+        :return: the selected windowing strategy
+        """
         return Sessions(self.gap_threshold)
 
     def get_combine_fn(self):
+        """
+        Creates a class which inherits from beam.CombineFn which processes
+        sessions and extracts sequences from it
+
+        :return: an instance of the beam.CombineFn
+        """
         epoch_suffix = '_epoch'
 
         timestamp_column = self.timestamp_column
