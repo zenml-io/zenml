@@ -276,7 +276,7 @@ class FeedForwardTrainer(BaseTrainerStep):
         input_layers = [tf.keras.layers.Input(shape=(1,), name=k)
                         for k in features]
 
-        d = tf.keras.layers.Concatenate()(input_layers)
+        d = tf.keras.layers.St()(input_layers)
 
         for size in self.hidden_layers:
             d = tf.keras.layers.Dense(size,
