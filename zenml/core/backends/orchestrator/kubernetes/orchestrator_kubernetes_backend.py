@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Definition of the Kubeflow Orchestrator Backend"""
+"""Definition of the Kubernetes Orchestrator Backend"""
 
 import base64
 import json
@@ -83,12 +83,8 @@ class OrchestratorKubernetesBackend(OrchestratorLocalBackend):
         self.namespace = namespace
         self.image_pull_policy = image_pull_policy
         assert image_pull_policy in ['Always', 'Never', 'IfNotPresent']
-        try:
-            k8s_config.load_kube_config(kubernetes_config_path)
-        except ConfigException as cfg_exc:
-            logger.error("The path you provided does not contain a valid"
-                         " Kubernetes config.")
-            raise
+        self.kubernetes_config_path = kubernetes_config_path
+
         super().__init__(**kwargs)
 
     def create_job_object(self, config):
@@ -143,6 +139,12 @@ class OrchestratorKubernetesBackend(OrchestratorLocalBackend):
         return job
 
     def launch_job(self, config: Dict[Text, Any]):
+        try:
+            k8s_config.load_kube_config(self.kubernetes_config_path)
+        except ConfigException as cfg_exc:
+            logger.error("The path you provided does not contain a valid"
+                         " Kubernetes config.")
+            raise
         batch_client = k8s_client.BatchV1Api()
         job_object = self.create_job_object(config)
 
