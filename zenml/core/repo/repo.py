@@ -139,6 +139,10 @@ class Repository:
         self._check_if_initialized()
         return self.zenml_config.get_metadata_store()
 
+    def get_default_pipelines_dir(self) -> Text:
+        self._check_if_initialized()
+        return self.zenml_config.get_pipelines_dir()
+
     def get_git_wrapper(self) -> GitWrapper:
         self._check_if_initialized()
         return self.git_wrapper
@@ -296,7 +300,8 @@ class Repository:
 
         if not path_utils.is_dir(pipelines_dir):
             return []
-        return path_utils.list_dir(pipelines_dir, only_file_names)
+        all_files = path_utils.list_dir(pipelines_dir, only_file_names)
+        return [x for x in all_files if yaml_utils.is_yaml(x)]
 
     def get_pipelines_by_datasource(self, datasource):
         """

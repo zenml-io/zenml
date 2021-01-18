@@ -10,7 +10,7 @@ from zenml.core.steps.split.base_split_step import BaseSplit
 
 class MyCustomSplit(BaseSplit):
 
-(... your custom split logic follows)
+# your custom split logic follows
 ```
 
 There are two main abstract methods that you have to implement to be able to use your custom split with ZenML's own

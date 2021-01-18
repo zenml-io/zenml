@@ -1,16 +1,32 @@
----
-id: tutorial_33_million_nyc
-title: Building a classifier on 33M samples
-description: Train on massive datasets with ease
----
+# Training a ML classifier on 59M samples
 
-# Classification with 59M samples \[WIP\]
+In this tutorial, we'll go through the step-by-step process of building a simple feedforward classifier trained on a 
+public BigQuery datasource. 
 
-In this tutorial, we'll go through the step-by-step process of building a simple feedforward classifier trained on a public BigQuery datasource. Structurally, the tutorial closely follows the quickstart, however, as we are handling a significantly larger dataset, we will have a more in-depth look into various aspects. 
+```{note}
+This tutorial is adapted **from the blog post:** [Deep Learning on 33,000,000 data points using a few lines of YAML](https://blog.maiot.io/deep_learning_33_million_with_few_lines_yaml/)
+```
 
-{% hint style="info" %}
-This tutorial is adapted **from the blog post:** [**Deep Learning on 33,000,000 data points using a few lines of YAML**](https://blog.maiot.io/deep_learning_33_million_with_few_lines_yaml/) ****using Core Engine **v0.20.0**.
-{% endhint %}
+tldr; One can utilize the [Dataflow Processing Backend](../backends/processing-backends.md).
 
-## \[to be continued\]
+```python
+from zenml.core.backends.processing.processing_dataflow_backend import \
+    ProcessingDataFlowBackend
 
+training_pipeline = TrainingPipeline(name='distributed_dataflow')
+
+# add steps
+...
+
+# configure steps
+processing_backend = ProcessingDataFlowBackend(project='GCP_PROJECT')
+
+# Run the pipeline
+training_pipeline.run(
+    backends=[processing_backend],
+)
+```
+
+Full code example can be found [here](https://github.com/maiot-io/zenml/blob/main/examples/gcp_dataflow/run.py)
+
+Detailed tutorial to follow! Check out the [GitHub repo](https://github.com/maiot-io/zenml) to get updates!

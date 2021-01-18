@@ -6,9 +6,9 @@ To help us better understand how the community uses ZenML, the pip package repor
 zenml config analytics opt-out
 ```
 
-{% hint style="info" %}
+```{attention}
 Currently, opting in and out of analytics is a global setting applicable to all ZenML repositories within your system.
-{% endhint %}
+```
 
 ## Why ZenML collects analytics <a id="motivation"></a>
 

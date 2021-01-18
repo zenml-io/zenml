@@ -1,7 +1,3 @@
----
-description: We make a Neural Network paint like Monet!
----
-
 # Style Transfer using a CycleGAN \[WIP\]
 
 Generative Neural Networks are a very different story compared to "normal" Neural Networks. Since they are trained to learn the probability distribution from data rather than the marginal distribution of a target feature, you can sample them just like any other probability distribution and "create" your own data. A very well-known example of this is the **Generative Adversarial Network** \(GAN\), in which two rival networks are trained to generate realistic data based on a training input. 

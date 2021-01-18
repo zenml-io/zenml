@@ -51,6 +51,18 @@ def read_yaml(file_path: Text):
         raise Exception(f'{file_path} does not exist.')
 
 
+def is_yaml(file_path: Text):
+    """
+    Returns True if file_path is YAML, else False
+
+    Args:
+        file_path (str): Path to YAML file.
+    """
+    if file_path.endswith('yaml') or file_path.endswith('yml'):
+        return True
+    return False
+
+
 def write_json(file_path: Text, contents: Dict):
     """
     Write contents as JSON format to file_path.
