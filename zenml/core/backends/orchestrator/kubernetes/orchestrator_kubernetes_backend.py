@@ -39,7 +39,6 @@ logger = get_logger(__name__)
 
 EXTRACTED_TAR_DIR_NAME = 'zenml_working'
 TAR_PATH_ARG = 'tar_path'
-SOURCE_DISK_IMAGE = "projects/cos-cloud/global/images/cos-85-13310-1041-38"
 STAGING_AREA = 'staging'
 DEFAULT_K8S_CONFIG = os.path.join(os.environ["HOME"], '.kube/config-lol')
 
@@ -60,6 +59,7 @@ class OrchestratorKubernetesBackend(OrchestratorLocalBackend):
                  extra_labels: Dict[Text, Any] = None,
                  extra_annotations: Dict[Text, Any] = None,
                  namespace: Text = None,
+                 image_pull_policy: Text = 'IfNotPresent',
                  kubernetes_config_path: Text = DEFAULT_K8S_CONFIG,
                  **kwargs):
         self.image = image
@@ -67,7 +67,8 @@ class OrchestratorKubernetesBackend(OrchestratorLocalBackend):
         self.extra_labels = extra_labels  # custom k8s labels
         self.extra_annotations = extra_annotations  # custom k8s annotations
         self.namespace = namespace
-
+        self.image_pull_policy = image_pull_policy
+        assert image_pull_policy in ['Always', 'Never', 'IfNotPresent']
         try:
             k8s_config.load_kube_config(kubernetes_config_path)
         except ConfigException as cfg_exc:
@@ -99,7 +100,9 @@ class OrchestratorKubernetesBackend(OrchestratorLocalBackend):
         container = k8s_client.V1Container(
             name=job_name,
             image=self.image,
-            command=command)
+            command=command,
+            image_pull_policy=self.image_pull_policy
+        )
 
         # Create and configure a spec section
         template = k8s_client.V1PodTemplateSpec(
@@ -110,7 +113,7 @@ class OrchestratorKubernetesBackend(OrchestratorLocalBackend):
         # Create the specification of deployment
         spec = k8s_client.V1JobSpec(
             template=template,
-            backoff_limit=4)
+            backoff_limit=1)
 
         # Instantiate the job object
         job = k8s_client.V1Job(
@@ -134,7 +137,10 @@ class OrchestratorKubernetesBackend(OrchestratorLocalBackend):
         api_response = batch_client.create_namespaced_job(
             body=job_object,
             namespace=namespace)
-        print(str(api_response.status))
+        logger.info(
+            f'Created k8s {api_response.kind} '
+            f'({api_response.api_version}): '
+            f'{api_response.metadata.name}')
 
         return None
 
