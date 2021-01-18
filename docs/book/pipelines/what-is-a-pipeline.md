@@ -26,7 +26,12 @@ Currently, there are three standard types of pipelines that should be used for d
 * [BatchInferencePipeline](batch-inference.md): To run Batch Inference with new data on a trained ML model.
 
 
-### Custom pipelines
+### Create a custom pipeline
+```{warning}
+Before creating your own pipeline, please make sure to follow the [general rules](../getting-started/creating-custom-logic.md)
+for extending any first-class ZenML component.
+```
+
 ZenML is designed in a way that the starting point to use it is to [create custom `Steps`](../steps/what-is-a-step.md) and use them in the Standard 
 Pipelines defined above. However, there will always be use-cases which do no match these opinionated general Standard pipelines, therefore one can always 
 create custom pipelines with arbitrary Steps.

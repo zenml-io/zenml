@@ -21,10 +21,16 @@ using the `backends` argument:
 * When executing a `pipeline.build()`.
 
 ## Create your own backend
+
+```{warning}
+Before creating your own backend, please make sure to follow the [general rules](../getting-started/creating-custom-logic.md)
+for extending any first-class ZenML component.
+```
+
 The API to create custom backends is still under active development. Please see this space for updates.
 
 If you would like to see this functionality earlier, please let us know via our [Slack Channel](https://zenml.io/slack-invite/) 
-or [create an issue on GitHub](https://https://github.com/maiot-io/zenml).
+or [create an issue on GitHub](https://https://github.com/maiot-io/zenml).)
 
 ## What next?
 * Set up different [orchestration](orchestrator-backends.md) strategies for your pipelines. Execute pipelines on your local 
