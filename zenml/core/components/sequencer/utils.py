@@ -17,7 +17,7 @@ import apache_beam as beam
 import tensorflow as tf
 
 
-class ToDataframe(beam.DoFn):
+class ConvertToDataframe(beam.DoFn):
     """
     Beam PTransform responsible for converting the incoming Arrow table into
     a pandas dataframe

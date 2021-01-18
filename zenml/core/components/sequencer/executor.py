@@ -99,7 +99,7 @@ class Executor(BaseExecutor):
                      | 'Read_' + s >> beam.io.ReadFromTFRecord(
                                 file_pattern=input_uri)
                      | 'Decode_' + s >> tf_example_decoder.DecodeTFExample()
-                     | 'ToDataFrame_' + s >> beam.ParDo(utils.ToDataframe()))
+                     | 'ToDataFrame_' + s >> beam.ParDo(utils.ConvertToDataframe()))
 
                 # Window into sessions
                 s_data = \
