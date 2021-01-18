@@ -1,10 +1,8 @@
-# ZenML Documentation
-
-## What is ZenML?
+# Introduction
 **ZenML** is an extensible, open-source MLOps framework for using production-ready Machine Learning pipelines - in a simple way. 
 
 ## Why do I need ZenML?
-ZenML exists to solve the following problems in Machine Learning development. This includes facing difficulties with:
+ZenML solves the problem of getting Machine Learning in models. You should use ZenML if you struggle with:
 
 * **Reproducing** training results in production.
 * Managing ML **metadata**, including data, code, and model versioning.
@@ -15,27 +13,30 @@ ZenML exists to solve the following problems in Machine Learning development. Th
 * Retaining code **quality** alongside development velocity.
 * Keeping up with the ML **tooling landscape** in a coherent manner.
 
-## Key Features
-If you/your team struggle with ZenML struggle with the above problems, ZenML solves them via:
+## Awesome things you can do with ZenML
+* Reproduce experiments at any time, on any environment. [[here's how](tutorials/ensuring-ml-reproducibility.md)].
+* Automatically track all parameters when creating ML experiments. [[here's how](tutorials/creating-first-pipeline.ipynb)].
+* Collaborate with your team using a git repo, re-use code, share results and compare experiments. [[here's how](tutorials/team-collaboration-with-zenml-and-google-cloud.md)].
+* No-hassle preprocessing and training on big VM's on the, for 1/4th the price. [[here's how](tutorials/running-a-pipeline-on-a-google-cloud-vm.md)].
+* Distribute preprocessing on hundreds of workers for millions of datapoints. [[here's how](tutorials/building-a-classifier-on-33m-samples.md)].
+* Launching training jobs on GPUs on the cloud with a simple command. [[here's how](tutorials/training-on-gcp-gpu.md)].
+* No-hassle evaluation of models with slicing metrics. [[here's how](tutorials/creating-first-pipeline.ipynb)]. 
+* Instant deployment of all models. [[here's how](tutorials/deploying-on-gcp.md)].
+* De-couple infrastructure from ML code. [[here's how](backends/what-is-a-backend.md)].
 
-* Guaranteed reproducibility of your training experiments. Your pipelines are versioned from data to model, experiments automatically tracked and all pipeline configs are declarative by default.
-* Automatic tracking of ML metadata. All runs are tracked in a human-readable, immutable, declarative config.
-* Version data, code, and models in one simple interface.
-* Re-use code and interim artifacts across experiments and users.
-* Guaranteed comparability between experiments.
-* Ability to quickly switch between local and cloud environments \(e.g. Kubernetes \).
-* Easily integrate with all popular tools including Git, Apache Beam, Kubernetes, PyTorch, TensorFlow.
 
-In addition, ZenML provides some goodies on top:
+## What do I do next?
+If one of the above links are too hands-on, then a good place to go from this point is:
 
-* Built-in and extensible abstractions for all MLOps needs - from distributed processing on large datasets to Cloud-integrations and model serving backends.
-* Pre-built helpers to compare and visualize input parameters as well as pipeline results \(e.g. Tensorboard, TFMA, TFDV\).
-* Cached pipeline states for faster experiment iterations.
-
-## List of all benefits
-
-## What to do next?
 * Get up and running with your first pipeline [with the Quickstart](getting-started/quickstart.md).
 * Read more about [core concepts](getting-started/core-concepts.md) to inform your decision about using ZenML.
 * Check out how to [convert your old ML code](getting-started/organizing-zenml.md) into ZenML pipelines, or start from scratch with our [tutorials](tutorials/creating-first-pipeline.ipynb)
 * If you are working as a team, see how to [collaborate using ZenML in a team setting](repository/team-collaboration-with-zenml.md).
+
+## Get involved
+If you're just not ready to use ZenML for whatever reason, but still would like to stay updated, then the best way 
+is to [star the GitHub repository](https://github.com/maiot-io/zenml)! You can then keep up with the latest going-on's 
+of ZenML, and it would help us tremendously to get more people using it.
+
+Contributions are also welcome! Please read out [contributing guide](https://github.com/maiot-io/zenml/blob/main/CONTRIBUTING.md) to 
+get started.

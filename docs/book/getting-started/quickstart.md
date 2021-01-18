@@ -1,3 +1,18 @@
+---
+jupytext:
+  cell_metadata_filter: -all
+  formats: md:myst
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.12
+    jupytext_version: 1.9.1
+kernelspec:
+  display_name: Python 3
+  language: python
+  name: python3
+---
+
 # Quickstart
 Get up and running in (almost) 3 steps.
 Let’s get you started with a simple pipeline. Please make sure to also check out the [advanced concepts.](core-concepts.md) This quickstart uses some built-ins and a very simple model.
@@ -16,25 +31,27 @@ If you don't feel like reading right now, please watch this video for a visual e
 
 ZenML is available for easy installation into your environment via PyPI:
 
-```bash
+```{code-cell}
+%%bash
 pip install zenml
 ```
 
 Alternatively, if you’re feeling brave, feel free to install the bleeding edge: **NOTE:** Do so on your own risk, no guarantees given!
 
-```bash
+```{code-cell}
+%%bash
 pip install git+https://github.com/maiot-io/zenml.git@main --upgrade
 ```
 
 ### Step 1: Initialize a ZenML repo from within a git repo
 
-```python
+```{code-cell}
 zenml init
 ```
 
 ### **Step 2: Assemble, run and evaluate your pipeline locally**
 
-```python
+```{code-cell}
 from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
@@ -83,7 +100,7 @@ training_pipeline.run()
 
 ### **Step 3: Leverage powerful integrations**
 
-```python
+```{code-cell}
 # See schema of data
 training_pipeline.view_schema()
 
@@ -94,5 +111,15 @@ training_pipeline.view_statistics()
 training_pipeline.evaluate()
 ```
 
-Of course, each of these steps can be [extended quite easily](../steps/what-is-a-step.md) to accommodate more complex scenarios and use-cases. There is a steadily-growing number of integrations available, for example, Google Dataflow for [distributed preprocessing](https://github.com/maiot-io/zenml/tree/staging#...) or Google Cloud AI Platform as a [training](https://github.com/maiot-io/zenml/tree/staging#...)  backend.
+Of course, each of these steps can be [extended quite easily](../steps/what-is-a-step.md) to accommodate more complex 
+scenarios and use-cases. There is a steadily-growing number of integrations available, for example, 
+[Google Dataflow for distributed preprocessing](../backends/what-is-a-backend.md) 
+or Google Cloud AI Platform as a [training(../backends/training-backends.md)  backend].
 
+## What to do next?
+* Read about [core concepts](core-concepts.md) of ZenML.
+* [Convert your legacy code-base](organizing-zenml.md) to ZenML pipelines.
+* Understand deeper what makes a [ZenML Repository](../repository/what-is-a-repository.md).
+* See what ZenML has to offer with standard powerful abstractions like [Pipelines](../pipelines/what-is-a-pipeline.md), 
+[Steps](../steps/what-is-a-step.md), [Datasources](../datasources/what-is-a-datasource.md) and [Backends](../backends/what-is-a-backend.md). 
+  If the standard ones don't fit your needs, you can also [create custom logic](creating-custom-logic.md) with ZenML.

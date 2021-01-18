@@ -1,4 +1,4 @@
-# Team collaboration with ZenML and Google Cloud
+# Collaboration with ZenML
 
 ZenML's mission is centered on reproducible Machine Learning, with easy access to integrations for your favorite technologies. A key aspect of this mission is the ability to easily collaborate with your team across machines and environments, without sacrifices.
 
@@ -13,7 +13,7 @@ Deploying the above in a shared setting makes all experiments within a ZenML rep
 This is regardless of which team member ran the corresponding pipelines, and regardless of the environment the experiments were run in.
 
 ```{note}
-The Metadata and Artifact Stores respectively, while highly recommended, need neccessary be shared to ensure collaboration. You could as well 
+The Metadata and Artifact Stores respectively, while highly recommended, are not neccessary be shared to ensure collaboration. You could as well 
 share the Git Repository with a committed local pipeline directory and still collaborate using ZenML. However, losing the Artifact and Metadata 
 Store will invalidate all [caching](../pipelines/reusing-artifacts.md), and all pipelines need them to be re-run on every team members local setup. This might 
 have uninteded consequences, so please be careful when setting this up in production.

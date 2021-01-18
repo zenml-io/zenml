@@ -23,8 +23,9 @@ class BaseBackend:
     """
     Base class for all ZenML backends.
 
-    Every ZenML pipeline runs in backends. Override this base class to define
-    your own custom Pipeline backend.
+    Every ZenML pipeline runs in backends that defines where and how the
+    pipeline runs. Override this base class to define your own custom Pipeline
+    backend.
 
     There are three types of backends available in ZenML: Orchestration
     backends, processing backends and training backends. Each of them serve
