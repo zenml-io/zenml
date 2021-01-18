@@ -41,6 +41,11 @@ class PipelineRunner(object):
 
         orch_args = config[keys.GlobalKeys.ENV][keys.EnvironmentKeys.BACKENDS][
             OrchestratorLocalBackend.BACKEND_KEY][keys.BackendKeys.ARGS]
+
+        # overwrite the backend to do local execution.
+        config[keys.GlobalKeys.ENV][keys.EnvironmentKeys.BACKENDS][OrchestratorLocalBackend.BACKEND_KEY][
+            keys.BackendKeys.TYPE] = OrchestratorLocalBackend.BACKEND_TYPE
+
         tar_path = orch_args[TAR_PATH_ARG]
 
         # Copy it over locally because it will be remote
