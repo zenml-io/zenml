@@ -35,8 +35,3 @@ def list_steps():
 
     step_versions = repo.get_step_versions()
     click.echo(tabulate(step_versions, headers="keys"))
-
-
-@steps.command("get-versions")
-def get_step_versions():
-    pass
