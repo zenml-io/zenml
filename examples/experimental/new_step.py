@@ -16,7 +16,8 @@ from typing import List
 
 import tensorflow as tf
 
-from zenml.core.steps.trainer.feedforward_trainer import FeedForwardTrainer
+from zenml.core.steps.trainer.feedforward_trainer.trainer import \
+    FeedForwardTrainer
 
 
 class MyTrainer(FeedForwardTrainer):

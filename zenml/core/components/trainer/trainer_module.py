@@ -15,6 +15,7 @@
 from zenml.utils.source_utils import load_source_path_class
 from zenml.core.standards.standard_keys import StepKeys
 
+
 def run_fn(fn_args):
     c = load_source_path_class(fn_args.pop(StepKeys.SOURCE))
 
