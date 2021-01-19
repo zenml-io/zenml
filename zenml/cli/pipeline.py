@@ -18,10 +18,9 @@ from tabulate import tabulate
 from typing import Text
 
 from zenml.cli.cli import cli
-from zenml.cli.utils import error
+from zenml.cli.utils import error, pretty_print
 from zenml.core.repo.repo import Repository
 from zenml.utils.yaml_utils import read_yaml
-from zenml.utils.print_utils import to_pretty_string
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
 
 
@@ -32,7 +31,7 @@ def pipeline():
 
 
 @pipeline.command('compare')
-def set_metadata_store():
+def compare_pipelines():
     """Compares pipelines in repo"""
     click.echo('Comparing pipelines in repo: Starting app..')
     repo: Repository = Repository.get_instance()
@@ -63,37 +62,45 @@ def list_pipelines():
 
 
 @pipeline.command('get')
-@click.argument('pipeline_id')
-def get_pipeline_by_id(pipeline_id: Text):
+@click.argument('pipeline_name')
+def get_pipeline_by_name(pipeline_name: Text):
     """
-    Gets pipeline from current repository by matching a (partial) identifier
-    against the pipeline yaml name.
-
+    Gets pipeline from current repository by matching a name against a
+    pipeline name in the repository.
     """
-    config = return_pipeline_config_by_id(pipeline_id)
+    repo: Repository = Repository.get_instance()
+    try:
+        p = repo.get_pipeline_by_name(pipeline_name)
+    except Exception as e:
+        error(e)
+        return
 
-    if config is not None:
-        click.echo(to_pretty_string(config))
+    pretty_print(p)
 
 
 @pipeline.command('run')
-@click.argument('pipeline_id')
+@click.argument('path_to_config')
 @click.option("--metadata_store", default=None,
               help="Path to a custom metadata store to use.")
 @click.option("--artifact_store", default=None,
               help="Path to a custom metadata store to use.")
-def run_pipeline_by_id(pipeline_id: Text,
-                       metadata_store: Text,
-                       artifact_store: Text):
+def run_pipeline(path_to_config: Text,
+                 metadata_store: Text,
+                 artifact_store: Text):
     """
-    Gets pipeline from current repository by matching a (partial) identifier
-    against the pipeline yaml name.
+    Runs pipeline specified by the given config YAML object.
 
     Args:
-        pipeline_id: ID of the designated pipeline. Has to be partially
-        matching the YAML file name.
+        path_to_config: Path to config of the designated pipeline.
+         Has to be matching the YAML file name.
+        artifact_store: Path to a custom artifact store.
+        metadata_store: Path to a custom metadata store. Currently not
+         implemented.
+
     """
-    config = return_pipeline_config_by_id(pipeline_id)
+    # config has metadata store, backends and artifact store,
+    # so no need to specify them
+    config = read_yaml(path_to_config)
     repo: Repository = Repository.get_instance()
 
     if metadata_store is not None:
@@ -110,33 +117,3 @@ def run_pipeline_by_id(pipeline_id: Text,
         p.run(artifact_store=artifact_store)
     except Exception as e:
         error(e)
-
-
-def return_pipeline_config_by_id(pipeline_id: Text):
-    """
-    Utility to get a pipeline object by matching a supplied ID against the
-    pipeline YAML configuration associated with it.
-
-    Args:
-        pipeline_id: ID of the designated pipeline. Has to be partially
-        matching the YAML file name.
-
-    Returns:
-        A Pipeline config object built from the matched config
-
-    """
-    try:
-        repo: Repository = Repository.get_instance()
-    except Exception as e:
-        error(e)
-        return None
-
-    try:
-        file_paths = repo.get_pipeline_file_paths()
-        path = next(y for y in file_paths if pipeline_id in y)
-    except StopIteration:
-        error(f"No pipeline matching the identifier {pipeline_id} "
-              f"was found.")
-        return None
-
-    return read_yaml(path)
