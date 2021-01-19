@@ -21,6 +21,8 @@ from zenml.core.repo.repo import Repository
 
 pass_config = click.make_pass_decorator(GlobalConfig, ensure=True)
 
+pass_repo = click.make_pass_decorator(Repository, ensure=True)
+
 
 def title(text):
     """
@@ -138,12 +140,3 @@ def parse_unknown_options(args):
     assert len(p_args) == len(r_args), 'Replicated arguments!'
 
     return r_args
-
-
-def safely_get_repository():
-    try:
-        repo: Repository = Repository.get_instance()
-        return repo
-    except Exception as e:
-        error(e)
-        return None
