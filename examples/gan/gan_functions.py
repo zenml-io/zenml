@@ -19,10 +19,10 @@ import tensorflow_addons as tfa
 
 from typing import List, Text
 
-from zenml.core.steps.trainer.feedforward_trainer import BaseTrainerStep
+from zenml.core.steps.trainer.tensorflow_trainers.tf_base_trainer import TFBaseTrainerStep
 
 
-class CycleGANTrainer(BaseTrainerStep):
+class CycleGANTrainer(TFBaseTrainerStep):
     def __init__(self, batch_size=1, epochs=25, **kwargs):
 
         self.batch_size = batch_size

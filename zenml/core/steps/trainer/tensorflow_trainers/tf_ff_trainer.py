@@ -18,15 +18,17 @@ from typing import List, Text
 import tensorflow as tf
 import tensorflow_transform as tft
 
-from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
+from zenml.core.steps.trainer.tensorflow_trainers.tf_base_trainer import \
+    TFBaseTrainerStep
 
 
-class FeedForwardTrainer(BaseTrainerStep):
+class FeedForwardTrainer(TFBaseTrainerStep):
     """
     Basic Feedforward Neural Network trainer. This step serves as an example
     of how to define your training logic to integrate well with TFX and
     Tensorflow Serving.
     """
+
     def __init__(self,
                  batch_size: int = 8,
                  lr: float = 0.001,
