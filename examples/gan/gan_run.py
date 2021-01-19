@@ -27,8 +27,7 @@ gan_pipeline = TrainingPipeline(name="gan_test",
 
 try:
     ds = ImageDatasource(name="gan_images",
-                         base_path="/Users/nicholasjunge/workspaces/maiot/"
-                                   "ce_project/images_mini")
+                         base_path="gs://zenml_quickstart/cycle_gan_mini")
 except:
     ds = repo.get_datasource_by_name('gan_images')
 

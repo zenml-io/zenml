@@ -24,8 +24,9 @@ from zenml.core.steps.preprocesser.standard_preprocesser \
 
 
 def decode_and_reshape_image(input_):
-    image = tf.map_fn(lambda x: tf.io.decode_image(x[0], channels=3),
-                      input_, dtype=tf.uint8)
+    densed = tf.sparse.to_dense(input_)
+    image = tf.map_fn(lambda x: tf.io.decode_image(x[0], channels=3), densed,
+                      dtype=tf.uint8)
     image = (tf.cast(image, tf.float32) / 127.5) - 1
     image = tf.reshape(image, [-1, 256, 256, 3])
     return image
