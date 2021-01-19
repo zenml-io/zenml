@@ -17,8 +17,11 @@ import click
 from dateutil import tz
 
 from zenml.core.repo.global_config import GlobalConfig
+from zenml.core.repo.repo import Repository
 
 pass_config = click.make_pass_decorator(GlobalConfig, ensure=True)
+
+pass_repo = click.make_pass_decorator(Repository, ensure=True)
 
 
 def title(text):
@@ -80,6 +83,14 @@ def warning(text):
         text:
     """
     click.echo(click.style(text, fg='yellow', bold=True))
+
+
+def pretty_print(obj):
+    """
+    Args:
+        obj:
+    """
+    click.echo(str(obj))
 
 
 def format_date(dt, format='%Y-%m-%d %H:%M:%S'):
