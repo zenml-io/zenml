@@ -10,19 +10,27 @@ meaning the orchestration would be local along with the actual steps. However, i
 is chosen, then chosen steps would be executed not in the local enviornment, but on the cloud in Google Dataflow.
 
 ## Standard Orchestrators
-Please refer to the docstrings within the source code for precise details the following s
+Please refer to the docstrings within the source code for precise details.
 
 ### Local orchestrator
-The local orchestrator is used by default. It runs the pipelines sequentially as a Python process on your local machine. 
-This is meant for smaller datasets and for quick experimentation.
+This is the default orchestrator for ZenML pipelines. It runs pipelines sequentially as a Python process in it's local environment. 
+You can use this orchestrator for quick experimentation and work on smaller datasets in your local environment.
 
 ### GCP Orchestrator
 
-The GCPOrchestrator can be found at `OrchestratorGCPBackend`. 
-It spins up a VM on your GCP projects, zips up your code to the instance, and executes the ZenML pipeline with a 
+The GCPOrchestrator can be found at [`OrchestratorGCPBackend`](https://docs.zenml.io/reference/core/backends/orchestrator/gcp/index.html). 
+It spins up a VM on your GCP projects, zips up your local code to the instance, and executes the ZenML pipeline with a 
 Docker Image of your choice.
 
-Best of all, the Orchestrator
+Best of all, the Orchestrator is capable of launching [preemtible VMs](https://cloud.google.com/compute/docs/instances/preemptible), saving a big chunk of cost along the way.
+
+### Kubernetes
+The KubernetesOrchestrator can be found at [`OrchestratorGCPBackend`](https://docs.zenml.io/reference/core/backends/orchestrator/kubernetes/index.html). 
+It launches a Job on your Kubernetes cluster, zips up your local code to the Pod, and executes the ZenML pipeline with a Docker Image of your choice.
+
+**NOTE:** This Orchestrator requires you to ensure a successful connection between your Kubernetes Cluster and your Metadata Store.
+
+A more extensive guide on creating pipelines with Kubernetes can be found in the [Kubernetes Tutorial](/tutorials/running-a-pipeline-on-kubernetes.md).
 
 ### AWS Orchestrator
 Coming Soon!
@@ -33,8 +41,6 @@ Coming Soon!
 ### Kubeflow
 Coming soon!
 
-### Vanilla Kubernetes
-Coming soon!
 
 
 ## Creating a custom orchestrator
