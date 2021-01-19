@@ -1,20 +1,24 @@
-- file: intro
-  title: Intro
+- file: index
+  title: Introduction
 
 - part: Getting Started
   chapters:
+  - file: getting-started/installation
+    title: Installation
+  - file: getting-started/quickstart
+    title: Quickstart
   - file: getting-started/core-concepts
     title: Core Concepts
   - file: getting-started/architectural-overview
     title: Architectural Overview
-  - file: getting-started/quickstart
-    title: Quickstart
-  - file: getting-started/installation
-    title: Installation
+  - file: getting-started/organizing-zenml
+    title: Organizing ML Code with ZenML
+  - file: getting-started/creating-custom-logic
+    title: Creating custom logic
 
 - part: Repository
   chapters:
-  - file: repository/repository-singleton
+  - file: repository/what-is-a-repository
     title: What is a ZenML Repository
   - file: repository/the-zenml-repository-instance
     title: The ZenML Repository Instance
@@ -26,6 +30,8 @@
     title: Artifact Store
   - file: repository/pipeline-directory
     title: Pipeline Directory
+  - file: repository/team-collaboration-with-zenml
+    title: Team Collaboration
 
 - part: Datasources
   chapters:
@@ -33,12 +39,10 @@
     title: What is a datasource
   - file: datasources/google-bigquery
     title: Google Bigquery
-  - file: datasources/local-images
-    title: Local Images
+  - file: datasources/images
+    title: Images
   - file: datasources/csv-files-locally
-    title: CSV files [WIP]
-  - file: datasources/create-your-own-datasource
-    title: Create your own datasource
+    title: CSV files
 
 - part: Pipelines
   chapters:
@@ -50,8 +54,10 @@
     title: Data [WIP]
   - file: pipelines/batch-inference
     title: Batch Inference [WIP]
-  - file: pipelines/caching
+  - file: pipelines/reusing-artifacts
     title: Caching
+  - file: pipelines/scheduling-jobs
+    title: Scheduling Jobs
 
 - part: Steps
   chapters:
@@ -71,35 +77,37 @@
   - file: steps/deployer
     title: Deployer
 
-
 - part: Backends
   chapters:
   - file: backends/what-is-a-backend
     title: What is a backend?
   - file: backends/orchestrator-backends
     title: Orchestrator Backends
+  - file: backends/processing-backends.md
+    title: Processing Backends
   - file: backends/training-backends
     title: Training Backends
-  - file: backends/processing-backends/processing-backends.md
-    title: Processing Backends
-    sections:
-      - file: backends/processing-backends/google-dataflow-processing
-        title: Google Dataflow
-
+  - file: backends/using-docker
+    title: Using Docker
 
 - part: Tutorials
   chapters:
-    - file: tutorials/simple-classification.ipynb
+    - file: tutorials/creating-first-pipeline.ipynb
       title: Creating your first pipeline
     - file: tutorials/running-a-pipeline-on-a-google-cloud-vm
       title: Running a training pipeline on a Google Cloud VM
     - file: tutorials/team-collaboration-with-zenml-and-google-cloud
       title: Team collaboration with ZenML and Google Cloud
     - file: tutorials/style-transfer-using-a-cyclegan-wip
-      title: Style Transfer using a CycleGAN [WIP]
+      title: Style Transfer using a CycleGAN
     - file: tutorials/building-a-classifier-on-33m-samples
-      title: Classification with 59M samples [WIP]
-
+      title: Classification with 59M samples
+    - file: tutorials/training-on-gcp-gpu
+      title: Training with GPUs on the Cloud
+    - file: tutorials/ensuring-ml-reproducibility
+      title: Ensuring ML reproducibility with ZenML
+    - file: tutorials/deploying-on-gcp
+      title: Deploying a model to the cloud
 - part: Misc
   chapters:
   - file: misc/roadmap

@@ -6,7 +6,7 @@ from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
 from zenml.core.steps.preprocesser.standard_preprocesser \
     .standard_preprocesser import StandardPreprocesser
 from zenml.core.steps.split.random_split import RandomSplit
-from zenml.core.steps.trainer.feedforward_trainer import FeedForwardTrainer
+from zenml.core.steps.trainer.feedforward_trainer.trainer import FeedForwardTrainer
 from zenml.core.repo.repo import Repository
 
 #########################

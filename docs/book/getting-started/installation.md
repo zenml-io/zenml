@@ -19,9 +19,9 @@ When you're set with your environment, run:
 pip install zenml
 ```
 
-{% hint style="info" %}
+```{warning}
 `ZenML` requires &gt;= Python 3.6 and &lt; Python 3.9.0 
-{% endhint %}
+```
 
 Alternatively, if you’re feeling brave, feel free to install the bleeding edge: **NOTE:** Do so on your own risk, no guarantees given!
 
@@ -31,20 +31,16 @@ pip install git+https://github.com/maiot-io/zenml.git@main --upgrade
 
 Once the installation is completed, you can check whether the installation was successful through:
 
-{% tabs %}
-{% tab title="Bash" %}
+### Bash
 ```bash
 zenml version
 ```
-{% endtab %}
 
-{% tab title="Python SDK" %}
+### Python
 ```
 import zenml
 print(zenml.utils.version.__version__)
 ```
-{% endtab %}
-{% endtabs %}
 
 If you would like to learn more about the current release, please visit the [PyPi homepage.](https://pypi.org/project/zenml)
 
@@ -77,9 +73,8 @@ jupyter nbextension install --py --symlink tensorflow_model_analysis
 jupyter nbextension enable --py tensorflow_model_analysis
 ```
 
-{% hint style="danger" %}
+```{warning}
 If you encounter a `File already exists in database error` error after the first command, this is most likely due to a [known bug](https://stackoverflow.com/questions/59165505/file-already-exists-in-database-error-from-protobuf-when-deploying-google-datafl) with one of our dependencies, namely [PyArrow](https://pypi.org/project/pyarrow/). Unfortunately, this will cause some features to not work on your machine \(namely pipeline evaluate and compare\).
 
-We are aware of this issue and are working hard to fix it. A future release of`zenml` will fix this issue.
-{% endhint %}
-
+We are aware of this issue and are working hard to fix it. A future release of `zenml` will fix this issue.
+```

@@ -1,7 +1,3 @@
----
-description: Track metadata automatically
----
-
 # Metadata Store
 
 ZenML puts a lot of emphasis on guaranteed tracking of inputs across pipeline steps. The strict, fully automated, and deeply built-in tracking enables some of our most powerful features - e.g. comparability across pipelines. To achieve this, we're using a concept we call the Metadata Store.
@@ -32,7 +28,6 @@ zenml config metadata set mysql \
 
 One particular configuration our team is very fond of internally leverages Google Cloud SQL and the docker-based cloudsql proxy to track experiments across team members and environments. Stay tuned for a tutorial on that!
 
-{% hint style="success" %}
+```{hint}
 ZenML relies on Google's [MLMetadata](https://github.com/google/ml-metadata) to track input parameters across your pipelines. 
-{% endhint %}
-
+```
