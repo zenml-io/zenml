@@ -15,8 +15,9 @@
 import click
 from tabulate import tabulate
 from zenml.cli.cli import cli
-from zenml.cli.utils import error, pretty_print
+from zenml.cli.utils import pretty_print, pass_repo
 from zenml.core.repo.repo import Repository
+from typing import Text
 
 
 @cli.group()
@@ -26,13 +27,8 @@ def datasource():
 
 
 @datasource.command("list")
-def list_datasources():
-    try:
-        repo: Repository = Repository.get_instance()
-    except Exception as e:
-        error(e)
-        return
-
+@pass_repo
+def list_datasources(repo: Repository):
     datasources = repo.get_datasources()
 
     click.echo(tabulate([ds.to_config() for ds in datasources],
@@ -41,16 +37,11 @@ def list_datasources():
 
 @datasource.command("get")
 @click.argument('datasource_name')
-def get_datasource_by_name(datasource_name):
+@pass_repo
+def get_datasource_by_name(repo: Repository, datasource_name: Text):
     """
     Gets pipeline from current repository by matching a name identifier
     against the data source name.
 
     """
-    try:
-        repo: Repository = Repository.get_instance()
-    except Exception as e:
-        error(e)
-        return
-
     pretty_print(repo.get_datasource_by_name(datasource_name))

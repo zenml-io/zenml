@@ -18,7 +18,7 @@ from tabulate import tabulate
 from typing import Text
 
 from zenml.cli.cli import cli
-from zenml.cli.utils import error, pretty_print
+from zenml.cli.utils import error, pretty_print, pass_repo
 from zenml.core.repo.repo import Repository
 from zenml.utils.yaml_utils import read_yaml
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
@@ -31,44 +31,43 @@ def pipeline():
 
 
 @pipeline.command('compare')
-def compare_pipelines():
+@pass_repo
+def compare_pipelines(repo: Repository):
     """Compares pipelines in repo"""
     click.echo('Comparing pipelines in repo: Starting app..')
-    repo: Repository = Repository.get_instance()
     repo.compare_pipelines()
 
 
 @pipeline.command('list')
-def list_pipelines():
+@pass_repo
+def list_pipelines(repo: Repository):
     """Lists pipelines in the current repository."""
     try:
-        repo: Repository = Repository.get_instance()
+        pipelines = repo.get_pipelines()
+
+        names = [p.name for p in pipelines]
+        types = [p.PIPELINE_TYPE for p in pipelines]
+        statuses = [p.get_status() for p in pipelines]
+        cache_enabled = [p.enable_cache for p in pipelines]
+        filenames = [p.file_name for p in pipelines]
+
+        headers = ["name", "type", "cache enabled", "status", "file name"]
+
+        click.echo(tabulate(zip(names, types, cache_enabled,
+                                statuses, filenames),
+                            headers=headers))
     except Exception as e:
         error(e)
-        return
-
-    pipelines = repo.get_pipelines()
-
-    names = [p.name for p in pipelines]
-    types = [p.PIPELINE_TYPE for p in pipelines]
-    statuses = [p.get_status() for p in pipelines]
-    cache_enabled = [p.enable_cache for p in pipelines]
-    filenames = [p.file_name for p in pipelines]
-
-    headers = ["name", "type", "cache enabled", "status", "file name"]
-
-    click.echo(tabulate(zip(names, types, cache_enabled, statuses, filenames),
-                        headers=headers))
 
 
 @pipeline.command('get')
 @click.argument('pipeline_name')
-def get_pipeline_by_name(pipeline_name: Text):
+@pass_repo
+def get_pipeline_by_name(repo: Repository, pipeline_name: Text):
     """
     Gets pipeline from current repository by matching a name against a
     pipeline name in the repository.
     """
-    repo: Repository = Repository.get_instance()
     try:
         p = repo.get_pipeline_by_name(pipeline_name)
     except Exception as e:
@@ -80,40 +79,20 @@ def get_pipeline_by_name(pipeline_name: Text):
 
 @pipeline.command('run')
 @click.argument('path_to_config')
-@click.option("--metadata_store", default=None,
-              help="Path to a custom metadata store to use.")
-@click.option("--artifact_store", default=None,
-              help="Path to a custom metadata store to use.")
-def run_pipeline(path_to_config: Text,
-                 metadata_store: Text,
-                 artifact_store: Text):
+@pass_repo
+def run_pipeline(path_to_config: Text):
     """
     Runs pipeline specified by the given config YAML object.
 
     Args:
         path_to_config: Path to config of the designated pipeline.
          Has to be matching the YAML file name.
-        artifact_store: Path to a custom artifact store.
-        metadata_store: Path to a custom metadata store. Currently not
-         implemented.
-
     """
     # config has metadata store, backends and artifact store,
     # so no need to specify them
-    config = read_yaml(path_to_config)
-    repo: Repository = Repository.get_instance()
-
-    if metadata_store is not None:
-        # TODO[MEDIUM]: Figure out how to configure an alternative
-        #  metadata store from a command line string
-        click.echo("The option to configure the metadata store "
-                   "from the command line is not yet implemented.")
-
-    if artifact_store is not None:
-        path = artifact_store
-        repo.zenml_config.set_artifact_store(artifact_store_path=path)
     try:
+        config = read_yaml(path_to_config)
         p: TrainingPipeline = TrainingPipeline.from_config(config)
-        p.run(artifact_store=artifact_store)
+        p.run()
     except Exception as e:
         error(e)

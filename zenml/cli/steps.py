@@ -15,7 +15,7 @@
 import click
 from tabulate import tabulate
 from zenml.cli.cli import cli
-from zenml.cli.utils import error
+from zenml.cli.utils import pass_repo
 from zenml.core.repo.repo import Repository
 
 
@@ -26,12 +26,7 @@ def steps():
 
 
 @steps.command("list")
-def list_steps():
-    try:
-        repo: Repository = Repository.get_instance()
-    except Exception as e:
-        error(e)
-        return
-
+@pass_repo
+def list_steps(repo: Repository):
     step_versions = repo.get_step_versions()
     click.echo(tabulate(step_versions, headers="keys"))
