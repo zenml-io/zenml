@@ -57,4 +57,5 @@ TRAINER_FN = 'zenml.core.components.trainer.trainer_module.run_fn'
 EVALUATOR_MODULE_FN = 'zenml.core.components.evaluator.evaluator_module'
 
 # GCP Orchestration
-GCP_ENTRYPOINT = 'zenml.core.backends.orchestrator.gcp.entrypoint'
+GCP_ENTRYPOINT = 'zenml.core.backends.orchestrator.entrypoint'
+K8S_ENTRYPOINT = 'zenml.core.backends.orchestrator.entrypoint'
