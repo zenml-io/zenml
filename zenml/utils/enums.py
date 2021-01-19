@@ -70,3 +70,8 @@ class GCPGPUTypes(Enum):
     K80 = 1
     V100 = 2
     P100 = 3
+
+class ImagePullPolicy(Enum):
+    Always = 1
+    Never = 2
+    IfNotPresent = 3

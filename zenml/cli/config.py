@@ -19,8 +19,9 @@ import click
 
 from zenml.cli.cli import cli
 from zenml.cli.cli import pass_config
-from zenml.cli.utils import parse_unknown_options
+from zenml.cli.utils import parse_unknown_options, error
 from zenml.core.repo.repo import Repository
+from zenml.utils.print_utils import to_pretty_string
 
 
 @cli.group()
@@ -52,6 +53,18 @@ def opt_out(config):
     """Opt-out of analytics"""
     config.set_analytics_opt_in(False)
     click.echo('Opted out of analytics.')
+
+
+@config.command("list")
+def list_config():
+    """Print the current ZenML config to the command line"""
+    try:
+        repo: Repository = Repository.get_instance()
+    except Exception as e:
+        error(e)
+        return
+
+    click.echo(to_pretty_string(repo.zenml_config))
 
 
 # Metadata Store
