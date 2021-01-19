@@ -39,6 +39,6 @@ gan_pipeline.add_split(CategoricalDomainSplit(categorical_column="label",
 
 gan_pipeline.add_preprocesser(GANPreprocessor())
 
-gan_pipeline.add_trainer(CycleGANTrainer(epochs=100))
+gan_pipeline.add_trainer(CycleGANTrainer(epochs=1))
 
 gan_pipeline.run()

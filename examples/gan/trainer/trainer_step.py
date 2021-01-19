@@ -12,36 +12,31 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
 from typing import List, Text
+
 import tensorflow as tf
 import tensorflow_transform as tft
-from datetime import datetime
 
-from zenml.core.steps.trainer.feedforward_trainer import FeedForwardTrainer
-from .gan_functions import discriminator_loss, \
-    identity_loss, generator_loss, calc_cycle_loss
 from examples.gan.trainer.gan_functions import Generator, Discriminator, \
     CycleGan
 from examples.gan.trainer.gan_functions import TensorBoardImage
+from zenml.core.steps.trainer.feedforward_trainer import FeedForwardTrainer
+from .gan_functions import discriminator_loss, \
+    identity_loss, generator_loss, calc_cycle_loss
 
 
 class CycleGANTrainer(FeedForwardTrainer):
     def __init__(self, batch_size=1, epochs=25, **kwargs):
-
         self.batch_size = batch_size
         self.epochs = epochs
         super(CycleGANTrainer, self).__init__(batch_size=batch_size,
                                               epochs=epochs,
                                               **kwargs)
 
-        self.time_suffix = datetime.now().strftime("%Y%m%d-%H%M%S")
-
-        self.log_dir = "./logs/train_data/" + self.time_suffix
-
     def model_fn(self,
                  train_dataset: tf.data.Dataset,
                  eval_dataset: tf.data.Dataset):
-
         dataset = tf.data.Dataset.zip((train_dataset, eval_dataset))
 
         monet_generator_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
@@ -82,10 +77,11 @@ class CycleGANTrainer(FeedForwardTrainer):
             dataset,
             batch_size=self.batch_size,
             epochs=self.epochs,
-            callbacks=[tf.keras.callbacks.TensorBoard(log_dir=self.log_dir),
-                       TensorBoardImage(test_data=eval_dataset,
-                                        log_dir="./logs/gan_test/" +
-                                                self.time_suffix)]
+            callbacks=[
+                tf.keras.callbacks.TensorBoard(
+                    log_dir=os.path.join(self.log_dir, 'train')),
+                TensorBoardImage(test_data=eval_dataset,
+                                 log_dir=os.path.join(self.log_dir, 'img'))]
         )
 
         return cycle_gan_model
@@ -93,7 +89,6 @@ class CycleGANTrainer(FeedForwardTrainer):
     def input_fn(self,
                  file_pattern: List[Text],
                  tf_transform_output: tft.TFTransformOutput):
-
         xf_feature_spec = tf_transform_output.transformed_feature_spec()
 
         xf_feature_spec = {x: xf_feature_spec[x]
