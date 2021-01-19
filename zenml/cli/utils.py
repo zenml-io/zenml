@@ -83,6 +83,14 @@ def warning(text):
     click.echo(click.style(text, fg='yellow', bold=True))
 
 
+def pretty_print(obj):
+    """
+    Args:
+        obj:
+    """
+    click.echo(str(obj))
+
+
 def format_date(dt, format='%Y-%m-%d %H:%M:%S'):
     """
     Args:
