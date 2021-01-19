@@ -20,13 +20,20 @@ from zenml.core.repo.repo import Repository
 
 
 @cli.group()
-def steps():
+def step():
     """Steps group"""
     pass
 
 
-@steps.command("list")
+@step.command("list")
 @pass_repo
 def list_steps(repo: Repository):
     step_versions = repo.get_step_versions()
-    click.echo(tabulate(step_versions, headers="keys"))
+    name_version_data = []
+    headers = ["step_name", "step_version"]
+    for name, version_set in step_versions.items():
+        names = [name] * len(version_set)
+        versions = list(version_set)
+        name_version_data.extend(list(zip(names, versions)))
+
+    click.echo(tabulate(name_version_data, headers=headers))
