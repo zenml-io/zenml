@@ -100,7 +100,7 @@
       title: Running a training pipeline on Kubernetes
     - file: tutorials/team-collaboration-with-zenml-and-google-cloud
       title: Team collaboration with ZenML and Google Cloud
-    - file: tutorials/style-transfer-using-a-cyclegan-wip
+    - file: tutorials/style-transfer-using-a-cyclegan
       title: Style Transfer using a CycleGAN
     - file: tutorials/building-a-classifier-on-33m-samples
       title: Classification with 59M samples
