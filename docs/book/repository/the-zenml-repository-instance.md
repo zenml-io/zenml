@@ -1,10 +1,7 @@
----
-description: A Singleton oracle that knows all
----
-
 # The ZenML Repository Instance
 
-In order to access information about your ZenML repository in code, you need to access the ZenML [Repository instance](https://github.com/maiot-io/zenml/blob/main/zenml/core/repo/repo.py). This object is a Singleton and can be fetched any time from within your Python code simply by executing:
+In order to access information about your ZenML repository in code, you need to access the ZenML [Repository instance](https://github.com/maiot-io/zenml/blob/main/zenml/core/repo/repo.py). 
+This object is a Singleton and can be fetched any time from within your Python code simply by executing:
 
 ```python
 from zenml.core.repo.repo import Repository
@@ -31,8 +28,10 @@ step_object = get_step_by_version(step_type, version)
 # Compare all pipelines in the repository
 repo.compare_pipelines()
 ```
+```{note}
+The full list of commands can be found within the Repository class definition.
+```
 
 Using these commands, one can always look back at what actions have been performed in this repository. 
 
-It is important to note that most of the methods listed above involve parsing the [config YAML files](../pipelines/zenml-pipeline-config.md) in your [Pipelines Directory](pipeline-directory.md). Therefore, by changing the pipelines directory or manipulating it, you may lose a lot of valuable information regarding how the repository developed over time.
-
+It is important to note that most of the methods listed above involve parsing the [config YAML files](../pipelines/what-is-a-pipeline.md) in your [Pipelines Directory](pipeline-directory.md). Therefore, by changing the pipelines directory or manipulating it, you may lose a lot of valuable information regarding how the repository developed over time.

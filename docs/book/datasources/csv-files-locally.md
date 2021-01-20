@@ -1,6 +1,11 @@
-# CSV files \[WIP\]
+# CSV Datasource
+Add a CSV file to your pipeline.
+Details to be found at `CSVDatasource`.
+    
+## Example
+```python
+from zenml.core.datasources.csv_datasource import CSVDatasource
 
-Please refer to docstring at `zenml.core.datasources.csv_datasource` until we write this out.
-
-## 
-
+# Add a datasource. This will automatically track and version it.
+ds = CSVDatasource(name=f'Name', path='gs://path/to/csv')
+```

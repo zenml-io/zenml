@@ -19,8 +19,9 @@ import click
 
 from zenml.cli.cli import cli
 from zenml.cli.cli import pass_config
-from zenml.cli.utils import parse_unknown_options
+from zenml.cli.utils import parse_unknown_options, error
 from zenml.core.repo.repo import Repository
+from zenml.utils.print_utils import to_pretty_string
 
 
 @cli.group()
@@ -52,6 +53,18 @@ def opt_out(config):
     """Opt-out of analytics"""
     config.set_analytics_opt_in(False)
     click.echo('Opted out of analytics.')
+
+
+@config.command("list")
+def list_config():
+    """Print the current ZenML config to the command line"""
+    try:
+        repo: Repository = Repository.get_instance()
+    except Exception as e:
+        error(e)
+        return
+
+    click.echo(to_pretty_string(repo.zenml_config))
 
 
 # Metadata Store
@@ -108,11 +121,36 @@ def set_artifact_store(path: Text = None):
     """Change artifact store for local config."""
     repo: Repository = Repository.get_instance()
     repo.zenml_config.set_artifact_store(path)
-    click.echo(f'Artifact store updated to {path}')
+    click.echo(f'Default artifact store updated to {path}')
 
 
 @artifacts.command('get')
 def get_artifact_store():
     """Print artifact store from local config."""
     repo: Repository = Repository.get_instance()
-    click.echo(f'Artifact store points to: {repo.get_default_artifact_store().path}')
+    click.echo(f'Default artifact store points to: '
+               f'{repo.get_default_artifact_store().path}')
+
+
+# Pipeline Directory
+@config.group()
+def pipelines():
+    """Utilities for pipelines dir store"""
+    pass
+
+
+@pipelines.command('set')
+@click.argument('path', type=click.Path())
+def set_pipelines_dir(path: Text = None):
+    """Change pipelines dir for local config."""
+    repo: Repository = Repository.get_instance()
+    repo.zenml_config.set_pipelines_dir(path)
+    click.echo(f'Default pipelines dir updated to {path}')
+
+
+@pipelines.command('get')
+def get_pipelines_dir():
+    """Print pipelines dir from local config."""
+    repo: Repository = Repository.get_instance()
+    click.echo(f'Default pipelines dir points to: '
+               f'{repo.get_default_pipelines_dir()}')

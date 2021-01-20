@@ -88,7 +88,7 @@ from zenml.core.pipelines.training_pipeline import TrainingPipeline
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
 from zenml.core.steps.preprocesser.standard_preprocesser.standard_preprocesser import StandardPreprocesser
 from zenml.core.steps.split.random_split import RandomSplit
-from zenml.core.steps.trainer.feedforward_trainer import FeedForwardTrainer
+from zenml.core.steps.trainer.feedforward_trainer.trainer import FeedForwardTrainer
 
 training_pipeline = TrainingPipeline(name='Quickstart')
 
@@ -272,10 +272,6 @@ Every ZenML pipeline yields a servable model, ready to be used in your existing 
 <This might very well be added at a later stage!>
 -->
 
-## Current limitations
-Currently, ZenML only supports Tensorflow 2.3.0 based models. However, the vision of the framework is to be library and dependency agnostic.
-
-Please see our [roadmap](https://docs.zenml.io/misc/roadmap) for details on how and when we plan to extend ZenML moving forward.
 
 ## Community
 Our community is the backbone of making ZenML a success! We are currently actively maintaining two main channels for community discussions:

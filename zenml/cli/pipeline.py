@@ -14,9 +14,14 @@
 """CLI for pipelines."""
 
 import click
+from tabulate import tabulate
+from typing import Text
 
 from zenml.cli.cli import cli
+from zenml.cli.utils import error, pretty_print, pass_repo
 from zenml.core.repo.repo import Repository
+from zenml.utils.yaml_utils import read_yaml
+from zenml.core.pipelines.training_pipeline import TrainingPipeline
 
 
 @cli.group()
@@ -26,8 +31,68 @@ def pipeline():
 
 
 @pipeline.command('compare')
-def set_metadata_store():
+@pass_repo
+def compare_pipelines(repo: Repository):
     """Compares pipelines in repo"""
     click.echo('Comparing pipelines in repo: Starting app..')
-    repo: Repository = Repository.get_instance()
     repo.compare_pipelines()
+
+
+@pipeline.command('list')
+@pass_repo
+def list_pipelines(repo: Repository):
+    """Lists pipelines in the current repository."""
+    try:
+        pipelines = repo.get_pipelines()
+
+        names = [p.name for p in pipelines]
+        types = [p.PIPELINE_TYPE for p in pipelines]
+        statuses = [p.get_status() for p in pipelines]
+        cache_enabled = [p.enable_cache for p in pipelines]
+        filenames = [p.file_name for p in pipelines]
+
+        headers = ["name", "type", "cache enabled", "status", "file name"]
+
+        click.echo(tabulate(zip(names, types, cache_enabled,
+                                statuses, filenames),
+                            headers=headers))
+    except Exception as e:
+        error(e)
+
+
+@pipeline.command('get')
+@click.argument('pipeline_name')
+@pass_repo
+def get_pipeline_by_name(repo: Repository, pipeline_name: Text):
+    """
+    Gets pipeline from current repository by matching a name against a
+    pipeline name in the repository.
+    """
+    try:
+        p = repo.get_pipeline_by_name(pipeline_name)
+    except Exception as e:
+        error(e)
+        return
+
+    pretty_print(p)
+
+
+@pipeline.command('run')
+@click.argument('path_to_config')
+@pass_repo
+def run_pipeline(path_to_config: Text):
+    """
+    Runs pipeline specified by the given config YAML object.
+
+    Args:
+        path_to_config: Path to config of the designated pipeline.
+         Has to be matching the YAML file name.
+    """
+    # config has metadata store, backends and artifact store,
+    # so no need to specify them
+    try:
+        config = read_yaml(path_to_config)
+        p: TrainingPipeline = TrainingPipeline.from_config(config)
+        p.run()
+    except Exception as e:
+        error(e)

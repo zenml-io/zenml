@@ -26,9 +26,9 @@ class GDPComponent(Enum):
     SplitGen = 1
     SplitStatistics = 2
     SplitSchema = 3
-    SequenceTransform = 4
-    SequenceStatistics = 5
-    SequenceSchema = 6
+    Sequencer = 4
+    SequencerStatistics = 5
+    SequencerSchema = 6
     PreTransform = 7
     PreTransformStatistics = 8
     PreTransformSchema = 9
@@ -58,7 +58,7 @@ class ArtifactStoreTypes(Enum):
 class StepTypes(Enum):
     base = 1
     data = 2
-    timeseries = 3
+    sequencer = 3
     preprocesser = 4
     split = 5
     trainer = 6
@@ -70,3 +70,8 @@ class GCPGPUTypes(Enum):
     K80 = 1
     V100 = 2
     P100 = 3
+
+class ImagePullPolicy(Enum):
+    Always = 1
+    Never = 2
+    IfNotPresent = 3

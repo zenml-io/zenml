@@ -1,6 +1,6 @@
 # ZenML Docs
 
-ZenML is an extensible, open-source MLOps framework for using production-ready Machine Learning pipelines - in a simple way.
+ZenML is an extensible, open-source MLOps framework for creating production-ready Machine Learning pipelines - in a simple way.
 
 ## Usage
 

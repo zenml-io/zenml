@@ -1,12 +1,12 @@
----
-description: A simple tutorial to transition your pipeline to train on a Google Cloud VM
----
-
 # Running a training pipeline on a Google Cloud VM
 
 Not all experiments are best-suited to local execution. Sometimes, you just need that additional power of a dedicated VM in the cloud - or just the ability to close your laptop and walk off, while the experiment continues to run.
-
 ZenML, with it's strong focus on integrations, provides a convenient way to achieve this with the built-in Google Cloud VM orchestration.
+
+An added plus to this integration is the ability to use [preemptible](https://cloud.google.com/compute/docs/instances/preemptible) instances, 
+which is a type of instance on GCP that you can create and run at a much lower price than normal instances. Usually, preemptible 
+instances come with a big disadvantage of being shut down at any point within 24 hours by GCP. However, most ZenML pipelines are done 
+well before that.
 
 To directly see the code, head over to [GitHub](https://github.com/maiot-io/zenml/tree/main/examples/gcp_orchestrated). Otherwise, follow along here.
 
@@ -43,7 +43,7 @@ from zenml.core.steps.preprocesser.standard_preprocesser \
     .standard_preprocesser import \
     StandardPreprocesser
 from zenml.core.steps.split.random_split import RandomSplit
-from zenml.core.steps.trainer.feedforward_trainer import FeedForwardTrainer
+from zenml.core.steps.trainer.feedforward_trainer.trainer import FeedForwardTrainer
 
 training_pipeline = TrainingPipeline(name='GCP Orchestrated')
 ```
@@ -143,13 +143,13 @@ The GCP orchestrator follows a simple mechanism to orchestrate the pipeline work
 * It then launches a VM using the Google Cloud python client.
 * The VM is bootstrapped with a [startup-script](https://github.com/maiot-io/zenml/blob/main/zenml/core/backends/orchestrator/gcp/startup-script.sh) that does the following:
   * Pulls the relevant docker image \(see below\).
-  * Receives the [pipeline config YAML](../pipelines/zenml-pipeline-config.md) that has the path of the `tar` source-code. It uses this to download and extract the contents on a local directory. This is why the artifact store needs to be a Google Cloud bucket that is accessible to the VM.
+  * Receives the [pipeline config YAML](../pipelines/what-is-a-pipeline.md) that has the path of the `tar` source-code. It uses this to download and extract the contents on a local directory. This is why the artifact store needs to be a Google Cloud bucket that is accessible to the VM.
   * Executes the pipeline with the [LocalOrchestrator](https://github.com/maiot-io/zenml/tree/main/zenml/core/backends/orchestrator/local) locally on the VM.
   * Shuts down when that process exits.
 
 ### Customize your orchestration
 
-Every ZenML [`Pipeline`](../pipelines/zenml-pipeline-config.md) has a `run` method that takes a list of [`Backends`](../backends/backends-overview.md) as input. If you pass in an [`OrchestratorBackend`](../backends/orchestrator-backends.md) , then the default local orchestrator is replaced by whatever you send in. In this case we sent in the [`OrchestratorGCPBackend`](https://github.com/maiot-io/zenml/blob/main/zenml/core/backends/orchestrator/gcp/orchestrator_gcp_backend.py) which takes certain parameters. They are:
+Every ZenML [`Pipeline`](../pipelines/what-is-a-pipeline.md) has a `run` method that takes a list of [`Backends`](../backends/what-is-a-backend.md) as input. If you pass in an [`OrchestratorBackend`](../backends/orchestrator-backends.md) , then the default local orchestrator is replaced by whatever you send in. In this case we sent in the [`OrchestratorGCPBackend`](https://github.com/maiot-io/zenml/blob/main/zenml/core/backends/orchestrator/gcp/orchestrator_gcp_backend.py) which takes certain parameters. They are:
 
 * `cloudsql_connection_name`: The [connection name](https://cloud.google.com/sql/docs/mysql/instance-info) of the Cloud SQL instance.
 * `project`: The GCP project name.

@@ -15,9 +15,6 @@
 
 from typing import Text, Optional, Dict
 
-from google.cloud import bigquery
-from google.cloud.exceptions import NotFound
-
 from zenml.core.datasources.base_datasource import BaseDatasource
 from zenml.core.steps.data.bq_data_step import BQDataStep
 
@@ -29,9 +26,14 @@ class BigQueryDatasource(BaseDatasource):
     """
     DATA_STEP = BQDataStep
 
-    def __init__(self, name: Text, query_project: Text, query_dataset: Text,
-                 query_table: Text, gcs_location: Text,
-                 query_limit: Optional[int] = None, dest_project: Text = None,
+    def __init__(self,
+                 name: Text,
+                 query_project: Text,
+                 query_dataset: Text,
+                 query_table: Text,
+                 gcs_location: Text,
+                 query_limit: Optional[int] = None,
+                 dest_project: Text = None,
                  schema: Dict = None, **unused_kwargs):
         """
         Initialize BigQuery source. This creates a DataPipeline that
@@ -45,26 +47,16 @@ class BigQueryDatasource(BaseDatasource):
         specified through dest_project.
 
         Args:
-            name: Name of datasource.
+            name: name of datasource. Must be globally unique in the repo.
             query_project: name of gcp project.
             query_dataset: name of dataset.
             query_table: name of table in dataset.
             query_limit: how many rows, from the top, to be queried.
-            gcs_location: google cloud storage location to store temp files.
-            dest_project: project where gcs exists.
+            gcs_location: google cloud storage (bucket) location to store temp.
+            dest_project: name of destination project. If None is specified,
+            then dest_project is set to the same as query_project.
         """
         super().__init__(name, schema, **unused_kwargs)
-
-        # Check whether we can access this
-        client = bigquery.Client(project=dest_project)
-        dataset_ref = bigquery.DatasetReference(
-            project=query_project, dataset_id=query_dataset)
-        table_ref = dataset_ref.table(query_table)
-
-        try:
-            client.get_table(table_ref)
-        except NotFound:
-            Exception(f'Table {query_table} not found.')
 
         # Check whether gcs_location is a valid one
         if not gcs_location.startswith('gs://'):
