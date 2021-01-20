@@ -63,8 +63,7 @@ real images with arbitrary contents. This data is made available on a public Zen
 access it for your pipeline by defining an image datasource and adding it to your pipeline.
 
 ```python
-base_path = "gs://zenml_quickstart/cycle_gan"
-ds = ImageDatasource(name="gan_images", base_path=base_path)
+ds = ImageDatasource(name="gan_images", base_path="gs://zenml_quickstart/cycle_gan")
 
 gan_pipeline.add_datasource(ds)
 ```
