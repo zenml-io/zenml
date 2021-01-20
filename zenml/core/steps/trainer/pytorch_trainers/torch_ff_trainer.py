@@ -12,20 +12,22 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import List, Text
-import os
+# The main solution for data ingestion is adapted
+# from: https://github.com/vahidk/tfrecord
 
-import tensorflow as tf
+import os
+from typing import List, Text
+
 import tensorflow_transform as tft
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as data
 
-from zenml.core.steps.trainer.pytorch_trainers.torch_base_trainer import TorchBaseTrainerStep
+from zenml.core.steps.trainer.pytorch_trainers.torch_base_trainer import \
+    TorchBaseTrainerStep
+from zenml.core.steps.trainer.pytorch_trainers.utils import TFRecordTorchDataset
 from zenml.utils import path_utils
-from zenml.utils.post_training.post_training_utils import \
-    convert_raw_dataset_to_pandas
 
 """
 TODO:
@@ -42,30 +44,6 @@ TODO:
 """
 
 
-class PyTorchDataset(data.Dataset):
-    """Face Landmarks dataset."""
-
-    def __init__(self, df):
-        """
-        Args:
-        """
-        self.df = df
-
-    def __len__(self):
-        # print len(self.landmarks_frame)
-        # return len(self.landmarks_frame)
-        return self.df.shape[0]
-
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-        all_data = self.df.iloc[idx, :].to_dict()
-        X_data = [v for k, v in all_data.items() if k.endswith('_xf')]
-        Y_data = [v for k, v in all_data.items() if k.startswith('label_')]
-
-        return torch.FloatTensor(X_data), torch.FloatTensor(Y_data)[0]
-
-
 def binary_acc(y_pred, y_test):
     y_pred_tag = torch.round(torch.sigmoid(y_pred))
 
@@ -76,7 +54,7 @@ def binary_acc(y_pred, y_test):
     return acc
 
 
-class PyTorchTrainer(TorchBaseTrainerStep):
+class FeedForwardTrainer(TorchBaseTrainerStep):
     def __init__(self,
                  batch_size: int = 8,
                  lr: float = 0.0001,
@@ -102,32 +80,26 @@ class PyTorchTrainer(TorchBaseTrainerStep):
         self.last_activation = last_activation
         self.input_units = input_units
         self.output_units = output_units
-        super(PyTorchTrainer, self).__init__(**kwargs)
+        super(FeedForwardTrainer, self).__init__(**kwargs)
 
     def input_fn(self,
                  file_pattern: List[Text],
                  tf_transform_output: tft.TFTransformOutput):
 
-        spec = tf_transform_output.transformed_feature_spec()
-        train_files = files.replace("*", "")
+        train_files = file_pattern[0].replace("*", "")
         data_files = path_utils.list_dir(train_files)
-        dataset = tf.data.TFRecordDataset(data_files, compression_type='GZIP')
-        sample_size = 10000
-        df = convert_raw_dataset_to_pandas(dataset, spec, sample_size)
-        dataset = PyTorchDataset(df)
-        loader = torch.utils.data.DataLoader(
-            dataset, batch_size=self.batch_size, shuffle=True)
 
-        data = next(iter(loader))
+        dataset = TFRecordTorchDataset(data_files[0], index_path=None)
+        loader = torch.utils.data.DataLoader(dataset, batch_size=32)
         return loader
 
     def model_fn(self,
                  train_dataset,
                  eval_dataset):
 
-        class binaryClassification(nn.Module):
+        class binaryClassifier(nn.Module):
             def __init__(self):
-                super(binaryClassification, self).__init__()
+                super(binaryClassifier, self).__init__()
                 # Number of input features is 12.
                 self.layer_1 = nn.Linear(9, 64)
                 self.layer_2 = nn.Linear(64, 64)
@@ -148,18 +120,18 @@ class PyTorchTrainer(TorchBaseTrainerStep):
 
                 return x
 
-        return binaryClassification()
+        return binaryClassifier()
 
     def run_fn(self):
+        train_dataset = self.input_fn(self.train_files,
+                                      self.tf_transform_output)
 
-        train_loader = self.input_fn(self.train_files,
-                                     self.transform_output)
-
-        eval_loader = self.input_fn(self.eval_files,
-                                    self.transform_output)
+        eval_dataset = self.input_fn(self.eval_files,
+                                     self.tf_transform_output)
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        model = self.model_fn()
+        model = self.model_fn(train_dataset, eval_dataset)
+
         model.to(device)
         criterion = nn.BCEWithLogitsLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.001)
@@ -168,7 +140,7 @@ class PyTorchTrainer(TorchBaseTrainerStep):
         for e in range(1, self.epochs + 1):
             epoch_loss = 0
             epoch_acc = 0
-            for X_batch, y_batch in train_loader:
+            for X_batch, y_batch in train_dataset:
                 X_batch, y_batch = X_batch.to(device), y_batch.to(device)
                 optimizer.zero_grad()
 
@@ -185,8 +157,9 @@ class PyTorchTrainer(TorchBaseTrainerStep):
 
             print(
                 f'Epoch {e + 0:03}: | Loss: '
-                f'{epoch_loss / len(train_loader):.5f} | Acc: '
-                f'{epoch_acc / len(train_loader):.3f}')
+                f'{epoch_loss / len(train_dataset):.5f} | Acc: '
+                f'{epoch_acc / len(train_dataset):.3f}')
 
         path_utils.create_dir_if_not_exists(self.serving_model_dir)
+        # TODO: Change the serving paradigm
         torch.save(model, os.path.join(self.serving_model_dir, 'model.pt'))

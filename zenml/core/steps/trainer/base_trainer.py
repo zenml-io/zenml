@@ -59,11 +59,12 @@ class BaseTrainerStep(BaseStep):
         self.eval_files = eval_files
         self.schema = None
         self.log_dir = None
+        self.tf_transform_output = None
 
         # Infer schema and log_dir
         if self.transform_output is not None:
-            tf_transform_output = tft.TFTransformOutput(self.transform_output)
-            self.schema = tf_transform_output.transformed_feature_spec().copy()
+            self.tf_transform_output = tft.TFTransformOutput(self.transform_output)
+            self.schema = self.tf_transform_output.transformed_feature_spec().copy()
 
         if self.serving_model_dir is not None:
             self.log_dir = os.path.join(
