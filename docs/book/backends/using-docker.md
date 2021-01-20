@@ -28,3 +28,47 @@ RUN pip install -r requirements.txt  # install your custom requirements
 ```
 
 More seasoned readers might notice, that there is no definition of an `ENTRYPOINT` anywhere. The ZenML Docker Images are deliberately designed without an `ENTRYPOINT` , as every backend can ship with a generic or specialised pipeline entrypoint. Routing is therefore handled via container invocation, not through defaults.
+
+Running a `docker build . -f path/to/your/dockerfile -t your-container-registry/your-image-name:your-image-tag` (given you adjust the paths and names) will yield you with your very own Docker image. You should push that image to your own container registry, to ensure availability for your pipeline backends, via `docker push your-container-registry/your-image-name:your-image-tag`.
+
+This is by no means a complete guide on building, pushing, and hosting Docker images. We strongly recommend you familiarize yourself with a Container registry of your choosing (e.g. [Google Container Registry](https://cloud.google.com/container-registry/docs) or [Docker Hub](https://docs.docker.com/docker-hub/)), and how the backend of your choosing can interact with the individual Registry options to ensure a pipeline's backend can pull and run your newly built containers.
+
+## Using custom images
+
+Once you've successfully built and pushed your new Docker Image to a registry you're ready to use it in your ZenML pipelines. For this example I'll be re-using our [Tutorial on running a pipeline on GCP](/tutorials/running-a-pipeline-on-a-google-cloud-vm.md).
+
+Your new orchestration backend instantiation looks like this:
+
+```python
+# Let's define the image you'll want to use:
+custom_docker_image = 'your-container-registry/your-image-name:your-image-tag'
+
+# taken straigt from the Google Cloud VM example
+artifact_store = 'gs://your-bucket-name/optional-subfolder'
+project = 'PROJECT'  # the project to launch the VM in
+zone = 'europe-west1-b'  # the zone to launch the VM in
+cloudsql_connection_name = 'PROJECT:REGION:INSTANCE'
+mysql_db = 'DATABASE'
+mysql_user = 'USERNAME'
+mysql_pw = 'PASSWORD'
+
+# Run the pipeline on a Google Cloud VM
+training_pipeline.run(
+    backends=[OrchestratorGCPBackend(
+        cloudsql_connection_name=cloudsql_connection_name,
+        project=project,
+        zone=zone,
+        image=custom_docker_image,  # this is it - your pipeline will use your very own Docker image.
+    )],
+    metadata_store=MySQLMetadataStore(
+        host='127.0.0.1',
+        port=3306,
+        database=mysql_db,
+        username=mysql_user,
+        password=mysql_pw,
+    ),
+    artifact_store=ArtifactStore(artifact_store)
+)
+```
+
+For more information on individual backends and if they have support for Docker Images please check the corresponding documentation.
