@@ -7,7 +7,7 @@ description: We make a Neural Network paint like Monet!
 Generative Neural Networks are a very different story compared to "normal" Neural Networks. Since they are trained to
 learn the probability distribution from data rather than the marginal distribution of a target feature, you can sample
 them just like any other probability distribution and "create" your own data. A very well-known example of this is
-the **Generative Adversarial Network** \(GAN\), in which two rival networks are trained to generate realistic data based
+the **Generative Adversarial Network** (GAN), in which two rival networks are trained to generate realistic data based
 on a training input.
 
 A visually appealing example of this type of architecture is the **CycleGAN.** Conceptually, it is an adversarial
@@ -45,12 +45,26 @@ gan_pipeline = TrainingPipeline(name="cycle_gan", enable_cache=True)
 
 ### Preparing the data
 
+#### Disclaimer: The data is sourced from the CycleGAN repository located [here.](https://junyanz.github.io/CycleGAN/)
+
+Citation for the original paper:
+```
+Unpaired Image-to-Image Translation using Cycle-Consistent Adversarial Networks.
+
+Jun-Yan Zhu*, Taesung Park*, Phillip Isola, Alexei A. Efros
+
+Berkeley AI Research Lab, UC Berkeley
+
+IEEE International Conference on Computer Vision (ICCV) 2017. (* equal contributions)
+```
+
 The data that we are dealing with in this example are images. Some of them are images of Monet paintings, others are
 real images with arbitrary contents. This data is made available on a public ZenML Google Cloud Storage bucket. You can
 access it for your pipeline by defining an image datasource and adding it to your pipeline.
 
 ```python
-ds = ImageDatasource(name="gan_images", base_path="gs://zenml_quickstart/cycle_gan")
+base_path = "gs://zenml_quickstart/cycle_gan"
+ds = ImageDatasource(name="gan_images", base_path=base_path)
 
 gan_pipeline.add_datasource(ds)
 ```

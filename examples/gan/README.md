@@ -1,3 +1,5 @@
+## Introduction
+
 This folder contains an example ZenML pipeline for a Style Transfer workflow using the CycleGAN architecture.
 
 Most of the code for the actual Tensorflow implementation of the CycleGAN model was taken from
@@ -5,6 +7,18 @@ the [CycleGAN tutorial](https://www.tensorflow.org/tutorials/generative/cyclegan
 
 The data for this tutorial has been sourced from and is licensed according
 to [the original CycleGAN repository](https://github.com/junyanz/CycleGAN).
+
+## Citation
+
+Unpaired Image-to-Image Translation using Cycle-Consistent Adversarial Networks.
+
+Jun-Yan Zhu*, Taesung Park*, Phillip Isola, Alexei A. Efros
+
+Berkeley AI Research Lab, UC Berkeley
+
+IEEE International Conference on Computer Vision (ICCV) 2017. (* equal contributions)
+
+## Code explanation
 
 The code for the tutorial is structured according to our recommendation on repository structure. The `preprocessing`
 folder contains the preprocessing code and ZenML step. The `trainer` folder contains the CycleGAN model implementation
