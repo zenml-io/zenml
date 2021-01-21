@@ -23,7 +23,13 @@ sha = '63e3948300b3f5f9cf6bf42587f7ee84efbb939a'
 repo.get_step_by_version('module.step.MyStep', sha)
 ```
 
-## Creating custom steps
+## Creating a custom step
+
+```{warning}
+Before creating your own step, please make sure to follow the [general rules](../getting-started/creating-custom-logic.md)
+for extending any first-class ZenML component.
+```
+
 While there are many ready-to-use Standard Steps in the `zenml` package, it will be more often than not needed to create one's own 
 logic while actually using ZenML.
 

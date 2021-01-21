@@ -1,7 +1,3 @@
----
-description: We make a Neural Network paint like Monet!
----
-
 # Style Transfer using a CycleGAN
 
 Generative Neural Networks are a very different story compared to "normal" Neural Networks. Since they are trained to

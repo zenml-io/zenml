@@ -26,7 +26,10 @@ print(datasource.sample_data())
 
 ## Create your own datasource
 
-When the standard datasources are not enough
+```{warning}
+Before creating your own datasource, please make sure to follow the [general rules](../getting-started/creating-custom-logic.md)
+for extending any first-class ZenML component.
+```
 
 If the standard datasources do not meet your needs, or your require custom logic while versioning the datasource, you can create custom datasources. 
 
