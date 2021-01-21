@@ -156,4 +156,4 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
 
         path_utils.create_dir_if_not_exists(self.serving_model_dir)
         # TODO: Change the serving paradigm
-        torch.save(model, os.path.join(self.serving_model_dir, 'model.pt'))
+        # torch.save(model, os.path.join(self.serving_model_dir, 'model.pt'))
