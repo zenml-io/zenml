@@ -36,7 +36,7 @@ git sha (which is essentially a snapshot of code in time) to a ML pipeline, ZenM
 git repository can re-run all parts of that pipeline by using Git history.
 
 ### Configuration
-ZenML already natively [seperates configuration from code in its design](). That means that every step in a pipeline has its parameters 
+ZenML already natively [separates configuration from code in its design](). That means that every step in a pipeline has its parameters 
 tracked and stored in the [declarative config file](../pipelines/what-is-a-pipeline.md) and also the [metadata store](../repository/metadata-store.md).
 Therefore, pulling a pipeline and running it in another environment not only ensures that the code will be the same, but also the 
 configuration.

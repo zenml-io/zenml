@@ -93,7 +93,9 @@
 - part: Benefits
   chapters:
     - file: benefits/ensuring-ml-reproducibility
-      title: Ensuring ML reproducibility
+      title: Reproducibility
+    - file: benefits/tracked-metadata
+      title: Metadata Tracking
 
 - part: Tutorials
   chapters:
