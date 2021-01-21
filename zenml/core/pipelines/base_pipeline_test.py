@@ -17,6 +17,8 @@ import os
 import zenml
 from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.repo.repo import Repository
+from zenml.utils.enums import PipelineStatusTypes
+
 
 ZENML_ROOT = os.path.dirname(zenml.__path__[0])
 
@@ -25,3 +27,23 @@ def test_executed():
     name = "my_pipeline"
     p = BasePipeline(name=name)
     assert not p.is_executed_in_metadata_store
+
+
+def test_naming():
+    name = "my_pipeline"
+    p = BasePipeline(name=name)
+    file_name = p.file_name
+    pipeline_name = p.pipeline_name
+
+    assert p.get_type_from_file_name(file_name) == p.PIPELINE_TYPE
+    assert p.get_name_from_pipeline_name(pipeline_name) == name
+    assert p.get_type_from_pipeline_name(pipeline_name) == p.PIPELINE_TYPE
+
+
+def test_get_unknown_pipeline_status():
+    name = "my_pipeline"
+    p = BasePipeline(name=name)
+
+    # passing this test means that if the pipeline is not in the metadata
+    # store, it is (semantically) not started yet
+    assert p.get_status() == PipelineStatusTypes.NotStarted.name
