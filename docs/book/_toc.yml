@@ -95,7 +95,7 @@
     - file: tutorials/creating-first-pipeline.ipynb
       title: Creating your first pipeline
     - file: tutorials/running-a-pipeline-on-a-google-cloud-vm
-      title: Running a training pipeline on a Google Cloud VM
+      title: Running a pipeline on Google Cloud VM
     - file: tutorials/running-a-pipeline-on-kubernetes
       title: Running a training pipeline on Kubernetes
     - file: tutorials/team-collaboration-with-zenml-and-google-cloud
@@ -107,9 +107,9 @@
     - file: tutorials/training-on-gcp-gpu
       title: Training with GPUs on the Cloud
     - file: tutorials/ensuring-ml-reproducibility
-      title: Ensuring ML reproducibility with ZenML
+      title: Ensuring ML reproducibility
     - file: tutorials/deploying-on-gcp
-      title: Deploying a model to the cloud
+      title: Deploying a model to GCP
 - part: Misc
   chapters:
   - file: misc/roadmap

@@ -1,4 +1,4 @@
-# Deploying a model to the cloud
+# Deploying a model to GCP
 
 In this tutorial, we'll go through the step-by-step process of deploying a ML pipeline on the cloud, with GPU training 
 enabled.
@@ -24,5 +24,4 @@ training_pipeline.add_deployment(deployer)
 training_pipeline.run()
 ```
 
-Detailed tutorial to follow..
-
+Detailed tutorial to follow.
