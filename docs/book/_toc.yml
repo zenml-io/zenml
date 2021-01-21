@@ -92,6 +92,8 @@
 
 - part: Benefits
   chapters:
+    - file: benefits/extensibility
+      title: Extensibility
     - file: benefits/ensuring-ml-reproducibility
       title: Reproducibility
     - file: benefits/tracked-metadata
