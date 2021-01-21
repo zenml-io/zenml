@@ -54,34 +54,6 @@ def tfrecord_loader(data_path: str,
                         typing.List[str], typing.Dict[str, str], None] = None,
                     shard: typing.Optional[typing.Tuple[int, int]] = None,
                     ) -> typing.Iterable[typing.Dict[str, np.ndarray]]:
-    """Create an iterator over the (decoded) examples contained within
-    the dataset.
-    Decodes raw bytes of the features (contained within the dataset)
-    into its respective format.
-    Params:
-    -------
-    data_path: str
-        TFRecord file path.
-    index_path: str or None
-        Index file path. Can be set to None if no file is available.
-    description: list or dict of str, optional, default=None
-        List of keys or dict of (key, value) pairs to extract from each
-        record. The keys represent the name of the features and the
-        values ("byte", "float", or "int") correspond to the data type.
-        If dtypes are provided, then they are verified against the
-        inferred type for compatibility purposes. If None (default),
-        then all features contained in the file are extracted.
-    shard: tuple of ints, optional, default=None
-        A tuple (index, count) representing worker_id and num_workers
-        count. Necessary to evenly split/shard the dataset among many
-        workers (i.e. >1).
-    Yields:
-    -------
-    features: dict of {str, np.ndarray}
-        Decoded bytes of the features into its respective data type (for
-        an individual record).
-    """
-
     typename_mapping = {
         "byte": "bytes_list",
         "float": "float_list",
@@ -134,26 +106,6 @@ def tfrecord_iterator(data_path: str,
                       index_path: typing.Optional[str] = None,
                       shard: typing.Optional[typing.Tuple[int, int]] = None
                       ) -> typing.Iterable[memoryview]:
-    """Create an iterator over the tfrecord dataset.
-    Since the tfrecords file stores each example as bytes, we can
-    define an iterator over `datum_bytes_view`, which is a memoryview
-    object referencing the bytes.
-    Params:
-    -------
-    data_path: str
-        TFRecord file path.
-    index_path: str, optional, default=None
-        Index file path. Can be set to None if no file is available.
-    shard: tuple of ints, optional, default=None
-        A tuple (index, count) representing worker_id and num_workers
-        count. Necessary to evenly split/shard the dataset among many
-        workers (i.e. >1).
-    Yields:
-    -------
-    datum_bytes_view: memoryview
-        Object referencing the specified `datum_bytes` contained in the
-        file (for a single record).
-    """
     file = io.open(data_path, "rb")
 
     length_bytes = bytearray(8)
@@ -203,7 +155,6 @@ def tfrecord_iterator(data_path: str,
 
 
 def cycle(iterator_fn: typing.Callable) -> typing.Iterable[typing.Any]:
-    """Create a repeating iterator from an iterator generator."""
     while True:
         for element in iterator_fn():
             yield element
@@ -211,20 +162,6 @@ def cycle(iterator_fn: typing.Callable) -> typing.Iterable[typing.Any]:
 
 def sample_iterators(iterators: typing.List[typing.Iterator],
                      ratios: typing.List[int]) -> typing.Iterable[typing.Any]:
-    """Retrieve info generated from the iterator(s) according to their
-    sampling ratios.
-    Params:
-    -------
-    iterators: list of iterators
-        All iterators (one for each file).
-    ratios: list of int
-        The ratios with which to sample each iterator.
-    Yields:
-    -------
-    item: Any
-        Decoded bytes of features into its respective data types from
-        an iterator (based off their sampling ratio).
-    """
     iterators = [cycle(iterator) for iterator in iterators]
     ratios = np.array(ratios)
     ratios = ratios / ratios.sum()
@@ -235,20 +172,6 @@ def sample_iterators(iterators: typing.List[typing.Iterator],
 
 def shuffle_iterator(iterator: typing.Iterator,
                      queue_size: int) -> typing.Iterable[typing.Any]:
-    """Shuffle elements contained in an iterator.
-    Params:
-    -------
-    iterator: iterator
-        The iterator.
-    queue_size: int
-        Length of buffer. Determines how many records are queued to
-        sample from.
-    Yields:
-    -------
-    item: Any
-        Decoded bytes of the features into its respective data type (for
-        an individual record) from an iterator.
-    """
     buffer = []
     try:
         for _ in range(queue_size):
