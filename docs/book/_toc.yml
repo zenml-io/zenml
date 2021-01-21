@@ -90,6 +90,11 @@
   - file: backends/using-docker
     title: Using Docker
 
+- part: Benefits
+  chapters:
+    - file: benefits/ensuring-ml-reproducibility
+      title: Ensuring ML reproducibility
+
 - part: Tutorials
   chapters:
     - file: tutorials/creating-first-pipeline.ipynb
@@ -106,10 +111,9 @@
       title: Classification with 59M samples
     - file: tutorials/training-on-gcp-gpu
       title: Training with GPUs on the Cloud
-    - file: tutorials/ensuring-ml-reproducibility
-      title: Ensuring ML reproducibility
     - file: tutorials/deploying-on-gcp
       title: Deploying a model to GCP
+
 - part: Misc
   chapters:
   - file: misc/roadmap
