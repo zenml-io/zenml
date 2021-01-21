@@ -13,8 +13,7 @@ from rudimentary notebook snippets to a testable, production codebase. Therefore
 time a model is (re-) trained, the results are what we expect them to be.
 
 ```{hint}
-To understand why reproducibility is so important in more detail, check out 
-https://blog.maiot.io/is-your-ml-reproducible/
+To understand why reproducibility is so important in more detail, check out this [blog post](https://blog.maiot.io/is-your-ml-reproducible/).
 ```
 
 ## How ZenML guarantees reproducibility
@@ -26,8 +25,7 @@ Throughout development, ZenML has mechanisms in place that automatically ensure 
 * Data
 
 ```{hint}
-If working in a team, you might consider setting up a [collaborative environment](../repository/team-collaboration-with-zenml.md)  
-to share reproducibility across your team.
+If working in a team, you might consider setting up a [collaborative environment](../repository/team-collaboration-with-zenml.md) to share reproducibility across your team.
 ```
 
 ### Code
@@ -53,7 +51,7 @@ can be reproduced any time from scratch or in another enviornment.
 ### Data
 Every ZenML step produces artifacts that are persisted in the [Artifact Store](../repository/artifact-store.md), and individually 
 tracked by the [Metadata Store](../repository/metadata-store.md). The combination of these two ensures that all data running through 
-the system exists in a system that tracks it completely end-to-end. This is also what allows for cool features such as [caching](../pipelines/reusing-artifacts.md). 
+the system exists in a system that tracks it completely end-to-end. This is also what allows for cool features such as [caching](../benefits/reusing-artifacts.md). 
 Therefore, having access to a shared metadata and artifact store ensures reproducible pipelines across environments.
 
 Having this system in place also ensures data versioning. This is achieved by the fact that every [Datasource](../datasources/what-is-a-datasource.md) has an 

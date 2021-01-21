@@ -3,7 +3,7 @@
 ZenML uses Google’s [ML Metadata](https://github.com/google/ml-metadata) under-the-hood to automatically track all 
 metadata produced by ZenML pipelines. ML Metadata standardizes metadata tracking and makes it easy to keep track of iterative experimentation as it 
 happens. This not only helps in post-training workflows to [compare results](../pipelines/training-pipeline.md) as experiments progress but also has the added advantage of leveraging 
-[caching](../pipelines/reusing-artifacts.md) of pipeline steps.
+[caching](../benefits/reusing-artifacts.md) of pipeline steps.
 
 ## How does it work?
 All parameters of every ZenML step are persisted in the [Metadata Store](../repository/metadata-store.md) and also in the 

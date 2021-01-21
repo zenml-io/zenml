@@ -42,7 +42,7 @@ The Machine Learning landscape is evolving at a rapid pace. We’re decoupling y
 
 ### Metadata and Artifacts
 
-With ZenML, inputs and outputs are tracked for every pipeline step. Output artifacts \(e.g. binary representations of data, splits, preprocessing results, models\) are centrally stored and are automatically used for [caching](../pipelines/reusing-artifacts.md). To facilitate that, ZenML relies on a Metadata Store and an Artifact Store.
+With ZenML, inputs and outputs are tracked for every pipeline step. Output artifacts \(e.g. binary representations of data, splits, preprocessing results, models\) are centrally stored and are automatically used for [caching](../benefits/reusing-artifacts.md). To facilitate that, ZenML relies on a Metadata Store and an Artifact Store.
 
 By default, both will point to a subfolder of your local `.zenml` directory, which is created when you run `zenml init`. It’ll contain both the Metadata Store \(default: SQLite\) as well as the Artifact Store \(default: tf.Records in local folders\).
 

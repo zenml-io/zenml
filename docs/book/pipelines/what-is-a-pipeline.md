@@ -148,7 +148,7 @@ the freedom of re-using steps with ease, and keeps reproducibility intact.
 ## Caching
 The `copy()` paradigm also helps in *re-usability* of code across pipelines. E.g. If now only the TrainerStep is changed in `pipeline_b` above, 
 then the corresponding `pipeline_b` pipeline run will skip splitting, preprocessing and re-use all the artifacts already produced by `pipeline_a`. 
-Read more about [caching here](reusing-artifacts.md).
+Read more about [caching here](../benefits/reusing-artifacts.md).
 
 ## Repository functionalities
 You can get all your pipelines using the [Repository](../repository/what-is-a-repository.md) class:

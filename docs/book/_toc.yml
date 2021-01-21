@@ -16,6 +16,17 @@
   - file: getting-started/creating-custom-logic
     title: Creating custom logic
 
+- part: Benefits
+  chapters:
+    - file: benefits/extensibility
+      title: Extensibility
+    - file: benefits/ensuring-ml-reproducibility
+      title: Reproducibility
+    - file: benefits/tracked-metadata
+      title: Metadata Tracking
+    - file: benefits/reusing-artifacts
+      title: Caching
+
 - part: Repository
   chapters:
   - file: repository/what-is-a-repository
@@ -54,8 +65,6 @@
     title: Data [WIP]
   - file: pipelines/batch-inference
     title: Batch Inference [WIP]
-  - file: pipelines/reusing-artifacts
-    title: Caching
   - file: pipelines/scheduling-jobs
     title: Scheduling Jobs
 
@@ -89,15 +98,6 @@
     title: Training Backends
   - file: backends/using-docker
     title: Using Docker
-
-- part: Benefits
-  chapters:
-    - file: benefits/extensibility
-      title: Extensibility
-    - file: benefits/ensuring-ml-reproducibility
-      title: Reproducibility
-    - file: benefits/tracked-metadata
-      title: Metadata Tracking
 
 - part: Tutorials
   chapters:
