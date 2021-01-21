@@ -19,7 +19,7 @@ pipeline.add_deployment(GCAIPDeployer(
 
 #### How to make a request to your served model
 
-Google Cloud AI Platform us using [TFServing](https://www.tensorflow.org/tfx/guide/serving) under-the-hood. TFServing has [defined standards](https://www.tensorflow.org/tfx/serving/api_docs/cc/) 
+Google Cloud AI Platform is using [TFServing](https://www.tensorflow.org/tfx/guide/serving) under-the-hood. TFServing has [defined standards](https://www.tensorflow.org/tfx/serving/api_docs/cc/) 
 on how to communicate with a model.
 
 A good example to request predictions from TFServing models can be found [here](https://www.tensorflow.org/tfx/tutorials/serving/rest_simple).
