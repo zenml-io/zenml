@@ -42,6 +42,7 @@ from zenml.core.steps.deployer.gcaip_deployer import GCAIPDeployer
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
 from zenml.core.steps.preprocesser.base_preprocesser import \
     BasePreprocesserStep
+from zenml.core.steps.deployer.base_deployer import BaseDeployerStep
 from zenml.core.steps.split.base_split_step import BaseSplit
 from zenml.core.steps.sequencer.base_sequencer import BaseSequencerStep
 from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
@@ -226,22 +227,10 @@ class TrainingPipeline(BasePipeline):
         # SERVING #
         ###########
         if keys.TrainingSteps.DEPLOYER in steps:
-            serving_args = steps[keys.TrainingSteps.DEPLOYER]['args']
-
-            project_id = serving_args['project_id']
-            output_base_dir = self.artifact_store.path
-            if 'model_name' in serving_args:
-                model_name = serving_args['model_name']
-            else:
-                model_name = self.pipeline_name().replace('-', '_')
-
-            gcaip_deployer = GCAIPDeployer(output_base_dir=output_base_dir,
-                                           project_id=project_id,
-                                           model_name=model_name)
-
-            pusher_config = gcaip_deployer.build_pusher_config()
-            pusher_executor_spec = gcaip_deployer.get_executor_spec()
-
+            deployer: BaseDeployerStep = \
+                self.steps_dict[keys.TrainingSteps.DEPLOYER]
+            pusher_config = deployer._build_pusher_args()
+            pusher_executor_spec = deployer._get_executor_spec()
             pusher = Pusher(model_export=trainer.outputs.output,
                             custom_executor_spec=pusher_executor_spec,
                             **pusher_config).with_id(
