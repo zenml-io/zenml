@@ -12,9 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-# The main solution for data ingestion is adapted
-# from: https://github.com/vahidk/tfrecord
-
 import os
 from typing import List, Text
 
@@ -26,7 +23,8 @@ import torch.utils.data as data
 
 from zenml.core.steps.trainer.pytorch_trainers.torch_base_trainer import \
     TorchBaseTrainerStep
-from zenml.core.steps.trainer.pytorch_trainers.utils import TFRecordTorchDataset
+from zenml.core.steps.trainer.pytorch_trainers.utils import \
+    TFRecordTorchDataset
 from zenml.utils import path_utils
 
 """
@@ -65,7 +63,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                  hidden_layers: List[int] = None,
                  hidden_activation: str = 'relu',
                  last_activation: str = 'sigmoid',
-                 input_units: int = 9,
+                 input_units: int = 8,
                  output_units: int = 1,
                  **kwargs
                  ):
@@ -85,23 +83,21 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
     def input_fn(self,
                  file_pattern: List[Text],
                  tf_transform_output: tft.TFTransformOutput):
-
-        train_files = file_pattern[0].replace("*", "")
-        data_files = path_utils.list_dir(train_files)
-
-        dataset = TFRecordTorchDataset(data_files[0], index_path=None)
-        loader = torch.utils.data.DataLoader(dataset, batch_size=32)
+        spec = tf_transform_output.transformed_feature_spec()
+        dataset = TFRecordTorchDataset(file_pattern, spec)
+        loader = torch.utils.data.DataLoader(dataset,
+                                             batch_size=self.batch_size,
+                                             )
         return loader
 
     def model_fn(self,
                  train_dataset,
                  eval_dataset):
 
-        class binaryClassifier(nn.Module):
+        class BinaryClassifier(nn.Module):
             def __init__(self):
-                super(binaryClassifier, self).__init__()
-                # Number of input features is 12.
-                self.layer_1 = nn.Linear(9, 64)
+                super(BinaryClassifier, self).__init__()
+                self.layer_1 = nn.Linear(8, 64)
                 self.layer_2 = nn.Linear(64, 64)
                 self.layer_out = nn.Linear(64, 1)
 
@@ -120,7 +116,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
 
                 return x
 
-        return binaryClassifier()
+        return BinaryClassifier()
 
     def run_fn(self):
         train_dataset = self.input_fn(self.train_files,
@@ -140,14 +136,13 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         for e in range(1, self.epochs + 1):
             epoch_loss = 0
             epoch_acc = 0
-            for X_batch, y_batch in train_dataset:
-                X_batch, y_batch = X_batch.to(device), y_batch.to(device)
+            for x, y in train_dataset:
+                X_batch, y_batch = x.to(device), y.to(device)
                 optimizer.zero_grad()
-
                 y_pred = model(X_batch)
 
-                loss = criterion(y_pred, y_batch.unsqueeze(1))
-                acc = binary_acc(y_pred, y_batch.unsqueeze(1))
+                loss = criterion(y_pred, y_batch)
+                acc = binary_acc(y_pred, y_batch)
 
                 loss.backward()
                 optimizer.step()
@@ -155,10 +150,9 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                 epoch_loss += loss.item()
                 epoch_acc += acc.item()
 
-            print(
-                f'Epoch {e + 0:03}: | Loss: '
-                f'{epoch_loss / len(train_dataset):.5f} | Acc: '
-                f'{epoch_acc / len(train_dataset):.3f}')
+            print(f'Epoch {e + 0:03}: | Loss: '
+                  f'{epoch_loss:.5f} | Acc: '
+                  f'{epoch_acc:.3f}')
 
         path_utils.create_dir_if_not_exists(self.serving_model_dir)
         # TODO: Change the serving paradigm

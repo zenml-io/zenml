@@ -1,184 +1,52 @@
 from __future__ import division
 
-import io
-import os
-import struct
-import typing
-import warnings
+from abc import ABC
+from itertools import starmap
 
 import numpy as np
+import tensorflow as tf
 import torch
 import torch.utils.data as data
-from tensorflow.core.example import example_pb2
+from tensorflow.python.data.ops import dataset_ops
+from tensorflow.python.data.ops import readers as core_readers
+from tensorflow.python.framework import dtypes
 
 
-# The main solution for data ingestion is adapted
-# from: https://github.com/vahidk/tfrecord
-
-
-class TFRecordTorchDataset(data.IterableDataset):
+class TFRecordTorchDataset(data.IterableDataset, ABC):
     def __init__(self,
-                 data_path: str,
-                 index_path: typing.Union[str, None],
-                 description: typing.Union[
-                     typing.List[str], typing.Dict[str, str], None] = None,
-                 shuffle_queue_size: typing.Optional[int] = None,
-                 transform: typing.Callable[[dict], typing.Any] = None
-                 ) -> None:
+                 file_pattern,
+                 spec) -> None:
         super(TFRecordTorchDataset, self).__init__()
-        self.data_path = data_path
-        self.index_path = index_path
-        self.description = description
-        self.shuffle_queue_size = shuffle_queue_size
-        self.transform = transform or (lambda x: x)
+        xf_feature_spec = {x: spec[x] for x in spec if x.endswith('_xf')}
+
+        self.dataset = create_tf_dataset(file_pattern=file_pattern,
+                                         spec=xf_feature_spec)
 
     def __iter__(self):
-        worker_info = torch.utils.data.get_worker_info()
-        if worker_info is not None:
-            shard = worker_info.id, worker_info.num_workers
-            np.random.seed(worker_info.seed % np.iinfo(np.uint32).max)
-        else:
-            shard = None
-        it = tfrecord_loader(
-            self.data_path, self.index_path, self.description, shard)
-        if self.shuffle_queue_size:
-            it = shuffle_iterator(it, self.shuffle_queue_size)
-        if self.transform:
-            it = map(self.transform, it)
+        it = _create_iterator(self.dataset)
+        it = _shuffle_iterator(it, 12)
         return it
 
 
-def tfrecord_loader(data_path: str,
-                    index_path: typing.Union[str, None],
-                    description: typing.Union[
-                        typing.List[str], typing.Dict[str, str], None] = None,
-                    shard: typing.Optional[typing.Tuple[int, int]] = None,
-                    ) -> typing.Iterable[typing.Dict[str, np.ndarray]]:
-    typename_mapping = {
-        "byte": "bytes_list",
-        "float": "float_list",
-        "int": "int64_list"
-    }
-
-    record_iterator = tfrecord_iterator(data_path, index_path, shard)
-
-    for record in record_iterator:
-        example = example_pb2.Example()
-        example.ParseFromString(record)
-
-        all_keys = list(example.features.feature.keys())
-        if description is None:
-            description = dict.fromkeys(all_keys, None)
-        elif isinstance(description, list):
-            description = dict.fromkeys(description, None)
-
-        features = {}
-        for key, typename in description.items():
-            if key not in all_keys:
-                raise KeyError(
-                    f"Key {key} doesn't exist (select from {all_keys})!")
-            # NOTE: We assume that each key in the example has only one field
-            # (either "bytes_list", "float_list", or "int64_list")!
-            field = example.features.feature[key].ListFields()[0]
-            inferred_typename, value = field[0].name, field[1].value
-            if typename is not None:
-                tf_typename = typename_mapping[typename]
-                if tf_typename != inferred_typename:
-                    reversed_mapping = {v: k for k, v in
-                                        typename_mapping.items()}
-                    raise TypeError(
-                        f"Incompatible type '{typename}' for `{key}` "
-                        f"(should be '{reversed_mapping[inferred_typename]}').")
-
-            # Decode raw bytes into respective data types
-            if inferred_typename == "bytes_list":
-                value = np.frombuffer(value[0], dtype=np.uint8)
-            elif inferred_typename == "float_list":
-                value = np.array(value, dtype=np.float32)
-            elif inferred_typename == "int64_list":
-                value = np.array(value, dtype=np.int32)
-            features[key] = value
-
-        yield features
+def _create_iterator(dataset):
+    iterator = dataset.as_numpy_iterator()
+    iterator = starmap(_convert_to_tensors, iterator)
+    return iterator
 
 
-def tfrecord_iterator(data_path: str,
-                      index_path: typing.Optional[str] = None,
-                      shard: typing.Optional[typing.Tuple[int, int]] = None
-                      ) -> typing.Iterable[memoryview]:
-    file = io.open(data_path, "rb")
-
-    length_bytes = bytearray(8)
-    crc_bytes = bytearray(4)
-    datum_bytes = bytearray(1024 * 1024)
-
-    def read_records(start_offset=None, end_offset=None):
-        nonlocal length_bytes, crc_bytes, datum_bytes
-
-        if start_offset is not None:
-            file.seek(start_offset)
-        if end_offset is None:
-            end_offset = os.path.getsize(data_path)
-        while file.tell() < end_offset:
-            if file.readinto(length_bytes) != 8:
-                raise RuntimeError("Failed to read the record size.")
-            if file.readinto(crc_bytes) != 4:
-                raise RuntimeError("Failed to read the start token.")
-            length, = struct.unpack("<Q", length_bytes)
-            if length > len(datum_bytes):
-                datum_bytes = datum_bytes.zfill(int(length * 1.5))
-            datum_bytes_view = memoryview(datum_bytes)[:length]
-            if file.readinto(datum_bytes_view) != length:
-                raise RuntimeError("Failed to read the record.")
-            if file.readinto(crc_bytes) != 4:
-                raise RuntimeError("Failed to read the end token.")
-            yield datum_bytes_view
-
-    if index_path is None:
-        yield from read_records()
-    else:
-        index = np.loadtxt(index_path, dtype=np.int64)[:, 0]
-        if shard is None:
-            offset = np.random.choice(index)
-            yield from read_records(offset)
-            yield from read_records(0, offset)
-        else:
-            num_records = len(index)
-            shard_idx, shard_count = shard
-            start_index = (num_records * shard_idx) // shard_count
-            end_index = (num_records * (shard_idx + 1)) // shard_count
-            start_byte = index[start_index]
-            end_byte = index[end_index] if end_index < num_records else None
-            yield from read_records(start_byte, end_byte)
-
-    file.close()
+def _convert_to_tensors(features, label):
+    return torch.FloatTensor(list(features.values())).squeeze(dim=-1), \
+           torch.FloatTensor(list(label.values())).squeeze(dim=-1)
 
 
-def cycle(iterator_fn: typing.Callable) -> typing.Iterable[typing.Any]:
-    while True:
-        for element in iterator_fn():
-            yield element
-
-
-def sample_iterators(iterators: typing.List[typing.Iterator],
-                     ratios: typing.List[int]) -> typing.Iterable[typing.Any]:
-    iterators = [cycle(iterator) for iterator in iterators]
-    ratios = np.array(ratios)
-    ratios = ratios / ratios.sum()
-    while True:
-        choice = np.random.choice(len(ratios), p=ratios)
-        yield next(iterators[choice])
-
-
-def shuffle_iterator(iterator: typing.Iterator,
-                     queue_size: int) -> typing.Iterable[typing.Any]:
+def _shuffle_iterator(iterator,
+                      queue_size: int):
     buffer = []
     try:
         for _ in range(queue_size):
             buffer.append(next(iterator))
     except StopIteration:
-        warnings.warn("Number of elements in the iterator is less than the "
-                      f"queue size (N={queue_size}).")
+        raise Exception('asdf')
     while buffer:
         index = np.random.randint(len(buffer))
         try:
@@ -187,3 +55,85 @@ def shuffle_iterator(iterator: typing.Iterator,
             yield item
         except StopIteration:
             yield buffer.pop(index)
+
+
+def _gzip_reader_fn(filenames):
+    """
+    Small utility returning a record reader that can read gzipped files.
+
+    Args:
+        filenames: Names of the compressed TFRecord data files.
+    """
+    return tf.data.TFRecordDataset(filenames, compression_type='GZIP')
+
+
+def _split_inputs_labels(x):
+    inputs = {}
+    labels = {}
+    for e in x:
+        if not e.startswith('label'):
+            inputs[e[:-len('_xf')]] = x[e]
+        else:
+            labels[e[len('label_'):-len('_xf')]] = x[e]
+
+    return inputs, labels
+
+
+def create_tf_dataset(file_pattern,
+                      spec,
+                      num_epochs=1,
+                      shuffle=False,
+                      shuffle_seed=None,
+                      shuffle_buffer_size=None,
+                      reader_num_threads=None,
+                      parser_num_threads=None,
+                      prefetch_buffer_size=None):
+    reader = _gzip_reader_fn
+
+    if reader_num_threads is None:
+        reader_num_threads = 1
+    if parser_num_threads is None:
+        parser_num_threads = 2
+    if prefetch_buffer_size is None:
+        prefetch_buffer_size = dataset_ops.AUTOTUNE
+
+    # Create dataset of all matching filenames
+    dataset = dataset_ops.Dataset.list_files(file_pattern=file_pattern,
+                                             shuffle=shuffle,
+                                             seed=shuffle_seed)
+
+    if reader_num_threads == dataset_ops.AUTOTUNE:
+        dataset = dataset.interleave(
+            lambda filename: reader(filename),
+            num_parallel_calls=reader_num_threads)
+        options = dataset_ops.Options()
+        options.experimental_deterministic = True
+        dataset = dataset.with_options(options)
+    else:
+        def apply_fn(dataset):
+            return core_readers.ParallelInterleaveDataset(
+                dataset,
+                lambda filename: reader(filename),
+                cycle_length=reader_num_threads,
+                block_length=1,
+                sloppy=True,
+                buffer_output_elements=None,
+                prefetch_input_elements=None)
+
+        dataset = dataset.apply(apply_fn)
+
+    if dataset_ops.get_legacy_output_types(dataset) == (dtypes.string,
+                                                        dtypes.string):
+        dataset = dataset_ops.MapDataset(dataset,
+                                         lambda _, v: v,
+                                         use_inter_op_parallelism=False)
+
+    if shuffle:
+        dataset = dataset.shuffle(shuffle_buffer_size, shuffle_seed)
+    if num_epochs != 1:
+        dataset = dataset.repeat(num_epochs)
+
+    dataset = dataset.map(lambda x: tf.io.parse_example(x, spec))
+    dataset = dataset.map(_split_inputs_labels)
+    dataset = dataset.prefetch(prefetch_buffer_size)
+    return dataset
