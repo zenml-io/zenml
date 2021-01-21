@@ -96,9 +96,11 @@
       title: Creating your first pipeline
     - file: tutorials/running-a-pipeline-on-a-google-cloud-vm
       title: Running a training pipeline on a Google Cloud VM
+    - file: tutorials/running-a-pipeline-on-kubernetes
+      title: Running a training pipeline on Kubernetes
     - file: tutorials/team-collaboration-with-zenml-and-google-cloud
       title: Team collaboration with ZenML and Google Cloud
-    - file: tutorials/style-transfer-using-a-cyclegan-wip
+    - file: tutorials/style-transfer-using-a-cyclegan
       title: Style Transfer using a CycleGAN
     - file: tutorials/building-a-classifier-on-33m-samples
       title: Classification with 59M samples

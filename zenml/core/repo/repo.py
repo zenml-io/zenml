@@ -89,7 +89,7 @@ class Repository:
                 'Looks like you used ZenML outside of a ZenML repo. '
                 'Please init a ZenML repo first before you using '
                 'the framework.')
-        return Repository.get_zenml_dir(Path(path).parent)
+        return Repository.get_zenml_dir(str(Path(path).parent))
 
     @staticmethod
     def get_instance(path: Text = None):
