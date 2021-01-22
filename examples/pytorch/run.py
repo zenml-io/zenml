@@ -1,26 +1,15 @@
-from random import randint
-
 from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
-from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
 from zenml.core.steps.preprocesser.standard_preprocesser \
     .standard_preprocesser import StandardPreprocesser
 from zenml.core.steps.split.random_split import RandomSplit
-from examples.pytorch.pytorch_trainer import PyTorchTrainer
-# from zenml.core.repo.repo import Repository
+from zenml.core.steps.trainer.pytorch_trainers.torch_ff_trainer import \
+    FeedForwardTrainer
 
-# Get a reference in code to the current repo
-# repo = Repository()
-# pipelines = repo.get_pipelines()
-
-
-training_pipeline = TrainingPipeline(
-    name=f'Experiment {randint(0, 10000)}',
-    enable_cache=True
-)
+training_pipeline = TrainingPipeline(name='ZenML with a Pytorch Trainer')
 
 # Add a datasource. This will automatically track and version it.
-ds = CSVDatasource(name=f'My CSV Datasource {randint(0, 100000)}',
+ds = CSVDatasource(name='Pima Indians Diabetes',
                    path='gs://zenml_quickstart/diabetes.csv')
 training_pipeline.add_datasource(ds)
 
@@ -39,14 +28,12 @@ training_pipeline.add_preprocesser(
     ))
 
 # Add a trainer
-training_pipeline.add_trainer(PyTorchTrainer(
+training_pipeline.add_trainer(FeedForwardTrainer(
     loss='binary_crossentropy',
     last_activation='sigmoid',
     output_units=1,
     metrics=['accuracy'],
-    epochs=100))
-
+    epoch=100))
 
 # Run the pipeline locally
 training_pipeline.run()
-
