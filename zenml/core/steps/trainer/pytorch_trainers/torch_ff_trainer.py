@@ -12,6 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+# TODO: [LOW] Refactor into utility
+import importlib.util
+spec = importlib.util.find_spec('torch')
+if spec is None:
+    raise AssertionError("torch integration not installed. Please install "
+                         "zenml[torch] via `pip install zenml[pytorch]`")
+
 import os
 from typing import List, Text
 
