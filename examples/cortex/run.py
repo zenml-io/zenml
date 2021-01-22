@@ -1,16 +1,15 @@
 from random import randint
 
+from examples.cortex.predictor.predictor import PythonPredictor
 from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
+from zenml.core.steps.deployer.cortex_deployer import CortexDeployer
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
 from zenml.core.steps.preprocesser.standard_preprocesser \
     .standard_preprocesser import StandardPreprocesser
 from zenml.core.steps.split.random_split import RandomSplit
 from zenml.core.steps.trainer.feedforward_trainer.trainer import \
     FeedForwardTrainer
-from zenml.core.steps.deployer.cortex_deployer import CortexDeployer
-from zenml.core.repo.repo import ArtifactStore
-
 
 training_pipeline = TrainingPipeline(
     name=f'Experiment {randint(0, 10000)}',
@@ -51,28 +50,17 @@ training_pipeline.add_evaluator(
                                             'binary_accuracy']}))
 
 # Pusher
+api_spec = {
+    "name": "api-classifier",
+    "kind": "RealtimeAPI",
+    "predictor": {}
+}
 training_pipeline.add_deployment(
     CortexDeployer(
-        api_spec="diabetes_1",
-        predictor=Predictor,
+        api_spec=api_spec,
+        predictor=PythonPredictor,
     )
 )
 
 # Run the pipeline locally
-training_pipeline.run(
-    artifact_store=ArtifactStore(path="gs://zenmlartifactstore/artifact_store_4/")
-)
-
-# Sample data
-df = training_pipeline.sample_transformed_data()
-print(df.shape)
-print(df.describe())
-
-# Evaluate
-# training_pipeline.evaluate()
-
-# See schema of data and detect drift
-# training_pipeline.view_schema()
-
-# See statistics of train and eval
-# training_pipeline.view_statistics()
+training_pipeline.run()

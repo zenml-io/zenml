@@ -12,54 +12,78 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Text
+from typing import Dict, Text, List, Optional
 
-from tfx.extensions.google_cloud_ai_platform.pusher import \
-    executor as ai_platform_pusher_executor
-
+from zenml.core.components.pusher import cortex_executor
 from zenml.core.steps.deployer.base_deployer import BaseDeployerStep
 from zenml.utils.logger import get_logger
+from zenml.utils.source_utils import resolve_source_path
 
 logger = get_logger(__name__)
 
 
-class GCAIPDeployer(BaseDeployerStep):
+class CortexDeployer(BaseDeployerStep):
     """
-    Step class for deploying models on Google Cloud AI Platform.
+    Step class for deploying models using Cortex.
     """
 
     def __init__(self,
-                 model_name: Text,
-                 project_id: Text,
+                 api_spec: Dict,
+                 predictor=None,
+                 requirements: List = [],
+                 conda_packages: List = [],
+                 env: Text = 'aws',
+                 project_dir: Optional[str] = None,
+                 force: bool = True,
+                 wait: bool = False,
+                 model_name: Text = '',
                  **kwargs):
         """
-        Google Cloud AI Platform Deployer Step constructor.
+        Cortex Deployer Step constructor.
 
-        Use this step to push your trained model to Google Cloud AI Platform,
-        where it gets assigned an endpoint that you can query for evaluations
-        and predictions.
+        Use this step to push your trained model to the
+        [Cortex API](https://docs.cortex.dev/).
 
         Args:
             model_name: Name of the model.
-            project_id: Name of the Google Cloud project which the model
-             should be pushed to.
-             deployment_path: Path where deployment is pushed.
+            predictor: Cortex Predictor class.
             **kwargs: Additional keyword arguments.
         """
-        self.project_id = project_id
         self.model_name = model_name
-        logger.warning('When using GCAIPDeployer, please ensure that the '
-                       'Artifact Store is a Google Cloud Bucket.')
-        super(GCAIPDeployer, self).__init__(project_id=project_id,
-                                            model_name=model_name,
-                                            **kwargs)
+        self.env = env
+        self.predictor = predictor
+        self.api_spec = api_spec
+        self.requirements = requirements
+        self.project_dir = project_dir
+        self.conda_packages = conda_packages
+        self.force = force
+        self.wait = wait
+        super(CortexDeployer, self).__init__(
+            model_name=model_name,
+            env=self.env,
+            predictor=predictor,
+            api_spec=self.api_spec,
+            requirements=self.requirements,
+            project_dir=self.project_dir,
+            conda_packages=self.conda_packages,
+            force=self.force,
+            wait=self.wait,
+            **kwargs)
 
     def get_config(self):
-        ai_platform_serving_args = {
-            'model_name': self.model_name,
-            'project_id': self.project_id
-        }
-        return {'ai_platform_serving_args': ai_platform_serving_args}
+        return {
+            "cortex_serving_args": {
+                "env": self.env,
+                "api_spec": self.api_spec,
+                "predictor_path": resolve_source_path(
+                    self.predictor.__module__ + '.' + self.predictor.__name__
+                ),
+                "requirements": self.requirements,
+                "conda_packages": self.conda_packages,
+                "project_dir": self.project_dir,
+                "force": self.force,
+                "wait": self.wait,
+            }}
 
     def get_executor(self):
-        return ai_platform_pusher_executor.Executor
+        return cortex_executor.Executor
