@@ -28,7 +28,7 @@ class CortexDeployer(BaseDeployerStep):
     """
 
     def __init__(self,
-                 api_spec: Dict,
+                 api_config: Dict,
                  predictor=None,
                  requirements: List = [],
                  conda_packages: List = [],
@@ -52,7 +52,7 @@ class CortexDeployer(BaseDeployerStep):
         self.model_name = model_name
         self.env = env
         self.predictor = predictor
-        self.api_spec = api_spec
+        self.api_config = api_config
         self.requirements = requirements
         self.project_dir = project_dir
         self.conda_packages = conda_packages
@@ -62,7 +62,7 @@ class CortexDeployer(BaseDeployerStep):
             model_name=model_name,
             env=self.env,
             predictor=predictor,
-            api_spec=self.api_spec,
+            api_config=self.api_config,
             requirements=self.requirements,
             project_dir=self.project_dir,
             conda_packages=self.conda_packages,
@@ -74,7 +74,7 @@ class CortexDeployer(BaseDeployerStep):
         return {
             "cortex_serving_args": {
                 "env": self.env,
-                "api_spec": self.api_spec,
+                "api_config": self.api_config,
                 "predictor_path": resolve_source_path(
                     self.predictor.__module__ + '.' + self.predictor.__name__
                 ),

@@ -13,7 +13,7 @@ from zenml.core.steps.trainer.feedforward_trainer.trainer import \
 
 training_pipeline = TrainingPipeline(
     name=f'Experiment {randint(0, 10000)}',
-    enable_cache=True
+    enable_cache=False
 )
 
 # Add a datasource. This will automatically track and version it.
@@ -50,14 +50,15 @@ training_pipeline.add_evaluator(
                                             'binary_accuracy']}))
 
 # Pusher
-api_spec = {
+api_config = {
     "name": "api-classifier",
     "kind": "RealtimeAPI",
     "predictor": {}
 }
 training_pipeline.add_deployment(
     CortexDeployer(
-        api_spec=api_spec,
+        env='cortex-gcp',
+        api_config=api_config,
         predictor=PythonPredictor,
     )
 )

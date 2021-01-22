@@ -103,7 +103,7 @@ class Executor(tfx_pusher_executor.Executor):
 
         # launch the api
         cx.create_api(
-            api_config=api_config, predictor=predictor, **cortex_serving_args)
+            api_spec=api_config, predictor=predictor, **cortex_serving_args)
 
         self._MarkPushed(
             model_push,

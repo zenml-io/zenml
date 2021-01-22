@@ -6,5 +6,6 @@ class PythonPredictor:
 
     def predict(self, payload):
         # Payload is the request your endpoint receives
+        print("Got config to be %s" % str(payload))
         prediction = self.model
         return prediction
