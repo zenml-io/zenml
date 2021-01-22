@@ -12,7 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import importlib.util
+
 from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
+from zenml.utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+spec = importlib.util.find_spec('torch')
+if spec is None:
+    logger.error("torch integration not installed. Please install "
+                 "zenml[torch] via `pip install zenml[pytorch]`")
 
 
 class TorchBaseTrainerStep(BaseTrainerStep):
