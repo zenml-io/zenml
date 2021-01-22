@@ -67,7 +67,6 @@ class BinaryClassifier(nn.Module):
 
 def binary_acc(y_pred, y_test):
     y_pred_tag = torch.round(torch.sigmoid(y_pred))
-
     correct_results_sum = (y_pred_tag == y_test).sum().float()
     acc = correct_results_sum / y_test.shape[0]
     acc = torch.round(acc * 100)
@@ -79,7 +78,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
     def __init__(self,
                  batch_size: int = 8,
                  lr: float = 0.0001,
-                 steps: int = 50,
+                 epoch: int = 50,
                  dropout_chance: int = 0.2,
                  loss: str = 'mse',
                  metrics: List[str] = None,
@@ -92,7 +91,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                  ):
         self.batch_size = batch_size
         self.lr = lr
-        self.steps = steps
+        self.epoch = epoch
         self.dropout_chance = dropout_chance
         self.loss = loss
         self.metrics = metrics or []
@@ -134,10 +133,12 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         optimizer = optim.Adam(model.parameters(), lr=0.001)
 
         model.train()
-        for e in range(1, self.steps + 1):
+        for e in range(1, self.epoch + 1):
             epoch_loss = 0
             epoch_acc = 0
+            step_count = 0
             for x, y in train_dataset:
+                step_count += 1
                 X_batch, y_batch = x.to(device), y.to(device)
                 optimizer.zero_grad()
                 y_pred = model(X_batch)
@@ -151,10 +152,13 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                 epoch_loss += loss.item()
                 epoch_acc += acc.item()
 
-            print(f'Step {e + 0:03}: | Loss: '
-                  f'{epoch_loss:.5f} | Acc: '
-                  f'{epoch_acc:.3f}')
+            print(f'Epoch {e + 0:03}: | Loss: '
+                  f'{epoch_loss/step_count:.5f} | Acc: '
+                  f'{epoch_acc/step_count:.3f}')
 
         path_utils.create_dir_if_not_exists(self.serving_model_dir)
+        if path_utils.is_remote(self.serving_model_dir):
+            print('is_remote')
+            pass
         # TODO: Change the serving paradigm
         torch.save(model, os.path.join(self.serving_model_dir, 'model.pt'))
