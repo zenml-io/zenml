@@ -18,6 +18,27 @@ from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
 class TFBaseTrainerStep(BaseTrainerStep):
 
     @staticmethod
+    def _get_ce_eval_tf_examples_fn(model, tf_transform_output):
+        """
+        Serving evaluation signature definition. Override this function to
+        define a custom model endpoint used for evaluation at serving time.
+
+        Args:
+            model: Trained model, output of the model_fn.
+            tf_transform_output: Output of the preceding Preprocessing
+             component.
+
+        Returns:
+            eval_examples_fn: A @tf.function annotated callable that takes
+             in a serialized tf.train.Example, parses it and serves the model
+             output of this Example as evaluation. In Tensorflow Extended,
+             such a mechanism is called a signature; for an example
+             implementation of this signature, see a ZenML derived TrainerStep
+             class.
+        """
+        pass
+
+    @staticmethod
     def _get_serve_tf_examples_fn(model, tf_transform_output):
         """
         Defines a serving prediction signature. Override this function to
@@ -39,23 +60,4 @@ class TFBaseTrainerStep(BaseTrainerStep):
         """
         pass
 
-    @staticmethod
-    def _get_ce_eval_tf_examples_fn(model, tf_transform_output):
-        """
-        Serving evaluation signature definition. Override this function to
-        define a custom model endpoint used for evaluation at serving time.
 
-        Args:
-            model: Trained model, output of the model_fn.
-            tf_transform_output: Output of the preceding Preprocessing
-             component.
-
-        Returns:
-            eval_examples_fn: A @tf.function annotated callable that takes
-             in a serialized tf.train.Example, parses it and serves the model
-             output of this Example as evaluation. In Tensorflow Extended,
-             such a mechanism is called a signature; for an example
-             implementation of this signature, see a ZenML derived TrainerStep
-             class.
-        """
-        pass

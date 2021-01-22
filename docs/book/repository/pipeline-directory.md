@@ -10,6 +10,10 @@ Similar to the [Artifact Store](artifact-store.md), you have the following optio
 * Remote \(Google Cloud Storage\)
   * **Soon**: S3 compatible backends
 
+```{warning}
+The pipeline YAML files produced by ZenML are not supposed to be edited in anyway.
+```
+
 By default, the default Pipelines Directory will be a local directory at the root of your repository called `pipelines`.
 The default Pipelines Directory will always be [referenced in your local `.zenml_config`](what-is-a-repository.md) , 
 located in the `.zenml` folder within your experiment directory.

@@ -69,7 +69,7 @@ class OrchestratorKubernetesBackend(OrchestratorLocalBackend):
     BACKEND_TYPE = 'kubernetes'
 
     def __init__(self,
-                 image: Text = 'eu.gcr.io/maiot-zenml/zenml:k8s-testing',
+                 image: Text = ZENML_BASE_IMAGE_NAME,
                  job_prefix: Text = 'zenml-',
                  extra_labels: Dict[Text, Any] = None,
                  extra_annotations: Dict[Text, Any] = None,

@@ -100,12 +100,7 @@ class BasePipeline:
             self.pipeline_name = self.create_pipeline_name_from_name()
             self.file_name = self.pipeline_name + '.yaml'
             # check duplicates here as its a 'new' pipeline
-            if self.file_name in \
-                    Repository.get_instance().get_pipeline_file_paths(
-                        only_file_names=True):
-                raise AssertionError(
-                    f'Pipeline names must be unique in the repository. There '
-                    f'is already a pipeline called {self.name}')
+            self._check_registered()
             track(event=CREATE_PIPELINE)
             logger.info(f'Pipeline {name} created.')
 
@@ -260,6 +255,14 @@ class BasePipeline:
                       metadata_store=metadata_store,
                       datasource=datasource)
 
+    def _check_registered(self):
+        if self.file_name in \
+                Repository.get_instance().get_pipeline_file_paths(
+                    only_file_names=True):
+            raise AssertionError(
+                f'Pipeline names must be unique in the repository. There '
+                f'is already a pipeline called {self.name}')
+
     def add_datasource(self, datasource: BaseDatasource):
         """
         Add datasource to pipeline.
@@ -325,6 +328,7 @@ class BasePipeline:
         Args:
             config: dict representation of ZenML config.
         """
+        self._check_registered()
         Repository.get_instance().register_pipeline(
             file_name=self.file_name, config=config)
 

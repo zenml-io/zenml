@@ -70,17 +70,6 @@ class BaseTrainerStep(BaseStep):
             self.log_dir = os.path.join(
                 os.path.dirname(self.serving_model_dir), 'logs')
 
-    def get_run_fn(self):
-        return self.run_fn
-
-    def run_fn(self):
-        """
-        Class method defining the control flow of the training process inside
-        the TFX Trainer Component Executor. Override this method in subclasses
-        to define your own custom training flow.
-        """
-        pass
-
     def input_fn(self,
                  file_pattern: List[Text],
                  tf_transform_output: tft.TFTransformOutput):
@@ -115,3 +104,14 @@ class BaseTrainerStep(BaseStep):
             model: A trained machine learning model.
         """
         pass
+
+    def run_fn(self):
+        """
+        Class method defining the control flow of the training process inside
+        the TFX Trainer Component Executor. Override this method in subclasses
+        to define your own custom training flow.
+        """
+        pass
+
+    def get_run_fn(self):
+        return self.run_fn
