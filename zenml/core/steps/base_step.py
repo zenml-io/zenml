@@ -12,14 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base Step Interface definition"""
-
+import inspect
 from typing import Dict
 
 from zenml.core.standards.standard_keys import StepKeys
 from zenml.utils.enums import StepTypes
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
 from zenml.utils.source_utils import resolve_source_path, \
-    load_source_path_class
+    load_source_path_class, is_source
 
 
 class BaseStep:
@@ -71,7 +71,16 @@ class BaseStep:
             source = config_block[StepKeys.SOURCE]
             class_ = load_source_path_class(source)
             args = config_block[StepKeys.ARGS]
-            obj = class_(**args)
+
+            # resolve args for special cases
+            resolved_args = {}
+            for k, v in args.items():
+                if isinstance(v, str) and is_source(v):
+                    resolved_args[k] = load_source_path_class(v)
+                else:
+                    resolved_args[k] = v
+
+            obj = class_(**resolved_args)
 
             # If we load from config, its immutable
             obj._immutable = True
@@ -91,7 +100,16 @@ class BaseStep:
             'args': {}  # whatever is used in the constructor for BaseStep
         }
         """
+        kwargs = {}
+        for key, kwarg in self._kwargs.items():
+            if inspect.isclass(kwarg):
+                kwargs[key] = resolve_source_path(
+                    kwarg.__module__ + '.' + kwarg.__name__
+                )
+            else:
+                kwargs[key] = kwarg
+
         return {
             StepKeys.SOURCE: self._source,
-            StepKeys.ARGS: self._kwargs  # everything to be recorded
+            StepKeys.ARGS: kwargs  # everything to be recorded
         }
