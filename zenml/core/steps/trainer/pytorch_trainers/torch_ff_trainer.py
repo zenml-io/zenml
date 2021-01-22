@@ -86,7 +86,19 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         self.last_activation = last_activation
         self.input_units = input_units
         self.output_units = output_units
-        super(FeedForwardTrainer, self).__init__(**kwargs)
+        super(FeedForwardTrainer, self).__init__(
+            batch_size=self.batch_size,
+            lr=self.lr,
+            epoch=self.epoch,
+            dropout_chance=self.dropout_chance,
+            loss=self.loss,
+            metrics=self.metrics,
+            hidden_layers=self.hidden_layers,
+            hidden_activation=self.hidden_activation,
+            last_activation=self.last_activation,
+            input_units=self.input_units,
+            output_units=self.output_units,
+            **kwargs)
 
     def input_fn(self,
                  file_pattern: List[Text],
