@@ -27,20 +27,6 @@ from zenml.core.steps.trainer.pytorch_trainers.utils import \
     TFRecordTorchDataset
 from zenml.utils import path_utils
 
-"""
-TODO:
-    * Currently, we convert TFRecords to Pandas by loading them in first. Not 
-    optimal. We should use a native interface to TFRecords, such as this 
-    library does: https://github.com/vahidk/tfrecord . We can use the library 
-    or use some of the logic in it for our use-case.
-    * PyTorchDataset expects a Pandas DataFrame. Should expect a TFRecords.
-    * Once all this is done, we should provide a nice interface similar to 
-    FeedForwardTrainer. I would advocate to rename FeedForwardTrainerStep to
-    TensorflowTrainerStep and this to PyTorchStep so that they are the base 
-    steps to inherit from for these libraries. We can make a sci-kit learn one 
-    as well.
-"""
-
 
 class BinaryClassifier(nn.Module):
     def __init__(self):
@@ -153,8 +139,8 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                 epoch_acc += acc.item()
 
             print(f'Epoch {e + 0:03}: | Loss: '
-                  f'{epoch_loss/step_count:.5f} | Acc: '
-                  f'{epoch_acc/step_count:.3f}')
+                  f'{epoch_loss / step_count:.5f} | Acc: '
+                  f'{epoch_acc / step_count:.3f}')
 
         path_utils.create_dir_if_not_exists(self.serving_model_dir)
         if path_utils.is_remote(self.serving_model_dir):
