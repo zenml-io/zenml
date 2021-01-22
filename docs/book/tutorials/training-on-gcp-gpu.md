@@ -4,7 +4,6 @@ In this tutorial, we'll go through the step-by-step process of deploying a ML pi
 enabled.
 
 
-
 tldr; One can utilize the [GCAIP Training Backend](../backends/training-backends.md).
 
 ```python

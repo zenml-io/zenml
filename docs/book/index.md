@@ -14,7 +14,7 @@ ZenML solves the problem of getting Machine Learning in models. You should use Z
 * Keeping up with the ML **tooling landscape** in a coherent manner.
 
 ## Awesome things you can do with ZenML
-* Reproduce experiments at any time, on any environment. [[here's how](tutorials/ensuring-ml-reproducibility.md)].
+* Reproduce experiments at any time, on any environment. [[here's how](benefits/ensuring-ml-reproducibility.md)].
 * Automatically track all parameters when creating ML experiments. [[here's how](tutorials/creating-first-pipeline.ipynb)].
 * Collaborate with your team using a git repo, re-use code, share results and compare experiments. [[here's how](tutorials/team-collaboration-with-zenml-and-google-cloud.md)].
 * No-hassle preprocessing and training on big VM's on the, for 1/4th the price. [[here's how](tutorials/running-a-pipeline-on-a-google-cloud-vm.md)].

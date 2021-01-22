@@ -57,7 +57,7 @@ For this example, we're gonna use a small and simple MySQL instance (`db-n1-stan
 
 ### 2. Create a Google Cloud Storage bucket as the artifact store
 
-Google Cloud Storage is one of the natively support artifact stores for ZenML. All pipeline artifacts will be persisted in this bucket, and enable cool features like [caching](../pipelines/reusing-artifacts.md) across environments, the ability to evaluate and compare pipelines that were executed on different machines, and many others.
+Google Cloud Storage is one of the natively support artifact stores for ZenML. All pipeline artifacts will be persisted in this bucket, and enable cool features like [caching](../benefits/reusing-artifacts.md) across environments, the ability to evaluate and compare pipelines that were executed on different machines, and many others.
 
 **NOTE:** You do not need to use the name we chose (`zenml-metadata`) - feel free to pick your own.
 

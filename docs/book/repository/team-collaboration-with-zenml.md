@@ -15,7 +15,7 @@ This is regardless of which team member ran the corresponding pipelines, and reg
 ```{note}
 The Metadata and Artifact Stores respectively, while highly recommended, are not neccessary be shared to ensure collaboration. You could as well 
 share the Git Repository with a committed local pipeline directory and still collaborate using ZenML. However, losing the Artifact and Metadata 
-Store will invalidate all [caching](../pipelines/reusing-artifacts.md), and all pipelines need them to be re-run on every team members local setup. This might 
+Store will invalidate all [caching](../benefits/reusing-artifacts.md), and all pipelines need them to be re-run on every team members local setup. This might 
 have uninteded consequences, so please be careful when setting this up in production.
 ```
 
@@ -55,7 +55,7 @@ pipeline_b.add_trainer(...)  # change trainer step
 pipeline_b.run()
 ```
 
-In the above example, if there is a shared Metadata and Artifact Store, all steps preceding the TrainerStep in the pipeline will be [cached](../pipelines/reusing-artifacts.md) and re-used in Pipeline B.
+In the above example, if there is a shared Metadata and Artifact Store, all steps preceding the TrainerStep in the pipeline will be [cached](../benefits/reusing-artifacts.md) and re-used in Pipeline B.
 This way the entire team is benefiting from each other's work implicitly, and can see each other's results and progress as it evolves.
 
 ## How to set it up

@@ -26,7 +26,12 @@ Currently, there are three standard types of pipelines that should be used for d
 * [BatchInferencePipeline](batch-inference.md): To run Batch Inference with new data on a trained ML model.
 
 
-### Custom pipelines
+### Create a custom pipeline
+```{warning}
+Before creating your own pipeline, please make sure to follow the [general rules](../getting-started/creating-custom-logic.md)
+for extending any first-class ZenML component.
+```
+
 ZenML is designed in a way that the starting point to use it is to [create custom `Steps`](../steps/what-is-a-step.md) and use them in the Standard 
 Pipelines defined above. However, there will always be use-cases which do no match these opinionated general Standard pipelines, therefore one can always 
 create custom pipelines with arbitrary Steps.
@@ -143,7 +148,7 @@ the freedom of re-using steps with ease, and keeps reproducibility intact.
 ## Caching
 The `copy()` paradigm also helps in *re-usability* of code across pipelines. E.g. If now only the TrainerStep is changed in `pipeline_b` above, 
 then the corresponding `pipeline_b` pipeline run will skip splitting, preprocessing and re-use all the artifacts already produced by `pipeline_a`. 
-Read more about [caching here](reusing-artifacts.md).
+Read more about [caching here](../benefits/reusing-artifacts.md).
 
 ## Repository functionalities
 You can get all your pipelines using the [Repository](../repository/what-is-a-repository.md) class:
