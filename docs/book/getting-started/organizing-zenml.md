@@ -46,17 +46,17 @@ evaluate_model(train)
 export_model(model)
 ```
 
-## Step 1: Seperate the split
+## Step 1: Separate the split
+
 ```python
 from random import randint
 
 from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
-from zenml.core.steps.preprocesser.standard_preprocesser \
-    .standard_preprocesser import StandardPreprocesser
+from zenml.core.steps.preprocesser.standard_preprocesser.standard_preprocesser import StandardPreprocesser
 from zenml.core.steps.split.random_split import RandomSplit
-from zenml.core.steps.trainer.feedforward_trainer.trainer import FeedForwardTrainer
+from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import FeedForwardTrainer
 
 training_pipeline = TrainingPipeline(
     name=f'Experiment {randint(0, 10000)}',
