@@ -147,7 +147,9 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
             temp_model_dir = '__temp_model_dir__'
             temp_path = os.path.join(os.getcwd(), temp_model_dir)
             if path_utils.is_dir(temp_path):
-                path_utils.rm_dir(temp_path)
+                raise PermissionError('{} is used as a temp path but it '
+                                      'already exists. Please remove it to '
+                                      'continue.')
             torch.save(model, temp_path)
             path_utils.copy_dir(temp_path, self.serving_model_dir)
             path_utils.rm_dir(temp_path)
