@@ -42,6 +42,29 @@ TODO:
 """
 
 
+class BinaryClassifier(nn.Module):
+    def __init__(self):
+        super(BinaryClassifier, self).__init__()
+        self.layer_1 = nn.Linear(8, 64)
+        self.layer_2 = nn.Linear(64, 64)
+        self.layer_out = nn.Linear(64, 1)
+
+        self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(p=0.1)
+        self.batchnorm1 = nn.BatchNorm1d(64)
+        self.batchnorm2 = nn.BatchNorm1d(64)
+
+    def forward(self, inputs):
+        x = self.relu(self.layer_1(inputs))
+        x = self.batchnorm1(x)
+        x = self.relu(self.layer_2(x))
+        x = self.batchnorm2(x)
+        x = self.dropout(x)
+        x = self.layer_out(x)
+
+        return x
+
+
 def binary_acc(y_pred, y_test):
     y_pred_tag = torch.round(torch.sigmoid(y_pred))
 
@@ -56,7 +79,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
     def __init__(self,
                  batch_size: int = 8,
                  lr: float = 0.0001,
-                 epochs: int = 50,
+                 steps: int = 50,
                  dropout_chance: int = 0.2,
                  loss: str = 'mse',
                  metrics: List[str] = None,
@@ -69,7 +92,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                  ):
         self.batch_size = batch_size
         self.lr = lr
-        self.epochs = epochs
+        self.steps = steps
         self.dropout_chance = dropout_chance
         self.loss = loss
         self.metrics = metrics or []
@@ -94,28 +117,6 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                  train_dataset,
                  eval_dataset):
 
-        class BinaryClassifier(nn.Module):
-            def __init__(self):
-                super(BinaryClassifier, self).__init__()
-                self.layer_1 = nn.Linear(8, 64)
-                self.layer_2 = nn.Linear(64, 64)
-                self.layer_out = nn.Linear(64, 1)
-
-                self.relu = nn.ReLU()
-                self.dropout = nn.Dropout(p=0.1)
-                self.batchnorm1 = nn.BatchNorm1d(64)
-                self.batchnorm2 = nn.BatchNorm1d(64)
-
-            def forward(self, inputs):
-                x = self.relu(self.layer_1(inputs))
-                x = self.batchnorm1(x)
-                x = self.relu(self.layer_2(x))
-                x = self.batchnorm2(x)
-                x = self.dropout(x)
-                x = self.layer_out(x)
-
-                return x
-
         return BinaryClassifier()
 
     def run_fn(self):
@@ -133,7 +134,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         optimizer = optim.Adam(model.parameters(), lr=0.001)
 
         model.train()
-        for e in range(1, self.epochs + 1):
+        for e in range(1, self.steps + 1):
             epoch_loss = 0
             epoch_acc = 0
             for x, y in train_dataset:
@@ -150,10 +151,10 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                 epoch_loss += loss.item()
                 epoch_acc += acc.item()
 
-            print(f'Epoch {e + 0:03}: | Loss: '
+            print(f'Step {e + 0:03}: | Loss: '
                   f'{epoch_loss:.5f} | Acc: '
                   f'{epoch_acc:.3f}')
 
         path_utils.create_dir_if_not_exists(self.serving_model_dir)
         # TODO: Change the serving paradigm
-        # torch.save(model, os.path.join(self.serving_model_dir, 'model.pt'))
+        torch.save(model, os.path.join(self.serving_model_dir, 'model.pt'))
