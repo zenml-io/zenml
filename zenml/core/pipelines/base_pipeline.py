@@ -135,20 +135,6 @@ class BasePipeline:
     def __str__(self):
         return to_pretty_string(self.to_config())
 
-    def __repr__(self):
-        """Visualizes pipeline steps as a basic ASCII flowchart."""
-        config = self.to_config()
-        steps_config = config[keys.GlobalKeys.STEPS]
-        steps = [v[keys.StepKeys.SOURCE] for v in steps_config.values()]
-        string_repr_list = []
-        for step in steps[:-1]:
-            string_repr_list.append(step)
-            string_repr_list.append('\t\t\t\t|\t\t\t\t')
-            string_repr_list.append('\t\t\t\tv\t\t\t\t')
-
-        string_repr_list.append(steps[-1])
-        return '\n'.join(string_repr_list)
-
     @property
     def is_executed_in_metadata_store(self):
         try:
