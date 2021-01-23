@@ -275,7 +275,7 @@ class BasePipeline:
         steps_config.update({
             keys.PipelineKeys.NAME: self.pipeline_name,
             keys.PipelineKeys.TYPE: self.PIPELINE_TYPE,
-            keys.PipelineKeys.SOURCE: 'test',
+            keys.PipelineKeys.SOURCE: self._source,
             keys.PipelineKeys.ENABLE_CACHE: self.enable_cache,
             keys.PipelineKeys.DATASOURCE: self.datasource.to_config(),
         })
