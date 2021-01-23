@@ -16,6 +16,7 @@
 from abc import abstractmethod
 from typing import Dict, Text, Any, Optional, List
 from uuid import uuid4
+from zenml.utils import source_utils
 
 from zenml.core.backends.base_backend import BaseBackend
 from zenml.core.backends.orchestrator.local.orchestrator_local_backend import \
@@ -24,7 +25,6 @@ from zenml.core.datasources.base_datasource import BaseDatasource
 from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
 from zenml.core.repo.artifact_store import ArtifactStore
 from zenml.core.repo.repo import Repository
-from zenml.core.repo.zenml_config import METADATA_KEY
 from zenml.core.standards import standard_keys as keys
 from zenml.core.steps.base_step import BaseStep
 from zenml.utils.constants import CONFIG_VERSION
@@ -48,7 +48,7 @@ class BasePipeline:
                  name: Text,
                  enable_cache: Optional[bool] = True,
                  steps_dict: Dict[Text, BaseStep] = None,
-                 backends_dict: Dict[Text, BaseBackend] = None,
+                 backend: OrchestratorLocalBackend = None,
                  metadata_store: Optional[ZenMLMetadataStore] = None,
                  artifact_store: Optional[ArtifactStore] = None,
                  datasource: Optional[BaseDatasource] = None,
@@ -65,7 +65,7 @@ class BasePipeline:
             enable_cache: Boolean, indicates whether or not caching
              should be used.
             steps_dict: Optional dict of steps.
-            backends_dict: Optional dict of backends
+            backend: Orchestrator backend.
             metadata_store: Configured metadata store. If None,
              the default metadata store is used.
             artifact_store: Configured artifact store. If None,
@@ -111,12 +111,11 @@ class BasePipeline:
         else:
             self.steps_dict = steps_dict
 
-        # Backends
-        if backends_dict is None:
-            self.backends_dict: Dict[Text, BaseBackend] = \
-                self.get_default_backends()
+        # Default to local
+        if backend is None:
+            self.backend = OrchestratorLocalBackend()
         else:
-            self.backends_dict = backends_dict
+            self.backend = backend
 
         # Artifact store
         if artifact_store:
@@ -131,6 +130,10 @@ class BasePipeline:
             self.datasource = datasource
         else:
             self.datasource = None
+
+        self._source = source_utils.resolve_source_path(
+            self.__class__.__module__ + '.' + self.__class__.__name__
+        )
 
     def __str__(self):
         return to_pretty_string(self.to_config())
@@ -159,16 +162,6 @@ class BasePipeline:
     def steps_completed(self) -> bool:
         """Returns True if all steps complete, else raises exception"""
         pass
-
-    @staticmethod
-    def get_type_from_file_name(file_name: Text):
-        """
-        Gets type of pipeline from file name.
-
-        Args:
-            file_name: YAML file name of pipeline.
-        """
-        return file_name.replace('.yaml', "").split('_')[0]
 
     @staticmethod
     def get_type_from_pipeline_name(pipeline_name: Text):
@@ -201,45 +194,49 @@ class BasePipeline:
         Args:
             config: a ZenML config in dict-form (probably loaded from YAML).
         """
-        # populate steps
-        steps_dict: Dict = {}
-        for step_key, step_config in config[keys.GlobalKeys.STEPS].items():
-            steps_dict[step_key] = BaseStep.from_config(step_config)
+        # start with artifact store
+        artifact_store = ArtifactStore(config[keys.GlobalKeys.ARTIFACT_STORE])
 
-        env = config[keys.GlobalKeys.ENV]
-        pipeline_name = env[keys.EnvironmentKeys.EXPERIMENT_NAME]
-        name = BasePipeline.get_name_from_pipeline_name(
-            pipeline_name=pipeline_name)
-
-        backends_dict: Dict = {}
-        for backend_key, backend_config in env[
-            keys.EnvironmentKeys.BACKENDS].items():
-            backends_dict[backend_key] = BaseBackend.from_config(
-                backend_key, backend_config)
-
-        artifact_store = ArtifactStore(
-            env[keys.EnvironmentKeys.ARTIFACT_STORE])
+        # metadata store
         metadata_store = ZenMLMetadataStore.from_config(
-            config=env[METADATA_KEY]
+            config=config[keys.GlobalKeys.METADATA_STORE]
         )
 
+        # orchestration backend
+        backend = OrchestratorLocalBackend.from_config(
+            OrchestratorLocalBackend.BACKEND_KEY,
+            config[keys.GlobalKeys.BACKEND])
+
+        # pipeline configuration
+        p_config = config[keys.GlobalKeys.PIPELINE]
+        pipeline_name = p_config[keys.PipelineKeys.NAME]
+        pipeline_source = p_config[keys.PipelineKeys.SOURCE]
+
+        # populate steps
+        steps_dict: Dict = {}
+        for step_key, step_config in p_config[keys.PipelineKeys.STEPS].items():
+            steps_dict[step_key] = BaseStep.from_config(step_config)
+
+        # datasource
         datasource = BaseDatasource.from_config(config)
 
-        from zenml.core.pipelines.pipeline_factory import pipeline_factory
-        pipeline_type = BasePipeline.get_type_from_pipeline_name(
-            pipeline_name)
-        class_ = pipeline_factory.get_pipeline_by_type(pipeline_type)
+        # enable cache
+        enable_cache = p_config[keys.PipelineKeys.ENABLE_CACHE]
+
+        class_ = source_utils.load_source_path_class(pipeline_source)
 
         # TODO: [MEDIUM] Perhaps move some of the logic in the init block here
         #  especially regarding inferring immutability.
 
-        return class_(name=name, pipeline_name=pipeline_name,
-                      enable_cache=env[keys.EnvironmentKeys.ENABLE_CACHE],
-                      steps_dict=steps_dict,
-                      backends_dict=backends_dict,
-                      artifact_store=artifact_store,
-                      metadata_store=metadata_store,
-                      datasource=datasource)
+        return class_(
+            name=name,
+            pipeline_name=pipeline_name,
+            enable_cache=enable_cache,
+            steps_dict=steps_dict,
+            backend=backend,
+            artifact_store=artifact_store,
+            metadata_store=metadata_store,
+            datasource=datasource)
 
     def _check_registered(self):
         if self.file_name in \
@@ -270,37 +267,29 @@ class BasePipeline:
         for step_key, step in self.steps_dict.items():
             steps_config[step_key] = step.to_config()
 
-        return {keys.GlobalKeys.STEPS: steps_config}
+        return {keys.PipelineKeys.STEPS: steps_config}
 
-    def get_environment(self) -> Dict:
-        """Get environment as a dict."""
-        backends_config_dict = {}
-        for b_name, b in self.backends_dict.items():
-            backends_config_dict.update(b.to_config())
-
-        return {
-            keys.EnvironmentKeys.EXPERIMENT_NAME: self.pipeline_name,
-            keys.EnvironmentKeys.ENABLE_CACHE: self.enable_cache,
-            keys.EnvironmentKeys.BACKENDS: backends_config_dict,
-            keys.EnvironmentKeys.ARTIFACT_STORE: self.artifact_store.path,
-            keys.EnvironmentKeys.METADATA_STORE:
-                self.metadata_store.to_config()
-        }
-
-    def to_config(self) -> Dict:
-        """Converts pipeline to ZenML config."""
-        # Create a ZenML pipeline.config.yaml
+    def get_pipeline_config(self):
+        """Get pipeline config"""
         steps_config = self.get_steps_config()
-
-        # Add env config to it
-        environment = self.get_environment()
-
         steps_config.update({
-            keys.GlobalKeys.ENV: environment,
-            keys.GlobalKeys.VERSION: CONFIG_VERSION,
-            keys.GlobalKeys.DATASOURCE: self.datasource.to_config()
+            keys.PipelineKeys.NAME: self.pipeline_name,
+            keys.PipelineKeys.TYPE: self.PIPELINE_TYPE,
+            keys.PipelineKeys.SOURCE: 'test',
+            keys.PipelineKeys.ENABLE_CACHE: self.enable_cache,
+            keys.PipelineKeys.DATASOURCE: self.datasource.to_config(),
         })
         return steps_config
+
+    def to_config(self) -> Dict:
+        """Converts entire pipeline to ZenML config."""
+        return {
+            keys.GlobalKeys.VERSION: CONFIG_VERSION,
+            keys.GlobalKeys.METADATA_STORE: self.metadata_store.to_config(),
+            keys.GlobalKeys.ARTIFACT_STORE: self.artifact_store.path,
+            keys.GlobalKeys.BACKEND: self.backend.to_config(),
+            keys.GlobalKeys.PIPELINE: self.get_pipeline_config(),
+        }
 
     def get_status(self) -> Text:
         """Get status of pipeline."""

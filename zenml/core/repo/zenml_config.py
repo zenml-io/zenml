@@ -22,11 +22,11 @@ from zenml.core.repo.constants import ZENML_CONFIG_NAME, \
     ARTIFACT_STORE_DEFAULT_DIR, PIPELINES_DEFAULT_DIR_NAME, \
     ML_METADATA_SQLITE_DEFAULT_NAME, ZENML_DIR_NAME
 from zenml.core.repo.git_wrapper import GitWrapper
-from zenml.core.standards.standard_keys import EnvironmentKeys
+from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils, yaml_utils
 
-ARTIFACT_STORE_KEY = EnvironmentKeys.ARTIFACT_STORE
-METADATA_KEY = EnvironmentKeys.METADATA_STORE
+ARTIFACT_STORE_KEY = keys.GlobalKeys.ARTIFACT_STORE
+METADATA_KEY = keys.GlobalKeys.METADATA_STORE
 PIPELINES_DIR_KEY = 'pipelines_dir'
 
 
