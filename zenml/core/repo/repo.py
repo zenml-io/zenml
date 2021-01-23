@@ -123,7 +123,7 @@ class Repository:
         GitWrapper(repo_path)
 
         # use the underlying ZenMLConfig class to create the config
-        ZenMLConfig.create_config(
+        ZenMLConfig.to_config(
             repo_path, artifact_store_path, metadata_store, pipelines_dir)
 
         # create global config
