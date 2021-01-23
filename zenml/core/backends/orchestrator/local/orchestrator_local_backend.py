@@ -72,9 +72,15 @@ class OrchestratorLocalBackend(BaseBackend):
             artifact_store.path, artifact_store.unique_id)
         pipeline_log = os.path.join(pipeline_root, 'logs', pipeline_name)
 
-        # Execution
-        execution: ProcessingLocalBackend = \
-            zen_pipeline.backends_dict[ProcessingLocalBackend.BACKEND_KEY]
+        # Resolve execution backend
+        execution = ProcessingLocalBackend()  # default
+        for e in zen_pipeline.steps_dict.values():
+            # find out the processing backends, take the first one
+            if e.backend is not None and issubclass(
+                    e.backend, ProcessingLocalBackend):
+                execution = e.backend
+                break
+
         beam_args = execution.get_beam_args(pipeline_name, pipeline_root)
 
         tfx_pipeline = pipeline.Pipeline(

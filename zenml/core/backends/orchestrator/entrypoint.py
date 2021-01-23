@@ -39,8 +39,7 @@ class PipelineRunner(object):
         # Load config from base64
         config = json.loads(base64.b64decode(config_b64))
 
-        orch_args = config[keys.GlobalKeys.ENV][keys.EnvironmentKeys.BACKENDS][
-            OrchestratorLocalBackend.BACKEND_KEY][keys.BackendKeys.ARGS]
+        orch_args = config[keys.GlobalKeys.BACKEND][keys.BackendKeys.ARGS]
         tar_path = orch_args[TAR_PATH_ARG]
 
         # Copy it over locally because it will be remote

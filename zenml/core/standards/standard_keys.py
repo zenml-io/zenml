@@ -96,6 +96,7 @@ class MLMetadataKeys(ConfigKeys):
 class StepKeys(ConfigKeys):
     SOURCE = 'source'
     ARGS = 'args'
+    BACKEND = 'backend'
 
 
 class TrainingSteps(ConfigKeys):

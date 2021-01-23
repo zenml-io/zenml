@@ -32,6 +32,7 @@ class ProcessingLocalBackend(BaseBackend):
     processing throughput significantly.
     """
     BACKEND_TYPE = 'processing'
+
     def get_beam_args(self,
                       pipeline_name: Text = None,
                       pipeline_root: Text = None) -> \

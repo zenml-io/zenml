@@ -15,6 +15,7 @@
 import inspect
 from typing import Dict
 
+from zenml.core.backends.base_backend import BaseBackend
 from zenml.core.standards.standard_keys import StepKeys
 from zenml.utils.enums import StepTypes
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
@@ -30,7 +31,7 @@ class BaseStep:
     """
     STEP_TYPE = StepTypes.base.name
 
-    def __init__(self, **kwargs):
+    def __init__(self, backend: BaseBackend, **kwargs):
         """
         Base data step constructor.
 
@@ -41,6 +42,7 @@ class BaseStep:
 
         self._kwargs = kwargs
         self._immutable = False
+        self.backend = backend
         self._source = resolve_source_path(
             self.__class__.__module__ + '.' + self.__class__.__name__
         )
@@ -72,8 +74,14 @@ class BaseStep:
             class_ = load_source_path_class(source)
             args = config_block[StepKeys.ARGS]
 
-            # resolve args for special cases
-            resolved_args = {}
+            # resolve backend
+            backend = None
+            if StepKeys.BACKEND in config_block:
+                backend_config = config_block[StepKeys.BACKEND]
+                backend = BaseBackend.from_config(backend_config)
+
+                # resolve args for special cases
+            resolved_args = {'backend': backend}
             for k, v in args.items():
                 if isinstance(v, str) and is_source(v):
                     resolved_args[k] = load_source_path_class(v)
@@ -84,7 +92,6 @@ class BaseStep:
 
             # If we load from config, its immutable
             obj._immutable = True
-            obj._source = source
             return obj
         else:
             raise AssertionError("Cannot create config_block without source "
@@ -109,7 +116,18 @@ class BaseStep:
             else:
                 kwargs[key] = kwarg
 
-        return {
+        config = {
             StepKeys.SOURCE: self._source,
-            StepKeys.ARGS: kwargs  # everything to be recorded
+            StepKeys.ARGS: kwargs,  # everything to be recorded
         }
+
+        # only add backend if its set
+        if self.backend is not None:
+            config.update({StepKeys.BACKEND: self.backend.to_config()})
+
+        return config
+
+    def with_backend(self, backend: BaseBackend):
+        """Builder for step backends."""
+        self.backend = backend
+        return self

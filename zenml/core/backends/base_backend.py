@@ -88,5 +88,5 @@ class BaseBackend:
             config[BackendKeys.SOURCE])
         backend_args = config[BackendKeys.ARGS]
         obj = backend_class(**backend_args)
-        obj._immutable = False
+        obj._immutable = True
         return obj
