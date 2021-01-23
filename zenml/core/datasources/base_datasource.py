@@ -14,6 +14,7 @@
 """Base Class for all ZenML datasources"""
 
 import os
+from abc import abstractmethod
 from typing import Text, Dict
 from uuid import uuid4
 
@@ -39,8 +40,6 @@ class BaseDatasource:
 
     Every ZenML datasource should override this class.
     """
-    DATA_STEP = None
-    PREFIX = 'pipeline_'
 
     def __init__(self,
                  name: Text,
@@ -119,17 +118,9 @@ class BaseDatasource:
             keys.DatasourceKeys.ID: self._id
         }
 
-    def get_pipeline_name_from_name(self):
-        return self.PREFIX + self.name
-
+    @abstractmethod
     def get_data_step(self):
-        params = self.__dict__.copy()
-        # TODO: [HIGH] Figure out if there is a better way to do this
-        params.pop('name')
-        params.pop('_id')
-        params.pop('_source')
-        params.pop('_immutable')
-        return self.DATA_STEP(**params)
+        pass
 
     def _get_one_pipeline(self):
         """Gets representative pipeline from all pipelines associated."""

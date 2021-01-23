@@ -24,8 +24,6 @@ class BigQueryDatasource(BaseDatasource):
 
     Use this for BigQuery training pipelines.
     """
-    DATA_STEP = BQDataStep
-
     def __init__(self,
                  name: Text,
                  query_project: Text,
@@ -71,3 +69,14 @@ class BigQueryDatasource(BaseDatasource):
 
         # If dest project not given, we use the same as query project
         self.dest_project = dest_project if dest_project else query_project
+
+    def get_data_step(self):
+        return BQDataStep(
+            query_project=self.query_project,
+            query_dataset=self.query_dataset,
+            query_table=self.query_table,
+            gcs_location=self.gcs_location,
+            dest_project=self.dest_project,
+            query_limit=self.query_limit,
+            schema=self.schema
+        )

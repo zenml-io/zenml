@@ -17,7 +17,6 @@ from typing import Text, Dict
 
 from zenml.core.datasources.base_datasource import BaseDatasource
 from zenml.core.steps.data.csv_data_step import CSVDataStep
-from zenml.utils import path_utils
 
 
 class CSVDatasource(BaseDatasource):
@@ -25,7 +24,6 @@ class CSVDatasource(BaseDatasource):
 
     Use this for CSV training pipelines.
     """
-    DATA_STEP = CSVDataStep
 
     def __init__(self, name: Text, path: Text, schema: Dict = None,
                  **unused_kwargs):
@@ -47,3 +45,8 @@ class CSVDatasource(BaseDatasource):
         super().__init__(name, schema, **unused_kwargs)
         self.path = path
 
+    def get_data_step(self):
+        CSVDataStep(
+            self.path,
+            self.schema
+        )

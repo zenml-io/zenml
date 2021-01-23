@@ -24,7 +24,6 @@ class ImageDatasource(BaseDatasource):
 
     Use this for image training pipelines.
     """
-    DATA_STEP = ImageDataStep
 
     def __init__(self, name: Text = None, base_path='', **unused_kwargs):
         """
@@ -36,3 +35,6 @@ class ImageDatasource(BaseDatasource):
         """
         super().__init__(name, **unused_kwargs)
         self.base_path = base_path
+
+    def get_data_step(self):
+        ImageDataStep(self.base_path)
