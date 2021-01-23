@@ -27,8 +27,6 @@ class OrchestratorKubeFlowBackend(OrchestratorLocalBackend):
 
     This backend is not implemented yet.
     """
-    BACKEND_TYPE = 'kubeflow'
-
     def __init__(self, image: Text = None, **kwargs):
         self.image = image
         super().__init__(**kwargs)

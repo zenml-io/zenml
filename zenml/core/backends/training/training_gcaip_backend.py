@@ -88,8 +88,6 @@ class SingleGPUTrainingGCAIPBackend(TrainingLocalBackend):
         self.max_running_time = max_running_time
         super().__init__(**kwargs)
 
-    BACKEND_TYPE = 'gcaip'
-
     def get_executor_spec(self):
         return executor_spec.ExecutorClassSpec(
             ai_platform_trainer_executor.GenericExecutor)

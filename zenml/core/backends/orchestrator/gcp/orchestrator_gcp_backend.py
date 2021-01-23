@@ -232,8 +232,7 @@ class OrchestratorGCPBackend(OrchestratorLocalBackend):
         logger.info(f'Created tar of current repository at: {path_to_tar}')
 
         # Upload tar to artifact store
-        store_path = \
-            config[keys.GlobalKeys.ENV][keys.EnvironmentKeys.ARTIFACT_STORE]
+        store_path = config[keys.GlobalKeys.ARTIFACT_STORE]
         store_staging_area = os.path.join(store_path, STAGING_AREA)
         store_path_to_tar = os.path.join(store_staging_area, tar_file_name)
         path_utils.copy(path_to_tar, store_path_to_tar)
@@ -244,8 +243,7 @@ class OrchestratorGCPBackend(OrchestratorLocalBackend):
         logger.info(f'Removed tar at: {path_to_tar}')
 
         # Append path of tar in config orchestrator utils
-        config[keys.GlobalKeys.ENV][keys.EnvironmentKeys.BACKENDS][
-            OrchestratorGCPBackend.BACKEND_KEY][keys.BackendKeys.ARGS][
+        config[keys.GlobalKeys.BACKEND][keys.BackendKeys.ARGS][
             TAR_PATH_ARG] = store_path_to_tar
 
         # Launch the instance

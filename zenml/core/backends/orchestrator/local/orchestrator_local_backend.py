@@ -42,8 +42,7 @@ class OrchestratorLocalBackend(BaseBackend):
     For quick prototyping and local tests, a single-machine direct backend can
     be selected to execute an ML Pipeline with minimal orchestration overhead.
     """
-    BACKEND_TYPE = 'local'
-    BACKEND_KEY = 'orchestrator'
+    BACKEND_TYPE = 'orchestrator'
 
     @staticmethod
     def get_tfx_pipeline(config: Dict[Text, Any]) -> pipeline.Pipeline:
@@ -56,20 +55,6 @@ class OrchestratorLocalBackend(BaseBackend):
         Returns:
             tfx_pipeline: A TFX pipeline object.
         """
-        env_dict = config[keys.GlobalKeys.ENV]
-
-        # Dataset, experiment
-        # Using the artifact store ID makes sense
-        # It is used currently to make all pipelines have the same base
-        # context in ML metadata store.
-        # artifact_store = ArtifactStore(
-        #     env_dict[keys.EnvironmentKeys.ARTIFACT_STORE])
-        # pipeline_name = env_dict[keys.EnvironmentKeys.EXPERIMENT_NAME]
-        #
-        # metadata_store: ZenMLMetadataStore = ZenMLMetadataStore.from_config(
-        #     env_dict[keys.EnvironmentKeys.METADATA_STORE])
-        # metadata_connection_config = metadata_store.get_tfx_metadata_config()
-
         from zenml.core.pipelines.base_pipeline import BasePipeline
         zen_pipeline: BasePipeline = BasePipeline.from_config(config)
 

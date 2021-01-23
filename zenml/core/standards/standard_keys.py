@@ -85,6 +85,7 @@ class DatasourceKeys(ConfigKeys):
 class BackendKeys(ConfigKeys):
     TYPE = 'type'
     ARGS = 'args'
+    SOURCE = 'source'
 
 
 class MLMetadataKeys(ConfigKeys):
