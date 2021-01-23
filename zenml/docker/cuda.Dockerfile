@@ -19,4 +19,4 @@ RUN apt-get update -y && \
     "tensorflow-gpu==${TENSORFLOW_VERSION}"
 
 ADD . /zenml
-RUN pip install -e .
+RUN pip install -e .[all]

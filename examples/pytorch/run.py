@@ -1,15 +1,12 @@
 from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
-from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
 from zenml.core.steps.preprocesser.standard_preprocesser \
-    .standard_preprocesser import \
-    StandardPreprocesser
+    .standard_preprocesser import StandardPreprocesser
 from zenml.core.steps.split.random_split import RandomSplit
-
-from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
+from zenml.core.steps.trainer.pytorch_trainers.torch_ff_trainer import \
     FeedForwardTrainer
 
-training_pipeline = TrainingPipeline(name='Quickstart')
+training_pipeline = TrainingPipeline(name='ZenML with a Pytorch Trainer')
 
 # Add a datasource. This will automatically track and version it.
 ds = CSVDatasource(name='Pima Indians Diabetes',
@@ -18,7 +15,7 @@ training_pipeline.add_datasource(ds)
 
 # Add a split
 training_pipeline.add_split(RandomSplit(
-    split_map={'train': 0.7, 'eval': 0.3}))
+    split_map={'eval': 0.3, 'train': 0.7}))
 
 # Add a preprocessing unit
 training_pipeline.add_preprocesser(
@@ -36,22 +33,7 @@ training_pipeline.add_trainer(FeedForwardTrainer(
     last_activation='sigmoid',
     output_units=1,
     metrics=['accuracy'],
-    epochs=20))
-
-# Add an evaluator
-training_pipeline.add_evaluator(
-    TFMAEvaluator(slices=[['has_diabetes']],
-                  metrics={'has_diabetes': ['binary_crossentropy',
-                                            'binary_accuracy']}))
+    epoch=100))
 
 # Run the pipeline locally
 training_pipeline.run()
-
-# See schema of data
-training_pipeline.view_schema()
-
-# See statistics of train and eval
-training_pipeline.view_statistics()
-
-# Creates a notebook for evaluation
-training_pipeline.evaluate()

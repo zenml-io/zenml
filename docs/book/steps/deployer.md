@@ -17,6 +17,10 @@ pipeline.add_deployment(GCAIPDeployer(
 ))
 ```
 
+```{warning}
+Currently, the GCAIPDeployer only works with Trainers fully implementing the `TFBaseTrainerStep` interface. An example is the standard `tf_ff_trainer.FeedForwardTrainer` step.
+```
+
 #### How to make a request to your served model
 
 Google Cloud AI Platform is using [TFServing](https://www.tensorflow.org/tfx/guide/serving) under-the-hood. TFServing has [defined standards](https://www.tensorflow.org/tfx/serving/api_docs/cc/) 
