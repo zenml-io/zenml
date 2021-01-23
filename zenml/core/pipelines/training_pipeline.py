@@ -27,24 +27,20 @@ from tfx.components.trainer.component import Trainer
 from tfx.components.transform.component import Transform
 from tfx.proto import trainer_pb2
 
-from zenml.core.backends.orchestrator.local.orchestrator_local_backend import \
-    OrchestratorLocalBackend
-from zenml.core.backends.processing.processing_local_backend import \
-    ProcessingLocalBackend
 from zenml.core.backends.training.training_local_backend import \
     TrainingLocalBackend
 from zenml.core.components.data_gen.component import DataGen
-from zenml.core.components.split_gen.component import SplitGen
 from zenml.core.components.sequencer.component import Sequencer
+from zenml.core.components.split_gen.component import SplitGen
 from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.standards import standard_keys as keys
+from zenml.core.steps.deployer.base_deployer import BaseDeployerStep
 from zenml.core.steps.deployer.gcaip_deployer import GCAIPDeployer
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
 from zenml.core.steps.preprocesser.base_preprocesser import \
     BasePreprocesserStep
-from zenml.core.steps.deployer.base_deployer import BaseDeployerStep
-from zenml.core.steps.split.base_split_step import BaseSplit
 from zenml.core.steps.sequencer.base_sequencer import BaseSequencerStep
+from zenml.core.steps.split.base_split_step import BaseSplit
 from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
 from zenml.utils import constants
 from zenml.utils import path_utils

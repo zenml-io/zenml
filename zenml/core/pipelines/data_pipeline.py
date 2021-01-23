@@ -18,10 +18,6 @@ from typing import Dict, Text, Any, List
 from tfx.components.schema_gen.component import SchemaGen
 from tfx.components.statistics_gen.component import StatisticsGen
 
-from zenml.core.backends.orchestrator.local.orchestrator_local_backend import \
-    OrchestratorLocalBackend
-from zenml.core.backends.processing.processing_local_backend import \
-    ProcessingLocalBackend
 from zenml.core.components.data_gen.component import DataGen
 from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.standards import standard_keys as keys

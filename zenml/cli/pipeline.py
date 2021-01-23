@@ -13,15 +13,14 @@
 #  permissions and limitations under the License.
 """CLI for pipelines."""
 
+from typing import Text
+
 import click
 from tabulate import tabulate
-from typing import Text
 
 from zenml.cli.cli import cli
 from zenml.cli.utils import error, pretty_print, pass_repo
 from zenml.core.repo.repo import Repository
-from zenml.utils.yaml_utils import read_yaml
-from zenml.core.pipelines.training_pipeline import TrainingPipeline
 
 
 @cli.group()

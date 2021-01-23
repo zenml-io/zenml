@@ -52,7 +52,7 @@ def set_root_verbosity():
     if level > logging.NOTSET:
         logging.basicConfig(level=level)
         get_logger(__name__).debug(f'Logging set to level: '
-                                  f'{logging.getLevelName(level)}')
+                                   f'{logging.getLevelName(level)}')
     else:
         logging.disable(sys.maxsize)
         logging.getLogger().disabled = True

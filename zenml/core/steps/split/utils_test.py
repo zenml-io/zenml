@@ -15,6 +15,7 @@
 
 import pytest
 import tensorflow as tf
+
 from zenml.core.steps.split.utils import get_categorical_value, \
     partition_cat_list
 
