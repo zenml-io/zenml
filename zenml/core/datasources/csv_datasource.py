@@ -46,7 +46,7 @@ class CSVDatasource(BaseDatasource):
         self.path = path
 
     def get_data_step(self):
-        CSVDataStep(
+        return CSVDataStep(
             self.path,
             self.schema
         )

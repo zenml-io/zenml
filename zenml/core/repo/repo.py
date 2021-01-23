@@ -256,7 +256,7 @@ class Repository:
         datasources_name = set()
         for file_path in self.get_pipeline_file_paths():
             c = yaml_utils.read_yaml(file_path)
-            ds = BaseDatasource.from_config(c)
+            ds = BaseDatasource.from_config(c[keys.GlobalKeys.PIPELINE])
             if ds.name not in datasources_name:
                 datasources.append(ds)
                 datasources_name.add(ds.name)

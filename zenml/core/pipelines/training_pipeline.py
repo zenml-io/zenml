@@ -178,6 +178,11 @@ class TrainingPipeline(BasePipeline):
         ############
         training_backend: TrainingLocalBackend = \
             self.steps_dict[keys.TrainingSteps.TRAINER].backend
+
+        # default to local
+        if training_backend is None:
+            training_backend = TrainingLocalBackend()
+
         training_kwargs = {
             'custom_executor_spec': training_backend.get_executor_spec(),
             'custom_config': steps[keys.TrainingSteps.TRAINER]

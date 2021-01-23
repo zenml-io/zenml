@@ -37,4 +37,4 @@ class ImageDatasource(BaseDatasource):
         self.base_path = base_path
 
     def get_data_step(self):
-        ImageDataStep(self.base_path)
+        return ImageDataStep(self.base_path)

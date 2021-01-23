@@ -62,7 +62,7 @@ class ConfigKeys:
 class GlobalKeys(ConfigKeys):
     VERSION = 'version'
     ARTIFACT_STORE = 'artifact_store'
-    METADATA_STORE = 'metadata_store'
+    METADATA_STORE = 'metadata'
     BACKEND = 'backend'
     PIPELINE = 'pipeline'
 

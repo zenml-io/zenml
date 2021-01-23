@@ -216,7 +216,8 @@ class BasePipeline:
             steps_dict[step_key] = BaseStep.from_config(step_config)
 
         # datasource
-        datasource = BaseDatasource.from_config(config)
+        datasource = BaseDatasource.from_config(
+            config[keys.GlobalKeys.PIPELINE])
 
         # enable cache
         enable_cache = p_config[keys.PipelineKeys.ENABLE_CACHE]
@@ -227,7 +228,7 @@ class BasePipeline:
         #  especially regarding inferring immutability.
 
         return class_(
-            name=name,
+            name=cls.get_name_from_pipeline_name(pipeline_name),
             pipeline_name=pipeline_name,
             enable_cache=enable_cache,
             steps_dict=steps_dict,

@@ -56,6 +56,7 @@ class BaseBackend:
     BACKEND_TYPE = None
 
     def __init__(self, **kwargs):
+        self._kwargs = kwargs
         self._source = source_utils.resolve_source_path(
             self.__class__.__module__ + '.' + self.__class__.__name__
         )
@@ -71,7 +72,7 @@ class BaseBackend:
         """Converts Backend to ZenML config block."""
         return {
             BackendKeys.TYPE: self.BACKEND_TYPE,
-            BackendKeys.ARGS: self.__dict__,  # everything in init
+            BackendKeys.ARGS: self._kwargs,  # everything in init
             BackendKeys.SOURCE: self._source,
         }
 

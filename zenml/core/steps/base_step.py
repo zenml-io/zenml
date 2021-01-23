@@ -31,7 +31,7 @@ class BaseStep:
     """
     STEP_TYPE = StepTypes.base.name
 
-    def __init__(self, backend: BaseBackend, **kwargs):
+    def __init__(self, backend: BaseBackend = None, **kwargs):
         """
         Base data step constructor.
 
@@ -39,7 +39,6 @@ class BaseStep:
             **kwargs: Keyword arguments used in the construction of a step
             from a configuration file.
         """
-
         self._kwargs = kwargs
         self._immutable = False
         self.backend = backend
@@ -73,15 +72,18 @@ class BaseStep:
             source = config_block[StepKeys.SOURCE]
             class_ = load_source_path_class(source)
             args = config_block[StepKeys.ARGS]
+            resolved_args = {}
 
             # resolve backend
-            backend = None
             if StepKeys.BACKEND in config_block:
                 backend_config = config_block[StepKeys.BACKEND]
                 backend = BaseBackend.from_config(backend_config)
 
-                # resolve args for special cases
-            resolved_args = {'backend': backend}
+                # only inject backend if its available in constructor
+                if 'backend' in inspect.getfullargspec(class_.__init__).args:
+                    resolved_args['backend'] = backend
+
+            # resolve args for special cases
             for k, v in args.items():
                 if isinstance(v, str) and is_source(v):
                     resolved_args[k] = load_source_path_class(v)
