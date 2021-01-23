@@ -353,7 +353,7 @@ class BasePipeline:
         Args:
             config: dict of ZenML config.
         """
-        # TODO: [LOW] Make sure this is subclass of OrchestratorLocalBackend
+        assert issubclass(self.backend.__class__, OrchestratorLocalBackend)
         self.backend.run(config)
 
     @track(event=RUN_PIPELINE)

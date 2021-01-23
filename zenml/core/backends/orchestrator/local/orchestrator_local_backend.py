@@ -74,9 +74,11 @@ class OrchestratorLocalBackend(BaseBackend):
         # Resolve execution backend
         execution = ProcessingLocalBackend()  # default
         for e in zen_pipeline.steps_dict.values():
-            # find out the processing backends, take the first one
-            if e.backend is not None and issubclass(
-                    e.backend, ProcessingLocalBackend):
+            # find out the processing backends, take the first one which is
+            # not a ProcessingLocalBackend
+            if e.backend and issubclass(
+                    e.backend.__class__, ProcessingLocalBackend) and \
+                    e.backend.__class__ != ProcessingLocalBackend:
                 execution = e.backend
                 break
 
