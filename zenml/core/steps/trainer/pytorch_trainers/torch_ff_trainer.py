@@ -12,6 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+# TODO: [LOW] Refactor into utility
+import importlib.util
+spec = importlib.util.find_spec('torch')
+if spec is None:
+    raise AssertionError("torch integration not installed. Please install "
+                         "zenml[torch] via `pip install zenml[pytorch]`")
+
 import os
 from typing import List, Text
 
@@ -86,7 +93,19 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         self.last_activation = last_activation
         self.input_units = input_units
         self.output_units = output_units
-        super(FeedForwardTrainer, self).__init__(**kwargs)
+        super(FeedForwardTrainer, self).__init__(
+            batch_size=self.batch_size,
+            lr=self.lr,
+            epoch=self.epoch,
+            dropout_chance=self.dropout_chance,
+            loss=self.loss,
+            metrics=self.metrics,
+            hidden_layers=self.hidden_layers,
+            hidden_activation=self.hidden_activation,
+            last_activation=self.last_activation,
+            input_units=self.input_units,
+            output_units=self.output_units,
+            **kwargs)
 
     def input_fn(self,
                  file_pattern: List[Text],

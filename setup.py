@@ -77,6 +77,9 @@ PYTORCH_REQUIREMENTS = [
     'torch'
 ]
 
+ALL_REQUIREMENTS = BASE_REQUIREMENTS + GCP_REQUIREMENTS + \
+                   PYTORCH_REQUIREMENTS + AZURE_REQUIREMENTS + AWS_REQUIREMENTS
+
 setup(
     name='zenml',
     description="ZenML: Write production-ready ML code.",
@@ -92,6 +95,7 @@ setup(
     version=version,
     install_requires=BASE_REQUIREMENTS,
     extras_require={
+        'all': ALL_REQUIREMENTS,
         'gcp': GCP_REQUIREMENTS,
         'pytorch': PYTORCH_REQUIREMENTS,
     },
