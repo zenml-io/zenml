@@ -312,13 +312,6 @@ class BasePipeline:
         return Repository.get_instance().load_pipeline_config(
             file_name=self.file_name)
 
-    def get_default_backends(self) -> Dict:
-        """Gets list of default backends for this pipeline."""
-        # For base class, orchestration is always necessary
-        return {
-            OrchestratorLocalBackend.BACKEND_KEY: OrchestratorLocalBackend()
-        }
-
     @track(event=GET_PIPELINE_ARTIFACTS)
     def get_artifacts_uri_by_component(self, component_name: Text):
         """
@@ -362,23 +355,19 @@ class BasePipeline:
         Args:
             config: dict of ZenML config.
         """
-        if OrchestratorLocalBackend.BACKEND_KEY not in self.backends_dict:
-            raise AssertionError('Orchestrator backend missing!')
-        orch_backend = self.backends_dict[OrchestratorLocalBackend.BACKEND_KEY]
-
         # TODO: [LOW] Make sure this is subclass of OrchestratorLocalBackend
-        orch_backend.run(config)
+        self.backend.run(config)
 
     @track(event=RUN_PIPELINE)
     def run(self,
-            backends: Optional[List[BaseBackend]] = None,
+            backend: OrchestratorLocalBackend = None,
             metadata_store: Optional[ZenMLMetadataStore] = None,
             artifact_store: Optional[ArtifactStore] = None):
         """
         Run the pipeline associated with the datasource.
 
         Args:
-            backends (list): list of backends to use for this
+            backend: orchestrator backend for pipeline.
             metadata_store: chosen metadata store, if None use default
             artifact_store: chosen artifact store, if None use default
              """
@@ -399,6 +388,9 @@ class BasePipeline:
                            'non-reproducible and non-comparable.')
             self.artifact_store = artifact_store
 
+        if backend:
+            self.backend = backend
+
         # We do not allow ml metadata to get polluted by repeated runs
         if self.is_executed_in_metadata_store:
             logger.info(f'Pipeline: `{self.name}` has already been executed '
@@ -409,14 +401,6 @@ class BasePipeline:
 
         # Check if steps are complete
         self.steps_completed()
-
-        # Resolve backends compatibility
-        if backends is None:
-            backends = []
-        for b in backends:
-            if b.BACKEND_KEY not in self.backends_dict:
-                raise Exception(f'Backend {b} not supported!')
-            self.backends_dict[b.BACKEND_KEY] = b
 
         if self._immutable:
             # This means its an 'older' pipeline that has been loaded in via
