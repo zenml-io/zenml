@@ -16,9 +16,7 @@
 from abc import abstractmethod
 from typing import Dict, Text, Any, Optional, List
 from uuid import uuid4
-from zenml.utils import source_utils
 
-from zenml.core.backends.base_backend import BaseBackend
 from zenml.core.backends.orchestrator.local.orchestrator_local_backend import \
     OrchestratorLocalBackend
 from zenml.core.datasources.base_datasource import BaseDatasource
@@ -27,6 +25,7 @@ from zenml.core.repo.artifact_store import ArtifactStore
 from zenml.core.repo.repo import Repository
 from zenml.core.standards import standard_keys as keys
 from zenml.core.steps.base_step import BaseStep
+from zenml.utils import source_utils
 from zenml.utils.constants import CONFIG_VERSION
 from zenml.utils.enums import PipelineStatusTypes
 from zenml.utils.logger import get_logger
@@ -204,7 +203,6 @@ class BasePipeline:
 
         # orchestration backend
         backend = OrchestratorLocalBackend.from_config(
-            OrchestratorLocalBackend.BACKEND_KEY,
             config[keys.GlobalKeys.BACKEND])
 
         # pipeline configuration

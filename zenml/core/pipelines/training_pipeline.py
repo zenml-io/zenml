@@ -80,7 +80,7 @@ class TrainingPipeline(BasePipeline):
              pipeline.
 
         """
-        steps = config[keys.GlobalKeys.STEPS]
+        steps = config[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.STEPS]
 
         component_list = []
 
@@ -181,7 +181,7 @@ class TrainingPipeline(BasePipeline):
         # TRAINING #
         ############
         training_backend: TrainingLocalBackend = \
-            self.backends_dict[TrainingLocalBackend.BACKEND_KEY]
+            self.steps_dict[keys.TrainingSteps.TRAINER].backend
         training_kwargs = {
             'custom_executor_spec': training_backend.get_executor_spec(),
             'custom_config': steps[keys.TrainingSteps.TRAINER]
@@ -329,15 +329,6 @@ class TrainingPipeline(BasePipeline):
         schema_uri = self.get_artifacts_uri_by_component(
             GDPComponent.SplitSchema.name)[0]
         detect_anomalies(stats_uri, schema_uri, split_name)
-
-    def get_default_backends(self) -> Dict:
-        """Gets list of default backends for this pipeline."""
-        # For base class, orchestration is always necessary
-        return {
-            OrchestratorLocalBackend.BACKEND_KEY: OrchestratorLocalBackend(),
-            ProcessingLocalBackend.BACKEND_KEY: ProcessingLocalBackend(),
-            TrainingLocalBackend.BACKEND_KEY: TrainingLocalBackend(),
-        }
 
     def steps_completed(self) -> bool:
         mandatory_steps = [keys.TrainingSteps.SPLIT,

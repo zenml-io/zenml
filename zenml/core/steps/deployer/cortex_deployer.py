@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Dict, Text, List, Optional
+from typing import Dict, Text, Optional
 
 from zenml.core.components.pusher import cortex_executor
 from zenml.core.steps.deployer.base_deployer import BaseDeployerStep
@@ -30,8 +30,8 @@ class CortexDeployer(BaseDeployerStep):
     def __init__(self,
                  api_spec: Dict,
                  predictor=None,
-                 requirements: List = [],
-                 conda_packages: List = [],
+                 requirements=None,
+                 conda_packages=None,
                  env: Text = 'aws',
                  project_dir: Optional[str] = None,
                  force: bool = True,
@@ -49,6 +49,11 @@ class CortexDeployer(BaseDeployerStep):
             predictor: Cortex Predictor class.
             **kwargs: Additional keyword arguments.
         """
+        if conda_packages is None:
+            conda_packages = []
+        if requirements is None:
+            requirements = []
+
         self.model_name = model_name
         self.env = env
         self.predictor = predictor

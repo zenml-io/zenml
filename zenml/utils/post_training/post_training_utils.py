@@ -330,10 +330,7 @@ def evaluate_single_pipeline(
 
 
 def compare_multiple_pipelines():
-    """
-    Args:
-        workspace_id (Text):
-    """
+    """Launches `compare` tool for comparing multiple training pipelines."""
     # assumes compare.py in the same folder
     template = \
         os.path.join(os.path.abspath(os.path.dirname(__file__)), 'compare.py')

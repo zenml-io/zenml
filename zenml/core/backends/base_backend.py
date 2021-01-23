@@ -81,7 +81,6 @@ class BaseBackend:
         Convert from ZenML config dict to ZenML Backend object.
 
         Args:
-            backend_key: the key of the backend
             config: a ZenML config in dict-form (probably loaded from YAML)
         """
         backend_class = source_utils.load_source_path_class(

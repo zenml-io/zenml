@@ -23,7 +23,6 @@ from zenml.core.backends.orchestrator.local.zenml_local_orchestrator import \
     ZenMLLocalDagRunner
 from zenml.core.backends.processing.processing_local_backend import \
     ProcessingLocalBackend
-from zenml.core.standards import standard_keys as keys
 
 
 class OrchestratorLocalBackend(BaseBackend):

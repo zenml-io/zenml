@@ -55,7 +55,9 @@ class DataPipeline(BasePipeline):
         Returns:
             A list of TFX components making up the data pipeline.
         """
-        data_config = config[keys.GlobalKeys.STEPS][keys.DataSteps.DATA]
+        data_config = \
+        config[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.STEPS][
+            keys.DataSteps.DATA]
         data = DataGen(
             source=data_config[StepKeys.SOURCE],
             source_args=data_config[StepKeys.ARGS]).with_id(
@@ -88,14 +90,6 @@ class DataPipeline(BasePipeline):
         uri = self.get_artifacts_uri_by_component(
             GDPComponent.DataSchema.name)[0]
         view_schema(uri)
-
-    def get_default_backends(self) -> Dict:
-        """Gets list of default backends for this pipeline."""
-        # For base class, orchestration is always necessary
-        return {
-            OrchestratorLocalBackend.BACKEND_KEY: OrchestratorLocalBackend(),
-            ProcessingLocalBackend.BACKEND_KEY: ProcessingLocalBackend()
-        }
 
     def steps_completed(self) -> bool:
         mandatory_steps = [keys.DataSteps.DATA]
