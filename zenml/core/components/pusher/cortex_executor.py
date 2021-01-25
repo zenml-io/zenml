@@ -17,6 +17,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
+import tempfile
 from typing import Any, Dict, List, Text
 
 import cortex
@@ -26,8 +28,6 @@ from tfx.types import artifact_utils
 from tfx.utils import io_utils
 from tfx.utils import json_utils
 from tfx.utils import path_utils
-
-from zenml.utils.source_utils import load_source_path_class
 
 # Keys for custom_config.
 _CUSTOM_CONFIG_KEY = 'custom_config'
@@ -93,17 +93,25 @@ class Executor(tfx_pusher_executor.Executor):
 
         # load the predictor
         predictor_path = cortex_serving_args.pop('predictor_path')
-        predictor = load_source_path_class(predictor_path)
+        with tempfile.TemporaryDirectory() as tmp_dir_name:
+            temp_project_dir = tmp_dir_name
+            p_dump_path = os.path.join(temp_project_dir, 'predictor.py')
+            io_utils.copy_file(predictor_path, p_dump_path)
 
-        # edit the api_config
-        api_config = cortex_serving_args.pop('api_config')
-        if 'config' not in api_config['predictor']:
-            api_config['predictor']['config'] = {}
-        api_config['predictor']['config']['model_artifact'] = model_path
+            # edit the api_config
+            api_config = cortex_serving_args.pop('api_config')
+            if 'config' not in api_config['predictor']:
+                api_config['predictor']['config'] = {}
+            api_config['predictor']['config']['model_artifact'] = model_path
 
-        # launch the api
-        cx.create_api(
-            api_spec=api_config, predictor=predictor, **cortex_serving_args)
+            # launch the api
+            api_config['predictor']['path'] = 'predictor.py'
+            api_config['predictor']['type'] = 'python'
+
+            cx.create_api(
+                api_config,
+                project_dir=temp_project_dir,
+                **cortex_serving_args)
 
         self._MarkPushed(
             model_push,

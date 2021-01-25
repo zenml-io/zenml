@@ -12,12 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
 from typing import Dict, Text, List, Optional
 
 from zenml.core.components.pusher import cortex_executor
+from zenml.core.repo.repo import Repository
 from zenml.core.steps.deployer.base_deployer import BaseDeployerStep
 from zenml.utils.logger import get_logger
-from zenml.utils.source_utils import resolve_source_path
+from zenml.utils.source_utils import get_path_from_source, \
+    get_class_path_from_source
 
 logger = get_logger(__name__)
 
@@ -33,7 +36,6 @@ class CortexDeployer(BaseDeployerStep):
                  requirements: List = [],
                  conda_packages: List = [],
                  env: Text = 'aws',
-                 project_dir: Optional[str] = None,
                  force: bool = True,
                  wait: bool = False,
                  model_name: Text = '',
@@ -54,7 +56,6 @@ class CortexDeployer(BaseDeployerStep):
         self.predictor = predictor
         self.api_config = api_config
         self.requirements = requirements
-        self.project_dir = project_dir
         self.conda_packages = conda_packages
         self.force = force
         self.wait = wait
@@ -64,23 +65,25 @@ class CortexDeployer(BaseDeployerStep):
             predictor=predictor,
             api_config=self.api_config,
             requirements=self.requirements,
-            project_dir=self.project_dir,
             conda_packages=self.conda_packages,
             force=self.force,
             wait=self.wait,
             **kwargs)
 
     def get_config(self):
+        predictor_path = self.predictor.__module__ + '.' + \
+                         self.predictor.__name__
+        p_file_path = \
+            get_path_from_source(get_class_path_from_source(predictor_path))
+        repo: Repository = Repository.get_instance()
+
         return {
             "cortex_serving_args": {
                 "env": self.env,
                 "api_config": self.api_config,
-                "predictor_path": resolve_source_path(
-                    self.predictor.__module__ + '.' + self.predictor.__name__
-                ),
+                "predictor_path": os.path.join(repo.path, p_file_path),
                 "requirements": self.requirements,
                 "conda_packages": self.conda_packages,
-                "project_dir": self.project_dir,
                 "force": self.force,
                 "wait": self.wait,
             }}
