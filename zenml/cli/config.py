@@ -19,9 +19,8 @@ import click
 
 from zenml.cli.cli import cli
 from zenml.cli.cli import pass_config
-from zenml.cli.utils import parse_unknown_options, error
+from zenml.cli.utils import parse_unknown_options
 from zenml.core.repo.repo import Repository
-from zenml.utils.print_utils import to_pretty_string
 
 
 @cli.group()
@@ -56,15 +55,12 @@ def opt_out(config):
 
 
 @config.command("list")
-def list_config():
+@click.pass_context
+def list_config(ctx):
     """Print the current ZenML config to the command line"""
-    try:
-        repo: Repository = Repository.get_instance()
-    except Exception as e:
-        error(e)
-        return
-
-    click.echo(to_pretty_string(repo.zenml_config))
+    ctx.invoke(get_metadata_store)
+    ctx.invoke(get_artifact_store)
+    ctx.invoke(get_pipelines_dir)
 
 
 # Metadata Store
