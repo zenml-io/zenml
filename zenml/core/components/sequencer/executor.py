@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
 from typing import Any, Dict, List, Text
 
 import apache_beam as beam
@@ -20,9 +21,8 @@ from tensorflow_data_validation.coders import tf_example_decoder
 from tfx import types
 from tfx.dsl.components.base.base_executor import BaseExecutor
 from tfx.types import artifact_utils
-from tfx.types.artifact_utils import get_split_uri
 from tfx.utils import io_utils
-import os
+
 from zenml.core.components.sequencer import constants
 from zenml.core.components.sequencer import utils
 from zenml.core.standards.standard_keys import StepKeys

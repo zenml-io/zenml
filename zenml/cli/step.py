@@ -14,6 +14,7 @@
 
 import click
 from tabulate import tabulate
+
 from zenml.cli.cli import cli
 from zenml.cli.utils import pass_repo
 from zenml.core.repo.repo import Repository

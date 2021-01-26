@@ -13,8 +13,6 @@
 #  permissions and limitations under the License.
 """Definition of the Spark Processing Backend"""
 
-from typing import Text
-
 from zenml.core.backends.processing.processing_local_backend import \
     ProcessingLocalBackend
 
@@ -32,7 +30,6 @@ class ProcessingSparkBackend(ProcessingLocalBackend):
 
     This backend is not implemented yet.
     """
-    BACKEND_TYPE = 'spark'
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

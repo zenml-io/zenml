@@ -15,7 +15,6 @@
 import os
 from typing import List, Text
 
-import tensorflow as tf
 import tensorflow_transform as tft
 
 from zenml.core.steps.base_step import BaseStep
@@ -60,26 +59,16 @@ class BaseTrainerStep(BaseStep):
         self.eval_files = eval_files
         self.schema = None
         self.log_dir = None
+        self.tf_transform_output = None
 
         # Infer schema and log_dir
         if self.transform_output is not None:
-            tf_transform_output = tft.TFTransformOutput(self.transform_output)
-            self.schema = tf_transform_output.transformed_feature_spec().copy()
+            self.tf_transform_output = tft.TFTransformOutput(self.transform_output)
+            self.schema = self.tf_transform_output.transformed_feature_spec().copy()
 
         if self.serving_model_dir is not None:
             self.log_dir = os.path.join(
                 os.path.dirname(self.serving_model_dir), 'logs')
-
-    def get_run_fn(self):
-        return self.run_fn
-
-    def run_fn(self):
-        """
-        Class method defining the control flow of the training process inside
-        the TFX Trainer Component Executor. Override this method in subclasses
-        to define your own custom training flow.
-        """
-        pass
 
     def input_fn(self,
                  file_pattern: List[Text],
@@ -101,51 +90,8 @@ class BaseTrainerStep(BaseStep):
         pass
 
     @staticmethod
-    def _get_serve_tf_examples_fn(model, tf_transform_output):
-        """
-        Defines a serving prediction signature. Override this function to
-        create a custom model endpoint that can be used for prediction at
-        serving time.
-
-        Args:
-            model: Trained model, output of the model_fn.
-            tf_transform_output: Output of the preceding Preprocessing
-             component.
-
-        Returns:
-            serve_examples_fn: A @tf.function annotated callable that takes
-             in a serialized tf.train.Example, parses it and serves the model
-             output of this Example as a prediction. In Tensorflow Extended,
-             such a mechanism is called a signature; for an example
-             implementation of this signature, see a ZenML derived TrainerStep
-             class.
-        """
-        pass
-
-    @staticmethod
-    def _get_ce_eval_tf_examples_fn(model, tf_transform_output):
-        """
-        Serving evaluation signature definition. Override this function to
-        define a custom model endpoint used for evaluation at serving time.
-
-        Args:
-            model: Trained model, output of the model_fn.
-            tf_transform_output: Output of the preceding Preprocessing
-             component.
-
-        Returns:
-            eval_examples_fn: A @tf.function annotated callable that takes
-             in a serialized tf.train.Example, parses it and serves the model
-             output of this Example as evaluation. In Tensorflow Extended,
-             such a mechanism is called a signature; for an example
-             implementation of this signature, see a ZenML derived TrainerStep
-             class.
-        """
-        pass
-
-    @staticmethod
-    def model_fn(train_dataset: tf.data.Dataset,
-                 eval_dataset: tf.data.Dataset):
+    def model_fn(train_dataset,
+                 eval_dataset):
         """
         Class method defining the training flow of the model. Override this
         in subclasses to define your own custom training flow.
@@ -158,3 +104,14 @@ class BaseTrainerStep(BaseStep):
             model: A trained machine learning model.
         """
         pass
+
+    def run_fn(self):
+        """
+        Class method defining the control flow of the training process inside
+        the TFX Trainer Component Executor. Override this method in subclasses
+        to define your own custom training flow.
+        """
+        pass
+
+    def get_run_fn(self):
+        return self.run_fn

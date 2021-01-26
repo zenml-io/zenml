@@ -14,6 +14,7 @@
 """Base Class for all ZenML datasources"""
 
 import os
+from abc import abstractmethod
 from typing import Text, Dict
 from uuid import uuid4
 
@@ -39,11 +40,12 @@ class BaseDatasource:
 
     Every ZenML datasource should override this class.
     """
-    DATA_STEP = None
-    PREFIX = 'pipeline_'
 
-    def __init__(self, name: Text, schema: Dict = None, _id: Text = None,
-                 _source: Text = None, *args, **kwargs):
+    def __init__(self,
+                 name: Text,
+                 schema: Dict = None,
+                 _id: Text = None,
+                 *args, **kwargs):
         """
         Construct the datasource
 
@@ -55,8 +57,6 @@ class BaseDatasource:
         if _id:
             # Its loaded from config
             self._id = _id
-            self._source = _source
-            self._immutable = True
             logger.debug(f'Datasource {name} loaded.')
         else:
             # If none, then this is assumed to be 'new'. Check dupes.
@@ -67,25 +67,21 @@ class BaseDatasource:
                     f'use Repository.get_instance().'
                     f'get_datasource_by_name("{name}") to fetch it.')
             self._id = str(uuid4())
-            self._immutable = False
-            self._source = source_utils.resolve_source_path(
-                self.__class__.__module__ + '.' + self.__class__.__name__
-            )
             track(event=CREATE_DATASOURCE)
             logger.info(f'Datasource {name} created.')
 
         self.name = name
         self.schema = schema
+        self._immutable = False
+        self._source = source_utils.resolve_source_path(
+            self.__class__.__module__ + '.' + self.__class__.__name__
+        )
 
     def __str__(self):
         return to_pretty_string(self.to_config())
 
     def __repr__(self):
         return to_pretty_string(self.to_config(), style=PrintStyles.PPRINT)
-
-    @classmethod
-    def get_name_from_pipeline_name(cls, pipeline_name: Text):
-        return pipeline_name[len(cls.PREFIX)]
 
     @classmethod
     def from_config(cls, config: Dict):
@@ -98,19 +94,21 @@ class BaseDatasource:
         Args:
             config: a DataStep config in dict-form (probably loaded from YAML).
         """
-        if keys.DataSteps.DATA not in config[keys.GlobalKeys.STEPS]:
+        if keys.DataSteps.DATA not in config[keys.PipelineKeys.STEPS]:
             raise Exception("Cant have datasource without data step.")
 
         # this is the data step config block
-        step_config = config[keys.GlobalKeys.STEPS][keys.DataSteps.DATA]
-        source = config[keys.GlobalKeys.DATASOURCE][keys.DatasourceKeys.SOURCE]
+        step_config = config[keys.PipelineKeys.STEPS][keys.DataSteps.DATA]
+        source = config[keys.PipelineKeys.DATASOURCE][
+            keys.DatasourceKeys.SOURCE]
         datasource_class = source_utils.load_source_path_class(source)
-        datasource_name = config[keys.GlobalKeys.DATASOURCE][
+        datasource_name = config[keys.PipelineKeys.DATASOURCE][
             keys.DatasourceKeys.NAME]
-        _id = config[keys.GlobalKeys.DATASOURCE][keys.DatasourceKeys.ID]
-        return datasource_class(
+        _id = config[keys.PipelineKeys.DATASOURCE][keys.DatasourceKeys.ID]
+        obj = datasource_class(
             name=datasource_name, _id=_id, _source=source,
             **step_config[keys.StepKeys.ARGS])
+        obj._immutable = True
 
     def to_config(self):
         """Converts datasource to ZenML config block."""
@@ -120,17 +118,9 @@ class BaseDatasource:
             keys.DatasourceKeys.ID: self._id
         }
 
-    def get_pipeline_name_from_name(self):
-        return self.PREFIX + self.name
-
+    @abstractmethod
     def get_data_step(self):
-        params = self.__dict__.copy()
-        # TODO: [HIGH] Figure out if there is a better way to do this
-        params.pop('name')
-        params.pop('_id')
-        params.pop('_source')
-        params.pop('_immutable')
-        return self.DATA_STEP(**params)
+        pass
 
     def _get_one_pipeline(self):
         """Gets representative pipeline from all pipelines associated."""

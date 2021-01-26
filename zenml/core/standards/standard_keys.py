@@ -61,28 +61,31 @@ class ConfigKeys:
 
 class GlobalKeys(ConfigKeys):
     VERSION = 'version'
-    ENV = 'environment'
-    STEPS = 'steps'
-    DATASOURCE = 'datasource'
-
-
-class EnvironmentKeys(ConfigKeys):
-    EXPERIMENT_NAME = 'pipeline_name'
     ARTIFACT_STORE = 'artifact_store'
     METADATA_STORE = 'metadata'
+    BACKEND = 'backend'
+    PIPELINE = 'pipeline'
+
+
+class PipelineKeys(ConfigKeys):
+    NAME = 'name'
+    TYPE = 'type'
+    SOURCE = 'source'
+    STEPS = 'steps'
+    DATASOURCE = 'datasource'
     ENABLE_CACHE = 'enable_cache'
-    BACKENDS = 'backends'
 
 
 class DatasourceKeys(ConfigKeys):
+    ID = 'id'
     NAME = 'name'
     SOURCE = 'source'
-    ID = 'id'
 
 
 class BackendKeys(ConfigKeys):
     TYPE = 'type'
     ARGS = 'args'
+    SOURCE = 'source'
 
 
 class MLMetadataKeys(ConfigKeys):
@@ -93,6 +96,7 @@ class MLMetadataKeys(ConfigKeys):
 class StepKeys(ConfigKeys):
     SOURCE = 'source'
     ARGS = 'args'
+    BACKEND = 'backend'
 
 
 class TrainingSteps(ConfigKeys):

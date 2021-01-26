@@ -27,23 +27,20 @@ from tfx.components.trainer.component import Trainer
 from tfx.components.transform.component import Transform
 from tfx.proto import trainer_pb2
 
-from zenml.core.backends.orchestrator.local.orchestrator_local_backend import \
-    OrchestratorLocalBackend
-from zenml.core.backends.processing.processing_local_backend import \
-    ProcessingLocalBackend
 from zenml.core.backends.training.training_local_backend import \
     TrainingLocalBackend
 from zenml.core.components.data_gen.component import DataGen
-from zenml.core.components.split_gen.component import SplitGen
 from zenml.core.components.sequencer.component import Sequencer
+from zenml.core.components.split_gen.component import SplitGen
 from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.standards import standard_keys as keys
+from zenml.core.steps.deployer.base_deployer import BaseDeployerStep
 from zenml.core.steps.deployer.gcaip_deployer import GCAIPDeployer
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
 from zenml.core.steps.preprocesser.base_preprocesser import \
     BasePreprocesserStep
-from zenml.core.steps.split.base_split_step import BaseSplit
 from zenml.core.steps.sequencer.base_sequencer import BaseSequencerStep
+from zenml.core.steps.split.base_split_step import BaseSplit
 from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
 from zenml.utils import constants
 from zenml.utils import path_utils
@@ -79,7 +76,7 @@ class TrainingPipeline(BasePipeline):
              pipeline.
 
         """
-        steps = config[keys.GlobalKeys.STEPS]
+        steps = config[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.STEPS]
 
         component_list = []
 
@@ -180,7 +177,12 @@ class TrainingPipeline(BasePipeline):
         # TRAINING #
         ############
         training_backend: TrainingLocalBackend = \
-            self.backends_dict[TrainingLocalBackend.BACKEND_KEY]
+            self.steps_dict[keys.TrainingSteps.TRAINER].backend
+
+        # default to local
+        if training_backend is None:
+            training_backend = TrainingLocalBackend()
+
         training_kwargs = {
             'custom_executor_spec': training_backend.get_executor_spec(),
             'custom_config': steps[keys.TrainingSteps.TRAINER]
@@ -226,22 +228,10 @@ class TrainingPipeline(BasePipeline):
         # SERVING #
         ###########
         if keys.TrainingSteps.DEPLOYER in steps:
-            serving_args = steps[keys.TrainingSteps.DEPLOYER]['args']
-
-            project_id = serving_args['project_id']
-            output_base_dir = self.artifact_store.path
-            if 'model_name' in serving_args:
-                model_name = serving_args['model_name']
-            else:
-                model_name = self.pipeline_name().replace('-', '_')
-
-            gcaip_deployer = GCAIPDeployer(output_base_dir=output_base_dir,
-                                           project_id=project_id,
-                                           model_name=model_name)
-
-            pusher_config = gcaip_deployer.build_pusher_config()
-            pusher_executor_spec = gcaip_deployer.get_executor_spec()
-
+            deployer: BaseDeployerStep = \
+                self.steps_dict[keys.TrainingSteps.DEPLOYER]
+            pusher_config = deployer._build_pusher_args()
+            pusher_executor_spec = deployer._get_executor_spec()
             pusher = Pusher(model_export=trainer.outputs.output,
                             custom_executor_spec=pusher_executor_spec,
                             **pusher_config).with_id(
@@ -340,15 +330,6 @@ class TrainingPipeline(BasePipeline):
         schema_uri = self.get_artifacts_uri_by_component(
             GDPComponent.SplitSchema.name)[0]
         detect_anomalies(stats_uri, schema_uri, split_name)
-
-    def get_default_backends(self) -> Dict:
-        """Gets list of default backends for this pipeline."""
-        # For base class, orchestration is always necessary
-        return {
-            OrchestratorLocalBackend.BACKEND_KEY: OrchestratorLocalBackend(),
-            ProcessingLocalBackend.BACKEND_KEY: ProcessingLocalBackend(),
-            TrainingLocalBackend.BACKEND_KEY: TrainingLocalBackend(),
-        }
 
     def steps_completed(self) -> bool:
         mandatory_steps = [keys.TrainingSteps.SPLIT,

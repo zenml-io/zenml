@@ -32,8 +32,6 @@ class ProcessingDataFlowBackend(ProcessingLocalBackend):
     This backend utilizes the beam v2 runner to run a custom docker image on
     the Dataflow job.
     """
-    BACKEND_TYPE = 'dataflow'
-
     def __init__(
             self,
             project: Text,

@@ -123,7 +123,7 @@ class Repository:
         GitWrapper(repo_path)
 
         # use the underlying ZenMLConfig class to create the config
-        ZenMLConfig.create_config(
+        ZenMLConfig.to_config(
             repo_path, artifact_store_path, metadata_store, pipelines_dir)
 
         # create global config
@@ -166,7 +166,8 @@ class Repository:
 
         for file_path in self.get_pipeline_file_paths():
             c = yaml_utils.read_yaml(file_path)
-            for step_name, step_config in c[keys.GlobalKeys.STEPS].items():
+            for step_name, step_config in c[keys.GlobalKeys.PIPELINE][
+                keys.PipelineKeys.STEPS].items():
                 # Get version from source
                 class_ = source_utils.get_class_path_from_source(
                     step_config[keys.StepKeys.SOURCE])
@@ -202,7 +203,8 @@ class Repository:
         steps_dict = {}
         for file_path in self.get_pipeline_file_paths():
             c = yaml_utils.read_yaml(file_path)
-            for step_name, step_config in c[keys.GlobalKeys.STEPS].items():
+            for step_name, step_config in c[keys.GlobalKeys.PIPELINE][
+                keys.PipelineKeys.STEPS].items():
                 # Get version from source
                 version = source_utils.get_version_from_source(
                     step_config[keys.StepKeys.SOURCE])
@@ -237,7 +239,8 @@ class Repository:
         n = []
         for file_path in self.get_pipeline_file_paths():
             c = yaml_utils.read_yaml(file_path)
-            n.append(c[keys.GlobalKeys.DATASOURCE][keys.DatasourceKeys.NAME])
+            n.append(c[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.DATASOURCE][
+                         keys.DatasourceKeys.NAME])
         return list(set(n))
 
     @track(event=GET_DATASOURCES)
@@ -253,7 +256,7 @@ class Repository:
         datasources_name = set()
         for file_path in self.get_pipeline_file_paths():
             c = yaml_utils.read_yaml(file_path)
-            ds = BaseDatasource.from_config(c)
+            ds = BaseDatasource.from_config(c[keys.GlobalKeys.PIPELINE])
             if ds.name not in datasources_name:
                 datasources.append(ds)
                 datasources_name.add(ds.name)
@@ -314,19 +317,14 @@ class Repository:
         pipelines = []
         for file_path in self.get_pipeline_file_paths():
             c = yaml_utils.read_yaml(file_path)
-            if c[keys.GlobalKeys.DATASOURCE][keys.DatasourceKeys.ID] == \
-                    datasource._id:
+            if c[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.DATASOURCE][
+                keys.DatasourceKeys.ID] == datasource._id:
                 pipelines.append(BasePipeline.from_config(c))
         return pipelines
 
     @track(event=GET_PIPELINES)
     def get_pipelines(self) -> List:
-        """
-        Gets list of all pipelines.
-
-        Args:
-            type_filter (list): list of types to filter by.
-        """
+        """Gets list of all pipelines."""
         from zenml.core.pipelines.base_pipeline import BasePipeline
         pipelines = []
         for file_path in self.get_pipeline_file_paths():

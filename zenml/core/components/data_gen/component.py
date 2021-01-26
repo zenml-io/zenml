@@ -39,10 +39,8 @@ class DataGen(BaseComponent):
         Args:
             source:
             source_args:
-            schema:
             instance_name:
             examples:
-            enable_cache:
         """
         examples = examples or Channel(type=standard_artifacts.Examples)
 

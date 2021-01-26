@@ -23,7 +23,6 @@ from zenml.core.backends.orchestrator.local.zenml_local_orchestrator import \
     ZenMLLocalDagRunner
 from zenml.core.backends.processing.processing_local_backend import \
     ProcessingLocalBackend
-from zenml.core.standards import standard_keys as keys
 
 
 class OrchestratorLocalBackend(BaseBackend):
@@ -42,8 +41,7 @@ class OrchestratorLocalBackend(BaseBackend):
     For quick prototyping and local tests, a single-machine direct backend can
     be selected to execute an ML Pipeline with minimal orchestration overhead.
     """
-    BACKEND_TYPE = 'local'
-    BACKEND_KEY = 'orchestrator'
+    BACKEND_TYPE = 'orchestrator'
 
     @staticmethod
     def get_tfx_pipeline(config: Dict[Text, Any]) -> pipeline.Pipeline:
@@ -56,20 +54,6 @@ class OrchestratorLocalBackend(BaseBackend):
         Returns:
             tfx_pipeline: A TFX pipeline object.
         """
-        env_dict = config[keys.GlobalKeys.ENV]
-
-        # Dataset, experiment
-        # Using the artifact store ID makes sense
-        # It is used currently to make all pipelines have the same base
-        # context in ML metadata store.
-        # artifact_store = ArtifactStore(
-        #     env_dict[keys.EnvironmentKeys.ARTIFACT_STORE])
-        # pipeline_name = env_dict[keys.EnvironmentKeys.EXPERIMENT_NAME]
-        #
-        # metadata_store: ZenMLMetadataStore = ZenMLMetadataStore.from_config(
-        #     env_dict[keys.EnvironmentKeys.METADATA_STORE])
-        # metadata_connection_config = metadata_store.get_tfx_metadata_config()
-
         from zenml.core.pipelines.base_pipeline import BasePipeline
         zen_pipeline: BasePipeline = BasePipeline.from_config(config)
 
@@ -87,9 +71,17 @@ class OrchestratorLocalBackend(BaseBackend):
             artifact_store.path, artifact_store.unique_id)
         pipeline_log = os.path.join(pipeline_root, 'logs', pipeline_name)
 
-        # Execution
-        execution: ProcessingLocalBackend = \
-            zen_pipeline.backends_dict[ProcessingLocalBackend.BACKEND_KEY]
+        # Resolve execution backend
+        execution = ProcessingLocalBackend()  # default
+        for e in zen_pipeline.steps_dict.values():
+            # find out the processing backends, take the first one which is
+            # not a ProcessingLocalBackend
+            if e.backend and issubclass(
+                    e.backend.__class__, ProcessingLocalBackend) and \
+                    e.backend.__class__ != ProcessingLocalBackend:
+                execution = e.backend
+                break
+
         beam_args = execution.get_beam_args(pipeline_name, pipeline_root)
 
         tfx_pipeline = pipeline.Pipeline(

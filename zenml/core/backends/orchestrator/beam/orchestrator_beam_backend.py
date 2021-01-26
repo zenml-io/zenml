@@ -25,8 +25,6 @@ from zenml.core.pipelines.utils import parse_yaml_beam_args
 
 class OrchestratorBeamBackend(OrchestratorLocalBackend):
     """Uses Apache Beam as a Pipeline orchestrator."""
-    BACKEND_TYPE = 'beam'
-
     def __init__(
             self, worker_machine_type: Text = 'e2-medium',
             num_workers: int = 4,
@@ -58,11 +56,11 @@ class OrchestratorBeamBackend(OrchestratorLocalBackend):
             'disk_size_gb': self.disk_size_gb,
             'autoscaling_algorithm': self.autoscaling_algorithm,
             'setup_file': os.path.join(os.getcwd(), 'setup.py'),
-            'job_name': 'zenml-' + run_name,
-            'temp_location': pipeline_temp,
-            'staging_location': staging_location,
-            'extra_package': gz_path,
-            'requirements_file': req_path,
+            # 'job_name': 'zenml-' + run_name,
+            # 'temp_location': pipeline_temp,
+            # 'staging_location': staging_location,
+            # 'extra_package': gz_path,
+            # 'requirements_file': req_path,
         })
         tfx_pipeline = self.get_tfx_pipeline(config)
         ZenMLBeamlDagRunner(beam_orchestrator_args).run(tfx_pipeline)

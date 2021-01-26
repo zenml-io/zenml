@@ -13,9 +13,11 @@
 #  permissions and limitations under the License.
 """Tests for different split steps."""
 
+import random
+
 import pytest
 import tensorflow as tf
-import random
+
 from zenml.core.steps.split.categorical_domain_split_step import \
     CategoricalDomainSplit
 from zenml.core.steps.split.categorical_ratio_split_step import \

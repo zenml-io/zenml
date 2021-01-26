@@ -221,3 +221,17 @@ def load_source_path_class(source_path: Text) -> Type:
         class_ = import_class_by_path(source)
 
     return class_
+
+
+def is_source(source_path: Text) -> bool:
+    """
+    Checks whether the source_path is source or not.
+
+    Args:
+        source_path (str): relative module path e.g. this.module.Class[@sha]
+    """
+    try:
+        load_source_path_class(source_path)
+    except:
+        return False
+    return True

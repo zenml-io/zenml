@@ -16,6 +16,17 @@
   - file: getting-started/creating-custom-logic
     title: Creating custom logic
 
+- part: Benefits
+  chapters:
+    - file: benefits/extensibility
+      title: Extensibility
+    - file: benefits/ensuring-ml-reproducibility
+      title: Reproducibility
+    - file: benefits/tracked-metadata
+      title: Metadata Tracking
+    - file: benefits/reusing-artifacts
+      title: Caching
+
 - part: Repository
   chapters:
   - file: repository/what-is-a-repository
@@ -54,8 +65,6 @@
     title: Data [WIP]
   - file: pipelines/batch-inference
     title: Batch Inference [WIP]
-  - file: pipelines/reusing-artifacts
-    title: Caching
   - file: pipelines/scheduling-jobs
     title: Scheduling Jobs
 
@@ -95,9 +104,9 @@
     - file: tutorials/creating-first-pipeline.ipynb
       title: Creating your first pipeline
     - file: tutorials/running-a-pipeline-on-a-google-cloud-vm
-      title: Running a training pipeline on a Google Cloud VM
+      title: Running a pipeline on Google Cloud VM
     - file: tutorials/running-a-pipeline-on-kubernetes
-      title: Running a training pipeline on Kubernetes
+      title: Running a pipeline on Kubernetes
     - file: tutorials/team-collaboration-with-zenml-and-google-cloud
       title: Team collaboration with ZenML and Google Cloud
     - file: tutorials/style-transfer-using-a-cyclegan
@@ -106,10 +115,9 @@
       title: Classification with 59M samples
     - file: tutorials/training-on-gcp-gpu
       title: Training with GPUs on the Cloud
-    - file: tutorials/ensuring-ml-reproducibility
-      title: Ensuring ML reproducibility with ZenML
     - file: tutorials/deploying-on-gcp
-      title: Deploying a model to the cloud
+      title: Deploying a model to GCP
+
 - part: Misc
   chapters:
   - file: misc/roadmap

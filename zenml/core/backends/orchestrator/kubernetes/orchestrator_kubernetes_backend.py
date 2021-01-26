@@ -15,26 +15,24 @@
 
 import base64
 import json
-import time
 import os
-from typing import Text
+import time
 from typing import Dict, Any
+from typing import Text
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from kubernetes.config.config_exception import ConfigException
-
-from tfx.orchestration import pipeline
 
 from zenml.core.backends.orchestrator.local.orchestrator_local_backend import \
     OrchestratorLocalBackend
 from zenml.core.repo.repo import Repository
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils
-from zenml.utils.string_utils import to_dns1123, get_id
 from zenml.utils.constants import ZENML_BASE_IMAGE_NAME, K8S_ENTRYPOINT
-from zenml.utils.logger import get_logger
 from zenml.utils.enums import ImagePullPolicy
+from zenml.utils.logger import get_logger
+from zenml.utils.string_utils import to_dns1123, get_id
 
 logger = get_logger(__name__)
 
@@ -63,10 +61,10 @@ class OrchestratorKubernetesBackend(OrchestratorLocalBackend):
         image_pull_policy: Kubernetes image pull policy.
             One of ['Always', 'Never', 'IfNotPresent'].
             (default: 'IfNotPresent')
-        kubernetes_config_path: Path to your Kubernetes cluster connection config.
+        kubernetes_config_path: Path to your Kubernetes cluster connection
+        config.
             (default: '~/.kube/config'
     """
-    BACKEND_TYPE = 'kubernetes'
 
     def __init__(self,
                  image: Text = ZENML_BASE_IMAGE_NAME,
@@ -89,16 +87,16 @@ class OrchestratorKubernetesBackend(OrchestratorLocalBackend):
         super().__init__(**kwargs)
 
     def create_job_object(self, config):
-        experiment_name = config[keys.GlobalKeys.ENV][
-            keys.EnvironmentKeys.EXPERIMENT_NAME]
-        job_name = to_dns1123(f'{self.job_prefix}{experiment_name}', length=63)
+        pipeline_name = config[keys.GlobalKeys.PIPELINE][
+            keys.PipelineKeys.NAME]
+        job_name = to_dns1123(f'{self.job_prefix}{pipeline_name}', length=63)
         labels = self.extra_labels or {}
         job_labels = {
             "app": "zenml",
-            "pipeline": experiment_name,
-            "datasource-id": config[keys.GlobalKeys.DATASOURCE][
-                keys.DatasourceKeys.ID],
-            "pipeline-id": get_id(experiment_name)
+            "pipeline": pipeline_name,
+            "datasource-id": config[keys.GlobalKeys.PIPELINE][
+                keys.PipelineKeys.DATASOURCE][keys.DatasourceKeys.ID],
+            "pipeline-id": get_id(pipeline_name)
         }
         labels.update(job_labels)  # make sure our labels are present
 
@@ -177,8 +175,7 @@ class OrchestratorKubernetesBackend(OrchestratorLocalBackend):
         logger.info(f'Created tar of current repository at: {path_to_tar}')
 
         # Upload tar to artifact store
-        store_path = \
-            config[keys.GlobalKeys.ENV][keys.EnvironmentKeys.ARTIFACT_STORE]
+        store_path = config[keys.GlobalKeys.ARTIFACT_STORE]
         store_staging_area = os.path.join(store_path, STAGING_AREA)
         store_path_to_tar = os.path.join(store_staging_area, tar_file_name)
         path_utils.copy(path_to_tar, store_path_to_tar)
@@ -189,8 +186,7 @@ class OrchestratorKubernetesBackend(OrchestratorLocalBackend):
         logger.info(f'Removed tar at: {path_to_tar}')
 
         # Append path of tar in config orchestrator utils
-        config[keys.GlobalKeys.ENV][keys.EnvironmentKeys.BACKENDS][
-            OrchestratorKubernetesBackend.BACKEND_KEY][keys.BackendKeys.ARGS][
+        config[keys.GlobalKeys.BACKEND][keys.BackendKeys.ARGS][
             TAR_PATH_ARG] = store_path_to_tar
 
         # Launch the instance

@@ -32,9 +32,7 @@ class TrainingLocalBackend(BaseBackend):
     Processing Units (GPUs) or application-specific integrated circuits
     (ASICs).
     """
-
-    BACKEND_TYPE = 'local'
-    BACKEND_KEY = 'training'
+    BACKEND_TYPE = 'training'
 
     def get_executor_spec(self):
         """Return a TFX Executor spec for the Trainer Component."""

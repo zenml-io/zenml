@@ -32,4 +32,4 @@ RUN apt-get update -y && \
   pip install --no-cache-dir --upgrade --pre pip
 
 ADD . /zenml
-RUN pip install -e .
+RUN pip install -e .[all]

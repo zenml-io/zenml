@@ -12,12 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from typing import Text
+
 import click
 from tabulate import tabulate
+
 from zenml.cli.cli import cli
 from zenml.cli.utils import pretty_print, pass_repo
 from zenml.core.repo.repo import Repository
-from typing import Text
 
 
 @cli.group()

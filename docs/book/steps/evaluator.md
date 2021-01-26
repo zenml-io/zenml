@@ -17,6 +17,9 @@ namely `slices` and `metrics`.
   conducted on each slice.
 * `metrics` define which metrics will be computed during the evaluation.
 
+```{warning}
+Currently, the TFMAEvaluator only works with Trainers fully implementing the `TFBaseTrainerStep` interface. An example is the standard `tf_ff_trainer.FeedForwardTrainer` step.
+```
 #### Example
 Let's start with a simple example. Imagine you are dealing with a simple regression task on a single 
 label and you want to compute the `mean_squared_error` of your trained model on the eval dataset. 
