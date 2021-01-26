@@ -32,6 +32,7 @@ from zenml.utils.post_training.post_training_utils import \
     convert_raw_dataset_to_pandas, view_statistics
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
 from zenml.utils.zenml_analytics import track, CREATE_DATASOURCE
+from zenml.utils.exceptions import AlreadyExistsException
 
 logger = get_logger(__name__)
 
@@ -63,10 +64,9 @@ class BaseDatasource:
             # If none, then this is assumed to be 'new'. Check dupes.
             all_names = Repository.get_instance().get_datasource_names()
             if any(d == name for d in all_names):
-                raise Exception(
-                    f'Datasource {name} already exists! Please '
-                    f'use Repository.get_instance().'
-                    f'get_datasource_by_name("{name}") to fetch it.')
+                raise AlreadyExistsException(
+                    name=name,
+                    resource_type='datasource')
             self._id = str(uuid4())
             track(event=CREATE_DATASOURCE)
             logger.info(f'Datasource {name} created.')

@@ -36,13 +36,27 @@ class EmptyDatasourceException(Exception):
 
 
 class DoesNotExistException(Exception):
-    """Raises exception when the `name` does not exist in the system."""
+    """Raises exception when the `name` does not exist in the system but an
+    action is being done that requires it to be present."""
 
     def __init__(self,
                  name='',
                  reason='',
                  message='{} does not exist! This might be due to: {}'):
         super().__init__(message.format(name, reason))
+
+
+class AlreadyExistsException(Exception):
+    """Raises exception when the `name` already exist in the system but an
+    action is trying to create a resource with the same name."""
+
+    def __init__(self,
+                 name='',
+                 resource_type=''):
+        message = f'{resource_type} {name} already exists! Please use ' \
+                  f'Repository.get_instance().get_{resource_type}_by_name' \
+                  f'("{name}") to fetch it.'
+        super().__init__(message)
 
 
 class PipelineNotSucceededException(Exception):
