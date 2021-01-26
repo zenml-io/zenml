@@ -1,9 +1,12 @@
+import os
+
 from zenml.core.backends.processing.processing_dataflow_backend import \
     ProcessingDataFlowBackend
 from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.metadata.mysql_metadata_wrapper import MySQLMetadataStore
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
 from zenml.core.repo.artifact_store import ArtifactStore
+from zenml.core.repo.repo import Repository
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
 from zenml.core.steps.preprocesser.standard_preprocesser \
     .standard_preprocesser import \
@@ -11,14 +14,15 @@ from zenml.core.steps.preprocesser.standard_preprocesser \
 from zenml.core.steps.split.random_split import RandomSplit
 from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
     FeedForwardTrainer
+from zenml.utils.exceptions import AlreadyExistsException
 
-artifact_store_path = 'gs://your-bucket-name/optional-subfolder'
-project = 'PROJECT'  # the project to launch the VM in
-cloudsql_connection_name = f'{project}:REGION:INSTANCE'
-mysql_db = 'DATABASE'
-mysql_user = 'USERNAME'
-mysql_pw = 'PASSWORD'
-training_job_dir = artifact_store_path + '/gcaiptrainer/'
+ARTIFACT_STORE_PATH = os.getenv('ARTIFACT_STORE_PATH')
+GCP_PROJECT = os.getenv('GCP_PROJECT')
+MYSQL_DB = os.getenv('MYSQL_DB')
+MYSQL_USER = os.getenv('MYSQL_USER')
+MYSQL_PWD = os.getenv('MYSQL_PWD')
+MYSQL_HOST = os.getenv('MYSQL_HOST', '127.0.0.1')
+MYSQL_PORT = os.getenv('MYSQL_PORT', 3306)
 
 # Run the pipeline locally but distribute the beam-compatible steps, i.e.,
 # the Data, Statistics, Preprocessing and Evaluator Steps.
@@ -26,15 +30,22 @@ training_job_dir = artifact_store_path + '/gcaiptrainer/'
 # to build a new Docker image based on the ZenML Dataflow image, and pass that
 # into the `image` parameter in the ProcessingDataFlowBackend
 
-
 # Define the processing backend
-processing_backend = ProcessingDataFlowBackend(project=project)
+processing_backend = ProcessingDataFlowBackend(
+    project=GCP_PROJECT,
+    staging_location=ARTIFACT_STORE_PATH,
+)
 
-training_pipeline = TrainingPipeline(name='GCP Orchestrated')
+# Define the training pipeline
+training_pipeline = TrainingPipeline(name='3')
 
 # Add a datasource. This will automatically track and version it.
-ds = CSVDatasource(name='Pima Indians Diabetes',
-                   path='gs://zenml_quickstart/diabetes.csv')
+try:
+    ds = CSVDatasource(name='Pima Indians Diabetes 3',
+                       path='gs://zenml_quickstart/diabetes.csv')
+except AlreadyExistsException:
+    ds = Repository.get_instance().get_datasource_by_name(
+        'Pima Indians Diabetes 3')
 training_pipeline.add_datasource(ds)
 
 # Add a split
@@ -72,18 +83,18 @@ training_pipeline.add_evaluator(
 
 # Define the metadata store
 metadata_store = MySQLMetadataStore(
-    host='127.0.0.1',
-    port=3306,
-    database=mysql_db,
-    username=mysql_user,
-    password=mysql_pw,
+    host=MYSQL_HOST,
+    port=MYSQL_PORT,
+    database=MYSQL_DB,
+    username=MYSQL_USER,
+    password=MYSQL_PWD,
 )
 
 # Define the artifact store
-artifact_store = ArtifactStore(artifact_store_path)
+artifact_store = ArtifactStore(ARTIFACT_STORE_PATH)
 
 # Run the pipeline
 training_pipeline.run(
-    metadata_store=metadata_store,
-    artifact_store=artifact_store,
+    # metadata_store=metadata_store,
+    # artifact_store=artifact_store,
 )

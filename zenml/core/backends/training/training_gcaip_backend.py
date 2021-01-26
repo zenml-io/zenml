@@ -54,8 +54,7 @@ class SingleGPUTrainingGCAIPBackend(TrainingLocalBackend):
             job_name: Text = f'train_{int(time.time())}',
             region: Text = 'europe-west1',
             python_version: Text = '3.7',
-            max_running_time: int = 7200,
-            **kwargs):
+            max_running_time: int = 7200):
         """
         An opinionated wrapper around a GCAIP training job.
 
@@ -86,7 +85,17 @@ class SingleGPUTrainingGCAIPBackend(TrainingLocalBackend):
         self.region = region
         self.python_version = python_version
         self.max_running_time = max_running_time
-        super().__init__(**kwargs)
+        super().__init__(
+            project=project,
+            job_dir=job_dir,
+            gpu_type=gpu_type,
+            machine_type=machine_type,
+            image=image,
+            job_name=job_name,
+            region=region,
+            python_version=python_version,
+            max_running_time=max_running_time,
+        )
 
     def get_executor_spec(self):
         return executor_spec.ExecutorClassSpec(

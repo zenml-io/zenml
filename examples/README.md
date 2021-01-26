@@ -4,9 +4,9 @@ This `example` folder is dedicated to provide our users with some practical exam
 
 Here you can find a list with brief descriptions for each example:
 
+- **distributed_processing**: Showcases distributed preprocessing wth`Google Cloud Platform / Dataflow` as the processing backend.
 - **experimental**: Experimental examples.
 - **gan**: Tutorial on how to create and train a GAN model with a custom `TrainerStep` and `PreprocessorStep`.
-- **gcp_dataflow**: Showcases distributed preprocessing wth`Google Cloud Platform / Dataflow` as the processing backend.
 - **gcp_orchestrated**: Runs pipeline on a virtual machine on `Google Cloud Platform` as the orchestration backend.
 - **gcp_trained**: A simple pipeline with `Google Cloud AI Platform` as the training backend.
 - **kubernetes**: Launches a kubernetes job on a kubernetes cluster.

@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Base High-level ZenML Pipeline definition"""
 
+import time
 from abc import abstractmethod
 from typing import Dict, Text, Any, Optional, List
 from uuid import uuid4
@@ -45,7 +46,7 @@ class BasePipeline:
     PIPELINE_TYPE = 'base'
 
     def __init__(self,
-                 name: Text,
+                 name: Text = None,
                  enable_cache: Optional[bool] = True,
                  steps_dict: Dict[Text, BaseStep] = None,
                  backend: OrchestratorLocalBackend = None,
@@ -71,6 +72,9 @@ class BasePipeline:
             artifact_store: Configured artifact store. If None,
              the default artifact store is used.
         """
+        # Generate a name if not given
+        if name is None:
+            name = str(int(time.time()))
         self.name = name
         self._immutable = False
 
@@ -223,9 +227,8 @@ class BasePipeline:
         return obj
 
     def _check_registered(self):
-        if self.file_name in \
-                Repository.get_instance().get_pipeline_file_paths(
-                    only_file_names=True):
+        if Repository.get_instance().get_pipeline_by_name(
+                self.name) is not None:
             raise AlreadyExistsException(
                 name=self.name, resource_type='pipeline')
 
@@ -260,7 +263,8 @@ class BasePipeline:
             keys.PipelineKeys.TYPE: self.PIPELINE_TYPE,
             keys.PipelineKeys.SOURCE: self._source,
             keys.PipelineKeys.ENABLE_CACHE: self.enable_cache,
-            keys.PipelineKeys.DATASOURCE: self.datasource.to_config(),
+            keys.PipelineKeys.DATASOURCE: self.datasource.to_config() if
+            self.datasource is not None else None,
         })
         return steps_config
 
