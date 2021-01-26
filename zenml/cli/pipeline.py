@@ -20,7 +20,9 @@ from tabulate import tabulate
 
 from zenml.cli.cli import cli
 from zenml.cli.utils import error, pretty_print, pass_repo
+from zenml.core.pipelines.training_pipeline import TrainingPipeline
 from zenml.core.repo.repo import Repository
+from zenml.utils.yaml_utils import read_yaml
 
 
 @cli.group()
@@ -76,22 +78,22 @@ def get_pipeline_by_name(repo: Repository, pipeline_name: Text):
     pretty_print(p)
 
 
-# @pipeline.command('run')
-# @click.argument('path_to_config')
-# @pass_repo
-# def run_pipeline(path_to_config: Text):
-#     """
-#     Runs pipeline specified by the given config YAML object.
-#
-#     Args:
-#         path_to_config: Path to config of the designated pipeline.
-#          Has to be matching the YAML file name.
-#     """
-#     # config has metadata store, backends and artifact store,
-#     # so no need to specify them
-#     try:
-#         config = read_yaml(path_to_config)
-#         p: TrainingPipeline = TrainingPipeline.from_config(config)
-#         p.run()
-#     except Exception as e:
-#         error(e)
+@pipeline.command('run')
+@click.argument('path_to_config')
+def run_pipeline(path_to_config: Text):
+    """
+    Runs pipeline specified by the given config YAML object.
+
+    Args:
+        path_to_config: Path to config of the designated pipeline.
+         Has to be matching the YAML file name.
+    """
+    # config has metadata store, backends and artifact store,
+    # so no need to specify them
+    print(path_to_config)
+    try:
+        config = read_yaml(path_to_config)
+        p: TrainingPipeline = TrainingPipeline.from_config(config)
+        p.run()
+    except Exception as e:
+        error(e)
