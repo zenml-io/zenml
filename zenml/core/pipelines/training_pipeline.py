@@ -85,6 +85,7 @@ class TrainingPipeline(BasePipeline):
         ############
         data_config = steps[keys.TrainingSteps.DATA]
         data = DataGen(
+            name=self.datasource.name,
             source=data_config[keys.StepKeys.SOURCE],
             source_args=data_config[keys.StepKeys.ARGS]
         ).with_id(GDPComponent.DataGen.name)

@@ -94,6 +94,7 @@ class MLMetadataKeys(ConfigKeys):
 
 
 class StepKeys(ConfigKeys):
+    NAME = 'name'
     SOURCE = 'source'
     ARGS = 'args'
     BACKEND = 'backend'

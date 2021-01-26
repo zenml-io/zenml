@@ -13,6 +13,7 @@ from zenml.core.standards.standard_keys import StepKeys
 
 class DataGenSpec(ComponentSpec):
     PARAMETERS = {
+        StepKeys.NAME: ExecutionParameter(type=Text),
         StepKeys.SOURCE: ExecutionParameter(type=Text),
         StepKeys.ARGS: ExecutionParameter(type=Dict[Text, Any]),
     }
@@ -27,6 +28,7 @@ class DataGen(BaseComponent):
     EXECUTOR_SPEC = ExecutorClassSpec(DataExecutor)
 
     def __init__(self,
+                 name: Text,
                  source: Text,
                  source_args: Dict[Text, Any],
                  instance_name: Optional[Text] = None,
@@ -37,6 +39,7 @@ class DataGen(BaseComponent):
         versioning data for now.
 
         Args:
+            name: name of datasource.
             source:
             source_args:
             instance_name:
@@ -45,7 +48,8 @@ class DataGen(BaseComponent):
         examples = examples or Channel(type=standard_artifacts.Examples)
 
         # Initiate the spec and create instance
-        spec = self.SPEC_CLASS(source=source,
+        spec = self.SPEC_CLASS(name=name,
+                               source=source,
                                args=source_args,
                                examples=examples)
 
