@@ -95,8 +95,24 @@ class Executor(tfx_pusher_executor.Executor):
         predictor_path = cortex_serving_args.pop('predictor_path')
         with tempfile.TemporaryDirectory() as tmp_dir_name:
             temp_project_dir = tmp_dir_name
+
+            # predictor
             p_dump_path = os.path.join(temp_project_dir, 'predictor.py')
             io_utils.copy_file(predictor_path, p_dump_path)
+
+            # requirements.txt
+            reqs = cortex_serving_args.pop('requirements', [])
+            if reqs :
+                r_dump_path = os.path.join(
+                    temp_project_dir, 'requirements.txt')
+                io_utils.write_string_file(reqs, r_dump_path)
+
+            # conda-packages.txt
+            c_reqs = cortex_serving_args.pop('conda_packages', [])
+            if c_reqs:
+                r_dump_path = os.path.join(
+                    temp_project_dir, 'conda-packages.txt')
+                io_utils.write_string_file(c_reqs, r_dump_path)
 
             # edit the api_config
             api_config = cortex_serving_args.pop('api_config')
