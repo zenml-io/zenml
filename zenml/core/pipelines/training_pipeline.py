@@ -45,6 +45,8 @@ from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
 from zenml.utils import constants
 from zenml.utils import path_utils
 from zenml.utils.enums import GDPComponent
+from zenml.utils.exceptions import DoesNotExistException, \
+    PipelineNotSucceededException
 from zenml.utils.logger import get_logger
 from zenml.utils.post_training.post_training_utils import \
     evaluate_single_pipeline, view_statistics, view_schema, detect_anomalies
@@ -284,7 +286,7 @@ class TrainingPipeline(BasePipeline):
 
     def evaluate(self, magic: bool = False):
         """
-        Evaluate pipeline from the evaluator steps artifacts.
+        Evaluate pipeline from the evaluator and trainer steps artifact.
 
         Args:
             magic: Creates new window if False, else creates notebook cells.
@@ -295,10 +297,17 @@ class TrainingPipeline(BasePipeline):
                 "Cannot evaluate a pipeline that has not executed "
                 "successfully. Please run the pipeline and ensure it "
                 "completes successfully to evaluate it.")
-            return
+            raise PipelineNotSucceededException(name=self.name)
         if keys.TrainingSteps.EVALUATOR not in self.steps_dict:
-            logger.info("This pipeline does not contain an evaluation step.")
-            return
+            logger.info("This pipeline does not contain an Evaluator step.")
+            raise DoesNotExistException(
+                name=f'{keys.TrainingSteps.EVALUATOR}',
+                reason='This pipeline does not contain an Evaluator step!')
+        if keys.TrainingSteps.TRAINER not in self.steps_dict:
+            logger.info("This pipeline does not contain a TRAINER step.")
+            raise DoesNotExistException(
+                name=f'{keys.TrainingSteps.TRAINER}',
+                reason='This pipeline does not contain a Trainer step!')
 
         logger.info(
             'Evaluating pipeline. If magic=False then a new window will open '
@@ -344,12 +353,8 @@ class TrainingPipeline(BasePipeline):
 
     def get_hyperparameters(self) -> Dict:
         """
-        Gets all hyperparameters of pipeline
+        Gets all hyper-parameters of pipeline.
         """
-        # TODO: [LOW] Check if this is necessary
-        if not self.is_executed_in_metadata_store:
-            raise Exception('This pipeline has not been run yet.')
-
         executions = self.metadata_store.get_pipeline_executions(self)
 
         hparams = {}

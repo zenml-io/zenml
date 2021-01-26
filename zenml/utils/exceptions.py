@@ -43,3 +43,13 @@ class DoesNotExistException(Exception):
                  reason='',
                  message='{} does not exist! This might be due to: {}'):
         super().__init__(message.format(name, reason))
+
+
+class PipelineNotSucceededException(Exception):
+    """Raises exception when trying to fetch artifacts from a not succeeded
+    pipeline."""
+
+    def __init__(self,
+                 name='',
+                 message='{} is not yet completed successfully.'):
+        super().__init__(message.format(name))
