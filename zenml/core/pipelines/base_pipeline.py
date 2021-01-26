@@ -71,6 +71,7 @@ class BasePipeline:
              the default artifact store is used.
         """
         self.name = name
+        self._immutable = False
 
         # Metadata store
         if metadata_store:
