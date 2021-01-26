@@ -15,69 +15,60 @@
 import pytest
 import os
 import zenml
+import random
 from typing import Text
 from zenml.core.repo.repo import Repository
-from zenml.core.datasources.base_datasource import BaseDatasource
 from zenml.core.pipelines.base_pipeline import BasePipeline
+from zenml.core.datasources.base_datasource import BaseDatasource
 from zenml.utils import yaml_utils, path_utils
+from zenml.utils.version import __version__
+from zenml.core.standards import standard_keys as keys
+from zenml.testing.helpers import cleanup, run_test_pipelines
 
-ZENML_ROOT = os.path.dirname(zenml.__path__[0])
+ZENML_ROOT = zenml.__path__[0]
+TEST_ROOT = os.path.join(ZENML_ROOT, "testing")
 
-
-@pytest.fixture
-def cleanup_metadata_store():
-    # Remove metadata db after a test to avoid test failures by duplicated
-    # data sources
-    metadata_db_location = os.path.join(".zenml", "local_store", "metadata.db")
-    try:
-        os.remove(os.path.join(ZENML_ROOT, metadata_db_location))
-    except Exception as e:
-        print(e)
+pipeline_root = os.path.join(TEST_ROOT, "test_pipelines")
+repo: Repository = Repository.get_instance()
+repo.zenml_config.set_pipelines_dir(pipeline_root)
 
 
-@pytest.fixture
-def cleanup_pipelines_dir():
-    def wrapper():
-        repo: Repository = Repository.get_instance()
-        pipelines_dir = repo.zenml_config.get_pipelines_dir()
-        for p_config in path_utils.list_dir(pipelines_dir):
-            os.remove(p_config)
-
-    return wrapper
-
-
-def test_double_init():
-    repo: Repository = Repository.get_instance()
+def test_repo_double_init():
     # explicitly constructing another repository should fail
     with pytest.raises(Exception):
-        repo2 = Repository()
+        _ = Repository()
 
 
-def test_datasource_get(monkeypatch):
+def test_get_datasources(run_test_pipelines):
+    run_test_pipelines()
 
-    def mock_datasources(self):
-        return [BaseDatasource(name="my_datasource")]
+    ds_list = repo.get_datasources()
 
-    def mock_datasource_names(self):
-        return []
+    # TODO: Expand this for more test pipeline types!
+    assert len(ds_list) == 1
 
-    monkeypatch.setattr("zenml.core.repo.repo.Repository.get_datasources",
-                        mock_datasources)
 
-    monkeypatch.setattr("zenml.core.repo.repo.Repository.get_datasources",
-                        mock_datasources)
+def test_get_datasource_by_name(run_test_pipelines):
+    run_test_pipelines()
 
-    repo: Repository = Repository.get_instance()
-
-    assert repo.get_datasource_by_name("my_datasource")
+    assert repo.get_datasource_by_name("my_csv_datasource")
 
     with pytest.raises(Exception):
         _ = repo.get_datasource_by_name("ds_123")
 
 
-def test_yaml_discovery(monkeypatch):
-    repo: Repository = Repository.get_instance()
+def test_get_datasource_names(run_test_pipelines):
+    run_test_pipelines()
 
+    # TODO: Expand to more test datasources!
+    test_ds_names = ["my_csv_datasource"]
+
+    ds_names = repo.get_datasource_names()
+
+    assert sorted(test_ds_names) == sorted(ds_names)
+
+
+def test_get_pipeline_file_paths(monkeypatch):
     mock_paths = ["pipeline_1.yaml", "pipeline_2.yaml", "awjfof.txt"]
 
     def mock_list_dir(dir_path: Text, only_file_names: bool = False):
@@ -92,32 +83,136 @@ def test_yaml_discovery(monkeypatch):
     assert paths == mock_paths[:-1]
 
 
-def test_get_pipelines(monkeypatch, cleanup_pipelines_dir):
+def test_get_pipeline_names():
+    # TODO: This has to be made dynamic once more pipelines come
+    real_p_names = sorted(["csvtest{0}".format(i) for i in range(1, 6)])
 
-    cleanup_pipelines_dir()
+    found_p_names = sorted(repo.get_pipeline_names())
 
-    repo: Repository = Repository.get_instance()
+    assert real_p_names == found_p_names
 
-    pipelines_dir = repo.zenml_config.get_pipelines_dir()
 
-    mock_configs = [{"name": "p1"}, {"name": "p2"}, {"name": "p3"}]
+def test_get_pipelines(run_test_pipelines):
+    run_test_pipelines()
 
-    mock_names = ["pipeline1.yml", "pipeline2.yml", "pipeline3.yml"]
-
-    for fn, cfg in zip(mock_names, mock_configs):
-        yaml_utils.write_yaml(os.path.join(pipelines_dir, fn), cfg)
-
-    def mock_create_pipeline(c):
-        return BasePipeline(name=c["name"])
-    monkeypatch.setattr("zenml.core.pipelines.base_pipeline.BasePipeline."
-                        "from_config",
-                        mock_create_pipeline)
+    p_names = sorted(repo.get_pipeline_names())
 
     pipelines = repo.get_pipelines()
 
-    assert len(pipelines) == len(mock_configs)
+    pipelines = sorted(pipelines, key=lambda p: p.name)
 
-    sorted_pipelines = sorted(pipelines, key=lambda p: p.name)
+    assert all(p.name == name for p, name in zip(pipelines, p_names))
 
-    assert all(p.name == c["name"] for p, c in zip(sorted_pipelines,
-                                                   mock_configs))
+
+def test_get_pipelines_by_datasource():
+    # asserted in an earlier test
+    ds = repo.get_datasource_by_name("my_csv_datasource")
+
+    p_names = repo.get_pipeline_names()
+
+    ds2 = BaseDatasource(name="ds_12254757")
+
+    pipelines = repo.get_pipelines_by_datasource(ds)
+
+    pipelines_2 = repo.get_pipelines_by_datasource(ds2)
+
+    assert len(pipelines) == len(p_names)
+
+    assert not pipelines_2
+
+
+def test_get_pipelines_by_type():
+    p_names = repo.get_pipeline_names()
+
+    pipelines = repo.get_pipelines_by_type(type_filter=["training"])
+
+    pipelines_2 = repo.get_pipelines_by_type(type_filter=["base"])
+
+    assert len(pipelines) == len(p_names)
+
+    assert not pipelines_2
+
+
+def test_get_pipeline_by_name():
+    p_names = repo.get_pipeline_names()
+
+    random_name = random.choice(p_names)
+    cfg_list = [y for y in repo.get_pipeline_file_paths()
+                if random_name in y]
+
+    cfg = yaml_utils.read_yaml(cfg_list[0])
+
+    p = repo.get_pipeline_by_name(random_name)
+
+    p_config = cfg[keys.GlobalKeys.PIPELINE]
+
+    assert p.PIPELINE_TYPE == p_config[keys.PipelineKeys.TYPE]
+    assert p.name in p_config[keys.PipelineKeys.NAME]
+    assert p.enable_cache == p_config[keys.PipelineKeys.ENABLE_CACHE]
+
+
+def test_get_step_versions():
+
+    step_versions = repo.get_step_versions()
+
+    # TODO: Make this less hardcoded
+    steps_used = ["zenml.core.steps.data.csv_data_step.CSVDataStep",
+                  "zenml.core.steps.preprocesser.standard_preprocesser."
+                  "standard_preprocesser.StandardPreprocesser",
+                  "zenml.core.steps.split.categorical_domain_split_step."
+                  "CategoricalDomainSplit",
+                  'zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer.'
+                  'FeedForwardTrainer'
+                  ]
+
+    current_version = "zenml_" + str(__version__)
+
+    assert sorted(steps_used) == sorted(step_versions.keys())
+    assert all(current_version in s for s in step_versions.values())
+
+
+def test_get_step_by_version():
+    # TODO: Make this less hardcoded
+    steps_used = ["zenml.core.steps.data.csv_data_step.CSVDataStep",
+                  "zenml.core.steps.preprocesser.standard_preprocesser."
+                  "standard_preprocesser.StandardPreprocesser",
+                  "zenml.core.steps.split.categorical_domain_split_step."
+                  "CategoricalDomainSplit",
+                  'zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer.'
+                  'FeedForwardTrainer'
+                  ]
+
+    random_step = random.choice(steps_used)
+
+    current_version = "zenml_" + str(__version__)
+
+    bogus_version = "asdfghjklöä"
+
+    assert repo.get_step_by_version(random_step, current_version)
+    with pytest.raises(Exception):
+        _ = repo.get_step_by_version(random_step, bogus_version)
+
+
+def test_get_step_versions_by_type():
+    # TODO: Make this less hardcoded
+    steps_used = ["zenml.core.steps.data.csv_data_step.CSVDataStep",
+                  "zenml.core.steps.preprocesser.standard_preprocesser."
+                  "standard_preprocesser.StandardPreprocesser",
+                  "zenml.core.steps.split.categorical_domain_split_step."
+                  "CategoricalDomainSplit",
+                  'zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer.'
+                  'FeedForwardTrainer'
+                  ]
+
+    random_step = random.choice(steps_used)
+
+    current_version = "zenml_" + str(__version__)
+
+    bogus_step = "asdfghjklöä"
+
+    step_versions = repo.get_step_versions_by_type(random_step)
+
+    assert step_versions == {current_version}
+
+    with pytest.raises(Exception):
+        _ = repo.get_step_versions_by_type(bogus_step)
