@@ -53,7 +53,7 @@ class AlreadyExistsException(Exception):
     def __init__(self,
                  name='',
                  resource_type=''):
-        message = f'{resource_type} {name} already exists! Please use ' \
+        message = f'{resource_type} `{name}` already exists! Please use ' \
                   f'Repository.get_instance().get_{resource_type}_by_name' \
                   f'("{name}") to fetch it.'
         super().__init__(message)

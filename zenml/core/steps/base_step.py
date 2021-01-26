@@ -75,13 +75,10 @@ class BaseStep:
             resolved_args = {}
 
             # resolve backend
+            backend = None
             if StepKeys.BACKEND in config_block:
                 backend_config = config_block[StepKeys.BACKEND]
                 backend = BaseBackend.from_config(backend_config)
-
-                # only inject backend if its available in constructor
-                if 'backend' in inspect.getfullargspec(class_.__init__).args:
-                    resolved_args['backend'] = backend
 
             # resolve args for special cases
             for k, v in args.items():
@@ -94,6 +91,7 @@ class BaseStep:
 
             # If we load from config, its immutable
             obj._immutable = True
+            obj.backend = backend
             return obj
         else:
             raise AssertionError("Cannot create config_block without source "

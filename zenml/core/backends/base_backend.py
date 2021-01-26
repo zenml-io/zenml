@@ -56,7 +56,11 @@ class BaseBackend:
     BACKEND_TYPE = None
 
     def __init__(self, **kwargs):
-        self._kwargs = kwargs
+        if len(kwargs):
+            self._kwargs = kwargs
+        else:
+            self._kwargs = {}
+
         self._source = source_utils.resolve_source_path(
             self.__class__.__module__ + '.' + self.__class__.__name__
         )

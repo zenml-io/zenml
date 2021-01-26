@@ -223,9 +223,8 @@ class BasePipeline:
         return obj
 
     def _check_registered(self):
-        if self.file_name in \
-                Repository.get_instance().get_pipeline_file_paths(
-                    only_file_names=True):
+        if Repository.get_instance().get_pipeline_by_name(
+                self.name) is not None:
             raise AlreadyExistsException(
                 name=self.name, resource_type='pipeline')
 
