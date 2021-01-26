@@ -1,7 +1,7 @@
 import os
 from random import randint
 
-from examples.cortex.predictor.predictor import PythonPredictor
+from examples.cortex.predictor.tf import TensorFlowPredictor
 from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
 from zenml.core.steps.deployer.cortex_deployer import CortexDeployer
@@ -64,7 +64,7 @@ training_pipeline.add_deployment(
     CortexDeployer(
         env='cortex-gcp',
         api_config=api_config,
-        predictor=PythonPredictor,
+        predictor=TensorFlowPredictor,
     )
 )
 
