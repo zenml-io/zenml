@@ -263,7 +263,8 @@ class BasePipeline:
             keys.PipelineKeys.TYPE: self.PIPELINE_TYPE,
             keys.PipelineKeys.SOURCE: self._source,
             keys.PipelineKeys.ENABLE_CACHE: self.enable_cache,
-            keys.PipelineKeys.DATASOURCE: self.datasource.to_config(),
+            keys.PipelineKeys.DATASOURCE: self.datasource.to_config() if
+            self.datasource is not None else None,
         })
         return steps_config
 
