@@ -4,21 +4,26 @@ from random import randint
 from examples.cortex.predictor.tf import TensorFlowPredictor
 from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
+from zenml.core.repo.artifact_store import ArtifactStore
 from zenml.core.steps.deployer.cortex_deployer import CortexDeployer
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
 from zenml.core.steps.preprocesser.standard_preprocesser \
-    .standard_preprocesser import StandardPreprocesser
+    .standard_preprocesser import \
+    StandardPreprocesser
 from zenml.core.steps.split.random_split import RandomSplit
 from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
     FeedForwardTrainer
 
-CORTEX_ENDPOINT_NAME = os.getenv('CORTEX_ENDPOINT_NAME', 'zenml_classifier')
+GCP_BUCKET = os.getenv('GCP_BUCKET')
+assert GCP_BUCKET
+CORTEX_ENDPOINT_NAME = os.getenv('CORTEX_ENDPOINT_NAME', 'zenml-classifier')
 
-# Run the pipeline locally but deploy with zenml
+# For this example, the ArtifactStore must be a GCP bucket, as the
+# CortexDeployer step is using the GCP env.
 
 training_pipeline = TrainingPipeline(
     name=f'Experiment {randint(0, 10000)}',
-    enable_cache=False
+    enable_cache=True
 )
 
 # Add a datasource. This will automatically track and version it.
@@ -68,5 +73,9 @@ training_pipeline.add_deployment(
     )
 )
 
-# Run the pipeline locally
-training_pipeline.run()
+# Define the artifact store
+artifact_store = ArtifactStore(
+    os.path.join(GCP_BUCKET, 'cortex/artifact_store'))
+
+# Run the pipeline
+training_pipeline.run(artifact_store=artifact_store)

@@ -22,11 +22,24 @@ In order to run this example, make sure you have the cortex cluster up.
 cortex cluster up
 ```
 
-### Run the project
+Then you can clone the repo and initialize a zenml repo:
+```bash
+git clone https://github.com/maiot-io/zenml.git
+cd zenml
+zenml init
+cd examples/cortex
+```
+
+And export the required configuration variables:
+```bash
+export CORTEX_ENDPOINT_NAME='myawesomemodel'
+export GCP_BUCKET='gs://mybucket'  # to be used as the artifact store
+```
+
+### Run the script
 Now we're ready. Execute:
 
 ```bash
-export CORTEX_ENDPOINT_NAME='myawesomemodel'
 python run.py
 ```
 
@@ -46,7 +59,13 @@ cortex logs $CORTEX_ENPOINT_NAME
 ```
 
 ### Clean up
-Delete the zenml references.
+Get rid of cortex references:
+```bash
+cortex delete $CORTEX_ENPOINT_NAME
+cortex cluster down
+```
+
+Delete the zenml references:
 
 ```python
 cd ../..
@@ -58,4 +77,5 @@ rm -r pipelines
 Currently, the `CortexDeployer` step only works with a local orchestrator backend.
 
 ## Next Steps
-Cortex makes it super easy to deploy your models straight to end-points in your cluster.
+Cortex makes it super easy to deploy your models straight to end-points in your cluster. A big thank you to the 
+cortex team for helping out in this integration and example!

@@ -54,7 +54,7 @@ class CortexDeployer(BaseDeployerStep):
         if conda_packages is None:
             conda_packages = []
         if requirements is None:
-            requirements = []
+            requirements = ['tensorflow==2.3.0']
 
         self.model_name = model_name
         self.env = env

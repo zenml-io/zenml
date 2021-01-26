@@ -105,14 +105,14 @@ class Executor(tfx_pusher_executor.Executor):
             if reqs :
                 r_dump_path = os.path.join(
                     temp_project_dir, 'requirements.txt')
-                io_utils.write_string_file(reqs, r_dump_path)
+                io_utils.write_string_file(r_dump_path, '\n'.join(reqs))
 
             # conda-packages.txt
             c_reqs = cortex_serving_args.pop('conda_packages', [])
             if c_reqs:
                 r_dump_path = os.path.join(
                     temp_project_dir, 'conda-packages.txt')
-                io_utils.write_string_file(c_reqs, r_dump_path)
+                io_utils.write_string_file(r_dump_path, '\n'.join(c_reqs))
 
             # edit the api_config
             api_config = cortex_serving_args.pop('api_config')
@@ -123,6 +123,8 @@ class Executor(tfx_pusher_executor.Executor):
             # launch the api
             api_config['predictor']['path'] = 'predictor.py'
 
+            # configure the model path
+            api_config['predictor']['models'] = {'path': model_path}
             cx.create_api(
                 api_config,
                 project_dir=temp_project_dir,
