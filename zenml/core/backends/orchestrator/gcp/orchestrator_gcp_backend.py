@@ -62,8 +62,7 @@ class OrchestratorGCPBackend(OrchestratorLocalBackend):
                  instance_name: Text = None,
                  machine_type: Text = 'e2-medium',
                  preemptible: bool = True,
-                 service_account: Text = None,
-                 **unused_kwargs):
+                 service_account: Text = None):
         self.project = project
         self.cloudsql_connection_name = cloudsql_connection_name
         self.zone = zone
@@ -87,7 +86,16 @@ class OrchestratorGCPBackend(OrchestratorLocalBackend):
         else:
             self.credentials = None
 
-        super().__init__(**unused_kwargs)
+        super().__init__(
+            project=project,
+            cloudsql_connection_name=cloudsql_connection_name,
+            image=image,
+            zone=zone,
+            instance_name=instance_name,
+            machine_type=machine_type,
+            preemptible=preemptible,
+            service_account=service_account,
+        )
 
     def launch_instance(self, config: Dict[Text, Any]):
         """
