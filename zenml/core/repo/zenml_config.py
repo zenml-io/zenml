@@ -24,6 +24,7 @@ from zenml.core.repo.constants import ZENML_CONFIG_NAME, \
 from zenml.core.repo.git_wrapper import GitWrapper
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils, yaml_utils
+from zenml.utils.exceptions import InitializationException
 
 ARTIFACT_STORE_KEY = keys.GlobalKeys.ARTIFACT_STORE
 METADATA_KEY = keys.GlobalKeys.METADATA_STORE
@@ -45,10 +46,11 @@ class ZenMLConfig:
         """
         self.repo_path = repo_path
         if not ZenMLConfig.is_zenml_dir(self.repo_path):
-            raise AssertionError(f'This is not a ZenML repository, as it does '
-                                 f'not contain the {ZENML_CONFIG_NAME} '
-                                 f'config file. Please initialize your repo '
-                                 f'with `zenml init` with the ZenML CLI.')
+            raise InitializationException(
+                f'This is not a ZenML repository, as it does '
+                f'not contain the {ZENML_CONFIG_NAME} '
+                f'config file. Please initialize your repo '
+                f'with `zenml init` with the ZenML CLI.')
 
         self.config_dir = os.path.join(repo_path, ZENML_DIR_NAME)
         self.config_path = os.path.join(self.config_dir, ZENML_CONFIG_NAME)
