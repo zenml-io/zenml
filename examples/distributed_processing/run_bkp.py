@@ -31,7 +31,10 @@ MYSQL_PORT = os.getenv('MYSQL_PORT', 3306)
 # into the `image` parameter in the ProcessingDataFlowBackend
 
 # Define the processing backend
-processing_backend = ProcessingDataFlowBackend(project=GCP_PROJECT)
+processing_backend = ProcessingDataFlowBackend(
+    project=GCP_PROJECT,
+    staging_location=ARTIFACT_STORE_PATH,
+)
 
 # Define the training pipeline
 training_pipeline = TrainingPipeline(name='3')
@@ -92,6 +95,6 @@ artifact_store = ArtifactStore(ARTIFACT_STORE_PATH)
 
 # Run the pipeline
 training_pipeline.run(
-    metadata_store=metadata_store,
-    artifact_store=artifact_store,
+    # metadata_store=metadata_store,
+    # artifact_store=artifact_store,
 )
