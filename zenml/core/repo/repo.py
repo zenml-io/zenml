@@ -270,7 +270,7 @@ class Repository:
             pipeline_name (str): Name of pipeline.
         """
         from zenml.core.pipelines.base_pipeline import BasePipeline
-        yamls = self.get_pipeline_file_paths()
+        yamls = self.get_pipeline_file_paths(only_file_names=True)
         for y in yamls:
             n = BasePipeline.get_name_from_pipeline_name(y)
             if n == pipeline_name:

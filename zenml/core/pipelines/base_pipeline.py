@@ -163,16 +163,6 @@ class BasePipeline:
         pass
 
     @staticmethod
-    def get_type_from_pipeline_name(pipeline_name: Text):
-        """
-        Gets type from pipeline name.
-
-        Args:
-            pipeline_name (str): simple string name.
-        """
-        return pipeline_name.split('_')[0]
-
-    @staticmethod
     def get_name_from_pipeline_name(pipeline_name: Text):
         """
         Gets name from pipeline name.
