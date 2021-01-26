@@ -88,7 +88,7 @@ class ProcessingDataFlowBackend(ProcessingLocalBackend):
         stage_location = os.path.join(pipeline_root, 'staging', pipeline_name)
 
         return [
-            '--runner=DataflowRunner',
+            '--runner=dataflow',
             '--project=' + self.project,
             '--temp_location=' + temp_location,
             '--staging_location=' + stage_location,
@@ -96,13 +96,6 @@ class ProcessingDataFlowBackend(ProcessingLocalBackend):
             # '--job_name=' + self.job_name,
             '--num_workers=' + str(self.num_workers),
             '--max_num_workers=' + str(self.max_num_workers),
-
-            # Specifying dependencies
-            # TODO: [LOW] Perhaps add an empty requirements.txt to avoid the
-            #  tfx ephemeral package addition
-            # '--extra_package=' + self.extra_package,
-            # '--requirements_file=' + self.requirements_file,
-            # '--setup_file=' + self.setup_file,
 
             # Temporary overrides of defaults.
             '--disk_size_gb=' + str(self.disk_size_gb),
