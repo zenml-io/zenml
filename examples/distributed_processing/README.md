@@ -1,6 +1,5 @@
 # Crunch through big data with distributed processing backends
-
-In ZenML, it is almost trivial to distribute certain `Steps` in a pipeline in cases where large 
+In ZenML, it is trivial to distribute certain `Steps` in a pipeline in cases where large 
 datasets are involved. All `Steps` within a pipeline take as input a `ProcessingBackend`.
 
 ## Adding a backend to a step

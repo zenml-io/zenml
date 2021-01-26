@@ -1,4 +1,7 @@
-from zenml.core.backends.orchestrator.kubernetes.orchestrator_kubernetes_backend import \
+import os
+
+from zenml.core.backends.orchestrator.kubernetes \
+    .orchestrator_kubernetes_backend import \
     OrchestratorKubernetesBackend
 from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.metadata.mysql_metadata_wrapper import MySQLMetadataStore
@@ -9,10 +12,8 @@ from zenml.core.steps.preprocesser.standard_preprocesser \
     .standard_preprocesser import \
     StandardPreprocesser
 from zenml.core.steps.split.random_split import RandomSplit
-from zenml.core.steps.trainer.feedforward_trainer.trainer import \
+from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
     FeedForwardTrainer
-
-import os
 
 training_pipeline = TrainingPipeline(name='kubernetes')
 
@@ -54,7 +55,6 @@ training_pipeline.add_evaluator(
     TFMAEvaluator(slices=[['has_diabetes']],
                   metrics={'has_diabetes': ['binary_crossentropy',
                                             'binary_accuracy']}))
-
 
 # Important details:
 artifact_store_bucket = 'gs://rndm-strg/zenml-k8s-test/'
