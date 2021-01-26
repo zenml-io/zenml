@@ -368,8 +368,8 @@ class Repository:
 
     def clean(self):
         """Deletes associated metadata store, pipelines dir and artifacts"""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def _check_if_initialized(self):
         if self.zenml_config is None:
-            raise InitializationException()
+            raise InitializationException

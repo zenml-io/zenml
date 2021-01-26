@@ -31,6 +31,7 @@ from zenml.utils.post_training.post_training_utils import \
     convert_raw_dataset_to_pandas, view_statistics
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
 from zenml.utils.zenml_analytics import track, CREATE_DATASOURCE
+from zenml.utils.exceptions import EmptyDatasourceException
 
 logger = get_logger(__name__)
 
@@ -129,8 +130,7 @@ class BaseDatasource:
             Repository.get_instance().get_pipelines_by_datasource(self)
 
         if len(pipelines) == 0:
-            raise Exception('This datasource is not associated with any '
-                            'pipelines, therefore there is no data!')
+            raise EmptyDatasourceException
         return pipelines[0]
 
     def _get_data_file_paths(self, pipeline):
