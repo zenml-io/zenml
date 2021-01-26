@@ -64,6 +64,11 @@ rm -r .zenml
 rm -r pipelines
 ```
 
+## Caveats
+Note: If any `Step` using the `ProcessingDataFlowBackend` is non-standard (i.e. a [custom step](https://docs.zenml.io/getting-started/creating-custom-logic.html)), 
+then you need to build a new Docker image based on the ZenML Dataflow image, and pass that into the `image` parameter 
+in the `ProcessingDataFlowBackend`. Find out more in [the docs](https://docs.zenml.io/backends/using-docker.html).
+
 ## Next Steps
 You can see how ZenML makes it easy to do distributed processing. But this is just scratching the service. You 
 can combine different `ProcessingBackends` with certain [TrainingBackends](../gcp_trained/README.md) to leverage 
