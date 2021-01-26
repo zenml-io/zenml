@@ -272,7 +272,7 @@ class Repository:
         from zenml.core.pipelines.base_pipeline import BasePipeline
         yamls = self.get_pipeline_file_paths()
         for y in yamls:
-            n = BasePipeline.get_name_from_pipeline_name(y)
+            n = BasePipeline.get_name_from_pipeline_name(os.path.basename(y))
             if n == pipeline_name:
                 c = yaml_utils.read_yaml(y)
                 return BasePipeline.from_config(c)
@@ -362,11 +362,11 @@ class Repository:
         pipelines_dir = self.zenml_config.get_pipelines_dir()
         return yaml_utils.read_yaml(os.path.join(pipelines_dir, file_name))
 
-    def compare_pipelines(self):
-        """Launch the compare app for all pipelines in repo"""
+    def compare_training_pipelines(self):
+        """Launch the compare app for all training pipelines in repo"""
         from zenml.utils.post_training.post_training_utils import \
-            compare_multiple_pipelines
-        compare_multiple_pipelines()
+            launch_compare_tool
+        launch_compare_tool()
 
     def _check_if_initialized(self):
         if self.zenml_config is None:

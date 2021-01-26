@@ -29,7 +29,7 @@ from zenml.utils import source_utils
 from zenml.utils.constants import CONFIG_VERSION
 from zenml.utils.enums import PipelineStatusTypes
 from zenml.utils.logger import get_logger
-from zenml.utils.print_utils import to_pretty_string
+from zenml.utils.print_utils import to_pretty_string, PrintStyles
 from zenml.utils.zenml_analytics import track, CREATE_PIPELINE, RUN_PIPELINE, \
     GET_PIPELINE_ARTIFACTS
 
@@ -71,6 +71,7 @@ class BasePipeline:
              the default artifact store is used.
         """
         self.name = name
+        self._immutable = False
 
         # Metadata store
         if metadata_store:
@@ -82,20 +83,10 @@ class BasePipeline:
 
         if pipeline_name:
             # This means its been loaded in through YAML, try to get context
-            if self.is_executed_in_metadata_store:
-                self._immutable = True
-                logger.debug(f'Pipeline {name} loaded and and is immutable.')
-            else:
-                # if metadata store does not have the pipeline_name, then we
-                # can safely execute this again.
-                self._immutable = False
-                logger.debug(f'Pipeline {name} loaded and can be run.')
-
             self.pipeline_name = pipeline_name
             self.file_name = self.pipeline_name + '.yaml'
         else:
             # if pipeline_name is None then its a new pipeline
-            self._immutable = False
             self.pipeline_name = self.create_pipeline_name_from_name()
             self.file_name = self.pipeline_name + '.yaml'
             # check duplicates here as its a 'new' pipeline
@@ -137,6 +128,9 @@ class BasePipeline:
     def __str__(self):
         return to_pretty_string(self.to_config())
 
+    def __repr__(self):
+        return to_pretty_string(self.to_config(), style=PrintStyles.PPRINT)
+
     @property
     def is_executed_in_metadata_store(self):
         try:
@@ -161,16 +155,6 @@ class BasePipeline:
     def steps_completed(self) -> bool:
         """Returns True if all steps complete, else raises exception"""
         pass
-
-    @staticmethod
-    def get_type_from_pipeline_name(pipeline_name: Text):
-        """
-        Gets type from pipeline name.
-
-        Args:
-            pipeline_name (str): simple string name.
-        """
-        return pipeline_name.split('_')[0]
 
     @staticmethod
     def get_name_from_pipeline_name(pipeline_name: Text):
@@ -224,10 +208,7 @@ class BasePipeline:
 
         class_ = source_utils.load_source_path_class(pipeline_source)
 
-        # TODO: [MEDIUM] Perhaps move some of the logic in the init block here
-        #  especially regarding inferring immutability.
-
-        return class_(
+        obj = class_(
             name=cls.get_name_from_pipeline_name(pipeline_name),
             pipeline_name=pipeline_name,
             enable_cache=enable_cache,
@@ -236,6 +217,9 @@ class BasePipeline:
             artifact_store=artifact_store,
             metadata_store=metadata_store,
             datasource=datasource)
+        obj._immutable = True
+        logger.debug(f'Pipeline {pipeline_name} loaded and and is immutable.')
+        return obj
 
     def _check_registered(self):
         if self.file_name in \
@@ -342,10 +326,11 @@ class BasePipeline:
         args = self.__dict__
 
         # Doing this will reset immutability
-        args.pop('name')
         args.pop('pipeline_name')
         args['name'] = new_name
-        return class_(**args)
+        obj = class_(**args)
+        obj._immutable = False
+        return obj
 
     def run_config(self, config: Dict[Text, Any]):
         """

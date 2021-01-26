@@ -109,6 +109,7 @@ class BaseDatasource:
             name=datasource_name, _id=_id, _source=source,
             **step_config[keys.StepKeys.ARGS])
         obj._immutable = True
+        return obj
 
     def to_config(self):
         """Converts datasource to ZenML config block."""
