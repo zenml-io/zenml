@@ -25,13 +25,13 @@ from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils
 from zenml.utils import source_utils
 from zenml.utils.enums import GDPComponent
+from zenml.utils.exceptions import EmptyDatasourceException
 from zenml.utils.logger import get_logger
 from zenml.utils.post_training.post_training_utils import \
     view_schema, get_feature_spec_from_schema, \
     convert_raw_dataset_to_pandas, view_statistics
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
 from zenml.utils.zenml_analytics import track, CREATE_DATASOURCE
-from zenml.utils.exceptions import EmptyDatasourceException
 
 logger = get_logger(__name__)
 

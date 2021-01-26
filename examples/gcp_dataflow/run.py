@@ -20,6 +20,16 @@ mysql_user = 'USERNAME'
 mysql_pw = 'PASSWORD'
 training_job_dir = artifact_store_path + '/gcaiptrainer/'
 
+# Run the pipeline locally but distribute the beam-compatible steps, i.e.,
+# the Data, Statistics, Preprocessing and Evaluator Steps.
+# Note: If any of these steps are non-standard, custom steps, then you need
+# to build a new Docker image based on the ZenML Dataflow image, and pass that
+# into the `image` parameter in the ProcessingDataFlowBackend
+
+
+# Define the processing backend
+processing_backend = ProcessingDataFlowBackend(project=project)
+
 training_pipeline = TrainingPipeline(name='GCP Orchestrated')
 
 # Add a datasource. This will automatically track and version it.
@@ -28,8 +38,10 @@ ds = CSVDatasource(name='Pima Indians Diabetes',
 training_pipeline.add_datasource(ds)
 
 # Add a split
-training_pipeline.add_split(RandomSplit(
-    split_map={'train': 0.7, 'eval': 0.3}))
+training_pipeline.add_split(
+    RandomSplit(split_map={'train': 0.7, 'eval': 0.3}).with_backend(
+        processing_backend)
+)
 
 # Add a preprocessing unit
 training_pipeline.add_preprocesser(
@@ -39,7 +51,8 @@ training_pipeline.add_preprocesser(
         labels=['has_diabetes'],
         overwrite={'has_diabetes': {
             'transform': [{'method': 'no_transform', 'parameters': {}}]}}
-    ))
+    ).with_backend(processing_backend)
+)
 
 # Add a trainer
 training_pipeline.add_trainer(FeedForwardTrainer(
@@ -51,19 +64,11 @@ training_pipeline.add_trainer(FeedForwardTrainer(
 
 # Add an evaluator
 training_pipeline.add_evaluator(
-    TFMAEvaluator(slices=[['has_diabetes']],
-                  metrics={'has_diabetes': ['binary_crossentropy',
-                                            'binary_accuracy']}))
-
-# Run the pipeline locally but distribute the beam-compatible steps, i.e.,
-# the Data, Statistics, Preprocessing and Evaluator Steps.
-# Note: If any of these steps are non-standard, custom steps, then you need
-# to build a new Docker image based on the ZenML Dataflow image, and pass that
-# into the `image` parameter in the ProcessingDataFlowBackend
-
-
-# Define the processing backend
-processing_backend = ProcessingDataFlowBackend(project=project)
+    TFMAEvaluator(
+        slices=[['has_diabetes']],
+        metrics={'has_diabetes': ['binary_crossentropy', 'binary_accuracy']}
+    ).with_backend(processing_backend)
+)
 
 # Define the metadata store
 metadata_store = MySQLMetadataStore(
@@ -79,7 +84,6 @@ artifact_store = ArtifactStore(artifact_store_path)
 
 # Run the pipeline
 training_pipeline.run(
-    backends=[processing_backend],
     metadata_store=metadata_store,
     artifact_store=artifact_store,
 )
