@@ -368,6 +368,10 @@ class Repository:
             launch_compare_tool
         launch_compare_tool()
 
+    def clean(self):
+        """Deletes associated metadata store, pipelines dir and artifacts"""
+        raise NotImplementedError()
+
     def _check_if_initialized(self):
         if self.zenml_config is None:
             raise Exception('ZenML config is none. Did you do `zenml init`?')
