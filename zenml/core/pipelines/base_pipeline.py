@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Base High-level ZenML Pipeline definition"""
 
+import time
 from abc import abstractmethod
 from typing import Dict, Text, Any, Optional, List
 from uuid import uuid4
@@ -45,7 +46,7 @@ class BasePipeline:
     PIPELINE_TYPE = 'base'
 
     def __init__(self,
-                 name: Text,
+                 name: Text = None,
                  enable_cache: Optional[bool] = True,
                  steps_dict: Dict[Text, BaseStep] = None,
                  backend: OrchestratorLocalBackend = None,
@@ -71,6 +72,9 @@ class BasePipeline:
             artifact_store: Configured artifact store. If None,
              the default artifact store is used.
         """
+        # Generate a name if not given
+        if name is None:
+            name = str(int(time.time()))
         self.name = name
         self._immutable = False
 
