@@ -122,7 +122,6 @@ class Executor(tfx_pusher_executor.Executor):
 
             # launch the api
             api_config['predictor']['path'] = 'predictor.py'
-            api_config['predictor']['type'] = 'python'
 
             cx.create_api(
                 api_config,

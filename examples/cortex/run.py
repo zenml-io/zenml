@@ -1,3 +1,4 @@
+import os
 from random import randint
 
 from examples.cortex.predictor.predictor import PythonPredictor
@@ -10,6 +11,10 @@ from zenml.core.steps.preprocesser.standard_preprocesser \
 from zenml.core.steps.split.random_split import RandomSplit
 from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
     FeedForwardTrainer
+
+CORTEX_ENDPOINT_NAME = os.getenv('CORTEX_ENDPOINT_NAME', 'zenml_classifier')
+
+# Run the pipeline locally but deploy with zenml
 
 training_pipeline = TrainingPipeline(
     name=f'Experiment {randint(0, 10000)}',
@@ -41,7 +46,7 @@ training_pipeline.add_trainer(FeedForwardTrainer(
     last_activation='sigmoid',
     output_units=1,
     metrics=['accuracy'],
-    epochs=13))
+    epochs=15))
 
 # Add an evaluator
 training_pipeline.add_evaluator(
@@ -49,11 +54,11 @@ training_pipeline.add_evaluator(
                   metrics={'has_diabetes': ['binary_crossentropy',
                                             'binary_accuracy']}))
 
-# Pusher
+# Add cortex deployer
 api_config = {
-    "name": "api-classifier",
+    "name": CORTEX_ENDPOINT_NAME,
     "kind": "RealtimeAPI",
-    "predictor": {}
+    "predictor": {"type": "tensorflow"}
 }
 training_pipeline.add_deployment(
     CortexDeployer(

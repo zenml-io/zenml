@@ -255,7 +255,7 @@ class TrainingPipeline(BasePipeline):
     def add_evaluator(self, evaluator_step: TFMAEvaluator):
         self.steps_dict[keys.TrainingSteps.EVALUATOR] = evaluator_step
 
-    def add_deployment(self, deployment_step: GCAIPDeployer):
+    def add_deployment(self, deployment_step: BaseDeployerStep):
         self.steps_dict[keys.TrainingSteps.DEPLOYER] = deployment_step
 
     def view_statistics(self, magic: bool = False):

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import Dict, Text, List, Optional
+from typing import Dict, Text, List
 
 from zenml.core.components.pusher import cortex_executor
 from zenml.core.repo.repo import Repository
@@ -33,8 +33,8 @@ class CortexDeployer(BaseDeployerStep):
     def __init__(self,
                  api_config: Dict,
                  predictor=None,
-                 requirements: List = [],
-                 conda_packages: List = [],
+                 requirements: List = None,
+                 conda_packages: List = None,
                  env: Text = 'aws',
                  force: bool = True,
                  wait: bool = False,
@@ -51,6 +51,11 @@ class CortexDeployer(BaseDeployerStep):
             predictor: Cortex Predictor class.
             **kwargs: Additional keyword arguments.
         """
+        if conda_packages is None:
+            conda_packages = []
+        if requirements is None:
+            requirements = []
+
         self.model_name = model_name
         self.env = env
         self.predictor = predictor
