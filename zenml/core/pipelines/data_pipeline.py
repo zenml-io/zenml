@@ -55,6 +55,7 @@ class DataPipeline(BasePipeline):
         config[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.STEPS][
             keys.DataSteps.DATA]
         data = DataGen(
+            name=self.datasource.name,
             source=data_config[StepKeys.SOURCE],
             source_args=data_config[StepKeys.ARGS]).with_id(
             GDPComponent.DataGen.name

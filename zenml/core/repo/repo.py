@@ -24,6 +24,7 @@ from zenml.core.repo.global_config import GlobalConfig
 from zenml.core.repo.zenml_config import ZenMLConfig
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils, yaml_utils
+from zenml.utils.exceptions import InitializationException
 from zenml.utils.logger import get_logger
 from zenml.utils.zenml_analytics import track, CREATE_REPO, GET_PIPELINES, \
     GET_DATASOURCES, GET_STEPS_VERSIONS, \
@@ -176,8 +177,6 @@ class Repository:
 
                 if class_ == type_str and version == source_version:
                     return BaseStep.from_config(step_config)
-        raise Exception(f'Step Type {type_str} does not exist with version '
-                        f'{version}!')
 
     def get_step_versions_by_type(self, step_type: Union[Type, Text]):
         """
@@ -192,8 +191,9 @@ class Repository:
 
         steps_dict = self.get_step_versions()
         if type_str not in steps_dict:
-            raise Exception(f'Type {type_str} not available. Available types: '
-                            f'{list(steps_dict.keys())}')
+            logger.warning(f'Type {type_str} not available. Available types: '
+                           f'{list(steps_dict.keys())}')
+            return
         return steps_dict[type_str]
 
     @track(event=GET_STEPS_VERSIONS)
@@ -228,7 +228,6 @@ class Repository:
         for d in all_datasources:
             if name == d.name:
                 return d
-        raise Exception(f'Datasource {name} does not exist')
 
     def get_datasource_names(self) -> List:
         """
@@ -276,7 +275,6 @@ class Repository:
             if n == pipeline_name:
                 c = yaml_utils.read_yaml(y)
                 return BasePipeline.from_config(c)
-        raise Exception(f'No pipeline called {pipeline_name}')
 
     def get_pipelines_by_type(self, type_filter: List[Text]) -> List:
         """
@@ -368,6 +366,10 @@ class Repository:
             launch_compare_tool
         launch_compare_tool()
 
+    def clean(self):
+        """Deletes associated metadata store, pipelines dir and artifacts"""
+        raise NotImplementedError
+
     def _check_if_initialized(self):
         if self.zenml_config is None:
-            raise Exception('ZenML config is none. Did you do `zenml init`?')
+            raise InitializationException

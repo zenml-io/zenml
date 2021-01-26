@@ -20,6 +20,7 @@ import git
 
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation
+from zenml.cli.utils import pass_repo
 from zenml.core.repo.repo import Repository
 
 
@@ -54,3 +55,21 @@ def init(repo_path: Text, pipelines_dir: Text = None,
     except git.InvalidGitRepositoryError:
         click.echo(f'{repo_path} is not a valid git repository! Please '
                    f'initialize ZenML within a git repository.')
+
+
+@cli.command('clean')
+@click.option('--yes', '-y', type=click.BOOL, default=False)
+@pass_repo
+def clean(repo: Repository, yes: bool = False):
+    """Clean everything in repository."""
+    if not yes:
+        confirm = confirmation(
+            "This will completely delete all pipelines, their associated "
+            "artifacts and metadata ever created in this ZenML repository. "
+            "Are you sure you want to proceed?")
+    else:
+        confirm = True
+
+    click.echo("Not implemented for this version")
+    # if confirm:
+    #     repo.clean()

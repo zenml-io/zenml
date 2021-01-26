@@ -28,6 +28,7 @@ from zenml.core.steps.base_step import BaseStep
 from zenml.utils import source_utils
 from zenml.utils.constants import CONFIG_VERSION
 from zenml.utils.enums import PipelineStatusTypes
+from zenml.utils.exceptions import AlreadyExistsException
 from zenml.utils.logger import get_logger
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
 from zenml.utils.zenml_analytics import track, CREATE_PIPELINE, RUN_PIPELINE, \
@@ -225,9 +226,8 @@ class BasePipeline:
         if self.file_name in \
                 Repository.get_instance().get_pipeline_file_paths(
                     only_file_names=True):
-            raise AssertionError(
-                f'Pipeline names must be unique in the repository. There '
-                f'is already a pipeline called {self.name}')
+            raise AlreadyExistsException(
+                name=self.name, resource_type='pipeline')
 
     def add_datasource(self, datasource: BaseDatasource):
         """
