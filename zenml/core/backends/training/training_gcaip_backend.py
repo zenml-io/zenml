@@ -22,8 +22,8 @@ from tfx.extensions.google_cloud_ai_platform.trainer import \
 from tfx.extensions.google_cloud_ai_platform.trainer.executor \
     import TRAINING_ARGS_KEY, JOB_ID_KEY
 
-from zenml.core.backends.training.training_local_backend import \
-    TrainingLocalBackend
+from zenml.core.backends.training.training_base_backend import \
+    TrainingBaseBackend
 from zenml.core.pipelines.utils import sanitize_name_for_ai_platform
 from zenml.utils.constants import ZENML_TRAINER_IMAGE_NAME
 from zenml.utils.enums import GCPGPUTypes
@@ -32,7 +32,7 @@ from zenml.utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-class SingleGPUTrainingGCAIPBackend(TrainingLocalBackend):
+class SingleGPUTrainingGCAIPBackend(TrainingBaseBackend):
     """
     Runs a TrainerStep on Google Cloud AI Platform.
 

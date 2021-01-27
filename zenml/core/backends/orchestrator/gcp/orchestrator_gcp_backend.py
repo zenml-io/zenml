@@ -23,8 +23,8 @@ from typing import Text
 import googleapiclient.discovery
 from google.oauth2 import service_account as sa
 
-from zenml.core.backends.orchestrator.local.orchestrator_local_backend import \
-    OrchestratorLocalBackend
+from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
+    OrchestratorBaseBackend
 from zenml.core.repo.repo import Repository
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils
@@ -39,7 +39,7 @@ SOURCE_DISK_IMAGE = "projects/cos-cloud/global/images/cos-85-13310-1041-38"
 STAGING_AREA = 'staging'
 
 
-class OrchestratorGCPBackend(OrchestratorLocalBackend):
+class OrchestratorGCPBackend(OrchestratorBaseBackend):
     """
     Orchestrates pipeline in a GCP Compute Instance.
 

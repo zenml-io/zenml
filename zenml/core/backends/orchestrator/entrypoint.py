@@ -22,8 +22,8 @@ import fire
 
 from zenml.core.backends.orchestrator.gcp.orchestrator_gcp_backend import \
     TAR_PATH_ARG
-from zenml.core.backends.orchestrator.local.orchestrator_local_backend import \
-    OrchestratorLocalBackend
+from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
+    OrchestratorBaseBackend
 from zenml.core.repo.repo import Repository
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils
@@ -55,7 +55,7 @@ class PipelineRunner(object):
         Repository.get_instance(EXTRACTED_TAR_DIR)
 
         # Change orchestrator of pipeline to local
-        OrchestratorLocalBackend().run(config)
+        OrchestratorBaseBackend().run(config)
 
 
 if __name__ == "__main__":

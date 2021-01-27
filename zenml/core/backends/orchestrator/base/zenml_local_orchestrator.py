@@ -26,7 +26,7 @@ logger = get_logger(__name__)
 class ZenMLLocalDagRunner(LocalDagRunner):
     """
     This is the almost the same as the super class from tfx:
-    tfx.orchestration.local.local_dag_runner.LocalDagRunner with the exception
+    tfx.orchestration.base.local_dag_runner.LocalDagRunner with the exception
     being that the pipeline_run is not overridden. Full credit to Google LLC
     for the original source code found at:
     https://github.com/tensorflow/tfx/blob/master/tfx/orchestration/local/

@@ -18,7 +18,7 @@ from typing import Optional, List, Text
 from zenml.core.backends.base_backend import BaseBackend
 
 
-class ProcessingLocalBackend(BaseBackend):
+class ProcessingBaseBackend(BaseBackend):
     """
     Use this class to run a ZenML pipeline locally.
 

@@ -27,8 +27,8 @@ from tfx.components.trainer.component import Trainer
 from tfx.components.transform.component import Transform
 from tfx.proto import trainer_pb2
 
-from zenml.core.backends.training.training_local_backend import \
-    TrainingLocalBackend
+from zenml.core.backends.training.training_base_backend import \
+    TrainingBaseBackend
 from zenml.core.components.data_gen.component import DataGen
 from zenml.core.components.sequencer.component import Sequencer
 from zenml.core.components.split_gen.component import SplitGen
@@ -179,12 +179,12 @@ class TrainingPipeline(BasePipeline):
         ############
         # TRAINING #
         ############
-        training_backend: TrainingLocalBackend = \
+        training_backend: TrainingBaseBackend = \
             self.steps_dict[keys.TrainingSteps.TRAINER].backend
 
         # default to local
         if training_backend is None:
-            training_backend = TrainingLocalBackend()
+            training_backend = TrainingBaseBackend()
 
         training_kwargs = {
             'custom_executor_spec': training_backend.get_executor_spec(),

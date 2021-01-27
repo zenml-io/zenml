@@ -17,15 +17,15 @@ import os
 import time
 from typing import Optional, List, Text
 
-from zenml.core.backends.processing.processing_local_backend import \
-    ProcessingLocalBackend
+from zenml.core.backends.processing.processing_base_backend import \
+    ProcessingBaseBackend
 from zenml.utils.constants import ZENML_DATAFLOW_IMAGE_NAME
 from zenml.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-class ProcessingDataFlowBackend(ProcessingLocalBackend):
+class ProcessingDataFlowBackend(ProcessingBaseBackend):
     """
     Use this to run a ZenML pipeline on Google Dataflow.
 
