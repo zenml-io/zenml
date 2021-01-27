@@ -16,6 +16,11 @@ from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
 
 
 class TFBaseTrainerStep(BaseTrainerStep):
+    """
+    Base class for all Tensorflow-based trainer steps. All tensorflow based
+    trainings should use this as the base class. An example is available
+    with tf_ff_trainer.FeedForwardTrainer.
+    """
 
     @staticmethod
     def _get_ce_eval_tf_examples_fn(model, tf_transform_output):
