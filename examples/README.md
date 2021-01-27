@@ -12,6 +12,10 @@ Here you can find a list with brief descriptions for each example:
 - **quickstart**: The official quickstart tutorial.
 - **vm_orchestrated**: Runs pipeline on an (optionally preemtible) virtual machine on `Google Cloud Platform` as the orchestration backend.
 
+Note: A lot of the examples are based on [Google Cloud Platform](https://cloud.google.com/). Extensions to other cloud providers like AWS and Azure will 
+be released over time, but the interactions will be very similar. In fact, adding support for these can a great first pull 
+request if you would to be a contributor to ZenML!
+
 Have any questions? Want more tutorials? Spot out-dated, frustrating tutorials? We got you covered!
 
 Feel free to let us know by creating an 

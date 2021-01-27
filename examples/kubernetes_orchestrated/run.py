@@ -27,6 +27,8 @@ MYSQL_PWD = os.getenv('MYSQL_PWD')
 MYSQL_HOST = os.getenv('MYSQL_HOST', '127.0.0.1')
 MYSQL_PORT = os.getenv('MYSQL_PORT', 3306)
 CONNECTION_NAME = f'{GCP_PROJECT}:{GCP_REGION}:{GCP_CLOUD_SQL_INSTANCE_NAME}'
+# Path to your kubernetes config:
+K8S_CONFIG_PATH = os.path.join(os.environ["HOME"], '.kube/config')
 
 assert GCP_BUCKET
 assert GCP_PROJECT
@@ -79,12 +81,6 @@ training_pipeline.add_evaluator(
                   metrics={'has_diabetes': ['binary_crossentropy',
                                             'binary_accuracy']}))
 
-# Important details:
-artifact_store_bucket = 'gs://rndm-strg/zenml-k8s-test/'
-
-# Path to your kubernetes config:
-k8s_config_path = os.path.join(os.environ["HOME"], '.kube/config')
-
 # Define the metadata store
 metadata_store = MySQLMetadataStore(
     host=MYSQL_HOST,
@@ -100,7 +96,7 @@ artifact_store = ArtifactStore(
 
 # Define the orchestrator backend
 orchestrator_backend = OrchestratorKubernetesBackend(
-    kubernetes_config_path=k8s_config_path,
+    kubernetes_config_path=K8S_CONFIG_PATH,
     image_pull_policy="Always")
 
 # Run the pipeline on a Kubernetes Cluster

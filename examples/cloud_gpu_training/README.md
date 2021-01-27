@@ -73,7 +73,7 @@ gcloud sql instances create $GCP_CLOUD_SQL_INSTANCE_NAME --tier=db-n1-standard-2
 ```
 
 ### Run the Cloud SQL proxy
-The proxy needs to run locally for your local client to be able to access the metadata store.
+The proxy needs to run locally for your local client to be able to access the metadata store. Download the proxy [here.](https://cloud.google.com/sql/docs/mysql/sql-proxy#linux-64-bit)
 
 ```bash
 ./cloud_sql_proxy -instances=$GCP_PROJECT:$GCP_REGION:$GCP_CLOUD_SQL_INSTANCE_NAME=tcp:3306 -credential_file=$GOOGLE_APPLICATION_CREDENTIALS
