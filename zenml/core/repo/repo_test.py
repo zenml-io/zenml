@@ -18,12 +18,10 @@ import zenml
 import random
 from typing import Text
 from zenml.core.repo.repo import Repository
-from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.datasources.base_datasource import BaseDatasource
-from zenml.utils import yaml_utils, path_utils
+from zenml.utils import yaml_utils
 from zenml.utils.version import __version__
 from zenml.core.standards import standard_keys as keys
-from zenml.testing.helpers import cleanup, run_test_pipelines
 
 ZENML_ROOT = zenml.__path__[0]
 TEST_ROOT = os.path.join(ZENML_ROOT, "testing")
@@ -48,18 +46,14 @@ def test_get_datasources(run_test_pipelines):
     assert len(ds_list) == 1
 
 
-def test_get_datasource_by_name(run_test_pipelines):
-    run_test_pipelines()
-
+def test_get_datasource_by_name():
     assert repo.get_datasource_by_name("my_csv_datasource")
 
     with pytest.raises(Exception):
         _ = repo.get_datasource_by_name("ds_123")
 
 
-def test_get_datasource_names(run_test_pipelines):
-    run_test_pipelines()
-
+def test_get_datasource_names():
     # TODO: Expand to more test datasources!
     test_ds_names = ["my_csv_datasource"]
 
@@ -92,9 +86,7 @@ def test_get_pipeline_names():
     assert real_p_names == found_p_names
 
 
-def test_get_pipelines(run_test_pipelines):
-    run_test_pipelines()
-
+def test_get_pipelines():
     p_names = sorted(repo.get_pipeline_names())
 
     pipelines = repo.get_pipelines()
