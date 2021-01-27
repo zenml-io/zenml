@@ -7,7 +7,7 @@ LINTER = pylint
 
 
 build:
-	pip install --editable .
+	pip install --editable .[all]
 
 run:
 	$(CLI_NAME) run
