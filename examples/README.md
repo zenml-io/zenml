@@ -4,7 +4,7 @@ This `example` folder is dedicated to provide our users with some practical exam
 
 Here you can find a list with brief descriptions for each example:
 
-- **cloud_gpu_trained**: Training a classifier on a GPU with [Google Cloud AI Platform](https://cloud.google.com/ai-platform) as the training backend.
+- **cloud_gpu_training**: Training a classifier on a GPU with [Google Cloud AI Platform](https://cloud.google.com/ai-platform) as the training backend.
 - **distributed_processing**: Showcases distributed preprocessing wth [Dataflow](https://cloud.google.com/dataflow) as the processing backend.
 - **gan**: Tutorial on how to create and train a GAN model with a custom `TrainerStep` and `PreprocessorStep`.
 - **kubernetes_orchestrated**: Launches a kubernetes job on a kubernetes cluster.
