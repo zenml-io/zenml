@@ -13,10 +13,14 @@
 #  permissions and limitations under the License.
 """Definition of a the base Backend"""
 
-from typing import Dict, Text
+from typing import Dict
 
 from zenml.core.standards.standard_keys import BackendKeys
+from zenml.utils import source_utils
+from zenml.utils.logger import get_logger
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
+
+logger = get_logger(__name__)
 
 
 class BaseBackend:
@@ -50,10 +54,17 @@ class BaseBackend:
     can be used.
     """
     BACKEND_TYPE = None
-    BACKEND_KEY = None
 
     def __init__(self, **kwargs):
-        pass
+        if len(kwargs):
+            self._kwargs = kwargs
+        else:
+            self._kwargs = {}
+
+        self._source = source_utils.resolve_source_path(
+            self.__class__.__module__ + '.' + self.__class__.__name__
+        )
+        self._immutable = False
 
     def __str__(self):
         return to_pretty_string(self.to_config())
@@ -64,24 +75,22 @@ class BaseBackend:
     def to_config(self):
         """Converts Backend to ZenML config block."""
         return {
-            self.BACKEND_KEY: {
-                BackendKeys.TYPE: self.BACKEND_TYPE,
-                BackendKeys.ARGS: self.__dict__  # everything in init
-            }
+            BackendKeys.TYPE: self.BACKEND_TYPE,
+            BackendKeys.ARGS: self._kwargs,  # everything in init
+            BackendKeys.SOURCE: self._source,
         }
 
     @classmethod
-    def from_config(cls, backend_key: Text, config: Dict):
+    def from_config(cls, config: Dict):
         """
         Convert from ZenML config dict to ZenML Backend object.
 
         Args:
-            backend_key: the key of the backend
             config: a ZenML config in dict-form (probably loaded from YAML)
         """
-        from zenml.core.backends.backend_factory import backend_factory
-        backend_class = backend_factory.get_backend(
-            backend_key, config[BackendKeys.TYPE])
+        backend_class = source_utils.load_source_path_class(
+            config[BackendKeys.SOURCE])
         backend_args = config[BackendKeys.ARGS]
         obj = backend_class(**backend_args)
+        obj._immutable = True
         return obj

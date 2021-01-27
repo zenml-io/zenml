@@ -17,26 +17,27 @@ import os
 import time
 from typing import Optional, List, Text
 
-from zenml.core.backends.processing.processing_local_backend import \
-    ProcessingLocalBackend
+from zenml.core.backends.processing.processing_base_backend import \
+    ProcessingBaseBackend
 from zenml.utils.constants import ZENML_DATAFLOW_IMAGE_NAME
 from zenml.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-class ProcessingDataFlowBackend(ProcessingLocalBackend):
+class ProcessingDataFlowBackend(ProcessingBaseBackend):
     """
     Use this to run a ZenML pipeline on Google Dataflow.
 
     This backend utilizes the beam v2 runner to run a custom docker image on
     the Dataflow job.
     """
-    BACKEND_TYPE = 'dataflow'
 
     def __init__(
             self,
             project: Text,
+            staging_location: Text = None,
+            temp_location: Text = None,
             region: Text = 'europe-west1',
             job_name: Text = f'zen_{int(time.time())}',
             image: Text = ZENML_DATAFLOW_IMAGE_NAME,
@@ -44,8 +45,7 @@ class ProcessingDataFlowBackend(ProcessingLocalBackend):
             num_workers: int = 4,
             max_num_workers: int = 10,
             disk_size_gb: int = 50,
-            autoscaling_algorithm: Text = 'THROUGHPUT_BASED',
-            **kwargs):
+            autoscaling_algorithm: Text = 'THROUGHPUT_BASED'):
         """
         Adding this Backend will cause all 'Beam'-supported Steps in the
         pipeline to run on Google Dataflow.
@@ -71,31 +71,47 @@ class ProcessingDataFlowBackend(ProcessingLocalBackend):
         self.disk_size_gb = disk_size_gb
         self.autoscaling_algorithm = autoscaling_algorithm
         self.image = image
-        super().__init__(**kwargs)
+        self.staging_location = staging_location
+        self.temp_location = temp_location
+
+        # staging and temp can be the same if one is specified
+        if staging_location is not None and temp_location is None:
+            self.temp_location = self.staging_location
+
+        super().__init__(
+            project=project,
+            staging_location=staging_location,
+            temp_location=temp_location,
+            region=region,
+            job_name=job_name,
+            image=image,
+            machine_type=machine_type,
+            num_workers=num_workers,
+            max_num_workers=max_num_workers,
+            disk_size_gb=disk_size_gb,
+            autoscaling_algorithm=autoscaling_algorithm,
+        )
 
     def get_beam_args(self,
                       pipeline_name: Text = None,
                       pipeline_root: Text = None) -> \
             Optional[List[Text]]:
-        temp_location = os.path.join(pipeline_root, 'tmp', pipeline_name)
-        stage_location = os.path.join(pipeline_root, 'staging', pipeline_name)
+        if self.temp_location is None:
+            self.temp_location = os.path.join(
+                pipeline_root, 'tmp', pipeline_name)
+        if self.staging_location is None:
+            self.staging_location = os.path.join(
+                pipeline_root, 'staging', pipeline_name)
 
         return [
-            '--runner=DataflowRunner',
+            '--runner=dataflow',
             '--project=' + self.project,
-            '--temp_location=' + temp_location,
-            '--staging_location=' + stage_location,
+            '--temp_location=' + self.temp_location,
+            '--staging_location=' + self.staging_location,
             '--region=' + self.region,
             # '--job_name=' + self.job_name,
             '--num_workers=' + str(self.num_workers),
             '--max_num_workers=' + str(self.max_num_workers),
-
-            # Specifying dependencies
-            # TODO: [LOW] Perhaps add an empty requirements.txt to avoid the
-            #  tfx ephemeral package addition
-            # '--extra_package=' + self.extra_package,
-            # '--requirements_file=' + self.requirements_file,
-            # '--setup_file=' + self.setup_file,
 
             # Temporary overrides of defaults.
             '--disk_size_gb=' + str(self.disk_size_gb),

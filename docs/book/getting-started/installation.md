@@ -29,6 +29,21 @@ Alternatively, if you’re feeling brave, feel free to install the bleeding edge
 pip install git+https://github.com/maiot-io/zenml.git@main --upgrade
 ```
 
+## Integrations
+The ZenML base package does not come up with all integrations pre-installed. Read more [here](../benefits/extensibility.md).
+To install an integration, use the pattern:
+
+```bash
+pip install zenml[INTEGRATION]
+```
+
+e.g.
+```bash
+pip install zenml[pytorch]
+```
+
+Use the keyword `all` in the square brackets if you would like to install all integrations.
+
 Once the installation is completed, you can check whether the installation was successful through:
 
 ### Bash

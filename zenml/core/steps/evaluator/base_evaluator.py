@@ -12,22 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import re
-from typing import Text
+
+from zenml.core.steps.base_step import BaseStep
+from zenml.utils.enums import StepTypes
 
 
-def to_dns1123(name: Text, length=253):
-    if len(name) > length:
-        name = name[:length]
-    name = re.sub(r'[^a-z0-9-\.]([^a-z0-9]{0,61}[^a-z0-9])?', r'-', name)
-    return name.lower()
+class BaseEvaluatorStep(BaseStep):
+    """
+    Base evaluator step. All evaluator steps should inherit from this class.
+    """
 
-def get_id(text: Text):
-    id_pattern = r'[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}'
-    matches = re.findall(id_pattern, text)
-    if not matches:
-        match = None
-    else:  # limit to the first result to prevent weirdness
-        match = matches[0]
-    return match
-
+    STEP_TYPE = StepTypes.evaluator.name

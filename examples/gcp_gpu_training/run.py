@@ -2,6 +2,8 @@ import os
 
 from zenml.core.backends.orchestrator.gcp.orchestrator_gcp_backend import \
     OrchestratorGCPBackend
+from zenml.core.backends.training.training_gcaip_backend import \
+    SingleGPUTrainingGCAIPBackend
 from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.metadata.mysql_metadata_wrapper import MySQLMetadataStore
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
@@ -19,14 +21,14 @@ from zenml.utils.exceptions import AlreadyExistsException
 GCP_PROJECT = os.getenv('GCP_PROJECT')
 GCP_BUCKET = os.getenv('GCP_BUCKET')
 GCP_REGION = os.getenv('GCP_REGION')
+GCP_CLOUD_SQL_INSTANCE_NAME = os.getenv('GCP_CLOUD_SQL_INSTANCE_NAME')
 MYSQL_DB = os.getenv('MYSQL_DB')
 MYSQL_USER = os.getenv('MYSQL_USER')
 MYSQL_PWD = os.getenv('MYSQL_PWD')
 MYSQL_HOST = os.getenv('MYSQL_HOST', '127.0.0.1')
 MYSQL_PORT = os.getenv('MYSQL_PORT', 3306)
-GCP_CLOUD_SQL_INSTANCE_NAME = os.getenv('GCP_CLOUD_SQL_INSTANCE_NAME',
-                                        MYSQL_DB)
 CONNECTION_NAME = f'{GCP_PROJECT}:{GCP_REGION}:{GCP_CLOUD_SQL_INSTANCE_NAME}'
+TRAINING_JOB_DIR = os.path.join(GCP_BUCKET, 'gcp_gpu_training/staging')
 
 assert GCP_BUCKET
 assert GCP_PROJECT
@@ -35,9 +37,14 @@ assert MYSQL_DB
 assert MYSQL_USER
 assert MYSQL_PWD
 
-# Run the pipeline on a Google Cloud VM.
-# The metadata store and artifact store should be accessible by the
-# orchestrator VM.
+# Run the pipeline on a Google Cloud VM and train on GCP as well
+# In order for this to work, the orchestrator and the backend should be in the
+# same GCP project. Also, the metadata store and artifact store should be
+# accessible by the orchestrator VM and the GCAIP worker VM.
+
+# Note: If you are using a custom Trainer, then you need
+# to build a new Docker image based on the ZenML Trainer image, and pass that
+# into the `image` parameter in the SingleGPUTrainingGCAIPBackend.
 
 # Define the training pipeline
 training_pipeline = TrainingPipeline()
@@ -65,13 +72,19 @@ training_pipeline.add_preprocesser(
             'transform': [{'method': 'no_transform', 'parameters': {}}]}}
     ))
 
-# Add a trainer
+# Add a trainer with a GCAIP backend
+training_backend = SingleGPUTrainingGCAIPBackend(
+    project=GCP_PROJECT,
+    job_dir=TRAINING_JOB_DIR
+)
+
 training_pipeline.add_trainer(FeedForwardTrainer(
     loss='binary_crossentropy',
     last_activation='sigmoid',
     output_units=1,
     metrics=['accuracy'],
-    epochs=20))
+    epochs=20).with_backend(training_backend)
+                              )
 
 # Add an evaluator
 training_pipeline.add_evaluator(
@@ -90,14 +103,12 @@ metadata_store = MySQLMetadataStore(
 
 # Define the artifact store
 artifact_store = ArtifactStore(
-    os.path.join(GCP_BUCKET, 'gcp_orchestrated/artifact_store'))
+    os.path.join(GCP_BUCKET, 'gcp_gpu_training/artifact_store'))
 
 # Define the orchestrator backend
 orchestrator_backend = OrchestratorGCPBackend(
-    cloudsql_connection_name=CONNECTION_NAME,
-    project=GCP_PROJECT,
-    preemptible=True,  # reduce costs by using preemptible instances
-)
+    cloudsql_connection_name=GCP_CLOUD_SQL_INSTANCE_NAME,
+    project=GCP_PROJECT)
 
 # Run the pipeline
 training_pipeline.run(

@@ -35,7 +35,7 @@ class CortexDeployer(BaseDeployerStep):
                  predictor=None,
                  requirements: List = None,
                  conda_packages: List = None,
-                 env: Text = 'aws',
+                 env: Text = 'gcp',
                  force: bool = True,
                  wait: bool = False,
                  model_name: Text = '',

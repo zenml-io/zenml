@@ -16,30 +16,35 @@
 import os
 from typing import Any, Text, Dict
 
+from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
+    OrchestratorBaseBackend
 from zenml.core.backends.orchestrator.beam.zenml_beam_orchestrator import \
     ZenMLBeamlDagRunner
-from zenml.core.backends.orchestrator.local.orchestrator_local_backend import \
-    OrchestratorLocalBackend
 from zenml.core.pipelines.utils import parse_yaml_beam_args
 
 
-class OrchestratorBeamBackend(OrchestratorLocalBackend):
+class OrchestratorBeamBackend(OrchestratorBaseBackend):
     """Uses Apache Beam as a Pipeline orchestrator."""
-    BACKEND_TYPE = 'beam'
 
     def __init__(
-            self, worker_machine_type: Text = 'e2-medium',
+            self,
+            worker_machine_type: Text = 'e2-medium',
             num_workers: int = 4,
             max_num_workers: int = 10,
             disk_size_gb: int = 100,
-            autoscaling_algorithm: Text = 'THROUGHPUT_BASED',
-            **kwargs):
+            autoscaling_algorithm: Text = 'THROUGHPUT_BASED'):
         self.worker_machine_type = worker_machine_type
         self.num_workers = num_workers
         self.max_num_workers = max_num_workers
         self.disk_size_gb = disk_size_gb
         self.autoscaling_algorithm = autoscaling_algorithm
-        super().__init__(**kwargs)
+        super().__init__(
+            worker_machine_type=worker_machine_type,
+            num_workers=num_workers,
+            max_num_workers=max_num_workers,
+            disk_size_gb=disk_size_gb,
+            autoscaling_algorithm=autoscaling_algorithm,
+        )
         raise NotImplementedError('Its coming soon!')
 
     def run(self, config: Dict[Text, Any]):
@@ -58,11 +63,11 @@ class OrchestratorBeamBackend(OrchestratorLocalBackend):
             'disk_size_gb': self.disk_size_gb,
             'autoscaling_algorithm': self.autoscaling_algorithm,
             'setup_file': os.path.join(os.getcwd(), 'setup.py'),
-            'job_name': 'zenml-' + run_name,
-            'temp_location': pipeline_temp,
-            'staging_location': staging_location,
-            'extra_package': gz_path,
-            'requirements_file': req_path,
+            # 'job_name': 'zenml-' + run_name,
+            # 'temp_location': pipeline_temp,
+            # 'staging_location': staging_location,
+            # 'extra_package': gz_path,
+            # 'requirements_file': req_path,
         })
         tfx_pipeline = self.get_tfx_pipeline(config)
         ZenMLBeamlDagRunner(beam_orchestrator_args).run(tfx_pipeline)

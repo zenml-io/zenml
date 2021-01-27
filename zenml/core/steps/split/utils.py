@@ -17,7 +17,6 @@ from typing import Text, List, Dict, Union
 
 import tensorflow as tf
 
-
 CategoricalValue = Union[Text, int]
 
 

@@ -8,7 +8,7 @@ Conceptually, every ZenML repository has three main aspects to it:
 2. Metadata stores
 3. Integrations for Orchestration, Processing, Training, and Serving
 
-![High Level Conceptual Diagram of a training pipeline in a ZenML repository](../assets/architecture-overview-zenml.png)
+![High Level Conceptual Diagram of a training pipeline in a ZenML repository](../assets/architecture.svg)
 
 Artifact and metadata stores can be configured per repository as well as per pipeline. However, only pipelines with the same Artifact and Metadata store are comparable, and therefore should not change to maintain the benefits of caching and consistency across pipeline runs.
 

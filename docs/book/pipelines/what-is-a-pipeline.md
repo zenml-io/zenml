@@ -48,81 +48,114 @@ Regardless of type, a ZenML pipeline is represented by a declarative config writ
 
 ```yaml
 version: '1'
-
-datasource:
-  id: acaca6c4-bbbe-49a9-bf0f-4b183ee2d9fc
-  name: My CSV Datasource 11379
-  source: zenml.core.datasources.csv_datasource.CSVDatasource@zenml_0.0.1rc2
-
-environment:
-  artifact_store: /path/to/local_store
-  backends:
-    orchestrator:
-      args: {}
-      type: local
-    processing:
-      args: {}
-      type: local
-    training:
-      args: {}
-      type: local
+artifact_store: /path/to/artifact/store
+backend:
+  args: {}
+  source: zenml.core.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend@zenml_0.2.0
+  type: orchestrator
+metadata:
+  args:
+    uri: /path/to/metadata.db
+  type: sqlite
+pipeline:
+  name: training_1611737166_ea2acded-5273-4f56-969f-087f8b03d7b8
+  type: training
+  source: zenml.core.pipelines.training_pipeline.TrainingPipeline@zenml_0.2.0
   enable_cache: true
-  metadata:
-    args:
-      uri: /path/to/zenml/.zenml/local_store/metadata.db
-    type: sqlite
-  pipeline_name: training_Experiment 1350_4c99bb8f-098d-49f9-a20d-1d37aee67d6c
 
-steps:
+  datasource:
+    id: be68f872-c90c-450b-92ee-f65463d9e1a4
+    name: Pima Indians Diabetes 3
+    source: zenml.core.datasources.csv_datasource.CSVDatasource@zenml_0.2.0
 
-  data:
-    args:
-      path: ...
-      schema: null
-    source: zenml.core.steps.data.csv_data_step.CSVDataStep@zenml_0.0.1rc2
-    
-  preprocessing:
-    args:
-      ...
-    source: zenml.core.steps.preprocesser.standard_preprocesser.standard_preprocesser.StandardPreprocesser@zenml_0.0.1rc2
-  
-  split:
-    args:
-      ...
-    source: zenml.core.steps.split.random_split.RandomSplit@zenml_0.0.1rc2
-  
-  training:
-    args:
-      batch_size: 8
-      dropout_chance: 0.2
-      epochs: 20
-      hidden_activation: relu
-      hidden_layers: null
-      last_activation: sigmoid
-      loss: binary_crossentropy
-      lr: 0.001
-      metrics:
-      - accuracy
-      output_units: 1
-    source: zenml.core.steps.trainer.feedforward_trainer.FeedForwardTrainer@zenml_0.0.1rc2
-  
-  evaluation:
+  steps:
+    data:
       args:
-        ...
-      source: zenml.core.steps.evaluator.tfma_evaluator.TFMAEvaluator@zenml_0.0.1rc2
-
-
+        path: gs://zenml_quickstart/diabetes.csv
+        schema: null
+      source: zenml.core.steps.data.csv_data_step.CSVDataStep@zenml_0.2.0
+    evaluator:
+      args:
+        metrics:
+          has_diabetes:
+          - binary_crossentropy
+          - binary_accuracy
+        slices:
+        - - has_diabetes
+      backend:
+        args: &id001
+          autoscaling_algorithm: THROUGHPUT_BASED
+          disk_size_gb: 50
+          image: eu.gcr.io/maiot-zenml/zenml:dataflow-0.2.0
+          job_name: zen_1611737163
+          machine_type: n1-standard-4
+          max_num_workers: 10
+          num_workers: 4
+          project: core-engine
+          region: europe-west1
+          staging_location: gs://zenmlartifactstore/dataflow_processing/staging
+          temp_location: null
+        source: zenml.core.backends.processing.processing_dataflow_backend.ProcessingDataFlowBackend@zenml_0.2.0
+        type: processing
+      source: zenml.core.steps.evaluator.tfma_evaluator.TFMAEvaluator@zenml_0.2.0
+    preprocesser:
+      args:
+        features:
+        - times_pregnant
+        - pgc
+        - dbp
+        - tst
+        - insulin
+        - bmi
+        - pedigree
+        - age
+        labels:
+        - has_diabetes
+        overwrite:
+          has_diabetes:
+            transform:
+            - method: no_transform
+              parameters: {}
+      backend:
+        args: *id001
+        source: zenml.core.backends.processing.processing_dataflow_backend.ProcessingDataFlowBackend@zenml_0.2.0
+        type: processing
+      source: zenml.core.steps.preprocesser.standard_preprocesser.standard_preprocesser.StandardPreprocesser@zenml_0.2.0
+    split:
+      args:
+        split_map:
+          eval: 0.3
+          train: 0.7
+      backend:
+        args: *id001
+        source: zenml.core.backends.processing.processing_dataflow_backend.ProcessingDataFlowBackend@zenml_0.2.0
+        type: processing
+      source: zenml.core.steps.split.random_split.RandomSplit@zenml_0.2.0
+    trainer:
+      args:
+        batch_size: 8
+        dropout_chance: 0.2
+        epochs: 20
+        hidden_activation: relu
+        hidden_layers: null
+        last_activation: sigmoid
+        loss: binary_crossentropy
+        lr: 0.001
+        metrics:
+        - accuracy
+        output_units: 1
+      source: zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer.FeedForwardTrainer@zenml_0.2.0
 ```
 
-The config above can be split into 4 distinct keys:
+The config above can be split into 5 distinct keys:
 
-* `version`: The version of the YAML standard to maintain backwards compatibility
-* `datasource`: The datasource details to represent the data flowing through the pipeline
-* `environment`: The configuration of the environment in which pipeline is executed, including  details like the [Artifact Store](../repository/artifact-store.md), [Metadata Store](../repository/metadata-store.md) and the [Backends](../backends/what-is-a-backend.md) used.
-* `steps`: The steps used that define what processing the data underwent as it went through the pipeline.
+* `version`: The version of the YAML standard to maintain backwards compatibility.
+* `artifact_store`: The path where the artifacts produced by the pipelines are stored.
+* `backend`: The orchestrator backend for the pipeline.
+* `metadata`: The metadata store config to store information of pipeline runs.
+* `pipeline`: A global key that contains information regarding the pipeline run itself, like `steps`.
 
 The most interesting key is perhaps the last one, i.e., `steps`. Each [`Step`](../steps/what-is-a-step.md) contains a `source` sub-key that points to a git-sha pinned version of the file in which it resides. It also contains all the parameters used in the constructors of these classes, to track them and use them later for comparability and repeatability. [Read more about steps here](../steps/what-is-a-step.md).
-
 
 ## Immutability and Reusing Pipeline Logic
 After pipelines are run, they are marked as being `immutable`. This  means that the internal [Steps](../steps/what-is-a-step.md) of these pipelines can no longer be changed.

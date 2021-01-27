@@ -22,11 +22,12 @@ from zenml.core.repo.constants import ZENML_CONFIG_NAME, \
     ARTIFACT_STORE_DEFAULT_DIR, PIPELINES_DEFAULT_DIR_NAME, \
     ML_METADATA_SQLITE_DEFAULT_NAME, ZENML_DIR_NAME
 from zenml.core.repo.git_wrapper import GitWrapper
-from zenml.core.standards.standard_keys import EnvironmentKeys
+from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils, yaml_utils
+from zenml.utils.exceptions import InitializationException
 
-ARTIFACT_STORE_KEY = EnvironmentKeys.ARTIFACT_STORE
-METADATA_KEY = EnvironmentKeys.METADATA_STORE
+ARTIFACT_STORE_KEY = keys.GlobalKeys.ARTIFACT_STORE
+METADATA_KEY = keys.GlobalKeys.METADATA_STORE
 PIPELINES_DIR_KEY = 'pipelines_dir'
 
 
@@ -45,10 +46,11 @@ class ZenMLConfig:
         """
         self.repo_path = repo_path
         if not ZenMLConfig.is_zenml_dir(self.repo_path):
-            raise AssertionError(f'This is not a ZenML repository, as it does '
-                                 f'not contain the {ZENML_CONFIG_NAME} '
-                                 f'config file. Please initialize your repo '
-                                 f'with `zenml init` with the ZenML CLI.')
+            raise InitializationException(
+                f'This is not a ZenML repository, as it does '
+                f'not contain the {ZENML_CONFIG_NAME} '
+                f'config file. Please initialize your repo '
+                f'with `zenml init` with the ZenML CLI.')
 
         self.config_dir = os.path.join(repo_path, ZENML_DIR_NAME)
         self.config_path = os.path.join(self.config_dir, ZENML_CONFIG_NAME)
@@ -61,7 +63,7 @@ class ZenMLConfig:
         self.pipelines_dir: Text = ''
 
         # Override these using load_config
-        self.load_config(self.raw_config)
+        self.from_config(self.raw_config)
 
     @staticmethod
     def is_zenml_dir(path: Text):
@@ -77,10 +79,10 @@ class ZenMLConfig:
         return True
 
     @staticmethod
-    def create_config(path: Text, artifact_store_path: Text = None,
-                      metadata_store: Optional[
-                          Type[ZenMLMetadataStore]] = None,
-                      pipelines_dir: Text = None):
+    def to_config(path: Text,
+                  artifact_store_path: Text = None,
+                  metadata_store: Optional[Type[ZenMLMetadataStore]] = None,
+                  pipelines_dir: Text = None):
         """
         Creates a default .zenml config at path/zenml/.zenml_config.
 
@@ -141,7 +143,7 @@ class ZenMLConfig:
         # Write initial config
         yaml_utils.write_yaml(config_path, config_dict)
 
-    def load_config(self, config_path: Dict):
+    def from_config(self, config_path: Dict):
         """
         Sets metadata and artifact_store variables
 
