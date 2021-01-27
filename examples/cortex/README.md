@@ -11,17 +11,11 @@ pipeline.add_deployment(
 )
 ```
 
-## Running on Google Cloud Platform and Dataflow
-This example utilize [Google Cloud Dataflow](https://cloud.google.com/dataflow) as the backend to 
-distribute certain Steps in the quickstart pipeline example. In order to run, follow these steps:
+## Deploying on a Cortex GCP cluster
+This example will utilize a `TrainingPipeline` with a `CortexDeployer` Step to deploy a trained model to a 
+cluster end-point right after training.
 
 ### Pre-requisites
-In order to run this example, make sure you have the cortex cluster up.
-
-```python
-cortex cluster up
-```
-
 Then you can clone the repo and initialize a zenml repo:
 ```bash
 git clone https://github.com/maiot-io/zenml.git
@@ -40,6 +34,13 @@ And export the required configuration variables:
 export CORTEX_ENDPOINT_NAME='myawesomemodel'
 export GCP_BUCKET='gs://mybucket'  # to be used as the artifact store
 ```
+
+In order to run this example, make sure you have the cortex cluster up.
+
+```python
+cortex cluster-gcp up
+```
+OR follow any of the steps outlined in the [Cortex docs](https://docs.cortex.dev/clusters/gcp/install).
 
 ### Run the script
 Now we're ready. Execute:
@@ -78,9 +79,14 @@ rm -r .zenml
 rm -r pipelines
 ```
 
-## Caveat
+## Limitations
 Currently, the `CortexDeployer` step only works with a local orchestrator backend.
 
+Let us know via [Slack](https://zenml.io/slack-invite) if you would like to see more backends!
+
 ## Next Steps
-Cortex makes it super easy to deploy your models straight to end-points in your cluster. A big thank you to the 
-cortex team for helping out in this integration and example!
+[Cortex](https://github.com/cortexlabs/cortex) makes it super easy to reproducibly deploy your models straight to 
+an end-point in your cluster. A big thank you to the  cortex team for helping out in this integration and example!
+
+Try using different [Workloads](https://docs.cortex.dev/workloads/batch) and [Predictors](https://docs.cortex.dev/workloads/realtime/predictors) in the 
+cortex config passed to the `CortexDeployer` step. You can set up batch workloads, split traffic on your cluster and lots more.
