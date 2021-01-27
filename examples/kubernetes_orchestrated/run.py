@@ -27,7 +27,6 @@ MYSQL_PWD = os.getenv('MYSQL_PWD')
 MYSQL_HOST = os.getenv('MYSQL_HOST', '127.0.0.1')
 MYSQL_PORT = os.getenv('MYSQL_PORT', 3306)
 CONNECTION_NAME = f'{GCP_PROJECT}:{GCP_REGION}:{GCP_CLOUD_SQL_INSTANCE_NAME}'
-TRAINING_JOB_DIR = os.path.join(GCP_BUCKET, 'cloud_gpu_training/staging')
 
 assert GCP_BUCKET
 assert GCP_PROJECT
@@ -97,7 +96,7 @@ metadata_store = MySQLMetadataStore(
 
 # Define the artifact store
 artifact_store = ArtifactStore(
-    os.path.join(GCP_BUCKET, 'cloud_gpu_training/artifact_store'))
+    os.path.join(GCP_BUCKET, 'kubernetes_orcestrated/artifact_store'))
 
 # Define the orchestrator backend
 orchestrator_backend = OrchestratorKubernetesBackend(
