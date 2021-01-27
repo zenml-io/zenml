@@ -26,7 +26,7 @@ In both cases, make sure to also install the gcp extension (e.g. with pip: `pip 
 
 ```
 zenml init
-cd zenml/examples/vm_orchestrated
+cd zenml/examples/gcp_orchestrated
 ```
 
 Also do the following:

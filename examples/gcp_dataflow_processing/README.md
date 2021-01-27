@@ -28,7 +28,7 @@ In both cases, make sure to also install the gcp extension (e.g. with pip: `pip 
 
 ```
 zenml init
-cd zenml/examples/distributed_processing
+cd zenml/examples/gcp_dataflow_processing
 ```
 
 Also do the following:

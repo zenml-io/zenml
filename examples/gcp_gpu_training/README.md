@@ -1,6 +1,5 @@
 # Train easily on the cloud with one flag
-
-In ZenML, one can configure a `TrainerStep` to utilize different `TrainingBackend` for different use-cases.
+In ZenML, one can configure a `TrainerStep` along with different `TrainingBackend` for different use-cases.
 
 ## Adding a training backend to a TrainerStep
 The pattern to add a training backend to the trainer step is:
@@ -28,7 +27,7 @@ In both cases, make sure to also install the gcp extension (e.g. with pip: `pip 
 
 ```
 zenml init
-cd zenml/examples/cloud_gpu_training
+cd zenml/examples/gcp_gpu_training
 ```
 
 Also do the following:
