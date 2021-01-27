@@ -17,8 +17,7 @@ import base64
 import json
 import os
 import time
-from typing import Dict, Any
-from typing import Text
+from typing import Dict, Any, Text
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
