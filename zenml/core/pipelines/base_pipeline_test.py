@@ -18,10 +18,11 @@ import zenml
 import random
 from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.datasources.base_datasource import BaseDatasource
+from zenml.core.steps.base_step import BaseStep
 from zenml.core.repo.repo import Repository
-from zenml.utils.enums import PipelineStatusTypes
+from zenml.utils.enums import PipelineStatusTypes, GDPComponent
 from zenml.core.standards import standard_keys as keys
-from zenml.utils import exceptions
+from zenml.utils import exceptions, path_utils
 
 ZENML_ROOT = zenml.__path__[0]
 TEST_ROOT = os.path.join(ZENML_ROOT, "testing")
@@ -116,3 +117,42 @@ def test_get_pipeline_config():
     assert config[keys.PipelineKeys.DATASOURCE] is None
     assert config[keys.PipelineKeys.SOURCE].split("@")[0] == \
            "zenml.core.pipelines.base_pipeline.BasePipeline"
+
+
+def test_get_steps_config():
+    # TODO: Expand this to more steps
+    name = "my_pipeline"
+    p: BasePipeline = BasePipeline(name=name)
+
+    kwargs = {"number": 1, "description": "abcdefg"}
+    step = BaseStep(**kwargs)
+
+    p.steps_dict["test"] = step
+
+    cfg = p.get_steps_config()
+
+    steps_cfg = cfg[keys.PipelineKeys.STEPS]
+
+    # want to avoid missing args / type inconsistencies
+    assert steps_cfg["test"] == step.to_config()
+
+
+def test_get_artifacts_uri_by_component():
+    test_component_name = GDPComponent.SplitGen.name
+
+    p_names = sorted(repo.get_pipeline_names())
+
+    p: BasePipeline = repo.get_pipeline_by_name(p_names[0])
+
+    uri_list = p.get_artifacts_uri_by_component(test_component_name)
+
+    # assert it is not empty
+    assert uri_list
+    # assert artifact was written
+    uri = uri_list[0]
+    written_artifacts = path_utils.list_dir(uri)
+    assert written_artifacts
+    # TODO: Ugly TFRecord validation
+    assert all((("tfrecord" in name and
+                os.path.splitext(name)[-1] == ".gz") for name in f)
+               for _, _, f in os.walk(uri))
