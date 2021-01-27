@@ -1,6 +1,6 @@
-# Crunch through big data with distributed processing backends
-In ZenML, it is trivial to distribute certain `Steps` in a pipeline in cases where large 
-datasets are involved. All `Steps` within a pipeline take as input a `ProcessingBackend`.
+# Run pipelines on the cloud cheaply
+You can easily run zenml pipelines on a cloud VM instance if local compute is not enough. With this ability, it 
+is simple to run on cheap preemptible/spot instances to save costs.
 
 ## Adding an orchestration backend to a pipeline
 The pattern to add a backend to the pipeline is:
@@ -10,7 +10,7 @@ backend = ...  # define the orchestrator backend you want to use
 pipeline.run(backend=backend)  # you can also do this at construction time
 ```
 
-## Running on Google Cloud Platform and Dataflow
+## Running on a pipeline a GCP Instance
 This example utilize [Google Cloud Dataflow](https://cloud.google.com/dataflow) as the backend to 
 distribute certain Steps in the quickstart pipeline example. In order to run, follow these steps:
 
@@ -26,23 +26,44 @@ In both cases, make sure to also install the gcp extension (e.g. with pip: `pip 
 
 ```
 zenml init
-cd zenml/examples/distributed_processing
+cd zenml/examples/vm_orchestrated
 ```
 
 Also do the following:
 
 * [Enable billing](https://cloud.google.com/billing/docs/how-to/modify-project#enable_billing_for_a_project) in your Google Cloud Platform project.
-* [Make sure you have permission locally](https://cloud.google.com/dataflow/docs/concepts/access-control) to launch dataflow jobs, whether through service account or default credentials.
+* [Make sure you have permission locally](https://cloud.google.com/compute/docs/access/iam) to launch a compute instance.
 
-### Create a Google Cloud Platform bucket
-Dataflow uses a Google Cloud Storage bucket as a staging location for the distributed job. You can create a 
-bucket in your project by using `gsutil`:
+### Set up env variables
+The `run.py` script utilizes certain environment variables for configuration. 
+Here is an easy way to set it up:
 
 ```bash
 export GCP_BUCKET="gs://mybucketname"
 export GCP_PROJECT='project_id'
+export GCP_REGION='my_region'export MYSQL_DB='database'
+export GCP_CLOUD_SQL_INSTANCE_NAME='cloudsql_instance_name'
+export MYSQL_USER='username'
+export MYSQL_PWD='password'
+export MYSQL_HOST='127.0.0.1'
+export MYSQL_PORT=3306
 export GOOGLE_APPLICATION_CREDENTIALS=/path/to/credentials.json  # optional for permissions to launch dataflow jobs
+```
+
+### Create a Google Cloud Platform bucket
+As the instance needs access to an artifact store, the local artifact store will not work. Instead, we can create a 
+bucket and use it instead:
+
+```bash
 gsutil mb $GCP_BUCKET
+```
+
+### Create Cloud SQL Instance
+The metadata store needs to be in the same GCP project as the GCP orchestrator. An easy way to achieve 
+this is by simply creating a [Cloud SQL Instance](https://cloud.google.com/sql/), which is Google's managed MySQL client.
+
+```bash
+gcloud sql instances create $GCP_CLOUD_SQL_INSTANCE_NAME --tier=db-n1-standard-2 --region=$GCP_REGION
 ```
 
 ### Run the project
@@ -51,15 +72,19 @@ Now we're ready. Execute:
 ```bash
 python run.py
 ```
-This might take a while (~30 mins) as almost every step in the pipeline will now be a dataflow job. While this may 
-seem a long amount of time for such a small amount of data, it will pay off on bigger datasets as most of the time is 
-building up and tearing down the job.
+This will launch a virtual machine in your GCP project that will run the entire pipeline.
 
 ### Clean up
 In order to clean up, you can delete the bucket, which also deletes the Artifact Store.
 
 ```bash
 gsutil rm -r $GCP_BUCKET
+```
+
+Delete the Cloud SQL instance:
+
+```bash
+gcloud sql instances delete $GCP_CLOUD_SQL_INSTANCE_NAME 
 ```
 
 Then in the root of your repo, delete the remaining zenml references.
@@ -71,11 +96,11 @@ rm -r pipelines
 ```
 
 ## Caveats
-Note: If any `Step` using the `ProcessingDataFlowBackend` is non-standard (i.e. a [custom step](https://docs.zenml.io/getting-started/creating-custom-logic.html)), 
-then you need to build a new Docker image based on the ZenML Dataflow image, and pass that into the `image` parameter 
-in the `ProcessingDataFlowBackend`. Find out more in [the docs](https://docs.zenml.io/backends/using-docker.html).
+Unlike all `ProcessingBackend` and `TrainingBackend` cases, there is no need to create a custom image if you have 
+any custom code in your pipeline to use this `OrchestratorBackend` (at least for the one used in this example). 
+The only time you would need to use it if you use a custom dependency which is not present the standard Docker image from 
+zenml.
 
 ## Next Steps
-You can see how ZenML makes it easy to do distributed processing. But this is just scratching the service. You 
-can combine different `ProcessingBackends` with certain [TrainingBackends](../cloud_gpu_training/README.md) to leverage 
-even more cloud power such as GPUs.
+Try using other backends such as [processing backends](../distributed_processing) for distributed preprocessing and [training backends](../cloud_gpu_training) for 
+GPU training on the cloud.
