@@ -68,7 +68,7 @@ cortex logs $CORTEX_ENPOINT_NAME
 Get rid of cortex references:
 ```bash
 cortex delete $CORTEX_ENPOINT_NAME
-cortex cluster down
+cortex cluster-gcp down
 ```
 
 Delete the zenml references:
@@ -79,8 +79,9 @@ rm -r .zenml
 rm -r pipelines
 ```
 
-## Limitations
-Currently, the `CortexDeployer` step only works with a local orchestrator backend.
+## Caveats
+Currently, the `CortexDeployer` step only works with a local orchestrator backend. Also the `cortex` integration 
+currently does not work with the `gcp` integration.
 
 Let us know via [Slack](https://zenml.io/slack-invite) if you would like to see more backends!
 
