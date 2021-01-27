@@ -26,7 +26,7 @@ git+https://github.com/maiot-io/sphinx-book-theme.git
 sphinxext-opengraph
 
 # cortex
-cortex==0.27.0
+# cortex==0.27.0 taken out due to global conflict
 
 # gcp
 apache-beam[gcp]==2.26.0
