@@ -25,7 +25,12 @@ cortex cluster up
 Then you can clone the repo and initialize a zenml repo:
 ```bash
 git clone https://github.com/maiot-io/zenml.git
-cd zenml
+```
+
+Before continuing, either install the [zenml pip package](https://pypi.org/project/zenml/) or to install it [from the cloned repo](../../zenml/README.md). 
+In both cases, make sure to install the cortex extension (e.g. `pip install zenml[cortex]`)
+
+```
 zenml init
 cd examples/cortex
 ```
