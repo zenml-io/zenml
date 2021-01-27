@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import importlib.util
 import os
 from typing import Dict, Text, List
 
@@ -21,6 +22,11 @@ from zenml.core.steps.deployer.base_deployer import BaseDeployerStep
 from zenml.utils.logger import get_logger
 from zenml.utils.source_utils import get_path_from_source, \
     get_class_path_from_source
+
+spec = importlib.util.find_spec('cortex')
+if spec is None:
+    raise AssertionError("cortex integration not installed. Please install "
+                         "zenml[cortex] via `pip install zenml[cortex]`")
 
 logger = get_logger(__name__)
 
@@ -38,25 +44,30 @@ class CortexDeployer(BaseDeployerStep):
                  env: Text = 'gcp',
                  force: bool = True,
                  wait: bool = False,
-                 model_name: Text = '',
                  **kwargs):
         """
         Cortex Deployer Step constructor.
 
-        Use this step to push your trained model to the
+        Use this step to push your trained model via the
         [Cortex API](https://docs.cortex.dev/).
 
         Args:
-            model_name: Name of the model.
-            predictor: Cortex Predictor class.
-            **kwargs: Additional keyword arguments.
+            api_spec: A dictionary defining a single Cortex API. See
+            https://docs.cortex.dev/v/0.27/ for schema.
+            predictor: A Cortex Predictor class implementation. Not required
+            for TaskAPI/TrafficSplitter kinds.
+            requirements: A list of PyPI dependencies that will be installed
+            before the predictor class implementation is invoked.
+            conda_packages: A list of Conda dependencies that will be
+            installed before the predictor class implementation is invoked.
+            force: Override any in-progress api updates.
+            wait: Streams logs until the APIs are ready.
         """
         if conda_packages is None:
             conda_packages = []
         if requirements is None:
             requirements = ['tensorflow==2.3.0']
 
-        self.model_name = model_name
         self.env = env
         self.predictor = predictor
         self.api_config = api_config
@@ -65,7 +76,6 @@ class CortexDeployer(BaseDeployerStep):
         self.force = force
         self.wait = wait
         super(CortexDeployer, self).__init__(
-            model_name=model_name,
             env=self.env,
             predictor=predictor,
             api_config=self.api_config,
