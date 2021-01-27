@@ -151,12 +151,15 @@ The config above can be split into 5 distinct keys:
 
 * `version`: The version of the YAML standard to maintain backwards compatibility.
 * `artifact_store`: The path where the artifacts produced by the pipelines are stored.
-* `backend`: The orchestrator backend for the pipeline.
+* `backend`: The orchestrator [backend](../backends/what-is-a-backend.md) for the pipeline.
 * `metadata`: The metadata store config to store information of pipeline runs.
-* `pipeline`: A global key that contains information regarding the pipeline run itself, like `steps`.
-
-The most interesting key is perhaps the last one, i.e., `steps`. Each [`Step`](../steps/what-is-a-step.md) contains a `source` sub-key that points to a git-sha pinned version of the file in which it resides. It also contains all the parameters used in the constructors of these classes, to track them and use them later for comparability and repeatability. [Read more about steps here](../steps/what-is-a-step.md).
-
+* `pipeline`: A global key that contains information regarding the pipeline run itself:
+  * `name`: The name of the pipeline.
+  * `type`: The type of the pipeline.
+  * `enable_cache`: If false, does not re-use artifacts from previous runs for caching.
+  * `datasource`: Details of the [datasource](../datasources/what-is-a-datasource.md) used in the pipeline. 
+  * `steps:`: Details of each [step](../steps/what-is-a-step.md) used in the pipeline.
+    
 ## Immutability and Reusing Pipeline Logic
 After pipelines are run, they are marked as being `immutable`. This  means that the internal [Steps](../steps/what-is-a-step.md) of these pipelines can no longer be changed.
 However, a common pattern in Machine Learning is to re-use logical components across the entire lifecycle. And that is after all, the whole purpose of creating steps in the 

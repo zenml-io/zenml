@@ -1,5 +1,12 @@
 # Introduction
 **ZenML** is an extensible, open-source MLOps framework for using production-ready Machine Learning pipelines - in a simple way. 
+At its core, ZenML will orchestrate your experiment pipelines from **sourcing data** to **splitting, preprocessing, training**, all the way to the 
+**evaluation of results** and even **serving**.
+
+While there are other pipelining solutions for Machine Learning experiments, ZenML is focussed on two unique approaches:
+
+* [Reproducibility](benefits/ensuring-ml-reproducibility.md). 
+* [Integrations](benefits/integrations.md).
 
 ## Why do I need ZenML?
 ZenML solves the problem of getting Machine Learning in models. You should use ZenML if you struggle with:
@@ -19,9 +26,9 @@ ZenML solves the problem of getting Machine Learning in models. You should use Z
 * Collaborate with your team using a git repo, re-use code, share results and compare experiments. [[here's how](tutorials/team-collaboration-with-zenml-and-google-cloud.md)].
 * No-hassle preprocessing and training on big VM's on the, for 1/4th the price. [[here's how](tutorials/running-a-pipeline-on-a-google-cloud-vm.md)].
 * Distribute preprocessing on hundreds of workers for millions of datapoints. [[here's how](tutorials/building-a-classifier-on-33m-samples.md)].
-* Launching training jobs on GPUs on the cloud with a simple command. [[here's how](tutorials/training-on-gcp-gpu.md)].
+* Launching training jobs on GPUs on the cloud with a simple command. [[here's how](https://github.com/maiot-io/zenml/tree/main/examples/gcp_gpu_training)].
 * No-hassle evaluation of models with slicing metrics. [[here's how](tutorials/creating-first-pipeline.ipynb)]. 
-* Instant deployment of all models. [[here's how](tutorials/deploying-on-gcp.md)].
+* Instantly deploy a model to the cloud. [[here's how](https://github.com/maiot-io/zenml/tree/main/examples/gcp_gcaip_deployment)].
 * De-couple infrastructure from ML code. [[here's how](backends/what-is-a-backend.md)].
 
 

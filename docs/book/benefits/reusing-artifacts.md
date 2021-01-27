@@ -4,7 +4,7 @@ Caching is an important mechanism for ZenML, which not only speeds up ML develop
 artifacts inevitably produced in the experimentation stage of training an ML model.
 
 ## The tremendous benefits of reusing artifacts
-Whenever, a [pipeline](what-is-a-pipeline.md) is run in the same repository, 
+Whenever, a [pipeline](../pipelines/what-is-a-pipeline.md) is run in the same repository, 
 ZenML tracks all [Steps](../steps/what-is-a-step.md) executed in the repository. The outputs of these steps are 
 stored as they are computed in the [Metadata](../repository/metadata-store.md) and [Artifact](../repository/artifact-store.md) Stores. 
 Whenever another pipeline is run afterwards that has the same Step configurations of a previously 

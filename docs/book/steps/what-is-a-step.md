@@ -49,9 +49,9 @@ enough to extend one of the standard step interfaces in your pipelines. These ar
 
 * DataStep interface to [create custom datasources](../datasources/what-is-a-datasource.md).
 * [SplitStep](split/built-in.md) interface for custom splitting logic.
-* SequencerStep interface for custom preprocessing of sequential data.
-* [PreprocessStep](split/built-in.md) interface for custom preprocessing logic.
-* [TrainerStep](split/built-in.md) interface for custom training logic.
+* [SequencerStep](sequencer.md) interface for custom preprocessing of sequential data.
+* [PreprocessStep](preprocess.md) interface for custom preprocessing logic.
+* [TrainerStep](trainer.md) interface for custom training logic.
 * [EvaluatorStep](evaluator.md) interface for custom evaluation logic.
 * [DeployerStep](deployer.md) interface for custom deployment logic.
 

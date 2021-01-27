@@ -116,11 +116,11 @@ mysql_pw = 'PASSWORD'
 
 # Run the pipeline on a Google Cloud VM
 training_pipeline.run(
-    backends=[OrchestratorGCPBackend(
+    backend=OrchestratorGCPBackend(
         cloudsql_connection_name=cloudsql_connection_name,
         project=project,
         zone=zone,
-    )],
+    ),
     metadata_store=MySQLMetadataStore(
         host='127.0.0.1',
         port=3306,

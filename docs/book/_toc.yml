@@ -9,8 +9,6 @@
     title: Quickstart
   - file: getting-started/core-concepts
     title: Core Concepts
-  - file: getting-started/architectural-overview
-    title: Architectural Overview
   - file: getting-started/organizing-zenml
     title: Organizing ML Code with ZenML
   - file: getting-started/creating-custom-logic
@@ -79,6 +77,8 @@
         title: Custom Split
   - file: steps/preprocess
     title: Preprocess
+  - file: steps/sequencer
+    title: Sequencer (Timeseries)
   - file: steps/trainer
     title: Trainer
   - file: steps/evaluator
@@ -113,10 +113,6 @@
       title: Style Transfer using a CycleGAN
     - file: tutorials/building-a-classifier-on-33m-samples
       title: Classification with 59M samples
-    - file: tutorials/training-on-gcp-gpu
-      title: Training with GPUs on the Cloud
-    - file: tutorials/deploying-on-gcp
-      title: Deploying a model to GCP
 
 - part: Misc
   chapters:
