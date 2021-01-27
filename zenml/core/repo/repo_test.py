@@ -49,8 +49,9 @@ def test_get_datasources(run_test_pipelines):
 def test_get_datasource_by_name():
     assert repo.get_datasource_by_name("my_csv_datasource")
 
-    with pytest.raises(Exception):
-        _ = repo.get_datasource_by_name("ds_123")
+    fake_ds = repo.get_datasource_by_name("ds_123")
+
+    assert fake_ds is None
 
 
 def test_get_datasource_names():
@@ -181,8 +182,7 @@ def test_get_step_by_version():
     bogus_version = "asdfghjklöä"
 
     assert repo.get_step_by_version(random_step, current_version)
-    with pytest.raises(Exception):
-        _ = repo.get_step_by_version(random_step, bogus_version)
+    assert repo.get_step_by_version(random_step, bogus_version) is None
 
 
 def test_get_step_versions_by_type():
@@ -206,5 +206,4 @@ def test_get_step_versions_by_type():
 
     assert step_versions == {current_version}
 
-    with pytest.raises(Exception):
-        _ = repo.get_step_versions_by_type(bogus_step)
+    assert repo.get_step_versions_by_type(bogus_step) is None
