@@ -15,21 +15,20 @@
 import pytest
 import os
 import zenml
+import random
+import pandas as pd
 from zenml.core.datasources.base_datasource import BaseDatasource
+from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.repo.repo import Repository
+from zenml.core.standards import standard_keys as keys
+from zenml.utils import yaml_utils, exceptions
 
-ZENML_ROOT = os.path.dirname(zenml.__path__[0])
+ZENML_ROOT = zenml.__path__[0]
+TEST_ROOT = os.path.join(ZENML_ROOT, "testing")
 
-
-@pytest.fixture
-def cleanup_metadata_store():
-    # Remove metadata db after a test to avoid test failures by duplicated
-    # data sources
-    metadata_db_location = os.path.join(".zenml", "local_store", "metadata.db")
-    try:
-        os.remove(os.path.join(ZENML_ROOT, metadata_db_location))
-    except Exception as e:
-        print(e)
+pipeline_root = os.path.join(TEST_ROOT, "test_pipelines")
+repo: Repository = Repository.get_instance()
+repo.zenml_config.set_pipelines_dir(pipeline_root)
 
 
 def test_datasource_create():
@@ -39,34 +38,85 @@ def test_datasource_create():
 
     assert not first_ds._immutable
 
-    # load-reload the same datasource by dummy config save
-    # TODO[HIGH]: This does not do what I think it does
-    second_ds = BaseDatasource.from_config(first_ds.to_config())
+    # reload a datasource from a saved config
+    p_config = random.choice(repo.get_pipeline_file_paths())
+    cfg = yaml_utils.read_yaml(p_config)
+    second_ds = BaseDatasource.from_config(cfg[keys.GlobalKeys.PIPELINE])
 
     assert second_ds._immutable
-
-    # attempt at duplicate datasource creation
-    with pytest.raises(Exception):
-        _ = BaseDatasource(name=name)
-
-
-def test_datasource_name():
-    name = "my_datasource"
-    first_ds = BaseDatasource(name=name)
-
-    pipeline_name = first_ds.get_pipeline_name_from_name()
-
-    # round trip
-    assert BaseDatasource.get_name_from_pipeline_name(pipeline_name) == name
 
 
 def test_get_datastep():
     name = "my_datasource"
     first_ds = BaseDatasource(name=name)
 
-    # BaseStep.DATA_STEP is None
-    # get_data_step is implemented, so the raised exception will NOT be a
-    # NotImplementedError
-    with pytest.raises(Exception):
-        _ = first_ds.get_data_step()
+    assert not first_ds.get_data_step()
+
+
+def test_get_one_pipeline():
+    name = "my_datasource"
+    first_ds = BaseDatasource(name=name)
+
+    with pytest.raises(exceptions.EmptyDatasourceException):
+        _ = first_ds._get_one_pipeline()
+
+    # reload a datasource from a saved config
+    p_config = random.choice(repo.get_pipeline_file_paths())
+    cfg = yaml_utils.read_yaml(p_config)
+    second_ds = BaseDatasource.from_config(cfg[keys.GlobalKeys.PIPELINE])
+
+    assert second_ds._get_one_pipeline()
+
+
+def test_get_data_file_paths():
+    name = "my_datasource"
+    first_ds = BaseDatasource(name=name)
+
+    p_name = "my_pipeline"
+    first_pipeline = BasePipeline(name=name)
+
+    first_pipeline.add_datasource(first_ds)
+
+    # reload a datasource from a saved config
+    p_config = random.choice(repo.get_pipeline_file_paths())
+    cfg = yaml_utils.read_yaml(p_config)
+    second_ds = BaseDatasource.from_config(cfg[keys.GlobalKeys.PIPELINE])
+
+    with pytest.raises(AssertionError):
+        _ = second_ds._get_data_file_paths(first_pipeline)
+
+    real_pipeline = second_ds._get_one_pipeline()
+    paths = second_ds._get_data_file_paths(real_pipeline)
+
+    # TODO: Find a better way of asserting TFRecords
+    assert all(os.path.splitext(p)[-1] == ".gz" for p in paths)
+
+
+def test_get_datapoints():
+    # reload a datasource from a saved config
+    p_config = random.choice(repo.get_pipeline_file_paths())
+    cfg = yaml_utils.read_yaml(p_config)
+    ds: BaseDatasource = BaseDatasource.from_config(
+        cfg[keys.GlobalKeys.PIPELINE])
+
+    csv_df = pd.read_csv(os.path.join(TEST_ROOT,
+                                      "test_data", "my_dataframe.csv"))
+
+    assert ds.get_datapoints() == len(csv_df.index)
+
+
+def test_sample_data():
+    # reload a datasource from a saved config
+    p_config = random.choice(repo.get_pipeline_file_paths())
+    cfg = yaml_utils.read_yaml(p_config)
+    ds: BaseDatasource = BaseDatasource.from_config(
+        cfg[keys.GlobalKeys.PIPELINE])
+
+    sample_df = ds.sample_data()
+    csv_df = pd.read_csv(os.path.join(TEST_ROOT,
+                                      "test_data", "my_dataframe.csv"))
+
+    # TODO: This fails on the test csv because the age gets typed as
+    #  a float in datasource.sample_data() method
+    assert sample_df.equals(csv_df)
 
