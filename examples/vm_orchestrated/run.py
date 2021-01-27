@@ -1,9 +1,12 @@
+import os
+
 from zenml.core.backends.orchestrator.gcp.orchestrator_gcp_backend import \
     OrchestratorGCPBackend
 from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.metadata.mysql_metadata_wrapper import MySQLMetadataStore
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
 from zenml.core.repo.artifact_store import ArtifactStore
+from zenml.core.repo.repo import Repository
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
 from zenml.core.steps.preprocesser.standard_preprocesser \
     .standard_preprocesser import \
@@ -11,20 +14,41 @@ from zenml.core.steps.preprocesser.standard_preprocesser \
 from zenml.core.steps.split.random_split import RandomSplit
 from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
     FeedForwardTrainer
+from zenml.utils.exceptions import AlreadyExistsException
 
-artifact_store_path = 'gs://your-bucket-name/optional-subfolder'
-project = 'PROJECT'  # the project to launch the VM in
-cloudsql_connection_name = f'{project}:REGION:INSTANCE'
-mysql_db = 'DATABASE'
-mysql_user = 'USERNAME'
-mysql_pw = 'PASSWORD'
-training_job_dir = artifact_store_path + '/gcaiptrainer/'
+GCP_PROJECT = os.getenv('GCP_PROJECT')
+GCP_BUCKET = os.getenv('GCP_BUCKET')
+GCP_REGION = os.getenv('GCP_REGION')
+MYSQL_DB = os.getenv('MYSQL_DB')
+MYSQL_USER = os.getenv('MYSQL_USER')
+MYSQL_PWD = os.getenv('MYSQL_PWD')
+MYSQL_HOST = os.getenv('MYSQL_HOST', '127.0.0.1')
+MYSQL_PORT = os.getenv('MYSQL_PORT', 3306)
+GCP_CLOUD_SQL_INSTANCE_NAME = os.getenv('GCP_CLOUD_SQL_INSTANCE_NAME',
+                                        MYSQL_DB)
+CONNECTION_NAME = f'{GCP_PROJECT}:{GCP_REGION}:{GCP_CLOUD_SQL_INSTANCE_NAME}'
 
-training_pipeline = TrainingPipeline(name='GCP Orchestrated')
+assert GCP_BUCKET
+assert GCP_PROJECT
+assert GCP_REGION
+assert MYSQL_DB
+assert MYSQL_USER
+assert MYSQL_PWD
+
+# Run the pipeline on a Google Cloud VM.
+# The metadata store and artifact store should be accessible by the
+# orchestrator VM.
+
+# Define the training pipeline
+training_pipeline = TrainingPipeline()
 
 # Add a datasource. This will automatically track and version it.
-ds = CSVDatasource(name='Pima Indians Diabetes',
-                   path='gs://zenml_quickstart/diabetes.csv')
+try:
+    ds = CSVDatasource(name='Pima Indians Diabetes',
+                       path='gs://zenml_quickstart/diabetes.csv')
+except AlreadyExistsException:
+    ds = Repository.get_instance().get_datasource_by_name(
+        'Pima Indians Diabetes')
 training_pipeline.add_datasource(ds)
 
 # Add a split
@@ -55,31 +79,29 @@ training_pipeline.add_evaluator(
                   metrics={'has_diabetes': ['binary_crossentropy',
                                             'binary_accuracy']}))
 
-# Run the pipeline on a Google Cloud VM.
-# The metadata store and artifact store should be accessible by the
-# orchestrator VM.
-
-
-# Define the orchestrator backend
-orchestrator_backend = OrchestratorGCPBackend(
-    cloudsql_connection_name=cloudsql_connection_name,
-    project=project)
-
 # Define the metadata store
 metadata_store = MySQLMetadataStore(
-    host='127.0.0.1',
-    port=3306,
-    database=mysql_db,
-    username=mysql_user,
-    password=mysql_pw,
+    host=MYSQL_HOST,
+    port=int(MYSQL_PORT),
+    database=MYSQL_DB,
+    username=MYSQL_USER,
+    password=MYSQL_PWD,
 )
 
 # Define the artifact store
-artifact_store = ArtifactStore(artifact_store_path)
+artifact_store = ArtifactStore(
+    os.path.join(GCP_BUCKET, 'vm_orchestrated/artifact_store'))
+
+# Define the orchestrator backend
+orchestrator_backend = OrchestratorGCPBackend(
+    cloudsql_connection_name=CONNECTION_NAME,
+    project=GCP_PROJECT,
+    preemptible=True,  # reduce costs by using preemptible instances
+)
 
 # Run the pipeline
 training_pipeline.run(
-    backends=[orchestrator_backend],
+    backend=orchestrator_backend,
     metadata_store=metadata_store,
     artifact_store=artifact_store,
 )

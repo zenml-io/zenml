@@ -2,7 +2,7 @@
   <a href="https://maiot.io">
     <img src=https://maiot.io/assets/images/maiot.png alt="maiot ZenML" width=55>
   </a>
-  &nbsp;maiot ZenML&nbsp;
+  &nbsp;ZenML&nbsp;
   <a href="https://docs.maiot.io"><img alt="release" src=https://img.shields.io/badge/-docs-26CB7C></a>
   <a href="https://github.com/maiot-io/zenml/releases"><img alt="release" src=https://img.shields.io/github/v/tag/maiot-io/zenml?color=431d93></a>
 </h1>
@@ -28,6 +28,19 @@ You can easily install `zenml` using pip:
 pip install zenml
 ```
 
+To install an integration, use the pattern:
+
+```bash
+pip install zenml[INTEGRATION]
+```
+
+e.g.
+```bash
+pip install zenml[pytorch]
+```
+
+Use the keyword `all` in the square brackets if you would like to install all integrations.
+
 ## How to install from source
 On the other hand, if you like to install from the source directly, you can follow:
 ```bash
@@ -36,6 +49,8 @@ source venv/bin/activate
 make install
 make build
 ```
+
+Note: This will install all integrations!
 
 ## Known errors in installation
 If you run into a `psutil` error, please install the python-dev libraries:
@@ -64,4 +79,4 @@ eval (env _zenml_COMPLETE=source_fish zenml)
 
 ## Authors
 
-* **maiot GmbH** - [maiot.io](https://maiot.io) - [maiot Docs](https://docs.maiot.io)
+* **maiot GmbH** - [Company Website](https://maiot.io) - [Product Website](https://zenml.io) - [ZenML Docs](https://docs.maiot.io)

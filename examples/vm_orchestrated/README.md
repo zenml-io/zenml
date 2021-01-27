@@ -2,14 +2,12 @@
 In ZenML, it is trivial to distribute certain `Steps` in a pipeline in cases where large 
 datasets are involved. All `Steps` within a pipeline take as input a `ProcessingBackend`.
 
-## Adding a backend to a step
-The pattern to add a backend to the step is:
+## Adding an orchestration backend to a pipeline
+The pattern to add a backend to the pipeline is:
 
 ```python
-backend = ...  # define the backend you want to use
-pipeline.add_step(
-    Step(...).with_backend(backend)
-)
+backend = ...  # define the orchestrator backend you want to use
+pipeline.run(backend=backend)  # you can also do this at construction time
 ```
 
 ## Running on Google Cloud Platform and Dataflow

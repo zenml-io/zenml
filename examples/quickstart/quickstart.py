@@ -1,19 +1,25 @@
 from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
+from zenml.core.repo.repo import Repository
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
 from zenml.core.steps.preprocesser.standard_preprocesser \
     .standard_preprocesser import \
     StandardPreprocesser
 from zenml.core.steps.split.random_split import RandomSplit
-
 from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
     FeedForwardTrainer
+from zenml.utils.exceptions import AlreadyExistsException
 
-training_pipeline = TrainingPipeline(name='Quickstart')
+# Define the training pipeline
+training_pipeline = TrainingPipeline()
 
 # Add a datasource. This will automatically track and version it.
-ds = CSVDatasource(name='Pima Indians Diabetes',
-                   path='gs://zenml_quickstart/diabetes.csv')
+try:
+    ds = CSVDatasource(name='Pima Indians Diabetes',
+                       path='gs://zenml_quickstart/diabetes.csv')
+except AlreadyExistsException:
+    ds = Repository.get_instance().get_datasource_by_name(
+        'Pima Indians Diabetes')
 training_pipeline.add_datasource(ds)
 
 # Add a split

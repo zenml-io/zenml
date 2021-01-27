@@ -33,15 +33,15 @@ processing_backend = ProcessingDataFlowBackend(
 )
 
 # Define the training pipeline
-training_pipeline = TrainingPipeline(name='3')
+training_pipeline = TrainingPipeline()
 
 # Add a datasource. This will automatically track and version it.
 try:
-    ds = CSVDatasource(name='Pima Indians Diabetes 3',
+    ds = CSVDatasource(name='Pima Indians Diabetes',
                        path='gs://zenml_quickstart/diabetes.csv')
 except AlreadyExistsException:
     ds = Repository.get_instance().get_datasource_by_name(
-        'Pima Indians Diabetes 3')
+        'Pima Indians Diabetes')
 training_pipeline.add_datasource(ds)
 
 # Add a split

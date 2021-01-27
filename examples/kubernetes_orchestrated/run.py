@@ -1,7 +1,8 @@
 import os
 
-from zenml.core.backends.processing.processing_dataflow_backend import \
-    ProcessingDataFlowBackend
+from zenml.core.backends.orchestrator.kubernetes \
+    .orchestrator_kubernetes_backend import \
+    OrchestratorKubernetesBackend
 from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.metadata.mysql_metadata_wrapper import MySQLMetadataStore
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
@@ -16,43 +17,45 @@ from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
     FeedForwardTrainer
 from zenml.utils.exceptions import AlreadyExistsException
 
-ARTIFACT_STORE_PATH = os.getenv('ARTIFACT_STORE_PATH')
 GCP_PROJECT = os.getenv('GCP_PROJECT')
+GCP_BUCKET = os.getenv('GCP_BUCKET')
+GCP_REGION = os.getenv('GCP_REGION')
+GCP_CLOUD_SQL_INSTANCE_NAME = os.getenv('GCP_CLOUD_SQL_INSTANCE_NAME')
 MYSQL_DB = os.getenv('MYSQL_DB')
 MYSQL_USER = os.getenv('MYSQL_USER')
 MYSQL_PWD = os.getenv('MYSQL_PWD')
 MYSQL_HOST = os.getenv('MYSQL_HOST', '127.0.0.1')
 MYSQL_PORT = os.getenv('MYSQL_PORT', 3306)
+CONNECTION_NAME = f'{GCP_PROJECT}:{GCP_REGION}:{GCP_CLOUD_SQL_INSTANCE_NAME}'
+TRAINING_JOB_DIR = os.path.join(GCP_BUCKET, 'cloud_gpu_training/staging')
 
-# Run the pipeline locally but distribute the beam-compatible steps, i.e.,
-# the Data, Statistics, Preprocessing and Evaluator Steps.
-# Note: If any of these steps are non-standard, custom steps, then you need
-# to build a new Docker image based on the ZenML Dataflow image, and pass that
-# into the `image` parameter in the ProcessingDataFlowBackend
+assert GCP_BUCKET
+assert GCP_PROJECT
+assert GCP_REGION
+assert MYSQL_DB
+assert MYSQL_USER
+assert MYSQL_PWD
 
-# Define the processing backend
-processing_backend = ProcessingDataFlowBackend(
-    project=GCP_PROJECT,
-    staging_location=ARTIFACT_STORE_PATH,
-)
+# Run the pipeline on a kubernetes cluster.
+# The metadata store and artifact store should be accessible by the cluster.
 
 # Define the training pipeline
-training_pipeline = TrainingPipeline(name='3')
+training_pipeline = TrainingPipeline()
 
 # Add a datasource. This will automatically track and version it.
 try:
-    ds = CSVDatasource(name='Pima Indians Diabetes 3',
+    ds = CSVDatasource(name='Pima Indians Diabetes',
                        path='gs://zenml_quickstart/diabetes.csv')
 except AlreadyExistsException:
     ds = Repository.get_instance().get_datasource_by_name(
-        'Pima Indians Diabetes 3')
+        'Pima Indians Diabetes')
+training_pipeline.add_datasource(ds)
+
 training_pipeline.add_datasource(ds)
 
 # Add a split
-training_pipeline.add_split(
-    RandomSplit(split_map={'train': 0.7, 'eval': 0.3}).with_backend(
-        processing_backend)
-)
+training_pipeline.add_split(RandomSplit(
+    split_map={'train': 0.7, 'eval': 0.3}))
 
 # Add a preprocessing unit
 training_pipeline.add_preprocesser(
@@ -62,9 +65,7 @@ training_pipeline.add_preprocesser(
         labels=['has_diabetes'],
         overwrite={'has_diabetes': {
             'transform': [{'method': 'no_transform', 'parameters': {}}]}}
-    ).with_backend(processing_backend)
-)
-
+    ))
 # Add a trainer
 training_pipeline.add_trainer(FeedForwardTrainer(
     loss='binary_crossentropy',
@@ -75,26 +76,37 @@ training_pipeline.add_trainer(FeedForwardTrainer(
 
 # Add an evaluator
 training_pipeline.add_evaluator(
-    TFMAEvaluator(
-        slices=[['has_diabetes']],
-        metrics={'has_diabetes': ['binary_crossentropy', 'binary_accuracy']}
-    ).with_backend(processing_backend)
-)
+    TFMAEvaluator(slices=[['has_diabetes']],
+                  metrics={'has_diabetes': ['binary_crossentropy',
+                                            'binary_accuracy']}))
+
+# Important details:
+artifact_store_bucket = 'gs://rndm-strg/zenml-k8s-test/'
+
+# Path to your kubernetes config:
+k8s_config_path = os.path.join(os.environ["HOME"], '.kube/config')
 
 # Define the metadata store
 metadata_store = MySQLMetadataStore(
     host=MYSQL_HOST,
-    port=MYSQL_PORT,
+    port=int(MYSQL_PORT),
     database=MYSQL_DB,
     username=MYSQL_USER,
     password=MYSQL_PWD,
 )
 
 # Define the artifact store
-artifact_store = ArtifactStore(ARTIFACT_STORE_PATH)
+artifact_store = ArtifactStore(
+    os.path.join(GCP_BUCKET, 'cloud_gpu_training/artifact_store'))
 
-# Run the pipeline
+# Define the orchestrator backend
+orchestrator_backend = OrchestratorKubernetesBackend(
+    kubernetes_config_path=k8s_config_path,
+    image_pull_policy="Always")
+
+# Run the pipeline on a Kubernetes Cluster
 training_pipeline.run(
-    # metadata_store=metadata_store,
-    # artifact_store=artifact_store,
+    backend=orchestrator_backend,
+    metadata_store=metadata_store,
+    artifact_store=artifact_store,
 )

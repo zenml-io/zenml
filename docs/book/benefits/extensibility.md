@@ -13,6 +13,16 @@ pip install zenml[pytorch]
 
 Will unlock the `pytorch` integration for ZenML, allowing users to use the `PyTorchTrianerStep` for example.
 
+To install all dependencies, use:
+
+```bash
+pip install zenml[all]
+```
+
+```{warning}
+Using the [all] keyword will result in a significantly bigger package installation.
+```
+
 In order to see the full list of integrations available, see the [setup.py on GitHub](https://github.com/maiot-io/zenml/blob/main/setup.py).
 
 We would be happy to see [your contributions for more integrations](https://github.com/maiot-io/zenml/) if the ones we have currently support 
