@@ -33,7 +33,7 @@ processing_backend = ProcessingDataFlowBackend(
 )
 
 # Define the training pipeline
-training_pipeline = TrainingPipeline(name='3')
+training_pipeline = TrainingPipeline()
 
 # Add a datasource. This will automatically track and version it.
 try:

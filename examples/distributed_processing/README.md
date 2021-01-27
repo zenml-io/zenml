@@ -23,8 +23,8 @@ In order to run this example, you need to clone the zenml repo.
 git clone https://github.com/maiot-io/zenml.git
 ```
 
-Before continuing, either install the [zenml pip package](https://pypi.org/project/zenml/) or to install it [from the cloned repo](../../zenml/README.md). 
-In both cases, make sure to install the gcp extension (e.g. `pip install zenml[gcp]`)
+Before continuing, either [install the zenml pip package](https://docs.zenml.io/getting-started/installation.html) or install it [from the cloned repo](../../zenml/README.md). 
+In both cases, make sure to also install the gcp extension (e.g. with pip: `pip install zenml[gcp]`)
 
 ```
 cd zenml/examples/distributed_processing
