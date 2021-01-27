@@ -90,7 +90,7 @@ metadata_store = MySQLMetadataStore(
 
 # Define the artifact store
 artifact_store = ArtifactStore(
-    os.path.join(GCP_BUCKET, 'vm_orchestrated/artifact_store'))
+    os.path.join(GCP_BUCKET, 'gcp_orchestrated/artifact_store'))
 
 # Define the orchestrator backend
 orchestrator_backend = OrchestratorGCPBackend(

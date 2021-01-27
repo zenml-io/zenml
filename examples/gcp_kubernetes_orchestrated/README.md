@@ -1,4 +1,4 @@
-# Run pipelines on the cloud cheaply
+# Run pipelines on a kubernetes cluster
 You can easily run zenml pipelines on a cloud VM instance if local compute is not enough. With this ability, it 
 is simple to run on cheap preemptible/spot instances to save costs.
 
@@ -10,8 +10,8 @@ backend = ...  # define the orchestrator backend you want to use
 pipeline.run(backend=backend)  # you can also do this at construction time
 ```
 
-## Running on a pipeline a GCP Instance
-This example utilizes [Google Compute Engine](https://cloud.google.com/compute) to launch a VM on Google Cloud Platform , 
+## Running on a pipeline a Google Kubernetes Engine (GKE)
+This example utilizes [Google Kubernetes Engine](https://cloud.google.com/kubernetes-engine) to launch a job on a GKE cluster, 
 which then runs the pipeline specified.
 
 ### Pre-requisites
@@ -26,7 +26,7 @@ In both cases, make sure to also install the gcp extension (e.g. with pip: `pip 
 
 ```
 zenml init
-cd zenml/examples/vm_orchestrated
+cd zenml/examples/kubernetes_orchestrated
 ```
 
 Also do the following:
@@ -49,6 +49,15 @@ export MYSQL_HOST='127.0.0.1'
 export MYSQL_PORT=3306
 export GOOGLE_APPLICATION_CREDENTIALS=/path/to/credentials.json  # optional for permissions to launch dataflow jobs
 ```
+
+## Ensure that you have kubectl
+This example assumes you have [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) installed and ready 
+to use. Additionally, it assumes there is a `.kube/config` configuration file in your $HOME directory. To check, try using:
+
+```bash
+kubectl version
+```
+which should return a result that ensures kubectl is installed on your machine.
 
 ### Create a Google Cloud Platform bucket
 As the instance needs access to an artifact store, the local artifact store will not work. Instead, we can create a 
@@ -79,7 +88,7 @@ Now we're ready. Execute:
 ```bash
 python run.py
 ```
-This will launch a virtual machine in your GCP project that will run the entire pipeline.
+This will launch a kubernetes job that will run the entire pipeline.
 
 ### Clean up
 In order to clean up, you can delete the bucket, which also deletes the Artifact Store.
@@ -109,5 +118,5 @@ The only time you would need to use it if you use a custom dependency which is n
 zenml.
 
 ## Next Steps
-Try using other backends such as [processing backends](../distributed_processing) for distributed preprocessing and [training backends](../cloud_gpu_training) for 
+Try using other backends such as [processing backends](../gcp_dataflow_processing) for distributed preprocessing and [training backends](../gcp_gpu_training) for 
 GPU training on the cloud.

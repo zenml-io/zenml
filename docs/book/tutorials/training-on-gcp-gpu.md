@@ -27,7 +27,7 @@ training_pipeline.run(
 )
 ```
 
-Full code example can be found [here](https://github.com/maiot-io/zenml/blob/main/examples/cloud_gpu_training/)
+Full code example can be found [here](https://github.com/maiot-io/zenml/blob/main/examples/gcp_gpu_training/)
 
 Detailed tutorial to follow..
 

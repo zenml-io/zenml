@@ -8,7 +8,7 @@ which is a type of instance on GCP that you can create and run at a much lower p
 instances come with a big disadvantage of being shut down at any point within 24 hours by GCP. However, most ZenML pipelines are done 
 well before that.
 
-To directly see the code, head over to [GitHub](https://github.com/maiot-io/zenml/tree/main/examples/vm_orchestrated). Otherwise, follow along here.
+To directly see the code, head over to [GitHub](https://github.com/maiot-io/zenml/tree/main/examples/gcp_orchestrated). Otherwise, follow along here.
 
 ## Prerequisites
 
