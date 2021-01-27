@@ -23,8 +23,8 @@ from typing import Text
 import googleapiclient.discovery
 from google.oauth2 import service_account as sa
 
-from zenml.core.backends.orchestrator.local.orchestrator_local_backend import \
-    OrchestratorLocalBackend
+from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
+    OrchestratorBaseBackend
 from zenml.core.repo.repo import Repository
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils
@@ -39,7 +39,7 @@ SOURCE_DISK_IMAGE = "projects/cos-cloud/global/images/cos-85-13310-1041-38"
 STAGING_AREA = 'staging'
 
 
-class OrchestratorGCPBackend(OrchestratorLocalBackend):
+class OrchestratorGCPBackend(OrchestratorBaseBackend):
     """
     Orchestrates pipeline in a GCP Compute Instance.
 
@@ -62,8 +62,7 @@ class OrchestratorGCPBackend(OrchestratorLocalBackend):
                  instance_name: Text = None,
                  machine_type: Text = 'e2-medium',
                  preemptible: bool = True,
-                 service_account: Text = None,
-                 **unused_kwargs):
+                 service_account: Text = None):
         self.project = project
         self.cloudsql_connection_name = cloudsql_connection_name
         self.zone = zone
@@ -87,7 +86,16 @@ class OrchestratorGCPBackend(OrchestratorLocalBackend):
         else:
             self.credentials = None
 
-        super().__init__(**unused_kwargs)
+        super().__init__(
+            project=project,
+            cloudsql_connection_name=cloudsql_connection_name,
+            image=image,
+            zone=zone,
+            instance_name=instance_name,
+            machine_type=machine_type,
+            preemptible=preemptible,
+            service_account=service_account,
+        )
 
     def launch_instance(self, config: Dict[Text, Any]):
         """
@@ -232,8 +240,7 @@ class OrchestratorGCPBackend(OrchestratorLocalBackend):
         logger.info(f'Created tar of current repository at: {path_to_tar}')
 
         # Upload tar to artifact store
-        store_path = \
-            config[keys.GlobalKeys.ENV][keys.EnvironmentKeys.ARTIFACT_STORE]
+        store_path = config[keys.GlobalKeys.ARTIFACT_STORE]
         store_staging_area = os.path.join(store_path, STAGING_AREA)
         store_path_to_tar = os.path.join(store_staging_area, tar_file_name)
         path_utils.copy(path_to_tar, store_path_to_tar)
@@ -244,8 +251,7 @@ class OrchestratorGCPBackend(OrchestratorLocalBackend):
         logger.info(f'Removed tar at: {path_to_tar}')
 
         # Append path of tar in config orchestrator utils
-        config[keys.GlobalKeys.ENV][keys.EnvironmentKeys.BACKENDS][
-            OrchestratorGCPBackend.BACKEND_KEY][keys.BackendKeys.ARGS][
+        config[keys.GlobalKeys.BACKEND][keys.BackendKeys.ARGS][
             TAR_PATH_ARG] = store_path_to_tar
 
         # Launch the instance

@@ -23,4 +23,9 @@ if spec is None:
 
 
 class TorchBaseTrainerStep(BaseTrainerStep):
+    """
+    Base class for all PyTorch based trainer steps. All pytorch based
+    trainings should use this as the base class. An example is available
+    with torch_ff_trainer.FeedForwardTrainer.
+    """
     pass

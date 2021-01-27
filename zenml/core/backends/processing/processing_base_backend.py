@@ -18,7 +18,7 @@ from typing import Optional, List, Text
 from zenml.core.backends.base_backend import BaseBackend
 
 
-class ProcessingLocalBackend(BaseBackend):
+class ProcessingBaseBackend(BaseBackend):
     """
     Use this class to run a ZenML pipeline locally.
 
@@ -31,8 +31,7 @@ class ProcessingLocalBackend(BaseBackend):
     with higher core counts and clock speeds can be leveraged to increase
     processing throughput significantly.
     """
-    BACKEND_TYPE = 'local'
-    BACKEND_KEY = 'processing'
+    BACKEND_TYPE = 'processing'
 
     def get_beam_args(self,
                       pipeline_name: Text = None,

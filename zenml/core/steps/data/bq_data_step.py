@@ -71,9 +71,13 @@ class BQDataStep(BaseDataStep):
     construction.
     """
 
-    def __init__(self, query_project: Text, query_dataset: Text,
-                 query_table: Text, gcs_location: Text,
-                 dest_project: Text = None, query_limit: int = None,
+    def __init__(self,
+                 query_project: Text,
+                 query_dataset: Text,
+                 query_table: Text,
+                 gcs_location: Text,
+                 dest_project: Text = None,
+                 query_limit: int = None,
                  schema: Dict = None):
         """
         BigQuery (BQ) data step constructor. Targets a single BigQuery table

@@ -12,14 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base Step Interface definition"""
-
+import inspect
 from typing import Dict
 
+from zenml.core.backends.base_backend import BaseBackend
 from zenml.core.standards.standard_keys import StepKeys
 from zenml.utils.enums import StepTypes
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
 from zenml.utils.source_utils import resolve_source_path, \
-    load_source_path_class
+    load_source_path_class, is_source
 
 
 class BaseStep:
@@ -30,7 +31,7 @@ class BaseStep:
     """
     STEP_TYPE = StepTypes.base.name
 
-    def __init__(self, **kwargs):
+    def __init__(self, backend: BaseBackend = None, **kwargs):
         """
         Base data step constructor.
 
@@ -38,9 +39,9 @@ class BaseStep:
             **kwargs: Keyword arguments used in the construction of a step
             from a configuration file.
         """
-
         self._kwargs = kwargs
         self._immutable = False
+        self.backend = backend
         self._source = resolve_source_path(
             self.__class__.__module__ + '.' + self.__class__.__name__
         )
@@ -71,11 +72,26 @@ class BaseStep:
             source = config_block[StepKeys.SOURCE]
             class_ = load_source_path_class(source)
             args = config_block[StepKeys.ARGS]
-            obj = class_(**args)
+            resolved_args = {}
+
+            # resolve backend
+            backend = None
+            if StepKeys.BACKEND in config_block:
+                backend_config = config_block[StepKeys.BACKEND]
+                backend = BaseBackend.from_config(backend_config)
+
+            # resolve args for special cases
+            for k, v in args.items():
+                if isinstance(v, str) and is_source(v):
+                    resolved_args[k] = load_source_path_class(v)
+                else:
+                    resolved_args[k] = v
+
+            obj = class_(**resolved_args)
 
             # If we load from config, its immutable
             obj._immutable = True
-            obj._source = source
+            obj.backend = backend
             return obj
         else:
             raise AssertionError("Cannot create config_block without source "
@@ -91,7 +107,27 @@ class BaseStep:
             'args': {}  # whatever is used in the constructor for BaseStep
         }
         """
-        return {
+        kwargs = {}
+        for key, kwarg in self._kwargs.items():
+            if inspect.isclass(kwarg):
+                kwargs[key] = resolve_source_path(
+                    kwarg.__module__ + '.' + kwarg.__name__
+                )
+            else:
+                kwargs[key] = kwarg
+
+        config = {
             StepKeys.SOURCE: self._source,
-            StepKeys.ARGS: self._kwargs  # everything to be recorded
+            StepKeys.ARGS: kwargs,  # everything to be recorded
         }
+
+        # only add backend if its set
+        if self.backend is not None:
+            config.update({StepKeys.BACKEND: self.backend.to_config()})
+
+        return config
+
+    def with_backend(self, backend: BaseBackend):
+        """Builder for step backends."""
+        self.backend = backend
+        return self

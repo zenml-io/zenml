@@ -329,11 +329,8 @@ def evaluate_single_pipeline(
         os.system('jupyter notebook "{}"'.format(final_out_path))
 
 
-def compare_multiple_pipelines():
-    """
-    Args:
-        workspace_id (Text):
-    """
+def launch_compare_tool():
+    """Launches `compare` tool for comparing multiple training pipelines."""
     # assumes compare.py in the same folder
     template = \
         os.path.join(os.path.abspath(os.path.dirname(__file__)), 'compare.py')

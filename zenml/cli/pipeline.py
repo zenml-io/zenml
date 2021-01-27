@@ -13,15 +13,16 @@
 #  permissions and limitations under the License.
 """CLI for pipelines."""
 
+from typing import Text
+
 import click
 from tabulate import tabulate
-from typing import Text
 
 from zenml.cli.cli import cli
 from zenml.cli.utils import error, pretty_print, pass_repo
+from zenml.core.pipelines.training_pipeline import TrainingPipeline
 from zenml.core.repo.repo import Repository
 from zenml.utils.yaml_utils import read_yaml
-from zenml.core.pipelines.training_pipeline import TrainingPipeline
 
 
 @cli.group()
@@ -34,8 +35,8 @@ def pipeline():
 @pass_repo
 def compare_pipelines(repo: Repository):
     """Compares pipelines in repo"""
-    click.echo('Comparing pipelines in repo: Starting app..')
-    repo.compare_pipelines()
+    click.echo('Comparing training pipelines in repo: Starting app..')
+    repo.compare_training_pipelines()
 
 
 @pipeline.command('list')
@@ -79,7 +80,6 @@ def get_pipeline_by_name(repo: Repository, pipeline_name: Text):
 
 @pipeline.command('run')
 @click.argument('path_to_config')
-@pass_repo
 def run_pipeline(path_to_config: Text):
     """
     Runs pipeline specified by the given config YAML object.
@@ -90,6 +90,7 @@ def run_pipeline(path_to_config: Text):
     """
     # config has metadata store, backends and artifact store,
     # so no need to specify them
+    print(path_to_config)
     try:
         config = read_yaml(path_to_config)
         p: TrainingPipeline = TrainingPipeline.from_config(config)

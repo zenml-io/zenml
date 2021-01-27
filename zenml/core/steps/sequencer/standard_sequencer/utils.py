@@ -20,10 +20,11 @@ import pandas as pd
 import pytz
 
 from zenml.core.standards.standard_keys import MethodKeys, DefaultKeys
-from zenml.core.steps.sequencer.standard_sequencer.methods.standard_methods import \
-    ResamplingMethods
 from zenml.core.steps.sequencer.standard_sequencer.methods import \
     methods_resampling
+from zenml.core.steps.sequencer.standard_sequencer.methods.standard_methods \
+    import \
+    ResamplingMethods
 
 
 def convert_datetime_to_secs(dt):

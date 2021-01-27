@@ -14,6 +14,7 @@
 
 # TODO: [LOW] Refactor into utility
 import importlib.util
+
 spec = importlib.util.find_spec('torch')
 if spec is None:
     raise AssertionError("torch integration not installed. Please install "

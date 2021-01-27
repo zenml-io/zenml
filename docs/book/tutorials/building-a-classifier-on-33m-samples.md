@@ -27,6 +27,6 @@ training_pipeline.run(
 )
 ```
 
-Full code example can be found [here](https://github.com/maiot-io/zenml/blob/main/examples/gcp_dataflow/run.py)
+Full code example can be found [here](https://github.com/maiot-io/zenml/blob/main/examples/gcp_dataflow_processing)
 
 Detailed tutorial to follow! Check out the [GitHub repo](https://github.com/maiot-io/zenml) to get updates!

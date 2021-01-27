@@ -19,9 +19,9 @@ from tfx.dsl.components.base import executor_spec
 from zenml.core.backends.base_backend import BaseBackend
 
 
-class TrainingLocalBackend(BaseBackend):
+class TrainingBaseBackend(BaseBackend):
     """
-    Base class for all local Training ZenML backends.
+    Base class for all base Training ZenML backends.
 
     Every ZenML pipeline runs in backends.
 
@@ -32,9 +32,7 @@ class TrainingLocalBackend(BaseBackend):
     Processing Units (GPUs) or application-specific integrated circuits
     (ASICs).
     """
-
-    BACKEND_TYPE = 'local'
-    BACKEND_KEY = 'training'
+    BACKEND_TYPE = 'training'
 
     def get_executor_spec(self):
         """Return a TFX Executor spec for the Trainer Component."""

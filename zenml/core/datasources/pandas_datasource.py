@@ -20,7 +20,6 @@ from zenml.core.datasources.base_datasource import BaseDatasource
 
 class PandasDatasource(BaseDatasource):
     """ZenML Pandas datasource definition."""
-    DATA_STEP = None
 
     def __init__(self, name: Text, df, schema=None, **unused_kwargs):
         """

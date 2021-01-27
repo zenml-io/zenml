@@ -24,6 +24,7 @@ from zenml.core.repo.global_config import GlobalConfig
 from zenml.core.repo.zenml_config import ZenMLConfig
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils, yaml_utils
+from zenml.utils.exceptions import InitializationException
 from zenml.utils.logger import get_logger
 from zenml.utils.zenml_analytics import track, CREATE_REPO, GET_PIPELINES, \
     GET_DATASOURCES, GET_STEPS_VERSIONS, \
@@ -123,7 +124,7 @@ class Repository:
         GitWrapper(repo_path)
 
         # use the underlying ZenMLConfig class to create the config
-        ZenMLConfig.create_config(
+        ZenMLConfig.to_config(
             repo_path, artifact_store_path, metadata_store, pipelines_dir)
 
         # create global config
@@ -166,7 +167,8 @@ class Repository:
 
         for file_path in self.get_pipeline_file_paths():
             c = yaml_utils.read_yaml(file_path)
-            for step_name, step_config in c[keys.GlobalKeys.STEPS].items():
+            for step_name, step_config in c[keys.GlobalKeys.PIPELINE][
+                keys.PipelineKeys.STEPS].items():
                 # Get version from source
                 class_ = source_utils.get_class_path_from_source(
                     step_config[keys.StepKeys.SOURCE])
@@ -175,8 +177,6 @@ class Repository:
 
                 if class_ == type_str and version == source_version:
                     return BaseStep.from_config(step_config)
-        raise Exception(f'Step Type {type_str} does not exist with version '
-                        f'{version}!')
 
     def get_step_versions_by_type(self, step_type: Union[Type, Text]):
         """
@@ -191,8 +191,9 @@ class Repository:
 
         steps_dict = self.get_step_versions()
         if type_str not in steps_dict:
-            raise Exception(f'Type {type_str} not available. Available types: '
-                            f'{list(steps_dict.keys())}')
+            logger.warning(f'Type {type_str} not available. Available types: '
+                           f'{list(steps_dict.keys())}')
+            return
         return steps_dict[type_str]
 
     @track(event=GET_STEPS_VERSIONS)
@@ -202,7 +203,8 @@ class Repository:
         steps_dict = {}
         for file_path in self.get_pipeline_file_paths():
             c = yaml_utils.read_yaml(file_path)
-            for step_name, step_config in c[keys.GlobalKeys.STEPS].items():
+            for step_name, step_config in c[keys.GlobalKeys.PIPELINE][
+                keys.PipelineKeys.STEPS].items():
                 # Get version from source
                 version = source_utils.get_version_from_source(
                     step_config[keys.StepKeys.SOURCE])
@@ -226,7 +228,6 @@ class Repository:
         for d in all_datasources:
             if name == d.name:
                 return d
-        raise Exception(f'Datasource {name} does not exist')
 
     def get_datasource_names(self) -> List:
         """
@@ -237,7 +238,8 @@ class Repository:
         n = []
         for file_path in self.get_pipeline_file_paths():
             c = yaml_utils.read_yaml(file_path)
-            n.append(c[keys.GlobalKeys.DATASOURCE][keys.DatasourceKeys.NAME])
+            n.append(c[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.DATASOURCE][
+                         keys.DatasourceKeys.NAME])
         return list(set(n))
 
     @track(event=GET_DATASOURCES)
@@ -253,7 +255,7 @@ class Repository:
         datasources_name = set()
         for file_path in self.get_pipeline_file_paths():
             c = yaml_utils.read_yaml(file_path)
-            ds = BaseDatasource.from_config(c)
+            ds = BaseDatasource.from_config(c[keys.GlobalKeys.PIPELINE])
             if ds.name not in datasources_name:
                 datasources.append(ds)
                 datasources_name.add(ds.name)
@@ -269,11 +271,10 @@ class Repository:
         from zenml.core.pipelines.base_pipeline import BasePipeline
         yamls = self.get_pipeline_file_paths()
         for y in yamls:
-            n = BasePipeline.get_name_from_pipeline_name(y)
+            n = BasePipeline.get_name_from_pipeline_name(os.path.basename(y))
             if n == pipeline_name:
                 c = yaml_utils.read_yaml(y)
                 return BasePipeline.from_config(c)
-        raise Exception(f'No pipeline called {pipeline_name}')
 
     def get_pipelines_by_type(self, type_filter: List[Text]) -> List:
         """
@@ -314,19 +315,14 @@ class Repository:
         pipelines = []
         for file_path in self.get_pipeline_file_paths():
             c = yaml_utils.read_yaml(file_path)
-            if c[keys.GlobalKeys.DATASOURCE][keys.DatasourceKeys.ID] == \
-                    datasource._id:
+            if c[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.DATASOURCE][
+                keys.DatasourceKeys.ID] == datasource._id:
                 pipelines.append(BasePipeline.from_config(c))
         return pipelines
 
     @track(event=GET_PIPELINES)
     def get_pipelines(self) -> List:
-        """
-        Gets list of all pipelines.
-
-        Args:
-            type_filter (list): list of types to filter by.
-        """
+        """Gets list of all pipelines."""
         from zenml.core.pipelines.base_pipeline import BasePipeline
         pipelines = []
         for file_path in self.get_pipeline_file_paths():
@@ -364,12 +360,16 @@ class Repository:
         pipelines_dir = self.zenml_config.get_pipelines_dir()
         return yaml_utils.read_yaml(os.path.join(pipelines_dir, file_name))
 
-    def compare_pipelines(self):
-        """Launch the compare app for all pipelines in repo"""
+    def compare_training_pipelines(self):
+        """Launch the compare app for all training pipelines in repo"""
         from zenml.utils.post_training.post_training_utils import \
-            compare_multiple_pipelines
-        compare_multiple_pipelines()
+            launch_compare_tool
+        launch_compare_tool()
+
+    def clean(self):
+        """Deletes associated metadata store, pipelines dir and artifacts"""
+        raise NotImplementedError
 
     def _check_if_initialized(self):
         if self.zenml_config is None:
-            raise Exception('ZenML config is none. Did you do `zenml init`?')
+            raise InitializationException

@@ -21,6 +21,7 @@ from ml_metadata.metadata_store import metadata_store
 from zenml.core.standards.standard_keys import MLMetadataKeys
 from zenml.utils.enums import MLMetadataTypes
 from zenml.utils.enums import PipelineStatusTypes
+from zenml.utils.exceptions import DoesNotExistException
 from zenml.utils.logger import get_logger
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
 
@@ -135,9 +136,10 @@ class ZenMLMetadataStore:
         e = self.get_component_execution(pipeline, component_name)
 
         if e is None:
-            raise Exception(f'{component_name} not found! This might be due '
-                            f'to the fact that the pipeline does not have '
-                            f'the associated {component_name} Step.')
+            raise DoesNotExistException(
+                name=component_name,
+                reason=f'The pipeline {pipeline.name} does not have the '
+                       f'associated {component_name} Step.')
 
         # Second, you will get artifacts
         return self.get_artifacts_by_execution(e.id)
@@ -160,9 +162,11 @@ class ZenMLMetadataStore:
             context_name=run_id
         )
         if run_context is None:
-            raise Exception(f'{pipeline.pipeline_name} does not exist in '
-                            f'Metadata store. This might be due to the fact '
-                            f'that it has not run yet!')
+            raise DoesNotExistException(
+                name=pipeline.pipeline_name,
+                reason=f'The pipeline does not exist in metadata store '
+                       f'because it has not been run yet. Please run the '
+                       f'pipeline before trying to fetch artifacts.')
         return run_context
 
     def get_artifacts_by_execution(self, execution_id):

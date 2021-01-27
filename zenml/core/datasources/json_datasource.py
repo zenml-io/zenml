@@ -20,7 +20,6 @@ from zenml.core.datasources.base_datasource import BaseDatasource
 
 class JSONDatasource(BaseDatasource):
     """ZenML JSON datasource definition."""
-    DATA_STEP = None
 
     def __init__(self, name: Text, json_obj, schema=None, **unused_kwargs):
         """

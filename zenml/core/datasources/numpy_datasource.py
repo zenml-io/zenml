@@ -20,7 +20,6 @@ from zenml.core.datasources.base_datasource import BaseDatasource
 
 class NumpyDatasource(BaseDatasource):
     """ZenML Numpy datasource definition."""
-    DATA_STEP = None
 
     def __init__(self, name: Text, np_array, schema=None, **unused_kwargs):
         """

@@ -14,10 +14,6 @@
 
 from typing import Dict, Text, Any, List
 
-from zenml.core.backends.orchestrator.local.orchestrator_local_backend import \
-    OrchestratorLocalBackend
-from zenml.core.backends.processing.processing_local_backend import \
-    ProcessingLocalBackend
 from zenml.core.pipelines.base_pipeline import BasePipeline
 
 
@@ -35,11 +31,3 @@ class BatchInferencePipeline(BasePipeline):
 
     def get_tfx_component_list(self, config: Dict[Text, Any]) -> List:
         pass
-
-    def get_default_backends(self) -> Dict:
-        """Gets list of default backends for this pipeline."""
-        # For base class, orchestration is always necessary
-        return {
-            OrchestratorLocalBackend.BACKEND_KEY: OrchestratorLocalBackend(),
-            ProcessingLocalBackend.BACKEND_KEY: ProcessingLocalBackend()
-        }

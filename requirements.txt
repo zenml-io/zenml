@@ -15,9 +15,7 @@ analytics-python==1.2.9
 distro==1.5.0
 tensorflow>=2.3.0,<2.4.0
 tensorflow-serving-api==2.3.0
-apache-beam[gcp]==2.26.0
-apache-beam==2.26.0
-google-apitools==0.5.31
+
 
 # docs
 jupyter-book==0.9.1
@@ -26,3 +24,14 @@ ghp-import==1.0.0
 jedi==0.17.2
 git+https://github.com/maiot-io/sphinx-book-theme.git
 sphinxext-opengraph
+
+# gcp
+apache-beam[gcp]==2.26.0
+apache-beam==2.26.0
+google-apitools==0.5.31
+
+# pytorch
+torch==1.7.0
+
+# cortex
+cortex==0.27.0
