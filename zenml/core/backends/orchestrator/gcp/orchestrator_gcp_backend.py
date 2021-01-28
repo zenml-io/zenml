@@ -28,14 +28,14 @@ from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
 from zenml.core.repo.repo import Repository
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils
-from zenml.utils.constants import ZENML_BASE_IMAGE_NAME, GCP_ENTRYPOINT
+from zenml.utils.constants import ZENML_BASE_IMAGE_NAME, \
+    ZENML_TRAINER_IMAGE_NAME, GCP_ENTRYPOINT
 from zenml.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 EXTRACTED_TAR_DIR_NAME = 'zenml_working'
 TAR_PATH_ARG = 'tar_path'
-SOURCE_DISK_IMAGE = "projects/cos-cloud/global/images/cos-85-13310-1041-38"
 STAGING_AREA = 'staging'
 
 
@@ -49,20 +49,77 @@ class OrchestratorGCPBackend(OrchestratorBaseBackend):
     of whether the pipeline failed or not. To see logs of the pipeline, use
     Logs Explorer <https://console.cloud.google.com/logs/> and filter for
     `logName="projects/<project_name>/logs/gcplogs-docker-driver"`. After
-    running the VM, the launch response is returned as a dict, where the
-    `targetId` can be used to even further filter for logs.
+    running the VM, the logger returns the link directly to the logs.
     """
-    BACKEND_TYPE = 'gcp'
 
     def __init__(self,
                  project,
                  cloudsql_connection_name,
-                 image: Text = None,
+                 machine_type: Text = 'e2-medium',
+                 gpu: Text = None,
+                 gpu_count: int = 0,
                  zone: Text = 'europe-west1-b',
                  instance_name: Text = None,
-                 machine_type: Text = 'e2-medium',
+                 disk_size: int = 100,
+                 image: Text = None,
+                 source_disk_image: Text = None,
                  preemptible: bool = True,
                  service_account: Text = None):
+        """
+        Initialize a GCP VM to orchestrate a pipeline. Users have the option
+        to run it with or without a GPU. In cases where a GPU is used,
+        the `image` and `source_disk_image` are both adapted to be
+        CUDA-compatible. This is convenient for the `TrainingPipeline`
+        especially.
+
+        Example:
+            a) Without GPU:
+            ```
+            OrchestratorGCPBackend(
+                project='my_project_id',
+                cloudsql_connection_name='my_project_id:my_region:conn_name'
+                machine_type='e2-medium'
+            )
+            ```
+            In the above case, a smaller `image` is used for the
+            orchestration of the pipeline, so the load-up time is faster. Use
+            for smaller datasets or where a GPU is not required for speed-up
+            training.
+
+            b) With GPU:
+            ```
+            OrchestratorGCPBackend(
+                project='my_project_id',
+                cloudsql_connection_name='my_project_id:my_region:conn_name'
+                machine_type='n1-standard-4',
+                gpu='nvidia-tesla-k80',
+            )
+            ```
+            Here, a large `image` is used for orchestration of the pipeline.
+            The attached k80 GPU is leveraged for faster training. Note that
+            not all machine_type are compatible with attached GPU! Make sure
+            to check Google Cloud Platform documentation for a full list.
+
+        Args:
+            project: GCP project_id.
+            cloudsql_connection_name: Cloud SQL instance name in the form
+            {GCP_PROJECT}:{GCP_REGION}:{GCP_CLOUD_SQL_INSTANCE_NAME}
+
+            gpu: (optional) GPU type to attach to VM. If gpu is specified,
+            default `image` and `source_disk_image` are both modified. Full
+            list of options [here](
+            https://cloud.google.com/compute/docs/gpus/create-vm-with-gpus
+            #gcloud_1)
+            zone: The zone where VM is launched.
+            instance_name: Name of the instance.
+            disk_size: Size of disk to be used.
+            preemptible: Set True to use preemtible instance for reduced costs.
+            image: The image in which the pipeline actually runs.
+            machine_type: VM Machine type. Full list [here](
+            https://cloud.google.com/compute/docs/machine-types)
+            source_disk_image: The image of the underlying VM.
+            service_account: Optional path to service account json file.
+        """
         self.project = project
         self.cloudsql_connection_name = cloudsql_connection_name
         self.zone = zone
@@ -75,16 +132,44 @@ class OrchestratorGCPBackend(OrchestratorBaseBackend):
         else:
             self.instance_name = instance_name
 
-        if image is None:
-            self.image = ZENML_BASE_IMAGE_NAME
+        self.gpu = gpu
+        self.gpu_count = gpu_count
 
         if service_account:
             scopes = ['https://www.googleapis.com/auth/cloud-platform']
             self.credentials = \
-                sa.Credentials.from_service_account_info(
-                    sa, scopes=scopes)
+                sa.Credentials.from_service_account_file(
+                    service_account, scopes=scopes)
         else:
             self.credentials = None
+
+        # Resolve images based on GPU
+        if image is None:
+            # use gpu image if a gpu is attached
+            if self.gpu is None:
+                self.image = ZENML_BASE_IMAGE_NAME
+            else:
+                self.image = ZENML_TRAINER_IMAGE_NAME
+
+        if source_disk_image is None:
+            compute = self._get_compute()
+            if self.gpu is None:
+                # get latest image from cos-85-lts family. As of Jan 28 2021
+                # it is: cos-85-13310-1041-38
+                image_response = compute.images().getFromFamily(
+                    project='cos-cloud',
+                    family='cos-85-lts').execute()
+                source_disk_image = image_response['selfLink']
+            else:
+                # get latest image from common-dl family. As of Jan 28 2021
+                # it is: 'c0-deeplearning-common-cu110-v20210121-debian-10'
+                image_response = compute.images().getFromFamily(
+                    project='ml-images',
+                    family='common-dl-gpu-debian-10').execute()
+                source_disk_image = image_response['selfLink']
+
+        self.source_disk_image = self.source_disk_image
+        self.disk_size = disk_size
 
         super().__init__(
             project=project,
@@ -95,6 +180,10 @@ class OrchestratorGCPBackend(OrchestratorBaseBackend):
             machine_type=machine_type,
             preemptible=preemptible,
             service_account=service_account,
+            gpu=gpu,
+            disk_size=disk_size,
+            source_disk_image=source_disk_image,
+            gpu_count=gpu_count,
         )
 
     def launch_instance(self, config: Dict[Text, Any]):
@@ -105,8 +194,6 @@ class OrchestratorGCPBackend(OrchestratorBaseBackend):
             config: a ZenML config dict
         """
         # Instantiate google compute service
-        compute = googleapiclient.discovery.build('compute', 'v1',
-                                                  credentials=self.credentials)
 
         # Configure the machine
         machine_type = f"zones/{self.zone}/machineTypes/{self.machine_type}"
@@ -127,7 +214,7 @@ class OrchestratorGCPBackend(OrchestratorBaseBackend):
                 "enableDisplay": False
             },
             # Specify if preemtible
-            # 'scheduling': {'preemptible': self.preemptible},
+            'scheduling': {'preemptible': self.preemptible},
 
             # Specify the boot disk and the image to use as a source.
             'disks': [
@@ -136,8 +223,8 @@ class OrchestratorGCPBackend(OrchestratorBaseBackend):
                     'boot': True,
                     'autoDelete': True,
                     'initializeParams': {
-                        'sourceImage': SOURCE_DISK_IMAGE,
-                        'diskSizeGb': '100'
+                        'sourceImage': self.source_disk_image,
+                        'diskSizeGb': str(self.disk_size)
                     }
                 }
             ],
@@ -191,12 +278,23 @@ class OrchestratorGCPBackend(OrchestratorBaseBackend):
             }
         }
 
+        if self.gpu:
+            compute_config["guestAccelerators"] = [
+                {
+                    "acceleratorCount": self.gpu_count,
+                    "acceleratorType":
+                        f"projects/{self.project}/zones/{self.zone}"
+                        f"/acceleratorTypes/{self.gpu}"
+                }
+            ]
+
         logger.info(
             f'Launching instance {self.instance_name} of type '
             f'{self.machine_type} in project: {self.project} in zone '
             f'{self.zone}')
 
         try:
+            compute = self._get_compute()
             res = compute.instances().insert(
                 project=self.project,
                 zone=self.zone,
@@ -256,3 +354,7 @@ class OrchestratorGCPBackend(OrchestratorBaseBackend):
 
         # Launch the instance
         self.launch_instance(config)
+
+    def _get_compute(self):
+        return googleapiclient.discovery.build(
+            'compute', 'v1', credentials=self.credentials)
