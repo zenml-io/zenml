@@ -100,7 +100,6 @@ orchestrator_backend = OrchestratorGCPBackend(
     machine_type='n1-standard-4',
     gpu='nvidia-tesla-k80',
     gpu_count=1,
-    image='eu.gcr.io/maiot-zenml/testing:cuda-0.2.1'
 )
 
 # Run the pipeline

@@ -1,5 +1,5 @@
-# Run pipelines on the cloud cheaply
-You can easily run zenml pipelines on a cloud VM instance if local compute is not enough. With this ability, it 
+# Train on GPUs in the cloud cheaply
+You can easily run zenml training pipelines on a cloud VM instance if local compute is not enough. With this ability, it 
 is simple to run on cheap preemptible/spot instances to save costs.
 
 ## Adding an orchestration backend to a pipeline
@@ -109,5 +109,5 @@ The only time you would need to use it if you use a custom dependency which is n
 zenml.
 
 ## Next Steps
-Try using other backends such as [processing backends](../gcp_dataflow_processing) for distributed preprocessing and [training backends](../gcp_gpu_training) for 
+Try using other backends such as [processing backends](../gcp_dataflow_processing) for distributed preprocessing and [training backends](../gcp_gcaip_training) for 
 GPU training on the cloud.
