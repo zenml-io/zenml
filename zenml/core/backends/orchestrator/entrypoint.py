@@ -20,10 +20,10 @@ import sys
 
 import fire
 
-from zenml.core.backends.orchestrator.gcp.orchestrator_gcp_backend import \
-    TAR_PATH_ARG
 from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
     OrchestratorBaseBackend
+from zenml.core.backends.orchestrator.gcp.orchestrator_gcp_backend import \
+    TAR_PATH_ARG
 from zenml.core.repo.repo import Repository
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils
@@ -39,8 +39,9 @@ class PipelineRunner(object):
         # Load config from base64
         config = json.loads(base64.b64decode(config_b64))
 
-        orch_args = config[keys.GlobalKeys.BACKEND][keys.BackendKeys.ARGS]
-        tar_path = orch_args[TAR_PATH_ARG]
+        # Remove tar_path arg from config
+        tar_path = config[keys.GlobalKeys.BACKEND][keys.BackendKeys.ARGS].pop(
+            TAR_PATH_ARG)
 
         # Copy it over locally because it will be remote
         path_utils.copy(tar_path, EXTRACTED_TAR_FILE_PATH)
