@@ -164,8 +164,8 @@ class OrchestratorGCPBackend(OrchestratorBaseBackend):
                 # get latest image from common-dl family. As of Jan 28 2021
                 # it is: 'c0-deeplearning-common-cu110-v20210121-debian-10'
                 image_response = compute.images().getFromFamily(
-                    project='ml-images',
-                    family='common-dl-gpu-debian-10').execute()
+                    project='deeplearning-platform-release',
+                    family='common-cu110').execute()
                 source_disk_image = image_response['selfLink']
 
         self.source_disk_image = source_disk_image
@@ -197,9 +197,10 @@ class OrchestratorGCPBackend(OrchestratorBaseBackend):
 
         # Configure the machine
         machine_type = f"zones/{self.zone}/machineTypes/{self.machine_type}"
-        startup_script = open(
-            os.path.join(
-                os.path.dirname(__file__), 'startup-script.sh'), 'r').read()
+        s_script_name = 'startup-script-gpu.sh' if self.gpu else \
+            'startup-script.sh'
+        startup_script = open(os.path.join(
+            os.path.dirname(__file__), s_script_name), 'r').read()
 
         config_encoded = base64.b64encode(json.dumps(config).encode())
         c_params = f'python -m {GCP_ENTRYPOINT} run_pipeline --config_b64 ' \

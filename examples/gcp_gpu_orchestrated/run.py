@@ -40,7 +40,7 @@ assert MYSQL_PWD
 # orchestrator VM.
 
 # Define the training pipeline
-training_pipeline = TrainingPipeline()
+training_pipeline = TrainingPipeline(enable_cache=False)
 
 # Add a datasource. This will automatically track and version it.
 try:
@@ -71,7 +71,7 @@ training_pipeline.add_trainer(FeedForwardTrainer(
     last_activation='sigmoid',
     output_units=1,
     metrics=['accuracy'],
-    epochs=20))
+    epochs=2000))
 
 # Add an evaluator
 training_pipeline.add_evaluator(
