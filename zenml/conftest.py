@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+# pylint disable=protected-access
+
 import pytest
 import os
 import zenml
@@ -19,6 +21,12 @@ import shutil
 from zenml.core.repo.repo import Repository
 from zenml.utils import path_utils, yaml_utils
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
+from zenml.core.datasources.base_datasource import BaseDatasource
+from zenml.core.backends.base_backend import BaseBackend
+from zenml.core.steps.base_step import BaseStep
+from zenml.core.pipelines.base_pipeline import BasePipeline
+from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
+from zenml.core.repo.zenml_config import ZenMLConfig
 
 # reset pipeline root to redirect to testing so that it writes the yamls there
 ZENML_ROOT = zenml.__path__[0]
@@ -101,4 +109,133 @@ def delete_config():
             print(e)
             pass
 
+    return wrapper
+
+
+@pytest.fixture
+def equal_backends():
+    def wrapper(bck1: BaseBackend, bck2: BaseBackend, loaded=True):
+        # There can be a "None" backend in a pipeline
+        if bck1 is None and bck2 is None:
+            return True
+        if sum(b is None for b in [bck1, bck2]) == 1:
+            return False
+
+        equal = False
+        equal |= bck1._kwargs == bck2._kwargs
+        equal |= bck1._source == bck2._source
+        if loaded:
+            equal |= bck1._immutable != bck2._immutable
+        else:
+            equal |= bck1._immutable == bck2._immutable
+
+        return equal
+
+    return wrapper
+
+
+@pytest.fixture
+def equal_steps(equal_backends):
+    def wrapper(step1: BaseStep, step2: BaseStep, loaded=True):
+        # There can be a "None" step e.g. in get_data_step()
+        # in a BaseDatasource
+        if step1 is None and step2 is None:
+            return True
+        if sum(s is None for s in [step1, step2]) == 1:
+            return False
+
+        equal = False
+        equal |= step1._kwargs == step2._kwargs
+        equal |= equal_backends(step1.backend, step2.backend, loaded=loaded)
+        equal |= step1._source == step2._source
+        if loaded:
+            equal |= step1._immutable != step2._immutable
+        else:
+            equal |= step1._immutable == step2._immutable
+
+        return equal
+
+    return wrapper
+
+
+@pytest.fixture
+def equal_datasources(equal_steps):
+    def wrapper(ds1: BaseDatasource, ds2: BaseDatasource, loaded=True):
+        # There can be a "None" datasource in a pipeline
+        if ds1 is None and ds2 is None:
+            return True
+        if sum(d is None for d in [ds1, ds2]) == 1:
+            return False
+
+        equal = False
+        equal |= ds1.name == ds2.name
+        equal |= ds1.schema == ds2.schema
+        equal |= ds1._id == ds2._id
+        equal |= ds1._source == ds2._source
+        equal |= equal_steps(ds1.get_data_step(), ds2.get_data_step(),
+                             loaded=loaded)
+        if loaded:
+            equal |= ds1._immutable != ds2._immutable
+        else:
+            equal |= ds1._immutable == ds2._immutable
+
+        return equal
+
+    return wrapper
+
+
+@pytest.fixture
+def equal_pipelines(equal_backends, equal_steps, equal_datasources):
+    def wrapper(p1: BasePipeline, p2: BasePipeline, loaded=True):
+        # There can be a "None" datasource in a pipeline
+        if p1 is None and p2 is None:
+            return True
+        if sum(p is None for p in [p1, p2]) == 1:
+            return False
+
+        equal = False
+        equal |= p1.name == p2.name
+        equal |= p1.PIPELINE_TYPE == p2.PIPELINE_TYPE
+        equal |= p1.pipeline_name == p2.pipeline_name
+        equal |= p1.enable_cache == p2.enable_cache
+        equal |= p1._source == p2._source
+        equal |= equal_backends(p1.backend, p2.backend, loaded=loaded)
+        equal |= equal_datasources(p1.datasource, p2.datasource, loaded=loaded)
+        if loaded:
+            equal |= p1._immutable != p2._immutable
+        else:
+            equal |= p1._immutable == p2._immutable
+        try:
+            for name, step in p1.steps_dict.items():
+                p2_step = p2.steps_dict[name]
+                equal |= equal_steps(step, p2_step, loaded=loaded)
+        except KeyError:
+            return False
+
+        return equal
+
+    return wrapper
+
+
+@pytest.fixture
+def equal_md_stores():
+    def wrapper(md1: ZenMLMetadataStore, md2: ZenMLMetadataStore):
+        # There can be a "None" datasource in a pipeline
+        if md1 is None and md2 is None:
+            return True
+        if sum(d is None for d in [md1, md2]) == 1:
+            return False
+        equal = False
+        equal |= md1.__dict__ == md2.__dict__
+        equal |= md1.STORE_TYPE == md2.STORE_TYPE
+
+        return equal
+
+    return wrapper
+
+
+@pytest.fixture
+def equal_zenml_configs():
+    def wrapper(cfg1: ZenMLConfig, cfg2: ZenMLConfig, loaded=True):
+        return False
     return wrapper
