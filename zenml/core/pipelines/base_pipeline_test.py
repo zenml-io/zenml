@@ -18,6 +18,7 @@ import zenml
 import random
 from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.datasources.base_datasource import BaseDatasource
+from zenml.core.datasources.image_datasource import ImageDatasource
 from zenml.core.steps.base_step import BaseStep
 from zenml.core.repo.repo import Repository
 from zenml.utils.enums import PipelineStatusTypes, GDPComponent
@@ -27,9 +28,9 @@ from zenml.utils import exceptions, path_utils
 ZENML_ROOT = zenml.__path__[0]
 TEST_ROOT = os.path.join(ZENML_ROOT, "testing")
 
-pipeline_root = os.path.join(TEST_ROOT, "test_pipelines")
+pipelines_dir = os.path.join(TEST_ROOT, "test_pipelines")
 repo: Repository = Repository.get_instance()
-repo.zenml_config.set_pipelines_dir(pipeline_root)
+repo.zenml_config.set_pipelines_dir(pipelines_dir)
 
 
 def test_executed():
@@ -48,9 +49,7 @@ def test_naming():
     # file_name = p.file_name
     pipeline_name = p.pipeline_name
 
-    # assert p.get_type_from_file_name(file_name) == p.PIPELINE_TYPE
     assert p.get_name_from_pipeline_name(pipeline_name) == name
-    # assert p.get_type_from_pipeline_name(pipeline_name) == p.PIPELINE_TYPE
 
 
 def test_get_status(run_test_pipelines):
@@ -111,12 +110,15 @@ def test_get_pipeline_config():
 
     config = p.get_pipeline_config()
 
-    assert name in config[keys.PipelineKeys.NAME]
+    p_name = p.pipeline_name
+
+    assert config[keys.PipelineKeys.NAME] == p_name
     assert config[keys.PipelineKeys.TYPE] == "base"
     assert config[keys.PipelineKeys.ENABLE_CACHE] is True
     assert config[keys.PipelineKeys.DATASOURCE] is None
     assert config[keys.PipelineKeys.SOURCE].split("@")[0] == \
            "zenml.core.pipelines.base_pipeline.BasePipeline"
+    # TODO: Expand this to more pipelines
 
 
 def test_get_steps_config():
@@ -133,7 +135,7 @@ def test_get_steps_config():
 
     steps_cfg = cfg[keys.PipelineKeys.STEPS]
 
-    # want to avoid missing args / type inconsistencies
+    # avoid missing args / type inconsistencies
     assert steps_cfg["test"] == step.to_config()
 
 
@@ -156,3 +158,15 @@ def test_get_artifacts_uri_by_component():
     assert all((("tfrecord" in name and
                 os.path.splitext(name)[-1] == ".gz") for name in f)
                for _, _, f in os.walk(uri))
+
+
+def test_to_from_config(equal_pipelines):
+    p1: BasePipeline = BasePipeline(name="my_pipeline")
+
+    ds = ImageDatasource(name="my_datasource")
+
+    p1.add_datasource(ds)
+
+    p2 = BasePipeline.from_config(p1.to_config())
+
+    assert equal_pipelines(p1, p2, loaded=True)
