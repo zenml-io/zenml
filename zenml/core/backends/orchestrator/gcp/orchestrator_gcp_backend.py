@@ -168,7 +168,7 @@ class OrchestratorGCPBackend(OrchestratorBaseBackend):
                     family='common-dl-gpu-debian-10').execute()
                 source_disk_image = image_response['selfLink']
 
-        self.source_disk_image = self.source_disk_image
+        self.source_disk_image = source_disk_image
         self.disk_size = disk_size
 
         super().__init__(

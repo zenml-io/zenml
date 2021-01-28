@@ -66,7 +66,7 @@ class Repository:
             # Load the ZenML config
             try:
                 self.zenml_config = ZenMLConfig(self.path)
-            except AssertionError:
+            except InitializationException:
                 # We allow this because we of the GCP orchestrator for now
                 self.zenml_config = None
 
