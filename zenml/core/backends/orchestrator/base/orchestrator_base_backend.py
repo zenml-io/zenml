@@ -19,13 +19,13 @@ from typing import Dict, Text, Any
 from tfx.orchestration import pipeline
 
 from zenml.core.backends.base_backend import BaseBackend
-from zenml.core.backends.orchestrator.local.zenml_local_orchestrator import \
+from zenml.core.backends.orchestrator.base.zenml_local_orchestrator import \
     ZenMLLocalDagRunner
-from zenml.core.backends.processing.processing_local_backend import \
-    ProcessingLocalBackend
+from zenml.core.backends.processing.processing_base_backend import \
+    ProcessingBaseBackend
 
 
-class OrchestratorLocalBackend(BaseBackend):
+class OrchestratorBaseBackend(BaseBackend):
     """
     Local ZenML orchestrator backend. Use this to run a ZenML pipeline
     locally on a machine.
@@ -72,13 +72,13 @@ class OrchestratorLocalBackend(BaseBackend):
         pipeline_log = os.path.join(pipeline_root, 'logs', pipeline_name)
 
         # Resolve execution backend
-        execution = ProcessingLocalBackend()  # default
+        execution = ProcessingBaseBackend()  # default
         for e in zen_pipeline.steps_dict.values():
             # find out the processing backends, take the first one which is
-            # not a ProcessingLocalBackend
+            # not a ProcessingBaseBackend
             if e.backend and issubclass(
-                    e.backend.__class__, ProcessingLocalBackend) and \
-                    e.backend.__class__ != ProcessingLocalBackend:
+                    e.backend.__class__, ProcessingBaseBackend) and \
+                    e.backend.__class__ != ProcessingBaseBackend:
                 execution = e.backend
                 break
 

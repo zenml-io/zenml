@@ -19,9 +19,9 @@ from tfx.dsl.components.base import executor_spec
 from zenml.core.backends.base_backend import BaseBackend
 
 
-class TrainingLocalBackend(BaseBackend):
+class TrainingBaseBackend(BaseBackend):
     """
-    Base class for all local Training ZenML backends.
+    Base class for all base Training ZenML backends.
 
     Every ZenML pipeline runs in backends.
 

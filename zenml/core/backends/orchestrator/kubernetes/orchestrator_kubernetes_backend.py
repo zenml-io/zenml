@@ -17,15 +17,14 @@ import base64
 import json
 import os
 import time
-from typing import Dict, Any
-from typing import Text
+from typing import Dict, Any, Text
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from kubernetes.config.config_exception import ConfigException
 
-from zenml.core.backends.orchestrator.local.orchestrator_local_backend import \
-    OrchestratorLocalBackend
+from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
+    OrchestratorBaseBackend
 from zenml.core.repo.repo import Repository
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils
@@ -42,7 +41,7 @@ STAGING_AREA = 'staging'
 DEFAULT_K8S_CONFIG = os.path.join(os.environ["HOME"], '.kube/config')
 
 
-class OrchestratorKubernetesBackend(OrchestratorLocalBackend):
+class OrchestratorKubernetesBackend(OrchestratorBaseBackend):
     """
     Runs pipeline on a Kubernetes cluster.
 

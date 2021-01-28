@@ -12,20 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import importlib.util
 
-from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
-
-spec = importlib.util.find_spec('torch')
-if spec is None:
-    raise AssertionError("torch integration not installed. Please install "
-                         "zenml[torch] via `pip install zenml[pytorch]`")
+from zenml.core.steps.base_step import BaseStep
+from zenml.utils.enums import StepTypes
 
 
-class TorchBaseTrainerStep(BaseTrainerStep):
+class BaseEvaluatorStep(BaseStep):
     """
-    Base class for all PyTorch based trainer steps. All pytorch based
-    trainings should use this as the base class. An example is available
-    with torch_ff_trainer.FeedForwardTrainer.
+    Base evaluator step. All evaluator steps should inherit from this class.
     """
-    pass
+
+    STEP_TYPE = StepTypes.evaluator.name

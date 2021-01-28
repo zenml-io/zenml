@@ -18,7 +18,7 @@ from typing import Dict, List, Text
 import tensorflow_model_analysis as tfma
 from google.protobuf.wrappers_pb2 import BoolValue
 
-from zenml.core.steps.base_step import BaseStep
+from zenml.core.steps.evaluator.base_evaluator import BaseEvaluatorStep
 from zenml.utils.enums import StepTypes
 
 
@@ -30,14 +30,11 @@ def to_camel_case(s):
     return ''.join(list(map(lambda x: x.capitalize(), s.split('_'))))
 
 
-class TFMAEvaluator(BaseStep):
+class TFMAEvaluator(BaseEvaluatorStep):
     """
     Custom TFMA Evaluator step. This step does not get its own derived class,
     it derives directly from the BaseStep class.
     """
-
-    STEP_TYPE = StepTypes.evaluator.name
-
     def __init__(self,
                  slices: List[List[Text]] = None,
                  metrics: Dict[Text, List[Text]] = None):

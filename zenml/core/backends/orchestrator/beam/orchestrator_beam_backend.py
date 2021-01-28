@@ -16,14 +16,14 @@
 import os
 from typing import Any, Text, Dict
 
+from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
+    OrchestratorBaseBackend
 from zenml.core.backends.orchestrator.beam.zenml_beam_orchestrator import \
     ZenMLBeamlDagRunner
-from zenml.core.backends.orchestrator.local.orchestrator_local_backend import \
-    OrchestratorLocalBackend
 from zenml.core.pipelines.utils import parse_yaml_beam_args
 
 
-class OrchestratorBeamBackend(OrchestratorLocalBackend):
+class OrchestratorBeamBackend(OrchestratorBaseBackend):
     """Uses Apache Beam as a Pipeline orchestrator."""
 
     def __init__(

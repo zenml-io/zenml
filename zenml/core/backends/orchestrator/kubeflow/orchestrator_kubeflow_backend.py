@@ -17,16 +17,17 @@ from typing import Text
 
 from tfx.orchestration import pipeline
 
-from zenml.core.backends.orchestrator.local.orchestrator_local_backend import \
-    OrchestratorLocalBackend
+from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
+    OrchestratorBaseBackend
 
 
-class OrchestratorKubeFlowBackend(OrchestratorLocalBackend):
+class OrchestratorKubeFlowBackend(OrchestratorBaseBackend):
     """
     Runs a ZenML pipeline on a Kubeflow cluster.
 
     This backend is not implemented yet.
     """
+
     def __init__(self, image: Text = None, **kwargs):
         self.image = image
         super().__init__(**kwargs)

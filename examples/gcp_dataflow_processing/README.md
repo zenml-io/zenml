@@ -28,7 +28,7 @@ In both cases, make sure to also install the gcp extension (e.g. with pip: `pip 
 
 ```
 zenml init
-cd zenml/examples/distributed_processing
+cd zenml/examples/gcp_dataflow_processing
 ```
 
 Also do the following:
@@ -79,5 +79,5 @@ in the `ProcessingDataFlowBackend`. Find out more in [the docs](https://docs.zen
 
 ## Next Steps
 You can see how ZenML makes it easy to do distributed processing. But this is just scratching the service. You 
-can combine different `ProcessingBackends` with certain [TrainingBackends](../cloud_gpu_training/README.md) to leverage 
+can combine different `ProcessingBackends` with certain [TrainingBackends](../gcp_gpu_training/README.md) to leverage 
 even more cloud power such as GPUs.

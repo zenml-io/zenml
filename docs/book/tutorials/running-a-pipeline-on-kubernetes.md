@@ -231,9 +231,9 @@ k8s_config_path = os.path.join(os.environ["HOME"], '.kube/config')
 
 # Run the pipeline on a Kubernetes Cluster
 training_pipeline.run(
-    backends=[
-        OrchestratorKubernetesBackend(kubernetes_config_path=k8s_config_path,
-                                      image_pull_policy="Always")],
+    backend=OrchestratorKubernetesBackend(
+        kubernetes_config_path=k8s_config_path,
+        image_pull_policy="Always"),
     metadata_store=MySQLMetadataStore(
         host=mysql_host,
         port=mysql_port,

@@ -1,8 +1,9 @@
 import os
 
-from zenml.core.backends.orchestrator.kubernetes \
-    .orchestrator_kubernetes_backend import \
-    OrchestratorKubernetesBackend
+from zenml.core.backends.orchestrator.gcp.orchestrator_gcp_backend import \
+    OrchestratorGCPBackend
+from zenml.core.backends.training.training_gcaip_backend import \
+    SingleGPUTrainingGCAIPBackend
 from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.metadata.mysql_metadata_wrapper import MySQLMetadataStore
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
@@ -27,7 +28,7 @@ MYSQL_PWD = os.getenv('MYSQL_PWD')
 MYSQL_HOST = os.getenv('MYSQL_HOST', '127.0.0.1')
 MYSQL_PORT = os.getenv('MYSQL_PORT', 3306)
 CONNECTION_NAME = f'{GCP_PROJECT}:{GCP_REGION}:{GCP_CLOUD_SQL_INSTANCE_NAME}'
-TRAINING_JOB_DIR = os.path.join(GCP_BUCKET, 'cloud_gpu_training/staging')
+TRAINING_JOB_DIR = os.path.join(GCP_BUCKET, 'gcp_gpu_training/staging')
 
 assert GCP_BUCKET
 assert GCP_PROJECT
@@ -36,8 +37,14 @@ assert MYSQL_DB
 assert MYSQL_USER
 assert MYSQL_PWD
 
-# Run the pipeline on a kubernetes cluster.
-# The metadata store and artifact store should be accessible by the cluster.
+# Run the pipeline on a Google Cloud VM and train on GCP as well
+# In order for this to work, the orchestrator and the backend should be in the
+# same GCP project. Also, the metadata store and artifact store should be
+# accessible by the orchestrator VM and the GCAIP worker VM.
+
+# Note: If you are using a custom Trainer, then you need
+# to build a new Docker image based on the ZenML Trainer image, and pass that
+# into the `image` parameter in the SingleGPUTrainingGCAIPBackend.
 
 # Define the training pipeline
 training_pipeline = TrainingPipeline()
@@ -49,8 +56,6 @@ try:
 except AlreadyExistsException:
     ds = Repository.get_instance().get_datasource_by_name(
         'Pima Indians Diabetes')
-training_pipeline.add_datasource(ds)
-
 training_pipeline.add_datasource(ds)
 
 # Add a split
@@ -66,25 +71,26 @@ training_pipeline.add_preprocesser(
         overwrite={'has_diabetes': {
             'transform': [{'method': 'no_transform', 'parameters': {}}]}}
     ))
-# Add a trainer
+
+# Add a trainer with a GCAIP backend
+training_backend = SingleGPUTrainingGCAIPBackend(
+    project=GCP_PROJECT,
+    job_dir=TRAINING_JOB_DIR
+)
+
 training_pipeline.add_trainer(FeedForwardTrainer(
     loss='binary_crossentropy',
     last_activation='sigmoid',
     output_units=1,
     metrics=['accuracy'],
-    epochs=20))
+    epochs=20).with_backend(training_backend)
+                              )
 
 # Add an evaluator
 training_pipeline.add_evaluator(
     TFMAEvaluator(slices=[['has_diabetes']],
                   metrics={'has_diabetes': ['binary_crossentropy',
                                             'binary_accuracy']}))
-
-# Important details:
-artifact_store_bucket = 'gs://rndm-strg/zenml-k8s-test/'
-
-# Path to your kubernetes config:
-k8s_config_path = os.path.join(os.environ["HOME"], '.kube/config')
 
 # Define the metadata store
 metadata_store = MySQLMetadataStore(
@@ -97,14 +103,14 @@ metadata_store = MySQLMetadataStore(
 
 # Define the artifact store
 artifact_store = ArtifactStore(
-    os.path.join(GCP_BUCKET, 'cloud_gpu_training/artifact_store'))
+    os.path.join(GCP_BUCKET, 'gcp_gpu_training/artifact_store'))
 
 # Define the orchestrator backend
-orchestrator_backend = OrchestratorKubernetesBackend(
-    kubernetes_config_path=k8s_config_path,
-    image_pull_policy="Always")
+orchestrator_backend = OrchestratorGCPBackend(
+    cloudsql_connection_name=GCP_CLOUD_SQL_INSTANCE_NAME,
+    project=GCP_PROJECT)
 
-# Run the pipeline on a Kubernetes Cluster
+# Run the pipeline
 training_pipeline.run(
     backend=orchestrator_backend,
     metadata_store=metadata_store,

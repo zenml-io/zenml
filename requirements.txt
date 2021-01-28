@@ -25,6 +25,9 @@ jedi==0.17.2
 git+https://github.com/maiot-io/sphinx-book-theme.git
 sphinxext-opengraph
 
+# cortex
+# cortex==0.27.0 taken out due to global conflict
+
 # gcp
 apache-beam[gcp]==2.26.0
 apache-beam==2.26.0
@@ -32,6 +35,3 @@ google-apitools==0.5.31
 
 # pytorch
 torch==1.7.0
-
-# cortex
-cortex==0.27.0

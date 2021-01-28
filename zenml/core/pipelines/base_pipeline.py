@@ -18,8 +18,8 @@ from abc import abstractmethod
 from typing import Dict, Text, Any, Optional, List
 from uuid import uuid4
 
-from zenml.core.backends.orchestrator.local.orchestrator_local_backend import \
-    OrchestratorLocalBackend
+from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
+    OrchestratorBaseBackend
 from zenml.core.datasources.base_datasource import BaseDatasource
 from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
 from zenml.core.repo.artifact_store import ArtifactStore
@@ -49,7 +49,7 @@ class BasePipeline:
                  name: Text = None,
                  enable_cache: Optional[bool] = True,
                  steps_dict: Dict[Text, BaseStep] = None,
-                 backend: OrchestratorLocalBackend = None,
+                 backend: OrchestratorBaseBackend = None,
                  metadata_store: Optional[ZenMLMetadataStore] = None,
                  artifact_store: Optional[ArtifactStore] = None,
                  datasource: Optional[BaseDatasource] = None,
@@ -108,7 +108,7 @@ class BasePipeline:
 
         # Default to local
         if backend is None:
-            self.backend = OrchestratorLocalBackend()
+            self.backend = OrchestratorBaseBackend()
         else:
             self.backend = backend
 
@@ -191,7 +191,7 @@ class BasePipeline:
         )
 
         # orchestration backend
-        backend = OrchestratorLocalBackend.from_config(
+        backend = OrchestratorBaseBackend.from_config(
             config[keys.GlobalKeys.BACKEND])
 
         # pipeline configuration
@@ -313,7 +313,7 @@ class BasePipeline:
             AssertionError('Cannot retrieve as pipeline is not succeeded.')
         artifacts = self.metadata_store.get_artifacts_by_component(
             self, component_name)
-        # Download if not local
+        # Download if not base
         uris = []
         for a in artifacts:
             uris.append(self.artifact_store.resolve_uri_locally(a.uri))
@@ -343,12 +343,12 @@ class BasePipeline:
         Args:
             config: dict of ZenML config.
         """
-        assert issubclass(self.backend.__class__, OrchestratorLocalBackend)
+        assert issubclass(self.backend.__class__, OrchestratorBaseBackend)
         self.backend.run(config)
 
     @track(event=RUN_PIPELINE)
     def run(self,
-            backend: OrchestratorLocalBackend = None,
+            backend: OrchestratorBaseBackend = None,
             metadata_store: Optional[ZenMLMetadataStore] = None,
             artifact_store: Optional[ArtifactStore] = None):
         """
