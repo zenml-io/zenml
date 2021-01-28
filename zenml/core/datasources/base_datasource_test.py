@@ -17,6 +17,7 @@ import os
 import zenml
 import random
 import pandas as pd
+from zenml.core.standards import standard_keys as keys
 from zenml.core.datasources.base_datasource import BaseDatasource
 from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.repo.repo import Repository
@@ -47,10 +48,20 @@ def test_datasource_create():
 
 
 def test_get_datastep():
-    name = "my_datasource"
-    first_ds = BaseDatasource(name=name)
+    first_ds = BaseDatasource(name="my_datasource")
 
     assert not first_ds.get_data_step()
+
+
+def test_to_from_config(equal_datasources):
+    first_ds = BaseDatasource(name="my_datasource")
+
+    config = dict({keys.PipelineKeys.STEPS: {}})
+    config[keys.PipelineKeys.STEPS][keys.DataSteps.DATA] = {"args": {}}
+    config[keys.PipelineKeys.DATASOURCE] = first_ds.to_config()
+    second_ds = BaseDatasource.from_config(config)
+
+    assert equal_datasources(first_ds, second_ds, loaded=True)
 
 
 def test_get_one_pipeline():
