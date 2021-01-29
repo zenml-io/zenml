@@ -112,7 +112,7 @@ class OrchestratorGCPBackend(OrchestratorBaseBackend):
             #gcloud_1)
             zone: The zone where VM is launched.
             instance_name: Name of the instance.
-            disk_size: Size of disk to be used.
+            disk_size: Size (in GB) of disk to be used.
             preemptible: Set True to use preemtible instance for reduced costs.
             image: The image in which the pipeline actually runs.
             machine_type: VM Machine type. Full list [here](
