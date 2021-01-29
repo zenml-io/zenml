@@ -42,7 +42,7 @@ AZURE_REQUIREMENTS = []
 # EXTRAS: TOOLING #
 ###################
 PYTORCH_INTEGRATION = 'pytorch'
-PYTORCH_REQUIREMENTS = ['torch']
+PYTORCH_REQUIREMENTS = ['torch==1.7.0']
 
 ###############
 # EXTRAS: ALL #
