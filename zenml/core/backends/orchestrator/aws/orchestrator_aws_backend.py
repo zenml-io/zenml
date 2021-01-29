@@ -1,5 +1,5 @@
 import time
-from typing import Text, List
+from typing import Text, List, Dict
 
 import boto3
 from botocore.exceptions import ClientError
@@ -18,7 +18,8 @@ class OrchestratorAWSBackend:
                  key_name: Text = 'baris',
                  min_count: int = 1,
                  max_count: int = 1,
-                 security_groups: List = None):
+                 security_groups: List = None,
+                 instance_profile: Dict = None):
 
         self.ec2_resource = boto3.resource('ec2')
         self.ec2_client = boto3.client('ec2')
@@ -34,6 +35,11 @@ class OrchestratorAWSBackend:
             self.security_groups = ['zenml']
         else:
             self.security_groups = security_groups
+
+        if instance_profile is None:
+            self.instance_profile = ['ZenML']
+        else:
+            self.instance_profile = instance_profile
 
     @staticmethod
     def make_unique_name(name):
@@ -104,6 +110,7 @@ class OrchestratorAWSBackend:
             ImageId=self.image_id,
             InstanceType=self.instance_type,
             SecurityGroups=self.security_groups,
+            IamInstanceProfile=self.instance_profile,
             KeyName=self.key_name,
             MaxCount=self.max_count,
             MinCount=self.min_count)
@@ -111,9 +118,3 @@ class OrchestratorAWSBackend:
 
 i = OrchestratorAWSBackend()
 OrchestratorAWSBackend().create_vm_instance()
-print('Memories....')
-
-# iam = boto3.client('iam')
-# role = iam.get_role(RoleName='ZenML')
-#
-# print(role)
