@@ -79,5 +79,5 @@ in the `ProcessingDataFlowBackend`. Find out more in [the docs](https://docs.zen
 
 ## Next Steps
 You can see how ZenML makes it easy to do distributed processing. But this is just scratching the service. You 
-can combine different `ProcessingBackends` with certain [TrainingBackends](../gcp_gpu_training/README.md) to leverage 
+can combine different `ProcessingBackends` with certain [TrainingBackends](../gcp_gcaip_training/README.md) to leverage 
 even more cloud power such as GPUs.
