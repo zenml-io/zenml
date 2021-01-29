@@ -68,9 +68,12 @@ GCP_REQUIREMENTS = [
     "apache-beam==2.26.0",
     "google-apitools==0.5.31",
 ]
+AWS_REQUIREMENTS = [
+    "boto3"
+]
+
 # TODO: For future references
 AZURE_REQUIREMENTS = []
-AWS_REQUIREMENTS = []
 
 # Tooling requirements
 PYTORCH_REQUIREMENTS = [
