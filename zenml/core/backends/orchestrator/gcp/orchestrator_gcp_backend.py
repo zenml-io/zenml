@@ -30,6 +30,9 @@ from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils
 from zenml.utils.constants import ZENML_BASE_IMAGE_NAME, GCP_ENTRYPOINT
 from zenml.utils.logger import get_logger
+from zenml.utils import requirement_utils
+
+requirement_utils.check_integration(requirement_utils.GCP_INTEGRATION)
 
 logger = get_logger(__name__)
 
