@@ -15,14 +15,15 @@
 import pytest
 import os
 import zenml
-import random
+import shutil
 from zenml.core.repo.repo import Repository
 from zenml.core.repo.zenml_config import ZenMLConfig, PIPELINES_DIR_KEY
 from zenml.utils.exceptions import InitializationException
 from zenml.utils import yaml_utils
 from zenml.core.standards import standard_keys as keys
 from zenml.core.repo.constants import ARTIFACT_STORE_DEFAULT_DIR, \
-    ZENML_DIR_NAME
+    ZENML_DIR_NAME, ML_METADATA_SQLITE_DEFAULT_NAME
+from zenml.core.metadata.mock_metadata_wrapper import MockMetadataStore
 
 ZENML_ROOT = zenml.__path__[0]
 TEST_ROOT = os.path.join(ZENML_ROOT, "testing")
@@ -35,6 +36,8 @@ config_root = os.path.dirname(ZENML_ROOT)
 artifact_store_path = os.path.join(config_root, ZENML_DIR_NAME,
                                    ARTIFACT_STORE_DEFAULT_DIR)
 
+sqlite_uri = os.path.join(artifact_store_path, ML_METADATA_SQLITE_DEFAULT_NAME)
+
 
 def test_zenml_config_init():
     # in the root initialization should work
@@ -42,13 +45,13 @@ def test_zenml_config_init():
 
     # outside of an initialized repo path
     with pytest.raises(InitializationException):
-        _ = ZenMLConfig(os.getcwd())
+        _ = ZenMLConfig(TEST_ROOT)
 
 
 def test_is_zenml_dir():
     ok_path = config_root
 
-    not_ok_path = os.getcwd()
+    not_ok_path = TEST_ROOT
 
     assert ZenMLConfig.is_zenml_dir(ok_path)
     assert not ZenMLConfig.is_zenml_dir(not_ok_path)
@@ -71,24 +74,34 @@ def test_zenml_config_getters():
     assert cfg1.get_metadata_store()
 
 
-def test_zenml_config_setters():
+def test_zenml_config_setters(equal_md_stores):
     cfg1 = ZenMLConfig(repo_path=config_root)
 
     old_store_path = artifact_store_path
     old_pipelines_dir = pipelines_dir
+    old_sqlite = cfg1.get_metadata_store()
 
     new_store_path = os.getcwd()
-
     new_pipelines_dir = "awfkoeghelk"
+    new_mdstore = MockMetadataStore()
 
     cfg1.set_artifact_store(new_store_path)
     cfg1.set_pipelines_dir(new_pipelines_dir)
+    cfg1.set_metadata_store(new_mdstore)
 
     updated_cfg = yaml_utils.read_yaml(cfg1.config_path)
+
+    loaded_md_store = MockMetadataStore.from_config(
+        updated_cfg[keys.GlobalKeys.METADATA_STORE])
 
     assert updated_cfg[keys.GlobalKeys.ARTIFACT_STORE] == new_store_path
     assert updated_cfg[PIPELINES_DIR_KEY] == new_pipelines_dir
 
+    assert equal_md_stores(new_mdstore, loaded_md_store)
+
     # revert changes
     cfg1.set_artifact_store(old_store_path)
     cfg1.set_pipelines_dir(old_pipelines_dir)
+    cfg1.set_metadata_store(old_sqlite)
+
+    shutil.rmtree(new_pipelines_dir, ignore_errors=False)
