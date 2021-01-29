@@ -79,7 +79,7 @@ def check_integration(integration):
 
     for s in specs:
         # Decouple from the version
-        pattern = r"([a-zA-Z0-9\-]+)(\[.+\])*(==(.+))*"
+        pattern = r"([a-zA-Z0-9\-]+)(\[.+\])*(.*)"
         s = re.search(pattern, s)[1]
 
         # TODO: We can also validate the version
