@@ -1,4 +1,7 @@
-import importlib.util
+import re
+
+import subprocess
+import sys
 
 ########
 # BASE #
@@ -62,21 +65,26 @@ EXTRAS_REQUIRE = {GCP_INTEGRATION: GCP_REQUIREMENTS,
 # UTIL FUNCTIONS #
 ##################
 def check_integration(integration):
+    # Get the installed packages
+    reqs = subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'])
+    installed_packages = [r.decode().split('==')[0] for r in reqs.split()]
+
     # Get the required extra packages for the integration
     assert integration in EXTRAS_REQUIRE, \
-        f'There is no integration for {integration}. Possible integration ' \
-        f'for ZenML include: {list(EXTRAS_REQUIRE.keys())}.'
+        f'At this moment, there is no integration for {integration}. ' \
+        f'Possible integrations for ZenML ' \
+        f'include: {list(EXTRAS_REQUIRE.keys())}.'
 
     specs = EXTRAS_REQUIRE[integration]
 
     for s in specs:
         # Decouple from the version
-        s = s.split('==')[0]
+        pattern = r"([a-zA-Z0-9\-]+)(\[.+\])*(==(.+))*"
+        s = re.search(pattern, s)[1]
 
-        # Search for the extra package
-        x = importlib.util.find_spec(s)
         # TODO: We can also validate the version
-        if x is None:
+        if s not in installed_packages:
+            print([s])
             raise AssertionError(f"{integration} integration not installed. "
                                  f"Please install zenml[{integration}] via "
                                  f"`pip install zenml[{integration}]`")
