@@ -84,7 +84,6 @@ def check_integration(integration):
 
         # TODO: We can also validate the version
         if s not in installed_packages:
-            print([s])
             raise AssertionError(f"{integration} integration not installed. "
                                  f"Please install zenml[{integration}] via "
                                  f"`pip install zenml[{integration}]`")
