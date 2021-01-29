@@ -45,6 +45,8 @@ def test_to_from_config(equal_md_stores):
 
     mds2 = ZenMLMetadataStore.from_config(mds1.to_config())
 
+    # TODO: This fails because from_config throws (base store is
+    #  not in the factory)
     assert equal_md_stores(mds1, mds2, loaded=True)
 
 
@@ -54,6 +56,8 @@ def test_get_pipeline_status(run_test_pipelines):
 
     mds1 = ZenMLMetadataStore()
 
+    # TODO: This returns a NotStarted enum, which may be misleading as the
+    #  associated store does not even exist
     with pytest.raises(expected_query_error):
         _ = mds1.get_pipeline_status(random_pipeline)
 
