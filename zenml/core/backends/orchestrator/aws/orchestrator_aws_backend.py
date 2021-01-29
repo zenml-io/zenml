@@ -1,5 +1,4 @@
 import time
-import urllib
 from typing import Text, List
 
 import boto3
@@ -31,17 +30,10 @@ class OrchestratorAWSBackend:
         self.min_count = min_count
         self.max_count = max_count
 
-        # if security_groups is None:
-        #
-        #     current_ip_address = urllib.request.urlopen(
-        #         'http://checkip.amazonaws.com') \
-        #         .read().decode('utf-8').strip()
-        #
-        #     self.security_groups = self.setup_security_group(
-        #         group_name=f'{self.make_unique_name("zenml_sg")}',
-        #         ssh_ingress_ip=current_ip_address)
-        # else:
-        self.security_groups = ['zenml_sg-Thu Jan 28 17:23:11 2021']
+        if security_groups is None:
+            self.security_groups = ['zenml']
+        else:
+            self.security_groups = security_groups
 
     @staticmethod
     def make_unique_name(name):
