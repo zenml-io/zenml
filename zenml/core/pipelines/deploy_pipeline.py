@@ -12,33 +12,32 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Dict, Text, Any, Optional, List
+from typing import Dict, Text, Any, List
+from typing import Optional
 
-from tfx.components.bulk_inferrer.component import BulkInferrer
 from tfx.components.common_nodes.importer_node import ImporterNode
-from tfx.proto import bulk_inferrer_pb2
+from tfx.components.pusher.component import Pusher
 from tfx.types import standard_artifacts
 
 from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
     OrchestratorBaseBackend
-from zenml.core.components.data_gen.component import DataGen
 from zenml.core.datasources.base_datasource import BaseDatasource
 from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
 from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.repo.artifact_store import ArtifactStore
 from zenml.core.standards import standard_keys as keys
-from zenml.core.standards.standard_keys import StepKeys
 from zenml.core.steps.base_step import BaseStep
+from zenml.core.steps.deployer.base_deployer import BaseDeployerStep
 from zenml.utils.enums import GDPComponent
 
 
-class BatchInferencePipeline(BasePipeline):
+class DeployPipeline(BasePipeline):
     """BatchInferencePipeline definition to run batch inference pipelines.
 
     A BatchInferencePipeline is used to run an inference based on a
     TrainingPipeline.
     """
-    PIPELINE_TYPE = 'infer'
+    PIPELINE_TYPE = 'deploy'
 
     def __init__(self,
                  model_uri: Text,
@@ -51,8 +50,8 @@ class BatchInferencePipeline(BasePipeline):
                  datasource: Optional[BaseDatasource] = None,
                  pipeline_name: Optional[Text] = None):
         """
-        Construct a Batch Inference pipeline. This is a pipeline that allows
-        for offline batch inference.
+        Construct a deployment pipeline. This is a pipeline that deploys a
+        model to a target. Can be controlled via a DeployerStep.
 
         Args:
             name: Outward-facing name of the pipeline.
@@ -73,7 +72,7 @@ class BatchInferencePipeline(BasePipeline):
         if model_uri is None:
             raise AssertionError('model_uri cannot be None.')
         self.model_uri = model_uri
-        super(BatchInferencePipeline, self).__init__(
+        super(DeployPipeline, self).__init__(
             name=name,
             enable_cache=enable_cache,
             steps_dict=steps_dict,
@@ -101,31 +100,6 @@ class BatchInferencePipeline(BasePipeline):
         """
         component_list = []
 
-        data_config = \
-            config[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.STEPS][
-                keys.DataSteps.DATA]
-        data = DataGen(
-            name=self.datasource.name,
-            source=data_config[StepKeys.SOURCE],
-            source_args=data_config[StepKeys.ARGS]).with_id(
-            GDPComponent.DataGen.name)
-        component_list.extend([data])
-
-        # Handle timeseries
-        # TODO: [LOW] Handle timeseries
-        # if GlobalKeys. in train_config:
-        #     schema = ImporterNode(instance_name='Schema',
-        #                           source_uri=spec['schema_uri'],
-        #                           artifact_type=standard_artifacts.Schema)
-        #
-        #     sequence_transform = SequenceTransform(
-        #         examples=data.outputs.examples,
-        #         schema=schema,
-        #         config=train_config,
-        #         instance_name=GDPComponent.SequenceTransform.name)
-        #     datapoints = sequence_transform.outputs.output
-        #     component_list.extend([schema, sequence_transform])
-
         # Load from model_uri
         model = ImporterNode(
             instance_name=GDPComponent.Trainer.name,
@@ -133,20 +107,23 @@ class BatchInferencePipeline(BasePipeline):
             artifact_type=standard_artifacts.Model)
         model_result = model.outputs.result
 
-        bulk_inferrer = BulkInferrer(
-            examples=data.outputs.examples,
-            model=model_result,
-            instance_name=GDPComponent.Inferrer.name,
-            # Empty data_spec.example_splits will result in using all splits.
-            data_spec=bulk_inferrer_pb2.DataSpec(),
-            model_spec=bulk_inferrer_pb2.ModelSpec())
+        deployer: BaseDeployerStep = \
+            self.steps_dict[keys.TrainingSteps.DEPLOYER]
+        pusher_config = deployer._build_pusher_args()
+        pusher_executor_spec = deployer._get_executor_spec()
+        pusher = Pusher(model_export=model_result,
+                        custom_executor_spec=pusher_executor_spec,
+                        **pusher_config).with_id(
+            GDPComponent.Deployer.name)
 
-        component_list.extend([model, bulk_inferrer])
-
+        component_list.extend([model, pusher])
         return component_list
 
+    def add_deployment(self, deployment_step: BaseDeployerStep):
+        self.steps_dict[keys.TrainingSteps.DEPLOYER] = deployment_step
+
     def steps_completed(self) -> bool:
-        mandatory_steps = [keys.DataSteps.DATA]
+        mandatory_steps = [keys.TrainingSteps.DEPLOYER]
         for step_name in mandatory_steps:
             if step_name not in self.steps_dict.keys():
                 raise AssertionError(
