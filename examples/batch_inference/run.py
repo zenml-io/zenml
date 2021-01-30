@@ -55,6 +55,7 @@ training_pipeline.run()
 
 from zenml.core.pipelines.infer_pipeline import BatchInferencePipeline
 
-infer_pipeline = BatchInferencePipeline(use_latest=True)
+model_uri = training_pipeline.get_artifacts_uri_by_component('Trainer')
+infer_pipeline = BatchInferencePipeline(model_uri=model_uri[0])
 infer_pipeline.add_datasource(ds)
 infer_pipeline.run()

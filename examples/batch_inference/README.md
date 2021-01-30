@@ -13,7 +13,7 @@ Before continuing, either [install the zenml pip package](https://docs.zenml.io/
 
 ```
 zenml init
-cd zenml/examples/quickstart
+cd zenml/examples/batch_inference
 ```
 
 ### Run the project
