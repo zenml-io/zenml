@@ -12,9 +12,29 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Dict, Text, Any, List
+from typing import Dict, Text, Any, Optional, List
 
+from tfx.components import ResolverNode
+from tfx.components.bulk_inferrer.component import BulkInferrer
+from tfx.components.common_nodes.importer_node import ImporterNode
+from tfx.dsl.experimental import latest_blessed_model_resolver
+from tfx.proto import bulk_inferrer_pb2
+from tfx.types import Channel
+from tfx.types import standard_artifacts
+from tfx.types.standard_artifacts import Model
+from tfx.types.standard_artifacts import ModelBlessing
+
+from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
+    OrchestratorBaseBackend
+from zenml.core.components.data_gen.component import DataGen
+from zenml.core.datasources.base_datasource import BaseDatasource
+from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
 from zenml.core.pipelines.base_pipeline import BasePipeline
+from zenml.core.repo.artifact_store import ArtifactStore
+from zenml.core.standards import standard_keys as keys
+from zenml.core.standards.standard_keys import StepKeys
+from zenml.core.steps.base_step import BaseStep
+from zenml.utils.enums import GDPComponent
 
 
 class BatchInferencePipeline(BasePipeline):
@@ -25,9 +45,128 @@ class BatchInferencePipeline(BasePipeline):
     """
     PIPELINE_TYPE = 'infer'
 
-    def __init__(self, name: Text, *args, **kwargs):
-        super().__init__(name, *args, **kwargs)
-        raise NotImplementedError('Coming soon!')
+    def __init__(self,
+                 name: Text = None,
+                 use_latest: bool = False,
+                 model_uri: Text = None,
+                 enable_cache: Optional[bool] = True,
+                 steps_dict: Dict[Text, BaseStep] = None,
+                 backend: OrchestratorBaseBackend = None,
+                 metadata_store: Optional[ZenMLMetadataStore] = None,
+                 artifact_store: Optional[ArtifactStore] = None,
+                 datasource: Optional[BaseDatasource] = None,
+                 pipeline_name: Optional[Text] = None):
+        """
+        Construct a Batch Inference pipeline. This is a pipeline that allows
+        for offline batch inference.
+
+        Args:
+            name: Outward-facing name of the pipeline.
+            use_latest: If specified, latest TrainerStep artifact is used.
+            model_uri: If specified, specific uri is used. Only one of
+            use_latest and model_uri can be specified.
+            pipeline_name: A unique name that identifies the pipeline after
+             it is run.
+            enable_cache: Boolean, indicates whether or not caching
+             should be used.
+            steps_dict: Optional dict of steps.
+            backend: Orchestrator backend.
+            metadata_store: Configured metadata store. If None,
+             the default metadata store is used.
+            artifact_store: Configured artifact store. If None,
+             the default artifact store is used.
+        """
+        self.use_latest = use_latest
+        self.model_uri = model_uri
+        super(BatchInferencePipeline, self).__init__(
+            name=name,
+            enable_cache=enable_cache,
+            steps_dict=steps_dict,
+            backend=backend,
+            metadata_store=metadata_store,
+            artifact_store=artifact_store,
+            datasource=datasource,
+            pipeline_name=pipeline_name,
+            use_latest=use_latest,
+            model_uri=model_uri,
+        )
 
     def get_tfx_component_list(self, config: Dict[Text, Any]) -> List:
-        pass
+        """
+        Creates an inference pipeline out of TFX components.
+
+        A inference pipeline is used to run a batch of data through a
+        ML model via the BulkInferrer TFX component.
+
+        Args:
+            config: Dict. Contains a ZenML configuration used to build the
+             data pipeline.
+
+        Returns:
+            A list of TFX components making up the data pipeline.
+        """
+        component_list = []
+
+        data_config = \
+            config[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.STEPS][
+                keys.DataSteps.DATA]
+        data = DataGen(
+            name=self.datasource.name,
+            source=data_config[StepKeys.SOURCE],
+            source_args=data_config[StepKeys.ARGS]).with_id(
+                GDPComponent.DataGen.name
+            )
+        component_list.extend([data])
+
+        # Handle timeseries
+        # TODO: [LOW] Handle timeseries
+        # if GlobalKeys. in train_config:
+        #     schema = ImporterNode(instance_name='Schema',
+        #                           source_uri=spec['schema_uri'],
+        #                           artifact_type=standard_artifacts.Schema)
+        #
+        #     sequence_transform = SequenceTransform(
+        #         examples=data.outputs.examples,
+        #         schema=schema,
+        #         config=train_config,
+        #         instance_name=GDPComponent.SequenceTransform.name)
+        #     datapoints = sequence_transform.outputs.output
+        #     component_list.extend([schema, sequence_transform])
+
+        # Get the latest blessed model for model validation.
+        if self.use_latest:
+            model = ResolverNode(
+                instance_name='latest_blessed_model_resolver',
+                resolver_class=latest_blessed_model_resolver
+                    .LatestBlessedModelResolver,
+                model=Channel(type=Model),
+                model_blessing=Channel(type=ModelBlessing))
+            model_result = model.outputs.model
+        else:
+            assert self.model_uri
+            # Load from model_uri
+            model = ImporterNode(
+                instance_name=GDPComponent.Trainer.name,
+                source_uri=self.model_uri,
+                artifact_type=standard_artifacts.Model)
+            model_result = model.outputs.result
+
+        bulk_inferrer = BulkInferrer(
+            examples=data.outputs.examples,
+            model=model_result,
+            instance_name=GDPComponent.Inferrer.name,
+            # Empty data_spec.example_splits will result in using all splits.
+            data_spec=bulk_inferrer_pb2.DataSpec(),
+            model_spec=bulk_inferrer_pb2.ModelSpec())
+
+        component_list.extend([model, bulk_inferrer])
+
+        return component_list
+
+    def steps_completed(self) -> bool:
+        mandatory_steps = [keys.DataSteps.DATA]
+        for step_name in mandatory_steps:
+            if step_name not in self.steps_dict.keys():
+                raise AssertionError(
+                    f'Mandatory step {step_name} not added.')
+        return True
