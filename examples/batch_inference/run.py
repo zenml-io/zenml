@@ -1,4 +1,5 @@
 from zenml.core.datasources.csv_datasource import CSVDatasource
+from zenml.core.pipelines.infer_pipeline import BatchInferencePipeline
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
 from zenml.core.repo.repo import Repository
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
@@ -53,9 +54,8 @@ training_pipeline.add_evaluator(
 # Run the pipeline locally
 training_pipeline.run()
 
-from zenml.core.pipelines.infer_pipeline import BatchInferencePipeline
-
-model_uri = training_pipeline.get_artifacts_uri_by_component('Trainer')
-infer_pipeline = BatchInferencePipeline(model_uri=model_uri[0])
+# Run inference
+model_uri = training_pipeline.get_model_uri()
+infer_pipeline = BatchInferencePipeline(model_uri=model_uri)
 infer_pipeline.add_datasource(ds)
 infer_pipeline.run()
