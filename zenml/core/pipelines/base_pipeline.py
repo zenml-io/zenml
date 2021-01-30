@@ -266,7 +266,7 @@ class BasePipeline:
             keys.PipelineKeys.ARGS: self._kwargs,
             keys.PipelineKeys.SOURCE: self._source,
             keys.PipelineKeys.DATASOURCE: self.datasource.to_config() if
-            self.datasource is not None else None,
+            self.datasource is not None else {},
         })
         return steps_config
 
