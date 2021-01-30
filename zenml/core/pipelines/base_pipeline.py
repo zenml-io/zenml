@@ -302,13 +302,15 @@ class BasePipeline:
             file_name=self.file_name)
 
     @track(event=GET_PIPELINE_ARTIFACTS)
-    def get_artifacts_uri_by_component(self, component_name: Text):
+    def get_artifacts_uri_by_component(
+            self, component_name: Text, resolve_locally: bool = True):
         """
         Gets the artifacts of any component within a pipeline. All artifacts
-        are resolved locally, even if artifact store is remote.
+        are resolved locally if resolve_locally flag is set.
 
         Args:
             component_name (str): name of component
+            resolve_locally (bool): If True, artifact is downloadeded locally.
         """
         status = self.metadata_store.get_pipeline_status(self)
         if status != PipelineStatusTypes.Succeeded.name:
@@ -318,7 +320,8 @@ class BasePipeline:
         # Download if not base
         uris = []
         for a in artifacts:
-            uris.append(self.artifact_store.resolve_uri_locally(a.uri))
+            uris.append(self.artifact_store.resolve_uri_locally(
+                a.uri) if resolve_locally else a.uri)
         return uris
 
     def copy(self, new_name: Text):

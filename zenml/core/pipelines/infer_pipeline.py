@@ -14,15 +14,10 @@
 
 from typing import Dict, Text, Any, Optional, List
 
-from tfx.components import ResolverNode
 from tfx.components.bulk_inferrer.component import BulkInferrer
 from tfx.components.common_nodes.importer_node import ImporterNode
-from tfx.dsl.experimental import latest_blessed_model_resolver
 from tfx.proto import bulk_inferrer_pb2
-from tfx.types import Channel
 from tfx.types import standard_artifacts
-from tfx.types.standard_artifacts import Model
-from tfx.types.standard_artifacts import ModelBlessing
 
 from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
     OrchestratorBaseBackend
@@ -46,9 +41,8 @@ class BatchInferencePipeline(BasePipeline):
     PIPELINE_TYPE = 'infer'
 
     def __init__(self,
+                 model_uri: Text,
                  name: Text = None,
-                 use_latest: bool = False,
-                 model_uri: Text = None,
                  enable_cache: Optional[bool] = True,
                  steps_dict: Dict[Text, BaseStep] = None,
                  backend: OrchestratorBaseBackend = None,
@@ -76,7 +70,8 @@ class BatchInferencePipeline(BasePipeline):
             artifact_store: Configured artifact store. If None,
              the default artifact store is used.
         """
-        self.use_latest = use_latest
+        if model_uri is None:
+            raise AssertionError('model_uri cannot be None.')
         self.model_uri = model_uri
         super(BatchInferencePipeline, self).__init__(
             name=name,
@@ -87,7 +82,6 @@ class BatchInferencePipeline(BasePipeline):
             artifact_store=artifact_store,
             datasource=datasource,
             pipeline_name=pipeline_name,
-            use_latest=use_latest,
             model_uri=model_uri,
         )
 
@@ -114,8 +108,7 @@ class BatchInferencePipeline(BasePipeline):
             name=self.datasource.name,
             source=data_config[StepKeys.SOURCE],
             source_args=data_config[StepKeys.ARGS]).with_id(
-                GDPComponent.DataGen.name
-            )
+            GDPComponent.DataGen.name)
         component_list.extend([data])
 
         # Handle timeseries
@@ -133,23 +126,12 @@ class BatchInferencePipeline(BasePipeline):
         #     datapoints = sequence_transform.outputs.output
         #     component_list.extend([schema, sequence_transform])
 
-        # Get the latest blessed model for model validation.
-        if self.use_latest:
-            model = ResolverNode(
-                instance_name='latest_blessed_model_resolver',
-                resolver_class=latest_blessed_model_resolver
-                    .LatestBlessedModelResolver,
-                model=Channel(type=Model),
-                model_blessing=Channel(type=ModelBlessing))
-            model_result = model.outputs.model
-        else:
-            assert self.model_uri
-            # Load from model_uri
-            model = ImporterNode(
-                instance_name=GDPComponent.Trainer.name,
-                source_uri=self.model_uri,
-                artifact_type=standard_artifacts.Model)
-            model_result = model.outputs.result
+        # Load from model_uri
+        model = ImporterNode(
+            instance_name=GDPComponent.Trainer.name,
+            source_uri=self.model_uri,
+            artifact_type=standard_artifacts.Model)
+        model_result = model.outputs.result
 
         bulk_inferrer = BulkInferrer(
             examples=data.outputs.examples,

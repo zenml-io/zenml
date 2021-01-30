@@ -70,6 +70,7 @@ class ArtifactStore:
             return artifact_uri
 
         if path is None:
+            # Create a unique path in local machine
             path = os.path.join(
                 GlobalConfig.get_config_dir(),
                 self.unique_id,

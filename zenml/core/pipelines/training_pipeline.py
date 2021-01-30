@@ -351,6 +351,12 @@ class TrainingPipeline(BasePipeline):
                 raise AssertionError(f'Mandatory step {step_name} not added.')
         return True
 
+    def get_model_uri(self):
+        """Gets model artifact."""
+        uris = self.get_artifacts_uri_by_component(
+            GDPComponent.Trainer.name, False)
+        return uris[0]
+
     def get_hyperparameters(self) -> Dict:
         """
         Gets all hyper-parameters of pipeline.
