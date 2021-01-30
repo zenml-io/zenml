@@ -74,7 +74,7 @@ class BasePipeline:
         """
         # Generate a name if not given
         if name is None:
-            name = str(int(time.time()))
+            name = str(round(time.time() * 1000))
         self.name = name
         self._immutable = False
 
@@ -129,6 +129,12 @@ class BasePipeline:
         self._source = source_utils.resolve_source_path(
             self.__class__.__module__ + '.' + self.__class__.__name__
         )
+        self._kwargs = {
+            keys.PipelineDetailKeys.NAME: self.pipeline_name,
+            keys.PipelineDetailKeys.ENABLE_CACHE: self.enable_cache,
+        }
+        if kwargs:
+            self._kwargs.update(kwargs)
 
     def __str__(self):
         return to_pretty_string(self.to_config())
@@ -196,7 +202,8 @@ class BasePipeline:
 
         # pipeline configuration
         p_config = config[keys.GlobalKeys.PIPELINE]
-        pipeline_name = p_config[keys.PipelineKeys.NAME]
+        kwargs = p_config[keys.PipelineKeys.ARGS]
+        pipeline_name = kwargs.pop(keys.PipelineDetailKeys.NAME)
         pipeline_source = p_config[keys.PipelineKeys.SOURCE]
 
         # populate steps
@@ -208,22 +215,19 @@ class BasePipeline:
         datasource = BaseDatasource.from_config(
             config[keys.GlobalKeys.PIPELINE])
 
-        # enable cache
-        enable_cache = p_config[keys.PipelineKeys.ENABLE_CACHE]
-
         class_ = source_utils.load_source_path_class(pipeline_source)
 
         obj = class_(
-            name=cls.get_name_from_pipeline_name(pipeline_name),
-            pipeline_name=pipeline_name,
-            enable_cache=enable_cache,
             steps_dict=steps_dict,
             backend=backend,
             artifact_store=artifact_store,
             metadata_store=metadata_store,
-            datasource=datasource)
+            datasource=datasource,
+            pipeline_name=pipeline_name,
+            name=cls.get_name_from_pipeline_name(pipeline_name),
+            **kwargs
+        )
         obj._immutable = True
-        logger.debug(f'Pipeline {pipeline_name} loaded and and is immutable.')
         return obj
 
     def _check_registered(self):
@@ -259,10 +263,8 @@ class BasePipeline:
         """Get pipeline config"""
         steps_config = self.get_steps_config()
         steps_config.update({
-            keys.PipelineKeys.NAME: self.pipeline_name,
-            keys.PipelineKeys.TYPE: self.PIPELINE_TYPE,
+            keys.PipelineKeys.ARGS: self._kwargs,
             keys.PipelineKeys.SOURCE: self._source,
-            keys.PipelineKeys.ENABLE_CACHE: self.enable_cache,
             keys.PipelineKeys.DATASOURCE: self.datasource.to_config() if
             self.datasource is not None else None,
         })
