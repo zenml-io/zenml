@@ -1,7 +1,9 @@
 from zenml.core.datasources.csv_datasource import CSVDatasource
+from zenml.core.pipelines.deploy_pipeline import DeployPipeline
 from zenml.core.pipelines.infer_pipeline import BatchInferencePipeline
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
 from zenml.core.repo.repo import Repository
+from zenml.core.steps.deployer.gcaip_deployer import GCAIPDeployer
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
 from zenml.core.steps.preprocesser.standard_preprocesser \
     .standard_preprocesser import \
@@ -59,3 +61,13 @@ model_uri = training_pipeline.get_model_uri()
 infer_pipeline = BatchInferencePipeline(model_uri=model_uri)
 infer_pipeline.add_datasource(ds)
 infer_pipeline.run()
+
+# Deploy
+deploy_pipeline = DeployPipeline(model_uri=model_uri)
+deploy_pipeline.add_deployment(
+    GCAIPDeployer(
+        model_name='zenml_test',
+        project_id='core-engine'
+    )
+)
+deploy_pipeline.run()
