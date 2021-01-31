@@ -316,9 +316,11 @@ class Repository:
         pipelines = []
         for file_path in self.get_pipeline_file_paths():
             c = yaml_utils.read_yaml(file_path)
-            if c[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.DATASOURCE][
-                keys.DatasourceKeys.ID] == datasource._id:
-                pipelines.append(BasePipeline.from_config(c))
+            if keys.DatasourceKeys.ID in c[keys.GlobalKeys.PIPELINE][
+                keys.PipelineKeys.DATASOURCE]:
+                if c[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.DATASOURCE][
+                    keys.DatasourceKeys.ID] == datasource._id:
+                    pipelines.append(BasePipeline.from_config(c))
         return pipelines
 
     @track(event=GET_PIPELINES)
