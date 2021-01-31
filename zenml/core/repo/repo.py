@@ -238,8 +238,9 @@ class Repository:
         n = []
         for file_path in self.get_pipeline_file_paths():
             c = yaml_utils.read_yaml(file_path)
-            n.append(c[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.DATASOURCE][
-                         keys.DatasourceKeys.NAME])
+            src = c[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.DATASOURCE]
+            if keys.DatasourceKeys.NAME in src:
+                n.append(src[keys.DatasourceKeys.NAME])
         return list(set(n))
 
     @track(event=GET_DATASOURCES)
@@ -256,7 +257,7 @@ class Repository:
         for file_path in self.get_pipeline_file_paths():
             c = yaml_utils.read_yaml(file_path)
             ds = BaseDatasource.from_config(c[keys.GlobalKeys.PIPELINE])
-            if ds.name not in datasources_name:
+            if ds and ds.name not in datasources_name:
                 datasources.append(ds)
                 datasources_name.add(ds.name)
         return datasources
