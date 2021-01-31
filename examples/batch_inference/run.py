@@ -1,9 +1,7 @@
 from zenml.core.datasources.csv_datasource import CSVDatasource
-from zenml.core.pipelines.deploy_pipeline import DeploymentPipeline
 from zenml.core.pipelines.infer_pipeline import BatchInferencePipeline
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
 from zenml.core.repo.repo import Repository
-from zenml.core.steps.deployer.gcaip_deployer import GCAIPDeployer
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
 from zenml.core.steps.preprocesser.standard_preprocesser \
     .standard_preprocesser import \
@@ -58,6 +56,11 @@ training_pipeline.run()
 
 # Run inference
 model_uri = training_pipeline.get_model_uri()
-infer_pipeline = BatchInferencePipeline(model_uri=model_uri)
+infer_pipeline = BatchInferencePipeline(model_uri=model_uri,
+                                        labels=['has_diabetes'])
 infer_pipeline.add_datasource(ds)
 infer_pipeline.run()
+df = infer_pipeline.get_predictions()
+print(df.columns)
+print(df[['has_diabetes', 'has_diabetes_label']].head())
+print(df.head())
