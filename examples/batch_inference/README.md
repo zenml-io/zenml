@@ -1,6 +1,7 @@
 # Get up and running quickly
-This is the quickstart example that runs a `TrainingPipeline` to train a Tensorflow-based classifier on the 
-[Pime Indian Diabetes dataset](https://www.kaggle.com/uciml/pima-indians-diabetes-database).
+This example first runs a `TrainingPipeline` to train a Tensorflow-based classifier on the 
+[Pime Indian Diabetes dataset](https://www.kaggle.com/uciml/pima-indians-diabetes-database) and then a 
+`BatchInferencePipeline` to run an offline-batch job to get prediction results.
 
 ### Pre-requisites
 In order to run this example, you need to clone the zenml repo.
@@ -23,11 +24,6 @@ Now we're ready. Execute:
 python run.py
 ```
 
-Or just a jupyter notebook
-```bash
-jupyter notebook  # jupyter must be installed
-```
-
 
 ### Clean up
 In order to clean up, in the root of your repo, delete the remaining zenml references.
@@ -39,7 +35,7 @@ rm -r pipelines
 ```
 
 ## Caveats
-The PyTorch Trainer does not yet work with the `Evaluator` or `Deployer` steps that follow it in a `TrainingPipeline`.
+`BatchInferencePipeline` currently only works with Tensorflow SavedModels.
 
 ## Next Steps
 Try [creating your own custom pytorch trainer](https://docs.zenml.io/getting-started/creating-custom-logic.html)!

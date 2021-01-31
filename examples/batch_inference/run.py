@@ -61,6 +61,4 @@ infer_pipeline = BatchInferencePipeline(model_uri=model_uri,
 infer_pipeline.add_datasource(ds)
 infer_pipeline.run()
 df = infer_pipeline.get_predictions()
-print(df.columns)
-print(df[['has_diabetes', 'has_diabetes_label']].head())
 print(df.head())
