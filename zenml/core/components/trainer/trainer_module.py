@@ -17,15 +17,17 @@ from zenml.utils.source_utils import load_source_path_class
 
 
 def run_fn(fn_args):
-    c = load_source_path_class(fn_args.pop(StepKeys.SOURCE))
+    fn_args_dict = fn_args.__dict__
+    custom_config = fn_args_dict.pop('custom_config')
+    c = load_source_path_class(custom_config.pop(StepKeys.SOURCE))
 
     # Pop unnecessary args
-    args = fn_args.pop(StepKeys.ARGS)
+    args = custom_config.pop(StepKeys.ARGS)
 
     # TODO: [LOW] Hard-coded
-    fn_args.pop('data_accessor')
+    fn_args_dict.pop('data_accessor')
 
     # We update users args first, because fn_args might have overlaps
-    args.update(fn_args)
+    args.update(fn_args_dict)
 
     return c(**args).get_run_fn()()
