@@ -1,5 +1,5 @@
 from zenml.core.datasources.csv_datasource import CSVDatasource
-from zenml.core.pipelines.deploy_pipeline import DeployPipeline
+from zenml.core.pipelines.deploy_pipeline import DeploymentPipeline
 from zenml.core.pipelines.infer_pipeline import BatchInferencePipeline
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
 from zenml.core.repo.repo import Repository
@@ -61,13 +61,3 @@ model_uri = training_pipeline.get_model_uri()
 infer_pipeline = BatchInferencePipeline(model_uri=model_uri)
 infer_pipeline.add_datasource(ds)
 infer_pipeline.run()
-
-# Deploy
-deploy_pipeline = DeployPipeline(model_uri=model_uri)
-deploy_pipeline.add_deployment(
-    GCAIPDeployer(
-        model_name='zenml_test',
-        project_id='core-engine'
-    )
-)
-deploy_pipeline.run()

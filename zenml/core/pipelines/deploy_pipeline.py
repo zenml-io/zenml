@@ -31,7 +31,7 @@ from zenml.core.steps.deployer.base_deployer import BaseDeployerStep
 from zenml.utils.enums import GDPComponent
 
 
-class DeployPipeline(BasePipeline):
+class DeploymentPipeline(BasePipeline):
     """BatchInferencePipeline definition to run batch inference pipelines.
 
     A BatchInferencePipeline is used to run an inference based on a
@@ -72,7 +72,7 @@ class DeployPipeline(BasePipeline):
         if model_uri is None:
             raise AssertionError('model_uri cannot be None.')
         self.model_uri = model_uri
-        super(DeployPipeline, self).__init__(
+        super(DeploymentPipeline, self).__init__(
             name=name,
             enable_cache=enable_cache,
             steps_dict=steps_dict,
