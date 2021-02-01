@@ -17,7 +17,6 @@ import os
 import zenml
 import random
 import pandas as pd
-from zenml.core.standards import standard_keys as keys
 from zenml.core.datasources.base_datasource import BaseDatasource
 from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.repo.repo import Repository
@@ -33,7 +32,6 @@ repo.zenml_config.set_pipelines_dir(pipeline_root)
 
 
 def test_datasource_create():
-    assert Repository.get_instance()
     name = "my_datasource"
     first_ds = BaseDatasource(name=name)
 
@@ -80,11 +78,9 @@ def test_get_one_pipeline():
 
 
 def test_get_data_file_paths():
-    name = "my_datasource"
-    first_ds = BaseDatasource(name=name)
+    first_ds = BaseDatasource(name="my_datasource")
 
-    p_name = "my_pipeline"
-    first_pipeline = BasePipeline(name=name)
+    first_pipeline = BasePipeline(name="my_pipeline")
 
     first_pipeline.add_datasource(first_ds)
 
@@ -130,4 +126,3 @@ def test_sample_data():
     # TODO: This fails on the test csv because the age gets typed as
     #  a float in datasource.sample_data() method
     assert sample_df.equals(csv_df)
-

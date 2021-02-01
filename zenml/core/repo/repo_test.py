@@ -18,6 +18,7 @@ import zenml
 import random
 from typing import Text
 from zenml.core.repo.repo import Repository
+from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.datasources.base_datasource import BaseDatasource
 from zenml.utils import yaml_utils
 from zenml.utils.version import __version__
@@ -126,7 +127,7 @@ def test_get_pipelines_by_type():
     assert not pipelines_2
 
 
-def test_get_pipeline_by_name():
+def test_get_pipeline_by_name(equal_pipelines):
     p_names = repo.get_pipeline_names()
 
     random_name = random.choice(p_names)
@@ -135,13 +136,11 @@ def test_get_pipeline_by_name():
 
     cfg = yaml_utils.read_yaml(cfg_list[0])
 
-    p = repo.get_pipeline_by_name(random_name)
+    p1 = repo.get_pipeline_by_name(random_name)
 
-    p_config = cfg[keys.GlobalKeys.PIPELINE]
+    p2 = BasePipeline.from_config(cfg)
 
-    assert p.PIPELINE_TYPE == p_config[keys.PipelineKeys.TYPE]
-    assert p.name in p_config[keys.PipelineKeys.NAME]
-    assert p.enable_cache == p_config[keys.PipelineKeys.ENABLE_CACHE]
+    assert equal_pipelines(p1, p2, loaded=True)
 
 
 def test_get_step_versions():

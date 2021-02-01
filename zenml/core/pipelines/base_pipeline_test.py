@@ -187,11 +187,9 @@ def test_load_config(equal_pipelines):
 def test_run_config():
     p = BasePipeline(name="my_pipeline")
 
-    success = {"message": "Run triggered!"}
-
     class MockBackend(OrchestratorBaseBackend):
         def run(self, config):
-            return success
+            return {"message": "Run triggered!"}
 
     # Base Orchestrator Backend complains about lack of datasource
     with pytest.raises(Exception):
@@ -206,11 +204,9 @@ def test_run_base(delete_config):
     # Test of pipeline.run(), without artifact / metadata store change
     p = BasePipeline(name="my_pipeline")
 
-    success = {"message": "Run triggered!"}
-
     class MockBackend(OrchestratorBaseBackend):
         def run(self, config):
-            return success
+            return {"message": "Run triggered!"}
 
     backend = MockBackend()
 
