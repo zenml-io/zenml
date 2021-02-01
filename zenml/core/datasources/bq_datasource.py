@@ -24,6 +24,7 @@ class BigQueryDatasource(BaseDatasource):
 
     Use this for BigQuery training pipelines.
     """
+
     def __init__(self,
                  name: Text,
                  query_project: Text,
