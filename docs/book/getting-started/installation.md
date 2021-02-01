@@ -30,7 +30,7 @@ pip install git+https://github.com/maiot-io/zenml.git@main --upgrade
 ```
 
 ## Integrations
-The ZenML base package does not come up with all integrations pre-installed. Read more [here](../benefits/extensibility.md).
+The ZenML base package does not come up with all integrations pre-installed. Read more [here](../benefits/integrations.md).
 To install an integration, use the pattern:
 
 ```bash

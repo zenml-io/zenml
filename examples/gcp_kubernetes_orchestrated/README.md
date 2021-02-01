@@ -118,5 +118,5 @@ The only time you would need to use it if you use a custom dependency which is n
 zenml.
 
 ## Next Steps
-Try using other backends such as [processing backends](../gcp_dataflow_processing) for distributed preprocessing and [training backends](../gcp_gpu_training) for 
+Try using other backends such as [processing backends](../gcp_dataflow_processing) for distributed preprocessing and [training backends](../gcp_gcaip_training) for 
 GPU training on the cloud.

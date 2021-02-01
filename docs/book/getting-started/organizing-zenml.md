@@ -45,62 +45,90 @@ evaluate_model(train)
 # CELL 6: Export (i.e. pickle it)
 export_model(model)
 ```
+The above, while being handy for quick results, does not really translate well in production. 
 
-## Step 1: Separate the split
+## Organize legacy code into production pipelines in seven easy steps
+ZenML allows you to take the above code, and organize it into [ZenML pipelines](../pipelines/what-is-a-pipeline.md). Heres how:
+
+### Step 0: Create the pipeline
+```python
+from zenml.core.pipelines.training_pipeline import TrainingPipeline
+training_pipeline = TrainingPipeline()
+```
+
+### Step 1: Configure the datasource
 
 ```python
-from random import randint
-
 from zenml.core.datasources.csv_datasource import CSVDatasource
-from zenml.core.pipelines.training_pipeline import TrainingPipeline
-from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
-from zenml.core.steps.preprocesser.standard_preprocesser.standard_preprocesser import StandardPreprocesser
-from zenml.core.steps.split.random_split import RandomSplit
-from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import FeedForwardTrainer
 
-training_pipeline = TrainingPipeline(
-    name=f'Experiment {randint(0, 10000)}',
-    enable_cache=True
-)
-
-# Add a datasource. This will automatically track and version it.
-ds = CSVDatasource(name=f'My CSV Datasource {randint(0, 100000)}',
-                   path='gs://zenml_quickstart/diabetes.csv')
+ds = CSVDatasource(name='A proper name', path='/path/to/file.csv')
 training_pipeline.add_datasource(ds)
+```
 
-# Add a split
+### Step 2: Separate the split
+
+```python
+from zenml.core.steps.split.random_split import RandomSplit
+
 training_pipeline.add_split(RandomSplit(
-    split_map={'eval': 0.3, 'train': 0.7}))
+    split_map={'train': 0.7, 'eval': 0.3}))
+```
 
-# Add a preprocessing unit
+### Step 3: Define the preprocessing
+```python
+from zenml.core.steps.preprocesser.standard_preprocesser.standard_preprocesser import StandardPreprocesser
+
 training_pipeline.add_preprocesser(
     StandardPreprocesser(
-        features=['times_pregnant', 'pgc', 'dbp', 'tst', 'insulin', 'bmi',
-                  'pedigree', 'age'],
-        labels=['has_diabetes'],
-        overwrite={'has_diabetes': {
-            'transform': [{'method': 'no_transform', 'parameters': {}}]}}
+        features=[...],
+        labels=[...],
     ))
+```
 
-# Add a trainer
+### Step 4: Write the trainer
+```python
+from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import FeedForwardTrainer
+
 training_pipeline.add_trainer(FeedForwardTrainer(
     loss='binary_crossentropy',
     last_activation='sigmoid',
     output_units=1,
     metrics=['accuracy'],
-    epochs=3))
+    epochs=20))
+```
 
-# Add an evaluator
+### Step 5: Set the evaluation
+```python
+from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
+
 training_pipeline.add_evaluator(
     TFMAEvaluator(slices=[['has_diabetes']],
                   metrics={'has_diabetes': ['binary_crossentropy',
                                             'binary_accuracy']}))
-
-# Run the pipeline locally
-training_pipeline.run()
-
 ```
 
+### Step 6: Select the deployment
+```python
+from zenml.core.steps.deployer.gcaip_deployer import GCAIPDeployer
+
+training_pipeline.add_deployment(
+    GCAIPDeployer(
+        project_id='project',
+        model_name='my_trained_awesome_model',
+    )
+)
+```
+
+### Step 7: Run the pipeline!
+```python
+training_pipeline.run()
+```
+
+## So what just happened?
+By refactoring all parts of the afore-mentioned Jupyter notebook into neat little steps in a ZenML pipeline, you have gone from PoC machine learning to 
+production-ready in minutes! Not only is the code, data, configuraiton and environment versioned, tracked, and catalogued for you, you can now reproduce 
+your results any time, anywhere! Feel free to run the same code on powerful machines on the cloud, distribute the preprocessing step, and deploy the model 
+straight to a cluster! This all comes for free with ZenML.
 
 ## What to do next?
 Now what would be a great time to see what ZenML has to offer with standard powerful abstractions like [Pipelines](../pipelines/what-is-a-pipeline.md), 

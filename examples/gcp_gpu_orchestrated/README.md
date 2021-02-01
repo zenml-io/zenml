@@ -1,20 +1,18 @@
-# Train easily on the cloud with one flag
+# Train on GPUs in the cloud cheaply
+You can easily run zenml training pipelines on a cloud VM instance if local compute is not enough. With this ability, it 
+is simple to run on cheap preemptible/spot instances to save costs.
 
-In ZenML, one can configure a `TrainerStep` to utilize different `TrainingBackend` for different use-cases.
-
-## Adding a training backend to a TrainerStep
-The pattern to add a training backend to the trainer step is:
+## Adding an orchestration backend to a pipeline
+The pattern to add a backend to the pipeline is:
 
 ```python
-backend = ...  # define the backend you want to use
-pipeline.add_trainer(
-    TrainerStep(...).with_backend(backend)
-)
+backend = ...  # define the orchestrator backend you want to use
+pipeline.run(backend=backend)  # you can also do this at construction time
 ```
 
-## Running on Google Cloud AI Platform
-This example utilize [Google Cloud AI Platform](https://cloud.google.com/dataflow) as the training backend to 
-run the training code using GCP cloud GPU resources.
+## Running on a pipeline a GCP Instance
+This example utilizes [Google Compute Engine](https://cloud.google.com/compute) to launch a VM on Google Cloud Platform , 
+which then runs the pipeline specified.
 
 ### Pre-requisites
 In order to run this example, you need to clone the zenml repo.
@@ -28,17 +26,13 @@ In both cases, make sure to also install the gcp extension (e.g. with pip: `pip 
 
 ```
 zenml init
-cd zenml/examples/cloud_gpu_training
+cd zenml/examples/gcp_orchestrated
 ```
 
 Also do the following:
 
 * [Enable billing](https://cloud.google.com/billing/docs/how-to/modify-project#enable_billing_for_a_project) in your Google Cloud Platform project.
-* [Make sure you have permission locally](https://cloud.google.com/dataflow/docs/concepts/access-control) to launch a Google Cloud VM.
-* Make sure you enable the following APIs:
-  * Google Cloud AI Platform
-  * Cloud SQL
-  * Cloud Storage
+* [Make sure you have permission locally](https://cloud.google.com/compute/docs/access/iam) to launch a compute instance.
 
 ### Set up env variables
 The `run.py` script utilizes certain environment variables for configuration. 
@@ -57,15 +51,15 @@ export GOOGLE_APPLICATION_CREDENTIALS=/path/to/credentials.json  # optional for 
 ```
 
 ### Create a Google Cloud Platform bucket
-GCAIP uses a Google Cloud Storage bucket as a staging location for the training job. You can create a 
-bucket in your project by using `gsutil`:
+As the instance needs access to an artifact store, the local artifact store will not work. Instead, we can create a 
+bucket and use it instead:
 
 ```bash
 gsutil mb $GCP_BUCKET
 ```
 
 ### Create Cloud SQL Instance
-The metadata store needs to be in the same GCP project as the GCP orchestrator and GCAIP Training job. An easy way to achieve 
+The metadata store needs to be in the same GCP project as the GCP orchestrator. An easy way to achieve 
 this is by simply creating a [Cloud SQL Instance](https://cloud.google.com/sql/), which is Google's managed MySQL client.
 
 ```bash
@@ -85,8 +79,7 @@ Now we're ready. Execute:
 ```bash
 python run.py
 ```
-This will launch a virtual machine in your GCP project that will run the entire pipeline. All steps will run on the VM, except the 
-`TrainerStep` that will run as a Google Cloud AI Platform job.
+This will launch a virtual machine in your GCP project that will run the entire pipeline.
 
 ### Clean up
 In order to clean up, you can delete the bucket, which also deletes the Artifact Store.
@@ -110,10 +103,11 @@ rm -r pipelines
 ```
 
 ## Caveats
-If you are using a custom Trainer, then you need to build a new Docker image based on the ZenML Trainer 
-image, and pass that into the `image` parameter in the SingleGPUTrainingGCAIPBackend. 
-Find out more in [the docs](https://docs.zenml.io/backends/using-docker.html).
-
+Unlike all `ProcessingBackend` and `TrainingBackend` cases, there is no need to create a custom image if you have 
+any custom code in your pipeline to use this `OrchestratorBackend` (at least for the one used in this example). 
+The only time you would need to use it if you use a custom dependency which is not present the standard Docker image from 
+zenml.
 
 ## Next Steps
-Create your own trainers and run your own jobs! 
+Try using other backends such as [processing backends](../gcp_dataflow_processing) for distributed preprocessing and [training backends](../gcp_gcaip_training) for 
+GPU training on the cloud.
