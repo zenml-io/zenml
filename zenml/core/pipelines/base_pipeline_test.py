@@ -19,6 +19,8 @@ import random
 from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.datasources.base_datasource import BaseDatasource
 from zenml.core.datasources.image_datasource import ImageDatasource
+from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
+    OrchestratorBaseBackend
 from zenml.core.steps.base_step import BaseStep
 from zenml.core.repo.repo import Repository
 from zenml.utils.enums import PipelineStatusTypes, GDPComponent
@@ -170,3 +172,50 @@ def test_to_from_config(equal_pipelines):
     p2 = BasePipeline.from_config(p1.to_config())
 
     assert equal_pipelines(p1, p2, loaded=True)
+
+
+def test_load_config(equal_pipelines):
+    p1 = random.choice(repo.get_pipelines())
+
+    pipeline_config = p1.load_config()
+
+    p2 = BasePipeline.from_config(pipeline_config)
+
+    assert equal_pipelines(p1, p2, loaded=True)
+
+
+def test_run_config():
+    p = BasePipeline(name="my_pipeline")
+
+    success = {"message": "Run triggered!"}
+
+    class MockBackend(OrchestratorBaseBackend):
+        def run(self, config):
+            return success
+
+    # Base Orchestrator Backend complains about lack of datasource
+    with pytest.raises(Exception):
+        p.run_config(p.to_config())
+
+    p.backend = MockBackend()
+
+    assert not p.run_config(p.to_config())
+
+
+def test_run_base(delete_config):
+    # Test of pipeline.run(), without artifact / metadata store change
+    p = BasePipeline(name="my_pipeline")
+
+    success = {"message": "Run triggered!"}
+
+    class MockBackend(OrchestratorBaseBackend):
+        def run(self, config):
+            return success
+
+    backend = MockBackend()
+
+    p.run(backend=backend)
+
+    assert p._immutable
+
+    delete_config(p.file_name)
