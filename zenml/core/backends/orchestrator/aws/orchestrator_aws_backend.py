@@ -1,3 +1,4 @@
+import os
 import time
 from typing import Text, List, Dict
 
@@ -37,9 +38,12 @@ class OrchestratorAWSBackend:
             self.security_groups = security_groups
 
         if instance_profile is None:
-            self.instance_profile = ['ZenML']
+            self.instance_profile = {'Name': 'ZenML'}
         else:
             self.instance_profile = instance_profile
+
+        self.startup = open(os.path.join(os.path.dirname(__file__),
+                                         'startup.sh'), 'r').read()
 
     @staticmethod
     def make_unique_name(name):
@@ -113,7 +117,8 @@ class OrchestratorAWSBackend:
             IamInstanceProfile=self.instance_profile,
             KeyName=self.key_name,
             MaxCount=self.max_count,
-            MinCount=self.min_count)
+            MinCount=self.min_count,
+            UserData=self.startup)
 
 
 i = OrchestratorAWSBackend()
