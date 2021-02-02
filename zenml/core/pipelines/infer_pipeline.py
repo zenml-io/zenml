@@ -147,6 +147,11 @@ class BatchInferencePipeline(BasePipeline):
             artifact_type=standard_artifacts.Model)
         model_result = model.outputs.result
 
+        TensorflowInferenceStep(
+            model_uri='',
+            labels=[],
+        )
+
         bulk_inferrer = BulkInferrer(
             examples=data.outputs.examples,
             model=model_result,

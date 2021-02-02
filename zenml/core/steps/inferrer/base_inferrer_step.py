@@ -44,3 +44,6 @@ class BaseInferrer(BaseStep):
             labels=labels,
             **kwargs,
         )
+
+    def get_destination(self):
+        return PTransform
