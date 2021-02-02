@@ -31,6 +31,7 @@ cd examples/cortex
 
 And export the required configuration variables:
 ```bash
+export CORTEX_ENV='gcp'
 export CORTEX_ENDPOINT_NAME='myawesomemodel'
 export GCP_BUCKET='gs://mybucket'  # to be used as the artifact store
 ```
@@ -40,7 +41,12 @@ In order to run this example, make sure you have the cortex cluster up.
 ```python
 cortex cluster-gcp up
 ```
-OR follow any of the steps outlined in the [Cortex docs](https://docs.cortex.dev/clusters/gcp/install).
+Then accept all the defaults, most important of which is the name of the `env`, which should be equal to the 
+`CORTEX_ENV` env variable above. This will default to `gcp`.
+
+You can also change this according to your requirements. Follow any of the steps outlined in the [Cortex docs](https://docs.cortex.dev/clusters/gcp/install).
+
+
 
 ### Run the script
 Now we're ready. Execute:
@@ -81,7 +87,9 @@ rm -r pipelines
 
 ## Caveats
 Currently, the `CortexDeployer` step only works with a local orchestrator backend. Also the `cortex` integration 
-currently does not work with the `gcp` integration.
+currently does not work with the `gcp` integration. It is also important to note that this also only works with the 
+a Google Cloud Bucket as the artifact store, because the model needs to be available to the cluster and a local artifact 
+store would not work.
 
 Let us know via [Slack](https://zenml.io/slack-invite) if you would like to see more backends!
 

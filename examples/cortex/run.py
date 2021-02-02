@@ -16,10 +16,15 @@ from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
 
 GCP_BUCKET = os.getenv('GCP_BUCKET')
 assert GCP_BUCKET
+CORTEX_ENV = os.getenv('GCP_BUCKET', 'env')
 CORTEX_ENDPOINT_NAME = os.getenv('CORTEX_ENDPOINT_NAME', 'zenml-classifier')
 
 # For this example, the ArtifactStore must be a GCP bucket, as the
 # CortexDeployer step is using the GCP env.
+
+from zenml.core.repo.repo import Repository
+
+print(Repository.get_instance().get_datasources())
 
 training_pipeline = TrainingPipeline(
     name=f'Experiment {randint(0, 10000)}',
@@ -27,8 +32,12 @@ training_pipeline = TrainingPipeline(
 )
 
 # Add a datasource. This will automatically track and version it.
-ds = CSVDatasource(name=f'My CSV Datasource {randint(0, 100000)}',
-                   path='gs://zenml_quickstart/diabetes.csv')
+try:
+    ds = CSVDatasource(name='My CSV Datasource 54664',
+                       path='gs://zenml_quickstart/diabetes.csv')
+except:
+    ds = Repository.get_instance().get_datasource_by_name(
+        'My CSV Datasource 54664')
 training_pipeline.add_datasource(ds)
 
 # Add a split
@@ -67,7 +76,7 @@ api_config = {
 }
 training_pipeline.add_deployment(
     CortexDeployer(
-        env='cortex-gcp',
+        env=CORTEX_ENV,
         api_config=api_config,
         predictor=TensorFlowPredictor,
     )
