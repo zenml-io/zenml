@@ -16,7 +16,7 @@ BASE_REQUIREMENTS = ["absl-py==0.10.0",
                      "tabulate==0.8.7",
                      "numpy==1.18.0",
                      "httplib2==0.17.0",
-                     "tfx==0.25.0",
+                     "tfx==0.26.1",
                      "fire==0.3.1",
                      "gitpython==3.1.11",
                      "analytics-python==1.2.9",
@@ -28,8 +28,8 @@ BASE_REQUIREMENTS = ["absl-py==0.10.0",
 # EXTRAS: PROVIDERS #
 #####################
 GCP_INTEGRATION = 'gcp'
-GCP_REQUIREMENTS = ["apache-beam[gcp]==2.26.0",
-                    "apache-beam==2.26.0",
+GCP_REQUIREMENTS = ["apache-beam[gcp]==2.27.0",
+                    "apache-beam==2.27.0",
                     "google-apitools==0.5.31"]
 
 AWS_INTEGRATION = 'aws'
