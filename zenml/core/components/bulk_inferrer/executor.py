@@ -33,6 +33,7 @@ from tfx.utils import proto_utils
 from tfx_bsl.public.beam import run_inference
 from tfx_bsl.public.proto import model_spec_pb2
 
+from zenml.core.components.bulk_inferrer.utils import convert_to_dict
 from zenml.core.standards.standard_keys import StepKeys
 from zenml.core.steps.inferrer.base_inferrer_step import BaseInferrer
 from zenml.utils import source_utils
@@ -53,7 +54,7 @@ def _RunInference(
     return (
             pipeline
             | 'ReadData' >> beam.io.ReadFromTFRecord(
-        file_pattern=io_utils.all_files_pattern(example_uri))
+                file_pattern=io_utils.all_files_pattern(example_uri))
             # TODO(b/131873699): Use the correct Example type here, which
             # is either Example or SequenceExample.
             | 'ParseExamples' >> beam.Map(tf.train.Example.FromString)
@@ -215,8 +216,8 @@ class Executor(base_executor.BaseExecutor):
                 # pylint: disable=no-value-for-parameter
                 data = (
                         pipeline
-                        | 'RunInference[{}]'.format(split) >> _RunInference(
-                    example_uri, inference_endpoint))
+                        | 'RunInference[{}]'.format(split) >>
+                        _RunInference(example_uri, inference_endpoint))
 
                 if output_examples:
                     output_examples_split_uri = artifact_utils.get_split_uri(
@@ -226,9 +227,11 @@ class Executor(base_executor.BaseExecutor):
                                  output_examples_split_uri)
                     _ = (
                             data
-                            | 'WriteOutput[{}]'.format(
-                        split) >> inferrer_step.get_destination())
-                    # pylint: enable=no-value-for-parameter
+                            | 'ConvertToExamples[{}]'.format(split) >>
+                            beam.Map(convert_to_dict,
+                                     output_example_spec=output_example_spec)
+                            | 'WriteOutput[{}]'.format(split) >>
+                            inferrer_step.get_destination())
 
                 data_list.append(data)
 
@@ -236,13 +239,13 @@ class Executor(base_executor.BaseExecutor):
                 _ = (
                         data_list
                         | 'FlattenInferenceResult' >> beam.Flatten(
-                    pipeline=pipeline)
+                                                        pipeline=pipeline)
                         | 'WritePredictionLogs' >> beam.io.WriteToTFRecord(
-                    os.path.join(inference_result.uri,
-                                 _PREDICTION_LOGS_FILE_NAME),
-                    file_name_suffix='.gz',
-                    coder=beam.coders.ProtoCoder(
-                        prediction_log_pb2.PredictionLog)))
+                            os.path.join(inference_result.uri,
+                                         _PREDICTION_LOGS_FILE_NAME),
+                            file_name_suffix='.gz',
+                            coder=beam.coders.ProtoCoder(
+                                    prediction_log_pb2.PredictionLog)))
 
         if output_examples:
             logging.info('Output examples written to %s.', output_examples.uri)
