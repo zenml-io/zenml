@@ -1,16 +1,39 @@
+#  Copyright (c) maiot GmbH 2021. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Orchestrator for simple AWS VM backend"""
+
 import os
 import time
-from typing import Text, List, Dict
+from typing import Text, List, Dict, Any
 
 import boto3
-from botocore.exceptions import ClientError
 
+from zenml.core.repo.repo import Repository
+from zenml.core.standards import standard_keys as keys
+from zenml.utils import path_utils
 from zenml.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+EXTRACTED_TAR_DIR_NAME = 'zenml_working'
+STAGING_AREA = 'staging'
+
 
 class OrchestratorAWSBackend:
+    """
+    Orchestrates pipeline on a AWS EC2 instance
+    """
 
     def __init__(self,
                  instance_name: Text = 'zenml',
@@ -57,58 +80,6 @@ class OrchestratorAWSBackend:
         assert len(key_pair) == 1
         return key_pair[0]
 
-    def setup_security_group(self,
-                             group_name,
-                             ssh_ingress_ip=None):
-
-        try:
-            default_vpc = list(self.ec2_resource.vpcs.filter(
-                Filters=[{'Name': 'isDefault', 'Values': ['true']}]))[0]
-            logger.info("Got default VPC %s.", default_vpc.id)
-        except ClientError:
-            logger.exception("Couldn't get VPCs.")
-            raise
-        except IndexError:
-            logger.exception("No default VPC in the list.")
-            raise
-
-        try:
-            security_group = default_vpc.create_security_group(
-                GroupName=group_name,
-                Description='demo security group')
-            logger.info(
-                "Created security group %s in VPC %s.", group_name,
-                default_vpc.id)
-        except ClientError:
-            logger.exception("Couldn't create security group %s.", group_name)
-            raise
-
-        try:
-            ip_permissions = [{
-                # HTTP ingress open to anyone
-                'IpProtocol': 'tcp', 'FromPort': 80, 'ToPort': 80,
-                'IpRanges': [{'CidrIp': '0.0.0.0/0'}]
-            }, {
-                # HTTPS ingress open to anyone
-                'IpProtocol': 'tcp', 'FromPort': 443, 'ToPort': 443,
-                'IpRanges': [{'CidrIp': '0.0.0.0/0'}]
-            }]
-            if ssh_ingress_ip is not None:
-                ip_permissions.append({
-                    # SSH ingress open to only the specified IP address
-                    'IpProtocol': 'tcp', 'FromPort': 22, 'ToPort': 22,
-                    'IpRanges': [{'CidrIp': f'{ssh_ingress_ip}/32'}]})
-            security_group.authorize_ingress(IpPermissions=ip_permissions)
-            logger.info(
-                "Set inbound rules for %s to allow all inbound HTTP and HTTPS "
-                "but only %s for SSH.", security_group.id, ssh_ingress_ip)
-        except ClientError:
-            logger.exception("Couldnt authorize inbound rules for %s.",
-                             group_name)
-            raise
-        else:
-            return security_group
-
     def create_vm_instance(self):
         return self.ec2_resource.create_instances(
             ImageId=self.image_id,
@@ -120,6 +91,28 @@ class OrchestratorAWSBackend:
             MinCount=self.min_count,
             UserData=self.startup)
 
+    def run(self, config: [Dict, Any]):
+        # Extract the paths to create the tar
+        logger.info('Orchestrating pipeline on GCP..')
+
+        repo: Repository = Repository.get_instance()
+        repo_path = repo.path
+        config_dir = repo.zenml_config.config_dir
+        tar_file_name = \
+            f'{EXTRACTED_TAR_DIR_NAME}_{str(int(time.time()))}.tar.gz'
+        path_to_tar = os.path.join(config_dir, tar_file_name)
+
+        # Create tarfile but exclude .zenml folder if exists
+        path_utils.create_tarfile(repo_path, path_to_tar)
+        logger.info(f'Created tar of current repository at: {path_to_tar}')
+
+        # Upload tar to artifact store
+        store_path = config[keys.GlobalKeys.ARTIFACT_STORE]
+        store_staging_area = os.path.join(store_path, STAGING_AREA)
+        store_path_to_tar = os.path.join(store_staging_area, tar_file_name)
+        path_utils.copy(path_to_tar, store_path_to_tar)
+        logger.info(f'Copied tar to artifact store at: {store_path_to_tar}')
+
 
 i = OrchestratorAWSBackend()
-OrchestratorAWSBackend().create_vm_instance()
+# OrchestratorAWSBackend().create_vm_instance()
