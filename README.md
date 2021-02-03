@@ -2,7 +2,6 @@
 
 <img src="https://zenml.io/assets/social/github.svg">
 
----
 
 <p align="center">
   <a href="https://zenml.io">ZenML.io</a> •
@@ -18,15 +17,18 @@
 ![GitHub](https://img.shields.io/github/license/maiot-io/zenml)
 </div>
 
----
 
-<div> Please join our
+
+<div align="center"> Join our
 <a href="https://zenml.io/slack-invite" target="_blank">
     <img width="25" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
-<b>Slack Community</b> </a> to be the first to get involved in the ZenML community
+<b>Slack Community</b> </a> join the ZenML family
+</div>
+<div align="center"> Give us a 
+    <img width="25" src="https://cdn.iconscout.com/icon/free/png-256/github-153-675523.png" alt="Slack"/>
+<b>GitHub star</b> to show your love!
 </div>
 
----
 
 ## What is ZenML?
 **ZenML** is an extensible, open-source MLOps framework for using production-ready Machine Learning pipelines - in a simple way. The key features of ZenML are:
@@ -40,16 +42,6 @@
 
 **ZenML** is built to take your experiments all the way from data versioning to a deployed model. It replaces fragile glue-code and scripts to automate Jupyter Notebooks for **production-ready Machine Learning**. The core design is centered around **extensible interfaces** to accommodate **complex pipeline** scenarios, while providing a **batteries-included, straightforward “happy path”** to achieve success in common use-cases **without unnecessary boiler-plate code**.
 
-### Contents
-
-* [Quickstart](#quickstart)
-* [Installation](#step-0-installation)
-* [ZenML Concepts](#zenml-concepts)
-* [Community](#community)
-* [Contributing](#contributing)
-* [Copyright](#copyright)
-* [Credit](#credit)
-* [Citation](#citation)
 
 
 ## Quickstart 
@@ -293,17 +285,3 @@ Any contribution made to this project will be licensed under the Apache License 
 ZenML is built on the shoulders of giants: We leverage, and would like to give credit to, existing open-source libraries like [TFX](https://github.com/tensorflow/tfx/). The goal of our framework is neither to replace these libraries, nor to diminish their usage. ZenML is simply an opinionated, higher level interface with the focus being purely on easy-of-use and coherent intuitive design.
 You can read more about why we actually started building ZenML at our [blog](https://blog.maiot.io/why-zenml/).
 
-
-## Citation
-
-If you want to cite the framework feel free to use this:
-
-```
-@article{maiotzenml,
-  title={ZenML},
-  author={maiot, Munich},
-  journal={GitHub. Note: https://github.com/maiot-io/zenml},
-  volume={1},
-  year={2020}
-}
-```
