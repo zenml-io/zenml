@@ -128,6 +128,12 @@ Once code is organized into a ZenML pipeline, you can supercharge your ML develo
 
 ### Work locally but switch seamlessly to the cloud
 
+### Versioning galore
+Code is versioned 
+Data is versioned
+Models are versioned
+Configurations are versioned
+
 ### Automatically detect schema
 ```python
 # See schema of data
@@ -161,6 +167,9 @@ You can also run these pipelines on a cloud VM, for example on a Google Cloud Pl
 ### Train on spot instances
 
 
+The best part is that ZenML is extensible easily, and can be molded to your use-case. You can create your own custom logic or create a PR 
+and contribute to the ZenML community, so that everyone can benefit.
+
 ## Community
 Our community is the backbone of making ZenML a success! We are currently actively maintaining two main channels for community discussions:
 
@@ -178,4 +187,3 @@ Any contribution made to this project will be licensed under the Apache License 
 ## Credit
 ZenML is built on the shoulders of giants: We leverage, and would like to give credit to, existing open-source libraries like [TFX](https://github.com/tensorflow/tfx/). The goal of our framework is neither to replace these libraries, nor to diminish their usage. ZenML is simply an opinionated, higher level interface with the focus being purely on easy-of-use and coherent intuitive design.
 You can read more about why we actually started building ZenML at our [blog](https://blog.maiot.io/why-zenml/).
-
