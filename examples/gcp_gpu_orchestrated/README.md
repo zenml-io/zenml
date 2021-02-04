@@ -1,5 +1,5 @@
-# Run pipelines on the cloud cheaply
-You can easily run zenml pipelines on a cloud VM instance if local compute is not enough. With this ability, it 
+# Train on GPUs in the cloud cheaply
+You can easily run zenml training pipelines on a cloud VM instance if local compute is not enough. With this ability, it 
 is simple to run on cheap preemptible/spot instances to save costs.
 
 ## Adding an orchestration backend to a pipeline

@@ -6,10 +6,11 @@ Here you can find a list with brief descriptions for each example:
 
 - **gan**: Tutorial on how to create and train a GAN model with a custom `TrainerStep` and `PreprocessorStep`.
 - **gcp_dataflow_processing**: Showcases distributed preprocessing wth [Dataflow](https://cloud.google.com/dataflow) as the processing backend.
-- **gcp_gcaip_training**: Deploying a classifier with [Google Cloud AI Platform](https://cloud.google.com/ai-platform).
-- **gcp_gpu_training**: Training a classifier on a GPU with [Google Cloud AI Platform](https://cloud.google.com/ai-platform) as the training backend.
+- **gcp_gcaip_deployment**: Deploying a classifier with [Google Cloud AI Platform](https://cloud.google.com/ai-platform).
+- **gcp_gcaip_training**: Training a classifier with [Google Cloud AI Platform](https://cloud.google.com/ai-platform).
+- **gcp_gpu_orchestrated**: Training a classifier on an (optionally preemtible) cuda-enabled Google Cloud Platform virtual machine.
+- **gcp_kubernetes_orchestrated**: Launches a kubernetes job on a kubernetes cluster.
 - **gcp_orchestrated**: Runs pipeline on an (optionally preemtible) virtual machine on `Google Cloud Platform` as the orchestration backend.
-- **kubernetes_orchestrated**: Launches a kubernetes job on a kubernetes cluster.
 - **pytorch**: Showcases PyTorch support.
 - **quickstart**: The official quickstart tutorial.
 
