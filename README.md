@@ -27,7 +27,6 @@
 <b>GitHub star</b> to show your love!
 </div>
 
-
 ## Why?
 ZenML is built for ML practitioners who are ramping up their ML workflows towards production. We built ZenML because we could not find an easy framework that translates the patterns observed in the research phase with Jupyter notebooks into a production-ready ML enviornment. Here is what's hard to replicate in production:
 
@@ -140,11 +139,13 @@ Configurations are versioned
 training_pipeline.view_schema()
 ```
 
-### View statistics of data and training splits
+### View statistics
 ```python
 # See statistics of train and eval
 training_pipeline.view_statistics()
 ```
+![ZenML statistics visualization](docs/zenml_statistics.gif)
+
 ### Evaluate the model using built-in evaluators
 ```python
 # Creates a notebook for evaluation
@@ -153,6 +154,7 @@ training_pipeline.evaluate()
 
 ### Compare training pipelines
 ```python
+repo.compare_training_pipelines()
 ```
 
 ### Deploy models automatically
@@ -165,7 +167,7 @@ for example Google Dataflow for [distributed preprocessing](https://docs.zenml.i
 You can also run these pipelines on a cloud VM, for example on a Google Cloud Platform VM, [with a few more lines of code](https://docs.zenml.io/tutorials/running-a-pipeline-on-a-google-cloud-vm).
 
 ### Train on spot instances
-
+Train on spot instances
 
 The best part is that ZenML is extensible easily, and can be molded to your use-case. You can create your own custom logic or create a PR 
 and contribute to the ZenML community, so that everyone can benefit.
