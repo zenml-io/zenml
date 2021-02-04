@@ -28,6 +28,10 @@ logger = get_logger(__name__)
 
 EXTRACTED_TAR_DIR_NAME = 'zenml_working'
 STAGING_AREA = 'staging'
+AWS_ACCESS_KEY_ID = 'aws_access_key_id'
+AWS_SECRET_ACCESS_KEY = 'aws_secret_access_key'
+AWS_REGION = 'aws_region'
+TAR_PATH_ARG = 'tar_path'
 
 
 class OrchestratorAWSBackend:
@@ -45,8 +49,15 @@ class OrchestratorAWSBackend:
                  security_groups: List = None,
                  instance_profile: Dict = None):
 
-        self.ec2_resource = boto3.resource('ec2')
-        self.ec2_client = boto3.client('ec2')
+        # Small workaround for the permission problem
+        session = boto3.Session()
+        credentials = session.get_credentials()
+        os.environ[AWS_ACCESS_KEY_ID] = credentials.access_key
+        os.environ[AWS_SECRET_ACCESS_KEY] = credentials.secret_key
+        os.environ[AWS_REGION] = session.region_name
+
+        self.ec2_client = session.client('ec2')
+        self.ec2_resource = session.resource('ec2')
 
         self.instance_name = instance_name
         self.instance_type = instance_type
@@ -112,6 +123,17 @@ class OrchestratorAWSBackend:
         store_path_to_tar = os.path.join(store_staging_area, tar_file_name)
         path_utils.copy(path_to_tar, store_path_to_tar)
         logger.info(f'Copied tar to artifact store at: {store_path_to_tar}')
+
+        # Remove tar
+        path_utils.rm_dir(path_to_tar)
+        logger.info(f'Removed tar at: {path_to_tar}')
+
+        # Append path of tar in config orchestrator utils
+        config[keys.GlobalKeys.BACKEND][keys.BackendKeys.ARGS][
+            TAR_PATH_ARG] = store_path_to_tar
+
+        # Launch the instance
+        self.launch_instance(config)
 
 
 i = OrchestratorAWSBackend()
