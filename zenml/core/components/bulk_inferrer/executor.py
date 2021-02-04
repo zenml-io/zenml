@@ -22,7 +22,6 @@ import tensorflow as tf
 from absl import logging
 from tensorflow_serving.apis import prediction_log_pb2
 from tfx import types
-from tfx.components.bulk_inferrer import prediction_to_example_utils
 from tfx.components.util import model_utils
 from tfx.dsl.components.base import base_executor
 from tfx.proto import bulk_inferrer_pb2
@@ -61,25 +60,8 @@ def _RunInference(
             | 'RunInference' >> run_inference.RunInference(inference_endpoint))
 
 
-@beam.ptransform_fn
-@beam.typehints.with_input_types(prediction_log_pb2.PredictionLog)
-@beam.typehints.with_output_types(beam.pvalue.PDone)
-def _WriteExamples(prediction_log: beam.pvalue.PCollection,
-                   output_example_spec: bulk_inferrer_pb2.OutputExampleSpec,
-                   output_path: Text) -> beam.pvalue.PDone:
-    """Converts `prediction_log` to `tf.train.Example` and materializes."""
-    return (prediction_log
-            | 'ConvertToExamples' >> beam.Map(
-                prediction_to_example_utils.convert,
-                output_example_spec=output_example_spec)
-            | 'WriteExamples' >> beam.io.WriteToTFRecord(
-                os.path.join(output_path, _EXAMPLES_FILE_NAME),
-                file_name_suffix='.gz',
-                coder=beam.coders.ProtoCoder(tf.train.Example)))
-
-
 class Executor(base_executor.BaseExecutor):
-    """TFX bulk inferer executor."""
+    """TFX bulk inferrer executor."""
 
     def Do(self, input_dict: Dict[Text, List[types.Artifact]],
            output_dict: Dict[Text, List[types.Artifact]],
@@ -227,9 +209,8 @@ class Executor(base_executor.BaseExecutor):
                                  output_examples_split_uri)
                     _ = (
                             data
-                            | 'ConvertToExamples[{}]'.format(split) >>
-                            beam.Map(convert_to_dict,
-                                     output_example_spec=output_example_spec)
+                            | 'ConvertToDict[{}]'.format(split) >>
+                            beam.Map(convert_to_dict, output_example_spec)
                             | 'WriteOutput[{}]'.format(split) >>
                             inferrer_step.get_destination())
 
