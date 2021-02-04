@@ -1,4 +1,4 @@
-#  Copyright (c) maiot GmbH 2020. All Rights Reserved.
+#  Copyright (c) maiot GmbH 2021. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -14,21 +14,24 @@
 
 from typing import Text, List
 
-from zenml.core.steps.base_step import BaseStep
-from zenml.core.steps.data.base_data_step import identity_ptransform
+from zenml.core.steps.inferrer.base_inferrer_step import BaseInferrer
+import apache_beam as beam
 
 
-class BaseInferrer(BaseStep):
+class FileWriterInferrer(BaseInferrer):
     """
-    Base inferrer class. This step is responsible for inference (batch).
+    File Writer Inferrer step, writing inference results to a text file.
     """
 
     def __init__(self,
                  model_uri: Text,
                  labels: List[Text],
+                 output_path: Text,
+                 output_ext: Text = ".csv",
+                 num_shards: int = 0,
                  **kwargs):
         """
-        Base Inferrer constructor.
+        Base Tensorflow Inferrer constructor.
 
         Args:
             name: Outward-facing name of the pipeline.
@@ -40,11 +43,19 @@ class BaseInferrer(BaseStep):
             raise AssertionError('model_uri cannot be None.')
         self.model_uri = model_uri
         self.labels = labels
-        super(BaseInferrer, self).__init__(
+        self.output_path = output_path
+        self.output_ext = output_ext
+        self.num_shards = num_shards
+
+        super(FileWriterInferrer, self).__init__(
             model_uri=model_uri,
             labels=labels,
             **kwargs,
         )
 
     def get_destination(self):
-        return identity_ptransform()
+        return beam.io.WriteToText(self.output_path,
+                                   file_name_suffix=self.output_ext,
+                                   append_trailing_newlines=True,
+                                   num_shards=self.num_shards,
+                                   )
