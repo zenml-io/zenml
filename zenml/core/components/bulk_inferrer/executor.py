@@ -60,7 +60,7 @@ def _RunInference(
             | 'RunInference' >> run_inference.RunInference(inference_endpoint))
 
 
-class Executor(base_executor.BaseExecutor):
+class BulkInferrerExecutor(base_executor.BaseExecutor):
     """TFX bulk inferrer executor."""
 
     def Do(self, input_dict: Dict[Text, List[types.Artifact]],
