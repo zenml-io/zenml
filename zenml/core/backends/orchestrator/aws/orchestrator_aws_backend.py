@@ -108,7 +108,7 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
 
     def run(self, config: [Dict, Any]):
         # Extract the paths to create the tar
-        logger.info('Orchestrating pipeline on GCP..')
+        logger.info('Orchestrating pipeline on AWS..')
 
         repo: Repository = Repository.get_instance()
         repo_path = repo.path
