@@ -19,6 +19,9 @@ from typing import Text, List, Dict, Any
 
 import boto3
 
+from zenml.core.backends.orchestrator.aws import startup_utils
+from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
+    OrchestratorBaseBackend
 from zenml.core.repo.repo import Repository
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils
@@ -34,7 +37,7 @@ AWS_REGION = 'aws_region'
 TAR_PATH_ARG = 'tar_path'
 
 
-class OrchestratorAWSBackend:
+class OrchestratorAWSBackend(OrchestratorBaseBackend):
     """
     Orchestrates pipeline on a AWS EC2 instance
     """
@@ -42,7 +45,7 @@ class OrchestratorAWSBackend:
     def __init__(self,
                  instance_name: Text = 'zenml',
                  instance_type: Text = 't2.micro',
-                 image_id: Text = 'ami-001ec343bb21e7e59',
+                 image_id: Text = 'ami-0a6dc7529cd559185',
                  key_name: Text = 'baris',
                  min_count: int = 1,
                  max_count: int = 1,
@@ -76,22 +79,23 @@ class OrchestratorAWSBackend:
         else:
             self.instance_profile = instance_profile
 
-        self.startup = open(os.path.join(os.path.dirname(__file__),
-                                         'startup.sh'), 'r').read()
+        super(OrchestratorBaseBackend, self).__init__(
+            instance_name=self.instance_name,
+            instance_type=self.instance_type,
+            image_id=self.image_id,
+            key_name=self.key_name,
+            min_count=self.min_count,
+            max_count=self.max_count,
+            security_groups=self.security_groups,
+            instance_profile=self.instance_profile,
+        )
 
     @staticmethod
     def make_unique_name(name):
         return f'{name}-{time.asctime()}'
 
-    def get_key_pair_by_name(self,
-                             name):
-        key_pairs = self.ec2_client.describe_key_pairs()
-        key_pair = [kp for kp in key_pairs['KeyPairs'] if
-                    kp['KeyName'] == name]
-        assert len(key_pair) == 1
-        return key_pair[0]
-
-    def create_vm_instance(self):
+    def launch_instance(self, config):
+        startup = startup_utils.get_startup_script(config)
         return self.ec2_resource.create_instances(
             ImageId=self.image_id,
             InstanceType=self.instance_type,
@@ -100,7 +104,7 @@ class OrchestratorAWSBackend:
             KeyName=self.key_name,
             MaxCount=self.max_count,
             MinCount=self.min_count,
-            UserData=self.startup)
+            UserData=startup)
 
     def run(self, config: [Dict, Any]):
         # Extract the paths to create the tar
@@ -135,6 +139,3 @@ class OrchestratorAWSBackend:
         # Launch the instance
         self.launch_instance(config)
 
-
-i = OrchestratorAWSBackend()
-# OrchestratorAWSBackend().create_vm_instance()
