@@ -31,11 +31,11 @@ logger = get_logger(__name__)
 
 EXTRACTED_TAR_DIR_NAME = 'zenml_working'
 STAGING_AREA = 'staging'
-AWS_ACCESS_KEY_ID = 'aws_access_key_id'
-AWS_SECRET_ACCESS_KEY = 'aws_secret_access_key'
-AWS_REGION = 'aws_region'
 TAR_PATH_ARG = 'tar_path'
 
+AWS_ACCESS_KEY_ID = 'AWS_ACCESS_KEY_ID'
+AWS_SECRET_ACCESS_KEY = 'AWS_SECRET_ACCESS_KEY'
+AWS_REGION = 'AWS_REGION'
 
 class OrchestratorAWSBackend(OrchestratorBaseBackend):
     """
