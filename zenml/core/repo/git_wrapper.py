@@ -122,12 +122,13 @@ class GitWrapper:
                 continue
 
             if path_utils.is_dir(os.path.join(mod_abs_dir, file_path)):
-                raise Exception(
+                logger.warning(
                     f'The step {source_path} is contained inside a module '
                     f'that '
                     f'has sub-directories (the sub-directory {file_path} at '
                     f'{mod_abs_dir}). For now, ZenML supports only a flat '
-                    f'directory structure in which to place Steps')
+                    f'directory structure in which to place Steps. Please make'
+                    f' sure that the Step does not utilize the sub-directory.')
             if not self.check_file_committed(path):
                 return False
         return True

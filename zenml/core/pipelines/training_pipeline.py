@@ -35,7 +35,6 @@ from zenml.core.components.split_gen.component import SplitGen
 from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.standards import standard_keys as keys
 from zenml.core.steps.deployer.base_deployer import BaseDeployerStep
-from zenml.core.steps.deployer.gcaip_deployer import GCAIPDeployer
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
 from zenml.core.steps.preprocesser.base_preprocesser import \
     BasePreprocesserStep
@@ -350,6 +349,12 @@ class TrainingPipeline(BasePipeline):
             if step_name not in self.steps_dict.keys():
                 raise AssertionError(f'Mandatory step {step_name} not added.')
         return True
+
+    def get_model_uri(self):
+        """Gets model artifact."""
+        uris = self.get_artifacts_uri_by_component(
+            GDPComponent.Trainer.name, False)
+        return uris[0]
 
     def get_hyperparameters(self) -> Dict:
         """

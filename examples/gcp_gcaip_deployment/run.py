@@ -71,3 +71,16 @@ training_pipeline.add_deployment(
 
 # Run the pipeline
 training_pipeline.run()
+
+# Another way to do is is to create a DeploymentPipeline.
+# Uncomment to create the model via this pipeline
+# from zenml.core.pipelines.deploy_pipeline import DeploymentPipeline
+# model_uri = training_pipeline.get_model_uri()
+# deploy_pipeline = DeploymentPipeline(model_uri=model_uri)
+# deploy_pipeline.add_deployment(
+#     GCAIPDeployer(
+#         model_name=MODEL_NAME + '_v2',
+#         project_id=GCP_PROJECT
+#     )
+# )
+# deploy_pipeline.run()
