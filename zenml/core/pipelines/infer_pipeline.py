@@ -144,17 +144,15 @@ class BatchInferencePipeline(BasePipeline):
             instance_name=GDPComponent.Trainer.name,
             source_uri=self.model_uri,
             artifact_type=standard_artifacts.Model)
+
         model_result = model.outputs.result
 
         infer_cfg = config[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.STEPS][
             keys.InferSteps.INFER]
 
         bulk_inferrer = BulkInferrer(
-            name="my_inferrer",
             source=infer_cfg[StepKeys.SOURCE],
             source_args=infer_cfg[StepKeys.ARGS],
-            # TODO [HIGH]: Where do the labels come from?
-            labels=[],
             model=model_result,
             examples=data.outputs.examples,
             instance_name=GDPComponent.Inferrer.name)
