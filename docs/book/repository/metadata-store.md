@@ -19,11 +19,11 @@ The Metadata Store can be simply configured to use any MySQL server \(=&gt;5.6\)
 
 ```text
 zenml config metadata set mysql \
-    --host 127.0.0.1 \ 
-    --port 3306 \
-    --username USER \
-    --passwd PASSWD \
-    --database DATABASE
+    --host="127.0.0.1" \ 
+    --port="3306" \
+    --username="USER" \
+    --password="PASSWD" \
+    --database="DATABASE"
 ```
 
 One particular configuration our team is very fond of internally leverages Google Cloud SQL and the docker-based cloudsql proxy to track experiments across team members and environments. Stay tuned for a tutorial on that!

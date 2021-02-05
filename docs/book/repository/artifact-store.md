@@ -25,6 +25,6 @@ Many experiments and many ZenML integrations require a remote Artifact Store to 
 Configuring a remote Artifact Store for ZenML is a one-liner using the CLI:
 
 ```text
-zenml config artifacts set gs://your-bucket/sub/dir
+zenml config artifacts set "gs://your-bucket/sub/dir"
 ```
 
