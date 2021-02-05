@@ -16,7 +16,7 @@ BASE_REQUIREMENTS = ["absl-py==0.10.0",
                      "tabulate==0.8.7",
                      "numpy==1.18.0",
                      "httplib2==0.17.0",
-                     "tfx==0.25.0",
+                     "tfx==0.26.1",
                      "fire==0.3.1",
                      "gitpython==3.1.11",
                      "analytics-python==1.2.9",
@@ -28,8 +28,8 @@ BASE_REQUIREMENTS = ["absl-py==0.10.0",
 # EXTRAS: PROVIDERS #
 #####################
 GCP_INTEGRATION = 'gcp'
-GCP_REQUIREMENTS = ["apache-beam[gcp]==2.26.0",
-                    "apache-beam==2.26.0",
+GCP_REQUIREMENTS = ["apache-beam[gcp]==2.27.0",
+                    "apache-beam==2.27.0",
                     "google-apitools==0.5.31"]
 
 AWS_INTEGRATION = 'aws'
@@ -44,6 +44,8 @@ AZURE_REQUIREMENTS = []
 PYTORCH_INTEGRATION = 'pytorch'
 PYTORCH_REQUIREMENTS = ['torch==1.7.0']
 
+CORTEX_INTEGRATION = 'cortex'
+CORTEX_REQUIREMENTS = ['cortex==0.27.0']
 ###############
 # EXTRAS: ALL #
 ###############
@@ -52,12 +54,14 @@ ALL_REQUIREMENTS = BASE_REQUIREMENTS + \
                    GCP_REQUIREMENTS + \
                    PYTORCH_REQUIREMENTS + \
                    AZURE_REQUIREMENTS + \
-                   AWS_REQUIREMENTS
+                   AWS_REQUIREMENTS + \
+                   CORTEX_REQUIREMENTS
 
 EXTRAS_REQUIRE = {GCP_INTEGRATION: GCP_REQUIREMENTS,
                   AWS_INTEGRATION: AWS_REQUIREMENTS,
                   # AZURE_INTEGRATION: AZURE_REQUIREMENTS,
                   PYTORCH_INTEGRATION: PYTORCH_REQUIREMENTS,
+                  CORTEX_INTEGRATION: CORTEX_REQUIREMENTS,
                   ALL_INTEGRATION: ALL_REQUIREMENTS}
 
 

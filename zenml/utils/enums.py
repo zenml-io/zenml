@@ -64,6 +64,7 @@ class StepTypes(Enum):
     trainer = 6
     evaluator = 7
     deployer = 8
+    inferrer = 9
 
 
 class GCPGPUTypes(Enum):

@@ -18,8 +18,8 @@ import tarfile
 from pathlib import Path
 from typing import Text, Callable
 
-from tfx.utils.io_utils import file_io, _REMOTE_FS_PREFIX, \
-    load_csv_column_names
+from tensorflow.python.lib.io import file_io
+from tfx.utils.io_utils import _REMOTE_FS_PREFIX, load_csv_column_names
 
 
 # TODO: [TFX] [LOW] Unnecessary dependency here

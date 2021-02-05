@@ -154,9 +154,8 @@ The config above can be split into 5 distinct keys:
 * `backend`: The orchestrator [backend](../backends/what-is-a-backend.md) for the pipeline.
 * `metadata`: The metadata store config to store information of pipeline runs.
 * `pipeline`: A global key that contains information regarding the pipeline run itself:
-  * `name`: The name of the pipeline.
-  * `type`: The type of the pipeline.
-  * `enable_cache`: If false, does not re-use artifacts from previous runs for caching.
+  * `source`: Path to pipeline code source code.
+  * `args`: Individual args of the pipeline like `name` etc.
   * `datasource`: Details of the [datasource](../datasources/what-is-a-datasource.md) used in the pipeline. 
   * `steps:`: Details of each [step](../steps/what-is-a-step.md) used in the pipeline.
     

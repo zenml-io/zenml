@@ -12,22 +12,27 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.core.standards.standard_keys import StepKeys
-from zenml.utils.source_utils import load_source_path_class
+from typing import Text, List
+
+from zenml.core.steps.inferrer.base_inferrer_step import BaseInferrer
 
 
-def run_fn(fn_args):
-    fn_args_dict = fn_args.__dict__
-    custom_config = fn_args_dict.pop('custom_config')
-    c = load_source_path_class(custom_config.pop(StepKeys.SOURCE))
+class TensorflowInferrer(BaseInferrer):
+    """
+    Tensorflow Inferrer.
+    """
 
-    # Pop unnecessary args
-    args = custom_config.pop(StepKeys.ARGS)
+    def __init__(self,
+                 labels: List[Text],
+                 **kwargs):
+        """
+        Base Tensorflow Inferrer constructor.
 
-    # TODO: [LOW] Hard-coded
-    fn_args_dict.pop('data_accessor')
-
-    # We update users args first, because fn_args might have overlaps
-    args.update(fn_args_dict)
-
-    return c(**args).get_run_fn()()
+        Args:
+            labels: Outward-facing name of the pipeline.
+        """
+        self.labels = labels
+        super(TensorflowInferrer, self).__init__(
+            labels=labels,
+            **kwargs,
+        )

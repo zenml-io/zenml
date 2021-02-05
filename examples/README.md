@@ -4,6 +4,7 @@ This `example` folder is dedicated to provide our users with some practical exam
 
 Here you can find a list with brief descriptions for each example:
 
+- **batch_inference**: Run a offline batch inference job.
 - **gan**: Tutorial on how to create and train a GAN model with a custom `TrainerStep` and `PreprocessorStep`.
 - **gcp_dataflow_processing**: Showcases distributed preprocessing wth [Dataflow](https://cloud.google.com/dataflow) as the processing backend.
 - **gcp_gcaip_deployment**: Deploying a classifier with [Google Cloud AI Platform](https://cloud.google.com/ai-platform).

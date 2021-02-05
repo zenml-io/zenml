@@ -68,11 +68,16 @@ class GlobalKeys(ConfigKeys):
 
 
 class PipelineKeys(ConfigKeys):
-    NAME = 'name'
-    TYPE = 'type'
+    ARGS = 'args'
     SOURCE = 'source'
     STEPS = 'steps'
     DATASOURCE = 'datasource'
+    ENABLE_CACHE = 'enable_cache'
+
+
+class PipelineDetailKeys(ConfigKeys):
+    NAME = 'name'
+    TYPE = 'type'
     ENABLE_CACHE = 'enable_cache'
 
 
