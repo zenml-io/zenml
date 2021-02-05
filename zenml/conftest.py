@@ -102,12 +102,8 @@ def delete_config():
         repo: Repository = Repository.get_instance()
         repo.zenml_config.set_pipelines_dir(pipeline_root)
 
-        try:
-            cfg = os.path.join(pipeline_root, filename)
-            os.remove(cfg)
-        except Exception as e:
-            print(e)
-            pass
+        cfg = os.path.join(pipeline_root, filename)
+        yaml_utils.remove(cfg)
 
     return wrapper
 
