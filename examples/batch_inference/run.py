@@ -10,6 +10,7 @@ from zenml.core.steps.split.random_split import RandomSplit
 from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
     FeedForwardTrainer
 from zenml.utils.exceptions import AlreadyExistsException
+from zenml.core.steps.inferrer.tensorflow_inferrer_step import TensorflowInferrer
 
 # Define the training pipeline
 training_pipeline = TrainingPipeline()
@@ -56,9 +57,14 @@ training_pipeline.run()
 
 # Run inference
 model_uri = training_pipeline.get_model_uri()
-infer_pipeline = BatchInferencePipeline(model_uri=model_uri,
-                                        labels=['has_diabetes'])
+infer_pipeline = BatchInferencePipeline(
+    model_uri=model_uri,
+)
 infer_pipeline.add_datasource(ds)
+infer_pipeline.add_infer_step(
+    TensorflowInferrer(
+        labels=['has_diabetes'])
+)
 infer_pipeline.run()
 df = infer_pipeline.get_predictions()
 print(df.head())

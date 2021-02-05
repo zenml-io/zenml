@@ -52,7 +52,6 @@ class BatchInferencePipeline(BasePipeline):
 
     def __init__(self,
                  model_uri: Text,
-                 labels: List[Text],
                  name: Text = None,
                  enable_cache: Optional[bool] = True,
                  steps_dict: Dict[Text, BaseStep] = None,
@@ -85,7 +84,6 @@ class BatchInferencePipeline(BasePipeline):
         if model_uri is None:
             raise AssertionError('model_uri cannot be None.')
         self.model_uri = model_uri
-        self.labels = labels
         super(BatchInferencePipeline, self).__init__(
             name=name,
             enable_cache=enable_cache,
@@ -96,7 +94,6 @@ class BatchInferencePipeline(BasePipeline):
             datasource=datasource,
             pipeline_name=pipeline_name,
             model_uri=model_uri,
-            labels=labels
         )
 
     def get_tfx_component_list(self, config: Dict[Text, Any]) -> List:
@@ -117,7 +114,7 @@ class BatchInferencePipeline(BasePipeline):
 
         data_config = \
             config[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.STEPS][
-                keys.DataSteps.DATA]
+                keys.InferSteps.DATA]
         data = DataGen(
             name=self.datasource.name,
             source=data_config[StepKeys.SOURCE],
@@ -174,7 +171,7 @@ class BatchInferencePipeline(BasePipeline):
         self.steps_dict[keys.InferSteps.INFER] = infer_step
 
     def steps_completed(self) -> bool:
-        mandatory_steps = [keys.DataSteps.DATA]
+        mandatory_steps = [keys.InferSteps.DATA, keys.InferSteps.INFER]
         for step_name in mandatory_steps:
             if step_name not in self.steps_dict.keys():
                 raise AssertionError(

@@ -42,8 +42,8 @@ def convert_to_dict(prediction_log: prediction_log_pb2.PredictionLog,
     """
     tf_example = convert(prediction_log=prediction_log,
                          output_example_spec=output_example_spec)
-
-    return to_dict(example=tf_example)
+    return tf_example
+    # return to_dict(example=tf_example)
 
 
 def to_dict(example: tf.train.Example) -> Dict[Text, Any]:
@@ -59,7 +59,7 @@ def to_dict(example: tf.train.Example) -> Dict[Text, Any]:
             # value list is found
             if value_list:
                 data = value_list.value
-                if len(data) >= 1:
+                if len(data) < 1:
                     output_dict[f] = data
                 else:
                     output_dict[f] = data[0]
