@@ -175,7 +175,7 @@ class BasePipeline:
         Args:
             pipeline_name (str): simple string name.
         """
-        return pipeline_name.split('_')[1]
+        return "_".join(pipeline_name.split('_')[1:-1])
 
     @classmethod
     def from_config(cls, config: Dict):

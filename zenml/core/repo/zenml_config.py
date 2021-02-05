@@ -143,22 +143,22 @@ class ZenMLConfig:
         # Write initial config
         yaml_utils.write_yaml(config_path, config_dict)
 
-    def from_config(self, config_path: Dict):
+    def from_config(self, config_dict: Dict):
         """
         Sets metadata and artifact_store variables
 
         Args:
-            config_path (str): Path to a .zenml config.
+            config_dict (dict): .zenml config object in dict format.
         """
-        assert METADATA_KEY in config_path
-        assert ARTIFACT_STORE_KEY in config_path
-        assert PIPELINES_DIR_KEY in config_path
+        assert METADATA_KEY in config_dict
+        assert ARTIFACT_STORE_KEY in config_dict
+        assert PIPELINES_DIR_KEY in config_dict
 
-        self.artifact_store = ArtifactStore(config_path[ARTIFACT_STORE_KEY])
+        self.artifact_store = ArtifactStore(config_dict[ARTIFACT_STORE_KEY])
         self.metadata_store = ZenMLMetadataStore.from_config(
-            config=config_path[METADATA_KEY]
+            config=config_dict[METADATA_KEY]
         )
-        self.pipelines_dir = config_path[PIPELINES_DIR_KEY]
+        self.pipelines_dir = config_dict[PIPELINES_DIR_KEY]
 
     def get_metadata_store(self) -> ZenMLMetadataStore:
         """Get metadata store from config."""

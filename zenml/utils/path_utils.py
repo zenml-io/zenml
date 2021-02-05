@@ -199,6 +199,18 @@ def rm_dir(dir_path: Text):
     file_io.delete_recursively_v2(dir_path)
 
 
+def rm_file(file_path: Text):
+    """
+    Deletes file. Dangerous operation.
+
+    Args:
+        file_path (str): Path of file to delete.
+    """
+    if not file_exists(file_path):
+        raise Exception(f'{file_path} does not exist!')
+    return file_io.delete_file_v2(file_path)
+
+
 def read_file_contents(file_path: Text):
     """
     Reads contents of file.
