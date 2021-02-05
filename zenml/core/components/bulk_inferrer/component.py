@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Text, Dict, Any, Optional, List
+from typing import Text, Dict, Any, Optional
 
 from tfx.dsl.components.base.base_component import BaseComponent
 from tfx.dsl.components.base.executor_spec import ExecutorClassSpec
@@ -21,21 +21,15 @@ from tfx.types.component_spec import ComponentSpec, ExecutionParameter, \
     ChannelParameter
 
 from zenml.core.components.bulk_inferrer.executor import BulkInferrerExecutor
+from zenml.core.components.bulk_inferrer.constants import MODEL, EXAMPLES, \
+    MODEL_BLESSING, PREDICTIONS
 from zenml.core.standards.standard_keys import StepKeys
-
-LABELS = "labels"
-MODEL = "model"
-EXAMPLES = "examples"
-PREDICTIONS = "predictions"
-MODEL_BLESSING = "model_blessing"
 
 
 class BulkInferrerSpec(ComponentSpec):
     PARAMETERS = {
-        StepKeys.NAME: ExecutionParameter(type=Text),
         StepKeys.SOURCE: ExecutionParameter(type=Text),
         StepKeys.ARGS: ExecutionParameter(type=Dict[Text, Any]),
-        LABELS: ExecutionParameter(type=List[Text])
     }
     INPUTS = {
         MODEL: ChannelParameter(type=standard_artifacts.Model, optional=True),
@@ -54,10 +48,8 @@ class BulkInferrer(BaseComponent):
     EXECUTOR_SPEC = ExecutorClassSpec(BulkInferrerExecutor)
 
     def __init__(self,
-                 name: Text,
                  source: Text,
                  source_args: Dict[Text, Any],
-                 labels: List[Text],
                  model: Optional[ChannelParameter] = None,
                  model_blessing: Optional[ChannelParameter] = None,
                  instance_name: Optional[Text] = None,
@@ -69,20 +61,20 @@ class BulkInferrer(BaseComponent):
         versioning data for now.
 
         Args:
-            name: name of datasource.
             source:
             source_args:
+            model:
+            model_blessing:
             instance_name:
             examples:
+            predictions:
         """
         examples = examples or Channel(type=standard_artifacts.Examples)
         predictions = predictions or Channel(type=standard_artifacts.Examples)
 
         # Initiate the spec and create instance
-        spec = self.SPEC_CLASS(name=name,
-                               source=source,
+        spec = self.SPEC_CLASS(source=source,
                                args=source_args,
-                               labels=labels,
                                model=model,
                                model_blessing=model_blessing,
                                examples=examples,

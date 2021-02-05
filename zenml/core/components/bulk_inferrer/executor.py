@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""TFX bulk_inferrer executor."""
+"""ZenML bulk inferrer executor."""
 
 from typing import Any, Dict, List, Text
 from typing import Optional
@@ -25,16 +25,14 @@ from tfx.proto import bulk_inferrer_pb2
 from tfx.types import artifact_utils
 from tfx.utils import path_utils
 from tfx_bsl.public.proto import model_spec_pb2
-# pylint: disable=protected-access
 from tfx.components.bulk_inferrer.executor import _RunInference
 
 from zenml.core.components.bulk_inferrer.utils import convert_to_dict
+from zenml.core.components.bulk_inferrer.constants import MODEL, EXAMPLES, \
+    MODEL_BLESSING, PREDICTIONS
 from zenml.core.standards.standard_keys import StepKeys
 from zenml.core.steps.inferrer.base_inferrer_step import BaseInferrer
 from zenml.utils import source_utils
-
-_PREDICTION_LOGS_FILE_NAME = 'prediction_logs'
-_EXAMPLES_FILE_NAME = 'examples'
 
 
 class BulkInferrerExecutor(base_executor.BaseExecutor):
@@ -67,14 +65,14 @@ class BulkInferrerExecutor(base_executor.BaseExecutor):
         inferrer_step: BaseInferrer = c(**args)
 
         output_examples = artifact_utils.get_single_instance(
-            output_dict['predictions'])
+            output_dict[PREDICTIONS])
 
-        if 'examples' not in input_dict:
+        if EXAMPLES not in input_dict:
             raise ValueError('\'examples\' is missing in input dict.')
-        if 'model' not in input_dict:
+        if MODEL not in input_dict:
             raise ValueError('Input models are not valid, model '
                              'need to be specified.')
-        if 'model_blessing' in input_dict:
+        if MODEL_BLESSING in input_dict:
             model_blessing = artifact_utils.get_single_instance(
                 input_dict['model_blessing'])
             if not model_utils.is_model_blessed(model_blessing):
@@ -86,7 +84,7 @@ class BulkInferrerExecutor(base_executor.BaseExecutor):
                 'used.')
 
         model = artifact_utils.get_single_instance(
-            input_dict['model'])
+            input_dict[MODEL])
         model_path = path_utils.serving_model_path(model.uri)
         logging.info('Use exported model from %s.', model_path)
 
@@ -96,26 +94,23 @@ class BulkInferrerExecutor(base_executor.BaseExecutor):
                     output_columns=[bulk_inferrer_pb2.PredictOutputCol(
                         output_key=x,
                         output_column=f'{x}_label', ) for x in
-                        exec_properties["labels"]]))])
+                        inferrer_step.get_labels()]))])
 
-        self._run_model_inference(
-            output_example_spec,
-            input_dict['examples'],
-            output_examples,
-            self._get_inference_spec(model_path),
-            inferrer_step
-        )
-
-    def _get_inference_spec(self, model_path: Text) \
-            -> model_spec_pb2.InferenceSpecType:
         model_spec = bulk_inferrer_pb2.ModelSpec()
         saved_model_spec = model_spec_pb2.SavedModelSpec(
             model_path=model_path,
             tag=model_spec.tag,
             signature_name=model_spec.model_signature_name)
-        result = model_spec_pb2.InferenceSpecType()
-        result.saved_model_spec.CopyFrom(saved_model_spec)
-        return result
+        inference_spec = model_spec_pb2.InferenceSpecType()
+        inference_spec.saved_model_spec.CopyFrom(saved_model_spec)
+
+        self._run_model_inference(
+            output_example_spec,
+            input_dict[EXAMPLES],
+            output_examples,
+            inference_spec,
+            inferrer_step
+        )
 
     def _run_model_inference(
             self,
@@ -136,6 +131,8 @@ class BulkInferrerExecutor(base_executor.BaseExecutor):
           inferrer_step: Inferrer step supplied in the infer pipeline config.
         """
 
+        # TODO[LOW]: Rewrite this since there is only one split in the
+        #  DataGen output
         example_uris = {}
         for example_artifact in examples:
             for split in artifact_utils.decode_split_names(
@@ -159,6 +156,6 @@ class BulkInferrerExecutor(base_executor.BaseExecutor):
                     | 'ConvertToDict[{}]'.format(split) >>
                     beam.Map(convert_to_dict, output_example_spec)
                     | 'WriteOutput[{}]'.format(split) >>
-                    inferrer_step.get_destination())
+                    inferrer_step.write_inference_results())
 
             logging.info('Output examples written to %s.', output_examples.uri)
