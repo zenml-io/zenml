@@ -33,6 +33,7 @@ from zenml.core.repo.artifact_store import ArtifactStore
 from zenml.core.standards import standard_keys as keys
 from zenml.core.standards.standard_keys import StepKeys
 from zenml.core.steps.base_step import BaseStep
+from zenml.core.steps.inferrer.base_inferrer_step import BaseInferrer
 from zenml.utils import path_utils
 from zenml.utils.enums import GDPComponent
 from zenml.utils.post_training.post_training_utils import \
@@ -168,6 +169,9 @@ class BatchInferencePipeline(BasePipeline):
         component_list.extend([model, bulk_inferrer, statistics, schema])
 
         return component_list
+
+    def add_infer_step(self, infer_step: BaseInferrer):
+        self.steps_dict[keys.InferSteps.INFER] = infer_step
 
     def steps_completed(self) -> bool:
         mandatory_steps = [keys.DataSteps.DATA]
