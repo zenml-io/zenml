@@ -12,10 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
 from typing import Text, List
 
+import apache_beam as beam
+import tensorflow as tf
+
+from zenml.core.components.bulk_inferrer.constants import PREDICTIONS
 from zenml.core.steps.base_step import BaseStep
-from zenml.core.steps.data.base_data_step import identity_ptransform
 
 
 class BaseInferrer(BaseStep):
@@ -40,6 +44,7 @@ class BaseInferrer(BaseStep):
             raise AssertionError('model_uri cannot be None.')
         self.model_uri = model_uri
         self.labels = labels
+        self.output_uri = None
         super(BaseInferrer, self).__init__(
             model_uri=model_uri,
             labels=labels,
@@ -49,5 +54,11 @@ class BaseInferrer(BaseStep):
     def get_labels(self):
         return self.labels
 
+    def set_output_uri(self, output_uri):
+        self.output_uri = output_uri
+
     def write_inference_results(self):
-        return identity_ptransform()
+        return beam.io.WriteToTFRecord(
+            os.path.join(self.output_uri, PREDICTIONS),
+            file_name_suffix='.gz',
+            coder=beam.coders.ProtoCoder(tf.train.Example))
