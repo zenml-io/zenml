@@ -20,7 +20,7 @@
 <div align="center"> Join our
 <a href="https://zenml.io/slack-invite" target="_blank">
     <img width="25" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
-<b>Slack Community</b> </a> join the ZenML family
+<b>Slack Community</b> </a> and become part of the ZenML family
 </div>
 <div align="center"> Give us a 
     <img width="25" src="https://cdn.iconscout.com/icon/free/png-256/github-153-675523.png" alt="Slack"/>
@@ -28,30 +28,25 @@
 </div>
 
 ## Why?
-ZenML is built for ML practitioners who are ramping up their ML workflows towards production. We built ZenML because we could not find an easy framework that translates the patterns observed in the research phase with Jupyter notebooks into a production-ready ML enviornment. Here is what's hard to replicate in production:
+ZenML is built for ML practitioners who are ramping up their ML workflows towards production. We built ZenML because we could not find an easy framework that translates the patterns observed in the research phase with Jupyter notebooks into a production-ready ML environment. Here is what's hard to replicate in production:
 
 * It's hard to **version** data, code, configuration, and models.
 * It's difficult to **reproduce** experiments across environments.
 * There is no **gold-standard** to organize ML code and manage technical debt as complexity grows.
-* It's a struggle to **estabilish a reliable link** between trainings and deployments.
+* It's a struggle to **establish a reliable link** between training and deployment.
 * It's arduous to **track** metadata and artifacts that are produced.
 
-ZenML is not here replace the great tools that solve the individual problems above. Rather, it uses them as [integrations](https://docs.zenml.io/benefits/integrations.html) to expose a coherent, simple path to getting any ML model in production. 
+ZenML is not here to replace the great tools that solve the individual problems above. Rather, it uses them as [integrations](https://docs.zenml.io/benefits/integrations.html) to expose a coherent, simple path to getting any ML model in production. 
 
 ## What is ZenML?
-**ZenML** is an extensible, open-source MLOps framework for creating production-ready Machine Learning pipelines - in a simple way. The key features of ZenML are:
+**ZenML** is an extensible, open-source MLOps framework for creating production-ready Machine Learning pipelines - in a simple way. 
 
-* Guaranteed reproducibility of your training experiments. Your pipelines are versioned from data to model, experiments automatically tracked and all pipeline configs are declarative by default.
-* Guaranteed comparability between experiments.
-* Ability to quickly switch between local and cloud environments (e.g. Kubernetes, Apache Beam).
-* Built-in and extensible abstractions for all MLOps needs - from distributed processing on large datasets to Cloud-integrations and model serving backends.
-* Pre-built helpers to compare and visualize input parameters as well as pipeline results (e.g. Tensorboard, TFMA, TFDV).
-* Cached pipeline states for faster experiment iterations.
+A user of ZenML is asked to break down their ML development into individual [Steps](https://docs.zenml.io/steps/what-is-a-step.html), each representing an individual task in the ML development process. A sequence of  steps put together is a [Pipeline](https://docs.zenml.io/pipelines/what-is-a-pipeline.html). Each pipeline contains a [Datasource](https://docs.zenml.io/datasources/what-is-a-datasource.html), which represents a snapshot of a versioned dataset in time. Lastly, every pipeline (and indeed almost every step) can run in [Backends](https://docs.zenml.io/backends/what-is-a-backend.html), that specify how and where a step is executed.
 
+By developing in pipelines, ML practitioners give themselves a platform to transition from research to production from the very beginning, and are also helped in the research phase by the powerful automations introduced by ZenML.
 
 ## Quickstart 
-The quickest way to get started is to The dataset used is the [Pima Indians Diabetes Dataset](https://storage.googleapis.com/zenml_quickstart/diabetes.csv) (originally from the National Institute of Diabetes and Digestive and Kidney Diseases) 
-
+The quickest way to get started is to create a simple pipeline. The dataset used here is the [Pima Indians Diabetes Dataset](https://storage.googleapis.com/zenml_quickstart/diabetes.csv) (originally from the National Institute of Diabetes and Digestive and Kidney Diseases) 
 
 #### Step 0: Installation
 
@@ -120,7 +115,7 @@ training_pipeline.add_evaluator(
 training_pipeline.run()
 ```
 
-To make this work for your existing codebase, follow our guide to convert you legacy codebase into ZenML code [here](https://docs.zenml.io/getting-started/organizing-zenml.html).
+While the above is great to get a quick flavor of ZenML, a more practical way to start is to follow our guide to convert your legacy codebase into ZenML code [here](https://docs.zenml.io/getting-started/organizing-zenml.html).
 
 ## Leverage powerful integrations
 Once code is organized into a ZenML pipeline, you can supercharge your ML development through powerful [integrations](https://docs.zenml.io/benefits/integrations.html). Some of the benefits you get are:
@@ -156,7 +151,8 @@ training_pipeline.view_schema()
 # See statistics of train and eval
 training_pipeline.view_statistics()
 ```
-![ZenML statistics visualization](docs/statistics.png)
+<img src="docs/statistics.png" alt="ZenML statistics visualization" />
+
 
 ### Evaluate the model using built-in evaluators
 ```python
@@ -164,7 +160,7 @@ training_pipeline.view_statistics()
 training_pipeline.evaluate()
 ```
 
-![Tensorboard built-in](docs/tensorboard_inline.png)
+<img src="docs/tensorboard_inline.png" alt="Tensorboard built-in"   />
 
 
 ### Compare training pipelines
@@ -175,17 +171,45 @@ repo.compare_training_pipelines()
 ![ZenML built-in pipeline comparison](docs/compare.png)
 
 
-### Deploy models automatically
-
 ### Distribute preprocessing to the cloud
-Of course, each of these steps can be [extended quite easily](https://docs.zenml.io/steps/creating-custom-steps) to accommodate more complex scenarios and use-cases. There is a steadily-growing number of integrations available, 
-for example Google Dataflow for [distributed preprocessing](https://docs.zenml.io/backends/processing-backends) or Google Cloud AI Platform as a 
-[training](https://docs.zenml.io/backends/training-backends) backend. 
-
-You can also run these pipelines on a cloud VM, for example on a Google Cloud Platform VM, [with a few more lines of code](https://docs.zenml.io/tutorials/running-a-pipeline-on-a-google-cloud-vm).
+Leverage distributed compute powered by [Apache Beam](https://beam.apache.org/):
+```python
+training_pipeline.add_preprocesser(
+    StandardPreprocesser(...).with_backend(
+      ProcessingDataFlowBackend(
+        project=GCP_PROJECT,
+        num_workers=10,
+    ))
+)
+```
+<img src="docs/zenml_distribute.png" alt="ZenML distributed processing"   />
 
 ### Train on spot instances
-Train on spot instances
+Easily train on spot instances to [save 80% cost](https://towardsdatascience.com/spot-the-difference-in-ml-costs-358202e60266).
+```python
+training_pipeline.run(
+  OrchestratorGCPBackend(
+    preemptible=True,  # reduce costs by using preemptible instances
+    machine_type='n1-standard-4',
+    gpu='nvidia-tesla-k80',
+    gpu_count=1,
+    ...
+  )
+  ...
+)
+```
+
+### Deploy models automatically
+Automatically deploy each model with powerful Deployment integrations like [Cortex](examples/cortex).
+
+```python
+training_pipeline.add_deployment(
+    CortexDeployer(
+        api_spec=api_spec,
+        predictor=PythonPredictor,
+    )
+)
+```
 
 The best part is that ZenML is extensible easily, and can be molded to your use-case. You can create your own custom logic or create a PR 
 and contribute to the ZenML community, so that everyone can benefit.
