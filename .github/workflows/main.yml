@@ -27,7 +27,7 @@ jobs:
       - name: testing
         run: |
           export TAG=$(echo ${GITHUB_REF} | sed 's|refs/tags/||g')
-          pip install git+https://github.com/maiot-io/zenml.git@$TAG
+          pip install -e .[all]
           mkdir ./zenml-testing
           cd ./zenml-testing
           git init
