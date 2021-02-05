@@ -147,6 +147,7 @@ class BulkInferrerExecutor(base_executor.BaseExecutor):
             for split, example_uri in example_uris.items():
                 output_examples_split_uri = artifact_utils.get_split_uri(
                     [output_examples], split)
+                inferrer_step.set_output_uri(output_examples_split_uri)
                 logging.info('Path of output examples split `%s` is %s.',
                              split, output_examples_split_uri)
                 _ = (
