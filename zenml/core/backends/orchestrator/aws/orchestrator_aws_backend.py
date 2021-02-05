@@ -37,6 +37,7 @@ AWS_ACCESS_KEY_ID = 'AWS_ACCESS_KEY_ID'
 AWS_SECRET_ACCESS_KEY = 'AWS_SECRET_ACCESS_KEY'
 AWS_REGION = 'AWS_REGION'
 
+
 class OrchestratorAWSBackend(OrchestratorBaseBackend):
     """
     Orchestrates pipeline on a AWS EC2 instance
@@ -45,7 +46,7 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
     def __init__(self,
                  instance_name: Text = 'zenml',
                  instance_type: Text = 't2.micro',
-                 image_id: Text = 'ami-0a6dc7529cd559185',
+                 image_id: Text = 'ami-02e9f4e447e4cda79',
                  key_name: Text = 'baris',
                  min_count: int = 1,
                  max_count: int = 1,
@@ -138,4 +139,3 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
 
         # Launch the instance
         self.launch_instance(config)
-
