@@ -13,24 +13,20 @@
 # limitations under the License.
 """TFX bulk_inferrer executor."""
 
-import os
 from typing import Any, Dict, List, Text
 from typing import Optional
 
 import apache_beam as beam
-import tensorflow as tf
 from absl import logging
-from tensorflow_serving.apis import prediction_log_pb2
 from tfx import types
 from tfx.components.util import model_utils
 from tfx.dsl.components.base import base_executor
 from tfx.proto import bulk_inferrer_pb2
 from tfx.types import artifact_utils
-from tfx.utils import io_utils
 from tfx.utils import path_utils
-from tfx.utils import proto_utils
-from tfx_bsl.public.beam import run_inference
 from tfx_bsl.public.proto import model_spec_pb2
+# pylint: disable=protected-access
+from tfx.components.bulk_inferrer.executor import _RunInference
 
 from zenml.core.components.bulk_inferrer.utils import convert_to_dict
 from zenml.core.standards.standard_keys import StepKeys
@@ -39,25 +35,6 @@ from zenml.utils import source_utils
 
 _PREDICTION_LOGS_FILE_NAME = 'prediction_logs'
 _EXAMPLES_FILE_NAME = 'examples'
-
-
-@beam.ptransform_fn
-@beam.typehints.with_input_types(beam.Pipeline)
-@beam.typehints.with_output_types(prediction_log_pb2.PredictionLog)
-def _RunInference(
-        pipeline: beam.Pipeline, example_uri: Text,
-        inference_endpoint: model_spec_pb2.InferenceSpecType
-) -> beam.pvalue.PCollection:
-    """Runs model inference on given examples data."""
-    # TODO(b/174703893): adopt standardized input.
-    return (
-            pipeline
-            | 'ReadData' >> beam.io.ReadFromTFRecord(
-                file_pattern=io_utils.all_files_pattern(example_uri))
-            # TODO(b/131873699): Use the correct Example type here, which
-            # is either Example or SequenceExample.
-            | 'ParseExamples' >> beam.Map(tf.train.Example.FromString)
-            | 'RunInference' >> run_inference.RunInference(inference_endpoint))
 
 
 class BulkInferrerExecutor(base_executor.BaseExecutor):
@@ -89,16 +66,8 @@ class BulkInferrerExecutor(base_executor.BaseExecutor):
         c = source_utils.load_source_path_class(source)
         inferrer_step: BaseInferrer = c(**args)
 
-        if output_dict.get('inference_result'):
-            inference_result = artifact_utils.get_single_instance(
-                output_dict['inference_result'])
-        else:
-            inference_result = None
-        if output_dict.get('output_examples'):
-            output_examples = artifact_utils.get_single_instance(
-                output_dict['output_examples'])
-        else:
-            output_examples = None
+        output_examples = artifact_utils.get_single_instance(
+            output_dict['predictions'])
 
         if 'examples' not in input_dict:
             raise ValueError('\'examples\' is missing in input dict.')
@@ -121,28 +90,25 @@ class BulkInferrerExecutor(base_executor.BaseExecutor):
         model_path = path_utils.serving_model_path(model.uri)
         logging.info('Use exported model from %s.', model_path)
 
-        data_spec = bulk_inferrer_pb2.DataSpec()
-        proto_utils.json_to_proto(exec_properties['data_spec'], data_spec)
-
-        output_example_spec = bulk_inferrer_pb2.OutputExampleSpec()
-        if exec_properties.get('output_example_spec'):
-            proto_utils.json_to_proto(exec_properties['output_example_spec'],
-                                      output_example_spec)
+        output_example_spec = bulk_inferrer_pb2.OutputExampleSpec(
+            output_columns_spec=[bulk_inferrer_pb2.OutputColumnsSpec(
+                predict_output=bulk_inferrer_pb2.PredictOutput(
+                    output_columns=[bulk_inferrer_pb2.PredictOutputCol(
+                        output_key=x,
+                        output_column=f'{x}_label', ) for x in
+                        exec_properties["labels"]]))])
 
         self._run_model_inference(
-            data_spec, output_example_spec, input_dict['examples'],
+            output_example_spec,
+            input_dict['examples'],
             output_examples,
-            inference_result,
-            self._get_inference_spec(model_path, exec_properties),
+            self._get_inference_spec(model_path),
             inferrer_step
         )
 
-    def _get_inference_spec(
-            self, model_path: Text,
-            exec_properties: Dict[
-                Text, Any]) -> model_spec_pb2.InferenceSpecType:
+    def _get_inference_spec(self, model_path: Text) \
+            -> model_spec_pb2.InferenceSpecType:
         model_spec = bulk_inferrer_pb2.ModelSpec()
-        proto_utils.json_to_proto(exec_properties['model_spec'], model_spec)
         saved_model_spec = model_spec_pb2.SavedModelSpec(
             model_path=model_path,
             tag=model_spec.tag,
@@ -153,83 +119,46 @@ class BulkInferrerExecutor(base_executor.BaseExecutor):
 
     def _run_model_inference(
             self,
-            data_spec: bulk_inferrer_pb2.DataSpec,
             output_example_spec: bulk_inferrer_pb2.OutputExampleSpec,
             examples: List[types.Artifact],
             output_examples: Optional[types.Artifact],
-            inference_result: Optional[types.Artifact],
             inference_endpoint: model_spec_pb2.InferenceSpecType,
-            inferrer_step,
+            inferrer_step: BaseInferrer,
     ) -> None:
         """Runs model inference on given examples data.
 
         Args:
-          data_spec: bulk_inferrer_pb2.DataSpec instance.
           output_example_spec: bulk_inferrer_pb2.OutputExampleSpec instance.
           examples: List of `standard_artifacts.Examples` artifacts.
           output_examples: Optional output `standard_artifacts.Examples`
           artifact.
-          inference_result: Optional output
-          `standard_artifacts.InferenceResult`
-            artifact.
           inference_endpoint: Model inference endpoint.
+          inferrer_step: Inferrer step supplied in the infer pipeline config.
         """
 
         example_uris = {}
         for example_artifact in examples:
             for split in artifact_utils.decode_split_names(
                     example_artifact.split_names):
-                if data_spec.example_splits:
-                    if split in data_spec.example_splits:
-                        example_uris[split] = artifact_utils.get_split_uri(
-                            [example_artifact], split)
-                else:
-                    example_uris[split] = artifact_utils.get_split_uri(
-                        [example_artifact],
-                        split)
+                example_uris[split] = artifact_utils.get_split_uri(
+                    [example_artifact], split)
 
-        if output_examples:
-            output_examples.split_names = artifact_utils.encode_split_names(
-                sorted(example_uris.keys()))
+        output_examples.split_names = artifact_utils.encode_split_names(
+            sorted(example_uris.keys()))
 
         with self._make_beam_pipeline() as pipeline:
-            data_list = []
             for split, example_uri in example_uris.items():
-                # pylint: disable=no-value-for-parameter
-                data = (
-                        pipeline
-                        | 'RunInference[{}]'.format(split) >>
-                        _RunInference(example_uri, inference_endpoint))
-
-                if output_examples:
-                    output_examples_split_uri = artifact_utils.get_split_uri(
-                        [output_examples], split)
-                    logging.info('Path of output examples split `%s` is %s.',
-                                 split,
-                                 output_examples_split_uri)
-                    _ = (
-                            data
-                            | 'ConvertToDict[{}]'.format(split) >>
-                            beam.Map(convert_to_dict, output_example_spec)
-                            | 'WriteOutput[{}]'.format(split) >>
-                            inferrer_step.get_destination())
-
-                data_list.append(data)
-
-            if inference_result:
+                output_examples_split_uri = artifact_utils.get_split_uri(
+                    [output_examples], split)
+                logging.info('Path of output examples split `%s` is %s.',
+                             split, output_examples_split_uri)
                 _ = (
-                        data_list
-                        | 'FlattenInferenceResult' >> beam.Flatten(
-                                                        pipeline=pipeline)
-                        | 'WritePredictionLogs' >> beam.io.WriteToTFRecord(
-                            os.path.join(inference_result.uri,
-                                         _PREDICTION_LOGS_FILE_NAME),
-                            file_name_suffix='.gz',
-                            coder=beam.coders.ProtoCoder(
-                                    prediction_log_pb2.PredictionLog)))
+                    pipeline
+                    | 'RunInference[{}]'.format(split) >>
+                    _RunInference(example_uri, inference_endpoint)
+                    | 'ConvertToDict[{}]'.format(split) >>
+                    beam.Map(convert_to_dict, output_example_spec)
+                    | 'WriteOutput[{}]'.format(split) >>
+                    inferrer_step.get_destination())
 
-        if output_examples:
             logging.info('Output examples written to %s.', output_examples.uri)
-        if inference_result:
-            logging.info('Inference result written to %s.',
-                         inference_result.uri)

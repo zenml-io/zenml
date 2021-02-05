@@ -27,6 +27,7 @@ LABELS = "labels"
 MODEL = "model"
 EXAMPLES = "examples"
 PREDICTIONS = "predictions"
+MODEL_BLESSING = "model_blessing"
 
 
 class BulkInferrerSpec(ComponentSpec):
@@ -39,6 +40,8 @@ class BulkInferrerSpec(ComponentSpec):
     INPUTS = {
         MODEL: ChannelParameter(type=standard_artifacts.Model, optional=True),
         EXAMPLES: ChannelParameter(type=standard_artifacts.Examples),
+        MODEL_BLESSING: ChannelParameter(type=standard_artifacts.ModelBlessing,
+                                         optional=True)
 
     }
     OUTPUTS = {
@@ -55,6 +58,8 @@ class BulkInferrer(BaseComponent):
                  source: Text,
                  source_args: Dict[Text, Any],
                  labels: List[Text],
+                 model: Optional[ChannelParameter] = None,
+                 model_blessing: Optional[ChannelParameter] = None,
                  instance_name: Optional[Text] = None,
                  examples: Optional[ChannelParameter] = None,
                  predictions: Optional[ChannelParameter] = None):
@@ -78,6 +83,8 @@ class BulkInferrer(BaseComponent):
                                source=source,
                                args=source_args,
                                labels=labels,
+                               model=model,
+                               model_blessing=model_blessing,
                                examples=examples,
                                predictions=predictions)
 
