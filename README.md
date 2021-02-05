@@ -127,24 +127,36 @@ Once code is organized into a ZenML pipeline, you can supercharge your ML develo
 
 ### Work locally but switch seamlessly to the cloud
 
+Switching from local experiments to cloud-based pipelines doesn't need to be complex.
+
+![From local to cloud with one parameter](docs/local-and-clound.png)
+
 ### Versioning galore
-Code is versioned 
-Data is versioned
-Models are versioned
-Configurations are versioned
+
+ZenML makes sure for every pipeline you can trust that:
+
+✅ Code is versioned  
+✅ Data is versioned  
+✅ Models are versioned  
+✅ Configurations are versioned  
+![ZenML declarative config](docs/versioning.png)
 
 ### Automatically detect schema
+
 ```python
-# See schema of data
+# See the schema of your data
 training_pipeline.view_schema()
 ```
+
+![Automatic schema dection](docs/schema.png)
+
 
 ### View statistics
 ```python
 # See statistics of train and eval
 training_pipeline.view_statistics()
 ```
-![ZenML statistics visualization](docs/zenml_statistics.gif)
+![ZenML statistics visualization](docs/statistics.png)
 
 ### Evaluate the model using built-in evaluators
 ```python
@@ -152,10 +164,16 @@ training_pipeline.view_statistics()
 training_pipeline.evaluate()
 ```
 
+![Tensorboard built-in](docs/tensorboard_inline.png)
+
+
 ### Compare training pipelines
 ```python
 repo.compare_training_pipelines()
 ```
+
+![ZenML built-in pipeline comparison](docs/compare.png)
+
 
 ### Deploy models automatically
 
