@@ -46,5 +46,8 @@ class BaseInferrer(BaseStep):
             **kwargs,
         )
 
-    def get_destination(self):
+    def get_labels(self):
+        return self.labels
+
+    def write_inference_results(self):
         return identity_ptransform()
