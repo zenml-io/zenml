@@ -46,7 +46,9 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
     def __init__(self,
                  instance_name: Text = 'zenml',
                  instance_type: Text = 't2.micro',
-                 image_id: Text = 'ami-02e9f4e447e4cda79',
+                 instance_image: Text = 'ami-02e9f4e447e4cda79',
+                 # TODO: Make it None after debugging
+                 zenml_image: Text = 'eu.gcr.io/maiot-zenml/testing:base-0.2.1',
                  key_name: Text = 'baris',
                  min_count: int = 1,
                  max_count: int = 1,
@@ -65,7 +67,8 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
 
         self.instance_name = instance_name
         self.instance_type = instance_type
-        self.image_id = image_id
+        self.instance_image = instance_image
+        self.zenml_image = zenml_image
         self.key_name = key_name
         self.min_count = min_count
         self.max_count = max_count
@@ -83,7 +86,8 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
         super(OrchestratorBaseBackend, self).__init__(
             instance_name=self.instance_name,
             instance_type=self.instance_type,
-            image_id=self.image_id,
+            instance_image=self.instance_image,
+            zenml_image=self.zenml_image,
             key_name=self.key_name,
             min_count=self.min_count,
             max_count=self.max_count,
@@ -96,9 +100,9 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
         return f'{name}-{time.asctime()}'
 
     def launch_instance(self, config):
-        startup = startup_utils.get_startup_script(config)
+        startup = startup_utils.get_startup_script(config, self.zenml_image)
         return self.ec2_resource.create_instances(
-            ImageId=self.image_id,
+            ImageId=self.instance_image,
             InstanceType=self.instance_type,
             SecurityGroups=self.security_groups,
             IamInstanceProfile=self.instance_profile,

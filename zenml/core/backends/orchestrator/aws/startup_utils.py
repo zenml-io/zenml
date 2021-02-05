@@ -1,6 +1,6 @@
 import base64
 import json
-
+from typing import Dict, Text
 from zenml.utils.constants import ZENML_BASE_IMAGE_NAME, AWS_ENTRYPOINT
 
 
@@ -10,8 +10,8 @@ def _get_container_params(config):
            f'{config_encoded.decode()}'
 
 
-def get_startup_script(config):
-    image_name = ZENML_BASE_IMAGE_NAME
+def get_startup_script(config: Dict,
+                       zenml_image: Text = ZENML_BASE_IMAGE_NAME):
     c_params = _get_container_params(config)
     return f"#!/bin/bash\n" \
-           f"sudo HOME=/home/root docker run --net=host {image_name} {c_params}"
+           f"sudo HOME=/home/root docker run --net=host {zenml_image} {c_params}"
