@@ -17,15 +17,14 @@ from typing import Dict, Text, Any, List
 from typing import Optional
 
 import tensorflow as tf
-from tfx.components.bulk_inferrer.component import BulkInferrer
 from tfx.components.common_nodes.importer_node import ImporterNode
 from tfx.components.schema_gen.component import SchemaGen
 from tfx.components.statistics_gen.component import StatisticsGen
-from tfx.proto import bulk_inferrer_pb2
 from tfx.types import standard_artifacts
 
 from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
     OrchestratorBaseBackend
+from zenml.core.components.bulk_inferrer.component import BulkInferrer
 from zenml.core.components.data_gen.component import DataGen
 from zenml.core.datasources.base_datasource import BaseDatasource
 from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
@@ -147,29 +146,21 @@ class BatchInferencePipeline(BasePipeline):
             artifact_type=standard_artifacts.Model)
         model_result = model.outputs.result
 
-        TensorflowInferenceStep(
-            model_uri='',
-            labels=[],
-        )
+        infer_cfg = config[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.STEPS][
+            keys.InferSteps.INFER]
 
         bulk_inferrer = BulkInferrer(
-            examples=data.outputs.examples,
+            name="my_inferrer",
+            source=infer_cfg[StepKeys.SOURCE],
+            source_args=infer_cfg[StepKeys.ARGS],
+            # TODO [HIGH]: Where do the labels come from?
+            labels=[],
             model=model_result,
-            instance_name=GDPComponent.Inferrer.name,
-            # Empty data_spec.example_splits will result in using all splits.
-            output_example_spec=bulk_inferrer_pb2.OutputExampleSpec(
-                output_columns_spec=[bulk_inferrer_pb2.OutputColumnsSpec(
-                    predict_output=bulk_inferrer_pb2.PredictOutput(
-                        output_columns=[bulk_inferrer_pb2.PredictOutputCol(
-                            output_key=x,
-                            output_column=f'{x}_label', ) for x in
-                            self.labels]))]
-            ),
-            data_spec=bulk_inferrer_pb2.DataSpec(),
-            model_spec=bulk_inferrer_pb2.ModelSpec())
+            examples=data.outputs.examples,
+            instance_name=GDPComponent.Inferrer.name)
 
         statistics = StatisticsGen(
-            examples=bulk_inferrer.outputs.output_examples
+            examples=bulk_inferrer.outputs.predictions
         ).with_id(GDPComponent.DataStatistics.name)
 
         schema = SchemaGen(
