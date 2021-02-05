@@ -103,7 +103,7 @@ def delete_config():
         repo.zenml_config.set_pipelines_dir(pipeline_root)
 
         cfg = os.path.join(pipeline_root, filename)
-        yaml_utils.remove(cfg)
+        path_utils.rm_file(cfg)
 
     return wrapper
 

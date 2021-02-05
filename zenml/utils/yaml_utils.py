@@ -92,18 +92,3 @@ def read_json(file_path: Text):
             return json.loads(f.read())
     else:
         raise Exception(f'{file_path} does not exist.')
-
-
-def remove(file_path: Text):
-    """
-    Remove a file found in file_path.
-
-    Args:
-        file_path (str): Path to file designated for deletion.
-    """
-    if path_utils.file_exists(file_path):
-        # TODO[LOW]: Should we catch any OSError here (e.g.
-        #  permission denied)?
-        os.remove(file_path)
-    else:
-        raise Exception(f'{file_path} does not exist.')
