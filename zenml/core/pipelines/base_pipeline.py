@@ -389,7 +389,9 @@ class BasePipeline:
             logger.info(f'Pipeline: `{self.name}` has already been executed '
                         f'for the connected metadata store. Pipelines are '
                         f'immutable after they run within the same metadata '
-                        f'store.')
+                        f'store. If the pipeline failed, then try using '
+                        f'the `pipeline.copy(new_name)` method to copy the '
+                        f'current `pipeline` and give it a new name.')
             return
 
         # Check if steps are complete
