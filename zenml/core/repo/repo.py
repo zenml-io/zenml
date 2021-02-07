@@ -229,6 +229,19 @@ class Repository:
             if name == d.name:
                 return d
 
+    def get_datasource_id_by_name(self, name: Text) -> List:
+        """
+        Get ID of a datasource by just its name.
+
+        Returns: ID of datasource.
+        """
+        for file_path in self.get_pipeline_file_paths():
+            c = yaml_utils.read_yaml(file_path)
+            src = c[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.DATASOURCE]
+            if keys.DatasourceKeys.NAME in src:
+                if name == src[keys.DatasourceKeys.NAME]:
+                    return src[keys.DatasourceKeys.ID]
+
     def get_datasource_names(self) -> List:
         """
         Get all datasources in this repo.

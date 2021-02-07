@@ -53,6 +53,7 @@ class BaseDatasource:
         repo: Repository = Repository.get_instance()
         all_names = repo.get_datasource_names()
         if any(d == name for d in all_names):
+            self._id = repo.get_datasource_id_by_name(name)
             self._immutable = True
         else:
             # Its a new datasource
