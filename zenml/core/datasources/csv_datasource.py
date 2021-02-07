@@ -25,8 +25,7 @@ class CSVDatasource(BaseDatasource):
     Use this for CSV training pipelines.
     """
 
-    def __init__(self, name: Text, path: Text, schema: Dict = None,
-                 **unused_kwargs):
+    def __init__(self, name: Text, path: Text, schema: Dict = None):
         """
         Create a CSV datasource. Creating this datasource creates a Beam
         pipeline that converts the CSV file into TFRecords for pipelines to
@@ -42,11 +41,9 @@ class CSVDatasource(BaseDatasource):
             path (str): path to csv file.
             schema (str): optional schema for data to conform to.
         """
-        super().__init__(name, schema, **unused_kwargs)
+        super().__init__(name)
         self.path = path
+        self.schema = schema
 
     def get_data_step(self):
-        return CSVDataStep(
-            self.path,
-            self.schema
-        )
+        return CSVDataStep(self.path, self.schema)

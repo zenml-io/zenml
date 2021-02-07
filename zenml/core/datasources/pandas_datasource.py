@@ -21,12 +21,12 @@ from zenml.core.datasources.base_datasource import BaseDatasource
 class PandasDatasource(BaseDatasource):
     """ZenML Pandas datasource definition."""
 
-    def __init__(self, name: Text, df, schema=None, **unused_kwargs):
+    def __init__(self, name: Text, df):
         """
         Initialize pandas datasource.
         Args:
             name: Name of datasource.
             df: pandas dataframe
         """
-        super().__init__(name, schema, **unused_kwargs)
+        super().__init__(name)
         raise NotImplementedError('Its coming soon!')

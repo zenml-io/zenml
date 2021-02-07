@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Base interface for BQ Data Step"""
 
-from typing import Text, Any
+from typing import Text, Any, Dict
 
 import apache_beam as beam
 from beam_nuggets.io import relational_db
@@ -32,7 +32,9 @@ def ReadFromPostgres(
         table: Text,
         host: Text = 'localhost',
         port: int = 5432,
-        query_limit: int = None) -> beam.pvalue.PCollection:
+        query_limit: int = None,
+        schema: Dict = None,
+    ) -> beam.pvalue.PCollection:
     """
     The Beam PTransform used to read data from a specific BQ table.
 
@@ -45,11 +47,11 @@ def ReadFromPostgres(
         database: Name of the target database.
         table: Name of the target table.
         query_limit: Max number of rows to fetch.
+        schema: Dict specifying schema.
 
     Returns:
         A beam.PCollection of data points. Each row in the BigQuery table
          represents a single data point.
-
     """
     query = f'SELECT * FROM {table}'
 
@@ -89,8 +91,7 @@ class PostgresDataStep(BaseDataStep):
                  schema: dict = None,
                  ):
         """
-        Postgres data step constructor. Targets a single Postgres table
-        within a public or private project and dataset.
+        Postgres data step constructor. Targets a single Postgres table.
 
         Args:
             host: Host of database.
@@ -100,6 +101,7 @@ class PostgresDataStep(BaseDataStep):
             database: Name of the target database.
             table: Name of the target table.
             query_limit: Max number of rows to fetch.
+            schema: Dict specifying schema.
         """
         super().__init__(
             username=username,
@@ -108,7 +110,9 @@ class PostgresDataStep(BaseDataStep):
             table=table,
             host=host,
             port=port,
-            query_limit=query_limit)
+            query_limit=query_limit,
+            schema=schema
+        )
         self.username = username
         self.password = password
         self.database = database

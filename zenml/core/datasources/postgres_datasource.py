@@ -22,7 +22,7 @@ from zenml.core.steps.data.postgres_data_step import PostgresDataStep
 class PostgresDatasource(BaseDatasource):
     """ZenML Postgres datasource definition.
 
-    Use this for Postgres training pipelines.
+    Use this for pipelines sourcing directly from a Postgres database table.
     """
 
     def __init__(self,
@@ -41,17 +41,17 @@ class PostgresDatasource(BaseDatasource):
 
         `SELECT * FROM dataset.table LIMIT query_limit`
         Args:
-            name: name of datasource. Must be globally unique in the repo.
-            query_project: name of gcp project.
-            query_dataset: name of dataset.
-            query_table: name of table in dataset.
-            query_limit: how many rows, from the top, to be queried.
-            gcs_location: google cloud storage (bucket) location to store temp.
-            dest_project: name of destination project. If None is specified,
-            then dest_project is set to the same as query_project.
+            name: Name of datasource.
+            username: Username of database user.
+            password: Password to connect to database.
+            database: Name of the target database.
+            table: Name of the target table.
+            host: Host of database.
+            port: Port to connect to with database (default 5432)
+            query_limit: Max number of rows to fetch.
+            schema: Dict specifying schema.
         """
-        super().__init__(name, schema, **unused_kwargs)
-
+        super().__init__(name)
         self.username = username
         self.password = password
         self.database = database

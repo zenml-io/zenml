@@ -32,7 +32,6 @@ from zenml.utils.post_training.post_training_utils import \
     convert_raw_dataset_to_pandas, view_statistics
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
 from zenml.utils.zenml_analytics import track, CREATE_DATASOURCE
-from zenml.utils.exceptions import AlreadyExistsException
 
 logger = get_logger(__name__)
 
@@ -43,37 +42,26 @@ class BaseDatasource:
     Every ZenML datasource should override this class.
     """
 
-    def __init__(self,
-                 name: Text,
-                 schema: Dict = None,
-                 _id: Text = None,
-                 *args, **kwargs):
+    def __init__(self, name: Text):
         """
         Construct the datasource
 
         Args:
             name (str): name of datasource
-            schema (dict): schema of datasource
-            _id: unique ID (for internal use)
         """
-        if _id:
-            # Its loaded from config
-            self._id = _id
-            logger.debug(f'Datasource {name} loaded.')
+        # If none, then this is assumed to be 'new'. Check dupes.
+        repo: Repository = Repository.get_instance()
+        all_names = repo.get_datasource_names()
+        if any(d == name for d in all_names):
+            self._immutable = True
         else:
-            # If none, then this is assumed to be 'new'. Check dupes.
-            all_names = Repository.get_instance().get_datasource_names()
-            if any(d == name for d in all_names):
-                raise AlreadyExistsException(
-                    name=name,
-                    resource_type='datasource')
+            # Its a new datasource
             self._id = str(uuid4())
+            self._immutable = False
             track(event=CREATE_DATASOURCE)
             logger.info(f'Datasource {name} created.')
 
         self.name = name
-        self.schema = schema
-        self._immutable = False
         self._source = source_utils.resolve_source_path(
             self.__class__.__module__ + '.' + self.__class__.__name__
         )
@@ -107,9 +95,10 @@ class BaseDatasource:
             keys.DatasourceKeys.NAME]
         _id = config[keys.PipelineKeys.DATASOURCE][keys.DatasourceKeys.ID]
         obj = datasource_class(
-            name=datasource_name, _id=_id, _source=source,
+            name=datasource_name,
             **step_config[keys.StepKeys.ARGS])
         obj._immutable = True
+        obj._id = _id
         return obj
 
     def to_config(self):

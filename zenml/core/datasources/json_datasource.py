@@ -21,12 +21,12 @@ from zenml.core.datasources.base_datasource import BaseDatasource
 class JSONDatasource(BaseDatasource):
     """ZenML JSON datasource definition."""
 
-    def __init__(self, name: Text, json_obj, schema=None, **unused_kwargs):
+    def __init__(self, name: Text, json_obj, schema=None):
         """
         Initialize numpy datasource.
         Args:
             name: name of datasource
             json_obj: json obj
         """
-        super().__init__(name, schema, **unused_kwargs)
+        super().__init__(name, schema)
         raise NotImplementedError('Its coming soon!')
