@@ -34,7 +34,7 @@ class PostgresDatasource(BaseDatasource):
                  host: Text = 'localhost',
                  port: int = 5432,
                  query_limit: int = None,
-                 schema: Dict = None, **unused_kwargs):
+                 schema: Dict = None):
         """
         Initialize Postgres source. This creates a DataPipeline that
         essentially performs the following query using Apache Beam.
