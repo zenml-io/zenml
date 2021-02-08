@@ -17,9 +17,7 @@ import os
 import time
 from typing import Text, List, Dict, Any
 
-import boto3
-
-from zenml.core.backends.orchestrator.aws import startup_utils
+from zenml.core.backends.orchestrator.aws import utils
 from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
     OrchestratorBaseBackend
 from zenml.core.repo.repo import Repository
@@ -32,10 +30,6 @@ logger = get_logger(__name__)
 EXTRACTED_TAR_DIR_NAME = 'zenml_working'
 STAGING_AREA = 'staging'
 TAR_PATH_ARG = 'tar_path'
-
-AWS_ACCESS_KEY_ID = 'AWS_ACCESS_KEY_ID'
-AWS_SECRET_ACCESS_KEY = 'AWS_SECRET_ACCESS_KEY'
-AWS_REGION = 'AWS_REGION'
 
 
 class OrchestratorAWSBackend(OrchestratorBaseBackend):
@@ -55,13 +49,7 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
                  security_groups: List = None,
                  instance_profile: Dict = None):
 
-        # Small workaround for the permission problem
-        session = boto3.Session()
-        credentials = session.get_credentials()
-        os.environ[AWS_ACCESS_KEY_ID] = credentials.access_key
-        os.environ[AWS_SECRET_ACCESS_KEY] = credentials.secret_key
-        os.environ[AWS_REGION] = session.region_name
-
+        session = utils.setup_session()
         self.ec2_client = session.client('ec2')
         self.ec2_resource = session.resource('ec2')
 
@@ -100,7 +88,7 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
         return f'{name}-{time.asctime()}'
 
     def launch_instance(self, config):
-        startup = startup_utils.get_startup_script(config, self.zenml_image)
+        startup = utils.get_startup_script(config, self.zenml_image)
         return self.ec2_resource.create_instances(
             ImageId=self.instance_image,
             InstanceType=self.instance_type,
