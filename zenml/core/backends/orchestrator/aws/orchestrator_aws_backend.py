@@ -42,14 +42,15 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
                  instance_type: Text = 't2.micro',
                  instance_image: Text = 'ami-02e9f4e447e4cda79',
                  # TODO: Make it None after debugging
-                 zenml_image: Text = 'eu.gcr.io/maiot-zenml/testing:base-0.2.1',
+                 zenml_image: Text = 'eu.gcr.io/maiot-zenml/testing:base-AWS',
+                 region: Text = None,
                  key_name: Text = 'baris',
                  min_count: int = 1,
                  max_count: int = 1,
                  security_groups: List = None,
                  instance_profile: Dict = None):
 
-        session = utils.setup_session()
+        session = utils.setup_session(region)
         self.ec2_client = session.client('ec2')
         self.ec2_resource = session.resource('ec2')
 
@@ -57,6 +58,7 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
         self.instance_type = instance_type
         self.instance_image = instance_image
         self.zenml_image = zenml_image
+        self.region = region
         self.key_name = key_name
         self.min_count = min_count
         self.max_count = max_count
@@ -76,6 +78,7 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
             instance_type=self.instance_type,
             instance_image=self.instance_image,
             zenml_image=self.zenml_image,
+            region=self.region,
             key_name=self.key_name,
             min_count=self.min_count,
             max_count=self.max_count,

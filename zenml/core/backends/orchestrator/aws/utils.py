@@ -25,10 +25,16 @@ def get_startup_script(config: Dict,
            f"sudo HOME=/home/root docker run --net=host {zenml_image} {c_params}"
 
 
-def setup_session():
+def setup_session(region: Text = None):
     session = boto3.Session()
     credentials = session.get_credentials()
     os.environ[AWS_ACCESS_KEY_ID] = credentials.access_key
     os.environ[AWS_SECRET_ACCESS_KEY] = credentials.secret_key
-    os.environ[AWS_REGION] = session.region_name
+    if region is None:
+        if session.region_name is None:
+            os.environ[AWS_REGION] = 'eu-central-1'
+        else:
+            os.environ[AWS_REGION] = session.region_name
+    else:
+        os.environ[AWS_REGION] = region
     return session
