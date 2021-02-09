@@ -25,6 +25,7 @@ from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils
 from zenml.utils.logger import get_logger
 from zenml.utils.constants import ZENML_BASE_IMAGE_NAME
+
 logger = get_logger(__name__)
 
 EXTRACTED_TAR_DIR_NAME = 'zenml_working'
@@ -98,7 +99,9 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
         return f'{name}-{time.asctime()}'
 
     def launch_instance(self, config):
-        startup = utils.get_startup_script(config, self.zenml_image)
+        startup = utils.get_startup_script(config,
+                                           self.region,
+                                           self.zenml_image)
         return self.ec2_resource.create_instances(
             ImageId=self.instance_image,
             InstanceType=self.instance_type,

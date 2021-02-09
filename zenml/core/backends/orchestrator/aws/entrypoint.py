@@ -27,7 +27,8 @@ from zenml.core.backends.orchestrator.aws.orchestrator_aws_backend import \
 from zenml.core.repo.repo import Repository
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils
-from zenml.core.backends.orchestrator.aws.utils import setup_session
+from zenml.core.backends.orchestrator.aws import utils
+
 EXTRACTED_TAR_DIR_NAME = 'zenml_working.tar.gz'
 EXTRACTED_TAR_FILE_PATH = os.path.join(os.getcwd(), EXTRACTED_TAR_DIR_NAME)
 EXTRACTED_TAR_DIR = os.path.join(os.getcwd(), 'zenml_working')
@@ -35,9 +36,10 @@ EXTRACTED_TAR_DIR = os.path.join(os.getcwd(), 'zenml_working')
 
 class PipelineRunner(object):
 
-    def run_pipeline(self, config_b64: str):
+    def run_pipeline(self, config_b64: str, region: str = None):
         # Setup the credentials in the environment
-        _ = setup_session()
+        _ = utils.setup_session()
+        _ = utils.setup_region(region)
 
         # Load config from base64
         config = json.loads(base64.b64decode(config_b64))
