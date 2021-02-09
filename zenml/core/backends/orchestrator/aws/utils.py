@@ -26,7 +26,7 @@ def get_startup_script(config: Dict,
            f'mkdir aws_config\n' \
            f'touch aws_config/config\n' \
            f'echo "[default]">>config\n' \
-           f'echo "region = {region}">>config\n"' \
+           f'echo "region = {region}">>config\n' \
            f'sudo HOME=/home/root docker run --net=host ' \
            f'--env AWS_REGION={region} -v aws_config:/home/.aws '\
            f'{zenml_image} {c_params}'
