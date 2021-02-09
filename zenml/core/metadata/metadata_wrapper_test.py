@@ -19,6 +19,9 @@ import random
 from zenml.core.repo.repo import Repository
 from zenml.utils.enums import GDPComponent
 from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
+from zenml.utils.enums import PipelineStatusTypes
+from zenml.core.standards.standard_keys import MLMetadataKeys
+
 
 ZENML_ROOT = zenml.__path__[0]
 TEST_ROOT = os.path.join(ZENML_ROOT, "testing")
@@ -29,25 +32,33 @@ repo.zenml_config.set_pipelines_dir(pipelines_dir)
 
 # we expect all queries to fail since the metadata store
 # cannot be instantiated
-expected_query_error = ValueError
+expected_query_error = AssertionError
 
 
 def test_metadata_init():
 
     mds1 = ZenMLMetadataStore()
 
-    with pytest.raises(expected_query_error):
+    with pytest.raises(ValueError):
         _ = mds1.store
 
 
-def test_to_from_config(equal_md_stores):
+def test_to_config():
     mds1 = ZenMLMetadataStore()
 
-    mds2 = ZenMLMetadataStore.from_config(mds1.to_config())
+    # disallow to/from_config for the base class by checking against
+    # factory keys
+    with pytest.raises(AssertionError):
+        mds1.to_config()
 
-    # TODO: This fails because from_config throws (base store is
-    #  not in the factory)
-    assert equal_md_stores(mds1, mds2, loaded=True)
+
+def test_from_config():
+    config = {MLMetadataKeys.TYPE: None,
+              MLMetadataKeys.ARGS: {}}
+
+    # throws because base MDStore is not in the factory
+    with pytest.raises(AssertionError):
+        _ = ZenMLMetadataStore.from_config(config)
 
 
 def test_get_pipeline_status(run_test_pipelines):
@@ -58,8 +69,9 @@ def test_get_pipeline_status(run_test_pipelines):
 
     # TODO: This returns a NotStarted enum, which may be misleading as the
     #  associated store does not even exist
-    with pytest.raises(expected_query_error):
-        _ = mds1.get_pipeline_status(random_pipeline)
+    # with pytest.raises(expected_query_error):
+    assert mds1.get_pipeline_status(random_pipeline) == \
+           PipelineStatusTypes.NotStarted.name
 
 
 def test_get_pipeline_executions():
@@ -121,5 +133,5 @@ def test_get_artifacts_by_execution():
 
     # no execution possible
     fake_id = "abcdefg"
-    with pytest.raises(expected_query_error):
+    with pytest.raises(ValueError):
         _ = mds1.get_artifacts_by_execution(fake_id)

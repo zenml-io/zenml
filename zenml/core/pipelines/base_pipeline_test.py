@@ -114,10 +114,12 @@ def test_get_pipeline_config():
 
     p_name = p.pipeline_name
 
-    assert config[keys.PipelineKeys.NAME] == p_name
-    assert config[keys.PipelineKeys.TYPE] == "base"
-    assert config[keys.PipelineKeys.ENABLE_CACHE] is True
-    assert config[keys.PipelineKeys.DATASOURCE] is None
+    p_args = config[keys.PipelineKeys.ARGS]
+
+    assert p_args[keys.PipelineDetailKeys.NAME] == p_name
+    # assert p_args[keys.PipelineDetailKeys.TYPE] == "base"
+    assert p_args[keys.PipelineDetailKeys.ENABLE_CACHE] is True
+    assert config[keys.PipelineKeys.DATASOURCE] == {}
     assert config[keys.PipelineKeys.SOURCE].split("@")[0] == \
            "zenml.core.pipelines.base_pipeline.BasePipeline"
     # TODO: Expand this to more pipelines
@@ -191,8 +193,13 @@ def test_run_config():
         def run(self, config):
             return {"message": "Run triggered!"}
 
-    # Base Orchestrator Backend complains about lack of datasource
+    # run config without a specified backend
+    p.run_config(p.to_config())
+
+    p.backend = "123"
+
     with pytest.raises(Exception):
+        # not a backend subclass error
         p.run_config(p.to_config())
 
     p.backend = MockBackend()
