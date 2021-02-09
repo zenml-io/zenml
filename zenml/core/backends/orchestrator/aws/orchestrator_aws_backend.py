@@ -60,7 +60,6 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
         self.instance_type = instance_type
         self.instance_image = instance_image
         self.zenml_image = zenml_image
-        self.region = region
         self.key_name = key_name
         self.min_count = min_count
         self.max_count = max_count
