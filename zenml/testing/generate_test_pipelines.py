@@ -36,43 +36,47 @@ image_root = os.path.join(csv_root, "images")
 repo: Repository = Repository.get_instance()
 repo.zenml_config.set_pipelines_dir(pipeline_root)
 
-for i in range(1, 6):
-    training_pipeline = TrainingPipeline(name='csvtest{0}'.format(i))
+try:
+    for i in range(1, 6):
+        training_pipeline = TrainingPipeline(name='csvtest{0}'.format(i))
 
-    try:
-        # Add a datasource. This will automatically track and version it.
-        ds = CSVDatasource(name='my_csv_datasource',
-                           path=os.path.join(csv_root, "my_dataframe.csv"))
-    except:
-        ds = repo.get_datasource_by_name("my_csv_datasource")
+        try:
+            # Add a datasource. This will automatically track and version it.
+            ds = CSVDatasource(name='my_csv_datasource',
+                               path=os.path.join(csv_root, "my_dataframe.csv"))
+        except:
+            ds = repo.get_datasource_by_name("my_csv_datasource")
 
-    training_pipeline.add_datasource(ds)
+        training_pipeline.add_datasource(ds)
 
-    # Add a split
-    training_pipeline.add_split(CategoricalDomainSplit(
-        categorical_column="name",
-        split_map={'train': ["arnold", "nicholas"], 'eval': ["lülük"]}))
+        # Add a split
+        training_pipeline.add_split(CategoricalDomainSplit(
+            categorical_column="name",
+            split_map={'train': ["arnold", "nicholas"], 'eval': ["lülük"]}))
 
-    # Add a preprocessing unit
-    training_pipeline.add_preprocesser(
-        StandardPreprocesser(
-            features=["name", "age"],
-            labels=['gpa'],
-            overwrite={'gpa': {
-                'transform': [{'method': 'no_transform', 'parameters': {}}]}}
-        ))
+        # Add a preprocessing unit
+        training_pipeline.add_preprocesser(
+            StandardPreprocesser(
+                features=["name", "age"],
+                labels=['gpa'],
+                overwrite={'gpa': {
+                    'transform': [{'method': 'no_transform', 'parameters': {}}]}}
+            ))
 
-    # Add a trainer
-    training_pipeline.add_trainer(FeedForwardTrainer(
-        batch_size=1,
-        loss='binary_crossentropy',
-        last_activation='sigmoid',
-        output_units=1,
-        metrics=['accuracy'],
-        epochs=i))
+        # Add a trainer
+        training_pipeline.add_trainer(FeedForwardTrainer(
+            batch_size=1,
+            loss='binary_crossentropy',
+            last_activation='sigmoid',
+            output_units=1,
+            metrics=['accuracy'],
+            epochs=i))
 
-    # Run the pipeline locally
-    training_pipeline.run()
+        # Run the pipeline locally
+        training_pipeline.run()
+
+except Exception as e:
+    print(e)
 
 # for i in range(1, 6):
 #     training_pipeline = TrainingPipeline(name='imagetest{0}'.format(i))
