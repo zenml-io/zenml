@@ -50,4 +50,4 @@ def setup_region(region):
                 os.environ[AWS_REGION] = session.region_name
     else:
         os.environ[AWS_REGION] = region
-    return region
+    return os.environ[AWS_REGION]
