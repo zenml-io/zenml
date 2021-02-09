@@ -21,7 +21,6 @@ from zenml.core.repo.artifact_store import ArtifactStore
 from zenml.core.repo.constants import ZENML_CONFIG_NAME, \
     ARTIFACT_STORE_DEFAULT_DIR, PIPELINES_DEFAULT_DIR_NAME, \
     ML_METADATA_SQLITE_DEFAULT_NAME, ZENML_DIR_NAME
-from zenml.core.repo.git_wrapper import GitWrapper
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils, yaml_utils
 from zenml.utils.exceptions import InitializationException
@@ -103,10 +102,6 @@ class ZenMLConfig:
 
         # Create config dir
         path_utils.create_dir_if_not_exists(config_dir_path)
-
-        # Do proper checks and add to .gitignore
-        git_wrapper = GitWrapper(path)
-        git_wrapper.add_gitignore([ZENML_DIR_NAME + '/'])
 
         if artifact_store_path is None:
             artifact_store_path = \

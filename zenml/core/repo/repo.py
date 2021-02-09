@@ -22,6 +22,7 @@ from zenml.core.repo.artifact_store import ArtifactStore
 from zenml.core.repo.git_wrapper import GitWrapper
 from zenml.core.repo.global_config import GlobalConfig
 from zenml.core.repo.zenml_config import ZenMLConfig
+from zenml.core.repo.constants import ZENML_DIR_NAME
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils, yaml_utils
 from zenml.utils.exceptions import InitializationException
@@ -121,7 +122,9 @@ class Repository:
             NoSuchPathError: If the repo_path does not exist.
         """
         # check whether its a git repo by initializing GitWrapper
-        GitWrapper(repo_path)
+        git_wrapper = GitWrapper(repo_path)
+        # Do proper checks and add to .gitignore
+        git_wrapper.add_gitignore([ZENML_DIR_NAME + '/'])
 
         # use the underlying ZenMLConfig class to create the config
         ZenMLConfig.to_config(
