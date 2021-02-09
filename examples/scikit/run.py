@@ -44,8 +44,5 @@ training_pipeline.add_trainer(MyScikitTrainer())
 # Run the pipeline locally
 training_pipeline.run()
 
-# See schema of data
-print(training_pipeline.view_schema())
-
 # See statistics of train and eval
 training_pipeline.view_statistics()
