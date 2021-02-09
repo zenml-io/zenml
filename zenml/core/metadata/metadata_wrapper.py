@@ -55,7 +55,7 @@ class ZenMLMetadataStore:
         store_type = config[MLMetadataKeys.TYPE]
         store_types = list(MLMetadataTypes.__members__.keys())
         if store_type not in store_types:
-            raise Exception(f'store_type must be one of: {store_types}')
+            raise AssertionError(f'store_type must be one of: {store_types}')
         args = config[MLMetadataKeys.ARGS]
         class_ = wrapper_factory.get_single_metadata_wrapper(store_type)
 
@@ -77,6 +77,10 @@ class ZenMLMetadataStore:
         """
         Converts from ZenML Metadata store back to config.
         """
+        store_types = list(MLMetadataTypes.__members__.keys())
+        if self.STORE_TYPE not in store_types:
+            raise AssertionError(f'store_type must be one of: {store_types}')
+
         args_dict = self.__dict__.copy()
         return {
             MLMetadataKeys.TYPE: self.STORE_TYPE,
