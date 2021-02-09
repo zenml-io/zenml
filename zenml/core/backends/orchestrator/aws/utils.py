@@ -19,22 +19,35 @@ def _get_container_params(config):
 
 
 def get_startup_script(config: Dict,
+                       region: Text,
                        zenml_image: Text = ZENML_BASE_IMAGE_NAME):
     c_params = _get_container_params(config)
-    return f"#!/bin/bash\n" \
-           f"sudo HOME=/home/root docker run --net=host {zenml_image} {c_params}"
+    return f'#!/bin/bash\n' \
+           f'mkdir aws_config\n' \
+           f'touch aws_config/config\n' \
+           f'echo "[default]\nregion = {region}">>config\n"' \
+           f'sudo HOME=/home/root docker run --net=host ' \
+           f'--env AWS_REGION={region} -v {zenml_image} {c_params}'
 
 
-def setup_session(region: Text = None):
+def setup_session():
     session = boto3.Session()
     credentials = session.get_credentials()
     os.environ[AWS_ACCESS_KEY_ID] = credentials.access_key
     os.environ[AWS_SECRET_ACCESS_KEY] = credentials.secret_key
+    return session
+
+
+def setup_region(region):
     if region is None:
-        if session.region_name is None:
-            os.environ[AWS_REGION] = 'eu-central-1'
+        if AWS_REGION in os.environ:
+            pass
         else:
-            os.environ[AWS_REGION] = session.region_name
+            session = boto3.Session()
+            if session.region_name is None:
+                os.environ[AWS_REGION] = 'eu-central-1'
+            else:
+                os.environ[AWS_REGION] = session.region_name
     else:
         os.environ[AWS_REGION] = region
-    return session
+    return region

@@ -24,7 +24,7 @@ from zenml.core.repo.repo import Repository
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils
 from zenml.utils.logger import get_logger
-
+from zenml.utils.constants import ZENML_BASE_IMAGE_NAME
 logger = get_logger(__name__)
 
 EXTRACTED_TAR_DIR_NAME = 'zenml_working'
@@ -41,8 +41,7 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
                  instance_name: Text = 'zenml',
                  instance_type: Text = 't2.micro',
                  instance_image: Text = 'ami-02e9f4e447e4cda79',
-                 # TODO: Make it None after debugging
-                 zenml_image: Text = 'eu.gcr.io/maiot-zenml/testing:base-AWS',
+                 zenml_image: Text = None,
                  region: Text = None,
                  key_name: Text = 'baris',
                  min_count: int = 1,
@@ -50,9 +49,11 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
                  security_groups: List = None,
                  instance_profile: Dict = None):
 
-        session = utils.setup_session(region)
-        self.ec2_client = session.client('ec2')
-        self.ec2_resource = session.resource('ec2')
+        self.session = utils.setup_session()
+        self.region = utils.setup_region(region)
+
+        self.ec2_client = self.session.client('ec2')
+        self.ec2_resource = self.session.resource('ec2')
 
         self.instance_name = instance_name
         self.instance_type = instance_type
@@ -72,6 +73,12 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
             self.instance_profile = {'Name': 'ZenML'}
         else:
             self.instance_profile = instance_profile
+
+        if zenml_image is None:
+            self.zenml_image = ZENML_BASE_IMAGE_NAME
+
+        else:
+            self.zenml_image = zenml_image
 
         super(OrchestratorBaseBackend, self).__init__(
             instance_name=self.instance_name,
