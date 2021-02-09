@@ -27,7 +27,6 @@ from zenml.core.steps.base_step import BaseStep
 from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
 from zenml.core.repo.zenml_config import ZenMLConfig
-from zenml.testing.utils import run_pipelines
 
 
 # reset pipeline root to redirect to testing so that it writes the yamls there
@@ -35,17 +34,6 @@ ZENML_ROOT = zenml.__path__[0]
 TEST_ROOT = os.path.join(ZENML_ROOT, "testing")
 
 pipeline_root = os.path.join(TEST_ROOT, "test_pipelines")
-
-
-#@pytest.fixture(scope="session", autouse=True)
-def pytest_configure(config):
-    """
-    Called after the Session object has been created and
-    before performing collection and entering the run test loop.
-    """
-    if not path_utils.is_dir(pipeline_root):
-        run_pipelines()
-        return
 
 
 @pytest.fixture
