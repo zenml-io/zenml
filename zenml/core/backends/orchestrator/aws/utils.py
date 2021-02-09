@@ -22,14 +22,14 @@ def get_startup_script(config: Dict,
                        region: Text,
                        zenml_image: Text = ZENML_BASE_IMAGE_NAME):
     c_params = _get_container_params(config, region)
-    return f'#!/bin/bash\n' \
-           f'mkdir aws_config\n' \
-           f'touch aws_config/config\n' \
-           f'echo "[default]">>config\n' \
-           f'echo "region = {region}">>config\n' \
-           f'sudo HOME=/home/root docker run --net=host ' \
-           f'--env AWS_REGION={region} -v aws_config:/home/.aws '\
-           f'{zenml_image} {c_params}'
+    return f"#!/bin/bash\n" \
+           f"mkdir ~/aws_config\n" \
+           f"touch ~/aws_config/config\n" \
+           f"echo \"[default]\">>~/aws_config/config\n" \
+           f"echo \"region = {region}\">>~/aws_config/config\n" \
+           f"sudo HOME=/home/root docker run --net=host " \
+           f"--env AWS_REGION={region} -v ~/aws_config:~/.aws " \
+           f"{zenml_image} {c_params}"
 
 
 def setup_session():
