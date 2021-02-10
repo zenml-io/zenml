@@ -13,8 +13,8 @@
 # or implied. See the License for the specific language governing
 # permissions and limitations under the License.
 #
-zenml init
+zenml init --analytics_opt_in False
 
-python generate_test_pipelines.py
+python zenml/testing/generate_test_pipelines.py
 
-cd ../.. && pytest zenml
+pytest zenml
