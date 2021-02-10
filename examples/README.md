@@ -13,6 +13,7 @@ Here you can find a list with brief descriptions for each example:
 - **gcp_kubernetes_orchestrated**: Launches a kubernetes job on a kubernetes cluster.
 - **gcp_orchestrated**: Runs pipeline on an (optionally preemtible) virtual machine on `Google Cloud Platform` as the orchestration backend.
 - **pytorch**: Showcases PyTorch support.
+- **pytorch_lightning**: Showcases [PyTorch Lightning](https://www.pytorchlightning.ai/) support.
 - **quickstart**: The official quickstart tutorial.
 
 Note: A lot of the examples are based on [Google Cloud Platform](https://cloud.google.com/). Extensions to other cloud providers like AWS and Azure will 
