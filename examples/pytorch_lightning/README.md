@@ -15,9 +15,8 @@ Before continuing, either [install the zenml pip package](https://docs.zenml.io/
 Also needed are the `pytorch-lightning` and `torch-vision` libraries:
 
 ```bash
-pip install zenml
+pip install zenml[pytorch]
 pip instal pytorch-lightning==1.1.8
-pip install torchvision==0.8.2
 ```
 
 Then:
