@@ -58,6 +58,8 @@ GET_PIPELINE_ARTIFACTS = "Pipeline Artifacts fetched"
 # Repo
 
 CREATE_REPO = "Repository created"
+
+INITIALIZE = "ZenML initialized"
 ```
 
  In addition, each Segment Track event collects the following metadata:
