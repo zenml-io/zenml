@@ -59,11 +59,17 @@ def test_is_zenml_dir():
 
 def test_to_from_config(equal_zenml_configs):
     # TODO: This is messed up
-    cfg1 = ZenMLConfig(repo_path=config_root)
+    cfg1 = ZenMLConfig(repo_path=TEST_ROOT)
 
-    cfg2 = cfg1.from_config(cfg1.to_config(path=config_root))
+    new_zenml_dir = os.path.join(TEST_ROOT, ".zenml")
+
+    os.mkdir(new_zenml_dir)
+
+    cfg2 = cfg1.from_config(cfg1.to_config(path=TEST_ROOT))
 
     assert equal_zenml_configs(cfg1, cfg2, loaded=True)
+
+    shutil.rmtree(new_zenml_dir, ignore_errors=False)
 
 
 def test_zenml_config_getters():
