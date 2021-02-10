@@ -28,7 +28,6 @@ from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
 from zenml.core.repo.zenml_config import ZenMLConfig
 
-
 # reset pipeline root to redirect to testing so that it writes the yamls there
 ZENML_ROOT = zenml.__path__[0]
 TEST_ROOT = os.path.join(ZENML_ROOT, "testing")
@@ -232,7 +231,19 @@ def equal_md_stores():
 
 
 @pytest.fixture
-def equal_zenml_configs():
+def equal_zenml_configs(equal_md_stores):
     def wrapper(cfg1: ZenMLConfig, cfg2: ZenMLConfig, loaded=True):
-        return False
+        # There can be a "None" datasource in a pipeline
+        if cfg1 is None and cfg2 is None:
+            return True
+        if sum(d is None for d in [cfg1, cfg2]) == 1:
+            return False
+
+        # TODO[LOW]: Expand logic
+        equal = False
+        equal |= equal_md_stores(cfg1.metadata_store, cfg2.metadata_store)
+        equal |= cfg1.pipelines_dir == cfg2.pipelines_dir
+        equal |= cfg1.artifact_store.path == cfg2.artifact_store.path
+
+        return equal
     return wrapper
