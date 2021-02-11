@@ -14,25 +14,28 @@
 
 # pylint disable=protected-access
 
-import pytest
 import os
-import zenml
 import shutil
-from zenml.core.repo.repo import Repository
-from zenml.utils import path_utils, yaml_utils
-from zenml.core.pipelines.training_pipeline import TrainingPipeline
-from zenml.core.datasources.base_datasource import BaseDatasource
+from pathlib import Path
+
+import pytest
+
+import zenml
 from zenml.core.backends.base_backend import BaseBackend
-from zenml.core.steps.base_step import BaseStep
-from zenml.core.pipelines.base_pipeline import BasePipeline
+from zenml.core.datasources.base_datasource import BaseDatasource
 from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
+from zenml.core.pipelines.base_pipeline import BasePipeline
+from zenml.core.pipelines.training_pipeline import TrainingPipeline
+from zenml.core.repo.repo import Repository
 from zenml.core.repo.zenml_config import ZenMLConfig
+from zenml.core.steps.base_step import BaseStep
+from zenml.utils import path_utils, yaml_utils
 
-# reset pipeline root to redirect to testing so that it writes the yamls there
-ZENML_ROOT = zenml.__path__[0]
-TEST_ROOT = os.path.join(ZENML_ROOT, "testing")
+# Nicholas a way to get to the root
+ZENML_ROOT = str(Path(zenml.__path__[0]).parent)
+TEST_ROOT = os.path.join(ZENML_ROOT, "tests")
 
-pipeline_root = os.path.join(TEST_ROOT, "test_pipelines")
+pipeline_root = os.path.join(TEST_ROOT, "pipelines")
 
 
 @pytest.fixture
@@ -93,6 +96,7 @@ def run_test_pipelines():
             y = yaml_utils.read_yaml(p_config)
             p: TrainingPipeline = TrainingPipeline.from_config(y)
             p.run()
+
     return wrapper
 
 
@@ -246,4 +250,5 @@ def equal_zenml_configs(equal_md_stores):
         equal |= cfg1.artifact_store.path == cfg2.artifact_store.path
 
         return equal
+
     return wrapper

@@ -13,9 +13,12 @@
 #  permissions and limitations under the License.
 
 import os
+from pathlib import Path
+
 import zenml
 from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
+from zenml.core.repo.repo import Repository
 from zenml.core.steps.preprocesser.standard_preprocesser \
     .standard_preprocesser import \
     StandardPreprocesser
@@ -23,16 +26,17 @@ from zenml.core.steps.split.categorical_domain_split_step import \
     CategoricalDomainSplit
 from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
     FeedForwardTrainer
-from zenml.core.repo.repo import Repository
 from zenml.utils import path_utils
 
-# reset pipeline root to redirect to testing so that it writes the yamls there
-ZENML_ROOT = zenml.__path__[0]
-TEST_ROOT = os.path.join(ZENML_ROOT, "testing")
+# reset pipeline root to redirect to tests so that it writes the yamls there
+ZENML_ROOT = str(Path(zenml.__path__[0]).parent)
+TEST_ROOT = os.path.join(ZENML_ROOT, "tests")
+Repository.init_repo(TEST_ROOT)
 
-pipeline_root = os.path.join(TEST_ROOT, "test_pipelines")
+pipeline_root = os.path.join(TEST_ROOT, "pipelines")
 csv_root = os.path.join(TEST_ROOT, "test_data")
 image_root = os.path.join(csv_root, "images")
+
 
 repo: Repository = Repository.get_instance()
 if path_utils.is_dir(pipeline_root):
@@ -63,7 +67,8 @@ try:
                 features=["name", "age"],
                 labels=['gpa'],
                 overwrite={'gpa': {
-                    'transform': [{'method': 'no_transform', 'parameters': {}}]}}
+                    'transform': [
+                        {'method': 'no_transform', 'parameters': {}}]}}
             ))
 
         # Add a trainer

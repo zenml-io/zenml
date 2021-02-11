@@ -12,24 +12,26 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import pytest
 import os
-import zenml
 import random
+from pathlib import Path
 from typing import Text
-from zenml.core.repo.repo import Repository
-from zenml.core.pipelines.base_pipeline import BasePipeline
+
+import pytest
+
+import zenml
 from zenml.core.datasources.base_datasource import BaseDatasource
+from zenml.core.pipelines.base_pipeline import BasePipeline
+from zenml.core.repo.repo import Repository
 from zenml.utils import yaml_utils
 from zenml.utils.version import __version__
-from zenml.core.standards import standard_keys as keys
 
-ZENML_ROOT = zenml.__path__[0]
-TEST_ROOT = os.path.join(ZENML_ROOT, "testing")
+# Nicholas a way to get to the root
+ZENML_ROOT = str(Path(zenml.__path__[0]).parent)
+TEST_ROOT = os.path.join(ZENML_ROOT, "tests")
 
-pipeline_root = os.path.join(TEST_ROOT, "test_pipelines")
+pipeline_root = os.path.join(TEST_ROOT, "pipelines")
 repo: Repository = Repository.get_instance()
-repo.zenml_config.set_pipelines_dir(pipeline_root)
 
 
 def test_repo_double_init():
@@ -144,7 +146,6 @@ def test_get_pipeline_by_name(equal_pipelines):
 
 
 def test_get_step_versions():
-
     step_versions = repo.get_step_versions()
 
     # TODO: Make this less hardcoded

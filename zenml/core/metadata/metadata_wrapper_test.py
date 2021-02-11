@@ -12,23 +12,25 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import pytest
 import os
-import zenml
 import random
-from zenml.core.repo.repo import Repository
-from zenml.utils.enums import GDPComponent
+from pathlib import Path
+
+import pytest
+
+import zenml
 from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
-from zenml.utils.enums import PipelineStatusTypes
+from zenml.core.repo.repo import Repository
 from zenml.core.standards.standard_keys import MLMetadataKeys
+from zenml.utils.enums import GDPComponent
+from zenml.utils.enums import PipelineStatusTypes
 
+# Nicholas a way to get to the root
+ZENML_ROOT = str(Path(zenml.__path__[0]).parent)
+TEST_ROOT = os.path.join(ZENML_ROOT, "tests")
 
-ZENML_ROOT = zenml.__path__[0]
-TEST_ROOT = os.path.join(ZENML_ROOT, "testing")
-
-pipelines_dir = os.path.join(TEST_ROOT, "test_pipelines")
+pipelines_dir = os.path.join(TEST_ROOT, "pipelines")
 repo: Repository = Repository.get_instance()
-repo.zenml_config.set_pipelines_dir(pipelines_dir)
 
 # we expect all queries to fail since the metadata store
 # cannot be instantiated
@@ -36,7 +38,6 @@ expected_query_error = AssertionError
 
 
 def test_metadata_init():
-
     mds1 = ZenMLMetadataStore()
 
     with pytest.raises(ValueError):

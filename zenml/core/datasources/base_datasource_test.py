@@ -22,13 +22,14 @@ from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.repo.repo import Repository
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import yaml_utils, exceptions
+from pathlib import Path
 
-ZENML_ROOT = zenml.__path__[0]
-TEST_ROOT = os.path.join(ZENML_ROOT, "testing")
+# Nicholas a way to get to the root
+ZENML_ROOT = str(Path(zenml.__path__[0]).parent)
+TEST_ROOT = os.path.join(ZENML_ROOT, "tests")
 
-pipeline_root = os.path.join(TEST_ROOT, "test_pipelines")
+pipeline_root = os.path.join(TEST_ROOT, "pipelines")
 repo: Repository = Repository.get_instance()
-repo.zenml_config.set_pipelines_dir(pipeline_root)
 
 
 def test_datasource_create():

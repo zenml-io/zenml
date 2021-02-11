@@ -12,27 +12,30 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import pytest
 import os
-import zenml
 import random
-from zenml.core.pipelines.base_pipeline import BasePipeline
-from zenml.core.datasources.base_datasource import BaseDatasource
-from zenml.core.datasources.image_datasource import ImageDatasource
+from pathlib import Path
+
+import pytest
+
+import zenml
 from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
     OrchestratorBaseBackend
-from zenml.core.steps.base_step import BaseStep
+from zenml.core.datasources.base_datasource import BaseDatasource
+from zenml.core.datasources.image_datasource import ImageDatasource
+from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.repo.repo import Repository
-from zenml.utils.enums import PipelineStatusTypes, GDPComponent
 from zenml.core.standards import standard_keys as keys
+from zenml.core.steps.base_step import BaseStep
 from zenml.utils import exceptions, path_utils
+from zenml.utils.enums import PipelineStatusTypes, GDPComponent
 
-ZENML_ROOT = zenml.__path__[0]
-TEST_ROOT = os.path.join(ZENML_ROOT, "testing")
+# Nicholas a way to get to the root
+ZENML_ROOT = str(Path(zenml.__path__[0]).parent)
+TEST_ROOT = os.path.join(ZENML_ROOT, "tests")
 
-pipelines_dir = os.path.join(TEST_ROOT, "test_pipelines")
+pipelines_dir = os.path.join(TEST_ROOT, "pipelines")
 repo: Repository = Repository.get_instance()
-repo.zenml_config.set_pipelines_dir(pipelines_dir)
 
 
 def test_executed():
@@ -160,7 +163,7 @@ def test_get_artifacts_uri_by_component():
     assert written_artifacts
     # TODO: Ugly TFRecord validation
     assert all((("tfrecord" in name and
-                os.path.splitext(name)[-1] == ".gz") for name in f)
+                 os.path.splitext(name)[-1] == ".gz") for name in f)
                for _, _, f in os.walk(uri))
 
 

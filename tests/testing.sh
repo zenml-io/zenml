@@ -13,8 +13,15 @@
 # or implied. See the License for the specific language governing
 # permissions and limitations under the License.
 #
-zenml init --analytics_opt_in False
+git init
+git add .
+git commit -m 'test commit'
 
-python zenml/testing/generate_test_pipelines.py
+python generate_test_pipelines.py
 
-pytest zenml
+pytest ../zenml
+
+rm -rf .git
+rm -rf .zenml
+rm -rf pipelines
+rm .gitignore
