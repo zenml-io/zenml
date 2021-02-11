@@ -25,17 +25,21 @@ from zenml.core.backends.base_backend import BaseBackend
 from zenml.core.datasources.base_datasource import BaseDatasource
 from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
 from zenml.core.pipelines.base_pipeline import BasePipeline
-from zenml.core.pipelines.training_pipeline import TrainingPipeline
 from zenml.core.repo.repo import Repository
 from zenml.core.repo.zenml_config import ZenMLConfig
 from zenml.core.steps.base_step import BaseStep
-from zenml.utils import path_utils, yaml_utils
+from zenml.utils import path_utils
 
 # Nicholas a way to get to the root
 ZENML_ROOT = str(Path(zenml.__path__[0]).parent)
 TEST_ROOT = os.path.join(ZENML_ROOT, "tests")
 
 pipeline_root = os.path.join(TEST_ROOT, "pipelines")
+
+
+@pytest.fixture
+def repo():
+    return Repository.get_instance()
 
 
 @pytest.fixture
@@ -87,24 +91,10 @@ def cleanup(cleanup_metadata_store, cleanup_artifacts):
 
 
 @pytest.fixture
-def run_test_pipelines():
-    def wrapper():
-        repo: Repository = Repository.get_instance()
-        repo.zenml_config.set_pipelines_dir(pipeline_root)
-
-        for p_config in path_utils.list_dir(pipeline_root):
-            y = yaml_utils.read_yaml(p_config)
-            p: TrainingPipeline = TrainingPipeline.from_config(y)
-            p.run()
-
-    return wrapper
-
-
-@pytest.fixture
 def delete_config():
     def wrapper(filename):
         repo: Repository = Repository.get_instance()
-        repo.zenml_config.set_pipelines_dir(pipeline_root)
+        pipeline_root = repo.zenml_config.get_pipelines_dir()
 
         cfg = os.path.join(pipeline_root, filename)
         path_utils.rm_file(cfg)
