@@ -120,4 +120,6 @@ def test_sample_data(repo):
     csv_df = pd.read_csv(os.path.join(TEST_ROOT,
                                       "test_data", "my_dataframe.csv"))
 
+# TODO: This fails for floating point values other than 2.5 in GPA.
+#   Pandas floating point comp might be too strict
     assert sample_df.equals(csv_df)
