@@ -19,7 +19,6 @@ import random
 import pandas as pd
 from zenml.core.datasources.base_datasource import BaseDatasource
 from zenml.core.pipelines.base_pipeline import BasePipeline
-from zenml.core.repo.repo import Repository
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import yaml_utils, exceptions
 from pathlib import Path
@@ -28,11 +27,8 @@ from pathlib import Path
 ZENML_ROOT = str(Path(zenml.__path__[0]).parent)
 TEST_ROOT = os.path.join(ZENML_ROOT, "tests")
 
-pipeline_root = os.path.join(TEST_ROOT, "pipelines")
-repo: Repository = Repository.get_instance()
 
-
-def test_datasource_create():
+def test_datasource_create(repo):
     name = "my_datasource"
     first_ds = BaseDatasource(name=name)
 
@@ -63,7 +59,7 @@ def test_to_from_config(equal_datasources):
     assert equal_datasources(first_ds, second_ds, loaded=True)
 
 
-def test_get_one_pipeline():
+def test_get_one_pipeline(repo):
     name = "my_datasource"
     first_ds = BaseDatasource(name=name)
 
@@ -78,7 +74,7 @@ def test_get_one_pipeline():
     assert second_ds._get_one_pipeline()
 
 
-def test_get_data_file_paths():
+def test_get_data_file_paths(repo):
     first_ds = BaseDatasource(name="my_datasource")
 
     first_pipeline = BasePipeline(name="my_pipeline")
@@ -100,7 +96,7 @@ def test_get_data_file_paths():
     assert all(os.path.splitext(p)[-1] == ".gz" for p in paths)
 
 
-def test_get_datapoints():
+def test_get_datapoints(repo):
     # reload a datasource from a saved config
     p_config = random.choice(repo.get_pipeline_file_paths())
     cfg = yaml_utils.read_yaml(p_config)
@@ -113,7 +109,7 @@ def test_get_datapoints():
     assert ds.get_datapoints() == len(csv_df.index)
 
 
-def test_sample_data():
+def test_sample_data(repo):
     # reload a datasource from a saved config
     p_config = random.choice(repo.get_pipeline_file_paths())
     cfg = yaml_utils.read_yaml(p_config)
@@ -124,6 +120,4 @@ def test_sample_data():
     csv_df = pd.read_csv(os.path.join(TEST_ROOT,
                                       "test_data", "my_dataframe.csv"))
 
-    # TODO: This fails on the test csv because the age gets typed as
-    #  a float in datasource.sample_data() method
     assert sample_df.equals(csv_df)

@@ -30,9 +30,6 @@ from zenml.utils.version import __version__
 ZENML_ROOT = str(Path(zenml.__path__[0]).parent)
 TEST_ROOT = os.path.join(ZENML_ROOT, "tests")
 
-pipeline_root = os.path.join(TEST_ROOT, "pipelines")
-repo: Repository = Repository.get_instance()
-
 
 def test_repo_double_init():
     # explicitly constructing another repository should fail
@@ -40,16 +37,14 @@ def test_repo_double_init():
         _ = Repository()
 
 
-def test_get_datasources(run_test_pipelines):
-    run_test_pipelines()
-
+def test_get_datasources(repo):
     ds_list = repo.get_datasources()
 
     # TODO: Expand this for more test pipeline types!
     assert len(ds_list) == 1
 
 
-def test_get_datasource_by_name():
+def test_get_datasource_by_name(repo):
     assert repo.get_datasource_by_name("my_csv_datasource")
 
     fake_ds = repo.get_datasource_by_name("ds_123")
@@ -57,7 +52,7 @@ def test_get_datasource_by_name():
     assert fake_ds is None
 
 
-def test_get_datasource_names():
+def test_get_datasource_names(repo):
     # TODO: Expand to more test datasources!
     test_ds_names = ["my_csv_datasource"]
 
@@ -66,7 +61,7 @@ def test_get_datasource_names():
     assert sorted(test_ds_names) == sorted(ds_names)
 
 
-def test_get_pipeline_file_paths(monkeypatch):
+def test_get_pipeline_file_paths(repo, monkeypatch):
     mock_paths = ["pipeline_1.yaml", "pipeline_2.yaml", "awjfof.txt"]
 
     def mock_list_dir(dir_path: Text, only_file_names: bool = False):
@@ -81,7 +76,7 @@ def test_get_pipeline_file_paths(monkeypatch):
     assert paths == mock_paths[:-1]
 
 
-def test_get_pipeline_names():
+def test_get_pipeline_names(repo):
     # TODO: This has to be made dynamic once more pipelines come
     real_p_names = sorted(["csvtest{0}".format(i) for i in range(1, 6)])
 
@@ -90,7 +85,7 @@ def test_get_pipeline_names():
     assert real_p_names == found_p_names
 
 
-def test_get_pipelines():
+def test_get_pipelines(repo):
     p_names = sorted(repo.get_pipeline_names())
 
     pipelines = repo.get_pipelines()
@@ -100,7 +95,7 @@ def test_get_pipelines():
     assert all(p.name == name for p, name in zip(pipelines, p_names))
 
 
-def test_get_pipelines_by_datasource():
+def test_get_pipelines_by_datasource(repo):
     # asserted in an earlier test
     ds = repo.get_datasource_by_name("my_csv_datasource")
 
@@ -117,7 +112,7 @@ def test_get_pipelines_by_datasource():
     assert not pipelines_2
 
 
-def test_get_pipelines_by_type():
+def test_get_pipelines_by_type(repo):
     p_names = repo.get_pipeline_names()
 
     pipelines = repo.get_pipelines_by_type(type_filter=["training"])
@@ -129,7 +124,7 @@ def test_get_pipelines_by_type():
     assert not pipelines_2
 
 
-def test_get_pipeline_by_name(equal_pipelines):
+def test_get_pipeline_by_name(repo, equal_pipelines):
     p_names = repo.get_pipeline_names()
 
     random_name = random.choice(p_names)
@@ -145,7 +140,7 @@ def test_get_pipeline_by_name(equal_pipelines):
     assert equal_pipelines(p1, p2, loaded=True)
 
 
-def test_get_step_versions():
+def test_get_step_versions(repo):
     step_versions = repo.get_step_versions()
 
     # TODO: Make this less hardcoded
@@ -164,7 +159,7 @@ def test_get_step_versions():
     assert all(current_version in s for s in step_versions.values())
 
 
-def test_get_step_by_version():
+def test_get_step_by_version(repo):
     # TODO: Make this less hardcoded
     steps_used = ["zenml.core.steps.data.csv_data_step.CSVDataStep",
                   "zenml.core.steps.preprocesser.standard_preprocesser."
@@ -185,7 +180,7 @@ def test_get_step_by_version():
     assert repo.get_step_by_version(random_step, bogus_version) is None
 
 
-def test_get_step_versions_by_type():
+def test_get_step_versions_by_type(repo):
     # TODO: Make this less hardcoded
     steps_used = ["zenml.core.steps.data.csv_data_step.CSVDataStep",
                   "zenml.core.steps.preprocesser.standard_preprocesser."

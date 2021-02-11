@@ -12,25 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os
 import random
-from pathlib import Path
 
 import pytest
 
-import zenml
 from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
-from zenml.core.repo.repo import Repository
 from zenml.core.standards.standard_keys import MLMetadataKeys
 from zenml.utils.enums import GDPComponent
 from zenml.utils.enums import PipelineStatusTypes
-
-# Nicholas a way to get to the root
-ZENML_ROOT = str(Path(zenml.__path__[0]).parent)
-TEST_ROOT = os.path.join(ZENML_ROOT, "tests")
-
-pipelines_dir = os.path.join(TEST_ROOT, "pipelines")
-repo: Repository = Repository.get_instance()
 
 # we expect all queries to fail since the metadata store
 # cannot be instantiated
@@ -62,8 +51,7 @@ def test_from_config():
         _ = ZenMLMetadataStore.from_config(config)
 
 
-def test_get_pipeline_status(run_test_pipelines):
-    run_test_pipelines()
+def test_get_pipeline_status(repo):
     random_pipeline = random.choice(repo.get_pipelines())
 
     mds1 = ZenMLMetadataStore()
@@ -75,7 +63,7 @@ def test_get_pipeline_status(run_test_pipelines):
            PipelineStatusTypes.NotStarted.name
 
 
-def test_get_pipeline_executions():
+def test_get_pipeline_executions(repo):
     mds1 = ZenMLMetadataStore()
 
     random_pipeline = random.choice(repo.get_pipelines())
@@ -86,7 +74,7 @@ def test_get_pipeline_executions():
         _ = mds1.get_pipeline_executions(random_pipeline)
 
 
-def test_get_components_status():
+def test_get_components_status(repo):
     mds1 = ZenMLMetadataStore()
 
     random_pipeline = random.choice(repo.get_pipelines())
@@ -95,7 +83,7 @@ def test_get_components_status():
         _ = mds1.get_components_status(random_pipeline)
 
 
-def test_get_artifacts_by_component():
+def test_get_artifacts_by_component(repo):
     mds1 = ZenMLMetadataStore()
 
     random_pipeline = random.choice(repo.get_pipelines())
@@ -108,7 +96,7 @@ def test_get_artifacts_by_component():
                                             component_name)
 
 
-def test_get_component_execution():
+def test_get_component_execution(repo):
     mds1 = ZenMLMetadataStore()
 
     random_pipeline = random.choice(repo.get_pipelines())
@@ -120,7 +108,7 @@ def test_get_component_execution():
                                          component_name)
 
 
-def test_get_pipeline_context():
+def test_get_pipeline_context(repo):
     mds1 = ZenMLMetadataStore()
 
     random_pipeline = random.choice(repo.get_pipelines())
