@@ -24,6 +24,7 @@ from zenml.core.steps.split.categorical_domain_split_step import \
 from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
     FeedForwardTrainer
 from zenml.core.repo.repo import Repository
+from zenml.utils import path_utils
 
 # reset pipeline root to redirect to testing so that it writes the yamls there
 ZENML_ROOT = zenml.__path__[0]
@@ -34,6 +35,8 @@ csv_root = os.path.join(TEST_ROOT, "test_data")
 image_root = os.path.join(csv_root, "images")
 
 repo: Repository = Repository.get_instance()
+if path_utils.is_dir(pipeline_root):
+    path_utils.rm_dir(pipeline_root)
 repo.zenml_config.set_pipelines_dir(pipeline_root)
 
 try:
