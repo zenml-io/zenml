@@ -25,6 +25,7 @@ from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils
 from zenml.utils import source_utils
 from zenml.utils.enums import GDPComponent
+from zenml.utils.exceptions import AlreadyExistsException
 from zenml.utils.exceptions import EmptyDatasourceException
 from zenml.utils.logger import get_logger
 from zenml.utils.post_training.post_training_utils import \
@@ -38,31 +39,36 @@ logger = get_logger(__name__)
 
 class BaseDatasource:
     """Base class for all ZenML datasources.
-
     Every ZenML datasource should override this class.
     """
 
-    def __init__(self, name: Text):
+    def __init__(self,
+                 name: Text,
+                 *args, **kwargs):
         """
         Construct the datasource
-
         Args:
             name (str): name of datasource
+            schema (dict): schema of datasource
+            _id: unique ID (for internal use)
         """
-        # If none, then this is assumed to be 'new'. Check dupes.
-        repo: Repository = Repository.get_instance()
-        all_names = repo.get_datasource_names()
-        if any(d == name for d in all_names):
-            self._id = repo.get_datasource_id_by_name(name)
-            self._immutable = True
+        if _id:
+            # Its loaded from config
+            self._id = _id
+            logger.debug(f'Datasource {name} loaded.')
         else:
-            # Its a new datasource
+            # If none, then this is assumed to be 'new'. Check dupes.
+            all_names = Repository.get_instance().get_datasource_names()
+            if any(d == name for d in all_names):
+                raise AlreadyExistsException(
+                    name=name,
+                    resource_type='datasource')
             self._id = str(uuid4())
-            self._immutable = False
             track(event=CREATE_DATASOURCE)
             logger.info(f'Datasource {name} created.')
 
         self.name = name
+        self._immutable = False
         self._source = source_utils.resolve_source_path(
             self.__class__.__module__ + '.' + self.__class__.__name__
         )
@@ -77,10 +83,8 @@ class BaseDatasource:
     def from_config(cls, config: Dict):
         """
         Convert from Data Step config to ZenML Datasource object.
-
         Data step is also populated and configuration set to parameters set
         in the config file.
-
         Args:
             config: a DataStep config in dict-form (probably loaded from YAML).
         """
@@ -96,10 +100,9 @@ class BaseDatasource:
             keys.DatasourceKeys.NAME]
         _id = config[keys.PipelineKeys.DATASOURCE][keys.DatasourceKeys.ID]
         obj = datasource_class(
-            name=datasource_name,
+            name=datasource_name, _id=_id, _source=source,
             **step_config[keys.StepKeys.ARGS])
         obj._immutable = True
-        obj._id = _id
         return obj
 
     def to_config(self):
@@ -126,7 +129,6 @@ class BaseDatasource:
     def _get_data_file_paths(self, pipeline):
         """
         Gets path where data is stored as list of file paths.
-
         Args:
             pipeline: a pipeline with this datasource embedded
         """
@@ -143,7 +145,6 @@ class BaseDatasource:
     def sample_data(self, sample_size: int = 100000):
         """
         Sampels data from datasource as a pandas DataFrame.
-
         Args:
             sample_size: # of rows to sample.
         """
