@@ -59,6 +59,8 @@ GET_PIPELINE_ARTIFACTS = "Pipeline Artifacts fetched"
 
 CREATE_REPO = "Repository created"
 
+INITIALIZE = "ZenML initialized"
+
 
 def get_segment_key() -> Text:
     if IS_DEBUG_ENV:
@@ -121,7 +123,7 @@ def track_event(event, metadata=None):
         opt_in = config.get_analytics_opt_in()
         logger.debug(f"Analytics opt-in: {opt_in}.")
 
-        if opt_in is False:
+        if opt_in is False and event is not INITIALIZE:
             return
 
         user_id = config.get_user_id()
@@ -171,8 +173,8 @@ def track(func, event=None):
     #     metadata['module'] = func.__module__
 
     def inner_func(*args, **kwargs):
-        result = func(*args, **kwargs)
         track_event(event, metadata=metadata)
+        result = func(*args, **kwargs)
         return result
 
     return inner_func

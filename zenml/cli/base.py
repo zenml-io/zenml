@@ -22,12 +22,14 @@ from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation
 from zenml.cli.utils import pass_repo
 from zenml.core.repo.repo import Repository
+from zenml.utils.zenml_analytics import track, INITIALIZE
 
 
 @cli.command('init')
 @click.option('--repo_path', type=click.Path(exists=True))
 @click.option('--pipelines_dir', type=click.Path(exists=True))
 @click.option('--analytics_opt_in', '-a', type=click.BOOL)
+@track(event=INITIALIZE)
 def init(repo_path: Text, pipelines_dir: Text = None,
          analytics_opt_in: bool = None):
     """Initialize ZenML on given path."""
