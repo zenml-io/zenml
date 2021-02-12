@@ -96,7 +96,7 @@ class BaseDatasource:
             config: a DataStep config in dict-form (probably loaded from YAML).
         """
         if keys.DataSteps.DATA not in config[keys.PipelineKeys.STEPS]:
-            raise Exception("Cant have datasource without data step.")
+            return None  # can be empty
 
         # this is the data step config block
         step_config = config[keys.PipelineKeys.STEPS][keys.DataSteps.DATA]

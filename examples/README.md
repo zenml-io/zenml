@@ -4,6 +4,7 @@ This `example` folder is dedicated to provide our users with some practical exam
 
 Here you can find a list with brief descriptions for each example:
 
+- **batch_inference**: Run a offline batch inference job.
 - **gan**: Tutorial on how to create and train a GAN model with a custom `TrainerStep` and `PreprocessorStep`.
 - **gcp_dataflow_processing**: Showcases distributed preprocessing wth [Dataflow](https://cloud.google.com/dataflow) as the processing backend.
 - **gcp_gcaip_deployment**: Deploying a classifier with [Google Cloud AI Platform](https://cloud.google.com/ai-platform).
@@ -12,6 +13,7 @@ Here you can find a list with brief descriptions for each example:
 - **gcp_kubernetes_orchestrated**: Launches a kubernetes job on a kubernetes cluster.
 - **gcp_orchestrated**: Runs pipeline on an (optionally preemtible) virtual machine on `Google Cloud Platform` as the orchestration backend.
 - **pytorch**: Showcases PyTorch support.
+- **pytorch_lightning**: Showcases [PyTorch Lightning](https://www.pytorchlightning.ai/) support.
 - **quickstart**: The official quickstart tutorial.
 
 Note: A lot of the examples are based on [Google Cloud Platform](https://cloud.google.com/). Extensions to other cloud providers like AWS and Azure will 

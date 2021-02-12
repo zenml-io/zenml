@@ -2,7 +2,6 @@
 
 <img src="https://zenml.io/assets/social/github.svg">
 
----
 
 <p align="center">
   <a href="https://zenml.io">ZenML.io</a> •
@@ -18,48 +17,36 @@
 ![GitHub](https://img.shields.io/github/license/maiot-io/zenml)
 </div>
 
----
-
-<div> Please join our
+<div align="center"> Join our
 <a href="https://zenml.io/slack-invite" target="_blank">
     <img width="25" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
-<b>Slack Community</b> </a> to be the first to get involved in the ZenML community
+<b>Slack Community</b> </a> and become part of the ZenML family
+</div>
+<div align="center"> Give us a 
+    <img width="25" src="https://cdn.iconscout.com/icon/free/png-256/github-153-675523.png" alt="Slack"/>
+<b>GitHub star</b> to show your love!
 </div>
 
----
+## Why?
+ZenML is built for ML practitioners who are ramping up their ML workflows towards production. We built ZenML because we could not find an easy framework that translates the patterns observed in the research phase with Jupyter notebooks into a production-ready ML environment. Here is what's hard to replicate in production:
+
+* It's hard to **version** data, code, configuration, and models.
+* It's difficult to **reproduce** experiments across environments.
+* There is no **gold-standard** to organize ML code and manage technical debt as complexity grows.
+* It's a struggle to **establish a reliable link** between training and deployment.
+* It's arduous to **track** metadata and artifacts that are produced.
+
+ZenML is not here to replace the great tools that solve the individual problems above. Rather, it uses them as [integrations](https://docs.zenml.io/benefits/integrations.html) to expose a coherent, simple path to getting any ML model in production. 
 
 ## What is ZenML?
-**ZenML** is an extensible, open-source MLOps framework for using production-ready Machine Learning pipelines - in a simple way. The key features of ZenML are:
+**ZenML** is an extensible, open-source MLOps framework for creating production-ready Machine Learning pipelines - in a simple way. 
 
-* Guaranteed reproducibility of your training experiments. Your pipelines are versioned from data to model, experiments automatically tracked and all pipeline configs are declarative by default.
-* Guaranteed comparability between experiments.
-* Ability to quickly switch between local and cloud environments (e.g. Kubernetes, Apache Beam).
-* Built-in and extensible abstractions for all MLOps needs - from distributed processing on large datasets to Cloud-integrations and model serving backends.
-* Pre-built helpers to compare and visualize input parameters as well as pipeline results (e.g. Tensorboard, TFMA, TFDV).
-* Cached pipeline states for faster experiment iterations.
+A user of ZenML is asked to break down their ML development into individual [Steps](https://docs.zenml.io/steps/what-is-a-step.html), each representing an individual task in the ML development process. A sequence of  steps put together is a [Pipeline](https://docs.zenml.io/pipelines/what-is-a-pipeline.html). Each pipeline contains a [Datasource](https://docs.zenml.io/datasources/what-is-a-datasource.html), which represents a snapshot of a versioned dataset in time. Lastly, every pipeline (and indeed almost every step) can run in [Backends](https://docs.zenml.io/backends/what-is-a-backend.html), that specify how and where a step is executed.
 
-**ZenML** is built to take your experiments all the way from data versioning to a deployed model. It replaces fragile glue-code and scripts to automate Jupyter Notebooks for **production-ready Machine Learning**. The core design is centered around **extensible interfaces** to accommodate **complex pipeline** scenarios, while providing a **batteries-included, straightforward “happy path”** to achieve success in common use-cases **without unnecessary boiler-plate code**.
-
-### Contents
-
-* [Quickstart](#quickstart)
-* [Installation](#step-0-installation)
-* [ZenML Concepts](#zenml-concepts)
-* [Community](#community)
-* [Contributing](#contributing)
-* [Copyright](#copyright)
-* [Credit](#credit)
-* [Citation](#citation)
-
+By developing in pipelines, ML practitioners give themselves a platform to transition from research to production from the very beginning, and are also helped in the research phase by the powerful automations introduced by ZenML.
 
 ## Quickstart 
-
-If you're more of a visual learner, you can also watch the [quickstart video](https://www.youtube.com/watch?v=Stg5rA_0oa8) where the below is explained in more depth.
-
-Let’s get you started with a simple pipeline. Please make sure to also check out the [advanced concepts](#zenml-concepts). It uses some built-ins and a very simple model. 
-The dataset used is the [Pima Indians Diabetes Dataset](https://storage.googleapis.com/zenml_quickstart/diabetes.csv), originally from the National Institute of Diabetes 
-and Digestive and Kidney Diseases. It is a binary classification problem.
-
+The quickest way to get started is to create a simple pipeline. The dataset used here is the [Pima Indians Diabetes Dataset](https://storage.googleapis.com/zenml_quickstart/diabetes.csv) (originally from the National Institute of Diabetes and Digestive and Kidney Diseases) 
 
 #### Step 0: Installation
 
@@ -128,149 +115,104 @@ training_pipeline.add_evaluator(
 training_pipeline.run()
 ```
 
-#### Step 3: Leverage powerful integrations
-```python
-# See schema of data
-training_pipeline.view_schema()
+While the above is great to get a quick flavor of ZenML, a more practical way to start is to follow our guide to convert your legacy codebase into ZenML code [here](https://docs.zenml.io/getting-started/organizing-zenml.html).
 
+## Leverage powerful integrations
+Once code is organized into a ZenML pipeline, you can supercharge your ML development through powerful [integrations](https://docs.zenml.io/benefits/integrations.html). Some of the benefits you get are:
+
+### Work locally but switch seamlessly to the cloud
+
+Switching from local experiments to cloud-based pipelines doesn't need to be complex.
+
+![From local to cloud with one parameter](docs/local-and-clound.png)
+
+### Versioning galore
+
+ZenML makes sure for every pipeline you can trust that:
+
+✅ Code is versioned  
+✅ Data is versioned  
+✅ Models are versioned  
+✅ Configurations are versioned  
+![ZenML declarative config](docs/versioning.png)
+
+### Automatically detect schema
+
+```python
+# See the schema of your data
+training_pipeline.view_schema()
+```
+
+![Automatic schema dection](docs/schema.png)
+
+
+### View statistics
+```python
 # See statistics of train and eval
 training_pipeline.view_statistics()
+```
+<img src="docs/statistics.png" alt="ZenML statistics visualization" />
 
+
+### Evaluate the model using built-in evaluators
+```python
 # Creates a notebook for evaluation
 training_pipeline.evaluate()
 ```
 
-Of course, each of these steps can be [extended quite easily](https://docs.zenml.io/steps/creating-custom-steps) to accommodate more complex scenarios and use-cases. There is a steadily-growing number of integrations available, 
-for example Google Dataflow for [distributed preprocessing](https://docs.zenml.io/backends/processing-backends) or Google Cloud AI Platform as a 
-[training](https://docs.zenml.io/backends/training-backends) backend. 
+<img src="docs/tensorboard_inline.png" alt="Tensorboard built-in"   />
 
-You can also run these pipelines on a cloud VM, for example on a Google Cloud Platform VM, [with a few more lines of code](https://docs.zenml.io/tutorials/running-a-pipeline-on-a-google-cloud-vm).
 
-## ZenML Concepts
-
-At its core, ZenML will orchestrate your experiment pipelines from **sourcing data** to **splitting, preprocessing, training**, all the way to the **evaluation of results** and even **serving**.
-
-While there are other pipelining solutions for Machine Learning experiments, ZenML is focussed on two unique approaches:
-
-* Reproducibility.
-* Integrations.
-
-Let us introduce some of the concepts we use to make this focus a reality.
-### Reproducibility
-
-ZenML is built with reproducibility in mind. Reproducibility is a core motivation of DevOps methodologies: Builds need to be reproducible. Commonly, this is achieved by version control of code, version pinning of dependencies and automation of workflows. ZenML bundles these practises into a coherent framework for Machine Learning.
-Machine Learning brings an added level of complexity to version control, beyond versioning code: Data is inherently hard to version. 
-#### Versioning of data
-ZenML takes an easy, yet effective approach to version controlling data. When sourcing data, either via dedicated data pipelines or within your training pipelines, ZenML creates an immutable snapshot of the data (TFRecords) used for your specific pipeline. This snapshot is tracked, just like any other pipeline step, and becomes available as a starting point to subsequent pipelines when using the same parameters for sourcing data.
-
-**NOTE:** The principles behind versioning data in ZenML is a variation of the method used for caching pipeline steps.
-#### Versioning of code
-It is not necessary to reinvent the wheel when it comes to version control of code - chances are, you’re already using git to do so (and if not, you should). ZenML can tap into a repository's history and allow for version-pinning of your own code via git SHA’s. 
-
-This becomes exceptionally powerful when you have code you want / need to embed at serving time, as there is now not just lineage of data, but also lineage of code from experiment to serving.
-#### Declarative configuration
-Declarative configurations are a staple of DevOps methodologies, ultimately brought to fame through [Terraform](https://terraform.io). In a nutshell: A pipeline’s configuration declares the “state” the pipeline should be in and the processing that should be applied, and ZenML figures out where the code lies and what computations to apply.
-
-That way, when your teammate clones your repo and re-runs a pipeline config on a different environment, the pipeline remains reproducible. 
-#### Metadata Tracking
-While versioning and declarative configs are essential for reproducibility, there needs to be a system that keeps track of all processes as they happen. Google’s [ML Metadata](https://github.com/google/ml-metadata) standardizes metadata tracking, and makes it easy to keep track of iterative experimentation as it happens. ZenML uses ML Metadata extensively (natively as well as via the TFX interface) to automatically track all **relevant** parameters that are created through ZenML pipeline interfaces. This not only helps in post-training workflows to compare results as experiments progress, but also has the added advantage of leveraging caching of pipeline steps.
-### Integrations
-
-The Machine Learning landscape is evolving at a rapid pace. We’re decoupling your experiment workflow from the tooling by providing integrations to solutions for specific aspects of your ML pipelines.
-
-#### Metadata and Artifacts
-
-With ZenML, inputs and outputs are tracked for every pipeline step. Output artifacts (e.g. binary representations of data, splits, preprocessing results, models) are centrally stored and are automatically used for caching. To facilitate that, ZenML relies on a Metadata Store and an Artifact Store.
-
-By default, both will point to a subfolder of your local `.zenml` directory, which is created when you run `zenml init`. It’ll contain both the Metadata Store (default: SQLite) as well as the Artifact Store (default: tf.Records in local folders).
-
-More advanced configurations might want to centralize both the Metadata as well as the Artifact Store, for example for use in Continuous Integration or for collaboration across teams:
-
-The Metadata Store can be simply configured to use any MySQL server (=>5.6):
-```bash
-zenml config metadata set mysql \
-    --host 127.0.0.1 \ 
-    --port 3306 \
-    --username USER \
-    --passwd PASSWD \
-    --database DATABASE
+### Compare training pipelines
+```python
+repo.compare_training_pipelines()
 ```
 
-The Artifact Store offers native support for Google Cloud Storage:
-```bash
-zenml config artifacts set gs://your-bucket/sub/dir
+![ZenML built-in pipeline comparison](docs/compare.png)
+
+
+### Distribute preprocessing to the cloud
+Leverage distributed compute powered by [Apache Beam](https://beam.apache.org/):
+```python
+training_pipeline.add_preprocesser(
+    StandardPreprocesser(...).with_backend(
+      ProcessingDataFlowBackend(
+        project=GCP_PROJECT,
+        num_workers=10,
+    ))
+)
+```
+<img src="docs/zenml_distribute.png" alt="ZenML distributed processing"   />
+
+### Train on spot instances
+Easily train on spot instances to [save 80% cost](https://towardsdatascience.com/spot-the-difference-in-ml-costs-358202e60266).
+```python
+training_pipeline.run(
+  OrchestratorGCPBackend(
+    preemptible=True,  # reduce costs by using preemptible instances
+    machine_type='n1-standard-4',
+    gpu='nvidia-tesla-k80',
+    gpu_count=1,
+    ...
+  )
+  ...
+)
 ```
 
-<!-- INSERT INFO ABOUT EXTENDING METADATA AND ARTIFACT STORE INTERFACES -->
+### Deploy models automatically
+Automatically deploy each model with powerful Deployment integrations like [Cortex](examples/cortex).
 
-#### Orchestration
-As ZenML is centered on decoupling workflow from tooling we provide a growing number of out-of-the-box supported backends for orchestration. 
+```python
+training_pipeline.add_deployment(
+    CortexDeployer(
+        api_spec=api_spec,
+        predictor=PythonPredictor,
+    )
+)
+```
 
-When you configure an orchestration backend for your pipeline, the environment you execute actual `pipeline.run()` will launch all pipeline steps at the configured orchestration backend, not the local environment. ZenML will attempt to use credentials for the orchestration backend in question from the current environment.
-**NOTE:** If no further pipeline configuration if provided (e.g. processing or training backends), the orchestration backend will also run all pipeline steps.
-
-A quick overview of the currently supported backends:
-
-| **Orchestrator** 	| **Status** 	|
-|-	|-	|
-| Google Cloud VMs 	| >0.1 	|
-| Kubernetes 	| Q1/2021 	|
-| Kubeflow 	| WIP 	|
-
-Integrating custom orchestration backends is fairly straightforward. Check out our example implementation of [Google Cloud VMs](https://github.com/maiot-io/zenml/blob/main/zenml/core/backends/orchestrator/gcp/orchestrator_gcp_backend.py) to learn more about building your own integrations.
-
-<!-- INSERT INFO ABOUT CONFIGURING ORCHESTRATION INTERFACES -->
-<!-- INSERT LINK TO DOCS -->
-#### Distributed Processing
-Sometimes, pipeline steps just need more scalability than what your orchestration backend can offer. That’s when the natively distributable codebase of ZenML can shine - it’s straightforward to run pipeline steps on processing backends like Google Dataflow or Apache Spark. 
-
-ZenML is using Apache Beam for it’s pipeline steps, therefore backends rely on the functionality of Apache Beam. A processing backend will execute all pipeline steps before the actual training.
-
-Processing backends can be used to great effect in conjunction with an orchestration backend. To give a practical example: You can orchestrate your pipelines using Google Cloud VMs and configure to use a service account with permissions for Google Dataflow and Google Cloud AI Platform. That way you don’t need to have very open permissions on your personal IAM user, but can relay authority to service-accounts within Google Cloud.
-
-We’re adding support for processing backends continuously:
-
-| **Backend** 	| **Status** 	|
-|-	|-	|
-| Google Cloud Dataflow 	| >0.1 	|
-| Apache Spark 	| WIP 	|
-| AWS EMR 	| WIP 	|
-| Flink 	| planned: Q3/2021 	|
-
-<!-- INSERT EXAMPLE ABOUT CONFIGURING PROCESSING BACKENDS -->
-<!-- INSERT LINK TO DOCS -->
-#### Training
-Many ML use-cases and model architectures require GPUs/TPUs. ZenML offers integrations to Cloud-based ML training offers, and provides a way to extend the training interface to allow for self-built training backends. 
-
-Some of these backends rely on Docker containers or other methods of transmitting code. Please see the documentation for a specific training backend for further details. 
-
-| **Backend** 	| **Status** 	|
-|-	|-	|
-| Google Cloud AI Platform 	| >0.1 	|
-| AWS Sagemaker 	| WIP 	|
-| Azure Machine Learning 	| planned: Q3/2021 	|
-
-<!-- INSERT EXAMPLE ABOUT CONFIGURING TRAINING BACKENDS -->
-<!-- INSERT LINK TO DOCS -->
-#### Serving
-Every ZenML pipeline yields a servable model, ready to be used in your existing architecture - for example as additional input for your CI/CD pipelines. To accommodate other architectures, ZenML has support for a growing number of dedicated serving backends, with clear linkage and lineage from data to deployment. 
-
-| **Backend** 	| **Status** 	|
-|-	|-	|
-| Google Cloud AI Platform 	| >0.1 	|
-| AWS Sagemaker 	| WIP 	|
-| Seldon 	| planned: Q1/2021 	|
-| Azure Machine Learning 	| planned: Q3/2021 	|
-
-<!-- INSERT EXAMPLE ABOUT CONFIGURING SERVING BACKENDS -->
-<!-- INSERT LINK TO DOCS -->
-
-<!-- ## Comparison
-
-<Align this with the ZenML landing page about competition, redo the analysis>
-<This might very well be added at a later stage!>
--->
-
+The best part is that ZenML is extensible easily, and can be molded to your use-case. You can create your own custom logic or create a PR 
+and contribute to the ZenML community, so that everyone can benefit.
 
 ## Community
 Our community is the backbone of making ZenML a success! We are currently actively maintaining two main channels for community discussions:
@@ -279,31 +221,13 @@ Our community is the backbone of making ZenML a success! We are currently active
 * The GitHub Community: Create your first thread [here](https://github.com/maiot-io/zenml/discussions).
 
 ## Contributing
-
-We would love to receive your contribution! Check our [Contributing Guide](CONTRIBUTING.md) for more details on how to contribute best.
+We would love to receive your contributions! Check our [Contributing Guide](CONTRIBUTING.md) for more details on how to contribute best.
 
 ## Copyright
-
 ZenML is distributed under the terms of the Apache License Version 2.0. A complete version of the license is available in the [LICENSE.md](LICENSE.md) in this repository.
 
 Any contribution made to this project will be licensed under the Apache License Version 2.0.
 
 ## Credit
-
 ZenML is built on the shoulders of giants: We leverage, and would like to give credit to, existing open-source libraries like [TFX](https://github.com/tensorflow/tfx/). The goal of our framework is neither to replace these libraries, nor to diminish their usage. ZenML is simply an opinionated, higher level interface with the focus being purely on easy-of-use and coherent intuitive design.
 You can read more about why we actually started building ZenML at our [blog](https://blog.maiot.io/why-zenml/).
-
-
-## Citation
-
-If you want to cite the framework feel free to use this:
-
-```
-@article{maiotzenml,
-  title={ZenML},
-  author={maiot, Munich},
-  journal={GitHub. Note: https://github.com/maiot-io/zenml},
-  volume={1},
-  year={2020}
-}
-```

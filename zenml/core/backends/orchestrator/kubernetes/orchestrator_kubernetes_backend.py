@@ -94,7 +94,7 @@ class OrchestratorKubernetesBackend(OrchestratorBaseBackend):
 
     def create_job_object(self, config):
         pipeline_name = config[keys.GlobalKeys.PIPELINE][
-            keys.PipelineKeys.NAME]
+            keys.PipelineKeys.ARGS][keys.PipelineDetailKeys.NAME]
         job_name = to_dns1123(f'{self.job_prefix}{pipeline_name}', length=63)
         labels = self.extra_labels or {}
         job_labels = {
