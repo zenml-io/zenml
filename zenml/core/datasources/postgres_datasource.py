@@ -25,16 +25,18 @@ class PostgresDatasource(BaseDatasource):
     Use this for pipelines sourcing directly from a Postgres database table.
     """
 
-    def __init__(self,
-                 name: Text,
-                 username: Text,
-                 password: Text,
-                 database: Text,
-                 table: Text,
-                 host: Text = 'localhost',
-                 port: int = 5432,
-                 query_limit: int = None,
-                 schema: Dict = None):
+    def __init__(
+            self,
+            name: Text,
+            username: Text,
+            password: Text,
+            database: Text,
+            table: Text,
+            host: Text = 'localhost',
+            port: int = 5432,
+            query_limit: int = None,
+            schema: Dict = None,
+            **kwargs):
         """
         Initialize Postgres source. This creates a DataPipeline that
         essentially performs the following query using Apache Beam.
@@ -51,7 +53,7 @@ class PostgresDatasource(BaseDatasource):
             query_limit: Max number of rows to fetch.
             schema: Dict specifying schema.
         """
-        super().__init__(name)
+        super().__init__(name, **kwargs)
         self.username = username
         self.password = password
         self.database = database

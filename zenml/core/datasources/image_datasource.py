@@ -25,10 +25,12 @@ class ImageDatasource(BaseDatasource):
     Use this for image training pipelines.
     """
 
-    def __init__(self,
-                 name: Text = None,
-                 base_path: Text = None,
-                 schema: Dict = None):
+    def __init__(
+            self,
+            name: Text = None,
+            base_path: Text = None,
+            schema: Dict = None,
+            **kwargs):
         """
         Create a Image datasource.
 
@@ -37,7 +39,7 @@ class ImageDatasource(BaseDatasource):
             base_path (str): Path to folder of images
             schema (str): Optional schema for data to conform to.
         """
-        super().__init__(name)
+        super().__init__(name, **kwargs)
         self.base_path = base_path
         self.schema = schema
 

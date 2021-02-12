@@ -42,9 +42,12 @@ class BaseDatasource:
     Every ZenML datasource should override this class.
     """
 
-    def __init__(self,
-                 name: Text,
-                 *args, **kwargs):
+    def __init__(
+            self,
+            name: Text,
+            _id: Text = None,
+            *args,
+            **kwargs):
         """
         Construct the datasource
         Args:
@@ -100,7 +103,7 @@ class BaseDatasource:
             keys.DatasourceKeys.NAME]
         _id = config[keys.PipelineKeys.DATASOURCE][keys.DatasourceKeys.ID]
         obj = datasource_class(
-            name=datasource_name, _id=_id, _source=source,
+            name=datasource_name, _id=_id,
             **step_config[keys.StepKeys.ARGS])
         obj._immutable = True
         return obj

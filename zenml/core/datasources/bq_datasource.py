@@ -25,15 +25,17 @@ class BigQueryDatasource(BaseDatasource):
     Use this for BigQuery training pipelines.
     """
 
-    def __init__(self,
-                 name: Text,
-                 query_project: Text,
-                 query_dataset: Text,
-                 query_table: Text,
-                 gcs_location: Text,
-                 query_limit: Optional[int] = None,
-                 dest_project: Text = None,
-                 schema: Dict = None):
+    def __init__(
+            self,
+            name: Text,
+            query_project: Text,
+            query_dataset: Text,
+            query_table: Text,
+            gcs_location: Text,
+            query_limit: Optional[int] = None,
+            dest_project: Text = None,
+            schema: Dict = None,
+            **kwargs):
         """
         Initialize BigQuery source. This creates a datasource that
         essentially reflects the following query using Apache Beam.
@@ -55,7 +57,7 @@ class BigQueryDatasource(BaseDatasource):
             dest_project: name of destination project. If None is specified,
             then dest_project is set to the same as query_project.
         """
-        super().__init__(name)
+        super().__init__(name, **kwargs)
 
         # Check whether gcs_location is a valid one
         if not gcs_location.startswith('gs://'):
