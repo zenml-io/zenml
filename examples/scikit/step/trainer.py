@@ -28,8 +28,18 @@ from zenml.utils.post_training.post_training_utils import \
 
 class MyScikitTrainer(BaseTrainerStep):
     """
-    Scikit trainer
+    Scikit trainer to train a scikit-learn based classifier model.
     """
+
+    def __init__(self, C: float = 1.0, kernel: Text = 'rbf', **kwargs):
+        self.C = C
+        self.kernel = kernel
+
+        super(MyScikitTrainer, self).__init__(
+            C=self.C,
+            kernel=self.kernel,
+            **kwargs
+        )
 
     def run_fn(self):
         tf_transform_output = tft.TFTransformOutput(self.transform_output)
@@ -37,7 +47,7 @@ class MyScikitTrainer(BaseTrainerStep):
         X_train, y_train = self.input_fn(self.train_files, tf_transform_output)
         X_eval, y_eval = self.input_fn(self.eval_files, tf_transform_output)
 
-        clf = svm.SVC()
+        clf = svm.SVC(C=self.C, kernel=self.kernel)
         clf.fit(X_train, y_train)
 
         y_pred = clf.predict(X_eval)

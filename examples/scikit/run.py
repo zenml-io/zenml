@@ -38,7 +38,10 @@ training_pipeline.add_preprocesser(
     ))
 
 # Add a trainer
-training_pipeline.add_trainer(MyScikitTrainer())
+training_pipeline.add_trainer(MyScikitTrainer(
+    C=1.0,
+    kernel='rbf',
+))
 
 
 # Run the pipeline locally
