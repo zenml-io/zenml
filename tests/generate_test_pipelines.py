@@ -27,6 +27,9 @@ from zenml.core.steps.split.categorical_domain_split_step import \
 from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
     FeedForwardTrainer
 from zenml.utils import path_utils
+from zenml.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 # reset pipeline root to redirect to tests so that it writes the yamls there
 ZENML_ROOT = str(Path(zenml.__path__[0]).parent)
@@ -84,43 +87,4 @@ try:
         training_pipeline.run()
 
 except Exception as e:
-    print(e)
-
-# for i in range(1, 6):
-#     training_pipeline = TrainingPipeline(name='imagetest{0}'.format(i))
-#
-#     try:
-#         # Add a datasource. This will automatically track and version it.
-#         ds = ImageDatasource(name='my_image_datasource',
-#                              base_path=image_root)
-#     except:
-#         ds = repo.get_datasource_by_name("my_image_datasource")
-#
-#     training_pipeline.add_datasource(ds)
-#
-#     # Add a split
-#     training_pipeline.add_split(CategoricalDomainSplit(
-#         categorical_column="label",
-#         split_map={'train': [9], 'eval': [6]},
-#         unknown_category_policy="eval"))
-#
-#     # Add a preprocessing unit
-#     training_pipeline.add_preprocesser(
-#         StandardPreprocesser(
-#             features=["name", "age"],
-#             labels=['gpa'],
-#             overwrite={'gpa': {
-#                 'transform': [{'method': 'no_transform', 'parameters': {}}]}}
-#         ))
-#
-#     # Add a trainer
-#     training_pipeline.add_trainer(FeedForwardTrainer(
-#         batch_size=1,
-#         loss='binary_crossentropy',
-#         last_activation='sigmoid',
-#         output_units=1,
-#         metrics=['accuracy'],
-#         epochs=i))
-#
-#     # Run the pipeline locally
-#     training_pipeline.run()
+    logger.error(e)
