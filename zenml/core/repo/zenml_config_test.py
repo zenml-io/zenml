@@ -74,7 +74,7 @@ def test_is_zenml_dir():
 
 
 def test_zenml_config_getters():
-    cfg1 = ZenMLConfig(repo_path=config_root)
+    cfg1 = ZenMLConfig(repo_path=TEST_ROOT)
 
     assert cfg1.get_pipelines_dir()
     assert cfg1.get_artifact_store()
@@ -82,7 +82,7 @@ def test_zenml_config_getters():
 
 
 def test_zenml_config_setters(equal_md_stores):
-    cfg1 = ZenMLConfig(repo_path=config_root)
+    cfg1 = ZenMLConfig(repo_path=TEST_ROOT)
 
     old_store_path = artifact_store_path
     old_pipelines_dir = pipelines_dir
