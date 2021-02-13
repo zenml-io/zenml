@@ -38,7 +38,8 @@ jobs:
       - name: unit-tests
         run: |
           pip install -e .[all]
-          tests/testing.sh
+          cd tests
+          ./testing.sh
 
       # Runs a set of commands using the runners shell
       - name: publish
