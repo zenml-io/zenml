@@ -34,13 +34,11 @@ jobs:
           zenml init --analytics_opt_in False
           python ../smoke_test.py && echo "Finished smoke test successfully" || echo "Smoke test failed"
 
+      # Run script directly
       - name: unit-tests
         run: |
           pip install -e .[all]
-          git init
-          zenml init --analytics_opt_in False
-          python zenml/testing/generate_test_pipelines.py
-          pytest zenml
+          tests/testing.sh
 
       # Runs a set of commands using the runners shell
       - name: publish
