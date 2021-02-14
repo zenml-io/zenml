@@ -99,7 +99,7 @@ class CSVDataStep(BaseDataStep):
             schema: Optional schema providing data type information about the
              data source.
         """
-        super().__init__(schema=schema, path=path)
+        super().__init__(path=path, schema=schema)
         self.path = path
 
     def read_from_source(self):

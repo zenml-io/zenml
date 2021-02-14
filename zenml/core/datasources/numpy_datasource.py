@@ -21,7 +21,11 @@ from zenml.core.datasources.base_datasource import BaseDatasource
 class NumpyDatasource(BaseDatasource):
     """ZenML Numpy datasource definition."""
 
-    def __init__(self, name: Text, np_array, schema=None, **unused_kwargs):
+    def __init__(
+            self,
+            name: Text,
+            np_array,
+            **kwargs):
         """
         Initialize numpy datasource.
 
@@ -29,5 +33,5 @@ class NumpyDatasource(BaseDatasource):
             name: name of datasource.
             np_array: numpy array
         """
-        super().__init__(name, schema, **unused_kwargs)
+        super().__init__(name, **kwargs)
         raise NotImplementedError('Its coming soon!')
