@@ -15,6 +15,12 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@master
+      - name: local-fix
+        run: |
+          # Hack to get setup-python to work with act locally (see https://github.com/nektos/act/issues/251)
+          if [ ! -f "/etc/lsb-release" ] ; then
+            echo "DISTRIB_RELEASE=18.04" > /etc/lsb-release
+          fi
       - name: Set up Python 3.7
         uses: actions/setup-python@v1
         with:
@@ -43,6 +49,7 @@ jobs:
 
       # Runs a set of commands using the runners shell
       - name: publish
+        if: ${{ !env.ACT }}  # we dont want this tested locally with [act](https://github.com/nektos/act)
         env: # Or as an environment variable
           TWINE_NON_INTERACTIVE: ${{ secrets.TWINE_NON_INTERACTIVE }}
           TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
