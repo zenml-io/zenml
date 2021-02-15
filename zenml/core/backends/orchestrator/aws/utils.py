@@ -35,12 +35,13 @@ def get_startup_script(config: Dict,
 def setup_session():
     session = boto3.Session()
     credentials = session.get_credentials()
-    os.environ[AWS_ACCESS_KEY_ID] = credentials.access_key
-    os.environ[AWS_SECRET_ACCESS_KEY] = credentials.secret_key
+    if credentials.method == 'shared-credentials-file':
+        os.environ[AWS_ACCESS_KEY_ID] = credentials.access_key
+        os.environ[AWS_SECRET_ACCESS_KEY] = credentials.secret_key
     return session
 
 
-def setup_region(region):
+def setup_region(region: Text = None):
     if region is None:
         if AWS_REGION in os.environ:
             pass
