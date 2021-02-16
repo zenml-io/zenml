@@ -93,9 +93,6 @@ def cleanup(cleanup_metadata_store, cleanup_artifacts):
 @pytest.fixture
 def delete_config():
     def wrapper(filename):
-        repo: Repository = Repository.get_instance()
-        pipeline_root = repo.zenml_config.get_pipelines_dir()
-
         cfg = os.path.join(pipeline_root, filename)
         path_utils.rm_file(cfg)
 
@@ -159,11 +156,11 @@ def equal_datasources(equal_steps):
 
         equal = False
         equal |= ds1.name == ds2.name
-        equal |= ds1.schema == ds2.schema
         equal |= ds1._id == ds2._id
         equal |= ds1._source == ds2._source
         equal |= equal_steps(ds1.get_data_step(), ds2.get_data_step(),
                              loaded=loaded)
+        # TODO[LOW]: Add more checks for constructor kwargs, __dict__ etc.
         if loaded:
             equal |= ds1._immutable != ds2._immutable
         else:
