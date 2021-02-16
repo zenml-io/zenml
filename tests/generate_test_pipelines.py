@@ -34,7 +34,7 @@ logger = get_logger(__name__)
 # reset pipeline root to redirect to tests so that it writes the yamls there
 ZENML_ROOT = str(Path(zenml.__path__[0]).parent)
 TEST_ROOT = os.path.join(ZENML_ROOT, "tests")
-Repository.init_repo(TEST_ROOT)
+Repository.init_repo(TEST_ROOT, analytics_opt_in=False)
 
 pipeline_root = os.path.join(TEST_ROOT, "pipelines")
 csv_root = os.path.join(TEST_ROOT, "test_data")
