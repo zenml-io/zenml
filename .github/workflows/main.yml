@@ -30,22 +30,13 @@ jobs:
       - name: install requirements
         run: sudo apt-get update && sudo apt-get install -y make && pip install twine
 
-      - name: testing
-        run: |
-          export TAG=$(echo ${GITHUB_REF} | sed 's|refs/tags/||g')
-          pip install -e .[all]
-          mkdir ./zenml-testing
-          cd ./zenml-testing
-          git init
-          zenml init --analytics_opt_in False
-          python ../smoke_test.py && echo "Finished smoke test successfully" || echo "Smoke test failed"
-
       # Run script directly
-      - name: unit-tests
+      - name: testing
         run: |
           pip install -e .[all]
           cd tests
           ./testing.sh
+          cat ~/.config/zenml/info.json
 
       # Runs a set of commands using the runners shell
       - name: publish
