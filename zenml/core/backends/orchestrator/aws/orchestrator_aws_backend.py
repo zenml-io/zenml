@@ -15,7 +15,7 @@
 
 import os
 import time
-from typing import Text, List, Dict, Any
+from typing import Text, Dict, Any
 
 from zenml.core.backends.orchestrator.aws import utils
 from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
@@ -23,8 +23,8 @@ from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
 from zenml.core.repo.repo import Repository
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils
-from zenml.utils.logger import get_logger
 from zenml.utils.constants import ZENML_BASE_IMAGE_NAME
+from zenml.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -39,16 +39,15 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
     """
 
     def __init__(self,
-                 instance_name: Text = 'zenml',
+                 iam_role: Text,
                  instance_type: Text = 't2.micro',
                  instance_image: Text = 'ami-02e9f4e447e4cda79',
                  zenml_image: Text = None,
                  region: Text = None,
-                 key_name: Text = 'baris',
+                 key_name: Text = None,
+                 security_group: Text = None,
                  min_count: int = 1,
-                 max_count: int = 1,
-                 security_groups: List = None,
-                 instance_profile: Dict = None):
+                 max_count: int = 1):
 
         self.session = utils.setup_session()
         self.region = utils.setup_region(region)
@@ -56,7 +55,6 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
         self.ec2_client = self.session.client('ec2')
         self.ec2_resource = self.session.resource('ec2')
 
-        self.instance_name = instance_name
         self.instance_type = instance_type
         self.instance_image = instance_image
         self.zenml_image = zenml_image
@@ -64,24 +62,19 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
         self.min_count = min_count
         self.max_count = max_count
 
-        if security_groups is None:
-            self.security_groups = ['zenml']
+        if security_group is not None:
+            self.security_group = [security_group]
         else:
-            self.security_groups = security_groups
+            self.security_group = security_group
 
-        if instance_profile is None:
-            self.instance_profile = {'Name': 'ZenML'}
-        else:
-            self.instance_profile = instance_profile
+        self.iam_role = {'Name': iam_role}
 
         if zenml_image is None:
             self.zenml_image = ZENML_BASE_IMAGE_NAME
-
         else:
             self.zenml_image = zenml_image
 
         super(OrchestratorBaseBackend, self).__init__(
-            instance_name=self.instance_name,
             instance_type=self.instance_type,
             instance_image=self.instance_image,
             zenml_image=self.zenml_image,
@@ -89,8 +82,8 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
             key_name=self.key_name,
             min_count=self.min_count,
             max_count=self.max_count,
-            security_groups=self.security_groups,
-            instance_profile=self.instance_profile,
+            security_group=self.security_group,
+            iam_role=self.iam_role,
         )
 
     @staticmethod
@@ -101,15 +94,19 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
         startup = utils.get_startup_script(config,
                                            self.region,
                                            self.zenml_image)
-        return self.ec2_resource.create_instances(
-            ImageId=self.instance_image,
-            InstanceType=self.instance_type,
-            SecurityGroups=self.security_groups,
-            IamInstanceProfile=self.instance_profile,
-            KeyName=self.key_name,
-            MaxCount=self.max_count,
-            MinCount=self.min_count,
-            UserData=startup)
+
+        args = {'ImageId': self.instance_image,
+                'InstanceType': self.instance_type,
+                'IamInstanceProfile': self.iam_role,
+                'KeyName': self.key_name,
+                'MaxCount': self.max_count,
+                'MinCount': self.min_count,
+                'UserData': startup}
+
+        if self.security_group:
+            args['SecurityGroups'] = self.security_group
+
+        return self.ec2_resource.create_instances(**args)
 
     def run(self, config: [Dict, Any]):
         # Extract the paths to create the tar
