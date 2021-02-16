@@ -10,8 +10,8 @@ jobs:
     name: Build and test ZenML on Python 🐍 distributions
     runs-on: ubuntu-18.04
     steps:
+      - uses: actions/checkout@master
       - name: local-fix
-        uses: actions/checkout@master
         run: |
           # Hack to get setup-python to work with act locally (see https://github.com/nektos/act/issues/251)
           if [ ! -f "/etc/lsb-release" ] ; then
