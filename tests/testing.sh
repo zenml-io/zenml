@@ -41,7 +41,11 @@ python generate_test_pipelines.py
 
 pytest ../zenml
 
+PYTEST_EXIT=$?
+
 rm -rf $GIT
 rm -rf $ZENML_DIR
 rm -rf $PIPELINES
 rm .gitignore
+
+exit $PYTEST_EXIT
