@@ -75,7 +75,7 @@ api_config = {
     "predictor": {
         "type": "tensorflow",
         # Set signature key of the model as we are using Tensorflow Trainer
-        "models": {"signature_key": "serving_default", "path": "6"}}
+        "models": {"signature_key": "serving_default"}}
 }
 training_pipeline.add_deployment(
     CortexDeployer(
