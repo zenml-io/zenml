@@ -114,5 +114,5 @@ Try using different [Workloads](https://docs.cortex.dev/workloads/batch) and [Pr
 cortex config passed to the `CortexDeployer` step. You can set up batch workloads, split traffic on your cluster and lots more.
 
 [Cortex](https://github.com/cortexlabs/cortex) makes it super easy to reproducibly deploy your models straight to 
-an end-point in your cluster. A big thank you to the  cortex team for helping out in this integration and example! Go 
+an end-point in your cluster. A big thank you to the cortex team for helping out in this integration and example! Go 
 check them out and [give them a star](https://github.com/cortexlabs/cortex) to show your love!
