@@ -1,8 +1,14 @@
 import json
+import os
 
 import requests
 
-ENDPOINT = 'http://35.226.91.12/zenml-classifier'
+CORTEX_ENDPOINT = os.getenv('CORTEX_ENV_ENDPOINT')
+CORTEX_MODEL_NAME = os.getenv('CORTEX_MODEL_NAME')
+assert CORTEX_ENDPOINT
+assert CORTEX_MODEL_NAME
+
+ENDPOINT = f'{CORTEX_ENDPOINT}/{CORTEX_MODEL_NAME}'
 
 
 def make_predict(json_request):
