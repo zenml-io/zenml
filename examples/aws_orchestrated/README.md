@@ -41,7 +41,13 @@ The first step is to create your own bucket S3 which would serve as the base for
 The second step is to create a database on RDS which will serve as your metadata store.
 
 Once you created the database, you need to configure the corresponding security group. In more detail, you need to add 
-a new inbound rule which will allow you to connect to your metadata store.
+a new inbound rule which will allow you to connect to your metadata store. In order to achieve this:
+
+1. Go to your `Databases` page on your RDS and select the database with the right identifier
+2. Under `Connectivity and Security` you will see the security group of your database, select it
+3. Once you are on the `Security Groups` page, your security group will be selected, on the bottom go to `Inbound Rules`
+4. Go to `Edit Inbound Rules` and click on `Add Rule`
+5. Choose the `Type` as `MYSQL/Aurora` and the `Source Type` as `Anywhere` and click on `Save rules`.
 
 ### Create a IAM role for your instance
 
@@ -60,8 +66,8 @@ aws configure
 and ultimately, set some environmental variables.
 
 ```bash
-export S3_BUCKET="s3://mybucketname"
-export IAM_ROLE="iam_role_name"
+export S3_BUCKET="s3://my-zenml-artifact-store"
+export IAM_ROLE="my-zenml-iam-role"
 
 export MYSQL_DB='metadata'
 export MYSQL_USER='username'
