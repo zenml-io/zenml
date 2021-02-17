@@ -29,8 +29,9 @@ def get_startup_script(config: Dict,
            f"echo \"region = {region}\">>/tmp/aws_config/config\n" \
            f"sudo HOME=/home/root docker run --net=host " \
            f"--env AWS_REGION={region} -v /tmp/aws_config:/root/.aws " \
-           f"{zenml_image} {c_params}"
-
+           f"{zenml_image} {c_params}\n" \
+           f"instanceId=$(curl http://169.254.169.254/latest/meta-data/instance-id/)\n" \
+           f"/usr/bin/aws ec2 terminate-instances --instance-ids $instanceId --region {region}" \
 
 def setup_session():
     session = boto3.Session()
