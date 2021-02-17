@@ -34,11 +34,17 @@ Before running the example, there are a few steps that you need to complete in o
 
 ### Create a S3 bucket for your artifact store
 
-The first step is to create your own bucket S3 which would serve as the base for your artifact store.
+The first step is to create your own bucket S3 which would serve as the base for your artifact store. You can block all 
+public access.
+
+![](videos/s3_video.gif)
 
 ### Create an RDS database for your metadata store
 
-The second step is to create a database on RDS which will serve as your metadata store.
+The second step is to create a database on RDS which will serve as your metadata store. For this example, we will be 
+using a MySQL 5.7.31 database with the free-tier template.
+
+![](videos/rds_video.gif)
 
 Once you created the database, you need to configure the corresponding security group. In more detail, you need to add 
 a new inbound rule which will allow you to connect to your metadata store. In order to achieve this:
@@ -52,7 +58,9 @@ a new inbound rule which will allow you to connect to your metadata store. In or
 ### Create a IAM role for your instance
 
 In the next step, you need to create a new IAM role in order to make your EC2 instance access the previously 
-created artifact store and metadata store.
+created artifact store (through the `AmazonS3FullAccess`) and metadata store (`AmazonRDSFullAccess`).
+
+![](videos/iam_video.gif)
 
 ### Make sure that you are set up locally
 
@@ -63,7 +71,7 @@ on your local setup:
 aws configure
 ```
 
-and ultimately, set some environmental variables.
+and ultimately, set some environmental variables:
 
 ```bash
 export S3_BUCKET="s3://my-zenml-artifact-store"
