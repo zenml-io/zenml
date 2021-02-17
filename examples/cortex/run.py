@@ -1,5 +1,4 @@
 import os
-from random import randint
 
 from examples.cortex.predictor.tf import TensorFlowPredictor
 from zenml.core.datasources.csv_datasource import CSVDatasource
@@ -13,6 +12,7 @@ from zenml.core.steps.preprocesser.standard_preprocesser \
 from zenml.core.steps.split.random_split import RandomSplit
 from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
     FeedForwardTrainer
+from zenml.utils.exceptions import AlreadyExistsException
 
 GCP_BUCKET = os.getenv('GCP_BUCKET')
 assert GCP_BUCKET
@@ -24,20 +24,16 @@ CORTEX_MODEL_NAME = os.getenv('CORTEX_MODEL_NAME', 'zenml-classifier')
 
 from zenml.core.repo.repo import Repository
 
-print(Repository.get_instance().get_datasources())
-
-training_pipeline = TrainingPipeline(
-    name=f'Experiment {randint(0, 10000)}',
-    enable_cache=True
-)
+# Define the training pipeline
+training_pipeline = TrainingPipeline()
 
 # Add a datasource. This will automatically track and version it.
 try:
-    ds = CSVDatasource(name='My CSV Datasource 54664',
+    ds = CSVDatasource(name='Pima Indians Diabetes',
                        path='gs://zenml_quickstart/diabetes.csv')
-except:
+except AlreadyExistsException:
     ds = Repository.get_instance().get_datasource_by_name(
-        'My CSV Datasource 54664')
+        'Pima Indians Diabetes')
 training_pipeline.add_datasource(ds)
 
 # Add a split

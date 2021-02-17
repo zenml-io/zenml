@@ -115,4 +115,4 @@ cortex config passed to the `CortexDeployer` step. You can set up batch workload
 
 [Cortex](https://github.com/cortexlabs/cortex) makes it super easy to reproducibly deploy your models straight to 
 an end-point in your cluster. A big thank you to the  cortex team for helping out in this integration and example! Go 
-check them out and give a star to show your love!
+check them out and [give them a star](https://github.com/cortexlabs/cortex) to show your love!
