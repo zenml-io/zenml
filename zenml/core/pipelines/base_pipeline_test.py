@@ -12,30 +12,29 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import pytest
 import os
-import zenml
 import random
-from zenml.core.pipelines.base_pipeline import BasePipeline
-from zenml.core.datasources.base_datasource import BaseDatasource
-from zenml.core.datasources.image_datasource import ImageDatasource
+from pathlib import Path
+
+import pytest
+
+import zenml
 from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
     OrchestratorBaseBackend
-from zenml.core.steps.base_step import BaseStep
-from zenml.core.repo.repo import Repository
-from zenml.utils.enums import PipelineStatusTypes, GDPComponent
+from zenml.core.datasources.base_datasource import BaseDatasource
+from zenml.core.datasources.image_datasource import ImageDatasource
+from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.standards import standard_keys as keys
+from zenml.core.steps.base_step import BaseStep
 from zenml.utils import exceptions, path_utils
+from zenml.utils.enums import PipelineStatusTypes, GDPComponent
 
-ZENML_ROOT = zenml.__path__[0]
-TEST_ROOT = os.path.join(ZENML_ROOT, "testing")
-
-pipelines_dir = os.path.join(TEST_ROOT, "test_pipelines")
-repo: Repository = Repository.get_instance()
-repo.zenml_config.set_pipelines_dir(pipelines_dir)
+# Nicholas a way to get to the root
+ZENML_ROOT = str(Path(zenml.__path__[0]).parent)
+TEST_ROOT = os.path.join(ZENML_ROOT, "tests")
 
 
-def test_executed():
+def test_executed(repo):
     name = "my_pipeline"
     p = BasePipeline(name=name)
     assert not p.is_executed_in_metadata_store
@@ -54,8 +53,7 @@ def test_naming():
     assert p.get_name_from_pipeline_name(pipeline_name) == name
 
 
-def test_get_status(run_test_pipelines):
-    run_test_pipelines()
+def test_get_status(repo):
     name = "my_pipeline"
     p = BasePipeline(name=name)
 
@@ -68,7 +66,7 @@ def test_get_status(run_test_pipelines):
     assert run_pipeline.get_status() == PipelineStatusTypes.Succeeded.name
 
 
-def test_register_pipeline(delete_config):
+def test_register_pipeline(repo, delete_config):
     name = "my_pipeline"
     p: BasePipeline = BasePipeline(name=name)
 
@@ -94,7 +92,7 @@ def test_add_datasource():
     assert not p.steps_dict[keys.TrainingSteps.DATA]
 
 
-def test_pipeline_copy():
+def test_pipeline_copy(repo):
     random_run_pipeline = random.choice(repo.get_pipelines())
 
     new_name = "my_second_pipeline"
@@ -114,10 +112,12 @@ def test_get_pipeline_config():
 
     p_name = p.pipeline_name
 
-    assert config[keys.PipelineKeys.NAME] == p_name
-    assert config[keys.PipelineKeys.TYPE] == "base"
-    assert config[keys.PipelineKeys.ENABLE_CACHE] is True
-    assert config[keys.PipelineKeys.DATASOURCE] is None
+    p_args = config[keys.PipelineKeys.ARGS]
+
+    assert p_args[keys.PipelineDetailKeys.NAME] == p_name
+    # assert p_args[keys.PipelineDetailKeys.TYPE] == "base"
+    assert p_args[keys.PipelineDetailKeys.ENABLE_CACHE] is True
+    assert config[keys.PipelineKeys.DATASOURCE] == {}
     assert config[keys.PipelineKeys.SOURCE].split("@")[0] == \
            "zenml.core.pipelines.base_pipeline.BasePipeline"
     # TODO: Expand this to more pipelines
@@ -141,7 +141,7 @@ def test_get_steps_config():
     assert steps_cfg["test"] == step.to_config()
 
 
-def test_get_artifacts_uri_by_component():
+def test_get_artifacts_uri_by_component(repo):
     test_component_name = GDPComponent.SplitGen.name
 
     p_names = sorted(repo.get_pipeline_names())
@@ -158,7 +158,7 @@ def test_get_artifacts_uri_by_component():
     assert written_artifacts
     # TODO: Ugly TFRecord validation
     assert all((("tfrecord" in name and
-                os.path.splitext(name)[-1] == ".gz") for name in f)
+                 os.path.splitext(name)[-1] == ".gz") for name in f)
                for _, _, f in os.walk(uri))
 
 
@@ -174,7 +174,7 @@ def test_to_from_config(equal_pipelines):
     assert equal_pipelines(p1, p2, loaded=True)
 
 
-def test_load_config(equal_pipelines):
+def test_load_config(repo, equal_pipelines):
     p1 = random.choice(repo.get_pipelines())
 
     pipeline_config = p1.load_config()
@@ -191,8 +191,13 @@ def test_run_config():
         def run(self, config):
             return {"message": "Run triggered!"}
 
-    # Base Orchestrator Backend complains about lack of datasource
+    # run config without a specified backend
+    p.run_config(p.to_config())
+
+    p.backend = "123"
+
     with pytest.raises(Exception):
+        # not a backend subclass error
         p.run_config(p.to_config())
 
     p.backend = MockBackend()
