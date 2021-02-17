@@ -1,24 +1,39 @@
-from random import randint
+import os
 
-from examples.cortex.predictor.predictor import PythonPredictor
+from examples.cortex.predictor.tf import TensorFlowPredictor
 from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
+from zenml.core.repo.artifact_store import ArtifactStore
 from zenml.core.steps.deployer.cortex_deployer import CortexDeployer
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
 from zenml.core.steps.preprocesser.standard_preprocesser \
-    .standard_preprocesser import StandardPreprocesser
+    .standard_preprocesser import \
+    StandardPreprocesser
 from zenml.core.steps.split.random_split import RandomSplit
-from zenml.core.steps.trainer.feedforward_trainer.trainer import \
+from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
     FeedForwardTrainer
+from zenml.utils.exceptions import AlreadyExistsException
 
-training_pipeline = TrainingPipeline(
-    name=f'Experiment {randint(0, 10000)}',
-    enable_cache=True
-)
+GCP_BUCKET = os.getenv('GCP_BUCKET')
+assert GCP_BUCKET
+CORTEX_ENV = os.getenv('CORTEX_ENV', 'env')
+CORTEX_MODEL_NAME = os.getenv('CORTEX_MODEL_NAME', 'zenml-classifier')
+
+# For this example, the ArtifactStore must be a GCP bucket, as the
+# CortexDeployer step is using the GCP env.
+
+from zenml.core.repo.repo import Repository
+
+# Define the training pipeline
+training_pipeline = TrainingPipeline()
 
 # Add a datasource. This will automatically track and version it.
-ds = CSVDatasource(name=f'My CSV Datasource {randint(0, 100000)}',
-                   path='gs://zenml_quickstart/diabetes.csv')
+try:
+    ds = CSVDatasource(name='Pima Indians Diabetes',
+                       path='gs://zenml_quickstart/diabetes.csv')
+except AlreadyExistsException:
+    ds = Repository.get_instance().get_datasource_by_name(
+        'Pima Indians Diabetes')
 training_pipeline.add_datasource(ds)
 
 # Add a split
@@ -41,7 +56,7 @@ training_pipeline.add_trainer(FeedForwardTrainer(
     last_activation='sigmoid',
     output_units=1,
     metrics=['accuracy'],
-    epochs=13))
+    epochs=15))
 
 # Add an evaluator
 training_pipeline.add_evaluator(
@@ -49,18 +64,26 @@ training_pipeline.add_evaluator(
                   metrics={'has_diabetes': ['binary_crossentropy',
                                             'binary_accuracy']}))
 
-# Pusher
-api_spec = {
-    "name": "api-classifier",
+# Add cortex deployer
+api_config = {
+    "name": CORTEX_MODEL_NAME,
     "kind": "RealtimeAPI",
-    "predictor": {}
+    "predictor": {
+        "type": "tensorflow",
+        # Set signature key of the model as we are using Tensorflow Trainer
+        "models": {"signature_key": "serving_default"}}
 }
 training_pipeline.add_deployment(
     CortexDeployer(
-        api_spec=api_spec,
-        predictor=PythonPredictor,
+        env=CORTEX_ENV,
+        api_config=api_config,
+        predictor=TensorFlowPredictor,
     )
 )
 
-# Run the pipeline locally
-training_pipeline.run()
+# Define the artifact store
+artifact_store = ArtifactStore(
+    os.path.join(GCP_BUCKET, 'cortex/artifact_store'))
+
+# Run the pipeline
+training_pipeline.run(artifact_store=artifact_store)
