@@ -12,7 +12,7 @@ pipeline.add_trainer(
 ```
 
 ## Running on Google Cloud AI Platform
-This example utilize [Google Cloud AI Platform](https://cloud.google.com/dataflow) as the training backend to 
+This example utilizes [Google Cloud AI Platform](https://cloud.google.com/ai-platform/docs) as the training backend to 
 run the training code using GCP cloud GPU resources.
 
 ### Pre-requisites

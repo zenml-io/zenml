@@ -4,6 +4,38 @@ Conceptually, a `Step` is a discrete and independent part of a pipeline that is 
 
 A ZenML installation already comes with many `standard` steps found in `zenml.core.steps.*` for users to get started. However, it is easy and intended for users to extend these steps or even create steps from scratch as it suits their needs.
 
+## Architectural overview
+
+The implementation of Steps in ZenML follow a few architectural design choices. 
+
+**1. Steps follow a specific order**
+ZenML Steps usually have hard dependencies on upstream Steps being executed. Pipelines always follow the resulting order of steps:
+
+```
+DataStep  
+└─> SplitStep  
+└──> (optional) SequenceStep  
+ └──> PreprocessStep  
+  └──> TrainerStep  
+   └──> EvaluatorStep  
+    └──> (optional) DeployerStep 
+```
+
+**2. Every step generates serialized TFRecords**  
+To ensure uniform interoperability between Steps, all Steps use serialized TFRecords as their final output. The output objects are persisted in the Artifact store, and following steps consume TFRecords as input from the Artifact store.
+
+**Noteable exceptions:**
+- DataStep: The DataStep can but does not have to consume TFRecords as input, as it's sourcing data from your specified data soure.
+- TrainerStep: The Trainer outputs the final trained model.
+- EvaluatorStep: The EvaluatorStep only consumes TFRecords.
+- DeployerStep: The DeployerStep will deploy your trained model to a backend of your choosing.
+
+**3. Steps can have backends**
+ZenML is built with integrations in mind. As an immediate effect, Steps can have backends. Backends can be general-purpose, e.g. the standard GCP or AWS Orchestrator Backends will be fully capable of running all steps. However, **not every step is compatible with every backend**. This becomes perfectly clear when we look at specialized training backends like Google AI Platform or AWS Sagemaker. These backends are incompatible with e.g. a `DataStep` or a `SplitStep`, only a `TrainerStep` can utilize such a specialized backend. Please check the configuration for a specific backend to learn more about limitations.
+
+**4. Custom Steps**
+ZenML ships with batteries included, but your needs might differ. Therefore we've made it easy to build custom steps to your unique requirements. Read on to learn more.
+
 ## Repository functionalities
 You can get all your steps using the [Repository](../repository/what-is-a-repository.md) class:
 

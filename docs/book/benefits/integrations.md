@@ -45,6 +45,8 @@ A quick overview of the currently supported backends:
 | :--- | :--- |
 | Google Cloud VMs | &gt;= 0.1.5 |
 | Kubernetes | &gt;0.2.0 |
+| AWS VMs | &gt;0.3.2 |
+| Azure VMs | WIP |
 | Kubeflow | WIP |
 
 Integrating custom orchestration backends is fairly straightforward. Check out our example implementation of [Google Cloud VMs](../tutorials/running-a-pipeline-on-a-google-cloud-vm.md) to learn more about building your own integrations.

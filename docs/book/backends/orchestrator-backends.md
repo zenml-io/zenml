@@ -33,10 +33,10 @@ It launches a Job on your Kubernetes cluster, zips up your local code to the Pod
 A more extensive guide on creating pipelines with Kubernetes can be found in the [Kubernetes Tutorial](/tutorials/running-a-pipeline-on-kubernetes.md).
 
 ### AWS Orchestrator
-Coming Soon!
+Stay tuned - we're almost there.
 
 ### Azure Orchestrator
-Coming Soon!
+Stay tuned - we're almost there.
 
 ### Kubeflow
 Coming soon!
