@@ -46,6 +46,13 @@ PYTORCH_REQUIREMENTS = ['torch==1.7.0']
 
 # CORTEX_INTEGRATION = 'cortex'
 # CORTEX_REQUIREMENTS = ['cortex==0.27.0']
+
+###############
+# DATASOURCES #
+###############
+POSTGRES_INTEGRATION = 'postgres'
+POSTGRES_REQUIREMENTS = ['beam-nuggets==0.17.0', 'pg8000==1.16.5']
+
 ###############
 # EXTRAS: ALL #
 ###############
@@ -54,7 +61,8 @@ ALL_REQUIREMENTS = BASE_REQUIREMENTS + \
                    GCP_REQUIREMENTS + \
                    PYTORCH_REQUIREMENTS + \
                    AZURE_REQUIREMENTS + \
-                   AWS_REQUIREMENTS
+                   AWS_REQUIREMENTS + \
+                   POSTGRES_REQUIREMENTS
                    # CORTEX_REQUIREMENTS
 
 EXTRAS_REQUIRE = {GCP_INTEGRATION: GCP_REQUIREMENTS,
@@ -62,6 +70,7 @@ EXTRAS_REQUIRE = {GCP_INTEGRATION: GCP_REQUIREMENTS,
                   # AZURE_INTEGRATION: AZURE_REQUIREMENTS,
                   PYTORCH_INTEGRATION: PYTORCH_REQUIREMENTS,
                   # CORTEX_INTEGRATION: CORTEX_REQUIREMENTS,
+                  POSTGRES_INTEGRATION: POSTGRES_REQUIREMENTS,
                   ALL_INTEGRATION: ALL_REQUIREMENTS}
 
 

@@ -105,13 +105,14 @@ class BQDataStep(BaseDataStep):
             schema: Optional schema providing data type information about
              the data source.
         """
-        super().__init__(schema=schema,
-                         query_project=query_project,
-                         query_dataset=query_dataset,
-                         query_table=query_table,
-                         gcs_location=gcs_location,
-                         dest_project=dest_project,
-                         query_limit=query_limit)
+        super().__init__(
+            schema=schema,
+            query_project=query_project,
+            query_dataset=query_dataset,
+            query_table=query_table,
+            gcs_location=gcs_location,
+            dest_project=dest_project,
+            query_limit=query_limit)
         self.query_project = query_project
         self.query_dataset = query_dataset
         self.query_table = query_table

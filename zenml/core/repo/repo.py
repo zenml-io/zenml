@@ -22,6 +22,7 @@ from zenml.core.repo.artifact_store import ArtifactStore
 from zenml.core.repo.git_wrapper import GitWrapper
 from zenml.core.repo.global_config import GlobalConfig
 from zenml.core.repo.zenml_config import ZenMLConfig
+from zenml.core.repo.constants import ZENML_DIR_NAME
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils, yaml_utils
 from zenml.utils.exceptions import InitializationException
@@ -121,7 +122,9 @@ class Repository:
             NoSuchPathError: If the repo_path does not exist.
         """
         # check whether its a git repo by initializing GitWrapper
-        GitWrapper(repo_path)
+        git_wrapper = GitWrapper(repo_path)
+        # Do proper checks and add to .gitignore
+        git_wrapper.add_gitignore([ZENML_DIR_NAME + '/'])
 
         # use the underlying ZenMLConfig class to create the config
         ZenMLConfig.to_config(
@@ -228,6 +231,19 @@ class Repository:
         for d in all_datasources:
             if name == d.name:
                 return d
+
+    def get_datasource_id_by_name(self, name: Text) -> List:
+        """
+        Get ID of a datasource by just its name.
+
+        Returns: ID of datasource.
+        """
+        for file_path in self.get_pipeline_file_paths():
+            c = yaml_utils.read_yaml(file_path)
+            src = c[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.DATASOURCE]
+            if keys.DatasourceKeys.NAME in src:
+                if name == src[keys.DatasourceKeys.NAME]:
+                    return src[keys.DatasourceKeys.ID]
 
     def get_datasource_names(self) -> List:
         """

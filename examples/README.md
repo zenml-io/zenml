@@ -15,6 +15,7 @@ Here you can find a list with brief descriptions for each example:
 - **pytorch**: Showcases PyTorch support.
 - **pytorch_lightning**: Showcases [PyTorch Lightning](https://www.pytorchlightning.ai/) support.
 - **quickstart**: The official quickstart tutorial.
+- **scikit**: An example of using a [scikit-learn](https://scikit-learn.org/) trainer within ZenML.
 
 Note: A lot of the examples are based on [Google Cloud Platform](https://cloud.google.com/). Extensions to other cloud providers like AWS and Azure will 
 be released over time, but the interactions will be very similar. In fact, adding support for these can a great first pull 

@@ -25,6 +25,7 @@ from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils
 from zenml.utils import source_utils
 from zenml.utils.enums import GDPComponent
+from zenml.utils.exceptions import AlreadyExistsException
 from zenml.utils.exceptions import EmptyDatasourceException
 from zenml.utils.logger import get_logger
 from zenml.utils.post_training.post_training_utils import \
@@ -32,25 +33,23 @@ from zenml.utils.post_training.post_training_utils import \
     convert_raw_dataset_to_pandas, view_statistics
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
 from zenml.utils.zenml_analytics import track, CREATE_DATASOURCE
-from zenml.utils.exceptions import AlreadyExistsException
 
 logger = get_logger(__name__)
 
 
 class BaseDatasource:
     """Base class for all ZenML datasources.
-
     Every ZenML datasource should override this class.
     """
 
-    def __init__(self,
-                 name: Text,
-                 schema: Dict = None,
-                 _id: Text = None,
-                 *args, **kwargs):
+    def __init__(
+            self,
+            name: Text,
+            _id: Text = None,
+            *args,
+            **kwargs):
         """
         Construct the datasource
-
         Args:
             name (str): name of datasource
             schema (dict): schema of datasource
@@ -72,7 +71,6 @@ class BaseDatasource:
             logger.info(f'Datasource {name} created.')
 
         self.name = name
-        self.schema = schema
         self._immutable = False
         self._source = source_utils.resolve_source_path(
             self.__class__.__module__ + '.' + self.__class__.__name__
@@ -88,10 +86,8 @@ class BaseDatasource:
     def from_config(cls, config: Dict):
         """
         Convert from Data Step config to ZenML Datasource object.
-
         Data step is also populated and configuration set to parameters set
         in the config file.
-
         Args:
             config: a DataStep config in dict-form (probably loaded from YAML).
         """
@@ -107,7 +103,7 @@ class BaseDatasource:
             keys.DatasourceKeys.NAME]
         _id = config[keys.PipelineKeys.DATASOURCE][keys.DatasourceKeys.ID]
         obj = datasource_class(
-            name=datasource_name, _id=_id, _source=source,
+            name=datasource_name, _id=_id,
             **step_config[keys.StepKeys.ARGS])
         obj._immutable = True
         return obj
@@ -136,7 +132,6 @@ class BaseDatasource:
     def _get_data_file_paths(self, pipeline):
         """
         Gets path where data is stored as list of file paths.
-
         Args:
             pipeline: a pipeline with this datasource embedded
         """
@@ -153,7 +148,6 @@ class BaseDatasource:
     def sample_data(self, sample_size: int = 100000):
         """
         Sampels data from datasource as a pandas DataFrame.
-
         Args:
             sample_size: # of rows to sample.
         """
