@@ -58,7 +58,9 @@ a new inbound rule which will allow you to connect to your metadata store. In or
 ### Create a IAM role for your instance
 
 In the next step, you need to create a new IAM role in order to make your EC2 instance access the previously 
-created artifact store (through the `AmazonS3FullAccess`) and metadata store (`AmazonRDSFullAccess`).
+created artifact store (through the `AmazonS3FullAccess`) and metadata store (`AmazonRDSFullAccess`). Additionally, you 
+can add `AmazonEC2FullAccess` to your role, so that your instance can shut itself down once the pipeline finishes 
+its execution.
 
 ![](videos/iam_video.gif)
 
