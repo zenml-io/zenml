@@ -42,7 +42,7 @@ def test_get_categorical_value():
     assert isinstance(float_value, float)
     assert isinstance(str_value, str)
 
-    # testing for a categorical feature that is not in the data
+    # tests for a categorical feature that is not in the data
     with pytest.raises(AssertionError):
         _ = get_categorical_value(tf_example, cat_col="testest")
 

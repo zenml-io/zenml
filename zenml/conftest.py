@@ -14,25 +14,32 @@
 
 # pylint disable=protected-access
 
-import pytest
 import os
-import zenml
 import shutil
-from zenml.core.repo.repo import Repository
-from zenml.utils import path_utils, yaml_utils
-from zenml.core.pipelines.training_pipeline import TrainingPipeline
-from zenml.core.datasources.base_datasource import BaseDatasource
+from pathlib import Path
+
+import pytest
+
+import zenml
 from zenml.core.backends.base_backend import BaseBackend
-from zenml.core.steps.base_step import BaseStep
-from zenml.core.pipelines.base_pipeline import BasePipeline
+from zenml.core.datasources.base_datasource import BaseDatasource
 from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
+from zenml.core.pipelines.base_pipeline import BasePipeline
+from zenml.core.repo.repo import Repository
 from zenml.core.repo.zenml_config import ZenMLConfig
+from zenml.core.steps.base_step import BaseStep
+from zenml.utils import path_utils
 
-# reset pipeline root to redirect to testing so that it writes the yamls there
-ZENML_ROOT = zenml.__path__[0]
-TEST_ROOT = os.path.join(ZENML_ROOT, "testing")
+# Nicholas a way to get to the root
+ZENML_ROOT = str(Path(zenml.__path__[0]).parent)
+TEST_ROOT = os.path.join(ZENML_ROOT, "tests")
 
-pipeline_root = os.path.join(TEST_ROOT, "test_pipelines")
+pipeline_root = os.path.join(TEST_ROOT, "pipelines")
+
+
+@pytest.fixture
+def repo():
+    return Repository.get_instance()
 
 
 @pytest.fixture
@@ -84,24 +91,8 @@ def cleanup(cleanup_metadata_store, cleanup_artifacts):
 
 
 @pytest.fixture
-def run_test_pipelines():
-    def wrapper():
-        repo: Repository = Repository.get_instance()
-        repo.zenml_config.set_pipelines_dir(pipeline_root)
-
-        for p_config in path_utils.list_dir(pipeline_root):
-            y = yaml_utils.read_yaml(p_config)
-            p: TrainingPipeline = TrainingPipeline.from_config(y)
-            p.run()
-    return wrapper
-
-
-@pytest.fixture
 def delete_config():
     def wrapper(filename):
-        repo: Repository = Repository.get_instance()
-        repo.zenml_config.set_pipelines_dir(pipeline_root)
-
         cfg = os.path.join(pipeline_root, filename)
         path_utils.rm_file(cfg)
 
@@ -165,11 +156,11 @@ def equal_datasources(equal_steps):
 
         equal = False
         equal |= ds1.name == ds2.name
-        equal |= ds1.schema == ds2.schema
         equal |= ds1._id == ds2._id
         equal |= ds1._source == ds2._source
         equal |= equal_steps(ds1.get_data_step(), ds2.get_data_step(),
                              loaded=loaded)
+        # TODO[LOW]: Add more checks for constructor kwargs, __dict__ etc.
         if loaded:
             equal |= ds1._immutable != ds2._immutable
         else:
@@ -231,7 +222,20 @@ def equal_md_stores():
 
 
 @pytest.fixture
-def equal_zenml_configs():
+def equal_zenml_configs(equal_md_stores):
     def wrapper(cfg1: ZenMLConfig, cfg2: ZenMLConfig, loaded=True):
-        return False
+        # There can be a "None" datasource in a pipeline
+        if cfg1 is None and cfg2 is None:
+            return True
+        if sum(d is None for d in [cfg1, cfg2]) == 1:
+            return False
+
+        # TODO[LOW]: Expand logic
+        equal = False
+        equal |= equal_md_stores(cfg1.metadata_store, cfg2.metadata_store)
+        equal |= cfg1.pipelines_dir == cfg2.pipelines_dir
+        equal |= cfg1.artifact_store.path == cfg2.artifact_store.path
+
+        return equal
+
     return wrapper
