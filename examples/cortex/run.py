@@ -16,7 +16,7 @@ from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
 
 GCP_BUCKET = os.getenv('GCP_BUCKET')
 assert GCP_BUCKET
-CORTEX_ENV = os.getenv('GCP_BUCKET', 'env')
+CORTEX_ENV = os.getenv('CORTEX_ENV', 'env')
 CORTEX_ENDPOINT_NAME = os.getenv('CORTEX_ENDPOINT_NAME', 'zenml-classifier')
 
 # For this example, the ArtifactStore must be a GCP bucket, as the
