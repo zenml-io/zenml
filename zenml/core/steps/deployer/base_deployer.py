@@ -12,9 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Text
+from typing import Type
 
 from tfx.dsl.components.base import executor_spec
+from tfx.dsl.components.base.base_executor import BaseExecutor
 
 from zenml.core.steps.base_step import BaseStep
 
@@ -27,21 +28,15 @@ class BaseDeployerStep(BaseStep):
     request.
     """
 
-    def __init__(self,
-                 model_name: Text = None,
-                 **kwargs):
+    def __init__(self, **kwargs):
         """
         Base deployer step constructor. In order to create custom model
         serving logic, implement deployer steps that inherit from this class.
 
         Args:
-            model_name: Name given to the trained model.
             **kwargs: Additional keyword arguments.
         """
-        self.model_name = model_name
-        super(BaseDeployerStep, self).__init__(
-            model_name=model_name,
-            **kwargs)
+        super(BaseDeployerStep, self).__init__(**kwargs)
 
     def get_config(self):
         pass
@@ -49,7 +44,7 @@ class BaseDeployerStep(BaseStep):
     def build_push_destination(self):
         pass
 
-    def get_executor(self):
+    def get_executor(self) -> Type[BaseExecutor]:
         pass
 
     def _build_pusher_args(self):
