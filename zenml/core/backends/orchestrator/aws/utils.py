@@ -31,7 +31,8 @@ def get_startup_script(config: Dict,
            f"--env AWS_REGION={region} -v /tmp/aws_config:/root/.aws " \
            f"{zenml_image} {c_params}\n" \
            f"instanceId=$(curl http://169.254.169.254/latest/meta-data/instance-id/)\n" \
-           f"/usr/bin/aws ec2 terminate-instances --instance-ids $instanceId --region {region}" \
+           f"/usr/bin/aws ec2 terminate-instances --instance-ids $instanceId --region {region}"
+
 
 def setup_session():
     session = boto3.Session()
