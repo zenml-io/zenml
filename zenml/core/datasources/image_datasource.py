@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Image Datasource definition"""
 
-from typing import Text
+from typing import Text, Dict
 
 from zenml.core.datasources.base_datasource import BaseDatasource
 from zenml.core.steps.data.image_data_step import ImageDataStep
@@ -25,16 +25,23 @@ class ImageDatasource(BaseDatasource):
     Use this for image training pipelines.
     """
 
-    def __init__(self, name: Text = None, base_path='', **unused_kwargs):
+    def __init__(
+            self,
+            name: Text = None,
+            base_path: Text = None,
+            schema: Dict = None,
+            **kwargs):
         """
         Create a Image datasource.
 
         Args:
             name (str): Name of datasource
             base_path (str): Path to folder of images
+            schema (str): Optional schema for data to conform to.
         """
-        super().__init__(name, **unused_kwargs)
+        super().__init__(name, **kwargs)
         self.base_path = base_path
+        self.schema = schema
 
     def get_data_step(self):
-        return ImageDataStep(self.base_path)
+        return ImageDataStep(self.base_path, self.schema)

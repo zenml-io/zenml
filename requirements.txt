@@ -35,3 +35,7 @@ google-apitools==0.5.31
 
 # pytorch
 torch==1.7.0
+
+# Beam nuggets for postgres
+beam-nuggets==0.17.0
+pg8000==1.16.5
