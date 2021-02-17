@@ -72,7 +72,10 @@ training_pipeline.add_evaluator(
 api_config = {
     "name": CORTEX_ENDPOINT_NAME,
     "kind": "RealtimeAPI",
-    "predictor": {"type": "tensorflow"}
+    "predictor": {
+        "type": "tensorflow",
+        # Set signature key of the model as we are using Tensorflow Trainer
+        "models": {"signature_key": "serving_default", "path": "6"}}
 }
 training_pipeline.add_deployment(
     CortexDeployer(

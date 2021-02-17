@@ -124,7 +124,9 @@ class Executor(tfx_pusher_executor.Executor):
             api_config['predictor']['path'] = 'predictor.py'
 
             # configure the model path
-            api_config['predictor']['models'] = {'path': model_path}
+            if 'models' not in api_config['predictor']:
+                api_config['predictor']['models'] = {}
+            api_config['predictor']['models'].update({'path': model_path})
             cx.create_api(
                 api_config,
                 project_dir=temp_project_dir,
