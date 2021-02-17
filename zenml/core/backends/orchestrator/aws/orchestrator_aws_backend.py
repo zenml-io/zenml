@@ -98,13 +98,15 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
         args = {'ImageId': self.instance_image,
                 'InstanceType': self.instance_type,
                 'IamInstanceProfile': self.iam_role,
-                'KeyName': self.key_name,
                 'MaxCount': self.max_count,
                 'MinCount': self.min_count,
                 'UserData': startup}
 
         if self.security_group:
             args['SecurityGroups'] = self.security_group
+
+        if self.key_name:
+            args['KeyName'] = self.key_name
 
         return self.ec2_resource.create_instances(**args)
 
