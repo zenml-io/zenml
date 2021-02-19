@@ -19,36 +19,62 @@ from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
 
 try:
     import tokenizers
+    from tokenizers import Tokenizer
 except ImportError:
-    print("Error: Tokenizer library not installed.")
+    print("Error: Library \"tokenizers\" not installed.")
 
 
 class HFTokenizerStep(BaseTrainerStep):
 
     def __init__(self,
-                 output_dir: Text,
-                 model: tokenizers.models.Model,
                  vocab_size: int,
                  min_frequency: int,
+                 model: tokenizers.models.Model = None,
+                 tokenizer: tokenizers.implementations.BaseTokenizer = None,
                  special_tokens: List[Text] = None,
                  train_files: Any = None,
                  eval_files: Any = None,
                  ):
 
-        super(HFTokenizerStep, self).__init__(serving_model_dir=output_dir,
-                                              train_files=train_files,
+        super(HFTokenizerStep, self).__init__(train_files=train_files,
                                               eval_files=eval_files)
 
         self.model = model
+
+        # for predefined tokenizer implementations from HuggingFace
+        if tokenizer is not None:
+            self.tokenizer = tokenizer
+        else:
+            # for customized tokenizers
+            self.tokenizer = Tokenizer(self.model)
         self.vocab_size = vocab_size
         self.min_frequency = min_frequency
         self.special_tokens = special_tokens or []
 
     def input_fn(self,
                  file_pattern: List[Text],
-                 tf_transform_output: tft.TFTransformOutput):
+                 tf_transform_output: tft.TFTransformOutput = None):
 
         return tf.data.TFRecordDataset(filenames=file_pattern,
                                        compression_type="GZIP")
 
+    def model_fn(self,
+                 train_dataset: tf.data.Dataset,
+                 eval_dataset: tf.data.Dataset):
+
+        train_dataset = train_dataset.batch(1024).as_numpy_iterator()
+        eval_dataset = eval_dataset.batch(1024).as_numpy_iterator()
+
+        self.tokenizer.train_from_iterator(train_dataset, trainer=None)
+
+        return self.tokenizer
+
+    def run_fn(self):
+        train_dataset = self.input_fn(self.train_files)
+        eval_dataset = self.input_fn(self.eval_files)
+
+        tokenizer = self.model_fn(train_dataset=train_dataset,
+                                  eval_dataset=eval_dataset)
+
+        tokenizer.save_model(self.serving_model_dir)
 
