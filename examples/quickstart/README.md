@@ -20,7 +20,7 @@ cd zenml/examples/quickstart
 Now we're ready. Execute:
 
 ```bash
-python run.py
+python quickstart.py
 ```
 
 Or just a jupyter notebook
