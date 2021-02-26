@@ -13,8 +13,9 @@ git clone https://github.com/maiot-io/zenml.git
 Before continuing, either [install the zenml pip package](https://docs.zenml.io/getting-started/installation.html) or install it [from the cloned repo](../../zenml/README.md). 
 
 ```
+cd zenml
 zenml init
-cd zenml/examples/batch_inference
+cd examples/batch_inference
 ```
 
 ### Run the project

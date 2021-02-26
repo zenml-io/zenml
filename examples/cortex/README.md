@@ -25,6 +25,7 @@ Before continuing, either install the [zenml pip package](https://pypi.org/proje
 In both cases, make sure to install the cortex extension (e.g. `pip install zenml[cortex]`)
 
 ```
+cd zenml
 zenml init
 cd examples/cortex
 ```

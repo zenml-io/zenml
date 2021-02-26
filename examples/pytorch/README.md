@@ -14,8 +14,9 @@ Before continuing, either [install the zenml pip package](https://docs.zenml.io/
 In both cases, make sure to also install the pytorch extension (e.g. with pip: `pip install zenml[pytorch]`)
 
 ```
+cd zenml
 zenml init
-cd zenml/examples/pytorch
+cd examples/pytorch
 ```
 
 
