@@ -26,8 +26,9 @@ install it [from the cloned repo](../../zenml/README.md). In both cases, make su
 `aws` extension (e.g. with pip: `pip install zenml[aws]`)
 
 ```
+cd zenml
 zenml init
-cd zenml/examples/aws_orchestrated
+cd examples/aws_orchestrated
 ```
 
 Before running the example, there are a few steps that you need to complete in order to set up your cloud environment:
