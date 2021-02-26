@@ -11,6 +11,8 @@ AWS_ACCESS_KEY_ID = 'AWS_ACCESS_KEY_ID'
 AWS_SECRET_ACCESS_KEY = 'AWS_SECRET_ACCESS_KEY'
 AWS_REGION = 'AWS_REGION'
 
+SHARED_CREDENTIALS_FILE = 'shared-credentials-file'
+
 
 def _get_container_params(config):
     config_encoded = base64.b64encode(json.dumps(config).encode())
