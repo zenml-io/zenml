@@ -34,6 +34,7 @@ jobs:
       - name: testing
         run: |
           pip install -e .[all]
+          pip install pytest
           cd tests
           ./testing.sh
           cat ~/.config/zenml/info.json
