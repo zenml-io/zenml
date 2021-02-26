@@ -33,7 +33,7 @@ GCP_REQUIREMENTS = ["apache-beam[gcp]==2.27.0",
                     "google-apitools==0.5.31"]
 
 AWS_INTEGRATION = 'aws'
-AWS_REQUIREMENTS = []
+AWS_REQUIREMENTS = ["boto3==1.16.62"]
 
 AZURE_INTEGRATION = 'azure'
 AZURE_REQUIREMENTS = []
