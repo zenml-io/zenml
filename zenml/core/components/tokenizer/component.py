@@ -21,12 +21,14 @@ from tfx.types.component_spec import ComponentSpec, ExecutionParameter, \
     ChannelParameter
 
 from zenml.core.components.tokenizer.executor import TokenizerExecutor
-from zenml.core.components.bulk_inferrer.constants import MODEL, EXAMPLES
-from zenml.core.components.split_gen.constants import OUTPUT_EXAMPLES
 from zenml.core.standards.standard_keys import StepKeys
 
 VOCAB = "vocabulary"
 MERGES = "merges"
+TOKENIZER = "tokenizer"
+TEXT_CACHE = "text_cache"
+EXAMPLES = "examples"
+OUTPUT_EXAMPLES = "output_examples"
 
 
 class TokenizerSpec(ComponentSpec):
@@ -35,12 +37,13 @@ class TokenizerSpec(ComponentSpec):
         StepKeys.ARGS: ExecutionParameter(type=Dict[Text, Any]),
     }
     INPUTS = {
-        MODEL: ChannelParameter(type=standard_artifacts.Model),
         EXAMPLES: ChannelParameter(type=standard_artifacts.Examples),
     }
 
     OUTPUTS = {
-        OUTPUT_EXAMPLES: ChannelParameter(type=standard_artifacts.Examples)
+        TOKENIZER: ChannelParameter(type=standard_artifacts.Model),
+        OUTPUT_EXAMPLES: ChannelParameter(type=standard_artifacts.Examples),
+        TEXT_CACHE: ChannelParameter(type=standard_artifacts.Examples)
     }
 
 
@@ -51,10 +54,12 @@ class Tokenizer(BaseComponent):
     def __init__(self,
                  source: Text,
                  source_args: Dict[Text, Any],
-                 model: Optional[ChannelParameter] = None,
-                 instance_name: Optional[Text] = None,
                  examples: Optional[ChannelParameter] = None,
-                 output_examples: Optional[ChannelParameter] = None):
+                 tokenizer: Optional[ChannelParameter] = None,
+                 output_examples: Optional[ChannelParameter] = None,
+                 text_cache: Optional[ChannelParameter] = None,
+                 instance_name: Optional[Text] = None
+                 ):
         """
         Interface for all DataGen components, the main component responsible
         for reading data and converting to TFRecords. This is how we handle
@@ -63,21 +68,23 @@ class Tokenizer(BaseComponent):
         Args:
             source:
             source_args:
-            model:
+            tokenizer:
             instance_name:
             examples:
         """
         examples = examples or Channel(type=standard_artifacts.Examples)
-        model = model or Channel(type=standard_artifacts.Model)
+        tokenizer = tokenizer or Channel(type=standard_artifacts.Model)
         output_examples = output_examples or Channel(
             type=standard_artifacts.Examples)
+        text_cache = text_cache or Channel(type=standard_artifacts.Examples)
 
         # Initiate the spec and create instance
         spec = self.SPEC_CLASS(source=source,
                                args=source_args,
-                               model=model,
+                               tokenizer=tokenizer,
                                examples=examples,
-                               output_examples=output_examples)
+                               output_examples=output_examples,
+                               text_cache=text_cache)
 
         super(Tokenizer, self).__init__(spec=spec,
                                         instance_name=instance_name)
