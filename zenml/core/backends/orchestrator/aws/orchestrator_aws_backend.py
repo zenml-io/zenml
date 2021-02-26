@@ -48,6 +48,22 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
                  security_group: Text = None,
                  min_count: int = 1,
                  max_count: int = 1):
+        """
+        Base class for the orchestrator backend on AWS
+
+        :param iam_role: the name of the role created in AWS IAM
+        :param instance_type: the type of the EC2 instance, defaults to
+        t2.micro
+        :param instance_image: the image for the EC2 instance, defaults to the
+        public image: Deep Learning AMI (Amazon Linux 2) Version 39.0
+        :param zenml_image: refers to the image with ZenML
+        :param region: the name of the region that AWS is working on
+        :param key_name: the name of the key to be used whilst creating the
+        instance on EC2
+        :param security_group: the name of a selected security group
+        :param min_count: the minimum number of instances, defaults to 1
+        :param max_count: the maximum number of instances, defaults to 1
+        """
 
         self.session = utils.setup_session()
         self.region = utils.setup_region(region)
