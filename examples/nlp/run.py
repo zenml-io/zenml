@@ -21,7 +21,7 @@ from zenml.core.repo.repo import Repository
 from zenml.utils.exceptions import AlreadyExistsException
 from examples.nlp.training.trainer import UrduTrainer
 
-
+# precious handcrafted Urdu Fake News
 base_path = "/Users/nicholasjunge/workspaces/ml/data/urdu_fake_news/" \
             "urdu_fake_news_small.csv"
 
@@ -39,15 +39,7 @@ nlp_pipeline.add_datasource(ds)
 
 tokenizer_step = TokenizerStep(text_feature="news",
                                vocab_size=3000,
-                               min_frequency=2,
-                               # special_tokens=[
-                               #     "<s>",
-                               #     "<pad>",
-                               #     "</s>",
-                               #     "<unk>",
-                               #     "<mask>",
-                               # ]
-                               )
+                               min_frequency=2)
 
 nlp_pipeline.add_tokenizer(tokenizer_step=tokenizer_step)
 
