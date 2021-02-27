@@ -73,7 +73,6 @@ class UrduTrainer(TFBaseTrainerStep):
             "distilbert-base-uncased", id2label=id2label)
 
         optimizer = tf.keras.optimizers.Adam(learning_rate=3e-5)
-        # loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
         model.compile(optimizer=optimizer,
                       loss=model.compute_loss,
@@ -96,8 +95,7 @@ class UrduTrainer(TFBaseTrainerStep):
 
         Args:
             file_pattern: File pattern matching saved TFRecords on disk.
-            feature_spec: Output of the preceding Transform /
-             Preprocessing component.
+            feature_spec: Feature spec from the inferred schema.
 
         Returns:
             dataset: tf.data.Dataset created out of the input files.
@@ -117,10 +115,6 @@ class UrduTrainer(TFBaseTrainerStep):
             label_key="label",
             reader=self._gzip_reader_fn,
             num_epochs=1)
-
-        # dataset = dataset.map(lambda x: (x, {"labels": x.pop("labels")}))
-
-        # dataset = dataset.unbatch()
 
         return dataset
 
