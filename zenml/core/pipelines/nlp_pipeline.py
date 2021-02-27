@@ -92,7 +92,13 @@ class NLPPipeline(BasePipeline):
         prediction = model(input_ids=transformed_bert_features["input_ids"],
                            training=False)
 
-        print(prediction)
+        formatted = [
+            {"label": model.config.id2label[item.argmax()],
+             "score": item.max().item()}
+            for item in tf.math.sigmoid(prediction.logits).numpy()
+        ]
+
+        print(formatted)
 
     def get_tfx_component_list(self, config: Dict[Text, Any]) -> List:
         """
