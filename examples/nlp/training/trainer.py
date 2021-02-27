@@ -67,13 +67,17 @@ class UrduTrainer(TFBaseTrainerStep):
                  train_dataset: tf.data.Dataset,
                  eval_dataset: tf.data.Dataset):
 
+        id2label = {0: "FAKE_NEWS", 1: "REAL_NEWS"}
+
         model = TFDistilBertForSequenceClassification.from_pretrained(
-            "distilbert-base-uncased", num_labels=1)
+            "distilbert-base-uncased", id2label=id2label)
 
         optimizer = tf.keras.optimizers.Adam(learning_rate=3e-5)
-        loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+        # loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
-        model.compile(optimizer=optimizer, loss=loss, metrics=["accuracy"])
+        model.compile(optimizer=optimizer,
+                      loss=model.compute_loss,
+                      metrics=["accuracy"])
 
         model.fit(train_dataset,
                   epochs=self.epochs,
@@ -113,6 +117,8 @@ class UrduTrainer(TFBaseTrainerStep):
             label_key="label",
             reader=self._gzip_reader_fn,
             num_epochs=1)
+
+        # dataset = dataset.map(lambda x: (x, {"labels": x.pop("labels")}))
 
         # dataset = dataset.unbatch()
 
