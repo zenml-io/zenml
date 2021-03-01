@@ -23,7 +23,7 @@ from examples.nlp.training.trainer import UrduTrainer
 
 # precious handcrafted Urdu Fake News
 base_path = "/Users/nicholasjunge/workspaces/ml/data/urdu_fake_news/" \
-            "urdu_fake_news_small.csv"
+            "urdu_fake_news.csv"
 
 try:
     nlp_pipeline = NLPPipeline(name="nlp_test")
@@ -38,15 +38,16 @@ except AlreadyExistsException:
 nlp_pipeline.add_datasource(ds)
 
 tokenizer_step = TokenizerStep(text_feature="news",
-                               vocab_size=3000,
-                               min_frequency=2)
+                               tokenizer="bert-wordpiece",
+                               vocab_size=3000)
 
 nlp_pipeline.add_tokenizer(tokenizer_step=tokenizer_step)
 
 nlp_pipeline.add_split(RandomSplit(split_map={"train": 0.9,
                                               "eval": 0.1}))
 
-nlp_pipeline.add_trainer(UrduTrainer(epochs=1, batch_size=16))
+nlp_pipeline.add_trainer(UrduTrainer(epochs=3, batch_size=64,
+                                     learning_rate=5e-3))
 
 nlp_pipeline.run()
 

@@ -30,6 +30,7 @@ class UrduTrainer(TFBaseTrainerStep):
                  eval_files: List[Text] = None,
                  batch_size: int = 64,
                  epochs: int = 25,
+                 learning_rate: float = 1e-4,
                  schema_file: Text = None,
                  **kwargs
                  ):
@@ -40,10 +41,14 @@ class UrduTrainer(TFBaseTrainerStep):
                                           eval_files=eval_files,
                                           batch_size=batch_size,
                                           epochs=epochs,
+                                          learning_rate=learning_rate,
                                           **kwargs)
 
+        # ML variables
         self.batch_size = batch_size
         self.epochs = epochs
+        self.learning_rate = learning_rate
+
         if schema_file:
             self.schema_path = os.path.dirname(schema_file)
         else:
@@ -72,7 +77,7 @@ class UrduTrainer(TFBaseTrainerStep):
         model = TFDistilBertForSequenceClassification.from_pretrained(
             "distilbert-base-uncased", id2label=id2label)
 
-        optimizer = tf.keras.optimizers.Adam(learning_rate=3e-5)
+        optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
 
         model.compile(optimizer=optimizer,
                       loss=model.compute_loss,
