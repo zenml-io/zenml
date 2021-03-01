@@ -48,6 +48,7 @@ logger = get_logger(__name__)
 class NLPPipeline(BasePipeline):
     PIPELINE_TYPE = "nlp"
 
+    # TODO: Remove Huggingface dependency from the base NLP pipeline
     def __call__(self, sequence: Union[Text, List[Text]] = None):
         """Call operator for local inference method"""
         if not self.get_status() == PipelineStatusTypes.Succeeded.name:
