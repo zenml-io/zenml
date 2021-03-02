@@ -34,6 +34,8 @@ class TFMAEvaluator(BaseEvaluatorStep):
     Custom TFMA Evaluator step. This step does not get its own derived class,
     it derives directly from the BaseStep class.
     """
+    MODULE_FILE = 'zenml.core.components.evaluator.evaluator_module'
+
     def __init__(self,
                  slices: List[List[Text]] = None,
                  metrics: Dict[Text, List[Text]] = None):
@@ -41,7 +43,7 @@ class TFMAEvaluator(BaseEvaluatorStep):
         self.slices = slices or list()
         self.metrics = metrics or dict()
 
-    def build_eval_config(self, use_defaults=False):
+    def build_config(self, use_defaults=False):
 
         # SLICING SPEC
         slicing_specs = [tfma.SlicingSpec()]
