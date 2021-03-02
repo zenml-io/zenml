@@ -20,4 +20,3 @@ tokenizer_map = {"bert-wordpiece": BertWordPieceTokenizer,
                  "char-level-bpe": CharBPETokenizer,
                  "sentencepiece-bpe": SentencePieceBPETokenizer,
                  "sentencepiece-unigram": SentencePieceUnigramTokenizer}
-
