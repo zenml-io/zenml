@@ -1,0 +1,8 @@
+EVAL_CONFIG = 'eval_config'
+EXAMPLE_SPLITS = 'example_splits'
+MODULE_FILE = 'module_file'
+MODULE_PATH = 'module_path'
+EXAMPLES = 'examples'
+MODEL = 'model'
+SCHEMA = 'schema'
+EVALUATION = 'evaluation'
