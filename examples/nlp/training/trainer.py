@@ -24,6 +24,7 @@ from zenml.utils.post_training.post_training_utils import \
 
 class UrduTrainer(TFBaseTrainerStep):
     def __init__(self,
+                 model_name: Text,
                  serving_model_dir: Text = None,
                  transform_output: Text = None,
                  train_files: List[Text] = None,
@@ -35,7 +36,8 @@ class UrduTrainer(TFBaseTrainerStep):
                  **kwargs
                  ):
 
-        super(UrduTrainer, self).__init__(serving_model_dir=serving_model_dir,
+        super(UrduTrainer, self).__init__(model_name=model_name,
+                                          serving_model_dir=serving_model_dir,
                                           transform_output=transform_output,
                                           train_files=train_files,
                                           eval_files=eval_files,
@@ -48,6 +50,7 @@ class UrduTrainer(TFBaseTrainerStep):
         self.batch_size = batch_size
         self.epochs = epochs
         self.learning_rate = learning_rate
+        self.model_name = model_name
 
         if schema_file:
             self.schema_path = os.path.dirname(schema_file)
@@ -75,7 +78,7 @@ class UrduTrainer(TFBaseTrainerStep):
         id2label = {0: "FAKE_NEWS", 1: "REAL_NEWS"}
 
         model = TFDistilBertForSequenceClassification.from_pretrained(
-            "distilbert-base-uncased", id2label=id2label)
+            self.model_name, id2label=id2label)
 
         optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
 
@@ -132,3 +135,7 @@ class UrduTrainer(TFBaseTrainerStep):
             filenames: Names of the compressed TFRecord data files.
         """
         return tf.data.TFRecordDataset(filenames, compression_type='GZIP')
+
+    def reload_model(self, path_to_model: Text):
+        return TFDistilBertForSequenceClassification.from_pretrained(
+            path_to_model)

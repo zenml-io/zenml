@@ -46,7 +46,9 @@ nlp_pipeline.add_tokenizer(tokenizer_step=tokenizer_step)
 nlp_pipeline.add_split(RandomSplit(split_map={"train": 0.9,
                                               "eval": 0.1}))
 
-nlp_pipeline.add_trainer(UrduTrainer(epochs=3, batch_size=64,
+nlp_pipeline.add_trainer(UrduTrainer(model_name="distilbert-base-uncased",
+                                     epochs=3,
+                                     batch_size=64,
                                      learning_rate=5e-3))
 
 nlp_pipeline.run()
