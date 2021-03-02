@@ -19,6 +19,8 @@ import os
 
 from zenml.core.steps.data.base_data_step import BaseDataStep
 
+SENTENCE = "sentence"
+
 
 def read_text(base_path: Text,
               file_ext: Text = ".txt",
@@ -38,7 +40,9 @@ class TextDataStep(BaseDataStep):
     A step that reads in text data from a collection of text files in a
     directory.
     """
-    def __init__(self, base_path: Text, schema: Dict = None,
+    def __init__(self,
+                 base_path: Text,
+                 schema: Dict = None,
                  file_ext: Text = ".txt",
                  strip_trailing_newlines: bool = True,
                  skip_header_lines: int = 0):
@@ -57,7 +61,12 @@ class TextDataStep(BaseDataStep):
             skip_header_lines: Number of lines to skip initially. Must be an
              integer larger or equal 0.
         """
-        super().__init__(path=base_path, schema=schema)
+        super().__init__(schema=schema,
+                         base_path=base_path,
+                         file_ext=file_ext,
+                         strip_trailing_newlines=strip_trailing_newlines,
+                         skip_header_lines=skip_header_lines)
+
         self.base_path = base_path
         self.file_ext = file_ext
         self.strip_trailing_newlines = strip_trailing_newlines
@@ -68,3 +77,6 @@ class TextDataStep(BaseDataStep):
                          file_ext=self.file_ext,
                          strip_trailing_newlines=self.strip_trailing_newlines,
                          skip_header_lines=self.skip_header_lines)
+
+    def convert_to_dict(self):
+        return beam.Map(lambda x: {SENTENCE: x})
