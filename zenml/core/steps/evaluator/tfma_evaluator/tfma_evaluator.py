@@ -31,23 +31,27 @@ def to_camel_case(s):
 
 class TFMAEvaluator(BaseEvaluatorStep):
     """
-    Custom TFMA Evaluator step. This step does not get its own derived class,
-    it derives directly from the BaseStep class.
+    Custom TFMA Evaluator step.
     """
-    MODULE_FILE = 'zenml.core.components.evaluator.evaluator_module'
+
+    CUSTOM_MODULE = 'zenml.core.steps.evaluator.tfma_evaluator.tfma_module'
 
     def __init__(self,
                  slices: List[List[Text]] = None,
-                 metrics: Dict[Text, List[Text]] = None):
-        super().__init__(slices=slices, metrics=metrics)
+                 metrics: Dict[Text, List[Text]] = None,
+                 splits: List[Text] = None):
+
+        super().__init__(slices=slices,
+                         metrics=metrics,
+                         splits=splits)
+
         self.slices = slices or list()
         self.metrics = metrics or dict()
+        self.splits = splits or ['eval']
 
     def build_config(self, use_defaults=False):
-
         # SLICING SPEC
         slicing_specs = [tfma.SlicingSpec()]
-
         if self.slices:
             slicing_specs.extend([tfma.SlicingSpec(feature_keys=e)
                                   for e in self.slices])
