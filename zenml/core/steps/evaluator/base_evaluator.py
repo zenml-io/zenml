@@ -21,5 +21,9 @@ class BaseEvaluatorStep(BaseStep):
     """
     Base evaluator step. All evaluator steps should inherit from this class.
     """
+    CUSTOM_MODULE = None
 
     STEP_TYPE = StepTypes.evaluator.name
+
+    def build_config(self):
+        pass
