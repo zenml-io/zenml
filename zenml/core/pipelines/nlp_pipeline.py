@@ -21,7 +21,6 @@ from tfx.components.schema_gen.component import SchemaGen
 from tfx.components.statistics_gen.component import StatisticsGen
 from tfx.components.trainer.component import Trainer
 from tfx.proto import trainer_pb2
-from tokenizers.implementations import BertWordPieceTokenizer
 from transformers import TFDistilBertForSequenceClassification
 
 from zenml.core.backends.training.training_base_backend import \
@@ -33,65 +32,42 @@ from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.standards import standard_keys as keys
 from zenml.core.steps.split.base_split_step import BaseSplit
 from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
+from zenml.core.steps.trainer.nlp_tokenizers.hf_tokenizer import TokenizerStep
 from zenml.utils import constants
 from zenml.utils.enums import GDPComponent
 from zenml.utils.enums import PipelineStatusTypes
-from zenml.utils.post_training.post_training_utils import \
-    get_feature_spec_from_schema
-from zenml.utils.logger import get_logger
-
-TOKENIZER = "tokenizer"
-
-logger = get_logger(__name__)
 
 
 class NLPPipeline(BasePipeline):
     PIPELINE_TYPE = "nlp"
 
     # TODO: Remove Huggingface dependency from the base NLP pipeline
-    def __call__(self, sequence: Union[Text, List[Text]] = None):
+    def __call__(self, sequence: Union[Text, List[Text]]):
         """Call operator for local inference method"""
+
         if not self.get_status() == PipelineStatusTypes.Succeeded.name:
             print("Please run the pipeline first before running inference!")
+            return
+
+        config = self.to_config()
+
+        steps = config[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.STEPS]
 
         model_uri = os.path.join(self.get_model_uri(), "serving_model_dir")
         model = TFDistilBertForSequenceClassification.from_pretrained(
-            model_uri
-        )
+            model_uri)
 
-        vocab = os.path.join(self.get_tokenizer_uri(), "vocab.txt")
-        tokenizer = BertWordPieceTokenizer(vocab=vocab)
-        tokenizer.enable_padding(length=128)
-        tokenizer.enable_truncation(max_length=128)
+        tokenizer_step = TokenizerStep.from_config(
+            steps[keys.NLPSteps.TOKENIZER])
+        tokenizer_step.load_vocab(self.get_tokenizer_uri())
 
-        encoded = tokenizer.encode(sequence=sequence)
-
-        id_list = tf.train.Feature(
-            int64_list=tf.train.Int64List(value=encoded.ids))
-        attention_list = tf.train.Feature(
-            int64_list=tf.train.Int64List(value=encoded.attention_mask))
-
-        feature = {"input_ids": id_list,
-                   "attention_mask": attention_list}
-
-        serialized_ex = tf.train.Example(
-            features=tf.train.Features(feature=feature)).SerializeToString()
-
-        necessary_features = ["input_ids", "attention_mask"]
-        example_spec = get_feature_spec_from_schema(self.get_schema_uri())
-        feature_spec = {k: v for k, v in example_spec.items()
-                        if k in necessary_features}
-
-        # transform is trivial so we can parse the spec anyways
-        parsed_features = tf.io.parse_example(serialized_ex,
-                                              feature_spec)
+        encoded = tokenizer_step.encode(sequence=sequence,
+                                        output_format="tf_tensors")
 
         transformed_bert_features = {k: tf.reshape(v, (1, -1)) for k, v in
-                                     parsed_features.items()
-                                     if k in necessary_features}
+                                     encoded.items()}
 
-        prediction = model(input_ids=transformed_bert_features["input_ids"],
-                           training=False)
+        prediction = model(input_ids=transformed_bert_features, training=False)
 
         formatted = [
             {"label": model.config.id2label[item.argmax()],
@@ -120,7 +96,7 @@ class NLPPipeline(BasePipeline):
         ############
         # RAW DATA #
         ############
-        data_config = steps[keys.TrainingSteps.DATA]
+        data_config = steps[keys.NLPSteps.DATA]
         data = DataGen(
             name=self.datasource.name,
             source=data_config[keys.StepKeys.SOURCE],
@@ -130,12 +106,12 @@ class NLPPipeline(BasePipeline):
         #############
         # TOKENIZER #
         #############
-        tokenizer_config = steps[TOKENIZER]
+        tokenizer_config = steps[keys.NLPSteps.TOKENIZER]
         tokenizer = Tokenizer(
             source=tokenizer_config[keys.StepKeys.SOURCE],
             source_args=tokenizer_config[keys.StepKeys.ARGS],
             examples=data.outputs.examples,
-        ).with_id(TOKENIZER.capitalize())
+        ).with_id(GDPComponent.Tokenizer.name)
 
         component_list.extend([tokenizer])
 
@@ -150,7 +126,7 @@ class NLPPipeline(BasePipeline):
             infer_feature_shape=True,
         ).with_id(GDPComponent.DataSchema.name)
 
-        split_config = steps[keys.TrainingSteps.SPLIT]
+        split_config = steps[keys.NLPSteps.SPLIT]
         splits = SplitGen(
             input_examples=tokenizer.outputs.output_examples,
             source=split_config[keys.StepKeys.SOURCE],
@@ -168,7 +144,7 @@ class NLPPipeline(BasePipeline):
         # TRAINING #
         ############
         training_backend: Optional[TrainingBaseBackend] = \
-            self.steps_dict[keys.TrainingSteps.TRAINER].backend
+            self.steps_dict[keys.NLPSteps.TRAINER].backend
 
         # default to local
         if training_backend is None:
@@ -176,7 +152,7 @@ class NLPPipeline(BasePipeline):
 
         training_kwargs = {
             'custom_executor_spec': training_backend.get_executor_spec(),
-            'custom_config': steps[keys.TrainingSteps.TRAINER]
+            'custom_config': steps[keys.NLPSteps.TRAINER]
         }
         training_kwargs['custom_config'].update(
             training_backend.get_custom_config())
@@ -195,23 +171,25 @@ class NLPPipeline(BasePipeline):
         return component_list
 
     def steps_completed(self) -> bool:
-        mandatory_steps = [TOKENIZER,
-                           keys.TrainingSteps.TRAINER,
-                           keys.TrainingSteps.DATA]
+        mandatory_steps = [keys.NLPSteps.DATA,
+                           keys.NLPSteps.TOKENIZER,
+                           keys.NLPSteps.SPLIT,
+                           keys.NLPSteps.TRAINER,
+                           ]
 
         for step_name in mandatory_steps:
             if step_name not in self.steps_dict.keys():
                 raise AssertionError(f'Mandatory step {step_name} not added.')
         return True
 
-    def add_tokenizer(self, tokenizer_step: Any):
-        self.steps_dict[TOKENIZER] = tokenizer_step
+    def add_tokenizer(self, tokenizer_step: TokenizerStep):
+        self.steps_dict[keys.NLPSteps.TOKENIZER] = tokenizer_step
 
     def add_split(self, split_step: BaseSplit):
-        self.steps_dict[keys.TrainingSteps.SPLIT] = split_step
+        self.steps_dict[keys.NLPSteps.SPLIT] = split_step
 
     def add_trainer(self, trainer_step: BaseTrainerStep):
-        self.steps_dict[keys.TrainingSteps.TRAINER] = trainer_step
+        self.steps_dict[keys.NLPSteps.TRAINER] = trainer_step
 
     def get_model_uri(self):
         """Gets model artifact."""
@@ -228,5 +206,5 @@ class NLPPipeline(BasePipeline):
     def get_tokenizer_uri(self):
         """Gets transform artifact."""
         uris = self.get_artifacts_uri_by_component(
-            TOKENIZER.capitalize(), False)
+            GDPComponent.Tokenizer.name, False)
         return uris[0]
