@@ -1,7 +1,8 @@
-EVAL_CONFIG = 'eval_config'
-EXAMPLE_SPLITS = 'example_splits'
-MODULE_FILE = 'module_file'
-MODULE_PATH = 'module_path'
+from zenml.core.standards.standard_keys import StepKeys
+
+SOURCE = StepKeys.SOURCE
+ARGS = StepKeys.ARGS
+
 EXAMPLES = 'examples'
 MODEL = 'model'
 SCHEMA = 'schema'

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, List, Text, Callable, Optional
 
 import apache_beam as beam
 import tensorflow_model_analysis as tfma
@@ -6,23 +6,34 @@ from absl import logging
 from tensorflow_model_analysis import constants as tfma_constants
 from tfx import types
 from tfx.components.util import tfxio_utils
-from tfx.components.util import udf_utils
 from tfx.dsl.components.base import base_executor
 from tfx.types import artifact_utils
+from tfx.utils import import_utils
 from tfx.utils import io_utils
-from tfx.utils import json_utils
 from tfx.utils import path_utils
-from tfx.utils import proto_utils
 from tfx_bsl.tfxio import tensor_adapter
 
 from zenml.core.components.evaluator import constants
+from zenml.core.standards.standard_keys import StepKeys
+from zenml.core.steps.evaluator.base_evaluator import BaseEvaluatorStep
+from zenml.utils import source_utils
+
+
+def try_get_fn(module_path: Text,
+               fn_name: Text) -> Optional[Callable[..., Any]]:
+    try:
+        return import_utils.import_func_from_module(module_path, fn_name)
+    except (ValueError, AttributeError):
+        return None
+
 
 _TELEMETRY_DESCRIPTORS = ['Evaluator']
 
 
 class Executor(base_executor.BaseExecutor):
 
-    def Do(self, input_dict: Dict[Text, List[types.Artifact]],
+    def Do(self,
+           input_dict: Dict[Text, List[types.Artifact]],
            output_dict: Dict[Text, List[types.Artifact]],
            exec_properties: Dict[Text, Any]) -> None:
 
@@ -37,16 +48,24 @@ class Executor(base_executor.BaseExecutor):
         evaluation_artifact = output_dict[constants.EVALUATION]
         output_uri = artifact_utils.get_single_uri(evaluation_artifact)
 
+        # Resolve the schema
+        schema = None
+        if constants.SCHEMA in input_dict:
+            schema_artifact = input_dict[constants.SCHEMA]
+            schema_uri = artifact_utils.get_single_uri(schema_artifact)
+            reader = io_utils.SchemaReader()
+            schema = reader.read(io_utils.get_only_uri_in_dir(schema_uri))
+
+        # Create the step with the schema attached if provided
+        source = exec_properties[StepKeys.SOURCE]
+        args = exec_properties[StepKeys.ARGS]
+        c = source_utils.load_source_path_class(source)
+        evaluator_step: BaseEvaluatorStep = c(**args)
+
         # Check the execution parameters
-        if constants.EVAL_CONFIG not in exec_properties:
-            raise ValueError(f'{constants.EVAL_CONFIG} is missing from exec'
-                             f'properties')
-        else:
-            eval_config = tfma.EvalConfig()
-            proto_utils.json_to_proto(exec_properties['eval_config'],
-                                      eval_config)
-            eval_config = tfma.update_eval_config_with_defaults(eval_config)
-            tfma.verify_eval_config(eval_config)
+        eval_config = evaluator_step.build_config()
+        eval_config = tfma.update_eval_config_with_defaults(eval_config)
+        tfma.verify_eval_config(eval_config)
 
         # Resolve the model
         if constants.MODEL in input_dict:
@@ -54,34 +73,17 @@ class Executor(base_executor.BaseExecutor):
             model_uri = artifact_utils.get_single_uri(model_artifact)
             model_path = path_utils.serving_model_path(model_uri)
 
-            eval_shared_model_fn = udf_utils.try_get_fn(
-                exec_properties=exec_properties,
-                fn_name='custom_eval_shared_model') or tfma.default_eval_shared_model
+            model_fn = try_get_fn(evaluator_step.CUSTOM_MODULE,
+                                  'custom_eval_shared_model') or tfma.default_eval_shared_model
 
-            eval_shared_model = eval_shared_model_fn(
-                model_name='',
+            eval_shared_model = model_fn(
+                model_name='',  # TODO: Fix with model names
                 eval_saved_model_path=model_path,
                 eval_config=eval_config)
         else:
             eval_shared_model = None
 
         self._log_startup(input_dict, output_dict, exec_properties)
-
-        # Resolve the schema
-        schema = None
-        if constants.SCHEMA in input_dict:
-            schema = io_utils.SchemaReader().read(
-                io_utils.get_only_uri_in_dir(
-                    artifact_utils.get_single_uri(
-                        input_dict[constants.SCHEMA])))
-
-        # Resolve the splits
-        splits = exec_properties.get(constants.EXAMPLE_SPLITS, 'null')
-        example_splits = json_utils.loads(splits)
-        if not example_splits:
-            example_splits = ['eval']
-            logging.info(f"The {constants.EXAMPLE_SPLITS} parameter is not "
-                         f"set, using 'eval' split.")
 
         # Main pipeline
         logging.info('Evaluating model.')
@@ -95,7 +97,7 @@ class Executor(base_executor.BaseExecutor):
                     telemetry_descriptors=_TELEMETRY_DESCRIPTORS,
                     schema=schema,
                     raw_record_column_name=tfma_constants.ARROW_INPUT_COLUMN)
-                for split in example_splits:
+                for split in evaluator_step.splits:
                     file_pattern = io_utils.all_files_pattern(
                         artifact_utils.get_split_uri(examples_artifact,
                                                      split))
@@ -108,7 +110,7 @@ class Executor(base_executor.BaseExecutor):
                         arrow_schema=tfxio.ArrowSchema(),
                         tensor_representations=tfxio.TensorRepresentations())
             else:
-                for split in example_splits:
+                for split in evaluator_step.splits:
                     file_pattern = io_utils.all_files_pattern(
                         artifact_utils.get_split_uri(examples_artifact,
                                                      split))
@@ -119,8 +121,8 @@ class Executor(base_executor.BaseExecutor):
                     examples_list.append(data)
 
             # Resolve custom extractors
-            custom_extractors = udf_utils.try_get_fn(
-                exec_properties=exec_properties, fn_name='custom_extractors')
+            custom_extractors = try_get_fn(evaluator_step.CUSTOM_MODULE,
+                                           'custom_extractors')
             extractors = None
             if custom_extractors:
                 extractors = custom_extractors(
@@ -129,8 +131,8 @@ class Executor(base_executor.BaseExecutor):
                     tensor_adapter_config=tensor_adapter_config)
 
             # Resolve custom evaluators
-            custom_evaluators = udf_utils.try_get_fn(
-                exec_properties=exec_properties, fn_name='custom_evaluators')
+            custom_evaluators = try_get_fn(evaluator_step.CUSTOM_MODULE,
+                                           'custom_evaluators')
             evaluators = None
             if custom_evaluators:
                 evaluators = custom_evaluators(
