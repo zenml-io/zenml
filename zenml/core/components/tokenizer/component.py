@@ -21,14 +21,9 @@ from tfx.types.component_spec import ComponentSpec, ExecutionParameter, \
     ChannelParameter
 
 from zenml.core.components.tokenizer.executor import TokenizerExecutor
+from zenml.core.components.tokenizer.constants import EXAMPLES, TOKENIZER, \
+    TEXT_CACHE, OUTPUT_EXAMPLES
 from zenml.core.standards.standard_keys import StepKeys
-
-VOCAB = "vocabulary"
-MERGES = "merges"
-TOKENIZER = "tokenizer"
-TEXT_CACHE = "text_cache"
-EXAMPLES = "examples"
-OUTPUT_EXAMPLES = "output_examples"
 
 
 class TokenizerSpec(ComponentSpec):
@@ -61,16 +56,17 @@ class Tokenizer(BaseComponent):
                  instance_name: Optional[Text] = None
                  ):
         """
-        Interface for all DataGen components, the main component responsible
-        for reading data and converting to TFRecords. This is how we handle
-        versioning data for now.
+        Interface for the Tokenizer component. This handles the vocabulary
+        construction as well as encoding input sequences for the NLP model.
 
         Args:
-            source:
-            source_args:
-            tokenizer:
-            instance_name:
-            examples:
+            source: Tokenizer step source class.
+            source_args: Keyword arguments for tokenizer step source class.
+            examples: Input channel for incoming data.
+            tokenizer: Output channel for the tokenizer output.
+            output_examples: Output channel for tokenized examples.
+            text_cache: Cache for text files written by the component.
+            instance_name: Name of the component.
         """
         examples = examples or Channel(type=standard_artifacts.Examples)
         tokenizer = tokenizer or Channel(type=standard_artifacts.Model)
