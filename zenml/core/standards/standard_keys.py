@@ -115,6 +115,13 @@ class TrainingSteps(ConfigKeys):
     DEPLOYER = 'deployer'
 
 
+class NLPSteps(ConfigKeys):
+    DATA = 'data'
+    SPLIT = 'split'
+    TRAINER = 'trainer'
+    TOKENIZER = 'tokenizer'
+
+
 class DataSteps(ConfigKeys):
     DATA = 'data'
 
