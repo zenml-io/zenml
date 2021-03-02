@@ -19,7 +19,6 @@ from pathlib import Path
 from typing import Dict, Text, Any, List
 
 import tensorflow as tf
-from tfx.components.evaluator.component import Evaluator
 from tfx.components.pusher.component import Pusher
 from tfx.components.schema_gen.component import SchemaGen
 from tfx.components.statistics_gen.component import StatisticsGen
@@ -30,12 +29,13 @@ from tfx.proto import trainer_pb2
 from zenml.core.backends.training.training_base_backend import \
     TrainingBaseBackend
 from zenml.core.components.data_gen.component import DataGen
+from zenml.core.components.evaluator.component import Evaluator
 from zenml.core.components.sequencer.component import Sequencer
 from zenml.core.components.split_gen.component import SplitGen
 from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.standards import standard_keys as keys
 from zenml.core.steps.deployer.base_deployer import BaseDeployerStep
-from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
+from zenml.core.steps.evaluator.base_evaluator import BaseEvaluatorStep
 from zenml.core.steps.preprocesser.base_preprocesser import \
     BasePreprocesserStep
 from zenml.core.steps.sequencer.base_sequencer import BaseSequencerStep
@@ -208,22 +208,20 @@ class TrainingPipeline(BasePipeline):
         # EVALUATOR #
         #############
         if keys.TrainingSteps.EVALUATOR in steps:
-            from zenml.utils import source_utils
-            eval_module = '.'.join(
-                constants.EVALUATOR_MODULE_FN.split('.')[:-1])
-            eval_module_file = constants.EVALUATOR_MODULE_FN.split('.')[-1]
-            abs_path = source_utils.get_absolute_path_from_module(eval_module)
-            custom_extractor_path = os.path.join(abs_path,
-                                                 eval_module_file) + '.py'
-            eval_step: TFMAEvaluator = TFMAEvaluator.from_config(
-                steps[keys.TrainingSteps.EVALUATOR])
-            eval_config = eval_step.build_eval_config()
+            evaluator_config = steps[keys.TrainingSteps.EVALUATOR]
             evaluator = Evaluator(
+                source=evaluator_config[keys.StepKeys.SOURCE],
+                source_args=evaluator_config[keys.StepKeys.ARGS],
                 examples=transform.outputs.transformed_examples,
                 model=trainer.outputs.model,
-                eval_config=eval_config,
-                module_file=custom_extractor_path,
             ).with_id(GDPComponent.Evaluator.name)
+
+            # evaluator = Evaluator(
+            #     source=evaluator_config[keys.StepKeys.SOURCE],
+            #     source_args=evaluator_config[keys.StepKeys.ARGS],
+            #     examples=splits.outputs.examples,
+            # ).with_id(GDPComponent.Evaluator.name)
+
             component_list.append(evaluator)
 
         ###########
@@ -255,7 +253,7 @@ class TrainingPipeline(BasePipeline):
     def add_trainer(self, trainer_step: BaseTrainerStep):
         self.steps_dict[keys.TrainingSteps.TRAINER] = trainer_step
 
-    def add_evaluator(self, evaluator_step: TFMAEvaluator):
+    def add_evaluator(self, evaluator_step: BaseEvaluatorStep):
         self.steps_dict[keys.TrainingSteps.EVALUATOR] = evaluator_step
 
     def add_deployment(self, deployment_step: BaseDeployerStep):
