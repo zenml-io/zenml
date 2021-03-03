@@ -24,10 +24,7 @@ from examples.nlp.training.trainer import UrduTrainer
 base_path = "/Users/nicholasjunge/workspaces/ml/data/urdu_fake_news/" \
             "urdu_fake_news_small.csv"
 
-try:
-    nlp_pipeline = NLPPipeline(name="nlp_test")
-except AlreadyExistsException:
-    nlp_pipeline = Repository.get_instance().get_pipeline_by_name("nlp_test")
+nlp_pipeline = NLPPipeline()
 
 try:
     ds = CSVDatasource(name="my_text", path=base_path)
