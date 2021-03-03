@@ -114,6 +114,21 @@ class TokenizerStep(BaseStep):
                              special_tokens=self.special_tokens,
                              show_progress=False)
 
+    def train_from_iterator(self, files: List[Text]):
+        ds = tf.data.TFRecordDataset(files, compression_type="GZIP").batch(24)
+
+        ds_numpy = ds.as_numpy_iterator()
+
+        def build_scoped_iterator():
+
+            pass
+
+        self.tokenizer.train_from_iterator(iterator=ds,
+                                           vocab_size=self.vocab_size,
+                                           min_frequency=self.min_frequency,
+                                           special_tokens=self.special_tokens,
+                                           show_progress=False)
+
     def save(self, output_dir: Text):
         """
         Save a trained tokenizer model to disk.

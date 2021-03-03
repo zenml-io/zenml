@@ -21,8 +21,8 @@ from tfx.types.component_spec import ComponentSpec, ExecutionParameter, \
     ChannelParameter
 
 from zenml.core.components.tokenizer.executor import TokenizerExecutor
-from zenml.core.components.tokenizer.constants import EXAMPLES, TOKENIZER, \
-    TEXT_CACHE, OUTPUT_EXAMPLES
+from zenml.core.components.tokenizer.constants import EXAMPLES, TOKENIZER,\
+    OUTPUT_EXAMPLES
 from zenml.core.standards.standard_keys import StepKeys
 
 
@@ -38,7 +38,6 @@ class TokenizerSpec(ComponentSpec):
     OUTPUTS = {
         TOKENIZER: ChannelParameter(type=standard_artifacts.Model),
         OUTPUT_EXAMPLES: ChannelParameter(type=standard_artifacts.Examples),
-        TEXT_CACHE: ChannelParameter(type=standard_artifacts.Examples)
     }
 
 
@@ -52,7 +51,6 @@ class Tokenizer(BaseComponent):
                  examples: Optional[ChannelParameter] = None,
                  tokenizer: Optional[ChannelParameter] = None,
                  output_examples: Optional[ChannelParameter] = None,
-                 text_cache: Optional[ChannelParameter] = None,
                  instance_name: Optional[Text] = None
                  ):
         """
@@ -65,22 +63,19 @@ class Tokenizer(BaseComponent):
             examples: Input channel for incoming data.
             tokenizer: Output channel for the tokenizer output.
             output_examples: Output channel for tokenized examples.
-            text_cache: Cache for text files written by the component.
             instance_name: Name of the component.
         """
         examples = examples or Channel(type=standard_artifacts.Examples)
         tokenizer = tokenizer or Channel(type=standard_artifacts.Model)
         output_examples = output_examples or Channel(
             type=standard_artifacts.Examples)
-        text_cache = text_cache or Channel(type=standard_artifacts.Examples)
 
         # Initiate the spec and create instance
         spec = self.SPEC_CLASS(source=source,
                                args=source_args,
                                tokenizer=tokenizer,
                                examples=examples,
-                               output_examples=output_examples,
-                               text_cache=text_cache)
+                               output_examples=output_examples)
 
         super(Tokenizer, self).__init__(spec=spec,
                                         instance_name=instance_name)
