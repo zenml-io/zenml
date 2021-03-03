@@ -13,8 +13,7 @@
 #  permissions and limitations under the License.
 
 from zenml.core.pipelines.nlp_pipeline import NLPPipeline
-from zenml.core.steps.trainer.nlp_tokenizers.hf_tokenizer import \
-    TokenizerStep
+from zenml.core.steps.tokenizer.hf_tokenizer import TokenizerStep
 from zenml.core.steps.split.random_split import RandomSplit
 from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.repo.repo import Repository
@@ -23,7 +22,7 @@ from examples.nlp.training.trainer import UrduTrainer
 
 # precious handcrafted Urdu Fake News
 base_path = "/Users/nicholasjunge/workspaces/ml/data/urdu_fake_news/" \
-            "urdu_fake_news.csv"
+            "urdu_fake_news_small.csv"
 
 try:
     nlp_pipeline = NLPPipeline(name="nlp_test")
