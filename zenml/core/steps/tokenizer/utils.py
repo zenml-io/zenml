@@ -12,7 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from tokenizers.implementations import *
+from tokenizers.implementations import BertWordPieceTokenizer, \
+    ByteLevelBPETokenizer, CharBPETokenizer, SentencePieceBPETokenizer, \
+    SentencePieceUnigramTokenizer
 
 
 tokenizer_map = {"bert-wordpiece": BertWordPieceTokenizer,
