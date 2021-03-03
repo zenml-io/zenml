@@ -32,7 +32,7 @@ from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.standards import standard_keys as keys
 from zenml.core.steps.split.base_split_step import BaseSplit
 from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
-from zenml.core.steps.trainer.nlp_tokenizers.hf_tokenizer import TokenizerStep
+from zenml.core.steps.tokenizer.hf_tokenizer import TokenizerStep
 from zenml.utils import constants
 from zenml.utils.enums import GDPComponent
 from zenml.utils.enums import PipelineStatusTypes
