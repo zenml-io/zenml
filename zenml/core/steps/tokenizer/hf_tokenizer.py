@@ -17,7 +17,8 @@ import tensorflow as tf
 from typing import Dict, Text, List, Any
 from zenml.utils import path_utils
 from zenml.core.steps.base_step import BaseStep
-from zenml.core.steps.trainer.nlp_tokenizers.utils import tokenizer_map
+from zenml.core.steps.tokenizer.utils import tokenizer_map
+from zenml.core.steps.split.utils import get_categorical_value
 
 
 class TokenizerStep(BaseStep):
@@ -41,6 +42,7 @@ class TokenizerStep(BaseStep):
                  min_frequency: int = 2,
                  sentence_length: int = 128,
                  special_tokens: List[Text] = None,
+                 batch_size: int = 64,
                  **kwargs):
         """
         Tokenizer step constructor.
@@ -59,6 +61,8 @@ class TokenizerStep(BaseStep):
              model, usually 128 for BERT-based models. Longer sentences will
              be padded, shorter sentences will be truncated to match length.
             special_tokens: List of special tokens to include.
+            batch_size: Batch size to use when training the tokenizer from an
+             iterator.
             **kwargs: Additional keyword arguments.
         """
 
@@ -69,6 +73,7 @@ class TokenizerStep(BaseStep):
                                             tokenizer=tokenizer,
                                             tokenizer_params=tokenizer_params,
                                             special_tokens=special_tokens,
+                                            batch_size=batch_size,
                                             **kwargs)
 
         # text feature to train tokenizer on
@@ -89,6 +94,7 @@ class TokenizerStep(BaseStep):
         self.tokenizer_name = tokenizer
         self.tokenizer_params = tokenizer_params or {}
         self.sentence_length = sentence_length
+        self.batch_size = batch_size
         self.tokenizer = tokenizer_map.get(
             self.tokenizer_name)(**self.tokenizer_params)
 
@@ -115,15 +121,19 @@ class TokenizerStep(BaseStep):
                              show_progress=False)
 
     def train_from_iterator(self, files: List[Text]):
-        ds = tf.data.TFRecordDataset(files, compression_type="GZIP").batch(24)
+        ds = tf.data.TFRecordDataset(files, compression_type="GZIP")
 
-        ds_numpy = ds.as_numpy_iterator()
+        ds_numpy = ds.batch(self.batch_size).as_numpy_iterator()
 
-        def build_scoped_iterator():
+        def build_scoped_iterator(text_feature):
+            for batch in ds_numpy:
+                yield [get_categorical_value(
+                    tf.train.Example.FromString(ex),
+                    text_feature) for ex in batch]
 
-            pass
+        iterator = build_scoped_iterator(self.text_feature)
 
-        self.tokenizer.train_from_iterator(iterator=ds,
+        self.tokenizer.train_from_iterator(iterator=iterator,
                                            vocab_size=self.vocab_size,
                                            min_frequency=self.min_frequency,
                                            special_tokens=self.special_tokens,
@@ -212,3 +222,21 @@ class TokenizerStep(BaseStep):
                           encoded.attention_mask,
                           dtype=tf.int32)}
         return output
+
+    def has_vocab(self):
+        """
+        Small routine to decide whether vocabulary has been preloaded into the
+        tokenizer. In this case, we do not need to train.
+        """
+
+        # paths under "vocab" and "merges" are assumed to be sensible for now,
+        # otherwise there would likely be an error in the constructor anyways
+        has_vocab = False
+        if "vocab" in self.tokenizer_params:
+            has_vocab = True
+            # separate check for merges file for BPE tokenizers
+            if "bpe" in self.tokenizer_name.lower():
+                if "merges" not in self.tokenizer_params:
+                    has_vocab = False
+
+        return has_vocab
