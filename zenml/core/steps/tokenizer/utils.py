@@ -16,7 +16,6 @@ from tokenizers.implementations import BertWordPieceTokenizer, \
     ByteLevelBPETokenizer, CharBPETokenizer, SentencePieceBPETokenizer, \
     SentencePieceUnigramTokenizer
 
-
 tokenizer_map = {"bert-wordpiece": BertWordPieceTokenizer,
                  "byte-level-bpe": ByteLevelBPETokenizer,
                  "char-level-bpe": CharBPETokenizer,

@@ -13,15 +13,17 @@
 #  permissions and limitations under the License.
 
 import os
-import tensorflow as tf
 from typing import Dict, Text, List, Any
-from zenml.utils import path_utils
-from zenml.core.steps.base_step import BaseStep
-from zenml.core.steps.tokenizer.utils import tokenizer_map
+
+import tensorflow as tf
+
+from zenml.core.steps.tokenizer.base_tokenizer import BaseTokenizer
 from zenml.core.steps.split.utils import get_categorical_value
+from zenml.core.steps.tokenizer.utils import tokenizer_map
+from zenml.utils import path_utils
 
 
-class TokenizerStep(BaseStep):
+class TokenizerStep(BaseTokenizer):
     """
     Base step for Tokenizer usage in NLP pipelines.
 
@@ -204,8 +206,9 @@ class TokenizerStep(BaseStep):
         if output_format == "tf_example":
             feature = {"input_ids": tf.train.Feature(
                 int64_list=tf.train.Int64List(value=encoded.ids)),
-                       "attention_mask": tf.train.Feature(
-                int64_list=tf.train.Int64List(value=encoded.attention_mask))}
+                "attention_mask": tf.train.Feature(
+                    int64_list=tf.train.Int64List(
+                        value=encoded.attention_mask))}
 
             output = tf.train.Example(
                 features=tf.train.Features(feature=feature))
