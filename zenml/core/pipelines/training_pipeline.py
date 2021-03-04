@@ -22,7 +22,6 @@ import tensorflow as tf
 from tfx.components.pusher.component import Pusher
 from tfx.components.schema_gen.component import SchemaGen
 from tfx.components.statistics_gen.component import StatisticsGen
-from tfx.components.trainer.component import Trainer
 from tfx.components.transform.component import Transform
 from tfx.proto import trainer_pb2
 
@@ -32,6 +31,7 @@ from zenml.core.components.data_gen.component import DataGen
 from zenml.core.components.evaluator.component import Evaluator
 from zenml.core.components.sequencer.component import Sequencer
 from zenml.core.components.split_gen.component import SplitGen
+from zenml.core.components.trainer.component import Trainer
 from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.standards import standard_keys as keys
 from zenml.core.steps.deployer.base_deployer import BaseDeployerStep
