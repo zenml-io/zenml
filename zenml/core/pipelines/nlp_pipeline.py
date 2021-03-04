@@ -21,7 +21,6 @@ from tfx.components.schema_gen.component import SchemaGen
 from tfx.components.statistics_gen.component import StatisticsGen
 from tfx.components.trainer.component import Trainer
 from tfx.proto import trainer_pb2
-from transformers import TFDistilBertForSequenceClassification
 
 from zenml.core.backends.training.training_base_backend import \
     TrainingBaseBackend
@@ -31,8 +30,8 @@ from zenml.core.components.tokenizer.component import Tokenizer
 from zenml.core.pipelines.base_pipeline import BasePipeline
 from zenml.core.standards import standard_keys as keys
 from zenml.core.steps.split.base_split_step import BaseSplit
+from zenml.core.steps.tokenizer.base_tokenizer import BaseTokenizer
 from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
-from zenml.core.steps.tokenizer.hf_tokenizer import TokenizerStep
 from zenml.utils import constants
 from zenml.utils.enums import GDPComponent
 from zenml.utils.enums import PipelineStatusTypes
@@ -41,7 +40,6 @@ from zenml.utils.enums import PipelineStatusTypes
 class NLPPipeline(BasePipeline):
     PIPELINE_TYPE = "nlp"
 
-    # TODO: Remove Huggingface dependency from the base NLP pipeline
     def __call__(self, sequence: Union[Text, List[Text]]):
         """Call operator for local inference method"""
 
@@ -49,16 +47,15 @@ class NLPPipeline(BasePipeline):
             print("Please run the pipeline first before running inference!")
             return
 
-        config = self.to_config()
+        trainer_step = self.steps_dict[keys.NLPSteps.TRAINER]
 
-        steps = config[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.STEPS]
-
+        # e.g. HuggingFace has special APIs for model loading,
+        # so we fall back to a trainer step class method
         model_uri = os.path.join(self.get_model_uri(), "serving_model_dir")
-        model = TFDistilBertForSequenceClassification.from_pretrained(
-            model_uri)
+        model = trainer_step.load_model(model_uri)
 
-        tokenizer_step = TokenizerStep.from_config(
-            steps[keys.NLPSteps.TOKENIZER])
+        tokenizer_step = self.steps_dict[keys.NLPSteps.TOKENIZER]
+
         tokenizer_step.load_vocab(self.get_tokenizer_uri())
 
         encoded = tokenizer_step.encode(sequence=sequence,
@@ -182,7 +179,7 @@ class NLPPipeline(BasePipeline):
                 raise AssertionError(f'Mandatory step {step_name} not added.')
         return True
 
-    def add_tokenizer(self, tokenizer_step: TokenizerStep):
+    def add_tokenizer(self, tokenizer_step: BaseTokenizer):
         self.steps_dict[keys.NLPSteps.TOKENIZER] = tokenizer_step
 
     def add_split(self, split_step: BaseSplit):
