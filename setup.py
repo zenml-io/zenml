@@ -77,7 +77,8 @@ setup(
     author_email='support@maiot.io',
     url='https://zenml.io/',
     keywords=[
-        "deep", "learning", "production", "machine", "pipeline", "mlops"
+        "deep", "learning", "production", "machine", "pipeline", "mlops",
+        "kubernetes", "machine-learning", "deep-learning"
     ],
     # See https://PyPI.python.org/PyPI?%3Aaction=list_classifiers
     classifiers=[

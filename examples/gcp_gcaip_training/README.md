@@ -12,7 +12,7 @@ pipeline.add_trainer(
 ```
 
 ## Running on Google Cloud AI Platform
-This example utilize [Google Cloud AI Platform](https://cloud.google.com/dataflow) as the training backend to 
+This example utilizes [Google Cloud AI Platform](https://cloud.google.com/ai-platform/docs) as the training backend to 
 run the training code using GCP cloud GPU resources.
 
 ### Pre-requisites
@@ -26,8 +26,9 @@ Before continuing, either [install the zenml pip package](https://docs.zenml.io/
 In both cases, make sure to also install the gcp extension (e.g. with pip: `pip install zenml[gcp]`)
 
 ```
+cd zenml
 zenml init
-cd zenml/examples/gcp_gpu_training
+cd examples/gcp_gpu_training
 ```
 
 Also do the following:

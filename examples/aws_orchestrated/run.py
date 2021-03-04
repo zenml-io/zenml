@@ -1,10 +1,15 @@
+"""
+
+"""
 import os
 
-from examples.cortex.predictor.tf import TensorFlowPredictor
+from zenml.core.backends.orchestrator.aws.orchestrator_aws_backend import \
+    OrchestratorAWSBackend
 from zenml.core.datasources.csv_datasource import CSVDatasource
+from zenml.core.metadata.mysql_metadata_wrapper import MySQLMetadataStore
 from zenml.core.pipelines.training_pipeline import TrainingPipeline
 from zenml.core.repo.artifact_store import ArtifactStore
-from zenml.core.steps.deployer.cortex_deployer import CortexDeployer
+from zenml.core.repo.repo import Repository
 from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
 from zenml.core.steps.preprocesser.standard_preprocesser \
     .standard_preprocesser import \
@@ -14,23 +19,33 @@ from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
     FeedForwardTrainer
 from zenml.utils.exceptions import AlreadyExistsException
 
-GCP_BUCKET = os.getenv('GCP_BUCKET')
-assert GCP_BUCKET
-CORTEX_ENV = os.getenv('CORTEX_ENV', 'env')
-CORTEX_MODEL_NAME = os.getenv('CORTEX_MODEL_NAME', 'zenml-classifier')
+# Get the configuration for the artifact store and the metadata store which
+# should be accessible from the VM
+S3_BUCKET = os.getenv('S3_BUCKET')
+IAM_ROLE = os.getenv('IAM_ROLE')
 
-# For this example, the ArtifactStore must be a GCP bucket, as the
-# CortexDeployer step is using the GCP env.
+assert S3_BUCKET
+assert IAM_ROLE
 
-from zenml.core.repo.repo import Repository
+MYSQL_DB = os.getenv('MYSQL_DB')
+MYSQL_USER = os.getenv('MYSQL_USER')
+MYSQL_PWD = os.getenv('MYSQL_PWD')
+MYSQL_HOST = os.getenv('MYSQL_HOST')
+MYSQL_PORT = os.getenv('MYSQL_PORT', '3306')
+
+assert MYSQL_DB
+assert MYSQL_USER
+assert MYSQL_PWD
+assert MYSQL_HOST
+assert MYSQL_PORT
 
 # Define the training pipeline
 training_pipeline = TrainingPipeline()
 
 # Add a datasource. This will automatically track and version it.
 try:
-    ds = CSVDatasource(name='Pima Indians Diabetes',
-                       path='gs://zenml_quickstart/diabetes.csv')
+    ds = CSVDatasource(name='Pima Indians Diabetes AWS',
+                       path='s3://zenml-quickstart/diabetes.csv')
 except AlreadyExistsException:
     ds = Repository.get_instance().get_datasource_by_name(
         'Pima Indians Diabetes')
@@ -38,7 +53,7 @@ training_pipeline.add_datasource(ds)
 
 # Add a split
 training_pipeline.add_split(RandomSplit(
-    split_map={'eval': 0.3, 'train': 0.7}))
+    split_map={'train': 0.6, 'eval': 0.4}))
 
 # Add a preprocessing unit
 training_pipeline.add_preprocesser(
@@ -56,7 +71,7 @@ training_pipeline.add_trainer(FeedForwardTrainer(
     last_activation='sigmoid',
     output_units=1,
     metrics=['accuracy'],
-    epochs=15))
+    epochs=20))
 
 # Add an evaluator
 training_pipeline.add_evaluator(
@@ -64,26 +79,27 @@ training_pipeline.add_evaluator(
                   metrics={'has_diabetes': ['binary_crossentropy',
                                             'binary_accuracy']}))
 
-# Add cortex deployer
-api_config = {
-    "name": CORTEX_MODEL_NAME,
-    "kind": "RealtimeAPI",
-    "predictor": {
-        "type": "tensorflow",
-        # Set signature key of the model as we are using Tensorflow Trainer
-        "models": {"signature_key": "serving_default"}}
-}
-training_pipeline.add_deployment(
-    CortexDeployer(
-        env=CORTEX_ENV,
-        api_config=api_config,
-        predictor=TensorFlowPredictor,
-    )
+# Define the metadata store
+metadata_store = MySQLMetadataStore(
+    host=MYSQL_HOST,
+    port=int(MYSQL_PORT),
+    database=MYSQL_DB,
+    username=MYSQL_USER,
+    password=MYSQL_PWD,
 )
 
 # Define the artifact store
 artifact_store = ArtifactStore(
-    os.path.join(GCP_BUCKET, 'cortex/artifact_store'))
+    os.path.join(S3_BUCKET, 'aws_orchestrated/artifact_store'))
+
+# Define the orchestrator backend
+orchestrator_backend = OrchestratorAWSBackend(
+    iam_role=IAM_ROLE
+)
 
 # Run the pipeline
-training_pipeline.run(artifact_store=artifact_store)
+training_pipeline.run(
+    backend=orchestrator_backend,
+    metadata_store=metadata_store,
+    artifact_store=artifact_store,
+)

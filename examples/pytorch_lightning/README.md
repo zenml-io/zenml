@@ -21,8 +21,9 @@ pip instal pytorch-lightning==1.1.8
 
 Then:
 ```
+cd zenml
 zenml init
-cd zenml/examples/pytorch_lightning
+cd examples/pytorch_lightning
 ```
 
 #### Short-term fix:

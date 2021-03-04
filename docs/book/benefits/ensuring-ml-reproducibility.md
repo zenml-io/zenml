@@ -62,11 +62,11 @@ The Metadata Store can be simply configured to use any MySQL server \(=&gt;5.6\)
 
 ```text
 zenml config metadata set mysql \
-    --host 127.0.0.1 \ 
-    --port 3306 \
-    --username USER \
-    --passwd PASSWD \
-    --database DATABASE
+    --host="127.0.0.1" \ 
+    --port="3306" \
+    --username="USER" \
+    --password="PASSWD" \
+    --database="DATABASE"
 ```
 
 ### Artifact tracking
@@ -80,8 +80,9 @@ More advanced configurations might want to centralize both the Metadata as well 
 The Artifact Store offers native support for Google Cloud Storage:
 
 ```text
-zenml config artifacts set gs://your-bucket/sub/dir
+zenml config artifacts set "gs://your-bucket/sub/dir"
 ```
+
 ### Environment
 ZenML is designed with [extensibility in mind](integrations.md). The ML eco-system has myriad cool tools that are useful in different scenarios. The 
 integration system implemented in ZenML allows to extend it quite easily with these tools. This allows for easy tracking of 

@@ -337,7 +337,7 @@ class OrchestratorGCPBackend(OrchestratorBaseBackend):
             f'{EXTRACTED_TAR_DIR_NAME}_{str(int(time.time()))}.tar.gz'
         path_to_tar = os.path.join(config_dir, tar_file_name)
 
-        # Create tarfile but excluse .zenml folder if exists
+        # Create tarfile but exclude .zenml folder if exists
         path_utils.create_tarfile(repo_path, path_to_tar)
         logger.info(f'Created tar of current repository at: {path_to_tar}')
 
