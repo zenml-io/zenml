@@ -49,4 +49,6 @@ nlp_pipeline.add_trainer(UrduTrainer(model_name="distilbert-base-uncased",
 
 nlp_pipeline.run()
 
+# evaluate the model with the sentence "The earth is flat"
+# which should (ideally) return FAKE_NEWS
 nlp_pipeline("دنیا سیدھی ہے")
