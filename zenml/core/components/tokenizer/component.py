@@ -20,9 +20,9 @@ from tfx.types import standard_artifacts, Channel
 from tfx.types.component_spec import ComponentSpec, ExecutionParameter, \
     ChannelParameter
 
-from zenml.core.components.tokenizer.executor import TokenizerExecutor
-from zenml.core.components.tokenizer.constants import EXAMPLES, TOKENIZER,\
+from zenml.core.components.tokenizer.constants import EXAMPLES, TOKENIZER, \
     OUTPUT_EXAMPLES
+from zenml.core.components.tokenizer.executor import TokenizerExecutor
 from zenml.core.standards.standard_keys import StepKeys
 
 

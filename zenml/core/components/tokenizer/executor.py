@@ -12,25 +12,25 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
 from typing import Any, Dict, List, Text
 
-import os
 import apache_beam as beam
 import tensorflow as tf
 from tfx import types
 from tfx.dsl.components.base import base_executor
 from tfx.types import artifact_utils
-from zenml.core.standards.standard_keys import StepKeys
-from zenml.core.steps.tokenizer.hf_tokenizer import TokenizerStep
-from zenml.core.components.split_gen.executor import WriteSplit
-from zenml.utils import source_utils
-from zenml.core.steps.split.utils import get_categorical_value
-from zenml.utils import path_utils
 from tfx.types.artifact_utils import get_split_uri
 from tfx.utils import io_utils
 
+from zenml.core.components.split_gen.executor import WriteSplit
+from zenml.core.standards.standard_keys import StepKeys
+from zenml.core.steps.split.utils import get_categorical_value
+from zenml.core.steps.tokenizer.base_tokenizer import BaseTokenizer
+from zenml.utils import path_utils, source_utils
 
-def encode_sentence(ex: tf.train.Example, tokenizer_step: TokenizerStep):
+
+def encode_sentence(ex: tf.train.Example, tokenizer_step: BaseTokenizer):
     sentence = get_categorical_value(ex, tokenizer_step.text_feature)
 
     encoded = tokenizer_step.encode(sentence, output_format="dict")
@@ -59,7 +59,7 @@ class TokenizerExecutor(base_executor.BaseExecutor):
         args = exec_properties[StepKeys.ARGS]
 
         c = source_utils.load_source_path_class(source)
-        tokenizer_step: TokenizerStep = c(**args)
+        tokenizer_step: BaseTokenizer = c(**args)
 
         tokenizer_location = artifact_utils.get_single_uri(
             output_dict["tokenizer"])
@@ -91,7 +91,7 @@ class TokenizerExecutor(base_executor.BaseExecutor):
 
                 _ = (p
                      | 'ReadData.' + split >> beam.io.ReadFromTFRecord(
-                        file_pattern=input_uri)
+                            file_pattern=input_uri)
                      | "ParseTFExFromString." + split >> beam.Map(
                             tf.train.Example.FromString)
                      | "AddTokens." + split >> beam.Map(
