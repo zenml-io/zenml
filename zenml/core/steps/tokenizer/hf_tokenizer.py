@@ -40,6 +40,7 @@ class TokenizerStep(BaseTokenizer):
                  text_feature: Text,
                  tokenizer: Text,
                  tokenizer_params: Dict[Text, Any] = None,
+                 skip_training: bool = False,
                  vocab_size: int = 30000,
                  min_frequency: int = 2,
                  sentence_length: int = 128,
@@ -56,6 +57,8 @@ class TokenizerStep(BaseTokenizer):
               "char-level-bpe", "sentencepiece-bpe", "sentencepiece-unigram".
             tokenizer_params: Keyword arguments to be used in construction of
              the tokenizer given by the tokenizer argument.
+            skip_training: Boolean indicating whether or not to skip training
+             the tokenizer in the pipeline.
             vocab_size: Size of the target vocabulary.
             min_frequency: Minimal frequency of an element to be included into
              the vocabulary.
@@ -69,6 +72,7 @@ class TokenizerStep(BaseTokenizer):
         """
 
         super(TokenizerStep, self).__init__(text_feature=text_feature,
+                                            skip_training=skip_training,
                                             vocab_size=vocab_size,
                                             min_frequency=min_frequency,
                                             sentence_length=sentence_length,
@@ -77,9 +81,6 @@ class TokenizerStep(BaseTokenizer):
                                             special_tokens=special_tokens,
                                             batch_size=batch_size,
                                             **kwargs)
-
-        # text feature to train tokenizer on
-        self.text_feature = text_feature
 
         # training arguments for tokenizer
         self.vocab_size = vocab_size
@@ -193,6 +194,19 @@ class TokenizerStep(BaseTokenizer):
         self.tokenizer.enable_truncation(max_length=self.sentence_length)
 
     def encode(self, sequence: Text, output_format: Text = "tf_example"):
+        """
+        Encode a sentence with the tokenizer in this class and output it into
+        the specified output format.
+
+        Args:
+            sequence: String, sentence to encode with the trained tokenizer.
+            output_format: String specifying output format. Can be either
+             `tf_tensors`, `dict` or `tf_example`.
+
+        Returns:
+            A representation of the sentence in IDs based on the vocabulary
+             of the tokenizer.
+        """
         eligible_formats = ["tf_tensors", "dict", "tf_example"]
 
         if output_format not in eligible_formats:
@@ -225,21 +239,3 @@ class TokenizerStep(BaseTokenizer):
                           encoded.attention_mask,
                           dtype=tf.int32)}
         return output
-
-    def has_vocab(self):
-        """
-        Small routine to decide whether vocabulary has been preloaded into the
-        tokenizer. In this case, we do not need to train.
-        """
-
-        # paths under "vocab" and "merges" are assumed to be sensible for now,
-        # otherwise there would likely be an error in the constructor anyways
-        has_vocab = False
-        if "vocab" in self.tokenizer_params:
-            has_vocab = True
-            # separate check for merges file for BPE tokenizers
-            if "bpe" in self.tokenizer_name.lower():
-                if "merges" not in self.tokenizer_params:
-                    has_vocab = False
-
-        return has_vocab

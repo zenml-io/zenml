@@ -21,11 +21,16 @@ class BaseTokenizer(BaseStep):
     Base step class for all tokenizers.
     """
 
-    def __init__(self, text_feature: Text, **kwargs):
+    def __init__(self,
+                 text_feature: Text,
+                 skip_training: bool = False,
+                 **kwargs):
         super(BaseTokenizer, self).__init__(text_feature=text_feature,
+                                            skip_training=skip_training,
                                             **kwargs)
 
         self.text_feature = text_feature
+        self.skip_training = skip_training
 
     def train(self, files: List[Text]):
         raise NotImplementedError
@@ -40,7 +45,4 @@ class BaseTokenizer(BaseStep):
         raise NotImplementedError
 
     def load_vocab(self, path_to_vocab: Text):
-        raise NotImplementedError
-
-    def has_vocab(self):
         raise NotImplementedError
