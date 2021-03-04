@@ -35,8 +35,8 @@ def _create_iterator(dataset):
 
 
 def _convert_to_tensors(features, label):
-    return torch.FloatTensor(list(features.values())).squeeze(dim=-1), \
-           torch.FloatTensor(list(label.values())).squeeze(dim=-1)
+    return {k: torch.from_numpy(v) for k, v in features.items()}, \
+           {k: torch.from_numpy(v) for k, v in label.items()}
 
 
 def _shuffle_iterator(iterator,
