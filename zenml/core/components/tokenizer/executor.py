@@ -79,8 +79,7 @@ class TokenizerExecutor(base_executor.BaseExecutor):
         output_examples.split_names = artifact_utils.encode_split_names(
             split_names)
 
-        # if vocab is already loaded, skip training
-        if tokenizer_step.has_vocab():
+        if not tokenizer_step.skip_training:
             tokenizer_step.train_from_iterator(files=all_files)
 
             tokenizer_step.save(output_dir=tokenizer_location)
