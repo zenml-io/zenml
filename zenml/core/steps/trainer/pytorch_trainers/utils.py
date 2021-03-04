@@ -46,7 +46,7 @@ def _shuffle_iterator(iterator,
         for _ in range(queue_size):
             buffer.append(next(iterator))
     except StopIteration:
-        raise Exception('asdf')
+        raise Exception('Iteration stopped!')
     while buffer:
         index = np.random.randint(len(buffer))
         try:
