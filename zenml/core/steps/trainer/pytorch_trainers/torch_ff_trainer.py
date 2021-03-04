@@ -49,8 +49,7 @@ class BinaryClassifier(nn.Module):
         self.batchnorm2 = nn.BatchNorm1d(64)
 
     def forward(self, inputs):
-        x = torch.stack(list(inputs.values()), dim=-1)
-        x = self.relu(self.layer_1(x))
+        x = self.relu(self.layer_1(inputs))
         x = self.batchnorm1(x)
         x = self.relu(self.layer_2(x))
         x = self.batchnorm2(x)
@@ -71,7 +70,7 @@ def binary_acc(y_pred, y_test):
 
 class FeedForwardTrainer(TorchBaseTrainerStep):
     def __init__(self,
-                 batch_size: int = 8,
+                 batch_size: int = 32,
                  lr: float = 0.0001,
                  epoch: int = 50,
                  dropout_chance: int = 0.2,
@@ -125,10 +124,19 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         # Activate the evaluation mode
         model.eval()
 
+        fpl = {'features': [],
+               'predictions': [],
+               'labels': []}
+
         for x, y in eval_dataset:
-            prediction = model(x)
-            # TODO: Implementing the testing
-        return None
+            x_batch = torch.cat([v for v in x.values()], dim=-1)
+
+            prediction = model(x_batch)
+            fpl['features'].append(x)
+            fpl['predictions'].append(prediction)
+            fpl['labels'].append(y)
+
+        return fpl
 
     def run_fn(self):
         train_dataset = self.input_fn(self.train_files,
@@ -151,14 +159,15 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
             step_count = 0
             for x, y in train_dataset:
                 step_count += 1
-                feature_batch = {k: v.to(device) for k, v in x.items()}
-                label_batch = {k: v.to(device) for k, v in y.items()}
+
+                x_batch = torch.cat([v.to(device) for v in x.values()], dim=-1)
+                y_batch = torch.cat([v.to(device) for v in y.values()], dim=-1)
                 optimizer.zero_grad()
 
-                y_pred = model(feature_batch)
+                y_pred = model(x_batch)
 
-                loss = criterion(y_pred, list(label_batch.values())[0])
-                acc = binary_acc(y_pred, list(label_batch.values())[0])
+                loss = criterion(y_pred, y_batch)
+                acc = binary_acc(y_pred, y_batch)
 
                 loss.backward()
                 optimizer.step()
