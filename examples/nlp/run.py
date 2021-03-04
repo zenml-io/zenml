@@ -12,13 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.core.pipelines.nlp_pipeline import NLPPipeline
-from zenml.core.steps.tokenizer.hf_tokenizer import TokenizerStep
-from zenml.core.steps.split.random_split import RandomSplit
-from zenml.core.datasources.csv_datasource import CSVDatasource
-from zenml.core.repo.repo import Repository
-from zenml.utils.exceptions import AlreadyExistsException
 from examples.nlp.training.trainer import UrduTrainer
+from zenml.core.datasources.csv_datasource import CSVDatasource
+from zenml.core.pipelines.nlp_pipeline import NLPPipeline
+from zenml.core.repo.repo import Repository
+from zenml.core.steps.split.random_split import RandomSplit
+from zenml.core.steps.tokenizer.hf_tokenizer import TokenizerStep
+from zenml.utils.exceptions import AlreadyExistsException
 
 # precious handcrafted Urdu Fake News
 base_path = "/Users/nicholasjunge/workspaces/ml/data/urdu_fake_news/" \

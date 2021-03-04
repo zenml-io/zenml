@@ -13,11 +13,13 @@
 #  permissions and limitations under the License.
 
 import os
-import tensorflow as tf
 from typing import List, Text, Dict
+
+import tensorflow as tf
+from transformers import TFDistilBertForSequenceClassification
+
 from zenml.core.steps.trainer.tensorflow_trainers.tf_base_trainer import \
     TFBaseTrainerStep
-from transformers import TFDistilBertForSequenceClassification
 from zenml.utils.post_training.post_training_utils import \
     get_feature_spec_from_schema
 
@@ -90,7 +92,7 @@ class UrduTrainer(TFBaseTrainerStep):
                   epochs=self.epochs,
                   callbacks=[
                       tf.keras.callbacks.TensorBoard(
-                        log_dir=os.path.join(self.log_dir, 'train'))])
+                          log_dir=os.path.join(self.log_dir, 'train'))])
 
         return model
 
@@ -136,6 +138,6 @@ class UrduTrainer(TFBaseTrainerStep):
         """
         return tf.data.TFRecordDataset(filenames, compression_type='GZIP')
 
-    def reload_model(self, path_to_model: Text):
+    def load_model(self, path_to_model: Text):
         return TFDistilBertForSequenceClassification.from_pretrained(
             path_to_model)
