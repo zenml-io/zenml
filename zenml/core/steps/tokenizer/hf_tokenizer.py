@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os
 from typing import Dict, Text, List, Any
 
 import tensorflow as tf
@@ -124,6 +123,14 @@ class TokenizerStep(BaseTokenizer):
                              show_progress=False)
 
     def train_from_iterator(self, files: List[Text]):
+        """
+        Method for training a tokenizer on a data iterator. The iterator is
+        constructed inside the function in a closure from a TFRecord dataset.
+
+        Args:
+            files: List of TFRecord files in GZIP format to ingest.
+        """
+
         ds = tf.data.TFRecordDataset(files, compression_type="GZIP")
 
         ds_numpy = ds.batch(self.batch_size).as_numpy_iterator()
@@ -172,9 +179,7 @@ class TokenizerStep(BaseTokenizer):
             vocab_file = None
 
         # update tokenizer params with vocab file name
-        self.tokenizer_params.update({"vocab": os.path.join(path_to_vocab,
-                                                            vocab_file)
-                                      })
+        self.tokenizer_params.update({"vocab": vocab_file})
 
         # merges are only needed for BPE Tokenizers
         if "bpe" in self.tokenizer_name:
@@ -183,9 +188,7 @@ class TokenizerStep(BaseTokenizer):
             except StopIteration:
                 merges_file = None
 
-            self.tokenizer_params.update(
-                {"merges": os.path.join(path_to_vocab,
-                                        merges_file)})
+            self.tokenizer_params.update({"merges": merges_file})
 
         # reconstruct tokenizer object
         self.tokenizer = tokenizer_map.get(
@@ -196,7 +199,10 @@ class TokenizerStep(BaseTokenizer):
     def encode(self, sequence: Text, output_format: Text = "tf_example"):
         """
         Encode a sentence with the tokenizer in this class and output it into
-        the specified output format.
+        the specified output format. Supported return types are "tf_tensors",
+        returning a dictionary of tensorflow tensor objects, "dict", returning
+        a dictionary of lists, and "tf_example", returning a tf.train.Example
+        proto file.
 
         Args:
             sequence: String, sentence to encode with the trained tokenizer.
