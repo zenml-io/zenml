@@ -72,7 +72,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
     def __init__(self,
                  batch_size: int = 32,
                  lr: float = 0.0001,
-                 epoch: int = 50,
+                 epoch: int = 10,
                  dropout_chance: int = 0.2,
                  loss: str = 'mse',
                  metrics: List[str] = None,
@@ -126,16 +126,18 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
 
         fpl = {'features': [],
                'predictions': [],
-               'labels': []}
+               'labels': [],
+               'raw': []}
 
-        for x, y in eval_dataset:
+        for x, y, raw in eval_dataset:
             x_batch = torch.cat([v for v in x.values()], dim=-1)
 
-            prediction = model(x_batch)
-            fpl['features'].append(x)
-            fpl['predictions'].append(prediction)
-            fpl['labels'].append(y)
-
+            p = model(x_batch)
+            fpl['features'].append({k: torch.squeeze(x[k]).detach().numpy() for k in x})
+            fpl['predictions'].append({'output': p.detach().numpy()}) # TODO: check if tensor dict or list
+            fpl['labels'].append({k: torch.squeeze(y[k]).detach().numpy() for k in y})
+            fpl['raw'].append(raw)
+            
         return fpl
 
     def run_fn(self):
@@ -157,7 +159,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
             epoch_loss = 0
             epoch_acc = 0
             step_count = 0
-            for x, y in train_dataset:
+            for x, y, _ in train_dataset:
                 step_count += 1
 
                 x_batch = torch.cat([v.to(device) for v in x.values()], dim=-1)
@@ -179,8 +181,8 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                   f'{epoch_loss / step_count:.5f} | Acc: '
                   f'{epoch_acc / step_count:.3f}')
 
-            # test
-            self.test_fn(model, eval_dataset)
+        # test
+        self.test_fn(model, eval_dataset)
 
         path_utils.create_dir_if_not_exists(self.serving_model_dir)
         if path_utils.is_remote(self.serving_model_dir):

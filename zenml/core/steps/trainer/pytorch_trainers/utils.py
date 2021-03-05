@@ -140,3 +140,27 @@ def create_tf_dataset(file_pattern,
     dataset = dataset.map(_split_inputs_labels)
     dataset = dataset.prefetch(prefetch_buffer_size)
     return dataset
+
+
+def combine_batch_results(x):
+    """
+
+    :param x: list of batches, batches are dicts where keys are features and
+    values are the values within the back
+    :return:
+    """
+    result = {}
+    for batch in x:
+        for feature, values in batch:
+            if isinstance(values, torch.Tensor):
+                values = torch.squeeze(values).detach().numpy()
+
+            if feature not in result:
+                result[feature] = values
+
+            else:
+                result[feature] = np.concatenate((result[feature],
+                                                  values), axis=0)
+
+
+    return result
