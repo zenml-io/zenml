@@ -20,14 +20,11 @@ from zenml.core.steps.split.random_split import RandomSplit
 from zenml.core.steps.tokenizer.hf_tokenizer import TokenizerStep
 from zenml.utils.exceptions import AlreadyExistsException
 
-# precious handcrafted Urdu Fake News
-base_path = "/Users/nicholasjunge/workspaces/ml/data/urdu_fake_news/" \
-            "urdu_fake_news_small.csv"
-
 nlp_pipeline = NLPPipeline()
 
 try:
-    ds = CSVDatasource(name="my_text", path=base_path)
+    ds = CSVDatasource(name="my_text",
+                       path="gs://zenml_quickstart/urdu_fake_news.csv")
 except AlreadyExistsException:
     ds = Repository.get_instance().get_datasource_by_name(name="my_text")
 
