@@ -32,8 +32,13 @@ import torch.utils.data as data
 from zenml.core.steps.trainer.pytorch_trainers.torch_base_trainer import \
     TorchBaseTrainerStep
 from zenml.core.steps.trainer.pytorch_trainers.utils import \
-    TFRecordTorchDataset
+    TFRecordTorchDataset, combine_batch_results
 from zenml.utils import path_utils
+
+FEATURES = 'features'
+LABELS = 'labels'
+PREDICTIONS = 'predictions'
+RAW = 'raw'
 
 
 class BinaryClassifier(nn.Module):
@@ -124,21 +129,41 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         # Activate the evaluation mode
         model.eval()
 
-        fpl = {'features': [],
-               'predictions': [],
-               'labels': [],
-               'raw': []}
+        results = {FEATURES: [],
+                   PREDICTIONS: [],
+                   LABELS: [],
+                   RAW: []}
 
         for x, y, raw in eval_dataset:
-            x_batch = torch.cat([v for v in x.values()], dim=-1)
+            # first, add the feature and the label tensors
+            results[FEATURES].append(x)
+            results[LABELS].append(y)
 
+            # secondly, add the raw data in
+            results[RAW].append(raw)
+
+            # finally, add the output of the model
+            x_batch = torch.cat([v for v in x.values()], dim=-1)
             p = model(x_batch)
-            fpl['features'].append({k: torch.squeeze(x[k]).detach().numpy() for k in x})
-            fpl['predictions'].append({'output': p.detach().numpy()}) # TODO: check if tensor dict or list
-            fpl['labels'].append({k: torch.squeeze(y[k]).detach().numpy() for k in y})
-            fpl['raw'].append(raw)
-            
-        return fpl
+
+            if isinstance(p, torch.Tensor):
+                results[PREDICTIONS].append({'output': p})
+            elif isinstance(p, dict):
+                results[PREDICTIONS].append(p)
+            elif isinstance(p, list):
+                results[PREDICTIONS].append({'output_{}'.format(i): v
+                                             for i, v in enumerate(p)})
+            else:
+                raise TypeError('Unknown output format!')
+
+        combined = {}
+        # Once the computation is complete combine all the batches
+        for d in results:
+            combined_batch = combine_batch_results(results[d])
+            for k in combined_batch:
+                combined[k + '_{}'.format(d)] = combined_batch[k]
+
+        return combined
 
     def run_fn(self):
         train_dataset = self.input_fn(self.train_files,

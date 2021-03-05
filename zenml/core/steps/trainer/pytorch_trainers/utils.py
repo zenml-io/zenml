@@ -151,7 +151,7 @@ def combine_batch_results(x):
     """
     result = {}
     for batch in x:
-        for feature, values in batch:
+        for feature, values in batch.items():
             if isinstance(values, torch.Tensor):
                 values = torch.squeeze(values).detach().numpy()
 
@@ -161,6 +161,5 @@ def combine_batch_results(x):
             else:
                 result[feature] = np.concatenate((result[feature],
                                                   values), axis=0)
-
 
     return result
