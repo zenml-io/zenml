@@ -6,18 +6,19 @@ from typing import Any, Dict, Optional, Text, Union
 
 import absl
 from tfx import types
-from tfx.components.trainer import executor
 from tfx.dsl.components.base import base_component
 from tfx.dsl.components.base import executor_spec
 from tfx.orchestration import data_types
 from tfx.proto import trainer_pb2
-from tfx.types.standard_artifacts import Examples, TransformGraph, Schema, \
-    Model, ModelRun, HyperParameters
 from tfx.types.component_spec import ChannelParameter
 from tfx.types.component_spec import ComponentSpec
 from tfx.types.component_spec import ExecutionParameter
-from tfx.types.standard_component_specs import TrainerSpec
+from tfx.types.standard_artifacts import Examples, TransformGraph, Schema, \
+    Model, ModelRun, HyperParameters
 from tfx.utils import json_utils
+
+from zenml.core.components.trainer import constants
+from zenml.core.components.trainer.executor import ZenMLTrainerExecutor
 
 
 class ZenMLTrainerSpec(ComponentSpec):
@@ -41,13 +42,13 @@ class ZenMLTrainerSpec(ComponentSpec):
     OUTPUTS = {
         'model': ChannelParameter(type=Model),
         'model_run': ChannelParameter(type=ModelRun),
-        'test_results': ChannelParameter(type=Examples)
+        constants.TEST_RESULTS: ChannelParameter(type=Examples)
     }
 
 
 class Trainer(base_component.BaseComponent):
-    SPEC_CLASS = TrainerSpec
-    EXECUTOR_SPEC = executor_spec.ExecutorClassSpec(executor.Executor)
+    SPEC_CLASS = ZenMLTrainerSpec
+    EXECUTOR_SPEC = executor_spec.ExecutorClassSpec(ZenMLTrainerExecutor)
 
     def __init__(
             self,
@@ -95,7 +96,7 @@ class Trainer(base_component.BaseComponent):
         output = output or types.Channel(type=Model)
         model_run = model_run or types.Channel(type=ModelRun)
         test_results = test_results or types.Channel(type=Examples)
-        spec = TrainerSpec(
+        spec = ZenMLTrainerSpec(
             examples=examples,
             transform_graph=transform_graph,
             schema=schema,
