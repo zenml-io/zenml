@@ -77,7 +77,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
     def __init__(self,
                  batch_size: int = 32,
                  lr: float = 0.0001,
-                 epoch: int = 10,
+                 epochs: int = 10,
                  dropout_chance: int = 0.2,
                  loss: str = 'mse',
                  metrics: List[str] = None,
@@ -90,7 +90,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                  ):
         self.batch_size = batch_size
         self.lr = lr
-        self.epoch = epoch
+        self.epochs = epochs
         self.dropout_chance = dropout_chance
         self.loss = loss
         self.metrics = metrics or []
@@ -102,7 +102,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         super(FeedForwardTrainer, self).__init__(
             batch_size=self.batch_size,
             lr=self.lr,
-            epoch=self.epoch,
+            epochs=self.epochs,
             dropout_chance=self.dropout_chance,
             loss=self.loss,
             metrics=self.metrics,
@@ -180,7 +180,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         optimizer = optim.Adam(model.parameters(), lr=0.001)
 
         model.train()
-        for e in range(1, self.epoch + 1):
+        for e in range(1, self.epochs + 1):
             epoch_loss = 0
             epoch_acc = 0
             step_count = 0
