@@ -30,7 +30,21 @@ from zenml.core.steps.tokenizer.base_tokenizer import BaseTokenizer
 from zenml.utils import path_utils, source_utils
 
 
-def encode_sentence(ex: tf.train.Example, tokenizer_step: BaseTokenizer):
+def append_tf_example(ex: tf.train.Example, tokenizer_step: BaseTokenizer):
+    """
+    Append the tokenizer encoding outputs as features to the existing data
+    in tf.train.Example format.
+
+    Args:
+        ex: tf.train.Example with the raw input features.
+        tokenizer_step: Local tokenizer step used in the NLP pipeline.
+
+    Returns:
+        A tf.train.Example with all of the features from the `ex` input,
+         plus two features `input_ids` and `attention_mask` holding the word
+         IDs and attention mask outputs from the tokenizer.
+
+    """
     sentence = get_categorical_value(ex, tokenizer_step.text_feature)
 
     encoded = tokenizer_step.encode(sentence, output_format="dict")
@@ -47,8 +61,8 @@ def encode_sentence(ex: tf.train.Example, tokenizer_step: BaseTokenizer):
 
 class TokenizerExecutor(base_executor.BaseExecutor):
     """
-    Tokenizer executor. This component loads a previously trained
-    tokenizer and uses it to transform the input data.
+    Tokenizer executor. This component uses a tokenizer, either already
+    trained or newly instantiated, and uses it to transform the input data.
     """
 
     def Do(self, input_dict: Dict[Text, List[types.Artifact]],
@@ -94,11 +108,11 @@ class TokenizerExecutor(base_executor.BaseExecutor):
                      | "ParseTFExFromString." + split >> beam.Map(
                             tf.train.Example.FromString)
                      | "AddTokens." + split >> beam.Map(
-                            encode_sentence,
+                            append_tf_example,
                             tokenizer_step=tokenizer_step)
-                     | 'Serialize2.' + split >> beam.Map(
+                     | 'Serialize.' + split >> beam.Map(
                             lambda x: x.SerializeToString())
-                     | 'WriteSplit2_' + split >> WriteSplit(
+                     | 'WriteSplit.' + split >> WriteSplit(
                             get_split_uri(
                                 output_dict["output_examples"],
                                 split)))
