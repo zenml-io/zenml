@@ -17,10 +17,9 @@ class TFRecordTorchDataset(data.IterableDataset, ABC):
                  file_pattern,
                  spec) -> None:
         super(TFRecordTorchDataset, self).__init__()
-        xf_feature_spec = {x: spec[x] for x in spec if x.endswith('_xf')}
 
         self.dataset = create_tf_dataset(file_pattern=file_pattern,
-                                         spec=xf_feature_spec)
+                                         spec=spec)
 
     def __iter__(self):
         it = _create_iterator(self.dataset)
@@ -34,9 +33,10 @@ def _create_iterator(dataset):
     return iterator
 
 
-def _convert_to_tensors(features, label):
+def _convert_to_tensors(features, label, raw):
     return {k: torch.from_numpy(v) for k, v in features.items()}, \
-           {k: torch.from_numpy(v) for k, v in label.items()}
+           {k: torch.from_numpy(v) for k, v in label.items()}, \
+           raw
 
 
 def _shuffle_iterator(iterator,
@@ -70,13 +70,16 @@ def _gzip_reader_fn(filenames):
 def _split_inputs_labels(x):
     inputs = {}
     labels = {}
+    raw = {}
     for e in x:
-        if not e.startswith('label'):
+        if e.startswith('label'):
+            labels[e[len('label_'):-len('_xf')]] = x[e]
+        elif e.endswith('_xf'):
             inputs[e[:-len('_xf')]] = x[e]
         else:
-            labels[e[len('label_'):-len('_xf')]] = x[e]
+            raw[e] = x[e]
 
-    return inputs, labels
+    return inputs, labels, raw
 
 
 def create_tf_dataset(file_pattern,
