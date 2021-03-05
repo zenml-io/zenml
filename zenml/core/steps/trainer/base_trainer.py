@@ -32,6 +32,7 @@ class BaseTrainerStep(BaseStep):
     def __init__(self,
                  serving_model_dir: Text = None,
                  transform_output: Text = None,
+                 test_results: Text = None,
                  train_files=None,
                  eval_files=None,
                  **kwargs):
@@ -55,6 +56,7 @@ class BaseTrainerStep(BaseStep):
         super().__init__(**kwargs)
         self.serving_model_dir = serving_model_dir
         self.transform_output = transform_output
+        self.test_results = test_results
         self.train_files = train_files
         self.eval_files = eval_files
         self.schema = None
