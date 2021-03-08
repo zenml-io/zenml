@@ -75,4 +75,4 @@ such a label file, you can use the supplied `prepare_gan_images.py` script.
 
 If you are not satisfied with the generated images, you can try adjusting the hyperparameters and see how they impact 
 the output images. Also, you can deploy your model to Google Cloud AI Platform by executing the second part of the 
-Jupyter Notebook, and then use it to generate images via REST requests.
+[Jupyter Notebook](./cycle_gan.ipynb), and then use it to generate images via REST requests.
