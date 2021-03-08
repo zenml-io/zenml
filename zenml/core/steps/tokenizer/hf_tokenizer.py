@@ -22,7 +22,7 @@ from zenml.core.steps.tokenizer.utils import tokenizer_map
 from zenml.utils import path_utils
 
 
-class TokenizerStep(BaseTokenizer):
+class HuggingFaceTokenizerStep(BaseTokenizer):
     """
     Base step for Tokenizer usage in NLP pipelines.
 
@@ -70,16 +70,17 @@ class TokenizerStep(BaseTokenizer):
             **kwargs: Additional keyword arguments.
         """
 
-        super(TokenizerStep, self).__init__(text_feature=text_feature,
-                                            skip_training=skip_training,
-                                            vocab_size=vocab_size,
-                                            min_frequency=min_frequency,
-                                            sentence_length=sentence_length,
-                                            tokenizer=tokenizer,
-                                            tokenizer_params=tokenizer_params,
-                                            special_tokens=special_tokens,
-                                            batch_size=batch_size,
-                                            **kwargs)
+        super(HuggingFaceTokenizerStep, self).__init__(
+            text_feature=text_feature,
+            skip_training=skip_training,
+            vocab_size=vocab_size,
+            min_frequency=min_frequency,
+            sentence_length=sentence_length,
+            tokenizer=tokenizer,
+            tokenizer_params=tokenizer_params,
+            special_tokens=special_tokens,
+            batch_size=batch_size,
+            **kwargs)
 
         # training arguments for tokenizer
         self.vocab_size = vocab_size
@@ -106,31 +107,12 @@ class TokenizerStep(BaseTokenizer):
 
     def train(self, files: List[Text]):
         """
-        Training method for the tokenizer (training in Huggingface means
-        constructing a vocabulary and computing other necessary information).
-
-        Args:
-            files: List of strings giving the paths to text files to be used
-             in training. Supports sharding, so multiple text files can be
-             supplied.
-
-        """
-        # showing progress does not work in logging mode apparently
-        self.tokenizer.train(files=files,
-                             vocab_size=self.vocab_size,
-                             min_frequency=self.min_frequency,
-                             special_tokens=self.special_tokens,
-                             show_progress=False)
-
-    def train_from_iterator(self, files: List[Text]):
-        """
         Method for training a tokenizer on a data iterator. The iterator is
         constructed inside the function in a closure from a TFRecord dataset.
 
         Args:
             files: List of TFRecord files in GZIP format to ingest.
         """
-
         ds = tf.data.TFRecordDataset(files, compression_type="GZIP")
 
         ds_numpy = ds.batch(self.batch_size).as_numpy_iterator()
@@ -143,6 +125,7 @@ class TokenizerStep(BaseTokenizer):
 
         iterator = build_scoped_iterator(self.text_feature)
 
+        # showing progress does not work in logging mode apparently
         self.tokenizer.train_from_iterator(iterator=iterator,
                                            vocab_size=self.vocab_size,
                                            min_frequency=self.min_frequency,
