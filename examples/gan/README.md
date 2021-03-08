@@ -25,7 +25,14 @@ folder contains the preprocessing code and ZenML step. The `trainer` folder cont
 as well as the TrainerStep that handles data sourcing and preparation.
 
 The `prepare_gan_images.py` script can be used to generate a labels.json file for use in the ZenML image pipeline.
-Simply set the (hardcoded) paths inside the file to the image folder locations on your machine.
+Simply set the (hardcoded) paths inside the file to the image folder locations on your machine. The script assumes a 
+certain folder structure:
+```
+base_dir -> monet_jpg
+         -> real_jpg
+```
+where `monet_jpg` and `real_jpg` need to be subdirectories of your base directory which contain the Monet paintings and
+the real images, respectively.
 
 The `cycle_gan.ipynb` notebook is the main Jupyter Notebook object of this tutorial. Executing it runs a ZenML pipeline
 on an example image dataset persisted in a public Google Cloud Storage bucket. In addition, it contains an optional 

@@ -7,7 +7,8 @@ from shutil import copyfile
 parser = argparse.ArgumentParser(
     description="Process images and create metadata JSON file.")
 
-parser.add_argument("input_dir", type=str, default=".",
+parser.add_argument("input_dir", type=str,
+                    default="gs://zenml_quickstart/cycle_gan_mini",
                     help="directory containing the images.")
 
 parser.add_argument("output_dir", type=str, default=".",
