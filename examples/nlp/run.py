@@ -17,7 +17,7 @@ from zenml.core.datasources.csv_datasource import CSVDatasource
 from zenml.core.pipelines.nlp_pipeline import NLPPipeline
 from zenml.core.repo.repo import Repository
 from zenml.core.steps.split.random_split import RandomSplit
-from zenml.core.steps.tokenizer.hf_tokenizer import TokenizerStep
+from zenml.core.steps.tokenizer.hf_tokenizer import HuggingFaceTokenizerStep
 from zenml.utils.exceptions import AlreadyExistsException
 
 nlp_pipeline = NLPPipeline()
@@ -30,9 +30,9 @@ except AlreadyExistsException:
 
 nlp_pipeline.add_datasource(ds)
 
-tokenizer_step = TokenizerStep(text_feature="news",
-                               tokenizer="bert-wordpiece",
-                               vocab_size=3000)
+tokenizer_step = HuggingFaceTokenizerStep(text_feature="news",
+                                          tokenizer="bert-wordpiece",
+                                          vocab_size=3000)
 
 nlp_pipeline.add_tokenizer(tokenizer_step=tokenizer_step)
 
