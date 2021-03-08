@@ -15,20 +15,19 @@ git clone https://github.com/maiot-io/zenml.git
 ```
 
 Before continuing, either [install the zenml pip package](https://docs.zenml.io/getting-started/installation.html) or
-install it [from the cloned repo](../../zenml/README.md). In both cases, make sure to also install the gcp extension (
-e.g. with pip: `pip install zenml[gcp]`)
+install it [from the cloned repo](../../zenml/README.md).
 
 ```
 cd zenml
 zenml init
-cd examples/gcp_dataflow_processing
+cd examples/nlp
 ```
 
 Also, you have to install some HuggingFace libraries to be able to proceed. To do that, in your ZenML virtual
 environment run
 
 ```
-pip install transformers tokenizers
+pip install zenml[huggingface]
 ```
 
 which installs the `transformers` and `tokenizers` libraries. Then, you can easily start up your first NLP pipeline by
@@ -47,15 +46,15 @@ the HuggingFace `datasets` repository.
 
 ```
 @article{MaazUrdufake2020,
-author = {Amjad, Maaz and Sidorov, Grigori and Zhila, Alisa and  G’{o}mez-Adorno, Helena and Voronkov, Ilia  and Gelbukh, Alexander},
-title = {Bend the Truth: A Benchmark Dataset for Fake News Detection in Urdu and Its Evaluation},
-journal={Journal of Intelligent & Fuzzy Systems},
-volume={39},
-number={2},
-pages={2457-2469},
-doi = {10.3233/JIFS-179905},
-year={2020},
-publisher={IOS Press}
+    author = {Amjad, Maaz and Sidorov, Grigori and Zhila, Alisa and  G’{o}mez-Adorno, Helena and Voronkov, Ilia  and Gelbukh, Alexander},
+    title = {Bend the Truth: A Benchmark Dataset for Fake News Detection in Urdu and Its Evaluation},
+    journal={Journal of Intelligent & Fuzzy Systems},
+    volume={39},
+    number={2},
+    pages={2457-2469},
+    doi = {10.3233/JIFS-179905},
+    year={2020},
+    publisher={IOS Press}
 }
 ```
 
