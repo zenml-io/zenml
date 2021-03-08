@@ -48,4 +48,4 @@ nlp_pipeline.run()
 
 # evaluate the model with the sentence "The earth is flat"
 # which should (ideally) return FAKE_NEWS
-nlp_pipeline("دنیا سیدھی ہے")
+nlp_pipeline.predict_sentence("دنیا سیدھی ہے")

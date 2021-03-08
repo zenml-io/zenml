@@ -40,7 +40,7 @@ from zenml.utils.enums import PipelineStatusTypes
 class NLPPipeline(BasePipeline):
     PIPELINE_TYPE = "nlp"
 
-    def __call__(self, sequence: Union[Text, List[Text]]):
+    def predict_sentence(self, sequence: Union[Text, List[Text]]):
         """Call operator for local inference method"""
 
         if not self.get_status() == PipelineStatusTypes.Succeeded.name:
