@@ -35,9 +35,6 @@ class BaseTokenizer(BaseStep):
     def train(self, files: List[Text]):
         raise NotImplementedError
 
-    def train_from_iterator(self, files: List[Text]):
-        raise NotImplementedError
-
     def encode(self, sequence: Text, output_format: Text):
         raise NotImplementedError
 
