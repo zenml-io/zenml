@@ -94,7 +94,7 @@ class TokenizerExecutor(base_executor.BaseExecutor):
             split_names)
 
         if not tokenizer_step.skip_training:
-            tokenizer_step.train_from_iterator(files=all_files)
+            tokenizer_step.train(files=all_files)
 
             tokenizer_step.save(output_dir=tokenizer_location)
 
