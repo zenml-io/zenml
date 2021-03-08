@@ -42,6 +42,7 @@ class GDPComponent(Enum):
     Inferrer = 17
     DataStatistics = 18
     DataSchema = 19
+    Tokenizer = 20
 
 
 class MLMetadataTypes(Enum):

@@ -21,7 +21,7 @@ import tensorflow_transform as tft
 from examples.gan.trainer.gan_functions import Generator, Discriminator, \
     CycleGan
 from examples.gan.trainer.gan_functions import TensorBoardImage
-from zenml.core.steps.trainer.feedforward_trainer.trainer import \
+from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
     FeedForwardTrainer
 from .gan_functions import discriminator_loss, \
     identity_loss, generator_loss, calc_cycle_loss
