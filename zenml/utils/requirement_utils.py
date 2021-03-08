@@ -53,6 +53,12 @@ CORTEX_REQUIREMENTS = ['cortex==0.29.0']
 POSTGRES_INTEGRATION = 'postgres'
 POSTGRES_REQUIREMENTS = ['beam-nuggets==0.17.0', 'pg8000==1.16.5']
 
+#######################
+# NLP via HuggingFace #
+#######################
+HUGGINGFACE_INTEGRATION = 'huggingface'
+HUGGINGFACE_REQUIREMENTS = ['transformers==4.3.3', 'tokenizers==0.10.1']
+
 ###############
 # EXTRAS: ALL #
 ###############
@@ -63,7 +69,8 @@ ALL_REQUIREMENTS = BASE_REQUIREMENTS + \
                    AZURE_REQUIREMENTS + \
                    AWS_REQUIREMENTS + \
                    POSTGRES_REQUIREMENTS + \
-                   CORTEX_REQUIREMENTS
+                   CORTEX_REQUIREMENTS + \
+                   HUGGINGFACE_REQUIREMENTS
 
 EXTRAS_REQUIRE = {GCP_INTEGRATION: GCP_REQUIREMENTS,
                   AWS_INTEGRATION: AWS_REQUIREMENTS,
@@ -71,6 +78,7 @@ EXTRAS_REQUIRE = {GCP_INTEGRATION: GCP_REQUIREMENTS,
                   PYTORCH_INTEGRATION: PYTORCH_REQUIREMENTS,
                   CORTEX_INTEGRATION: CORTEX_REQUIREMENTS,
                   POSTGRES_INTEGRATION: POSTGRES_REQUIREMENTS,
+                  HUGGINGFACE_INTEGRATION: HUGGINGFACE_REQUIREMENTS,
                   ALL_INTEGRATION: ALL_REQUIREMENTS}
 
 
