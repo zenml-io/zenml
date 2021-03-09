@@ -28,7 +28,7 @@ from zenml.core.components.split_gen import constants
 from zenml.core.components.split_gen.utils import parse_schema, \
     parse_statistics
 from zenml.core.standards.standard_keys import StepKeys
-from zenml.core.steps.split.base_split_step import BaseSplit
+from zenml.core.steps.split import BaseSplit
 from zenml.core.steps.split.constants import SKIP
 from zenml.utils import source_utils
 from zenml.utils.logger import get_logger

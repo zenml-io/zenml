@@ -23,7 +23,7 @@ from tfx.types import artifact_utils
 from zenml.core.components.data_gen import utils
 from zenml.core.components.data_gen.constants import DATA_SPLIT_NAME
 from zenml.core.standards.standard_keys import StepKeys
-from zenml.core.steps.data.base_data_step import BaseDataStep
+from zenml.core.steps.data import BaseDataStep
 from zenml.utils import source_utils
 
 

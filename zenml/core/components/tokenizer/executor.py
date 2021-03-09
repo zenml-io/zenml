@@ -26,7 +26,7 @@ from tfx.utils import io_utils
 from zenml.core.components.split_gen.executor import WriteSplit
 from zenml.core.standards.standard_keys import StepKeys
 from zenml.core.steps.split.utils import get_categorical_value
-from zenml.core.steps.tokenizer.base_tokenizer import BaseTokenizer
+from zenml.core.steps.tokenizer import BaseTokenizer
 from zenml.utils import path_utils, source_utils
 
 
