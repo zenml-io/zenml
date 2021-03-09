@@ -17,7 +17,7 @@ import hashlib
 import os
 from typing import Text
 
-from zenml.core.repo.global_config import GlobalConfig
+from zenml.core.repo import GlobalConfig
 from zenml.utils import path_utils
 from zenml.utils.enums import ArtifactStoreTypes
 from zenml.utils.print_utils import to_pretty_string, PrintStyles

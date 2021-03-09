@@ -16,8 +16,8 @@
 import os
 from typing import Text, Optional, Dict, Type
 
-from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
-from zenml.core.repo.artifact_store import ArtifactStore
+from zenml.core.metadata import ZenMLMetadataStore
+from zenml.core.repo import ArtifactStore
 from zenml.core.repo.constants import ZENML_CONFIG_NAME, \
     ARTIFACT_STORE_DEFAULT_DIR, PIPELINES_DEFAULT_DIR_NAME, \
     ML_METADATA_SQLITE_DEFAULT_NAME, ZENML_DIR_NAME

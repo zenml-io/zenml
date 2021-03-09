@@ -17,12 +17,12 @@ import os
 from pathlib import Path
 from typing import Text, List, Dict, Any, Optional, Union, Type
 
-from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
-from zenml.core.repo.artifact_store import ArtifactStore
-from zenml.core.repo.git_wrapper import GitWrapper
-from zenml.core.repo.global_config import GlobalConfig
-from zenml.core.repo.zenml_config import ZenMLConfig
+from zenml.core.metadata import ZenMLMetadataStore
+from zenml.core.repo import ArtifactStore
 from zenml.core.repo.constants import ZENML_DIR_NAME
+from zenml.core.repo import GitWrapper
+from zenml.core.repo import GlobalConfig
+from zenml.core.repo import ZenMLConfig
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils, yaml_utils
 from zenml.utils.exceptions import InitializationException

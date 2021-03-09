@@ -19,10 +19,11 @@ from pathlib import Path
 import pytest
 
 import zenml
-from zenml.core.metadata.mock_metadata_wrapper import MockMetadataStore
+from zenml.core.metadata import MockMetadataStore
 from zenml.core.repo.constants import ARTIFACT_STORE_DEFAULT_DIR, \
     ZENML_DIR_NAME, ML_METADATA_SQLITE_DEFAULT_NAME
-from zenml.core.repo.zenml_config import ZenMLConfig, PIPELINES_DIR_KEY
+from zenml.core.repo.zenml_config import PIPELINES_DIR_KEY
+from zenml.core.repo import ZenMLConfig
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import yaml_utils
 from zenml.utils.exceptions import InitializationException
