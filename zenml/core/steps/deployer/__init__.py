@@ -12,3 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from zenml.core.steps.deployer.base_deployer import BaseDeployerStep
+
+try:
+    from zenml.core.steps.deployer.cortex_deployer import CortexDeployer
+except ModuleNotFoundError:
+    pass
+
+from zenml.core.steps.deployer.gcaip_deployer import GCAIPDeployer

@@ -18,12 +18,10 @@ import random
 import pytest
 import tensorflow as tf
 
-from zenml.core.steps.split.categorical_domain_split_step import \
-    CategoricalDomainSplit
-from zenml.core.steps.split.categorical_ratio_split_step import \
-    CategoricalRatioSplit
-from zenml.core.steps.split.no_split_step import NoSplit
-from zenml.core.steps.split.random_split import RandomSplit
+from zenml.core.steps.split import CategoricalDomainSplit
+from zenml.core.steps.split import CategoricalRatioSplit
+from zenml.core.steps.split import NoSplit
+from zenml.core.steps.split import RandomSplit
 
 
 @pytest.fixture

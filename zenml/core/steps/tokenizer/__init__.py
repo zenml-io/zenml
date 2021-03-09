@@ -12,3 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from zenml.core.steps.tokenizer.base_tokenizer import BaseTokenizer
+
+# HuggingFace extra requirement
+try:
+    from zenml.core.steps.tokenizer.hf_tokenizer import \
+        HuggingFaceTokenizerStep
+except ModuleNotFoundError:
+    pass

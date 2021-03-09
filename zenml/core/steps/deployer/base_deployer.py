@@ -17,7 +17,7 @@ from typing import Type
 from tfx.dsl.components.base import executor_spec
 from tfx.dsl.components.base.base_executor import BaseExecutor
 
-from zenml.core.steps.base_step import BaseStep
+from zenml.core.steps import BaseStep
 
 
 class BaseDeployerStep(BaseStep):

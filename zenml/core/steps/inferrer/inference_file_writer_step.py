@@ -16,7 +16,7 @@ from typing import Text, List
 
 import apache_beam as beam
 
-from zenml.core.steps.inferrer.base_inferrer_step import BaseInferrer
+from zenml.core.steps.inferrer import BaseInferrer
 
 
 class FileWriterInferrer(BaseInferrer):

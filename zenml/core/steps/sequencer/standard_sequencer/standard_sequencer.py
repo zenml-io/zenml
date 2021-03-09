@@ -23,7 +23,7 @@ from apache_beam.transforms.window import TimestampedValue
 from apache_beam.utils.timestamp import Timestamp
 from tensorflow_transform.tf_metadata import schema_utils
 
-from zenml.core.steps.sequencer.base_sequencer import BaseSequencerStep
+from zenml.core.steps.sequencer import BaseSequencerStep
 from zenml.core.steps.sequencer.standard_sequencer import utils
 from zenml.core.steps.sequencer.standard_sequencer.methods \
     .standard_methods import ResamplingMethods, FillingMethods

@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 
 from typing import Text, List
-from zenml.core.steps.base_step import BaseStep
+
+from zenml.core.steps import BaseStep
 
 
 class BaseTokenizer(BaseStep):

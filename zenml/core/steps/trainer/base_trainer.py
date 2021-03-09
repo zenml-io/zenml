@@ -17,7 +17,7 @@ from typing import List, Text
 
 import tensorflow_transform as tft
 
-from zenml.core.steps.base_step import BaseStep
+from zenml.core.steps import BaseStep
 from zenml.utils.enums import StepTypes
 
 

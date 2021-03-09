@@ -22,7 +22,7 @@ from apache_beam.io import fileio
 
 from zenml.core.components.data_gen.constants import BINARY_DATA, FILE_NAME, \
     FILE_EXT, METADATA, LABEL, IMAGE
-from zenml.core.steps.data.base_data_step import BaseDataStep
+from zenml.core.steps.data import BaseDataStep
 
 
 def read_file_content(file: beam.io.fileio.ReadableFile):

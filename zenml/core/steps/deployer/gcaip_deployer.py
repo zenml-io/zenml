@@ -17,7 +17,7 @@ from typing import Text
 from tfx.extensions.google_cloud_ai_platform.pusher import \
     executor as ai_platform_pusher_executor
 
-from zenml.core.steps.deployer.base_deployer import BaseDeployerStep
+from zenml.core.steps.deployer import BaseDeployerStep
 from zenml.utils.logger import get_logger
 
 logger = get_logger(__name__)

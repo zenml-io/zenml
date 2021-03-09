@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
+from zenml.core.steps.trainer import BaseTrainerStep
 
 
 class TFBaseTrainerStep(BaseTrainerStep):

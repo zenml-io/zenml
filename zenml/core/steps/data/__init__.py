@@ -12,3 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from zenml.core.steps.data.base_data_step import BaseDataStep
+from zenml.core.steps.data.bq_data_step import BQDataStep
+from zenml.core.steps.data.csv_data_step import CSVDataStep
+from zenml.core.steps.data.image_data_step import ImageDataStep
+from zenml.core.steps.data.postgres_data_step import PostgresDataStep

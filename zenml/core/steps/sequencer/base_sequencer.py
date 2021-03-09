@@ -18,7 +18,7 @@ from tensorflow_metadata.proto.v0.schema_pb2 import Schema
 from tensorflow_metadata.proto.v0.statistics_pb2 import \
     DatasetFeatureStatisticsList
 
-from zenml.core.steps.base_step import BaseStep
+from zenml.core.steps import BaseStep
 from zenml.utils.enums import StepTypes
 
 
