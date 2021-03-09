@@ -19,15 +19,14 @@ from tfx.components.common_nodes.importer_node import ImporterNode
 from tfx.components.pusher.component import Pusher
 from tfx.types import standard_artifacts
 
-from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
-    OrchestratorBaseBackend
-from zenml.core.datasources.base_datasource import BaseDatasource
-from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
-from zenml.core.pipelines.base_pipeline import BasePipeline
-from zenml.core.repo.artifact_store import ArtifactStore
+from zenml.core.backends.orchestrator import OrchestratorBaseBackend
+from zenml.core.datasources import BaseDatasource
+from zenml.core.metadata import ZenMLMetadataStore
+from zenml.core.pipelines import BasePipeline
+from zenml.core.repo import ArtifactStore
 from zenml.core.standards import standard_keys as keys
-from zenml.core.steps.base_step import BaseStep
-from zenml.core.steps.deployer.base_deployer import BaseDeployerStep
+from zenml.core.steps import BaseStep
+from zenml.core.steps.deployer import BaseDeployerStep
 from zenml.utils.enums import GDPComponent
 
 

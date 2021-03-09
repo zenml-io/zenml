@@ -19,7 +19,7 @@ from tfx.components.schema_gen.component import SchemaGen
 from tfx.components.statistics_gen.component import StatisticsGen
 
 from zenml.core.components.data_gen.component import DataGen
-from zenml.core.pipelines.base_pipeline import BasePipeline
+from zenml.core.pipelines import BasePipeline
 from zenml.core.standards import standard_keys as keys
 from zenml.core.standards.standard_keys import StepKeys
 from zenml.utils.enums import GDPComponent

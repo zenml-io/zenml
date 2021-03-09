@@ -22,19 +22,17 @@ from tfx.components.statistics_gen.component import StatisticsGen
 from tfx.components.trainer.component import Trainer
 from tfx.proto import trainer_pb2
 
-from zenml.core.backends.training.training_base_backend import \
-    TrainingBaseBackend
+from zenml.core.backends.training import TrainingBaseBackend
 from zenml.core.components.data_gen.component import DataGen
 from zenml.core.components.split_gen.component import SplitGen
 from zenml.core.components.tokenizer.component import Tokenizer
-from zenml.core.pipelines.base_pipeline import BasePipeline
+from zenml.core.pipelines import BasePipeline
 from zenml.core.standards import standard_keys as keys
-from zenml.core.steps.split.base_split_step import BaseSplit
-from zenml.core.steps.tokenizer.base_tokenizer import BaseTokenizer
-from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
+from zenml.core.steps.split import BaseSplit
+from zenml.core.steps.tokenizer import BaseTokenizer
+from zenml.core.steps.trainer import BaseTrainerStep
 from zenml.utils import constants
-from zenml.utils.enums import GDPComponent
-from zenml.utils.enums import PipelineStatusTypes
+from zenml.utils.enums import GDPComponent, PipelineStatusTypes
 
 
 class NLPPipeline(BasePipeline):
