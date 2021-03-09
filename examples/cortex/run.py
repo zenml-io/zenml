@@ -1,17 +1,14 @@
 import os
 
 from examples.cortex.predictor.tf import TensorFlowPredictor
-from zenml.core.datasources.csv_datasource import CSVDatasource
-from zenml.core.pipelines.training_pipeline import TrainingPipeline
-from zenml.core.repo.artifact_store import ArtifactStore
-from zenml.core.steps.deployer.cortex_deployer import CortexDeployer
-from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
-from zenml.core.steps.preprocesser.standard_preprocesser \
-    .standard_preprocesser import \
-    StandardPreprocesser
-from zenml.core.steps.split.random_split import RandomSplit
-from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
-    FeedForwardTrainer
+from zenml.core.datasources import CSVDatasource
+from zenml.core.pipelines import TrainingPipeline
+from zenml.core.repo import ArtifactStore
+from zenml.core.steps.deployer import CortexDeployer
+from zenml.core.steps.evaluator import TFMAEvaluator
+from zenml.core.steps.preprocesser import StandardPreprocesser
+from zenml.core.steps.split import RandomSplit
+from zenml.core.steps.trainer import TFFeedForwardTrainer
 from zenml.utils.exceptions import AlreadyExistsException
 
 GCP_BUCKET = os.getenv('GCP_BUCKET')
@@ -51,7 +48,7 @@ training_pipeline.add_preprocesser(
     ))
 
 # Add a trainer
-training_pipeline.add_trainer(FeedForwardTrainer(
+training_pipeline.add_trainer(TFFeedForwardTrainer(
     loss='binary_crossentropy',
     last_activation='sigmoid',
     output_units=1,

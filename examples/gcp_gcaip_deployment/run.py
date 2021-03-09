@@ -1,16 +1,13 @@
 import os
 
-from zenml.core.datasources.csv_datasource import CSVDatasource
-from zenml.core.pipelines.training_pipeline import TrainingPipeline
-from zenml.core.repo.repo import Repository
-from zenml.core.steps.deployer.gcaip_deployer import GCAIPDeployer
-from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
-from zenml.core.steps.preprocesser.standard_preprocesser \
-    .standard_preprocesser import \
-    StandardPreprocesser
-from zenml.core.steps.split.random_split import RandomSplit
-from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
-    FeedForwardTrainer
+from zenml.core.datasources import CSVDatasource
+from zenml.core.pipelines import TrainingPipeline
+from zenml.core.repo import Repository
+from zenml.core.steps.deployer import GCAIPDeployer
+from zenml.core.steps.evaluator import TFMAEvaluator
+from zenml.core.steps.preprocesser import StandardPreprocesser
+from zenml.core.steps.split import RandomSplit
+from zenml.core.steps.trainer import TFFeedForwardTrainer
 from zenml.utils.exceptions import AlreadyExistsException
 
 GCP_PROJECT = os.getenv('GCP_PROJECT')
@@ -48,7 +45,7 @@ training_pipeline.add_preprocesser(
             'transform': [{'method': 'no_transform', 'parameters': {}}]}}
     ))
 
-training_pipeline.add_trainer(FeedForwardTrainer(
+training_pipeline.add_trainer(TFFeedForwardTrainer(
     loss='binary_crossentropy',
     last_activation='sigmoid',
     output_units=1,

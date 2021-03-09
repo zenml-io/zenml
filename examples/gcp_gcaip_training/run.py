@@ -1,21 +1,15 @@
 import os
 
-from zenml.core.backends.orchestrator.gcp.orchestrator_gcp_backend import \
-    OrchestratorGCPBackend
-from zenml.core.backends.training.training_gcaip_backend import \
-    SingleGPUTrainingGCAIPBackend
-from zenml.core.datasources.csv_datasource import CSVDatasource
-from zenml.core.metadata.mysql_metadata_wrapper import MySQLMetadataStore
-from zenml.core.pipelines.training_pipeline import TrainingPipeline
-from zenml.core.repo.artifact_store import ArtifactStore
-from zenml.core.repo.repo import Repository
-from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
-from zenml.core.steps.preprocesser.standard_preprocesser \
-    .standard_preprocesser import \
-    StandardPreprocesser
-from zenml.core.steps.split.random_split import RandomSplit
-from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
-    FeedForwardTrainer
+from zenml.core.backends.orchestrator import OrchestratorGCPBackend
+from zenml.core.backends.training import SingleGPUTrainingGCAIPBackend
+from zenml.core.datasources import CSVDatasource
+from zenml.core.metadata import MySQLMetadataStore
+from zenml.core.pipelines import TrainingPipeline
+from zenml.core.repo import Repository, ArtifactStore
+from zenml.core.steps.evaluator import TFMAEvaluator
+from zenml.core.steps.preprocesser import StandardPreprocesser
+from zenml.core.steps.split import RandomSplit
+from zenml.core.steps.trainer import TFFeedForwardTrainer
 from zenml.utils.exceptions import AlreadyExistsException
 
 GCP_PROJECT = os.getenv('GCP_PROJECT')
@@ -78,7 +72,7 @@ training_backend = SingleGPUTrainingGCAIPBackend(
     job_dir=TRAINING_JOB_DIR
 )
 
-training_pipeline.add_trainer(FeedForwardTrainer(
+training_pipeline.add_trainer(TFFeedForwardTrainer(
     loss='binary_crossentropy',
     last_activation='sigmoid',
     output_units=1,
