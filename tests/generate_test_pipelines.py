@@ -16,16 +16,12 @@ import os
 from pathlib import Path
 
 import zenml
-from zenml.core.datasources.csv_datasource import CSVDatasource
-from zenml.core.pipelines.training_pipeline import TrainingPipeline
-from zenml.core.repo.repo import Repository
-from zenml.core.steps.preprocesser.standard_preprocesser \
-    .standard_preprocesser import \
-    StandardPreprocesser
-from zenml.core.steps.split.categorical_domain_split_step import \
-    CategoricalDomainSplit
-from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
-    FeedForwardTrainer
+from zenml.core.datasources import CSVDatasource
+from zenml.core.pipelines import TrainingPipeline
+from zenml.core.repo import Repository
+from zenml.core.steps.preprocesser import StandardPreprocesser
+from zenml.core.steps.split import CategoricalDomainSplit
+from zenml.core.steps.trainer import TFFeedForwardTrainer
 from zenml.utils import path_utils
 from zenml.utils.logger import get_logger
 
@@ -75,7 +71,7 @@ try:
             ))
 
         # Add a trainer
-        training_pipeline.add_trainer(FeedForwardTrainer(
+        training_pipeline.add_trainer(TFFeedForwardTrainer(
             batch_size=1,
             loss='binary_crossentropy',
             last_activation='sigmoid',
