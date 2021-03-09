@@ -25,8 +25,9 @@ Before continuing, either [install the zenml pip package](https://docs.zenml.io/
 In both cases, make sure to also install the gcp extension (e.g. with pip: `pip install zenml[gcp]`)
 
 ```
+cd zenml
 zenml init
-cd zenml/examples/kubernetes_orchestrated
+cd examples/kubernetes_orchestrated
 ```
 
 Also do the following:

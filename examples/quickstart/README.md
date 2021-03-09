@@ -12,15 +12,16 @@ git clone https://github.com/maiot-io/zenml.git
 Before continuing, either [install the zenml pip package](https://docs.zenml.io/getting-started/installation.html) or install it [from the cloned repo](../../zenml/README.md). 
 
 ```
+cd zenml
 zenml init
-cd zenml/examples/quickstart
+cd examples/quickstart
 ```
 
 ### Run the project
 Now we're ready. Execute:
 
 ```bash
-python run.py
+python quickstart.py
 ```
 
 Or just a jupyter notebook

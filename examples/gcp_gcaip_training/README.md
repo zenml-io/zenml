@@ -26,8 +26,9 @@ Before continuing, either [install the zenml pip package](https://docs.zenml.io/
 In both cases, make sure to also install the gcp extension (e.g. with pip: `pip install zenml[gcp]`)
 
 ```
+cd zenml
 zenml init
-cd zenml/examples/gcp_gpu_training
+cd examples/gcp_gpu_training
 ```
 
 Also do the following:
