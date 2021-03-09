@@ -15,8 +15,8 @@
 
 from typing import Text, Dict
 
-from zenml.core.datasources.base_datasource import BaseDatasource
-from zenml.core.steps.data.csv_data_step import CSVDataStep
+from zenml.core.datasources import BaseDatasource
+from zenml.core.steps.data import CSVDataStep
 
 
 class CSVDatasource(BaseDatasource):

@@ -15,7 +15,7 @@
 
 from typing import Text
 
-from zenml.core.datasources.base_datasource import BaseDatasource
+from zenml.core.datasources import BaseDatasource
 
 
 class JSONDatasource(BaseDatasource):

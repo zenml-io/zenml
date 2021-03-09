@@ -17,8 +17,8 @@ import os
 import zenml
 import random
 import pandas as pd
-from zenml.core.datasources.base_datasource import BaseDatasource
-from zenml.core.pipelines.base_pipeline import BasePipeline
+from zenml.core.datasources import BaseDatasource
+from zenml.core.pipelines import BasePipeline
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import yaml_utils, exceptions
 from pathlib import Path

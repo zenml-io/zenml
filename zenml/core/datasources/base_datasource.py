@@ -20,13 +20,13 @@ from uuid import uuid4
 
 import tensorflow as tf
 
-from zenml.core.repo.repo import Repository
+from zenml.core.repo import Repository
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils
 from zenml.utils import source_utils
 from zenml.utils.enums import GDPComponent
-from zenml.utils.exceptions import AlreadyExistsException
-from zenml.utils.exceptions import EmptyDatasourceException
+from zenml.utils.exceptions import AlreadyExistsException, \
+    EmptyDatasourceException
 from zenml.utils.logger import get_logger
 from zenml.utils.post_training.post_training_utils import \
     view_schema, get_feature_spec_from_schema, \

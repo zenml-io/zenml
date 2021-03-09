@@ -15,8 +15,8 @@
 
 from typing import Text, Dict
 
-from zenml.core.datasources.base_datasource import BaseDatasource
-from zenml.core.steps.data.image_data_step import ImageDataStep
+from zenml.core.datasources import BaseDatasource
+from zenml.core.steps.data import ImageDataStep
 
 
 class ImageDatasource(BaseDatasource):
