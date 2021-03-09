@@ -18,8 +18,7 @@ from typing import Text, Type, Optional, Union
 
 from tfx.utils.import_utils import import_class_by_path
 
-from zenml.core.repo.git_wrapper import GitWrapper
-from zenml.core.repo.repo import Repository
+from zenml.core.repo import Repository, GitWrapper
 from zenml.utils.constants import APP_NAME
 from zenml.utils.logger import get_logger
 from zenml.utils.version import __version__
