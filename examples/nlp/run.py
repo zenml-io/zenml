@@ -13,11 +13,11 @@
 #  permissions and limitations under the License.
 
 from examples.nlp.training.trainer import UrduTrainer
-from zenml.core.datasources.csv_datasource import CSVDatasource
-from zenml.core.pipelines.nlp_pipeline import NLPPipeline
-from zenml.core.repo.repo import Repository
-from zenml.core.steps.split.random_split import RandomSplit
-from zenml.core.steps.tokenizer.hf_tokenizer import HuggingFaceTokenizerStep
+from zenml.core.datasources import CSVDatasource
+from zenml.core.pipelines import NLPPipeline
+from zenml.core.repo import Repository
+from zenml.core.steps.split import RandomSplit
+from zenml.core.steps.tokenizer import HuggingFaceTokenizerStep
 from zenml.utils.exceptions import AlreadyExistsException
 
 nlp_pipeline = NLPPipeline()
