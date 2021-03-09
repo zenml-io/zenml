@@ -20,7 +20,7 @@ import click
 from zenml.cli.cli import cli
 from zenml.cli.cli import pass_config
 from zenml.cli.utils import parse_unknown_options
-from zenml.core.repo.repo import Repository
+from zenml.core.repo import Repository
 
 
 @cli.group()

@@ -21,7 +21,7 @@ import git
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation
 from zenml.cli.utils import pass_repo
-from zenml.core.repo.repo import Repository
+from zenml.core.repo import Repository
 from zenml.utils.zenml_analytics import track, INITIALIZE
 
 
