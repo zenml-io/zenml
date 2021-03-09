@@ -21,13 +21,12 @@ import tensorflow_transform as tft
 from examples.gan.trainer.gan_functions import Generator, Discriminator, \
     CycleGan
 from examples.gan.trainer.gan_functions import TensorBoardImage
-from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
-    FeedForwardTrainer
-from .gan_functions import discriminator_loss, \
+from examples.gan.trainer.gan_functions import discriminator_loss, \
     identity_loss, generator_loss, calc_cycle_loss
+from zenml.core.steps.trainer import TFFeedForwardTrainer
 
 
-class CycleGANTrainer(FeedForwardTrainer):
+class CycleGANTrainer(TFFeedForwardTrainer):
     def __init__(self, batch_size=1, epochs=25, **kwargs):
         self.batch_size = batch_size
         self.epochs = epochs

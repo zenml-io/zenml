@@ -16,11 +16,7 @@ from typing import Dict
 
 import tensorflow as tf
 
-from zenml.core.steps.preprocesser.base_preprocesser import \
-    BasePreprocesserStep
-from zenml.core.steps.preprocesser.standard_preprocesser \
-    .standard_preprocesser import \
-    transformed_name
+from zenml.core.steps.preprocesser import BasePreprocesserStep
 
 
 def decode_and_reshape_image(input_):
@@ -46,6 +42,6 @@ class GANPreprocessor(BasePreprocesserStep):
             if k == "image":
                 result = decode_and_reshape_image(v)
                 result = tf.cast(result, dtype=tf.float32)
-                outputs[transformed_name(k)] = result
+                outputs[k + "_xf"] = result
 
         return outputs
