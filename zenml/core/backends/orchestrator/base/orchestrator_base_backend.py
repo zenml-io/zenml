@@ -18,11 +18,10 @@ from typing import Dict, Text, Any
 
 from tfx.orchestration import pipeline
 
-from zenml.core.backends.base_backend import BaseBackend
+from zenml.core.backends import BaseBackend
 from zenml.core.backends.orchestrator.base.zenml_local_orchestrator import \
     ZenMLLocalDagRunner
-from zenml.core.backends.processing.processing_base_backend import \
-    ProcessingBaseBackend
+from zenml.core.backends.processing import ProcessingBaseBackend
 
 
 class OrchestratorBaseBackend(BaseBackend):

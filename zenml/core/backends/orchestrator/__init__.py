@@ -12,3 +12,21 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+# contains extra AWS requirements
+try:
+    from zenml.core.backends.orchestrator.aws.orchestrator_aws_backend import \
+     OrchestratorAWSBackend
+except ModuleNotFoundError:
+    pass
+
+from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
+    OrchestratorBaseBackend
+# errors out because of breaking changes in TFX
+# from zenml.core.backends.orchestrator.beam.orchestrator_beam_backend import \
+#     OrchestratorBeamBackend
+from zenml.core.backends.orchestrator.gcp.orchestrator_gcp_backend import \
+    OrchestratorGCPBackend
+from zenml.core.backends.orchestrator.kubeflow.orchestrator_kubeflow_backend \
+    import OrchestratorKubeFlowBackend
+from zenml.core.backends.orchestrator.kubernetes.\
+    orchestrator_kubernetes_backend import OrchestratorKubernetesBackend

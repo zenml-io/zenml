@@ -22,8 +22,7 @@ from tfx.extensions.google_cloud_ai_platform.trainer import \
 from tfx.extensions.google_cloud_ai_platform.trainer.executor \
     import TRAINING_ARGS_KEY, JOB_ID_KEY
 
-from zenml.core.backends.training.training_base_backend import \
-    TrainingBaseBackend
+from zenml.core.backends.training import TrainingBaseBackend
 from zenml.core.pipelines.utils import sanitize_name_for_ai_platform
 from zenml.utils import requirement_utils
 from zenml.utils.constants import ZENML_TRAINER_IMAGE_NAME

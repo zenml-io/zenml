@@ -17,8 +17,7 @@ import os
 import time
 from typing import Optional, List, Text
 
-from zenml.core.backends.processing.processing_base_backend import \
-    ProcessingBaseBackend
+from zenml.core.backends.processing import ProcessingBaseBackend
 from zenml.utils import requirement_utils
 from zenml.utils.constants import ZENML_DATAFLOW_IMAGE_NAME
 from zenml.utils.logger import get_logger
