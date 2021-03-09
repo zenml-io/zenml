@@ -12,3 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
+from zenml.core.metadata.mysql_metadata_wrapper import MySQLMetadataStore
+from zenml.core.metadata.mock_metadata_wrapper import MockMetadataStore
+from zenml.core.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore

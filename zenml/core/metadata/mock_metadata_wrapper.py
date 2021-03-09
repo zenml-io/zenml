@@ -14,7 +14,7 @@
 
 from ml_metadata.proto import metadata_store_pb2
 
-from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
+from zenml.core.metadata import ZenMLMetadataStore
 from zenml.utils.enums import MLMetadataTypes
 
 

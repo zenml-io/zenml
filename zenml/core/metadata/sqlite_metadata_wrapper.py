@@ -16,7 +16,7 @@ from typing import Text
 
 from tfx.orchestration import metadata
 
-from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
+from zenml.core.metadata import ZenMLMetadataStore
 from zenml.utils import path_utils
 from zenml.utils.enums import MLMetadataTypes
 
