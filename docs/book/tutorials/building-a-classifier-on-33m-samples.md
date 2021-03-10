@@ -10,8 +10,7 @@ This tutorial is adapted **from the blog post:** [Deep Learning on 33,000,000 da
 tldr; One can utilize the [Dataflow Processing Backend](../backends/processing-backends.md).
 
 ```python
-from zenml.core.backends.processing.processing_dataflow_backend import \
-    ProcessingDataFlowBackend
+from zenml.backends.processing import ProcessingDataFlowBackend
 
 training_pipeline = TrainingPipeline(name='distributed_dataflow')
 
