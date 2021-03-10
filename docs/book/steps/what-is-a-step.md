@@ -40,7 +40,7 @@ ZenML ships with batteries included, but your needs might differ. Therefore we'v
 You can get all your steps using the [Repository](../repository/what-is-a-repository.md) class:
 
 ```python
-from zenml.core.repo.repo import Repository
+from zenml.repo import Repository
 
 repo: Repository = Repository.get_instance()
 

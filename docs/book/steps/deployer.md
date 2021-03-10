@@ -9,7 +9,7 @@ There are some standard deployers built-in to ZenML for common deployment scenar
 Deploys the model directly to a [Google Cloud AI Platform](https://cloud.google.com/ai-platform/prediction/docs) end-point.
 
 ```python
-from zenml.core.steps.deployer.gcaip_deployer import GCAIPDeployer
+from zenml.steps.deployer import GCAIPDeployer
 
 pipeline.add_deployment(GCAIPDeployer(
     project_id='project_id',

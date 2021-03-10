@@ -29,7 +29,7 @@ have any special features that need careful selection, enough data is available,
 values in the data is not too skewed. Defining a random split in ZenML is as easy as the following piece of code:
 
 ```
-from zenml.core.steps.split.random_split import RandomSplit
+from zenml.steps.split import RandomSplit
 
 split = RandomSplit(split_map={"train": 0.5, "eval":0.5})
 
@@ -59,7 +59,7 @@ feature can take. This approach gives you the most freedom in defining your spli
 domain-based split as such:
 
 ```
-from zenml.core.steps.split.categorical_domain_split_step import CategoricalDomainSplit
+from zenml.steps.split import CategoricalDomainSplit
 
 split = CategoricalDomainSplit(categorical_column="my_categorical_column",
                                split_map = {"train": ["value_1", "value_2"],
@@ -95,7 +95,7 @@ object that indicates what percentage of the categories in the list should go in
 Instantiating a categorical ratio-based split works as such:
 
 ```
-from zenml.core.steps.split.categorical_ratio_split_step import CategoricalRatioSplit
+from zenml.steps.split import CategoricalRatioSplit
 
 split = CategoricalRatioSplit(categorical_column="color",
                               categories = ["red", "green", "blue", "yellow"],
