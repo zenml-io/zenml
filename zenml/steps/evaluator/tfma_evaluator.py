@@ -18,7 +18,7 @@ from typing import Dict, List, Text
 import tensorflow_model_analysis as tfma
 from google.protobuf.wrappers_pb2 import BoolValue
 
-from zenml.core.steps.evaluator.base_evaluator import BaseEvaluatorStep
+from zenml.steps.evaluator.base_evaluator import BaseEvaluatorStep
 
 
 def to_camel_case(s):

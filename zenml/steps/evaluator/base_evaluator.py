@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 
-from zenml.core.steps import BaseStep
+from zenml.steps import BaseStep
 from zenml.utils.enums import StepTypes
 
 
