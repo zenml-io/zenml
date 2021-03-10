@@ -52,11 +52,11 @@ EVALUATION_NOTEBOOK = 'evaluation_notebook.ipynb'
 
 # Pipeline related constants
 PREPROCESSING_FN = \
-    'zenml.core.components.transform.transform_module.preprocessing_fn'
-TRAINER_FN = 'zenml.core.components.trainer.trainer_module.run_fn'
-EVALUATOR_MODULE_FN = 'zenml.core.components.evaluator.evaluator_module'
+    'zenml.components.transform.transform_module.preprocessing_fn'
+TRAINER_FN = 'zenml.components.trainer.trainer_module.run_fn'
+EVALUATOR_MODULE_FN = 'zenml.components.evaluator.evaluator_module'
 
 # GCP Orchestration
-GCP_ENTRYPOINT = 'zenml.core.backends.orchestrator.entrypoint'
-AWS_ENTRYPOINT = 'zenml.core.backends.orchestrator.entrypoint'
-K8S_ENTRYPOINT = 'zenml.core.backends.orchestrator.entrypoint'
+GCP_ENTRYPOINT = 'zenml.backends.orchestrator.entrypoint'
+AWS_ENTRYPOINT = 'zenml.backends.orchestrator.entrypoint'
+K8S_ENTRYPOINT = 'zenml.backends.orchestrator.entrypoint'
