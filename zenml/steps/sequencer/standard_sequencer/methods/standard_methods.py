@@ -12,8 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.core.steps.sequencer.standard_sequencer.methods import \
-    methods_filling, methods_resampling
+from zenml.steps.sequencer.standard_sequencer.methods import \
+    methods_resampling, methods_filling
 from zenml.utils.preprocessing_utils import MethodDescriptions
 
 

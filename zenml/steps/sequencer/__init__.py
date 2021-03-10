@@ -12,6 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.core.steps.sequencer.base_sequencer import BaseSequencerStep
-from zenml.core.steps.sequencer.standard_sequencer.standard_sequencer import \
+from zenml.steps.sequencer.base_sequencer import BaseSequencerStep
+from zenml.steps.sequencer.standard_sequencer.standard_sequencer import \
     StandardSequencer
