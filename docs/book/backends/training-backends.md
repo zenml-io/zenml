@@ -20,20 +20,19 @@ Google offers a dedicated service for training models with access to GPUs and TP
 **Usage:**
 
 ```python
-from zenml.core.backends.training.training_gcaip_backend import \
-    SingleGPUTrainingGCAIPBackend
-from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
-    FeedForwardTrainer
+from zenml.backends.training import SingleGPUTrainingGCAIPBackend
+from zenml.steps.trainer import TFFeedForwardTrainer
+
 (...)
 
 # Add a trainer with a GCAIP backend
 training_backend = SingleGPUTrainingGCAIPBackend(
-    project=GCP_PROJECT,
-    job_dir=TRAINING_JOB_DIR
+  project=GCP_PROJECT,
+  job_dir=TRAINING_JOB_DIR
 )
 
 training_pipeline.add_trainer(
-    FeedForwardTrainer(...).with_backend(training_backend))
+  TFFeedForwardTrainer(...).with_backend(training_backend))
 ```
 
 ### AWS Sagemaker
