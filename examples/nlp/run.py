@@ -24,7 +24,7 @@ nlp_pipeline = NLPPipeline()
 
 try:
     ds = CSVDatasource(name="my_text",
-                       path="/Users/nicholasjunge/workspaces/ml/data/urdu_fake_news/urdu_fake_news_small.csv")
+                       path="gs://zenml_quickstart/urdu_fake_news.csv")
 except AlreadyExistsException:
     ds = Repository.get_instance().get_datasource_by_name(name="my_text")
 
