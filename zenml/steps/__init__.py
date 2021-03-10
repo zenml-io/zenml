@@ -12,4 +12,4 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.core.steps.base_step import BaseStep
+from zenml.steps.base_step import BaseStep

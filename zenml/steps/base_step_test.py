@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 from zenml.backends import BaseBackend
-from zenml.core.steps import BaseStep
+from zenml.steps import BaseStep
 
 
 def test_to_from_config(equal_steps):
