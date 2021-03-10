@@ -18,7 +18,7 @@ from typing import List, Text
 import tensorflow as tf
 import tensorflow_transform as tft
 
-from zenml.core.steps.trainer import TFBaseTrainerStep
+from zenml.steps.trainer import TFBaseTrainerStep
 
 
 class FeedForwardTrainer(TFBaseTrainerStep):

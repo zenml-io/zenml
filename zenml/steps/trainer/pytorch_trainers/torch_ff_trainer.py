@@ -29,8 +29,8 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as data
 
-from zenml.core.steps.trainer import TorchBaseTrainerStep
-from zenml.core.steps.trainer.pytorch_trainers.utils import \
+from zenml.steps.trainer import TorchBaseTrainerStep
+from zenml.steps.trainer.pytorch_trainers.utils import \
     TFRecordTorchDataset
 from zenml.utils import path_utils
 

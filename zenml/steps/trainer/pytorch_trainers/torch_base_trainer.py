@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.core.steps.trainer import BaseTrainerStep
+from zenml.steps.trainer import BaseTrainerStep
 from zenml.utils import requirement_utils
 
 requirement_utils.check_integration(requirement_utils.PYTORCH_INTEGRATION)

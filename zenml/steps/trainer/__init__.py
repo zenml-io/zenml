@@ -12,12 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
-from zenml.core.steps.trainer.pytorch_trainers.torch_base_trainer import \
-    TorchBaseTrainerStep
-from zenml.core.steps.trainer.pytorch_trainers.torch_ff_trainer import \
-    FeedForwardTrainer as TorchFeedForwardTrainer
-from zenml.core.steps.trainer.tensorflow_trainers.tf_base_trainer import \
+from zenml.steps.trainer.base_trainer import BaseTrainerStep
+from zenml.steps.trainer.tensorflow_trainers.tf_base_trainer import \
     TFBaseTrainerStep
-from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
+from zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
     FeedForwardTrainer as TFFeedForwardTrainer
+from zenml.steps.trainer.pytorch_trainers.torch_base_trainer import \
+    TorchBaseTrainerStep
+
+# wrap Pytorch extra integrations safely
+try:
+    from zenml.steps.trainer.pytorch_trainers.torch_ff_trainer import \
+     FeedForwardTrainer as TorchFeedForwardTrainer
+except ModuleNotFoundError:
+    pass
