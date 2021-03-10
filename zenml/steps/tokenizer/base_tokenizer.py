@@ -14,7 +14,7 @@
 
 from typing import Text, List
 
-from zenml.core.steps import BaseStep
+from zenml.steps import BaseStep
 
 
 class BaseTokenizer(BaseStep):

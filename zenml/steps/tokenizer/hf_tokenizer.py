@@ -16,9 +16,9 @@ from typing import Dict, Text, List, Any
 
 import tensorflow as tf
 
-from zenml.core.steps.split.utils import get_categorical_value
-from zenml.core.steps.tokenizer import BaseTokenizer
-from zenml.core.steps.tokenizer.utils import tokenizer_map
+from zenml.steps.split.utils import get_categorical_value
+from zenml.steps.tokenizer import BaseTokenizer
+from zenml.steps.tokenizer.utils import tokenizer_map
 from zenml.utils import path_utils
 
 
