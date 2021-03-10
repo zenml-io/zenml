@@ -31,8 +31,7 @@ import torch.utils.data as data
 
 from zenml.core.steps.trainer.pytorch_trainers.torch_base_trainer import \
     TorchBaseTrainerStep
-from zenml.core.steps.trainer.pytorch_trainers.utils import \
-    TFRecordTorchDataset, combine_batch_results
+from zenml.core.steps.trainer.pytorch_trainers import utils
 from zenml.utils import path_utils
 
 FEATURES = 'features'
@@ -117,7 +116,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                  file_pattern: List[Text],
                  tf_transform_output: tft.TFTransformOutput):
         spec = tf_transform_output.transformed_feature_spec()
-        dataset = TFRecordTorchDataset(file_pattern, spec)
+        dataset = utils.TFRecordTorchDataset(file_pattern, spec)
         loader = torch.utils.data.DataLoader(dataset,
                                              batch_size=self.batch_size)
         return loader
@@ -159,7 +158,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         combined = {}
         # Once the computation is complete combine all the batches
         for d in results:
-            combined_batch = combine_batch_results(results[d])
+            combined_batch = utils.combine_batch_results(results[d])
             for k in combined_batch:
                 combined[k + '_{}'.format(d)] = combined_batch[k]
 
@@ -207,7 +206,8 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                   f'{epoch_acc / step_count:.3f}')
 
         # test
-        self.test_fn(model, eval_dataset)
+        test_results = self.test_fn(model, eval_dataset)
+        utils.save_test_results(test_results, self.test_results)
 
         path_utils.create_dir_if_not_exists(self.serving_model_dir)
         if path_utils.is_remote(self.serving_model_dir):
