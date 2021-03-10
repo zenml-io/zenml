@@ -16,10 +16,10 @@ from typing import Dict, List, Text, Any
 
 import tensorflow as tf
 
-from zenml.core.standards.standard_keys import MethodKeys, DefaultKeys
-from zenml.core.steps.preprocesser import BasePreprocesserStep
-from zenml.core.steps.preprocesser.standard_preprocesser.methods \
-    .standard_methods import NonSeqFillingMethods, TransformMethods
+from zenml.standards.standard_keys import MethodKeys, DefaultKeys
+from zenml.steps.preprocesser import BasePreprocesserStep
+from zenml.steps.preprocesser.standard_preprocesser.methods.standard_methods \
+    import NonSeqFillingMethods, TransformMethods
 from zenml.utils.preprocessing_utils import parse_methods, DEFAULT_DICT
 
 XF_SUFFIX = '_xf'

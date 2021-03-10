@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.core.steps.preprocesser.base_preprocesser import \
-    BasePreprocesserStep
-from zenml.core.steps.preprocesser.standard_preprocesser.\
-    standard_preprocesser import StandardPreprocesser
+from zenml.steps.preprocesser.base_preprocesser import BasePreprocesserStep
+from zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser \
+    import StandardPreprocesser

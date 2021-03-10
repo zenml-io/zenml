@@ -14,7 +14,7 @@
 
 from typing import Dict
 
-from zenml.core.steps import BaseStep
+from zenml.steps import BaseStep
 from zenml.utils.enums import StepTypes
 
 
