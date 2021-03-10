@@ -12,6 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.core.steps.inferrer.base_inferrer_step import BaseInferrer
-from zenml.core.steps.inferrer.tensorflow_inferrer_step import \
+from zenml.steps.inferrer.base_inferrer_step import BaseInferrer
+from zenml.steps.inferrer.tensorflow_inferrer_step import \
     TensorflowInferrer

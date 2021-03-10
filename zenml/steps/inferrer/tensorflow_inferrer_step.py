@@ -14,7 +14,7 @@
 
 from typing import Text, List
 
-from zenml.core.steps.inferrer import BaseInferrer
+from zenml.steps.inferrer import BaseInferrer
 
 
 class TensorflowInferrer(BaseInferrer):

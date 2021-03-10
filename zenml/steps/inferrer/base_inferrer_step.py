@@ -19,7 +19,7 @@ import apache_beam as beam
 import tensorflow as tf
 
 from zenml.components.bulk_inferrer.constants import PREDICTIONS
-from zenml.core.steps import BaseStep
+from zenml.steps import BaseStep
 
 
 class BaseInferrer(BaseStep):
