@@ -51,7 +51,7 @@ version: '1'
 artifact_store: /path/to/artifact/store
 backend:
   args: {}
-  source: zenml.core.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend@zenml_0.2.0
+  source: zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend@zenml_0.2.0
   type: orchestrator
 metadata:
   args:
@@ -60,20 +60,20 @@ metadata:
 pipeline:
   name: training_1611737166_ea2acded-5273-4f56-969f-087f8b03d7b8
   type: training
-  source: zenml.core.pipelines.training_pipeline.TrainingPipeline@zenml_0.2.0
+  source: zenml.pipelines.training_pipeline.TrainingPipeline@zenml_0.2.0
   enable_cache: true
 
   datasource:
     id: be68f872-c90c-450b-92ee-f65463d9e1a4
     name: Pima Indians Diabetes 3
-    source: zenml.core.datasources.csv_datasource.CSVDatasource@zenml_0.2.0
+    source: zenml.datasources.csv_datasource.CSVDatasource@zenml_0.2.0
 
   steps:
     data:
       args:
         path: gs://zenml_quickstart/diabetes.csv
         schema: null
-      source: zenml.core.steps.data.csv_data_step.CSVDataStep@zenml_0.2.0
+      source: zenml.steps.data.csv_data_step.CSVDataStep@zenml_0.2.0
     evaluator:
       args:
         metrics:
@@ -95,9 +95,9 @@ pipeline:
           region: europe-west1
           staging_location: gs://zenmlartifactstore/dataflow_processing/staging
           temp_location: null
-        source: zenml.core.backends.processing.processing_dataflow_backend.ProcessingDataFlowBackend@zenml_0.2.0
+        source: zenml.backends.processing.processing_dataflow_backend.ProcessingDataFlowBackend@zenml_0.2.0
         type: processing
-      source: zenml.core.steps.evaluator.tfma_evaluator.TFMAEvaluator@zenml_0.2.0
+      source: zenml.steps.evaluator.tfma_evaluator.TFMAEvaluator@zenml_0.2.0
     preprocesser:
       args:
         features:
@@ -118,9 +118,9 @@ pipeline:
               parameters: {}
       backend:
         args: *id001
-        source: zenml.core.backends.processing.processing_dataflow_backend.ProcessingDataFlowBackend@zenml_0.2.0
+        source: zenml.backends.processing.processing_dataflow_backend.ProcessingDataFlowBackend@zenml_0.2.0
         type: processing
-      source: zenml.core.steps.preprocesser.standard_preprocesser.standard_preprocesser.StandardPreprocesser@zenml_0.2.0
+      source: zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.StandardPreprocesser@zenml_0.2.0
     split:
       args:
         split_map:
@@ -128,9 +128,9 @@ pipeline:
           train: 0.7
       backend:
         args: *id001
-        source: zenml.core.backends.processing.processing_dataflow_backend.ProcessingDataFlowBackend@zenml_0.2.0
+        source: zenml.backends.processing.processing_dataflow_backend.ProcessingDataFlowBackend@zenml_0.2.0
         type: processing
-      source: zenml.core.steps.split.random_split.RandomSplit@zenml_0.2.0
+      source: zenml.steps.split.random_split.RandomSplit@zenml_0.2.0
     trainer:
       args:
         batch_size: 8
@@ -144,7 +144,7 @@ pipeline:
         metrics:
         - accuracy
         output_units: 1
-      source: zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer.FeedForwardTrainer@zenml_0.2.0
+      source: zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.FeedForwardTrainer@zenml_0.2.0
 ```
 
 The config above can be split into 5 distinct keys:
@@ -165,8 +165,9 @@ However, a common pattern in Machine Learning is to re-use logical components ac
 first place.
 
 In order to re-use logic from another pipeline in ZenML, it is as simple as to execute:
+
 ```python
-from zenml.core.repo.repo import Repository
+from zenml.repo.repo import Repository
 
 # Get a reference in code to the current repo
 repo = Repository()
@@ -189,7 +190,7 @@ Read more about [caching here](../benefits/reusing-artifacts.md).
 You can get all your pipelines using the [Repository](../repository/what-is-a-repository.md) class:
 
 ```python
-from zenml.core.repo.repo import Repository
+from zenml.repo import Repository
 
 repo: Repository = Repository.get_instance()
 
