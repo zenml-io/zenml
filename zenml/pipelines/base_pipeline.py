@@ -18,12 +18,12 @@ from abc import abstractmethod
 from typing import Dict, Text, Any, Optional, List
 from uuid import uuid4
 
-from zenml.core.backends.orchestrator import OrchestratorBaseBackend
-from zenml.core.datasources import BaseDatasource
-from zenml.core.metadata import ZenMLMetadataStore
-from zenml.core.repo import Repository, ArtifactStore
-from zenml.core.standards import standard_keys as keys
-from zenml.core.steps import BaseStep
+from zenml.backends.orchestrator import OrchestratorBaseBackend
+from zenml.datasources import BaseDatasource
+from zenml.metadata import ZenMLMetadataStore
+from zenml.repo import Repository, ArtifactStore
+from zenml.standards import standard_keys as keys
+from zenml.steps import BaseStep
 from zenml.utils import source_utils
 from zenml.utils.constants import CONFIG_VERSION
 from zenml.utils.enums import PipelineStatusTypes

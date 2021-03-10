@@ -12,9 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.core.pipelines.base_pipeline import BasePipeline
-from zenml.core.pipelines.data_pipeline import DataPipeline
-from zenml.core.pipelines.deploy_pipeline import DeploymentPipeline
-from zenml.core.pipelines.infer_pipeline import BatchInferencePipeline
-from zenml.core.pipelines.nlp_pipeline import NLPPipeline
-from zenml.core.pipelines.training_pipeline import TrainingPipeline
+from zenml.pipelines.base_pipeline import BasePipeline
+from zenml.pipelines.training_pipeline import TrainingPipeline
+from zenml.pipelines.data_pipeline import DataPipeline
+from zenml.pipelines.nlp_pipeline import NLPPipeline
+from zenml.pipelines.infer_pipeline import BatchInferencePipeline
+from zenml.pipelines.deploy_pipeline import DeploymentPipeline

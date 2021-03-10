@@ -18,10 +18,10 @@ from typing import Dict, Text, Any, List
 from tfx.components.schema_gen.component import SchemaGen
 from tfx.components.statistics_gen.component import StatisticsGen
 
-from zenml.core.components.data_gen.component import DataGen
-from zenml.core.pipelines import BasePipeline
-from zenml.core.standards import standard_keys as keys
-from zenml.core.standards.standard_keys import StepKeys
+from zenml.components import DataGen
+from zenml.pipelines import BasePipeline
+from zenml.standards import standard_keys as keys
+from zenml.standards.standard_keys import StepKeys
 from zenml.utils.enums import GDPComponent
 from zenml.utils.post_training.post_training_utils import \
     view_statistics, view_schema

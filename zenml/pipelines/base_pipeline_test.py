@@ -19,11 +19,11 @@ from pathlib import Path
 import pytest
 
 import zenml
-from zenml.core.backends.orchestrator import OrchestratorBaseBackend
-from zenml.core.datasources import BaseDatasource, ImageDatasource
-from zenml.core.pipelines import BasePipeline
-from zenml.core.standards import standard_keys as keys
-from zenml.core.steps import BaseStep
+from zenml.backends.orchestrator import OrchestratorBaseBackend
+from zenml.datasources import BaseDatasource, ImageDatasource
+from zenml.pipelines import BasePipeline
+from zenml.standards import standard_keys as keys
+from zenml.steps import BaseStep
 from zenml.utils import exceptions, path_utils
 from zenml.utils.enums import PipelineStatusTypes, GDPComponent
 

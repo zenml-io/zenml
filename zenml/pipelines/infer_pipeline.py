@@ -22,17 +22,16 @@ from tfx.components.schema_gen.component import SchemaGen
 from tfx.components.statistics_gen.component import StatisticsGen
 from tfx.types import standard_artifacts
 
-from zenml.core.backends.orchestrator import OrchestratorBaseBackend
-from zenml.core.components.bulk_inferrer.component import BulkInferrer
-from zenml.core.components.data_gen.component import DataGen
-from zenml.core.datasources import BaseDatasource
-from zenml.core.metadata import ZenMLMetadataStore
-from zenml.core.pipelines import BasePipeline
-from zenml.core.repo import ArtifactStore
-from zenml.core.standards import standard_keys as keys
-from zenml.core.standards.standard_keys import StepKeys
-from zenml.core.steps import BaseStep
-from zenml.core.steps.inferrer import BaseInferrer
+from zenml.backends.orchestrator import OrchestratorBaseBackend
+from zenml.components import DataGen, BulkInferrer
+from zenml.datasources import BaseDatasource
+from zenml.metadata import ZenMLMetadataStore
+from zenml.pipelines import BasePipeline
+from zenml.repo import ArtifactStore
+from zenml.standards import standard_keys as keys
+from zenml.standards.standard_keys import StepKeys
+from zenml.steps import BaseStep
+from zenml.steps.inferrer import BaseInferrer
 from zenml.utils import path_utils
 from zenml.utils.enums import GDPComponent
 from zenml.utils.post_training.post_training_utils import \

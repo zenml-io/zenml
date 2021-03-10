@@ -27,20 +27,17 @@ from tfx.components.trainer.component import Trainer
 from tfx.components.transform.component import Transform
 from tfx.proto import trainer_pb2
 
-from zenml.core.backends.training import TrainingBaseBackend
-from zenml.core.components.data_gen.component import DataGen
-from zenml.core.components.sequencer.component import Sequencer
-from zenml.core.components.split_gen.component import SplitGen
-from zenml.core.pipelines import BasePipeline
-from zenml.core.standards import standard_keys as keys
-from zenml.core.steps.deployer import BaseDeployerStep
-from zenml.core.steps.evaluator import TFMAEvaluator
-from zenml.core.steps.preprocesser import BasePreprocesserStep
-from zenml.core.steps.sequencer import BaseSequencerStep
-from zenml.core.steps.split import BaseSplit
-from zenml.core.steps.trainer import BaseTrainerStep
-from zenml.utils import constants
-from zenml.utils import path_utils
+from zenml.backends.training import TrainingBaseBackend
+from zenml.components import DataGen, Sequencer, SplitGen
+from zenml.pipelines import BasePipeline
+from zenml.standards import standard_keys as keys
+from zenml.steps.deployer import BaseDeployerStep
+from zenml.steps.evaluator import TFMAEvaluator
+from zenml.steps.preprocesser import BasePreprocesserStep
+from zenml.steps.sequencer import BaseSequencerStep
+from zenml.steps.split import BaseSplit
+from zenml.steps.trainer import BaseTrainerStep
+from zenml.utils import constants, path_utils
 from zenml.utils.enums import GDPComponent
 from zenml.utils.exceptions import DoesNotExistException, \
     PipelineNotSucceededException
