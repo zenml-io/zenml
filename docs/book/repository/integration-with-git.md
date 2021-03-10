@@ -25,7 +25,7 @@ each time the pipeline is run or loaded the `class` is loaded **as is** from the
 
 ```{warning}
 While it is faster to just keep running pipelines with un-pinned classes, each un-pinned class adds a technical debt to the ZenML repository. This is because there are no 
-guarantees of reproducibility once a pipeline has a class that is un-pinned. We strongly advice to always commit all code before running pipelines.
+guarantees of reproducibility once a pipeline has a class that is un-pinned. We strongly advise to always commit all code before running pipelines.
 ```
 
 ### Versioning built-in methods
@@ -33,7 +33,7 @@ guarantees of reproducibility once a pipeline has a class that is un-pinned. We 
 Since ZenML comes with a lot of batteries included, and as ZenML is undergoing rapid development, we're providing a way to version built-in methods, too.
 
 Specifying the version of a built-in method will be persisted in the pipeline config as `step.path@zenml_0.1.0`. 
-E.g. `zenml.core.steps.data.bq_data_step.BQDataStep@zenml_0.1.4`
+E.g. `zenml.steps.data.bq_data_step.BQDataStep@zenml_0.1.4`
 
 ## Under the hood
 When running a version-pinned piece of code, ZenML loads all SHA-pinned classes from your git history into memory.
@@ -72,7 +72,8 @@ repository
 where the contents of `my_trainer_step.py` are:
 
 ```python
-from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
+from zenml.steps.trainer import BaseTrainerStep
+
 
 class MyAwesomeTrainer(BaseTrainerStep):
     def run_fn(self, *args, **kwargs):
@@ -83,7 +84,7 @@ class MyAwesomeTrainer(BaseTrainerStep):
 If we commit everything and then run a pipeline like so:
 
 ```python
-from zenml.core.pipelines.training_pipeline import TrainingPipeline
+from zenml.pipelines import TrainingPipeline
 from trainers.my_awesome_trainer.my_trainer_step import MyAwesomeTrainer
 
 training_pipeline = TrainingPipeline(name='My Awesome Pipeline')
@@ -91,7 +92,7 @@ training_pipeline = TrainingPipeline(name='My Awesome Pipeline')
 # Fill in other steps
 
 # Add a trainer
-training_pipeline.add_trainer(FeedForwardTrainer(
+training_pipeline.add_trainer(MyAwesomeTrainer(
     loss='binary_crossentropy',
     last_activation='sigmoid',
     output_units=1,
