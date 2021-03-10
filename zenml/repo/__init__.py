@@ -12,5 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from zenml.repo.global_config import GlobalConfig
+from zenml.repo.artifact_store import ArtifactStore
+from zenml.repo.git_wrapper import GitWrapper
+from zenml.repo.zenml_config import ZenMLConfig
 from zenml.repo.repo import Repository
-

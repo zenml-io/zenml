@@ -18,12 +18,9 @@ from pathlib import Path
 from typing import Text, List, Dict, Any, Optional, Union, Type
 
 from zenml.metadata import ZenMLMetadataStore
-from zenml.repo import ArtifactStore
 from zenml.repo.constants import ZENML_DIR_NAME
-from zenml.repo import GitWrapper
-from zenml.repo import GlobalConfig
-from zenml.repo import ZenMLConfig
-from zenml.core.standards import standard_keys as keys
+from zenml.repo import ArtifactStore, GitWrapper, GlobalConfig, ZenMLConfig
+from zenml.standards import standard_keys as keys
 from zenml.utils import path_utils, yaml_utils
 from zenml.utils.exceptions import InitializationException
 from zenml.utils.logger import get_logger
@@ -164,7 +161,7 @@ class Repository:
             version: either sha pin or standard ZenML version pin.
         """
         from zenml.utils import source_utils
-        from zenml.core.steps.base_step import BaseStep
+        from zenml.steps.base_step import BaseStep
 
         type_str = source_utils.get_module_path_from_class(step_type)
 

@@ -21,7 +21,7 @@ from zenml.repo import ArtifactStore
 from zenml.repo.constants import ZENML_CONFIG_NAME, \
     ARTIFACT_STORE_DEFAULT_DIR, PIPELINES_DEFAULT_DIR_NAME, \
     ML_METADATA_SQLITE_DEFAULT_NAME, ZENML_DIR_NAME
-from zenml.core.standards import standard_keys as keys
+from zenml.standards import standard_keys as keys
 from zenml.utils import path_utils, yaml_utils
 from zenml.utils.exceptions import InitializationException
 

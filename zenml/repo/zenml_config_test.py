@@ -22,9 +22,9 @@ import zenml
 from zenml.metadata import MockMetadataStore
 from zenml.repo.constants import ARTIFACT_STORE_DEFAULT_DIR, \
     ZENML_DIR_NAME, ML_METADATA_SQLITE_DEFAULT_NAME
-from zenml.repo import PIPELINES_DIR_KEY
+from zenml.repo.zenml_config import PIPELINES_DIR_KEY
 from zenml.repo import ZenMLConfig
-from zenml.core.standards import standard_keys as keys
+from zenml.standards import standard_keys as keys
 from zenml.utils import yaml_utils
 from zenml.utils.exceptions import InitializationException
 
