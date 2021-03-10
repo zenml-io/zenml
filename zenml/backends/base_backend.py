@@ -15,7 +15,7 @@
 
 from typing import Dict
 
-from zenml.core.standards.standard_keys import BackendKeys
+from zenml.standards.standard_keys import BackendKeys
 from zenml.utils import source_utils
 from zenml.utils.logger import get_logger
 from zenml.utils.print_utils import to_pretty_string, PrintStyles

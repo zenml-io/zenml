@@ -23,9 +23,9 @@ from typing import Text
 import googleapiclient.discovery
 from google.oauth2 import service_account as sa
 
-from zenml.core.backends.orchestrator import OrchestratorBaseBackend
-from zenml.core.repo import Repository
-from zenml.core.standards import standard_keys as keys
+from zenml.backends.orchestrator import OrchestratorBaseBackend
+from zenml.repo import Repository
+from zenml.standards import standard_keys as keys
 from zenml.utils import path_utils
 from zenml.utils import requirement_utils
 from zenml.utils.constants import ZENML_BASE_IMAGE_NAME, \

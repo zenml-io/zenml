@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Definition of the Spark Processing Backend"""
 
-from zenml.core.backends.processing import ProcessingBaseBackend
+from zenml.backends.processing import ProcessingBaseBackend
 
 
 class ProcessingSparkBackend(ProcessingBaseBackend):

@@ -23,9 +23,9 @@ from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from kubernetes.config.config_exception import ConfigException
 
-from zenml.core.backends.orchestrator import OrchestratorBaseBackend
-from zenml.core.repo import Repository
-from zenml.core.standards import standard_keys as keys
+from zenml.backends.orchestrator import OrchestratorBaseBackend
+from zenml.repo import Repository
+from zenml.standards import standard_keys as keys
 from zenml.utils import path_utils
 from zenml.utils.constants import ZENML_BASE_IMAGE_NAME, K8S_ENTRYPOINT
 from zenml.utils.enums import ImagePullPolicy

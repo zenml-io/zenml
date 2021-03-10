@@ -18,10 +18,10 @@ from typing import Dict, Text, Any
 
 from tfx.orchestration import pipeline
 
-from zenml.core.backends import BaseBackend
-from zenml.core.backends.orchestrator.base.zenml_local_orchestrator import \
+from zenml.backends import BaseBackend
+from zenml.backends.orchestrator.base.zenml_local_orchestrator import \
     ZenMLLocalDagRunner
-from zenml.core.backends.processing import ProcessingBaseBackend
+from zenml.backends.processing import ProcessingBaseBackend
 
 
 class OrchestratorBaseBackend(BaseBackend):
@@ -53,7 +53,7 @@ class OrchestratorBaseBackend(BaseBackend):
         Returns:
             tfx_pipeline: A TFX pipeline object.
         """
-        from zenml.core.pipelines.base_pipeline import BasePipeline
+        from zenml.pipelines import BasePipeline
         zen_pipeline: BasePipeline = BasePipeline.from_config(config)
 
         # Get component list

@@ -15,7 +15,7 @@
 
 from typing import Optional, List, Text
 
-from zenml.core.backends import BaseBackend
+from zenml.backends import BaseBackend
 
 
 class ProcessingBaseBackend(BaseBackend):

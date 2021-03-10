@@ -20,12 +20,12 @@ import sys
 
 import fire
 
-from zenml.core.backends.orchestrator.base.orchestrator_base_backend import \
+from zenml.backends.orchestrator.base.orchestrator_base_backend import \
     OrchestratorBaseBackend
-from zenml.core.backends.orchestrator.gcp.orchestrator_gcp_backend import \
+from zenml.backends.orchestrator.gcp.orchestrator_gcp_backend import \
     TAR_PATH_ARG
-from zenml.core.repo.repo import Repository
-from zenml.core.standards import standard_keys as keys
+from zenml.repo.repo import Repository
+from zenml.standards import standard_keys as keys
 from zenml.utils import path_utils
 
 EXTRACTED_TAR_DIR_NAME = 'zenml_working.tar.gz'

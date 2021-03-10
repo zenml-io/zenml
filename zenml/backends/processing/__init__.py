@@ -12,9 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.core.backends.processing.processing_base_backend import \
+from zenml.backends.processing.processing_base_backend import \
     ProcessingBaseBackend
-from zenml.core.backends.processing.processing_spark_backend import \
-    ProcessingSparkBackend
-from zenml.core.backends.processing.processing_dataflow_backend import \
+from zenml.backends.processing.processing_dataflow_backend import \
     ProcessingDataFlowBackend
+from zenml.backends.processing.processing_spark_backend import \
+    ProcessingSparkBackend

@@ -16,7 +16,7 @@
 from tfx.components.trainer.executor import GenericExecutor
 from tfx.dsl.components.base import executor_spec
 
-from zenml.core.backends import BaseBackend
+from zenml.backends import BaseBackend
 
 
 class TrainingBaseBackend(BaseBackend):

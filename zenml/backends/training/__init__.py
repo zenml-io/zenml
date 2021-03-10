@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.core.backends.training.training_base_backend import \
+from zenml.backends.training.training_base_backend import \
     TrainingBaseBackend
-from zenml.core.backends.training.training_gcaip_backend import \
+from zenml.backends.training.training_gcaip_backend import \
     SingleGPUTrainingGCAIPBackend

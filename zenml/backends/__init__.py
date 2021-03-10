@@ -12,4 +12,4 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.core.backends.base_backend import BaseBackend
+from zenml.backends.base_backend import BaseBackend

@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.core.backends import BaseBackend
+from zenml.backends import BaseBackend
 
 
 def test_to_from_config(equal_backends):

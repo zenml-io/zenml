@@ -16,10 +16,10 @@
 import os
 from typing import Any, Text, Dict
 
-from zenml.core.backends.orchestrator import OrchestratorBaseBackend
-from zenml.core.backends.orchestrator.beam.zenml_beam_orchestrator import \
+from zenml.backends.orchestrator import OrchestratorBaseBackend
+from zenml.backends.orchestrator.beam.zenml_beam_orchestrator import \
     ZenMLBeamlDagRunner
-from zenml.core.pipelines.utils import parse_yaml_beam_args
+from zenml.pipelines.utils import parse_yaml_beam_args
 
 
 class OrchestratorBeamBackend(OrchestratorBaseBackend):

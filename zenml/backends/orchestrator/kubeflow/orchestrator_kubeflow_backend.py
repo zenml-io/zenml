@@ -17,7 +17,7 @@ from typing import Text
 
 from tfx.orchestration import pipeline
 
-from zenml.core.backends.orchestrator import OrchestratorBaseBackend
+from zenml.backends.orchestrator import OrchestratorBaseBackend
 
 
 class OrchestratorKubeFlowBackend(OrchestratorBaseBackend):
