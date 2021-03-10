@@ -19,7 +19,7 @@ from typing import Text, Any
 
 import apache_beam as beam
 
-from zenml.core.steps import BaseStep
+from zenml.steps import BaseStep
 from zenml.utils.enums import StepTypes
 
 

@@ -18,7 +18,7 @@ from typing import Text, Any, Dict
 import apache_beam as beam
 from beam_nuggets.io import relational_db
 
-from zenml.core.steps.data import BaseDataStep
+from zenml.steps.data import BaseDataStep
 
 
 @beam.ptransform_fn

@@ -17,9 +17,9 @@ import json
 
 import pytest
 
-from zenml.components import FILE_EXT, FILE_NAME, \
+from zenml.components.data_gen.constants import FILE_EXT, FILE_NAME, \
     BINARY_DATA, IMAGE, LABEL
-from zenml.core.steps.data.image_data_step import get_matching_label, \
+from zenml.steps.data.image_data_step import get_matching_label, \
     add_label_and_metadata, SplitByFileName
 
 json_data = {"1f22663e72.jpg": {"label": 0,

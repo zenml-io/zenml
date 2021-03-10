@@ -20,9 +20,9 @@ from typing import Dict, Text, Any
 import apache_beam as beam
 from apache_beam.io import fileio
 
-from zenml.components import BINARY_DATA, FILE_NAME, \
+from zenml.components.data_gen.constants import BINARY_DATA, FILE_NAME, \
     FILE_EXT, METADATA, LABEL, IMAGE
-from zenml.core.steps.data import BaseDataStep
+from zenml.steps.data import BaseDataStep
 
 
 def read_file_content(file: beam.io.fileio.ReadableFile):

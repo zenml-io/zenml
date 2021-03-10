@@ -19,7 +19,7 @@ from typing import Text, Any, Dict
 import apache_beam as beam
 from tfx_bsl.coders import csv_decoder
 
-from zenml.core.steps.data import BaseDataStep
+from zenml.steps.data import BaseDataStep
 from zenml.utils import path_utils
 from zenml.utils.logger import get_logger
 
