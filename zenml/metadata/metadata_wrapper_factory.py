@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """Factory to register metadata_wrapper classes to metadata_wrappers"""
 
-from zenml.core.metadata import MockMetadataStore
-from zenml.core.metadata import MySQLMetadataStore
-from zenml.core.metadata import SQLiteMetadataStore
+from zenml.metadata import MockMetadataStore
+from zenml.metadata import MySQLMetadataStore
+from zenml.metadata import SQLiteMetadataStore
 
 
 class MetadataWrapperFactory:

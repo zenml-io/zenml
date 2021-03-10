@@ -16,8 +16,8 @@ import random
 
 import pytest
 
-from zenml.core.metadata import ZenMLMetadataStore
-from zenml.core.standards.standard_keys import MLMetadataKeys
+from zenml.metadata import ZenMLMetadataStore
+from zenml.standards.standard_keys import MLMetadataKeys
 from zenml.utils.enums import GDPComponent
 from zenml.utils.enums import PipelineStatusTypes
 

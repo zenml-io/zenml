@@ -18,7 +18,7 @@ from typing import Text, Dict
 
 from ml_metadata.metadata_store import metadata_store
 
-from zenml.core.standards.standard_keys import MLMetadataKeys
+from zenml.standards.standard_keys import MLMetadataKeys
 from zenml.utils.enums import MLMetadataTypes
 from zenml.utils.enums import PipelineStatusTypes
 from zenml.utils.exceptions import DoesNotExistException
@@ -50,7 +50,7 @@ class ZenMLMetadataStore:
         Args:
             config (dict): ZenML config block for metadata.
         """
-        from zenml.core.metadata.metadata_wrapper_factory import \
+        from zenml.metadata.metadata_wrapper_factory import \
             wrapper_factory
         store_type = config[MLMetadataKeys.TYPE]
         store_types = list(MLMetadataTypes.__members__.keys())
