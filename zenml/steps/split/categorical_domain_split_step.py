@@ -15,9 +15,9 @@
 
 from typing import Text, Dict, List, Any, Union
 
-from zenml.core.steps.split import constants
-from zenml.core.steps.split import BaseSplit
-from zenml.core.steps.split.utils import get_categorical_value
+from zenml.steps.split import constants
+from zenml.steps.split import BaseSplit
+from zenml.steps.split.utils import get_categorical_value
 
 CategoricalValue = Union[Text, int]
 

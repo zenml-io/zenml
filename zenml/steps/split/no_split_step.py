@@ -15,8 +15,8 @@
 
 from typing import Text, List, Any
 
-from zenml.core.steps.split import constants
-from zenml.core.steps.split import BaseSplit
+from zenml.steps.split import constants
+from zenml.steps.split import BaseSplit
 
 
 def NoSplitPartitionFn(element: Any,

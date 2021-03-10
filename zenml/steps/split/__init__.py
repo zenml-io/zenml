@@ -12,10 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.core.steps.split.base_split_step import BaseSplit
-from zenml.core.steps.split.categorical_domain_split_step import \
+from zenml.steps.split.base_split_step import BaseSplit
+from zenml.steps.split.categorical_domain_split_step import \
     CategoricalDomainSplit
-from zenml.core.steps.split.categorical_ratio_split_step import \
+from zenml.steps.split.categorical_ratio_split_step import \
     CategoricalRatioSplit
-from zenml.core.steps.split.no_split_step import NoSplit
-from zenml.core.steps.split.random_split import RandomSplit
+from zenml.steps.split.no_split_step import NoSplit
+from zenml.steps.split.random_split import RandomSplit

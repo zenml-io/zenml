@@ -18,8 +18,8 @@ from typing import Text, List, Dict, Any
 
 import numpy as np
 
-from zenml.core.steps.split import constants
-from zenml.core.steps.split import BaseSplit
+from zenml.steps.split import constants
+from zenml.steps.split import BaseSplit
 
 
 def lint_split_map(split_map: Dict[Text, float]):

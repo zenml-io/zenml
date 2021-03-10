@@ -15,11 +15,11 @@
 
 from typing import Text, List, Dict, Union
 
-from zenml.core.steps.split import constants
-from zenml.core.steps.split import BaseSplit
-from zenml.core.steps.split.categorical_domain_split_step import \
+from zenml.steps.split import constants
+from zenml.steps.split import BaseSplit
+from zenml.steps.split.categorical_domain_split_step import \
     CategoricalPartitionFn
-from zenml.core.steps.split.utils import partition_cat_list
+from zenml.steps.split.utils import partition_cat_list
 
 CategoricalValue = Union[Text, int]
 
