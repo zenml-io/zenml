@@ -16,13 +16,14 @@ import os
 from pathlib import Path
 
 import zenml
-from zenml.core.datasources import CSVDatasource
-from zenml.core.pipelines import TrainingPipeline
-from zenml.core.repo import Repository
-from zenml.core.steps.preprocesser import StandardPreprocesser
-from zenml.core.steps.split import CategoricalDomainSplit
-from zenml.core.steps.trainer import TFFeedForwardTrainer
+from zenml.datasources import CSVDatasource
+from zenml.pipelines import TrainingPipeline
+from zenml.repo import Repository
+from zenml.steps.preprocesser import StandardPreprocesser
+from zenml.steps.split import CategoricalDomainSplit
+from zenml.steps.trainer import TFFeedForwardTrainer
 from zenml.utils import path_utils
+from zenml.utils.exceptions import AlreadyExistsException
 from zenml.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -50,7 +51,7 @@ try:
             # Add a datasource. This will automatically track and version it.
             ds = CSVDatasource(name='my_csv_datasource',
                                path=os.path.join(csv_root, "my_dataframe.csv"))
-        except:
+        except AlreadyExistsException:
             ds = repo.get_datasource_by_name("my_csv_datasource")
 
         training_pipeline.add_datasource(ds)
