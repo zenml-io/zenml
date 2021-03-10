@@ -18,7 +18,7 @@ from typing import Dict, Text, List
 
 from zenml.components.pusher import cortex_executor
 from zenml.repo import Repository
-from zenml.core.steps.deployer import BaseDeployerStep
+from zenml.steps.deployer import BaseDeployerStep
 from zenml.utils.logger import get_logger
 from zenml.utils.source_utils import get_path_from_source, \
     get_class_path_from_source
