@@ -12,3 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from zenml.core.steps.trainer import BaseTrainerStep
+from zenml.utils import requirement_utils
+
+requirement_utils.check_integration(requirement_utils.PYTORCH_INTEGRATION)
+
+
+class TorchBaseTrainerStep(BaseTrainerStep):
+    """
+    Base class for all PyTorch based trainer steps. All pytorch based
+    trainings should use this as the base class. An example is available
+    with torch_ff_trainer.FeedForwardTrainer.
+    """
+    pass

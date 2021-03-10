@@ -17,12 +17,12 @@ import os
 from pathlib import Path
 from typing import Text, List, Dict, Any, Optional, Union, Type
 
-from zenml.core.metadata import ZenMLMetadataStore
-from zenml.core.repo import ArtifactStore
-from zenml.core.repo.constants import ZENML_DIR_NAME
-from zenml.core.repo import GitWrapper
-from zenml.core.repo import GlobalConfig
-from zenml.core.repo import ZenMLConfig
+from zenml.metadata import ZenMLMetadataStore
+from zenml.repo import ArtifactStore
+from zenml.repo.constants import ZENML_DIR_NAME
+from zenml.repo import GitWrapper
+from zenml.repo import GlobalConfig
+from zenml.repo import ZenMLConfig
 from zenml.core.standards import standard_keys as keys
 from zenml.utils import path_utils, yaml_utils
 from zenml.utils.exceptions import InitializationException
@@ -266,7 +266,7 @@ class Repository:
 
         Returns: list of datasources used in this repo
         """
-        from zenml.core.datasources.base_datasource import BaseDatasource
+        from zenml.datasources import BaseDatasource
 
         datasources = []
         datasources_name = set()
@@ -285,7 +285,7 @@ class Repository:
         Args:
             pipeline_name (str): Name of pipeline.
         """
-        from zenml.core.pipelines.base_pipeline import BasePipeline
+        from zenml.pipelines import BasePipeline
         yamls = self.get_pipeline_file_paths()
         for y in yamls:
             n = BasePipeline.get_name_from_pipeline_name(os.path.basename(y))
@@ -305,7 +305,7 @@ class Repository:
 
     def get_pipeline_names(self) -> Optional[List[Text]]:
         """Gets list of pipeline (unique) names"""
-        from zenml.core.pipelines.base_pipeline import BasePipeline
+        from zenml.pipelines import BasePipeline
         yamls = self.get_pipeline_file_paths(only_file_names=True)
         return [BasePipeline.get_name_from_pipeline_name(p) for p in yamls]
 
@@ -328,7 +328,7 @@ class Repository:
         Args:
             datasource (BaseDatasource): object of type BaseDatasource.
         """
-        from zenml.core.pipelines.base_pipeline import BasePipeline
+        from zenml.pipelines import BasePipeline
         pipelines = []
         for file_path in self.get_pipeline_file_paths():
             c = yaml_utils.read_yaml(file_path)
@@ -342,7 +342,7 @@ class Repository:
     @track(event=GET_PIPELINES)
     def get_pipelines(self) -> List:
         """Gets list of all pipelines."""
-        from zenml.core.pipelines.base_pipeline import BasePipeline
+        from zenml.pipelines import BasePipeline
         pipelines = []
         for file_path in self.get_pipeline_file_paths():
             c = yaml_utils.read_yaml(file_path)

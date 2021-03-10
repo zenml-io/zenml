@@ -16,9 +16,9 @@
 import os
 from typing import Text, Optional, Dict, Type
 
-from zenml.core.metadata import ZenMLMetadataStore
-from zenml.core.repo import ArtifactStore
-from zenml.core.repo.constants import ZENML_CONFIG_NAME, \
+from zenml.metadata import ZenMLMetadataStore
+from zenml.repo import ArtifactStore
+from zenml.repo.constants import ZENML_CONFIG_NAME, \
     ARTIFACT_STORE_DEFAULT_DIR, PIPELINES_DEFAULT_DIR_NAME, \
     ML_METADATA_SQLITE_DEFAULT_NAME, ZENML_DIR_NAME
 from zenml.core.standards import standard_keys as keys
@@ -117,7 +117,7 @@ class ZenMLConfig:
         if metadata_store is None:
             uri = os.path.join(
                 artifact_store_path, ML_METADATA_SQLITE_DEFAULT_NAME)
-            from zenml.core.metadata.sqlite_metadata_wrapper import \
+            from zenml.metadata import \
                 SQLiteMetadataStore
             metadata_dict = SQLiteMetadataStore(uri).to_config()
         else:

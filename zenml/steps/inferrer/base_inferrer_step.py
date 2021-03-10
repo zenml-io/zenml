@@ -18,7 +18,7 @@ from typing import Text, List
 import apache_beam as beam
 import tensorflow as tf
 
-from zenml.core.components.bulk_inferrer.constants import PREDICTIONS
+from zenml.components.bulk_inferrer.constants import PREDICTIONS
 from zenml.core.steps import BaseStep
 
 

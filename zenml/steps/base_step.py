@@ -15,7 +15,7 @@
 import inspect
 from typing import Dict
 
-from zenml.core.backends import BaseBackend
+from zenml.backends import BaseBackend
 from zenml.core.standards.standard_keys import StepKeys
 from zenml.utils.enums import StepTypes
 from zenml.utils.print_utils import to_pretty_string, PrintStyles

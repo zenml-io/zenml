@@ -18,7 +18,7 @@ from typing import Text, List
 
 from git import Repo as GitRepo
 
-from zenml.core.repo.constants import GIT_FOLDER_NAME
+from zenml.repo.constants import GIT_FOLDER_NAME
 from zenml.utils import path_utils
 from zenml.utils.logger import get_logger
 

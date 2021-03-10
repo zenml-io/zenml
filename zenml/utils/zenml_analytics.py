@@ -118,7 +118,7 @@ def track_event(event, metadata=None):
         metadata: dict of metadata
     """
     try:
-        from zenml.core.repo.global_config import GlobalConfig
+        from zenml.repo import GlobalConfig
         config = GlobalConfig.get_instance()
         opt_in = config.get_analytics_opt_in()
         logger.debug(f"Analytics opt-in: {opt_in}.")
