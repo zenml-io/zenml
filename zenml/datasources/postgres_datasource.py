@@ -15,8 +15,8 @@
 
 from typing import Text, Dict
 
-from zenml.core.datasources import BaseDatasource
-from zenml.core.steps.data import PostgresDataStep
+from zenml.datasources import BaseDatasource
+from zenml.steps.data import PostgresDataStep
 
 
 class PostgresDatasource(BaseDatasource):

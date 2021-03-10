@@ -15,8 +15,8 @@
 
 from typing import Text, Optional, Dict
 
-from zenml.core.datasources import BaseDatasource
-from zenml.core.steps.data import BQDataStep
+from zenml.datasources import BaseDatasource
+from zenml.steps.data import BQDataStep
 
 
 class BigQueryDatasource(BaseDatasource):

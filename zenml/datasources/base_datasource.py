@@ -20,8 +20,8 @@ from uuid import uuid4
 
 import tensorflow as tf
 
-from zenml.core.repo import Repository
-from zenml.core.standards import standard_keys as keys
+from zenml.repo import Repository
+from zenml.standards import standard_keys as keys
 from zenml.utils import path_utils
 from zenml.utils import source_utils
 from zenml.utils.enums import GDPComponent

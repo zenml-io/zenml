@@ -12,11 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.core.datasources.base_datasource import BaseDatasource
-from zenml.core.datasources.bq_datasource import BigQueryDatasource
-from zenml.core.datasources.csv_datasource import CSVDatasource
-from zenml.core.datasources.image_datasource import ImageDatasource
-from zenml.core.datasources.json_datasource import JSONDatasource
-from zenml.core.datasources.numpy_datasource import NumpyDatasource
-from zenml.core.datasources.pandas_datasource import PandasDatasource
-from zenml.core.datasources.postgres_datasource import PostgresDatasource
+from zenml.datasources.base_datasource import BaseDatasource
+from zenml.datasources.bq_datasource import BigQueryDatasource
+from zenml.datasources.csv_datasource import CSVDatasource
+from zenml.datasources.image_datasource import ImageDatasource
+from zenml.datasources.json_datasource import JSONDatasource
+from zenml.datasources.numpy_datasource import NumpyDatasource
+from zenml.datasources.pandas_datasource import PandasDatasource
+from zenml.datasources.postgres_datasource import PostgresDatasource

@@ -15,7 +15,7 @@
 
 from typing import Text
 
-from zenml.core.datasources import BaseDatasource
+from zenml.datasources import BaseDatasource
 
 
 class PandasDatasource(BaseDatasource):
