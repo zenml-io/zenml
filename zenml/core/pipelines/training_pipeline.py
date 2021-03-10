@@ -209,18 +209,18 @@ class TrainingPipeline(BasePipeline):
         #############
         if keys.TrainingSteps.EVALUATOR in steps:
             evaluator_config = steps[keys.TrainingSteps.EVALUATOR]
-            evaluator = Evaluator(
-                source=evaluator_config[keys.StepKeys.SOURCE],
-                source_args=evaluator_config[keys.StepKeys.ARGS],
-                examples=transform.outputs.transformed_examples,
-                model=trainer.outputs.model,
-            ).with_id(GDPComponent.Evaluator.name)
-
             # evaluator = Evaluator(
             #     source=evaluator_config[keys.StepKeys.SOURCE],
             #     source_args=evaluator_config[keys.StepKeys.ARGS],
-            #     examples=splits.outputs.examples,
+            #     examples=transform.outputs.transformed_examples,
+            #     model=trainer.outputs.model,
             # ).with_id(GDPComponent.Evaluator.name)
+
+            evaluator = Evaluator(
+                source=evaluator_config[keys.StepKeys.SOURCE],
+                source_args=evaluator_config[keys.StepKeys.ARGS],
+                examples=trainer.outputs.test_results,
+            ).with_id(GDPComponent.Evaluator.name)
 
             component_list.append(evaluator)
 
