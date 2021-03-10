@@ -16,7 +16,7 @@
 import click
 from dateutil import tz
 
-from zenml.core.repo import Repository, GlobalConfig
+from zenml.repo import Repository, GlobalConfig
 
 pass_config = click.make_pass_decorator(GlobalConfig, ensure=True)
 
