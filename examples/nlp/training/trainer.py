@@ -18,7 +18,7 @@ from typing import List, Text, Dict
 import tensorflow as tf
 from transformers import TFDistilBertForSequenceClassification
 
-from zenml.core.steps.trainer import TFBaseTrainerStep
+from zenml.steps.trainer import TFBaseTrainerStep
 from zenml.utils.post_training.post_training_utils import \
     get_feature_spec_from_schema
 

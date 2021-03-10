@@ -1,13 +1,13 @@
 import os
 
-from zenml.core.datasources import CSVDatasource
-from zenml.core.pipelines import TrainingPipeline
-from zenml.core.repo import Repository
-from zenml.core.steps.deployer import GCAIPDeployer
-from zenml.core.steps.evaluator import TFMAEvaluator
-from zenml.core.steps.preprocesser import StandardPreprocesser
-from zenml.core.steps.split import RandomSplit
-from zenml.core.steps.trainer import TFFeedForwardTrainer
+from zenml.datasources import CSVDatasource
+from zenml.pipelines import TrainingPipeline
+from zenml.repo import Repository
+from zenml.steps.deployer import GCAIPDeployer
+from zenml.steps.evaluator import TFMAEvaluator
+from zenml.steps.preprocesser import StandardPreprocesser
+from zenml.steps.split import RandomSplit
+from zenml.steps.trainer import TFFeedForwardTrainer
 from zenml.utils.exceptions import AlreadyExistsException
 
 GCP_PROJECT = os.getenv('GCP_PROJECT')

@@ -22,7 +22,7 @@ from examples.gan.trainer.gan_functions import Generator, Discriminator, \
     CycleGan, TensorBoardImage
 from examples.gan.trainer.gan_functions import discriminator_loss, \
     identity_loss, generator_loss, calc_cycle_loss
-from zenml.core.steps.trainer import TFFeedForwardTrainer
+from zenml.steps.trainer import TFFeedForwardTrainer
 
 
 class CycleGANTrainer(TFFeedForwardTrainer):

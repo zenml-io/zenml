@@ -1,14 +1,14 @@
 import os
 
 from examples.cortex.predictor.tf import TensorFlowPredictor
-from zenml.core.datasources import CSVDatasource
-from zenml.core.pipelines import TrainingPipeline
-from zenml.core.repo import ArtifactStore
-from zenml.core.steps.deployer import CortexDeployer
-from zenml.core.steps.evaluator import TFMAEvaluator
-from zenml.core.steps.preprocesser import StandardPreprocesser
-from zenml.core.steps.split import RandomSplit
-from zenml.core.steps.trainer import TFFeedForwardTrainer
+from zenml.datasources import CSVDatasource
+from zenml.pipelines import TrainingPipeline
+from zenml.repo import ArtifactStore
+from zenml.steps.deployer import CortexDeployer
+from zenml.steps.evaluator import TFMAEvaluator
+from zenml.steps.preprocesser import StandardPreprocesser
+from zenml.steps.split import RandomSplit
+from zenml.steps.trainer import TFFeedForwardTrainer
 from zenml.utils.exceptions import AlreadyExistsException
 
 GCP_BUCKET = os.getenv('GCP_BUCKET')
@@ -19,7 +19,7 @@ CORTEX_MODEL_NAME = os.getenv('CORTEX_MODEL_NAME', 'zenml-classifier')
 # For this example, the ArtifactStore must be a GCP bucket, as the
 # CortexDeployer step is using the GCP env.
 
-from zenml.core.repo.repo import Repository
+from zenml.repo.repo import Repository
 
 # Define the training pipeline
 training_pipeline = TrainingPipeline()

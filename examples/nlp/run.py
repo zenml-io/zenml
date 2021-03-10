@@ -13,18 +13,18 @@
 #  permissions and limitations under the License.
 
 from examples.nlp.training.trainer import UrduTrainer
-from zenml.core.datasources import CSVDatasource
-from zenml.core.pipelines import NLPPipeline
-from zenml.core.repo import Repository
-from zenml.core.steps.split import RandomSplit
-from zenml.core.steps.tokenizer import HuggingFaceTokenizerStep
+from zenml.datasources import CSVDatasource
+from zenml.pipelines import NLPPipeline
+from zenml.repo import Repository
+from zenml.steps.split import RandomSplit
+from zenml.steps.tokenizer import HuggingFaceTokenizerStep
 from zenml.utils.exceptions import AlreadyExistsException
 
 nlp_pipeline = NLPPipeline()
 
 try:
     ds = CSVDatasource(name="my_text",
-                       path="gs://zenml_quickstart/urdu_fake_news.csv")
+                       path="/Users/nicholasjunge/workspaces/ml/data/urdu_fake_news/urdu_fake_news_small.csv")
 except AlreadyExistsException:
     ds = Repository.get_instance().get_datasource_by_name(name="my_text")
 

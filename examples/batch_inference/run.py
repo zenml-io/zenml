@@ -1,12 +1,12 @@
-from zenml.core.datasources import CSVDatasource
-from zenml.core.pipelines import TrainingPipeline, BatchInferencePipeline
-from zenml.core.repo import Repository
-from zenml.core.steps.evaluator import TFMAEvaluator
-from zenml.core.steps.preprocesser import StandardPreprocesser
-from zenml.core.steps.split import RandomSplit
-from zenml.core.steps.trainer import TFFeedForwardTrainer
+from zenml.datasources import CSVDatasource
+from zenml.pipelines import TrainingPipeline, BatchInferencePipeline
+from zenml.repo import Repository
+from zenml.steps.evaluator import TFMAEvaluator
+from zenml.steps.preprocesser import StandardPreprocesser
+from zenml.steps.split import RandomSplit
+from zenml.steps.trainer import TFFeedForwardTrainer
 from zenml.utils.exceptions import AlreadyExistsException
-from zenml.core.steps.inferrer import TensorflowInferrer
+from zenml.steps.inferrer import TensorflowInferrer
 
 # Define the training pipeline
 training_pipeline = TrainingPipeline()

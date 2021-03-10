@@ -16,7 +16,7 @@ from typing import Dict
 
 import tensorflow as tf
 
-from zenml.core.steps.preprocesser import BasePreprocesserStep
+from zenml.steps.preprocesser import BasePreprocesserStep
 
 
 def decode_and_reshape_image(input_):

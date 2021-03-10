@@ -3,15 +3,15 @@
 """
 import os
 
-from zenml.core.backends.orchestrator import OrchestratorAWSBackend
-from zenml.core.datasources import CSVDatasource
-from zenml.core.metadata import MySQLMetadataStore
-from zenml.core.pipelines import TrainingPipeline
-from zenml.core.repo import ArtifactStore, Repository
-from zenml.core.steps.evaluator import TFMAEvaluator
-from zenml.core.steps.preprocesser import StandardPreprocesser
-from zenml.core.steps.split import RandomSplit
-from zenml.core.steps.trainer import TFFeedForwardTrainer
+from zenml.backends.orchestrator import OrchestratorAWSBackend
+from zenml.datasources import CSVDatasource
+from zenml.metadata import MySQLMetadataStore
+from zenml.pipelines import TrainingPipeline
+from zenml.repo import ArtifactStore, Repository
+from zenml.steps.evaluator import TFMAEvaluator
+from zenml.steps.preprocesser import StandardPreprocesser
+from zenml.steps.split import RandomSplit
+from zenml.steps.trainer import TFFeedForwardTrainer
 from zenml.utils.exceptions import AlreadyExistsException
 
 # Get the configuration for the artifact store and the metadata store which

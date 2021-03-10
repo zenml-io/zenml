@@ -1,8 +1,8 @@
-from zenml.core.datasources import CSVDatasource
-from zenml.core.pipelines import TrainingPipeline
-from zenml.core.repo import Repository
-from zenml.core.steps.preprocesser import StandardPreprocesser
-from zenml.core.steps.split import RandomSplit
+from zenml.datasources import CSVDatasource
+from zenml.pipelines import TrainingPipeline
+from zenml.repo import Repository
+from zenml.steps.preprocesser import StandardPreprocesser
+from zenml.steps.split import RandomSplit
 from zenml.utils.exceptions import AlreadyExistsException
 from examples.scikit.step.trainer import MyScikitTrainer
 

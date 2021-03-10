@@ -1,14 +1,14 @@
 import os
 
-from zenml.core.backends.orchestrator import OrchestratorKubernetesBackend
-from zenml.core.datasources import CSVDatasource
-from zenml.core.metadata import MySQLMetadataStore
-from zenml.core.pipelines import TrainingPipeline
-from zenml.core.repo import Repository, ArtifactStore
-from zenml.core.steps.evaluator import TFMAEvaluator
-from zenml.core.steps.preprocesser import StandardPreprocesser
-from zenml.core.steps.split import RandomSplit
-from zenml.core.steps.trainer import TFFeedForwardTrainer
+from zenml.backends.orchestrator import OrchestratorKubernetesBackend
+from zenml.datasources import CSVDatasource
+from zenml.metadata import MySQLMetadataStore
+from zenml.pipelines import TrainingPipeline
+from zenml.repo import Repository, ArtifactStore
+from zenml.steps.evaluator import TFMAEvaluator
+from zenml.steps.preprocesser import StandardPreprocesser
+from zenml.steps.split import RandomSplit
+from zenml.steps.trainer import TFFeedForwardTrainer
 from zenml.utils.exceptions import AlreadyExistsException
 
 GCP_PROJECT = os.getenv('GCP_PROJECT')
