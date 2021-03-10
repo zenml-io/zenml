@@ -144,12 +144,12 @@ def test_get_step_versions(repo):
     step_versions = repo.get_step_versions()
 
     # TODO: Make this less hardcoded
-    steps_used = ["zenml.core.steps.data.csv_data_step.CSVDataStep",
-                  "zenml.core.steps.preprocesser.standard_preprocesser."
+    steps_used = ["zenml.steps.data.csv_data_step.CSVDataStep",
+                  "zenml.steps.preprocesser.standard_preprocesser."
                   "standard_preprocesser.StandardPreprocesser",
-                  "zenml.core.steps.split.categorical_domain_split_step."
+                  "zenml.steps.split.categorical_domain_split_step."
                   "CategoricalDomainSplit",
-                  'zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer.'
+                  'zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.'
                   'FeedForwardTrainer'
                   ]
 
@@ -161,12 +161,12 @@ def test_get_step_versions(repo):
 
 def test_get_step_by_version(repo):
     # TODO: Make this less hardcoded
-    steps_used = ["zenml.core.steps.data.csv_data_step.CSVDataStep",
-                  "zenml.core.steps.preprocesser.standard_preprocesser."
+    steps_used = ["zenml.steps.data.csv_data_step.CSVDataStep",
+                  "zenml.steps.preprocesser.standard_preprocesser."
                   "standard_preprocesser.StandardPreprocesser",
-                  "zenml.core.steps.split.categorical_domain_split_step."
+                  "zenml.steps.split.categorical_domain_split_step."
                   "CategoricalDomainSplit",
-                  'zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer.'
+                  'zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.'
                   'FeedForwardTrainer'
                   ]
 
@@ -182,12 +182,12 @@ def test_get_step_by_version(repo):
 
 def test_get_step_versions_by_type(repo):
     # TODO: Make this less hardcoded
-    steps_used = ["zenml.core.steps.data.csv_data_step.CSVDataStep",
-                  "zenml.core.steps.preprocesser.standard_preprocesser."
+    steps_used = ["zenml.steps.data.csv_data_step.CSVDataStep",
+                  "zenml.steps.preprocesser.standard_preprocesser."
                   "standard_preprocesser.StandardPreprocesser",
-                  "zenml.core.steps.split.categorical_domain_split_step."
+                  "zenml.steps.split.categorical_domain_split_step."
                   "CategoricalDomainSplit",
-                  'zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer.'
+                  'zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.'
                   'FeedForwardTrainer'
                   ]
 

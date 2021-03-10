@@ -117,7 +117,7 @@ def test_get_pipeline_config():
     assert p_args[keys.PipelineDetailKeys.ENABLE_CACHE] is True
     assert config[keys.PipelineKeys.DATASOURCE] == {}
     assert config[keys.PipelineKeys.SOURCE].split("@")[0] == \
-           "zenml.core.pipelines.base_pipeline.BasePipeline"
+           "zenml.pipelines.base_pipeline.BasePipeline"
     # TODO: Expand this to more pipelines
 
 
