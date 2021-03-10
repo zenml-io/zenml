@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.core.standards.standard_keys import StepKeys
+from zenml.standards.standard_keys import StepKeys
 from zenml.utils.source_utils import load_source_path_class
 
 

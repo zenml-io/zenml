@@ -6,9 +6,9 @@ from tfx.types import standard_artifacts, Channel
 from tfx.types.component_spec import ComponentSpec, ExecutionParameter, \
     ChannelParameter
 
-from zenml.core.components.data_gen.constants import DATA_SPLIT_NAME
-from zenml.core.components.data_gen.executor import DataExecutor
-from zenml.core.standards.standard_keys import StepKeys
+from zenml.components.data_gen.constants import DATA_SPLIT_NAME
+from zenml.components.data_gen.executor import DataExecutor
+from zenml.standards.standard_keys import StepKeys
 
 
 class DataGenSpec(ComponentSpec):

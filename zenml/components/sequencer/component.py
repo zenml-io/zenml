@@ -22,9 +22,8 @@ from tfx.types import standard_artifacts
 from tfx.types.component_spec import ComponentSpec, ExecutionParameter, \
     ChannelParameter
 
-from zenml.core.components.sequencer import constants
-from zenml.core.components.sequencer import executor
-from zenml.core.standards.standard_keys import StepKeys
+from zenml.components.sequencer import constants, executor
+from zenml.standards.standard_keys import StepKeys
 
 
 class SequencerComponentSpec(ComponentSpec):

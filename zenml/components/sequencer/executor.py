@@ -23,10 +23,9 @@ from tfx.dsl.components.base.base_executor import BaseExecutor
 from tfx.types import artifact_utils
 from tfx.utils import io_utils
 
-from zenml.core.components.sequencer import constants
-from zenml.core.components.sequencer import utils
-from zenml.core.standards.standard_keys import StepKeys
-from zenml.core.steps.sequencer.base_sequencer import BaseSequencerStep
+from zenml.components.sequencer import constants, utils
+from zenml.standards.standard_keys import StepKeys
+from zenml.steps.sequencer import BaseSequencerStep
 from zenml.utils import source_utils
 
 
@@ -99,7 +98,8 @@ class Executor(BaseExecutor):
                      | 'Read_' + s >> beam.io.ReadFromTFRecord(
                                 file_pattern=input_uri)
                      | 'Decode_' + s >> tf_example_decoder.DecodeTFExample()
-                     | 'ToDataFrame_' + s >> beam.ParDo(utils.ConvertToDataframe()))
+                     | 'ToDataFrame_' + s >> beam.ParDo(
+                                utils.ConvertToDataframe()))
 
                 # Window into sessions
                 s_data = \

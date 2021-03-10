@@ -1,15 +1,14 @@
 from typing import Text, Dict, Any, Optional
 
-from tfx.dsl.components.base.base_component import BaseComponent
 from tfx.dsl.components.base.executor_spec import ExecutorClassSpec
 from tfx.types import standard_artifacts, Channel
 from tfx.types.component_spec import ComponentSpec, ExecutionParameter, \
     ChannelParameter
 from tfx.components.transform.component import Transform
 
-from zenml.core.components.data_gen.constants import DATA_SPLIT_NAME
-from zenml.core.components.data_gen.executor import DataExecutor
-from zenml.core.standards.standard_keys import StepKeys
+from zenml.components.data_gen.constants import DATA_SPLIT_NAME
+from zenml.components.data_gen.executor import DataExecutor
+from zenml.standards.standard_keys import StepKeys
 
 
 class SimpleTransformSpec(ComponentSpec):

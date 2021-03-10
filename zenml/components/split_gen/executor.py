@@ -23,13 +23,13 @@ from tfx.types import artifact_utils
 from tfx.types.artifact_utils import get_split_uri
 from tfx.utils import io_utils
 
-from zenml.core.components.data_gen.constants import DATA_SPLIT_NAME
-from zenml.core.components.split_gen import constants
-from zenml.core.components.split_gen.utils import parse_schema, \
+from zenml.components.data_gen.constants import DATA_SPLIT_NAME
+from zenml.components.split_gen import constants
+from zenml.components.split_gen.utils import parse_schema, \
     parse_statistics
-from zenml.core.standards.standard_keys import StepKeys
-from zenml.core.steps.split import BaseSplit
-from zenml.core.steps.split.constants import SKIP
+from zenml.standards.standard_keys import StepKeys
+from zenml.steps.split import BaseSplit
+from zenml.steps.split.constants import SKIP
 from zenml.utils import source_utils
 from zenml.utils.logger import get_logger
 

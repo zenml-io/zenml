@@ -27,11 +27,11 @@ from tfx.utils import path_utils
 from tfx_bsl.public.proto import model_spec_pb2
 from tfx.components.bulk_inferrer.executor import _RunInference
 
-from zenml.core.components.bulk_inferrer.utils import convert_to_dict
-from zenml.core.components.bulk_inferrer.constants import MODEL, EXAMPLES, \
+from zenml.components.bulk_inferrer.utils import convert_to_dict
+from zenml.components.bulk_inferrer.constants import MODEL, EXAMPLES, \
     MODEL_BLESSING, PREDICTIONS
-from zenml.core.standards.standard_keys import StepKeys
-from zenml.core.steps.inferrer.base_inferrer_step import BaseInferrer
+from zenml.standards.standard_keys import StepKeys
+from zenml.steps.inferrer import BaseInferrer
 from zenml.utils import source_utils
 
 

@@ -20,10 +20,10 @@ from tfx.components.example_gen.base_example_gen_executor import _WriteSplit
 from tfx.dsl.components.base import base_executor
 from tfx.types import artifact_utils
 
-from zenml.core.components.data_gen import utils
-from zenml.core.components.data_gen.constants import DATA_SPLIT_NAME
-from zenml.core.standards.standard_keys import StepKeys
-from zenml.core.steps.data import BaseDataStep
+from zenml.components.data_gen import utils
+from zenml.components.data_gen.constants import DATA_SPLIT_NAME
+from zenml.standards.standard_keys import StepKeys
+from zenml.steps.data import BaseDataStep
 from zenml.utils import source_utils
 
 

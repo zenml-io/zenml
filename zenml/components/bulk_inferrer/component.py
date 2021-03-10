@@ -20,10 +20,10 @@ from tfx.types import standard_artifacts, Channel
 from tfx.types.component_spec import ComponentSpec, ExecutionParameter, \
     ChannelParameter
 
-from zenml.core.components.bulk_inferrer.executor import BulkInferrerExecutor
-from zenml.core.components.bulk_inferrer.constants import MODEL, EXAMPLES, \
+from zenml.components.bulk_inferrer.executor import BulkInferrerExecutor
+from zenml.components.bulk_inferrer.constants import MODEL, EXAMPLES, \
     MODEL_BLESSING, PREDICTIONS
-from zenml.core.standards.standard_keys import StepKeys
+from zenml.standards.standard_keys import StepKeys
 
 
 class BulkInferrerSpec(ComponentSpec):

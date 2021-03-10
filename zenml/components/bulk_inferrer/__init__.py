@@ -1,4 +1,4 @@
-#  Copyright (c) maiot GmbH 2020. All Rights Reserved.
+﻿#  Copyright (c) maiot GmbH 2021. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,9 +12,3 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.components.data_gen.component import DataGen
-from zenml.components.bulk_inferrer.component import BulkInferrer
-from zenml.components.sequencer.component import Sequencer
-from zenml.components.tokenizer.component import Tokenizer
-from zenml.components.split_gen.component import SplitGen
-from zenml.components.transform_simple.component import SimpleTransform
