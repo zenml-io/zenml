@@ -27,9 +27,9 @@ from zenml.backends.orchestrator import OrchestratorBaseBackend
 from zenml.repo import Repository
 from zenml.standards import standard_keys as keys
 from zenml.utils import path_utils
-from zenml.utils.constants import ZENML_BASE_IMAGE_NAME, K8S_ENTRYPOINT
-from zenml.utils.enums import ImagePullPolicy
-from zenml.utils.logger import get_logger
+from zenml.constants import ZENML_BASE_IMAGE_NAME, K8S_ENTRYPOINT
+from zenml.enums import ImagePullPolicy
+from zenml.logger import get_logger
 from zenml.utils.string_utils import to_dns1123, get_id
 
 logger = get_logger(__name__)

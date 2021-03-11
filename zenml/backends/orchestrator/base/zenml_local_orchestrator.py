@@ -18,7 +18,7 @@ from tfx.orchestration import pipeline
 from tfx.orchestration.config import config_utils
 from tfx.orchestration.local.local_dag_runner import LocalDagRunner
 
-from zenml.utils.logger import get_logger
+from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 

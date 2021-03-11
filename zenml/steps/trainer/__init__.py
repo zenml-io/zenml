@@ -17,7 +17,7 @@ from zenml.steps.trainer.tensorflow_trainers.tf_base_trainer import \
     TFBaseTrainerStep
 from zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
     FeedForwardTrainer as TFFeedForwardTrainer
-from zenml.utils.logger import get_logger
+from zenml.logger import get_logger
 from zenml.utils.requirement_utils import check_integration, \
     PYTORCH_INTEGRATION
 

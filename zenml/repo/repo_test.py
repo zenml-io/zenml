@@ -24,7 +24,7 @@ from zenml.datasources import BaseDatasource
 from zenml.pipelines import BasePipeline
 from zenml.repo import Repository
 from zenml.utils import yaml_utils
-from zenml.utils.version import __version__
+from zenml.version import __version__
 
 # Nicholas a way to get to the root
 ZENML_ROOT = str(Path(zenml.__path__[0]).parent)

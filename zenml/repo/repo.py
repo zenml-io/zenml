@@ -22,9 +22,9 @@ from zenml.repo.constants import ZENML_DIR_NAME
 from zenml.repo import ArtifactStore, GitWrapper, GlobalConfig, ZenMLConfig
 from zenml.standards import standard_keys as keys
 from zenml.utils import path_utils, yaml_utils
-from zenml.utils.exceptions import InitializationException
-from zenml.utils.logger import get_logger
-from zenml.utils.zenml_analytics import track, CREATE_REPO, GET_PIPELINES, \
+from zenml.exceptions import InitializationException
+from zenml.logger import get_logger
+from zenml.utils.analytics_utils import track, CREATE_REPO, GET_PIPELINES, \
     GET_DATASOURCES, GET_STEPS_VERSIONS, \
     REGISTER_PIPELINE, GET_STEP_VERSION
 

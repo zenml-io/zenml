@@ -18,7 +18,7 @@ from uuid import uuid4
 
 import click
 
-from zenml.utils import constants
+from zenml import constants
 from zenml.utils import path_utils
 from zenml.utils import yaml_utils
 

@@ -18,8 +18,8 @@ import pytest
 
 from zenml.metadata import ZenMLMetadataStore
 from zenml.standards.standard_keys import MLMetadataKeys
-from zenml.utils.enums import GDPComponent
-from zenml.utils.enums import PipelineStatusTypes
+from zenml.enums import GDPComponent
+from zenml.enums import PipelineStatusTypes
 
 # we expect all queries to fail since the metadata store
 # cannot be instantiated

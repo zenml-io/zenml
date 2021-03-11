@@ -16,7 +16,7 @@ from zenml.backends.processing.processing_base_backend import \
     ProcessingBaseBackend
 from zenml.backends.processing.processing_spark_backend import \
     ProcessingSparkBackend
-from zenml.utils.logger import get_logger
+from zenml.logger import get_logger
 from zenml.utils.requirement_utils import check_integration, \
     GCP_INTEGRATION
 

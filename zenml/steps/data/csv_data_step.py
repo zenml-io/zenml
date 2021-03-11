@@ -21,7 +21,7 @@ from tfx_bsl.coders import csv_decoder
 
 from zenml.steps.data import BaseDataStep
 from zenml.utils import path_utils
-from zenml.utils.logger import get_logger
+from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 

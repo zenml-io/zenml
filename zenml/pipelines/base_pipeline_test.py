@@ -24,8 +24,9 @@ from zenml.datasources import BaseDatasource, ImageDatasource
 from zenml.pipelines import BasePipeline
 from zenml.standards import standard_keys as keys
 from zenml.steps import BaseStep
-from zenml.utils import exceptions, path_utils
-from zenml.utils.enums import PipelineStatusTypes, GDPComponent
+from zenml.utils import path_utils
+from zenml import exceptions
+from zenml.enums import PipelineStatusTypes, GDPComponent
 
 # Nicholas a way to get to the root
 ZENML_ROOT = str(Path(zenml.__path__[0]).parent)

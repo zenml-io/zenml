@@ -19,10 +19,10 @@ from typing import Text, Dict
 from ml_metadata.metadata_store import metadata_store
 
 from zenml.standards.standard_keys import MLMetadataKeys
-from zenml.utils.enums import MLMetadataTypes
-from zenml.utils.enums import PipelineStatusTypes
-from zenml.utils.exceptions import DoesNotExistException
-from zenml.utils.logger import get_logger
+from zenml.enums import MLMetadataTypes
+from zenml.enums import PipelineStatusTypes
+from zenml.exceptions import DoesNotExistException
+from zenml.logger import get_logger
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
 
 logger = get_logger(__name__)

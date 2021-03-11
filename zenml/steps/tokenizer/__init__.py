@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 from zenml.steps.tokenizer.base_tokenizer import BaseTokenizer
-from zenml.utils.logger import get_logger
+from zenml.logger import get_logger
 from zenml.utils.requirement_utils import check_integration, \
     HUGGINGFACE_INTEGRATION
 

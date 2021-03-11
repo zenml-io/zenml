@@ -14,7 +14,7 @@
 
 from zenml.steps.deployer.base_deployer import BaseDeployerStep
 from zenml.steps.deployer.gcaip_deployer import GCAIPDeployer
-from zenml.utils.logger import get_logger
+from zenml.logger import get_logger
 from zenml.utils.requirement_utils import check_integration, \
     CORTEX_INTEGRATION
 

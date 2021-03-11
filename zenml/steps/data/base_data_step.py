@@ -20,7 +20,7 @@ from typing import Text, Any
 import apache_beam as beam
 
 from zenml.steps import BaseStep
-from zenml.utils.enums import StepTypes
+from zenml.enums import StepTypes
 
 
 @beam.ptransform_fn

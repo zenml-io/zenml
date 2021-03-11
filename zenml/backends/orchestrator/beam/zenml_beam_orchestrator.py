@@ -18,7 +18,7 @@ from tfx.orchestration.beam.beam_dag_runner import BeamDagRunner, \
     _ComponentAsDoFn
 from tfx.orchestration.config import config_utils
 
-from zenml.utils.logger import get_logger
+from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 

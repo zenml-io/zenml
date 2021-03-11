@@ -15,7 +15,7 @@
 from ml_metadata.proto import metadata_store_pb2
 
 from zenml.metadata import ZenMLMetadataStore
-from zenml.utils.enums import MLMetadataTypes
+from zenml.enums import MLMetadataTypes
 
 
 class MockMetadataStore(ZenMLMetadataStore):

@@ -26,7 +26,7 @@ from zenml.repo.zenml_config import PIPELINES_DIR_KEY
 from zenml.repo import ZenMLConfig
 from zenml.standards import standard_keys as keys
 from zenml.utils import yaml_utils
-from zenml.utils.exceptions import InitializationException
+from zenml.exceptions import InitializationException
 
 # Nicholas a way to get to the root
 ZENML_ROOT = str(Path(zenml.__path__[0]).parent)

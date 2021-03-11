@@ -20,7 +20,7 @@ from typing import Dict, List, Text, Any
 import apache_beam as beam
 import tensorflow as tf
 
-from zenml.utils.logger import get_logger
+from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 

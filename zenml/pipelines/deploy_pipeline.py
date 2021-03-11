@@ -27,7 +27,7 @@ from zenml.repo import ArtifactStore
 from zenml.standards import standard_keys as keys
 from zenml.steps import BaseStep
 from zenml.steps.deployer import BaseDeployerStep
-from zenml.utils.enums import GDPComponent
+from zenml.enums import GDPComponent
 
 
 class DeploymentPipeline(BasePipeline):

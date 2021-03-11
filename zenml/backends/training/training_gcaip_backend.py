@@ -25,9 +25,9 @@ from tfx.extensions.google_cloud_ai_platform.trainer.executor \
 from zenml.backends.training import TrainingBaseBackend
 from zenml.pipelines.utils import sanitize_name_for_ai_platform
 from zenml.utils import requirement_utils
-from zenml.utils.constants import ZENML_TRAINER_IMAGE_NAME
-from zenml.utils.enums import GCPGPUTypes
-from zenml.utils.logger import get_logger
+from zenml.constants import ZENML_TRAINER_IMAGE_NAME
+from zenml.enums import GCPGPUTypes
+from zenml.logger import get_logger
 
 requirement_utils.check_integration(requirement_utils.GCP_INTEGRATION)
 

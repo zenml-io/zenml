@@ -29,8 +29,8 @@ from zenml.standards import standard_keys as keys
 from zenml.steps.split import BaseSplit
 from zenml.steps.tokenizer import BaseTokenizer
 from zenml.steps.trainer import BaseTrainerStep
-from zenml.utils import constants
-from zenml.utils.enums import GDPComponent, PipelineStatusTypes
+from zenml import constants
+from zenml.enums import GDPComponent, PipelineStatusTypes
 
 
 class NLPPipeline(BasePipeline):

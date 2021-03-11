@@ -33,7 +33,7 @@ from zenml.standards.standard_keys import StepKeys
 from zenml.steps import BaseStep
 from zenml.steps.inferrer import BaseInferrer
 from zenml.utils import path_utils
-from zenml.utils.enums import GDPComponent
+from zenml.enums import GDPComponent
 from zenml.utils.post_training.post_training_utils import \
     convert_raw_dataset_to_pandas
 from zenml.utils.post_training.post_training_utils import \

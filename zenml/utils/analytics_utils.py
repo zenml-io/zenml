@@ -21,9 +21,9 @@ import analytics
 import distro
 import requests
 
-from zenml.utils.constants import IS_DEBUG_ENV
-from zenml.utils.logger import get_logger
-from zenml.utils.version import __version__
+from zenml.constants import IS_DEBUG_ENV
+from zenml.logger import get_logger
+from zenml.version import __version__
 
 logger = get_logger(__name__)
 

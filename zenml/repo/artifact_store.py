@@ -19,7 +19,7 @@ from typing import Text
 
 from zenml.repo import GlobalConfig
 from zenml.utils import path_utils
-from zenml.utils.enums import ArtifactStoreTypes
+from zenml.enums import ArtifactStoreTypes
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
 
 

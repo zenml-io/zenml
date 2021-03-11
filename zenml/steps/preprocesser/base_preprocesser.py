@@ -15,7 +15,7 @@
 from typing import Dict
 
 from zenml.steps import BaseStep
-from zenml.utils.enums import StepTypes
+from zenml.enums import StepTypes
 
 
 class BasePreprocesserStep(BaseStep):

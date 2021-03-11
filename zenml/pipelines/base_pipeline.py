@@ -25,12 +25,12 @@ from zenml.repo import Repository, ArtifactStore
 from zenml.standards import standard_keys as keys
 from zenml.steps import BaseStep
 from zenml.utils import source_utils
-from zenml.utils.constants import CONFIG_VERSION
-from zenml.utils.enums import PipelineStatusTypes
-from zenml.utils.exceptions import AlreadyExistsException
-from zenml.utils.logger import get_logger
+from zenml.constants import CONFIG_VERSION
+from zenml.enums import PipelineStatusTypes
+from zenml.exceptions import AlreadyExistsException
+from zenml.logger import get_logger
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
-from zenml.utils.zenml_analytics import track, CREATE_PIPELINE, RUN_PIPELINE, \
+from zenml.utils.analytics_utils import track, CREATE_PIPELINE, RUN_PIPELINE, \
     GET_PIPELINE_ARTIFACTS
 
 logger = get_logger(__name__)

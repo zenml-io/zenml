@@ -14,7 +14,7 @@
 
 from zenml.backends.training.training_base_backend import \
     TrainingBaseBackend
-from zenml.utils.logger import get_logger
+from zenml.logger import get_logger
 from zenml.utils.requirement_utils import check_integration, \
     GCP_INTEGRATION
 

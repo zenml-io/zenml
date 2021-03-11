@@ -18,7 +18,7 @@ from tfx.extensions.google_cloud_ai_platform.pusher import \
     executor as ai_platform_pusher_executor
 
 from zenml.steps.deployer import BaseDeployerStep
-from zenml.utils.logger import get_logger
+from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 

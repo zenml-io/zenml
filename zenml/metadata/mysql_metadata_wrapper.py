@@ -17,7 +17,7 @@ from typing import Text
 from tfx.orchestration import metadata
 
 from zenml.metadata import ZenMLMetadataStore
-from zenml.utils.enums import MLMetadataTypes
+from zenml.enums import MLMetadataTypes
 
 
 class MySQLMetadataStore(ZenMLMetadataStore):

@@ -23,7 +23,7 @@ from zenml.repo.constants import ZENML_CONFIG_NAME, \
     ML_METADATA_SQLITE_DEFAULT_NAME, ZENML_DIR_NAME
 from zenml.standards import standard_keys as keys
 from zenml.utils import path_utils, yaml_utils
-from zenml.utils.exceptions import InitializationException
+from zenml.exceptions import InitializationException
 
 ARTIFACT_STORE_KEY = keys.GlobalKeys.ARTIFACT_STORE
 METADATA_KEY = keys.GlobalKeys.METADATA_STORE

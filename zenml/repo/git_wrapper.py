@@ -20,7 +20,7 @@ from git import Repo as GitRepo
 
 from zenml.repo.constants import GIT_FOLDER_NAME
 from zenml.utils import path_utils
-from zenml.utils.logger import get_logger
+from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 

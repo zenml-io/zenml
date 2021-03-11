@@ -16,7 +16,7 @@ from zenml.steps.data.base_data_step import BaseDataStep
 from zenml.steps.data.bq_data_step import BQDataStep
 from zenml.steps.data.csv_data_step import CSVDataStep
 from zenml.steps.data.image_data_step import ImageDataStep
-from zenml.utils.logger import get_logger
+from zenml.logger import get_logger
 from zenml.utils.requirement_utils import check_integration, \
     POSTGRES_INTEGRATION
 

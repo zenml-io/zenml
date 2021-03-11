@@ -22,7 +22,7 @@ from zenml.components import DataGen
 from zenml.pipelines import BasePipeline
 from zenml.standards import standard_keys as keys
 from zenml.standards.standard_keys import StepKeys
-from zenml.utils.enums import GDPComponent
+from zenml.enums import GDPComponent
 from zenml.utils.post_training.post_training_utils import \
     view_statistics, view_schema
 

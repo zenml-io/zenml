@@ -9,7 +9,7 @@ import tensorflow_model_analysis as tfma
 
 from zenml.pipelines import TrainingPipeline
 from zenml.repo import Repository
-from zenml.utils.enums import PipelineStatusTypes, GDPComponent
+from zenml.enums import PipelineStatusTypes, GDPComponent
 
 pn.extension('plotly')
 

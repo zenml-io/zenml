@@ -14,7 +14,7 @@
 
 
 from zenml.steps import BaseStep
-from zenml.utils.enums import StepTypes
+from zenml.enums import StepTypes
 
 
 class BaseEvaluatorStep(BaseStep):

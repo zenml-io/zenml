@@ -31,7 +31,7 @@ from zenml.standards.standard_keys import StepKeys
 from zenml.steps.split import BaseSplit
 from zenml.steps.split.constants import SKIP
 from zenml.utils import source_utils
-from zenml.utils.logger import get_logger
+from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 

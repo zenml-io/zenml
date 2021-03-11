@@ -20,7 +20,7 @@ from zenml.backends.orchestrator.kubeflow.orchestrator_kubeflow_backend \
     import OrchestratorKubeFlowBackend
 from zenml.backends.orchestrator.kubernetes.orchestrator_kubernetes_backend \
     import OrchestratorKubernetesBackend
-from zenml.utils.logger import get_logger
+from zenml.logger import get_logger
 from zenml.utils.requirement_utils import check_integration, \
     AWS_INTEGRATION
 

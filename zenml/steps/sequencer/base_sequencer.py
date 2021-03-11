@@ -19,7 +19,7 @@ from tensorflow_metadata.proto.v0.statistics_pb2 import \
     DatasetFeatureStatisticsList
 
 from zenml.steps import BaseStep
-from zenml.utils.enums import StepTypes
+from zenml.enums import StepTypes
 
 
 class BaseSequencerStep(BaseStep):

@@ -18,7 +18,7 @@ from tfx.orchestration import metadata
 
 from zenml.metadata import ZenMLMetadataStore
 from zenml.utils import path_utils
-from zenml.utils.enums import MLMetadataTypes
+from zenml.enums import MLMetadataTypes
 
 
 class SQLiteMetadataStore(ZenMLMetadataStore):

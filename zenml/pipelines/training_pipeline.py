@@ -37,11 +37,12 @@ from zenml.steps.preprocesser import BasePreprocesserStep
 from zenml.steps.sequencer import BaseSequencerStep
 from zenml.steps.split import BaseSplit
 from zenml.steps.trainer import BaseTrainerStep
-from zenml.utils import constants, path_utils
-from zenml.utils.enums import GDPComponent
-from zenml.utils.exceptions import DoesNotExistException, \
+from zenml.utils import path_utils
+from zenml import constants
+from zenml.enums import GDPComponent
+from zenml.exceptions import DoesNotExistException, \
     PipelineNotSucceededException
-from zenml.utils.logger import get_logger
+from zenml.logger import get_logger
 from zenml.utils.post_training.post_training_utils import \
     evaluate_single_pipeline, view_statistics, view_schema, detect_anomalies
 from zenml.utils.post_training.post_training_utils import \
@@ -285,7 +286,7 @@ class TrainingPipeline(BasePipeline):
         Args:
             magic: Creates new window if False, else creates notebook cells.
         """
-        from zenml.utils.enums import PipelineStatusTypes
+        from zenml.enums import PipelineStatusTypes
         if self.get_status() != PipelineStatusTypes.Succeeded.name:
             logger.info(
                 "Cannot evaluate a pipeline that has not executed "

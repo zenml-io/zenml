@@ -20,7 +20,8 @@ import pandas as pd
 from zenml.datasources import BaseDatasource
 from zenml.pipelines import BasePipeline
 from zenml.standards import standard_keys as keys
-from zenml.utils import yaml_utils, exceptions
+from zenml.utils import yaml_utils
+from zenml import exceptions
 from pathlib import Path
 
 # Nicholas a way to get to the root

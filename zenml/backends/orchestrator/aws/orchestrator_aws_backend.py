@@ -22,8 +22,8 @@ from zenml.backends.orchestrator import OrchestratorBaseBackend
 from zenml.repo import Repository
 from zenml.standards import standard_keys as keys
 from zenml.utils import path_utils
-from zenml.utils.constants import ZENML_BASE_IMAGE_NAME
-from zenml.utils.logger import get_logger
+from zenml.constants import ZENML_BASE_IMAGE_NAME
+from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 

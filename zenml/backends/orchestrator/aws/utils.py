@@ -5,7 +5,7 @@ from typing import Dict, Text
 
 import boto3
 
-from zenml.utils.constants import ZENML_BASE_IMAGE_NAME, AWS_ENTRYPOINT
+from zenml.constants import ZENML_BASE_IMAGE_NAME, AWS_ENTRYPOINT
 
 AWS_ACCESS_KEY_ID = 'AWS_ACCESS_KEY_ID'
 AWS_SECRET_ACCESS_KEY = 'AWS_SECRET_ACCESS_KEY'
