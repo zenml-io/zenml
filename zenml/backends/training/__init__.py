@@ -14,5 +14,18 @@
 
 from zenml.backends.training.training_base_backend import \
     TrainingBaseBackend
-from zenml.backends.training.training_gcaip_backend import \
-    SingleGPUTrainingGCAIPBackend
+from zenml.utils.logger import get_logger
+from zenml.utils.requirement_utils import check_integration, \
+    GCP_INTEGRATION
+
+logger = get_logger(__name__)
+
+try:
+    check_integration(GCP_INTEGRATION)
+    from zenml.backends.training.training_gcaip_backend import \
+        SingleGPUTrainingGCAIPBackend
+except ModuleNotFoundError as e:
+    logger.debug(f"There were failed imports due to missing integrations. "
+                 f"SingleGPUTrainingGCAIPBackend was not imported. "
+                 f"More information:")
+    logger.debug(e)

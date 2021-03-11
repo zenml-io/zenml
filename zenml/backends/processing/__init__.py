@@ -14,7 +14,20 @@
 
 from zenml.backends.processing.processing_base_backend import \
     ProcessingBaseBackend
-from zenml.backends.processing.processing_dataflow_backend import \
-    ProcessingDataFlowBackend
 from zenml.backends.processing.processing_spark_backend import \
     ProcessingSparkBackend
+from zenml.utils.logger import get_logger
+from zenml.utils.requirement_utils import check_integration, \
+    GCP_INTEGRATION
+
+logger = get_logger(__name__)
+
+try:
+    check_integration(GCP_INTEGRATION)
+    from zenml.backends.processing.processing_dataflow_backend import \
+        ProcessingDataFlowBackend
+except ModuleNotFoundError as e:
+    logger.debug(f"There were failed imports due to missing integrations. "
+                 f"ProcessingDataFlowBackend was not imported. "
+                 f"More information:")
+    logger.debug(e)

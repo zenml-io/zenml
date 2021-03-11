@@ -16,17 +16,23 @@ from zenml.backends.orchestrator.base.orchestrator_base_backend import \
     OrchestratorBaseBackend
 from zenml.backends.orchestrator.gcp.orchestrator_gcp_backend import \
     OrchestratorGCPBackend
-from zenml.backends.orchestrator.kubernetes.orchestrator_kubernetes_backend \
-    import OrchestratorKubernetesBackend
 from zenml.backends.orchestrator.kubeflow.orchestrator_kubeflow_backend \
     import OrchestratorKubeFlowBackend
-# errors out because of breaking changes in TFX
-# from zenml.core.backends.orchestrator.beam.orchestrator_beam_backend import \
-#     OrchestratorBeamBackend
+from zenml.backends.orchestrator.kubernetes.orchestrator_kubernetes_backend \
+    import OrchestratorKubernetesBackend
+from zenml.utils.logger import get_logger
+from zenml.utils.requirement_utils import check_integration, \
+    AWS_INTEGRATION
 
-# contains extra AWS requirements
+logger = get_logger(__name__)
+
+# check extra AWS requirements
 try:
+    check_integration(AWS_INTEGRATION)
     from zenml.backends.orchestrator.aws.orchestrator_aws_backend import \
-     OrchestratorAWSBackend
-except ModuleNotFoundError:
-    pass
+        OrchestratorAWSBackend
+except ModuleNotFoundError as e:
+    logger.debug(f"There were failed imports due to missing integrations. "
+                 f"OrchestratorAWSBackend was not imported. "
+                 f"More information:")
+    logger.debug(e)
