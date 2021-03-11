@@ -33,7 +33,7 @@ class AgnosticEvaluator(BaseEvaluatorStep):
                  prediction_key: Text = None,
                  label_key: Text = None,
                  slices: List[List[Text]] = None,
-                 metrics: Dict[Text, List[Text]] = None,
+                 metrics: List[Text] = None,
                  splits: List[Text] = None):
 
         super().__init__(prediction_key=prediction_key,
@@ -43,7 +43,7 @@ class AgnosticEvaluator(BaseEvaluatorStep):
                          splits=splits)
 
         self.slices = slices or list()
-        self.metrics = metrics or dict()
+        self.metrics = metrics or list()
         self.splits = splits or ['eval']
 
         self.prediction_key = prediction_key
@@ -60,22 +60,15 @@ class AgnosticEvaluator(BaseEvaluatorStep):
                                   for e in self.slices])
 
         # MODEL SPEC
-        metric_labels = sorted(list(set(self.metrics.keys())))
         model_specs = [tfma.ModelSpec(label_key=self.label_key,
                                       prediction_key=self.prediction_key)]
 
         # METRIC SPEC
         baseline = [tfma.MetricConfig(class_name='ExampleCount')]
-        metrics_specs = []
-        for i, key in enumerate(metric_labels):
-            metric_list = baseline.copy()
-            metric_list.extend(
-                [tfma.MetricConfig(class_name=to_camel_case(m))
-                 for m in self.metrics[key]])
+        for key in self.metrics:
+            baseline.append(tfma.MetricConfig(class_name=to_camel_case(key)))
 
-            metrics_specs.append(tfma.MetricsSpec(
-                # output_names=[key], # TODO: enable multi label
-                metrics=metric_list))
+        metrics_specs = [tfma.MetricsSpec(metrics=baseline)]
 
         return tfma.EvalConfig(
             model_specs=model_specs,
