@@ -15,7 +15,7 @@
 import click
 
 from zenml.cli.cli import cli
-from zenml.utils.version import __version__
+from zenml.version import __version__
 
 
 @cli.command()

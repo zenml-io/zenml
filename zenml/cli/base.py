@@ -22,7 +22,7 @@ from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation
 from zenml.cli.utils import pass_repo
 from zenml.repo import Repository
-from zenml.utils.zenml_analytics import track, INITIALIZE
+from zenml.utils.analytics_utils import track, INITIALIZE
 
 
 @cli.command('init')

@@ -22,7 +22,7 @@
 import click
 
 from zenml.cli.utils import pass_config
-from zenml.utils.logger import set_root_verbosity
+from zenml.logger import set_root_verbosity
 
 
 @click.group()
