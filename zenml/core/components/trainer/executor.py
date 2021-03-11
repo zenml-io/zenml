@@ -16,8 +16,14 @@ class ZenMLTrainerExecutor(GenericExecutor):
         results = super(ZenMLTrainerExecutor, self)._GetFnArgs(input_dict,
                                                                output_dict,
                                                                exec_properties)
-        test_results = os.path.join(artifact_utils.get_single_uri(
-            output_dict[constants.TEST_RESULTS]), constants.TEST_RESULTS)
+        # TODO: fix the fixed eval split
+        output_artifact = artifact_utils.get_single_instance(
+            output_dict[constants.TEST_RESULTS])
+        output_artifact.split_names = artifact_utils.encode_split_names(
+            ['eval'])
+        test_results = artifact_utils.get_split_uri(
+            [output_artifact], 'eval')
+
         results.test_results = test_results
 
         return results
