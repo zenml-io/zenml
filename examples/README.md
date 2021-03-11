@@ -14,6 +14,7 @@ Here you can find a list with brief descriptions for each example:
 - **gcp_gpu_orchestrated**: Training a classifier on an (optionally preemtible) cuda-enabled Google Cloud Platform virtual machine.
 - **gcp_kubernetes_orchestrated**: Launches a kubernetes job on a kubernetes cluster.
 - **gcp_orchestrated**: Runs pipeline on an (optionally preemtible) virtual machine on `Google Cloud Platform` as the orchestration backend.
+- **nlp**: Uses the awesome [HuggingFace](https://huggingface.co/) library to create a NLP Training pipeline.
 - **pytorch**: Showcases PyTorch support.
 - **pytorch_lightning**: Showcases [PyTorch Lightning](https://www.pytorchlightning.ai/) support.
 - **quickstart**: The official quickstart tutorial.
