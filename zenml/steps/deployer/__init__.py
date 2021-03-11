@@ -14,8 +14,17 @@
 
 from zenml.steps.deployer.base_deployer import BaseDeployerStep
 from zenml.steps.deployer.gcaip_deployer import GCAIPDeployer
+from zenml.utils.logger import get_logger
+from zenml.utils.requirement_utils import check_integration, \
+    CORTEX_INTEGRATION
+
+logger = get_logger(__name__)
 
 try:
+    check_integration(CORTEX_INTEGRATION)
     from zenml.steps.deployer.cortex_deployer import CortexDeployer
-except ModuleNotFoundError:
-    pass
+except ModuleNotFoundError as e:
+    logger.debug(f"There were failed imports due to missing integrations. "
+                 f"HuggingFaceTokenizerStep was not imported. "
+                 f"More information:")
+    logger.debug(e)

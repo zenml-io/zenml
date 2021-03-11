@@ -15,5 +15,18 @@
 from zenml.steps.data.base_data_step import BaseDataStep
 from zenml.steps.data.bq_data_step import BQDataStep
 from zenml.steps.data.csv_data_step import CSVDataStep
-from zenml.steps.data.postgres_data_step import PostgresDataStep
 from zenml.steps.data.image_data_step import ImageDataStep
+from zenml.utils.logger import get_logger
+from zenml.utils.requirement_utils import check_integration, \
+    POSTGRES_INTEGRATION
+
+logger = get_logger(__name__)
+
+try:
+    check_integration(POSTGRES_INTEGRATION)
+    from zenml.steps.data.postgres_data_step import PostgresDataStep
+except ModuleNotFoundError as e:
+    logger.debug(f"There were failed imports due to missing integrations. "
+                 f"PostgresDataStep was not imported. "
+                 f"More information:")
+    logger.debug(e)

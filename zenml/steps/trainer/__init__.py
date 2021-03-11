@@ -17,12 +17,21 @@ from zenml.steps.trainer.tensorflow_trainers.tf_base_trainer import \
     TFBaseTrainerStep
 from zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
     FeedForwardTrainer as TFFeedForwardTrainer
-from zenml.steps.trainer.pytorch_trainers.torch_base_trainer import \
-    TorchBaseTrainerStep
+from zenml.utils.logger import get_logger
+from zenml.utils.requirement_utils import check_integration, \
+    PYTORCH_INTEGRATION
+
+logger = get_logger(__name__)
 
 # wrap Pytorch extra integrations safely
 try:
+    check_integration(PYTORCH_INTEGRATION)
+    from zenml.steps.trainer.pytorch_trainers.torch_base_trainer import \
+        TorchBaseTrainerStep
     from zenml.steps.trainer.pytorch_trainers.torch_ff_trainer import \
-     FeedForwardTrainer as TorchFeedForwardTrainer
-except ModuleNotFoundError:
-    pass
+        FeedForwardTrainer as TorchFeedForwardTrainer
+except ModuleNotFoundError as e:
+    logger.debug(f"There were failed imports due to missing integrations. "
+                 f"TorchBaseTrainerStep, TorchFeedForwardTrainer were not "
+                 f"imported. More information:")
+    logger.debug(e)

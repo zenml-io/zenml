@@ -13,10 +13,19 @@
 #  permissions and limitations under the License.
 
 from zenml.steps.tokenizer.base_tokenizer import BaseTokenizer
+from zenml.utils.logger import get_logger
+from zenml.utils.requirement_utils import check_integration, \
+    HUGGINGFACE_INTEGRATION
+
+logger = get_logger(__name__)
 
 # HuggingFace extra requirement
 try:
+    check_integration(HUGGINGFACE_INTEGRATION)
     from zenml.steps.tokenizer.hf_tokenizer import \
         HuggingFaceTokenizerStep
-except ModuleNotFoundError:
-    pass
+except ModuleNotFoundError as e:
+    logger.debug(f"There were failed imports due to missing integrations. "
+                 f"HuggingFaceTokenizerStep was not imported. "
+                 f"More information:")
+    logger.debug(e)
