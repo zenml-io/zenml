@@ -13,6 +13,8 @@ from tensorflow.python.data.ops import dataset_ops
 from tensorflow.python.data.ops import readers as core_readers
 from tensorflow.python.framework import dtypes
 
+from zenml.utils import path_utils
+
 
 class TFRecordTorchDataset(data.IterableDataset, ABC):
     def __init__(self,
@@ -169,6 +171,8 @@ def combine_batch_results(x):
 
 
 def save_test_results(results, output_path):
+    path_utils.create_dir_if_not_exists(output_path)
+    output_path = os.path.join(output_path, 'test_results')
     with tf.io.TFRecordWriter(output_path) as writer:
         for example in to_serialized_examples(results):
             writer.write(example)
