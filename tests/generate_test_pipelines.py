@@ -23,8 +23,8 @@ from zenml.steps.preprocesser import StandardPreprocesser
 from zenml.steps.split import CategoricalDomainSplit
 from zenml.steps.trainer import TFFeedForwardTrainer
 from zenml.utils import path_utils
-from zenml.utils.exceptions import AlreadyExistsException
-from zenml.utils.logger import get_logger
+from zenml.exceptions import AlreadyExistsException
+from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
