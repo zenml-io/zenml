@@ -4,8 +4,9 @@ Connect public and private Google BigQuery tables.
 Please refer to docstring at `BigQueryDatasource` for details.
 
 ## Example
+
 ```python
-from zenml.core.datasources.bq_datasource import BigQueryDatasource
+from zenml.datasources import BigQueryDatasource
 
 ds = BigQueryDatasource(
     name=f'Name',

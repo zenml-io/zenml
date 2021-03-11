@@ -7,9 +7,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 import tensorflow_model_analysis as tfma
 
-from zenml.core.pipelines.training_pipeline import TrainingPipeline
-from zenml.core.repo.repo import Repository
-from zenml.utils.enums import PipelineStatusTypes, GDPComponent
+from zenml.pipelines import TrainingPipeline
+from zenml.repo import Repository
+from zenml.enums import PipelineStatusTypes, GDPComponent
 
 pn.extension('plotly')
 

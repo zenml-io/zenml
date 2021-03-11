@@ -29,10 +29,10 @@ from tensorflow_metadata.proto.v0 import statistics_pb2
 from tensorflow_transform.tf_metadata import schema_utils
 from tfx.utils import io_utils
 
-from zenml.utils.constants import APP_NAME, EVALUATION_NOTEBOOK, \
+from zenml.constants import APP_NAME, EVALUATION_NOTEBOOK, \
     COMPARISON_NOTEBOOK
-from zenml.utils.enums import GDPComponent
-from zenml.utils.logger import get_logger
+from zenml.enums import GDPComponent
+from zenml.logger import get_logger
 from zenml.utils.path_utils import read_file_contents
 
 logger = get_logger(__name__)

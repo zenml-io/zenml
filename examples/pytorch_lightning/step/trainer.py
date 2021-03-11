@@ -19,12 +19,11 @@ import torch
 from pytorch_lightning import Trainer
 from torch.nn import functional as F
 
-from zenml.core.steps.trainer.pytorch_trainers.torch_ff_trainer import \
-    FeedForwardTrainer
+from zenml.steps.trainer import TorchFeedForwardTrainer
 from zenml.utils import path_utils
 
 
-class MyPyTorchLightningTrainer(FeedForwardTrainer):
+class MyPyTorchLightningTrainer(TorchFeedForwardTrainer):
     """
     PyTorch Lightning trainer
     """

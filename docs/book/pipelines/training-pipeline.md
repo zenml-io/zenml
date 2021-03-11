@@ -58,7 +58,7 @@ together in a repository, you can compare pipelines with each other. The direct 
 judge the performance and results of different configurations against each other.
 
 ```python
-from zenml.core.repo.repo import Repository
+from zenml.repo import Repository
 
 repo = Repository.get_instance()
 repo.compare_training_pipelines()

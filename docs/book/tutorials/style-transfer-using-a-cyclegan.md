@@ -30,12 +30,10 @@ pipeline.
 ```python
 from examples.gan.preprocessing.preprocessor import GANPreprocessor
 from examples.gan.trainer.trainer_step import CycleGANTrainer
-from zenml.core.datasources.image_datasource import ImageDatasource
-from zenml.core.pipelines.training_pipeline import TrainingPipeline
-from zenml.core.repo.repo import Repository
-from zenml.core.steps.split.categorical_domain_split_step import
-
-CategoricalDomainSplit
+from zenml.datasources import ImageDatasource
+from zenml.pipelines import TrainingPipeline
+from zenml.repo import Repository
+from zenml.steps.split import CategoricalDomainSplit
 
 gan_pipeline = TrainingPipeline(name="cycle_gan", enable_cache=True)
 ```

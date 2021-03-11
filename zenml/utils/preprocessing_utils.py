@@ -1,4 +1,4 @@
-from zenml.core.standards.standard_keys import MethodKeys
+from zenml.standards.standard_keys import MethodKeys
 
 
 def parse_methods(input_dict, process, methods):

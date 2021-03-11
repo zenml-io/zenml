@@ -27,7 +27,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 vspec = importlib.util.spec_from_file_location(
     "version",
     str(Path(__file__).resolve().parent /
-        'zenml' / 'utils' / "version.py")
+        'zenml' / 'version.py')
 )
 vmod = importlib.util.module_from_spec(vspec)
 vspec.loader.exec_module(vmod)

@@ -19,7 +19,7 @@ from tabulate import tabulate
 
 from zenml.cli.cli import cli
 from zenml.cli.utils import pretty_print, pass_repo
-from zenml.core.repo.repo import Repository
+from zenml.repo import Repository
 
 
 @cli.group()

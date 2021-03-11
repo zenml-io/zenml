@@ -21,13 +21,12 @@ from pathlib import Path
 import pytest
 
 import zenml
-from zenml.core.backends.base_backend import BaseBackend
-from zenml.core.datasources.base_datasource import BaseDatasource
-from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
-from zenml.core.pipelines.base_pipeline import BasePipeline
-from zenml.core.repo.repo import Repository
-from zenml.core.repo.zenml_config import ZenMLConfig
-from zenml.core.steps.base_step import BaseStep
+from zenml.backends import BaseBackend
+from zenml.datasources import BaseDatasource
+from zenml.metadata import ZenMLMetadataStore
+from zenml.pipelines import BasePipeline
+from zenml.repo import Repository, ZenMLConfig
+from zenml.steps import BaseStep
 from zenml.utils import path_utils
 
 # Nicholas a way to get to the root

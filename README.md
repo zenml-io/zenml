@@ -70,17 +70,17 @@ zenml init
 #### Step 2: Assemble, run and evaluate your pipeline locally
 
 ```python
-from zenml.core.datasources.csv_datasource import CSVDatasource
-from zenml.core.pipelines.training_pipeline import TrainingPipeline
-from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
-from zenml.core.steps.split.random_split import RandomSplit
-from zenml.core.steps.preprocesser.standard_preprocesser.standard_preprocesser import StandardPreprocesser
-from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import FeedForwardTrainer
+from zenml.datasources import CSVDatasource
+from zenml.pipelines import TrainingPipeline
+from zenml.steps.evaluator import TFMAEvaluator
+from zenml.steps.split import RandomSplit
+from zenml.steps.preprocesser import StandardPreprocesser
+from zenml.steps.trainer import TFFeedForwardTrainer
 
 training_pipeline = TrainingPipeline(name='Quickstart')
 
 # Add a datasource. This will automatically track and version it.
-ds = CSVDatasource(name='Pima Indians Diabetes Dataset', 
+ds = CSVDatasource(name='Pima Indians Diabetes Dataset',
                    path='gs://zenml_quickstart/diabetes.csv')
 training_pipeline.add_datasource(ds)
 
@@ -98,7 +98,7 @@ training_pipeline.add_preprocesser(
     ))
 
 # Add a trainer
-training_pipeline.add_trainer(FeedForwardTrainer(
+training_pipeline.add_trainer(TFFeedForwardTrainer(
     loss='binary_crossentropy',
     last_activation='sigmoid',
     output_units=1,

@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import Text, Dict
 
 import yaml
-import os
 
 from zenml.utils import path_utils
 

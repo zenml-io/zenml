@@ -35,14 +35,15 @@ training_pipeline.run()
 ```
 
 Then Team Member B can access this pipeline and use it as follows:
+
 ```python
-from zenml.core.repo.repo import Repository
+from zenml.repo import Repository
 
 # Get a reference in code to the current repo
 repo = Repository()
 pipeline_a = repo.get_pipeline_by_name('Pipeline A')
 
-pipeline_a.view_schema() # view schema
+pipeline_a.view_schema()  # view schema
 pipeline_a.view_statistics()  # view statistics of the run
 pipeline_a.view_anomalies()  # view anomalies (feature drift etc)
 pipeline_a.evaluate()  # view results

@@ -13,36 +13,40 @@
 #  permissions and limitations under the License.
 
 from examples.nlp.training.trainer import UrduTrainer
-from zenml.core.datasources.csv_datasource import CSVDatasource
-from zenml.core.pipelines.nlp_pipeline import NLPPipeline
-from zenml.core.repo.repo import Repository
-from zenml.core.steps.split.random_split import RandomSplit
-from zenml.core.steps.tokenizer.hf_tokenizer import HuggingFaceTokenizerStep
-from zenml.utils.exceptions import AlreadyExistsException
+from zenml.datasources import CSVDatasource
+from zenml.exceptions import AlreadyExistsException
+from zenml.pipelines import NLPPipeline
+from zenml.repo import Repository
+from zenml.steps.split import RandomSplit
+from zenml.steps.tokenizer import HuggingFaceTokenizerStep
 
 nlp_pipeline = NLPPipeline()
 
 try:
-    ds = CSVDatasource(name="my_text",
+    ds = CSVDatasource(name="My Urdu Text",
                        path="gs://zenml_quickstart/urdu_fake_news.csv")
 except AlreadyExistsException:
-    ds = Repository.get_instance().get_datasource_by_name(name="my_text")
+    ds = Repository.get_instance().get_datasource_by_name(name="My Urdu Text")
 
 nlp_pipeline.add_datasource(ds)
 
-tokenizer_step = HuggingFaceTokenizerStep(text_feature="news",
-                                          tokenizer="bert-wordpiece",
-                                          vocab_size=3000)
+tokenizer_step = HuggingFaceTokenizerStep(
+    text_feature="news",
+    tokenizer="bert-wordpiece",
+    vocab_size=3000)
 
 nlp_pipeline.add_tokenizer(tokenizer_step=tokenizer_step)
 
-nlp_pipeline.add_split(RandomSplit(split_map={"train": 0.9,
-                                              "eval": 0.1}))
+nlp_pipeline.add_split(RandomSplit(
+    split_map={"train": 0.9, "eval": 0.1}))
 
-nlp_pipeline.add_trainer(UrduTrainer(model_name="distilbert-base-uncased",
-                                     epochs=3,
-                                     batch_size=64,
-                                     learning_rate=5e-3))
+nlp_pipeline.add_trainer(
+    UrduTrainer(
+        model_name="distilbert-base-uncased",
+        epochs=3,
+        batch_size=64,
+        learning_rate=5e-3)
+)
 
 nlp_pipeline.run()
 

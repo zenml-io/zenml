@@ -51,15 +51,17 @@ The above, while being handy for quick results, does not really translate well i
 ZenML allows you to take the above code, and organize it into [ZenML pipelines](../pipelines/what-is-a-pipeline.md). Heres how:
 
 ### Step 0: Create the pipeline
+
 ```python
-from zenml.core.pipelines.training_pipeline import TrainingPipeline
+from zenml.pipelines import TrainingPipeline
+
 training_pipeline = TrainingPipeline()
 ```
 
 ### Step 1: Configure the datasource
 
 ```python
-from zenml.core.datasources.csv_datasource import CSVDatasource
+from zenml.datasources import CSVDatasource
 
 ds = CSVDatasource(name='A proper name', path='/path/to/file.csv')
 training_pipeline.add_datasource(ds)
@@ -68,15 +70,16 @@ training_pipeline.add_datasource(ds)
 ### Step 2: Separate the split
 
 ```python
-from zenml.core.steps.split.random_split import RandomSplit
+from zenml.steps.split import RandomSplit
 
 training_pipeline.add_split(RandomSplit(
     split_map={'train': 0.7, 'eval': 0.3}))
 ```
 
 ### Step 3: Define the preprocessing
+
 ```python
-from zenml.core.steps.preprocesser.standard_preprocesser.standard_preprocesser import StandardPreprocesser
+from zenml.steps.preprocesser import StandardPreprocesser
 
 training_pipeline.add_preprocesser(
     StandardPreprocesser(
@@ -86,10 +89,11 @@ training_pipeline.add_preprocesser(
 ```
 
 ### Step 4: Write the trainer
-```python
-from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import FeedForwardTrainer
 
-training_pipeline.add_trainer(FeedForwardTrainer(
+```python
+from zenml.steps.trainer import TFFeedForwardTrainer
+
+training_pipeline.add_trainer(TFFeedForwardTrainer(
     loss='binary_crossentropy',
     last_activation='sigmoid',
     output_units=1,
@@ -98,8 +102,9 @@ training_pipeline.add_trainer(FeedForwardTrainer(
 ```
 
 ### Step 5: Set the evaluation
+
 ```python
-from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
+from zenml.steps.evaluator import TFMAEvaluator
 
 training_pipeline.add_evaluator(
     TFMAEvaluator(slices=[['has_diabetes']],
@@ -108,8 +113,9 @@ training_pipeline.add_evaluator(
 ```
 
 ### Step 6: Select the deployment
+
 ```python
-from zenml.core.steps.deployer.gcaip_deployer import GCAIPDeployer
+from zenml.steps.deployer import GCAIPDeployer
 
 training_pipeline.add_deployment(
     GCAIPDeployer(
