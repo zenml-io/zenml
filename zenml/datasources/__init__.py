@@ -19,4 +19,18 @@ from zenml.datasources.image_datasource import ImageDatasource
 from zenml.datasources.json_datasource import JSONDatasource
 from zenml.datasources.numpy_datasource import NumpyDatasource
 from zenml.datasources.pandas_datasource import PandasDatasource
-from zenml.datasources.postgres_datasource import PostgresDatasource
+
+from zenml.utils.requirement_utils import check_integration, \
+    POSTGRES_INTEGRATION
+from zenml.utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+try:
+    check_integration(POSTGRES_INTEGRATION)
+    from zenml.datasources.postgres_datasource import PostgresDatasource
+except ModuleNotFoundError as e:
+    logger.info(f"There were failed imports due to missing integrations. "
+                f"More information:")
+    logger.info(e)
+
