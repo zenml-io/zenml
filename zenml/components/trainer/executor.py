@@ -5,7 +5,7 @@ from tfx.components.trainer import fn_args_utils
 from tfx.components.trainer.executor import GenericExecutor
 from tfx.types import artifact_utils
 
-from zenml.core.components.trainer import constants
+from zenml.components.trainer import constants
 
 
 class ZenMLTrainerExecutor(GenericExecutor):

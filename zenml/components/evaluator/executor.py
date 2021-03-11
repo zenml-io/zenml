@@ -13,9 +13,9 @@ from tfx.utils import io_utils
 from tfx.utils import path_utils
 from tfx_bsl.tfxio import tensor_adapter
 
-from zenml.core.components.evaluator import constants
-from zenml.core.standards.standard_keys import StepKeys
-from zenml.core.steps.evaluator.base_evaluator import BaseEvaluatorStep
+from zenml.components.evaluator import constants
+from zenml.standards.standard_keys import StepKeys
+from zenml.steps.evaluator.base_evaluator import BaseEvaluatorStep
 from zenml.utils import source_utils
 
 

@@ -1,4 +1,4 @@
-from zenml.core.standards.standard_keys import StepKeys
+from zenml.standards.standard_keys import StepKeys
 
 SOURCE = StepKeys.SOURCE
 ARGS = StepKeys.ARGS

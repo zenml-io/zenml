@@ -10,8 +10,8 @@ from tfx.types.component_spec import ExecutionParameter
 from tfx.types.standard_artifacts import Examples, Model, Schema, \
     ModelEvaluation
 
-from zenml.core.components.evaluator import constants
-from zenml.core.components.evaluator import executor
+from zenml.components.evaluator import constants
+from zenml.components.evaluator import executor
 
 
 class ZenMLEvaluatorSpec(ComponentSpec):

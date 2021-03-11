@@ -17,8 +17,8 @@ from tfx.types.standard_artifacts import Examples, TransformGraph, Schema, \
     Model, ModelRun, HyperParameters
 from tfx.utils import json_utils
 
-from zenml.core.components.trainer import constants
-from zenml.core.components.trainer.executor import ZenMLTrainerExecutor
+from zenml.components.trainer import constants
+from zenml.components.trainer.executor import ZenMLTrainerExecutor
 
 
 class ZenMLTrainerSpec(ComponentSpec):
