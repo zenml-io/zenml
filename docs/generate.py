@@ -59,11 +59,11 @@ def generate_toc(target='docs/book/reference', toc_file='docs/book/_toc.yml'):
 - part: Reference
   chapters:
     '''
-    skip_header = '- file: index\nsections:\n'
+    skip_header = 'file: index\nsections:\n'
 
     with open(f'{target}/_toc.yml', 'r') as raw_toc:
         generated_toc = raw_toc.read().replace(skip_header, '')
-        generated_toc = generated_toc.replace('file: ', 'file: reference/')
+        generated_toc = generated_toc.replace('file: ', '- file: reference/')
         generated_toc = generated_toc.replace('\n', '\n    ')  # indentation
         generated_toc += '\n\n'
         new_toc += generated_toc
