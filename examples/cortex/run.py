@@ -9,7 +9,7 @@ from zenml.steps.evaluator import TFMAEvaluator
 from zenml.steps.preprocesser import StandardPreprocesser
 from zenml.steps.split import RandomSplit
 from zenml.steps.trainer import TFFeedForwardTrainer
-from zenml.utils.exceptions import AlreadyExistsException
+from zenml.exceptions import AlreadyExistsException
 
 GCP_BUCKET = os.getenv('GCP_BUCKET')
 assert GCP_BUCKET

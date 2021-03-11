@@ -12,7 +12,7 @@ from zenml.steps.evaluator import TFMAEvaluator
 from zenml.steps.preprocesser import StandardPreprocesser
 from zenml.steps.split import RandomSplit
 from zenml.steps.trainer import TFFeedForwardTrainer
-from zenml.utils.exceptions import AlreadyExistsException
+from zenml.exceptions import AlreadyExistsException
 
 # Get the configuration for the artifact store and the metadata store which
 # should be accessible from the VM

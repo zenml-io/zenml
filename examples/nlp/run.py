@@ -18,7 +18,7 @@ from zenml.pipelines import NLPPipeline
 from zenml.repo import Repository
 from zenml.steps.split import RandomSplit
 from zenml.steps.tokenizer import HuggingFaceTokenizerStep
-from zenml.utils.exceptions import AlreadyExistsException
+from zenml.exceptions import AlreadyExistsException
 
 nlp_pipeline = NLPPipeline()
 
