@@ -52,7 +52,7 @@ class AgnosticEvaluator(BaseEvaluatorStep):
         if prediction_key is None or label_key is None:
             self.infer_prediction_label_pair()
 
-    def build_agnostic_config(self):
+    def build_config(self):
         # SLICING SPEC
         slicing_specs = [tfma.SlicingSpec()]
         if self.slices:
