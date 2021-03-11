@@ -22,7 +22,7 @@ from zenml.datasources.pandas_datasource import PandasDatasource
 
 from zenml.utils.requirement_utils import check_integration, \
     POSTGRES_INTEGRATION
-from zenml.utils.logger import get_logger
+from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -30,7 +30,8 @@ try:
     check_integration(POSTGRES_INTEGRATION)
     from zenml.datasources.postgres_datasource import PostgresDatasource
 except ModuleNotFoundError as e:
-    logger.info(f"There were failed imports due to missing integrations. "
-                f"More information:")
-    logger.info(e)
+    logger.debug(f"There were failed imports due to missing integrations. "
+                 f"PostgresDatasource was not imported. "
+                 f"More information:")
+    logger.debug(e)
 
