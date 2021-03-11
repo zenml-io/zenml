@@ -32,18 +32,15 @@ This tutorial picks up where [the quickstart ends.](../getting-started/quickstar
 With the prerequisites in hand, we can jump straight in. First things first, let's import all we need for this tutorial, and let's create the \(for now empty\) training pipeline object.
 
 ```python
-from zenml.core.backends.orchestrator.gcp.orchestrator_gcp_backend import \
-    OrchestratorGCPBackend
-from zenml.core.datasources.csv_datasource import CSVDatasource
-from zenml.core.metadata.mysql_metadata_wrapper import MySQLMetadataStore
-from zenml.core.pipelines.training_pipeline import TrainingPipeline
-from zenml.core.repo.artifact_store import ArtifactStore
-from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
-from zenml.core.steps.preprocesser.standard_preprocesser \
-    .standard_preprocesser import \
-    StandardPreprocesser
-from zenml.core.steps.split.random_split import RandomSplit
-from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import FeedForwardTrainer
+from zenml.backends.orchestrator import OrchestratorGCPBackend
+from zenml.datasources import CSVDatasource
+from zenml.metadata import MySQLMetadataStore
+from zenml.pipelines import TrainingPipeline
+from zenml.repo import ArtifactStore
+from zenml.steps.evaluator import TFMAEvaluator
+from zenml.steps.preprocesser import StandardPreprocesser
+from zenml.steps.split import RandomSplit
+from zenml.steps.trainer import TFFeedForwardTrainer
 
 training_pipeline = TrainingPipeline(name='GCP Orchestrated')
 ```
@@ -81,7 +78,7 @@ To keep this example straightforward, we'll be using one of the built-in trainer
 
 ```python
 # Add a trainer
-training_pipeline.add_trainer(FeedForwardTrainer(
+training_pipeline.add_trainer(TFFeedForwardTrainer(
     loss='binary_crossentropy',
     last_activation='sigmoid',
     output_units=1,

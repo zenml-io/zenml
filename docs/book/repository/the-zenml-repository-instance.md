@@ -4,7 +4,7 @@ In order to access information about your ZenML repository in code, you need to 
 This object is a Singleton and can be fetched any time from within your Python code simply by executing:
 
 ```python
-from zenml.core.repo.repo import Repository
+from zenml.repo import Repository
 
 # We recommend to add the type hint for auto-completion in your IDE/Notebook
 repo: Repository = Repository.get_instance()

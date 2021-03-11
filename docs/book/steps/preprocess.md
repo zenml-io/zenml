@@ -28,7 +28,7 @@ For this, ZenML provides the `BasePreprocesserStep` interface that one can subcl
 your own custom split logic.
 
 ```
-from zenml.core.steps.preprocesser.base_preprocesser import BasePreprocesserStep
+from zenml.steps.preprocesser import BasePreprocesserStep
 
 class MyCustomPreprocesser(BasePreprocesserStep):
 

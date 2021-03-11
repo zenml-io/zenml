@@ -16,18 +16,15 @@ import os
 from pathlib import Path
 
 import zenml
-from zenml.core.datasources.csv_datasource import CSVDatasource
-from zenml.core.pipelines.training_pipeline import TrainingPipeline
-from zenml.core.repo.repo import Repository
-from zenml.core.steps.preprocesser.standard_preprocesser \
-    .standard_preprocesser import \
-    StandardPreprocesser
-from zenml.core.steps.split.categorical_domain_split_step import \
-    CategoricalDomainSplit
-from zenml.core.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
-    FeedForwardTrainer
+from zenml.datasources import CSVDatasource
+from zenml.pipelines import TrainingPipeline
+from zenml.repo import Repository
+from zenml.steps.preprocesser import StandardPreprocesser
+from zenml.steps.split import CategoricalDomainSplit
+from zenml.steps.trainer import TFFeedForwardTrainer
 from zenml.utils import path_utils
-from zenml.utils.logger import get_logger
+from zenml.exceptions import AlreadyExistsException
+from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -54,7 +51,7 @@ try:
             # Add a datasource. This will automatically track and version it.
             ds = CSVDatasource(name='my_csv_datasource',
                                path=os.path.join(csv_root, "my_dataframe.csv"))
-        except:
+        except AlreadyExistsException:
             ds = repo.get_datasource_by_name("my_csv_datasource")
 
         training_pipeline.add_datasource(ds)
@@ -75,7 +72,7 @@ try:
             ))
 
         # Add a trainer
-        training_pipeline.add_trainer(FeedForwardTrainer(
+        training_pipeline.add_trainer(TFFeedForwardTrainer(
             batch_size=1,
             loss='binary_crossentropy',
             last_activation='sigmoid',

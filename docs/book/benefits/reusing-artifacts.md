@@ -44,8 +44,9 @@ training_pipeline.run()
 ```
 
 Then get the pipeline:
+
 ```python
-from zenml.core.repo.repo import Repository
+from zenml.repo import Repository
 
 # Get a reference in code to the current repo
 repo = Repository()

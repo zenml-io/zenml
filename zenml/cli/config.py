@@ -20,7 +20,7 @@ import click
 from zenml.cli.cli import cli
 from zenml.cli.cli import pass_config
 from zenml.cli.utils import parse_unknown_options
-from zenml.core.repo.repo import Repository
+from zenml.repo import Repository
 
 
 @cli.group()
@@ -87,7 +87,7 @@ def set_metadata_store(store_type, args):
         'type': store_type,
         'args': parsed_args
     }
-    from zenml.core.metadata.metadata_wrapper import ZenMLMetadataStore
+    from zenml.metadata.metadata_wrapper import ZenMLMetadataStore
 
     store = ZenMLMetadataStore.from_config(config)
     repo: Repository = Repository.get_instance()

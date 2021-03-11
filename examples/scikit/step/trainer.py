@@ -20,7 +20,7 @@ from joblib import dump
 from sklearn import svm
 from sklearn.metrics import classification_report, confusion_matrix
 
-from zenml.core.steps.trainer.base_trainer import BaseTrainerStep
+from zenml.steps.trainer import BaseTrainerStep
 from zenml.utils import path_utils
 from zenml.utils.post_training.post_training_utils import \
     convert_raw_dataset_to_pandas

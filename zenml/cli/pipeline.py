@@ -20,8 +20,8 @@ from tabulate import tabulate
 
 from zenml.cli.cli import cli
 from zenml.cli.utils import error, pretty_print, pass_repo
-from zenml.core.pipelines.training_pipeline import TrainingPipeline
-from zenml.core.repo.repo import Repository
+from zenml.pipelines import TrainingPipeline
+from zenml.repo import Repository
 from zenml.utils.yaml_utils import read_yaml
 
 

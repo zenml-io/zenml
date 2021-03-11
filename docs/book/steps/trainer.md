@@ -2,7 +2,7 @@
 The Trainer defines the model and training loop within the [TrainingPipeline](../pipelines/training-pipeline.md).
 
 ## Standard trainers
-A standard `FeedForwardTrainer` step is provided in the source code, which defines a simple feed-forward neural 
+A standard `TFFeedForwardTrainer` step is provided in the source code, which defines a simple feed-forward neural 
 network in Tensorflow.
 
 ## Create custom trainers

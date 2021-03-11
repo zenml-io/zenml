@@ -8,7 +8,7 @@ That is exactly the point where ZenML comes into play with the concept of versio
 You can get all your datasources using the [Repository](../repository/what-is-a-repository.md) class:
 
 ```python
-from zenml.core.repo.repo import Repository
+from zenml.repo import Repository
 
 repo: Repository = Repository.get_instance()
 

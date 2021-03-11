@@ -6,7 +6,7 @@ For this, ZenML provides the `BaseSplit` interface that you can subclass in a st
 your own custom split logic.
 
 ```
-from zenml.core.steps.split.base_split_step import BaseSplit
+from zenml.steps.split import BaseSplit
 
 class MyCustomSplit(BaseSplit):
 
@@ -40,8 +40,8 @@ Now that the theoretical flow is in place, we can quickly give an example by bui
 data into `train` and `eval` sets based on whether an integer feature in the data is odd or even.
 
 ```
-from zenml.core.steps.split.base_split_step import BaseSplit
-from zenml.core.steps.split.utils import get_categorical_value
+from zenml.steps.split import BaseSplit
+from zenml.steps.split.utils import get_categorical_value
 
 def OddEvenPartitionFn(element, num_partitions, int_feature):
 

@@ -12,6 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.utils.logger import init_logging
+from zenml.logger import init_logging
 
 init_logging()

@@ -154,21 +154,17 @@ So far, you've created a Kubernetes Cluster, potentially a Google Cloud SQL MySQ
 For this example, we'll use a simple one:
 
 ```python
-from zenml.core.backends.orchestrator.kubernetes.orchestrator_kubernetes_backend import \
-    OrchestratorKubernetesBackend
-from zenml.core.datasources.csv_datasource import CSVDatasource
-from zenml.core.metadata.mysql_metadata_wrapper import MySQLMetadataStore
-from zenml.core.pipelines.training_pipeline import TrainingPipeline
-from zenml.core.repo.artifact_store import ArtifactStore
-from zenml.core.steps.evaluator.tfma_evaluator import TFMAEvaluator
-from zenml.core.steps.preprocesser.standard_preprocesser \
-    .standard_preprocesser import \
-    StandardPreprocesser
-from zenml.core.steps.split.random_split import RandomSplit
-from zenml.core.steps.trainer.feedforward_trainer.trainer import \
-    FeedForwardTrainer
-
 import os
+
+from zenml.backends.orchestrator import OrchestratorKubernetesBackend
+from zenml.datasources import CSVDatasource
+from zenml.metadata import MySQLMetadataStore
+from zenml.pipelines import TrainingPipeline
+from zenml.repo import ArtifactStore
+from zenml.steps.evaluator import TFMAEvaluator
+from zenml.steps.preprocesser import StandardPreprocesser
+from zenml.steps.split import RandomSplit
+from zenml.steps.trainer import TFFeedForwardTrainer
 
 training_pipeline = TrainingPipeline(name='kubernetes')
 
@@ -178,7 +174,7 @@ try:
                        path='gs://zenml_quickstart/diabetes.csv')
 except:
     # A small nicety for people that have ran a quickstart before :)
-    from zenml.core.repo.repo import Repository
+    from zenml.repo.repo import Repository
 
     repo: Repository = Repository.get_instance()
     ds = repo.get_datasource_by_name("Pima Indians Diabetes")
@@ -199,7 +195,7 @@ training_pipeline.add_preprocesser(
             'transform': [{'method': 'no_transform', 'parameters': {}}]}}
     ))
 # Add a trainer
-training_pipeline.add_trainer(FeedForwardTrainer(
+training_pipeline.add_trainer(TFFeedForwardTrainer(
     loss='binary_crossentropy',
     last_activation='sigmoid',
     output_units=1,
@@ -223,8 +219,8 @@ artifact_store_bucket = 'gs://rndm-strg/zenml-k8s-test/'
 mysql_host = 'cloudsql'
 mysql_port = 3306
 mysql_db = 'zenml'
-mysql_user = USERNAME
-mysql_pw = PASSWORD
+mysql_user = 'USERNAME'
+mysql_pw = 'PASSWORD'
 
 # Path to your kubernetes config:
 k8s_config_path = os.path.join(os.environ["HOME"], '.kube/config')
@@ -250,7 +246,7 @@ training_pipeline.run(
 Congratulations, you've successfully launched a training pipeline on Kubernetes. In the log output you'll notice a line like this:
 
 ```
-2021-01-19 15:37:55,237 — zenml.core.backends.orchestrator.kubernetes.orchestrator_kubernetes_backend — INFO — Created k8s Job (batch/v1): zenml-training-kubernetes-5f4b60a6-477f-435b-9b1d-cf4523873fe5
+2021-01-19 15:37:55,237 — zenml.backends.orchestrator.kubernetes.orchestrator_kubernetes_backend — INFO — Created k8s Job (batch/v1): zenml-training-kubernetes-5f4b60a6-477f-435b-9b1d-cf4523873fe5
 ```
 
 Now, just having a pipeline run is no fun at all, you'll probably want to check yourself, if the Job is actually launching successfully. A quick detour into Kubernetes territory is in order.
