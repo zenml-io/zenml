@@ -1,4 +1,3 @@
-import os
 from typing import Dict, Text, List, Any
 
 from tfx import types
