@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Definition of the base Training Backend"""
 
-from zenml.core.components.trainer.executor import ZenMLTrainerExecutor
+from zenml.components.trainer.executor import ZenMLTrainerExecutor
 from tfx.dsl.components.base import executor_spec
 
 from zenml.backends import BaseBackend
