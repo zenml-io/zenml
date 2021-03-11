@@ -148,14 +148,15 @@ def combine_batch_results(x):
     """
 
     :param x: list of batches, batches are dicts where keys are features and
-    values are the values within the back
+    values are the values within the batch
     :return:
     """
     result = {}
     for batch in x:
         for feature, values in batch.items():
             if isinstance(values, torch.Tensor):
-                values = torch.squeeze(values).detach().numpy()
+                temp = torch.squeeze(values).detach().numpy()
+                values = np.reshape(temp, values.size())
 
             if feature not in result:
                 result[feature] = values
