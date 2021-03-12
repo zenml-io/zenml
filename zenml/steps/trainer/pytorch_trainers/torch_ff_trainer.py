@@ -121,41 +121,34 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         # Activate the evaluation mode
         model.eval()
 
-        results = {FEATURES: [],
-                   PREDICTIONS: [],
-                   LABELS: [],
-                   RAW: []}
-
+        batch_list = []
         for x, y, raw in eval_dataset:
-            # first, add the feature and the label tensors
-            results[FEATURES].append(x)
-            results[LABELS].append(y)
+            # start with an empty batch
+            batch = {}
 
-            # secondly, add the raw data in
-            results[RAW].append(raw)
+            # add the raw features with the transformed features and labels
+            batch.update(x)
+            batch.update(y)
+            batch.update(raw)
 
             # finally, add the output of the model
             x_batch = torch.cat([v for v in x.values()], dim=-1)
             p = model(x_batch)
 
             if isinstance(p, torch.Tensor):
-                results[PREDICTIONS].append({'output': p})
+                batch.update({'output': p})
             elif isinstance(p, dict):
-                results[PREDICTIONS].append(p)
+                batch.update(p)
             elif isinstance(p, list):
-                results[PREDICTIONS].append({'output_{}'.format(i): v
-                                             for i, v in enumerate(p)})
+                batch.update({'output_{}'.format(i): v for i, v in enumerate(p)})
             else:
                 raise TypeError('Unknown output format!')
 
-        combined = {}
-        # Once the computation is complete combine all the batches
-        for d in results:
-            combined_batch = utils.combine_batch_results(results[d])
-            for k in combined_batch:
-                combined[k + '_{}'.format(d)] = combined_batch[k]
+            batch_list.append(batch)
 
-        return combined
+        combined_batch = utils.combine_batch_results(batch_list)
+
+        return combined_batch
 
     def run_fn(self):
         train_dataset = self.input_fn(self.train_files,
