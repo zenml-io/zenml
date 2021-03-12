@@ -30,14 +30,14 @@ class AgnosticEvaluator(BaseEvaluatorStep):
     """
 
     def __init__(self,
-                 prediction_key: Text = None,
-                 label_key: Text = None,
+                 label_key: Text,
+                 prediction_key: Text = 'output',
                  slices: List[List[Text]] = None,
                  metrics: List[Text] = None,
                  splits: List[Text] = None):
 
-        super().__init__(prediction_key=prediction_key,
-                         label_key=label_key,
+        super().__init__(label_key=label_key,
+                         prediction_key=prediction_key,
                          slices=slices,
                          metrics=metrics,
                          splits=splits)
@@ -48,9 +48,6 @@ class AgnosticEvaluator(BaseEvaluatorStep):
 
         self.prediction_key = prediction_key
         self.label_key = label_key
-
-        if prediction_key is None or label_key is None:
-            self.infer_prediction_label_pair()
 
     def build_config(self):
         # SLICING SPEC
@@ -76,6 +73,3 @@ class AgnosticEvaluator(BaseEvaluatorStep):
             metrics_specs=metrics_specs,
             options=tfma.Options(
                 include_default_metrics=BoolValue(value=False)))
-
-    def infer_prediction_label_pair(self):
-        raise NotImplementedError('This utility function is not implemented!')
