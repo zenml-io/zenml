@@ -12,13 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-# TODO: [LOW] Refactor into utility
-import importlib.util
-
-spec = importlib.util.find_spec('torch')
-if spec is None:
-    raise AssertionError("torch integration not installed. Please install "
-                         "zenml[torch] via `pip install zenml[pytorch]`")
 
 import os
 from typing import List, Text
@@ -29,8 +22,8 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as data
 
-from zenml.steps.trainer.pytorch_trainers import utils
 from zenml.steps.trainer import TorchBaseTrainerStep
+from zenml.steps.trainer.pytorch_trainers import utils
 from zenml.utils import path_utils
 
 FEATURES = 'features'
@@ -117,7 +110,8 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         spec = tf_transform_output.transformed_feature_spec()
         dataset = utils.TFRecordTorchDataset(file_pattern, spec)
         loader = torch.utils.data.DataLoader(dataset,
-                                             batch_size=self.batch_size)
+                                             batch_size=self.batch_size,
+                                             drop_last=True)
         return loader
 
     def model_fn(self, train_dataset, eval_dataset):
