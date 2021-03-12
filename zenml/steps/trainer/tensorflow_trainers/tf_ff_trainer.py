@@ -19,6 +19,7 @@ import tensorflow as tf
 import tensorflow_transform as tft
 
 from zenml.steps.trainer import TFBaseTrainerStep
+from zenml.utils import naming_utils
 
 
 class FeedForwardTrainer(TFBaseTrainerStep):
@@ -139,7 +140,8 @@ class FeedForwardTrainer(TFBaseTrainerStep):
 
         xf_feature_spec = {x: xf_feature_spec[x]
                            for x in xf_feature_spec
-                           if x.endswith('_xf')}
+                           if naming_utils.check_if_transformed_feature(x)
+                           or naming_utils.check_if_transformed_label(x)}
 
         dataset = tf.data.experimental.make_batched_features_dataset(
             file_pattern=file_pattern,
@@ -154,16 +156,10 @@ class FeedForwardTrainer(TFBaseTrainerStep):
             inputs = {}
             labels = {}
             for e in x:
-                if not e.startswith('label'):
+                if naming_utils.check_if_transformed_feature(x):
                     inputs[e] = x[e]
                 else:
                     labels[e] = x[e]
-
-            labels = {
-                label[len('label_'):-len('_xf')]:
-                    labels[label]
-                for label in labels.keys()
-            }
 
             return inputs, labels
 
@@ -194,9 +190,9 @@ class FeedForwardTrainer(TFBaseTrainerStep):
             xf_feature_spec = tf_transform_output.transformed_feature_spec()
             transformed_features = model.tft_layer(parsed_features)
             for f in xf_feature_spec:
-                if f.startswith('label_'):
+                if naming_utils.check_if_transformed_label(f):
                     transformed_features.pop(f)
-                if not f.endswith('_xf'):
+                if not naming_utils.check_if_transformed_feature(f):
                     transformed_features.pop(f)
 
             return model(transformed_features)
@@ -222,8 +218,10 @@ class FeedForwardTrainer(TFBaseTrainerStep):
             """Returns the output to be used in the ce_eval signature."""
             xf_feature_spec = tf_transform_output.transformed_feature_spec()
 
-            label_spec = [f for f in xf_feature_spec if f.startswith('label_')]
-            eval_spec = [f for f in xf_feature_spec if not f.endswith('_xf')]
+            label_spec = [f for f in xf_feature_spec if
+                          naming_utils.check_if_transformed_label(f)]
+            eval_spec = [f for f in xf_feature_spec if
+                         not naming_utils.check_if_transformed_feature(f)]
 
             transformed_features = tf.io.parse_example(serialized_tf_examples,
                                                        xf_feature_spec)
