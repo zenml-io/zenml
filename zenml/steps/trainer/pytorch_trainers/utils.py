@@ -13,6 +13,7 @@ from tensorflow.python.data.ops import dataset_ops
 from tensorflow.python.data.ops import readers as core_readers
 from tensorflow.python.framework import dtypes
 
+from zenml.utils import naming_utils
 from zenml.utils import path_utils
 
 
@@ -76,10 +77,10 @@ def _split_inputs_labels(x):
     labels = {}
     raw = {}
     for e in x:
-        if e.startswith('label'):
-            labels[e[len('label_'):-len('_xf')]] = x[e]
-        elif e.endswith('_xf'):
-            inputs[e[:-len('_xf')]] = x[e]
+        if naming_utils.check_if_transformed_label(e):
+            labels[e] = x[e]
+        elif naming_utils.check_if_transformed_feature(e):
+            inputs[e] = x[e]
         else:
             raw[e] = x[e]
 
@@ -93,33 +94,28 @@ def create_tf_dataset(file_pattern,
                       shuffle_seed=None,
                       shuffle_buffer_size=None,
                       reader_num_threads=None,
-                      parser_num_threads=None,
                       prefetch_buffer_size=None):
     reader = _gzip_reader_fn
 
     if reader_num_threads is None:
         reader_num_threads = 1
-    if parser_num_threads is None:
-        parser_num_threads = 2
     if prefetch_buffer_size is None:
         prefetch_buffer_size = dataset_ops.AUTOTUNE
 
-    # Create dataset of all matching filenames
     dataset = dataset_ops.Dataset.list_files(file_pattern=file_pattern,
                                              shuffle=shuffle,
                                              seed=shuffle_seed)
 
     if reader_num_threads == dataset_ops.AUTOTUNE:
-        dataset = dataset.interleave(
-            lambda filename: reader(filename),
-            num_parallel_calls=reader_num_threads)
+        dataset = dataset.interleave(lambda filename: reader(filename),
+                                     num_parallel_calls=reader_num_threads)
         options = dataset_ops.Options()
         options.experimental_deterministic = True
         dataset = dataset.with_options(options)
     else:
-        def apply_fn(dataset):
+        def apply_fn(d):
             return core_readers.ParallelInterleaveDataset(
-                dataset,
+                d,
                 lambda filename: reader(filename),
                 cycle_length=reader_num_threads,
                 block_length=1,
@@ -147,12 +143,6 @@ def create_tf_dataset(file_pattern,
 
 
 def combine_batch_results(x):
-    """
-
-    :param x: list of batches, batches are dicts where keys are features and
-    values are the values within the batch
-    :return:
-    """
     result = {}
     for batch in x:
         for feature, values in batch.items():
