@@ -19,4 +19,4 @@ from zenml.utils.source_utils import load_source_path_class
 def preprocessing_fn(inputs, custom_config):
     c = load_source_path_class(custom_config[StepKeys.SOURCE])
     args = custom_config[StepKeys.ARGS]
-    return c(**args).get_preprocessing_fn()(inputs)
+    return c(**args).preprocessing_fn(inputs)
