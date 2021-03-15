@@ -156,7 +156,7 @@ class FeedForwardTrainer(TFBaseTrainerStep):
             inputs = {}
             labels = {}
             for e in x:
-                if naming_utils.check_if_transformed_feature(x):
+                if naming_utils.check_if_transformed_feature(e):
                     inputs[e] = x[e]
                 else:
                     labels[e] = x[e]
@@ -190,8 +190,6 @@ class FeedForwardTrainer(TFBaseTrainerStep):
             xf_feature_spec = tf_transform_output.transformed_feature_spec()
             transformed_features = model.tft_layer(parsed_features)
             for f in xf_feature_spec:
-                if naming_utils.check_if_transformed_label(f):
-                    transformed_features.pop(f)
                 if not naming_utils.check_if_transformed_feature(f):
                     transformed_features.pop(f)
 
@@ -218,16 +216,12 @@ class FeedForwardTrainer(TFBaseTrainerStep):
             """Returns the output to be used in the ce_eval signature."""
             xf_feature_spec = tf_transform_output.transformed_feature_spec()
 
-            label_spec = [f for f in xf_feature_spec if
-                          naming_utils.check_if_transformed_label(f)]
-            eval_spec = [f for f in xf_feature_spec if
-                         not naming_utils.check_if_transformed_feature(f)]
-
             transformed_features = tf.io.parse_example(serialized_tf_examples,
                                                        xf_feature_spec)
 
-            for f in label_spec + eval_spec:
-                transformed_features.pop(f)
+            for f in tf_transform_output.transformed_feature_spec():
+                if not naming_utils.transformed_feature_name(f):
+                    transformed_features.pop(f)
 
             outputs = model(transformed_features)
 
