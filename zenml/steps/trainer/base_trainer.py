@@ -115,11 +115,5 @@ class BaseTrainerStep(BaseStep):
         """
         pass
 
-    def get_run_fn(self):
-        return self.run_fn
-
     def test_fn(self):
         pass
-
-    def get_test_fn(self):
-        return self.test_fn
