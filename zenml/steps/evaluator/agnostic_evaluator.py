@@ -31,7 +31,7 @@ class AgnosticEvaluator(BaseEvaluatorStep):
 
     def __init__(self,
                  label_key: Text,
-                 prediction_key: Text = 'output',
+                 prediction_key: Text,
                  slices: List[List[Text]] = None,
                  metrics: List[Text] = None,
                  splits: List[Text] = None):
