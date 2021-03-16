@@ -22,6 +22,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as data
 
+from zenml.steps.trainer import utils
 from zenml.steps.trainer import TorchBaseTrainerStep
 from zenml.steps.trainer.pytorch_trainers import utils
 from zenml.utils import path_utils
