@@ -19,6 +19,7 @@ import tensorflow as tf
 import tensorflow_transform as tft
 
 from zenml.steps.trainer import TFBaseTrainerStep
+from zenml.steps.trainer import utils
 from zenml.utils import naming_utils
 
 
@@ -91,6 +92,41 @@ class FeedForwardTrainer(TFBaseTrainerStep):
     def get_run_fn(self):
         return self.run_fn
 
+    def test_fn(self, model, datasets):
+        batch_list = []
+        for x, y in datasets:
+            # start with an empty batch
+            batch = {}
+
+            transformed_f = {f: x[f] for f in x if
+                             naming_utils.check_if_transformed_feature(f)}
+            raw_f = {f: x[f] for f in x if
+                     not naming_utils.check_if_transformed_feature(f)}
+
+            # add the raw features with the transformed features and labels
+            batch.update(transformed_f)
+            batch.update(y)
+            batch.update(raw_f)
+
+            # finally, add the output of the
+            p = model.predict(transformed_f)
+
+            if isinstance(p, tf.Tensor):
+                batch.update({'output': p})
+            elif isinstance(p, dict):
+                batch.update({naming_utils.output_name(k): p[k] for k in p})
+            elif isinstance(p, list):
+                batch.update(
+                    {'output_{}'.format(i): v for i, v in enumerate(p)})
+            else:
+                raise TypeError('Unknown output format!')
+
+            batch_list.append(batch)
+
+        return batch_list
+
+        # combined_batch = utils.combine_batch_results(batch_list)
+
     def run_fn(self):
         tf_transform_output = tft.TFTransformOutput(self.transform_output)
 
@@ -99,6 +135,9 @@ class FeedForwardTrainer(TFBaseTrainerStep):
 
         model = self.model_fn(train_dataset=train_dataset,
                               eval_dataset=eval_dataset)
+
+        test_results = self.test_fn(model, eval_dataset)
+        utils.save_test_results(test_results, self.test_results)
 
         signatures = {
             'serving_default':
@@ -138,32 +177,32 @@ class FeedForwardTrainer(TFBaseTrainerStep):
 
         xf_feature_spec = tf_transform_output.transformed_feature_spec()
 
-        xf_feature_spec = {x: xf_feature_spec[x]
-                           for x in xf_feature_spec
-                           if naming_utils.check_if_transformed_feature(x)
-                           or naming_utils.check_if_transformed_label(x)}
+        # xf_feature_spec = {x: xf_feature_spec[x]
+        #                    for x in xf_feature_spec
+        #                    if naming_utils.check_if_transformed_feature(x)
+        #                    or naming_utils.check_if_transformed_label(x)}
 
         dataset = tf.data.experimental.make_batched_features_dataset(
             file_pattern=file_pattern,
             batch_size=self.batch_size,
             features=xf_feature_spec,
             reader=self._gzip_reader_fn,
-            num_epochs=1)
+            num_epochs=1,
+            drop_final_batch=True)
 
-        dataset = dataset.unbatch()
+        # dataset = dataset.unbatch()
 
-        def split_inputs_labels(x):
+        def split_columns(x):
             inputs = {}
             labels = {}
             for e in x:
-                if naming_utils.check_if_transformed_feature(e):
+                if not naming_utils.check_if_transformed_label(e):
                     inputs[e] = x[e]
                 else:
                     labels[e] = x[e]
-
             return inputs, labels
 
-        dataset = dataset.map(split_inputs_labels)
+        dataset = dataset.map(split_columns)
 
         return dataset
 
@@ -258,10 +297,6 @@ class FeedForwardTrainer(TFBaseTrainerStep):
         Returns:
             model: A trained feedforward neural network model.
         """
-
-        train_dataset = train_dataset.batch(self.batch_size,
-                                            drop_remainder=True)
-        eval_dataset = eval_dataset.batch(self.batch_size, drop_remainder=True)
 
         features = list(train_dataset.element_spec[0].keys())
         labels = list(train_dataset.element_spec[1].keys())
