@@ -54,10 +54,11 @@ def combine_batch_results(x):
             if isinstance(values, torch.Tensor):
                 temp = torch.squeeze(values).detach().numpy()
                 values = np.reshape(temp, values.size())
+            elif isinstance(values, tf.Tensor):
+                values = values.numpy()
 
             if feature not in result:
                 result[feature] = values
-
             else:
                 result[feature] = np.concatenate((result[feature],
                                                   values), axis=0)
