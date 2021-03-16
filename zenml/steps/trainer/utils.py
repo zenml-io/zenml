@@ -1,7 +1,9 @@
 import os
 
+import numpy as np
 import pandas as pd
 import tensorflow as tf
+import torch
 
 from zenml.utils import path_utils
 
@@ -43,3 +45,21 @@ def to_serialized_examples(instance) -> tf.train.Example:
         ).SerializeToString())
 
     return example_list
+
+
+def combine_batch_results(x):
+    result = {}
+    for batch in x:
+        for feature, values in batch.items():
+            if isinstance(values, torch.Tensor):
+                temp = torch.squeeze(values).detach().numpy()
+                values = np.reshape(temp, values.size())
+
+            if feature not in result:
+                result[feature] = values
+
+            else:
+                result[feature] = np.concatenate((result[feature],
+                                                  values), axis=0)
+
+    return result

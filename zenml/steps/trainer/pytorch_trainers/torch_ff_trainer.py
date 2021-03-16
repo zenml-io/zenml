@@ -22,9 +22,9 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as data
 
-from zenml.steps.trainer import utils
 from zenml.steps.trainer import TorchBaseTrainerStep
-from zenml.steps.trainer.pytorch_trainers import utils
+from zenml.steps.trainer import utils
+from zenml.steps.trainer.pytorch_trainers import utils as torch_utils
 from zenml.utils import path_utils
 
 FEATURES = 'features'
@@ -109,7 +109,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                  file_pattern: List[Text],
                  tf_transform_output: tft.TFTransformOutput):
         spec = tf_transform_output.transformed_feature_spec()
-        dataset = utils.TFRecordTorchDataset(file_pattern, spec)
+        dataset = torch_utils.TFRecordTorchDataset(file_pattern, spec)
         loader = torch.utils.data.DataLoader(dataset,
                                              batch_size=self.batch_size,
                                              drop_last=True)
@@ -141,7 +141,8 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
             elif isinstance(p, dict):
                 batch.update(p)
             elif isinstance(p, list):
-                batch.update({'output_{}'.format(i): v for i, v in enumerate(p)})
+                batch.update(
+                    {'output_{}'.format(i): v for i, v in enumerate(p)})
             else:
                 raise TypeError('Unknown output format!')
 
