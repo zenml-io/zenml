@@ -19,6 +19,7 @@ import tensorflow_model_analysis as tfma
 from google.protobuf.wrappers_pb2 import BoolValue
 
 from zenml.steps.evaluator.base_evaluator import BaseEvaluatorStep
+from zenml.utils import naming_utils
 
 
 def to_camel_case(s):
@@ -61,8 +62,7 @@ class TFMAEvaluator(BaseEvaluatorStep):
 
         model_specs = [tfma.ModelSpec(
             signature_name='zen_eval',
-            label_keys={l: 'label_{}_xf'.format(l)
-                        for i, l in enumerate(metric_labels)})]
+            label_keys={label: label for label in metric_labels})]
 
         # METRIC SPEC
         baseline = [tfma.MetricConfig(class_name='ExampleCount')]
