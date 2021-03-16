@@ -109,7 +109,7 @@ class FeedForwardTrainer(TFBaseTrainerStep):
             batch.update(raw_f)
 
             # finally, add the output of the
-            p = model.predict(transformed_f)
+            p = model.predict(x)
 
             if isinstance(p, tf.Tensor):
                 batch.update({'output': p})
@@ -177,11 +177,6 @@ class FeedForwardTrainer(TFBaseTrainerStep):
 
         xf_feature_spec = tf_transform_output.transformed_feature_spec()
 
-        # xf_feature_spec = {x: xf_feature_spec[x]
-        #                    for x in xf_feature_spec
-        #                    if naming_utils.check_if_transformed_feature(x)
-        #                    or naming_utils.check_if_transformed_label(x)}
-
         dataset = tf.data.experimental.make_batched_features_dataset(
             file_pattern=file_pattern,
             batch_size=self.batch_size,
@@ -189,8 +184,6 @@ class FeedForwardTrainer(TFBaseTrainerStep):
             reader=self._gzip_reader_fn,
             num_epochs=1,
             drop_final_batch=True)
-
-        # dataset = dataset.unbatch()
 
         def split_columns(x):
             inputs = {}
