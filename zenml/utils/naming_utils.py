@@ -24,6 +24,7 @@ from typing import Text
 
 TRANSFORM_SUFFIX = '_xf'
 LABEL_SUFFIX = '_xl'
+OUTPUT_SUFFIX = '_o'
 
 
 def transformed_feature_name(name: Text):
@@ -34,9 +35,17 @@ def transformed_label_name(name: Text):
     return name + LABEL_SUFFIX
 
 
+def output_name(name: Text):
+    return name + OUTPUT_SUFFIX
+
+
 def check_if_transformed_feature(name: Text):
     return name.endswith(TRANSFORM_SUFFIX)
 
 
 def check_if_transformed_label(name: Text):
     return name.endswith(LABEL_SUFFIX)
+
+
+def check_if_output_name(name: Text):
+    return name.endswith(OUTPUT_SUFFIX)
