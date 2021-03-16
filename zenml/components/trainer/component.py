@@ -4,7 +4,6 @@ from __future__ import print_function
 
 from typing import Any, Dict, Optional, Text, Union
 
-import absl
 from tfx import types
 from tfx.dsl.components.base import base_component
 from tfx.dsl.components.base import executor_spec
@@ -70,7 +69,6 @@ class Trainer(base_component.BaseComponent):
             output: Optional[types.Channel] = None,
             model_run: Optional[types.Channel] = None,
             test_results: Optional[types.Channel] = None,
-            transform_output: Optional[types.Channel] = None,
             instance_name: Optional[Text] = None):
 
         if [bool(module_file), bool(run_fn), bool(trainer_fn)].count(
@@ -83,15 +81,10 @@ class Trainer(base_component.BaseComponent):
             raise ValueError(
                 "Exactly one of 'example' or 'transformed_example' must be supplied.")
 
-        if transform_output:
-            absl.logging.warning(
-                'The "transform_output" argument to the Trainer component has '
-                'been renamed to "transform_graph" and is deprecated. Please update '
-                "your usage as support for this argument will be removed soon.")
-            transform_graph = transform_output
         if transformed_examples and not transform_graph:
             raise ValueError("If 'transformed_examples' is supplied, "
                              "'transform_graph' must be supplied too.")
+
         examples = examples or transformed_examples
         output = output or types.Channel(type=Model)
         model_run = model_run or types.Channel(type=ModelRun)
