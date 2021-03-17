@@ -38,17 +38,31 @@ class TFMAEvaluator(BaseEvaluatorStep):
     CUSTOM_MODULE = 'zenml.steps.evaluator.tfma_module'
 
     def __init__(self,
+                 metrics: Dict[Text, List[Text]],
                  slices: List[List[Text]] = None,
-                 metrics: Dict[Text, List[Text]] = None,
+                 output_mapping: Dict[Text, Text] = None,
                  splits: List[Text] = None):
 
         super().__init__(slices=slices,
                          metrics=metrics,
-                         splits=splits)
+                         splits=splits,
+                         output_mapping=output_mapping)
+
+        self.metrics = metrics
 
         self.slices = slices or list()
-        self.metrics = metrics or dict()
         self.splits = splits or ['eval']
+
+        if output_mapping is None:
+            if len(self.metrics.keys()) == 1:
+                label = list(self.metrics.keys())[0]
+                self.output_mapping = {label: label}
+            else:
+                raise ValueError('If you are using the evaluator to compute '
+                                 'metrics on more than 1 output/label please'
+                                 'provide a output_mapping!')
+        else:
+            self.output_mapping = output_mapping
 
     def build_config(self, use_defaults=False):
         # SLICING SPEC
@@ -59,10 +73,8 @@ class TFMAEvaluator(BaseEvaluatorStep):
 
         # MODEL SPEC
         metric_labels = sorted(list(set(self.metrics.keys())))
-
-        model_specs = [tfma.ModelSpec(
-            signature_name='zen_eval',
-            label_keys={label: label for label in metric_labels})]
+        model_specs = [tfma.ModelSpec(signature_name='zen_eval',
+                                      label_keys=self.output_mapping)]
 
         # METRIC SPEC
         baseline = [tfma.MetricConfig(class_name='ExampleCount')]
