@@ -23,15 +23,18 @@ from zenml.steps.evaluator.base_evaluator import BaseEvaluatorStep
 
 def to_camel_case(s):
     """
-    Args:
-        s:
+    Converts a given name to camel case and removes any '_'
     """
     return ''.join(list(map(lambda x: x.capitalize(), s.split('_'))))
 
 
 class TFMAEvaluator(BaseEvaluatorStep):
     """
-    Custom TFMA Evaluator step.
+    TFMA Evaluator step designed for the TF models in ZenML
+
+    It features a specific build_config method which produces a flexible
+    tfma.EvalConfig, which can work with a wide range of Tensorflow models and
+    TFMA
     """
 
     CUSTOM_MODULE = 'zenml.steps.evaluator.tfma_module'
@@ -41,6 +44,18 @@ class TFMAEvaluator(BaseEvaluatorStep):
                  slices: List[List[Text]] = None,
                  output_mapping: Dict[Text, Text] = None,
                  splits: List[Text] = None):
+        """
+        Init for the TFMA evaluator
+
+        :param metrics: a dictionary, which specifies a list metrics for each
+        label
+        :param slices: a list of lists, each element in the inner list include
+        a set of features which will be used for slicing on the results
+        :param output_mapping: a mapping from label names to output names.
+        This is especially useful, when it comes to multi-output models or
+        models with unknown output names.
+        :param splits: the list of splits to apply the evaluation on
+        """
 
         super().__init__(slices=slices,
                          metrics=metrics,
