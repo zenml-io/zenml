@@ -232,6 +232,14 @@ class BasePipeline:
             raise AlreadyExistsException(
                 name=self.name, resource_type='pipeline')
 
+    def _validate_steps(self):
+        """Ensure that steps are of the right type"""
+        for step_name, step_val in self.steps_dict.items():
+            if not issubclass(type(step_val), BaseStep):
+                raise AssertionError(
+                    f'Step {step_name} needs to be an object that is a '
+                    f'sub-class of: {BaseStep}')
+
     def add_datasource(self, datasource: BaseDatasource):
         """
         Add datasource to pipeline.
@@ -392,6 +400,9 @@ class BasePipeline:
 
         # Check if steps are complete
         self.steps_completed()
+
+        # Validate steps
+        self._validate_steps()
 
         if self._immutable:
             # This means its an 'older' pipeline that has been loaded in via
