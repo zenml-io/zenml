@@ -204,8 +204,8 @@ class TrainingPipeline(BasePipeline):
         #############
         if keys.TrainingSteps.EVALUATOR in steps:
             evaluator_config = steps[keys.TrainingSteps.EVALUATOR]
-            # TODO: This check should ideally not happen here, integrate it
-            #   into the component
+            # TODO [MEDIUM]: This check should ideally not happen here,
+            #  integrate it into the component
             eval_source = evaluator_config['source'].split('@')[0]
             if eval_source == 'zenml.steps.evaluator.agnostic_evaluator.AgnosticEvaluator':
                 evaluator = Evaluator(
