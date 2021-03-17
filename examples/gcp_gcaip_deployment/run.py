@@ -1,6 +1,7 @@
 import os
 
 from zenml.datasources import CSVDatasource
+from zenml.exceptions import AlreadyExistsException
 from zenml.pipelines import TrainingPipeline
 from zenml.repo import Repository
 from zenml.steps.deployer import GCAIPDeployer
@@ -8,7 +9,7 @@ from zenml.steps.evaluator import TFMAEvaluator
 from zenml.steps.preprocesser import StandardPreprocesser
 from zenml.steps.split import RandomSplit
 from zenml.steps.trainer import TFFeedForwardTrainer
-from zenml.exceptions import AlreadyExistsException
+from zenml.utils.naming_utils import transformed_label_name
 
 GCP_PROJECT = os.getenv('GCP_PROJECT')
 MODEL_NAME = os.getenv('MODEL_NAME')
@@ -55,8 +56,8 @@ training_pipeline.add_trainer(TFFeedForwardTrainer(
 # Add an evaluator
 training_pipeline.add_evaluator(
     TFMAEvaluator(slices=[['has_diabetes']],
-                  metrics={'has_diabetes': ['binary_crossentropy',
-                                            'binary_accuracy']}))
+                  metrics={transformed_label_name('has_diabetes'):
+                               ['binary_crossentropy', 'binary_accuracy']}))
 
 # Add the deployer
 training_pipeline.add_deployment(
