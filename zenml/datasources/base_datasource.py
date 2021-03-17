@@ -20,19 +20,19 @@ from uuid import uuid4
 
 import tensorflow as tf
 
-from zenml.repo import Repository
-from zenml.standards import standard_keys as keys
-from zenml.utils import path_utils
-from zenml.utils import source_utils
 from zenml.enums import GDPComponent
 from zenml.exceptions import AlreadyExistsException, \
     EmptyDatasourceException
 from zenml.logger import get_logger
+from zenml.repo import Repository
+from zenml.standards import standard_keys as keys
+from zenml.utils import path_utils
+from zenml.utils import source_utils
+from zenml.utils.analytics_utils import track, CREATE_DATASOURCE
 from zenml.utils.post_training.post_training_utils import \
     view_schema, get_feature_spec_from_schema, \
     convert_raw_dataset_to_pandas, view_statistics
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
-from zenml.utils.analytics_utils import track, CREATE_DATASOURCE
 
 logger = get_logger(__name__)
 
@@ -72,9 +72,7 @@ class BaseDatasource:
 
         self.name = name
         self._immutable = False
-        self._source = source_utils.resolve_source(
-            self.__class__.__module__ + '.' + self.__class__.__name__
-        )
+        self._source = source_utils.resolve_class(self.__class__)
 
     def __str__(self):
         return to_pretty_string(self.to_config())

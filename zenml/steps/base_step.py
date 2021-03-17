@@ -19,8 +19,8 @@ from zenml.backends import BaseBackend
 from zenml.enums import StepTypes
 from zenml.standards.standard_keys import StepKeys
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
-from zenml.utils.source_utils import resolve_source, \
-    load_source_path_class, is_valid_source, get_module_source_from_file_path
+from zenml.utils.source_utils import resolve_class, \
+    load_source_path_class, is_valid_source
 
 
 class BaseStep:
@@ -42,13 +42,7 @@ class BaseStep:
         self._kwargs = kwargs
         self._immutable = False
         self.backend = backend
-
-        file_path = inspect.getfile(self.__class__)
-        full_module_path = get_module_source_from_file_path(file_path)
-
-        self._source = resolve_source(
-            full_module_path + '.' + self.__class__.__name__
-        )
+        self._source = resolve_class(self.__class__)
 
     def __str__(self):
         return to_pretty_string(self.to_config())
@@ -114,9 +108,7 @@ class BaseStep:
         kwargs = {}
         for key, kwarg in self._kwargs.items():
             if inspect.isclass(kwarg):
-                kwargs[key] = resolve_source(
-                    kwarg.__module__ + '.' + kwarg.__name__
-                )
+                kwargs[key] = resolve_class(kwarg)
             else:
                 kwargs[key] = kwarg
 

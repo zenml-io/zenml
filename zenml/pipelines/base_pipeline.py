@@ -19,19 +19,19 @@ from typing import Dict, Text, Any, Optional, List
 from uuid import uuid4
 
 from zenml.backends.orchestrator import OrchestratorBaseBackend
+from zenml.constants import CONFIG_VERSION
 from zenml.datasources import BaseDatasource
+from zenml.enums import PipelineStatusTypes
+from zenml.exceptions import AlreadyExistsException
+from zenml.logger import get_logger
 from zenml.metadata import ZenMLMetadataStore
 from zenml.repo import Repository, ArtifactStore
 from zenml.standards import standard_keys as keys
 from zenml.steps import BaseStep
 from zenml.utils import source_utils
-from zenml.constants import CONFIG_VERSION
-from zenml.enums import PipelineStatusTypes
-from zenml.exceptions import AlreadyExistsException
-from zenml.logger import get_logger
-from zenml.utils.print_utils import to_pretty_string, PrintStyles
 from zenml.utils.analytics_utils import track, CREATE_PIPELINE, RUN_PIPELINE, \
     GET_PIPELINE_ARTIFACTS
+from zenml.utils.print_utils import to_pretty_string, PrintStyles
 
 logger = get_logger(__name__)
 
@@ -124,9 +124,7 @@ class BasePipeline:
         else:
             self.datasource = None
 
-        self._source = source_utils.resolve_source(
-            self.__class__.__module__ + '.' + self.__class__.__name__
-        )
+        self._source = source_utils.resolve_class(self.__class__)
         self._kwargs = {
             keys.PipelineDetailKeys.NAME: self.pipeline_name,
             keys.PipelineDetailKeys.ENABLE_CACHE: self.enable_cache,
