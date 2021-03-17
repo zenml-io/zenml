@@ -14,9 +14,12 @@ from tfx.utils import path_utils
 from tfx_bsl.tfxio import tensor_adapter
 
 from zenml.components.evaluator import constants
+from zenml.logger import get_logger
 from zenml.standards.standard_keys import StepKeys
 from zenml.steps.evaluator.base_evaluator import BaseEvaluatorStep
-from zenml.utils import source_utils
+from zenml.utils import source_utils, path_utils
+
+logger = get_logger(__name__)
 
 
 def try_get_fn(module_path: Text,
@@ -42,112 +45,128 @@ class Executor(base_executor.BaseExecutor):
             raise ValueError(f'{constants.EXAMPLES} is missing from inputs')
         examples_artifact = input_dict[constants.EXAMPLES]
 
-        # Check the outputs
-        if constants.EVALUATION not in output_dict:
-            raise ValueError(f'{constants.EVALUATION} is missing from outputs')
-        evaluation_artifact = output_dict[constants.EVALUATION]
-        output_uri = artifact_utils.get_single_uri(evaluation_artifact)
+        input_uri = artifact_utils.get_single_uri(examples_artifact)
+        if len(path_utils.list_dir(input_uri)) == 0:
+            # TODO: This is quite specific to AgnosticEvaluators,
+            logger.warning('ZenML can not run the evaluation as the provided '
+                           'input configuration does not point towards any '
+                           'data. Specifically, if you are using the agnostic '
+                           'evaluator, please make sure that you are using a '
+                           'proper test_fn in your trainer step to write '
+                           'these results.')
 
-        # Resolve the schema
-        schema = None
-        if constants.SCHEMA in input_dict:
-            schema_artifact = input_dict[constants.SCHEMA]
-            schema_uri = artifact_utils.get_single_uri(schema_artifact)
-            reader = io_utils.SchemaReader()
-            schema = reader.read(io_utils.get_only_uri_in_dir(schema_uri))
-
-        # Create the step with the schema attached if provided
-        source = exec_properties[StepKeys.SOURCE]
-        args = exec_properties[StepKeys.ARGS]
-        c = source_utils.load_source_path_class(source)
-        evaluator_step: BaseEvaluatorStep = c(**args)
-
-        # Check the execution parameters
-        eval_config = evaluator_step.build_config()
-        eval_config = tfma.update_eval_config_with_defaults(eval_config)
-        tfma.verify_eval_config(eval_config)
-
-        # Resolve the model
-        if constants.MODEL in input_dict:
-            model_artifact = input_dict[constants.MODEL]
-            model_uri = artifact_utils.get_single_uri(model_artifact)
-            model_path = path_utils.serving_model_path(model_uri)
-
-            model_fn = try_get_fn(evaluator_step.CUSTOM_MODULE,
-                                  'custom_eval_shared_model') or tfma.default_eval_shared_model
-
-            eval_shared_model = model_fn(
-                model_name='',  # TODO: Fix with model names
-                eval_saved_model_path=model_path,
-                eval_config=eval_config)
         else:
-            eval_shared_model = None
+            # Check the outputs
+            if constants.EVALUATION not in output_dict:
+                raise ValueError(
+                    f'{constants.EVALUATION} is missing from outputs')
+            evaluation_artifact = output_dict[constants.EVALUATION]
+            output_uri = artifact_utils.get_single_uri(evaluation_artifact)
 
-        self._log_startup(input_dict, output_dict, exec_properties)
+            # Resolve the schema
+            schema = None
+            if constants.SCHEMA in input_dict:
+                schema_artifact = input_dict[constants.SCHEMA]
+                schema_uri = artifact_utils.get_single_uri(schema_artifact)
+                reader = io_utils.SchemaReader()
+                schema = reader.read(io_utils.get_only_uri_in_dir(schema_uri))
 
-        # Main pipeline
-        logging.info('Evaluating model.')
-        with self._make_beam_pipeline() as pipeline:
-            examples_list = []
-            tensor_adapter_config = None
-            if tfma.is_batched_input(eval_shared_model, eval_config):
-                tfxio_factory = tfxio_utils.get_tfxio_factory_from_artifact(
-                    examples=[
-                        artifact_utils.get_single_instance(examples_artifact)],
-                    telemetry_descriptors=_TELEMETRY_DESCRIPTORS,
-                    schema=schema,
-                    raw_record_column_name=tfma_constants.ARROW_INPUT_COLUMN)
-                for split in evaluator_step.splits:
-                    file_pattern = io_utils.all_files_pattern(
-                        artifact_utils.get_split_uri(examples_artifact,
-                                                     split))
-                    tfxio = tfxio_factory(file_pattern)
-                    data = (pipeline
-                            | 'ReadFromTFRecordToArrow[%s]' % split >> tfxio.BeamSource())
-                    examples_list.append(data)
-                if schema is not None:
-                    tensor_adapter_config = tensor_adapter.TensorAdapterConfig(
-                        arrow_schema=tfxio.ArrowSchema(),
-                        tensor_representations=tfxio.TensorRepresentations())
+            # Create the step with the schema attached if provided
+            source = exec_properties[StepKeys.SOURCE]
+            args = exec_properties[StepKeys.ARGS]
+            c = source_utils.load_source_path_class(source)
+            evaluator_step: BaseEvaluatorStep = c(**args)
+
+            # Check the execution parameters
+            eval_config = evaluator_step.build_config()
+            eval_config = tfma.update_eval_config_with_defaults(eval_config)
+            tfma.verify_eval_config(eval_config)
+
+            # Resolve the model
+            if constants.MODEL in input_dict:
+                model_artifact = input_dict[constants.MODEL]
+                model_uri = artifact_utils.get_single_uri(model_artifact)
+                model_path = path_utils.serving_model_path(model_uri)
+
+                model_fn = try_get_fn(evaluator_step.CUSTOM_MODULE,
+                                      'custom_eval_shared_model') or tfma.default_eval_shared_model
+
+                eval_shared_model = model_fn(
+                    model_name='',  # TODO: Fix with model names
+                    eval_saved_model_path=model_path,
+                    eval_config=eval_config)
             else:
-                for split in evaluator_step.splits:
-                    file_pattern = io_utils.all_files_pattern(
-                        artifact_utils.get_split_uri(examples_artifact,
-                                                     split))
-                    data = (pipeline
-                            | 'ReadFromTFRecord[%s]' % split >>
-                            beam.io.ReadFromTFRecord(file_pattern=file_pattern)
-                            )
-                    examples_list.append(data)
+                eval_shared_model = None
 
-            # Resolve custom extractors
-            custom_extractors = try_get_fn(evaluator_step.CUSTOM_MODULE,
-                                           'custom_extractors')
-            extractors = None
-            if custom_extractors:
-                extractors = custom_extractors(
-                    eval_shared_model=eval_shared_model,
-                    eval_config=eval_config,
-                    tensor_adapter_config=tensor_adapter_config)
+            self._log_startup(input_dict, output_dict, exec_properties)
 
-            # Resolve custom evaluators
-            custom_evaluators = try_get_fn(evaluator_step.CUSTOM_MODULE,
-                                           'custom_evaluators')
-            evaluators = None
-            if custom_evaluators:
-                evaluators = custom_evaluators(
-                    eval_shared_model=eval_shared_model,
-                    eval_config=eval_config,
-                    tensor_adapter_config=tensor_adapter_config)
+            # Main pipeline
+            logging.info('Evaluating model.')
+            with self._make_beam_pipeline() as pipeline:
+                examples_list = []
+                tensor_adapter_config = None
 
-            # Extract, evaluate and write
-            (examples_list | 'FlattenExamples' >> beam.Flatten()
-             |
-             'ExtractEvaluateAndWriteResults' >> tfma.ExtractEvaluateAndWriteResults(
-                        eval_config=eval_config,
+                if tfma.is_batched_input(eval_shared_model, eval_config):
+                    tfxio_factory = tfxio_utils.get_tfxio_factory_from_artifact(
+                        examples=[
+                            artifact_utils.get_single_instance(
+                                examples_artifact)],
+                        telemetry_descriptors=_TELEMETRY_DESCRIPTORS,
+                        schema=schema,
+                        raw_record_column_name=tfma_constants.ARROW_INPUT_COLUMN)
+                    for split in evaluator_step.splits:
+                        file_pattern = io_utils.all_files_pattern(
+                            artifact_utils.get_split_uri(examples_artifact,
+                                                         split))
+                        tfxio = tfxio_factory(file_pattern)
+                        data = (pipeline
+                                | 'ReadFromTFRecordToArrow[%s]' % split >> tfxio.BeamSource())
+                        examples_list.append(data)
+                    if schema is not None:
+                        tensor_adapter_config = tensor_adapter.TensorAdapterConfig(
+                            arrow_schema=tfxio.ArrowSchema(),
+                            tensor_representations=tfxio.TensorRepresentations())
+                else:
+                    for split in evaluator_step.splits:
+                        file_pattern = io_utils.all_files_pattern(
+                            artifact_utils.get_split_uri(examples_artifact,
+                                                         split))
+                        data = (pipeline
+                                | 'ReadFromTFRecord[%s]' % split >>
+                                beam.io.ReadFromTFRecord(
+                                    file_pattern=file_pattern)
+                                )
+                        examples_list.append(data)
+
+                # Resolve custom extractors
+                custom_extractors = try_get_fn(evaluator_step.CUSTOM_MODULE,
+                                               'custom_extractors')
+                extractors = None
+                if custom_extractors:
+                    extractors = custom_extractors(
                         eval_shared_model=eval_shared_model,
-                        output_path=output_uri,
-                        extractors=extractors,
-                        evaluators=evaluators,
-                        tensor_adapter_config=tensor_adapter_config))
-        logging.info('Evaluation complete. Results written to %s.', output_uri)
+                        eval_config=eval_config,
+                        tensor_adapter_config=tensor_adapter_config)
+
+                # Resolve custom evaluators
+                custom_evaluators = try_get_fn(evaluator_step.CUSTOM_MODULE,
+                                               'custom_evaluators')
+                evaluators = None
+                if custom_evaluators:
+                    evaluators = custom_evaluators(
+                        eval_shared_model=eval_shared_model,
+                        eval_config=eval_config,
+                        tensor_adapter_config=tensor_adapter_config)
+
+                # Extract, evaluate and write
+                (examples_list | 'FlattenExamples' >> beam.Flatten()
+                 |
+                 'ExtractEvaluateAndWriteResults' >> tfma.ExtractEvaluateAndWriteResults(
+                            eval_config=eval_config,
+                            eval_shared_model=eval_shared_model,
+                            output_path=output_uri,
+                            extractors=extractors,
+                            evaluators=evaluators,
+                            tensor_adapter_config=tensor_adapter_config))
+            logging.info('Evaluation complete. Results written to %s.',
+                         output_uri)
