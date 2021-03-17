@@ -21,7 +21,7 @@ from zenml.repo import Repository
 from zenml.steps.deployer import BaseDeployerStep
 from zenml.logger import get_logger
 from zenml.utils.source_utils import get_path_from_source, \
-    get_class_path_from_source
+    get_class_source_from_source, resolve_class
 
 spec = importlib.util.find_spec('cortex')
 if spec is None:
@@ -88,8 +88,9 @@ class CortexDeployer(BaseDeployerStep):
     def get_config(self):
         predictor_path = self.predictor.__module__ + '.' + \
                          self.predictor.__name__
+        # TODO: [MEDIUM] Find a better way to get p_file_path
         p_file_path = \
-            get_path_from_source(get_class_path_from_source(predictor_path))
+            get_path_from_source(get_class_source_from_source(predictor_path))
         repo: Repository = Repository.get_instance()
 
         return {

@@ -16,11 +16,11 @@
 import os
 from typing import Text, List
 
-from git import Repo as GitRepo
+from git import Repo as GitRepo, BadName
 
+from zenml.logger import get_logger
 from zenml.repo.constants import GIT_FOLDER_NAME
 from zenml.utils import path_utils
-from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -75,7 +75,12 @@ class GitWrapper:
             file_path (str): Path to any file within the ZenML repo.
         """
         uncommitted_files = [i.a_path for i in self.git_repo.index.diff(None)]
-        staged_files = [i.a_path for i in self.git_repo.index.diff('HEAD')]
+        try:
+            staged_files = [i.a_path for i in self.git_repo.index.diff('HEAD')]
+        except BadName:
+            # for Ref 'HEAD' did not resolve to an object
+            logger.debug('No committed files in the repo. No staged files.')
+            staged_files = []
 
         # source: https://stackoverflow.com/questions/3801321/
         untracked_files = self.git_repo.git.ls_files(
@@ -92,24 +97,26 @@ class GitWrapper:
         """
         return self.git_repo.head.object.hexsha
 
-    def check_module_clean(self, source_path: Text):
+    def check_module_clean(self, source: Text):
         """
-        Returns True if all files within source_path module are committed.
+        Returns True if all files within source's module are committed.
 
         Args:
-            source_path (str): relative module path pointing to a Class.
+            source (str): relative module path pointing to a Class.
         """
         # import here to resolve circular dependency
         from zenml.utils import source_utils
 
         # Get the module path
-        module_path = source_utils.get_module_path_from_source(source_path)
+        module_path = source_utils.get_module_source_from_source(source)
 
         # Get relative path of module because check_file_committed needs that
-        module_dir = source_utils.get_relative_path_from_module(module_path)
+        module_dir = source_utils.get_relative_path_from_module_source(
+            module_path)
 
         # Get absolute path of module because path_utils.list_dir needs that
-        mod_abs_dir = source_utils.get_absolute_path_from_module(module_path)
+        mod_abs_dir = source_utils.get_absolute_path_from_module_source(
+            module_path)
         module_file_names = path_utils.list_dir(
             mod_abs_dir, only_file_names=True)
 
@@ -123,7 +130,7 @@ class GitWrapper:
 
             if path_utils.is_dir(os.path.join(mod_abs_dir, file_path)):
                 logger.warning(
-                    f'The step {source_path} is contained inside a module '
+                    f'The step {source} is contained inside a module '
                     f'that '
                     f'has sub-directories (the sub-directory {file_path} at '
                     f'{mod_abs_dir}). For now, ZenML supports only a flat '
@@ -133,24 +140,24 @@ class GitWrapper:
                 return False
         return True
 
-    def resolve_source_path(self, source_path: Text) -> Text:
+    def resolve_class_source(self, source: Text) -> Text:
         """
-        Takes source path (e.g. this.module.ClassName), and appends relevant
+        Takes source (e.g. this.module.ClassName), and appends relevant
         sha to it if the files within `module` are all committed. If even one
-        file is not committed, then returns `source_path` unchanged.
+        file is not committed, then returns `source` unchanged.
 
         Args:
-            source_path (str): relative module path pointing to a Class.
+            source (str): relative module path pointing to a Class.
         """
-        if not self.check_module_clean(source_path):
+        if not self.check_module_clean(source):
             # Return the source path if not clean
             logger.warning(
                 f'Found uncommitted file. Pipelines run with this '
                 f'configuration may not be reproducible. Please commit '
                 f'all files in this module and then run the pipeline to '
                 f'ensure reproducibility.')
-            return source_path
-        return source_path + '@' + self.get_current_sha()
+            return source
+        return source + '@' + self.get_current_sha()
 
     def stash(self):
         """Wrapper for git stash"""

@@ -28,6 +28,7 @@ from tfx.proto import trainer_pb2
 from zenml import constants
 from zenml.backends.training import TrainingBaseBackend
 from zenml.components import DataGen, Sequencer, SplitGen, Trainer, Evaluator
+
 from zenml.enums import GDPComponent
 from zenml.exceptions import DoesNotExistException, \
     PipelineNotSucceededException
