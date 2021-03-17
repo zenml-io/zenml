@@ -14,11 +14,14 @@
 """
 These utils are predicated on the following definitions:
 
-* class_path:
-* module_path:
-* file_path:
-* source: 
-* pin: Whatever comes after the `@` symbol from a fully-qualified source.
+* class_source: This is a python-import type path to a class, e.g.
+some.mod.class
+* module_source: This is a python-import type path to a module, e.g. some.mod
+* file_path, relative_path, absolute_path: These are file system paths.
+* source: This is a class_source or module_source. If it is a class_source, it
+can also be optionally pinned.
+* pin: Whatever comes after the `@` symbol from a source, usually the git sha
+or the version of zenml as a string.
 """
 import importlib
 import inspect
@@ -57,7 +60,7 @@ def resolve_standard_source(source: Text) -> Text:
     Creates a ZenML pin for source pinning from release version.
 
     Args:
-        source (str): relative class path e.g. this.module.Class.
+        source (str): class_source e.g. this.module.Class.
     """
     if '@' in source:
         raise AssertionError(f'source {source} is already pinned.')
@@ -70,7 +73,7 @@ def is_standard_source(source: Text) -> bool:
     Returns True if source is a standard ZenML source.
 
     Args:
-        source (str): relative class path e.g. this.module.Class[@pin].
+        source (str): class_source e.g. this.module.Class[@pin].
     """
     if source.split('.')[0] == 'zenml':
         return True
@@ -82,7 +85,7 @@ def is_valid_source(source: Text) -> bool:
     Checks whether the source_path is valid or not.
 
     Args:
-        source (str): relative class path e.g. this.module.Class[@pin].
+        source (str): class_source e.g. this.module.Class[@pin].
     """
     try:
         load_source_path_class(source)
@@ -96,8 +99,9 @@ def get_path_from_source(source):
     Get file path from source
 
     Args:
-        source (str): relative class path e.g. this.module.Class
+        source (str): class_source e.g. this.module.Class.
     """
+    # TODO: [MEDIUM] Make sure this is an absolute path rather than naive split
     file_path = "/".join(source.split('.')[:-1]) + '.py'
     return file_path
 
@@ -107,7 +111,7 @@ def get_pin_from_source(source: Text) -> Optional[Text]:
     Gets pin from source, i.e. module.path@pin, returns pin.
 
     Args:
-        source (str): relative class path e.g. this.module.Class[@pin].
+        source (str): class_source e.g. this.module.Class[@pin].
     """
     if '@' in source:
         pin = source.split('@')[-1]
@@ -115,9 +119,9 @@ def get_pin_from_source(source: Text) -> Optional[Text]:
     return 'unpinned'
 
 
-def get_class_path_from_source(source: Text) -> Optional[Text]:
+def get_class_source_from_source(source: Text) -> Optional[Text]:
     """
-    Gets class path from source, i.e. module.path@version, returns version.
+    Gets class source from source, i.e. module.path@version, returns version.
 
     Args:
         source: source pointing to potentially pinned sha.
@@ -126,22 +130,22 @@ def get_class_path_from_source(source: Text) -> Optional[Text]:
     return source.split('@')[0]
 
 
-def get_module_path_from_source(source: Text) -> Text:
+def get_module_source_from_source(source: Text) -> Text:
     """
-    Gets module path from source. E.g. some.module.file.class@version, returns
-    some.module.
+    Gets module source from source. E.g. `some.module.file.class@version`,
+    returns `some.module`.
 
     Args:
         source: source pointing to potentially pinned sha.
     """
-    class_path = get_class_path_from_source(source)
-    return '.'.join(class_path.split('.')[:-2])
+    class_source = get_class_source_from_source(source)
+    return '.'.join(class_source.split('.')[:-2])
 
 
 def get_module_source_from_file_path(file_path):
     """
-    Gets module path from a file_path. E.g. /home/hamza/myrepo/step/trainer.py
-    returns myrepo.step.trainer if `myrepo` is the root of the repo.
+    Gets module_source from a file_path. E.g. `/home/myrepo/step/trainer.py`
+    returns `myrepo.step.trainer` if `myrepo` is the root of the repo.
 
     Args:
         file_path: Absolute file path to a file within the module.
@@ -151,53 +155,53 @@ def get_module_source_from_file_path(file_path):
     # Replace repo_path with file_path to get relative path left over
     relative_file_path = file_path.replace(repo_path, '')[1:]
 
-    # Kick out the .py and replace `/` with `.` to get the module path
+    # Kick out the .py and replace `/` with `.` to get the module source
     relative_file_path = relative_file_path.replace('.py', '')
     module_source = relative_file_path.replace('/', '.')
     return module_source
 
 
-def get_relative_path_from_module_path(module: Text):
+def get_relative_path_from_module_source(module_source: Text):
     """
     Get a directory path from module, relative to root of repository.
 
     E.g. zenml.core.step will return zenml/core/step.
 
     Args:
-        module (str): A module e.g. zenml.core.step
+        module_source (str): A module e.g. zenml.core.step
     """
-    return module.replace('.', '/')
+    return module_source.replace('.', '/')
 
 
-def get_absolute_path_from_module_path(module: Text):
+def get_absolute_path_from_module_source(module: Text):
     """
-    Get a directory path from module.
+    Get a directory path from module source.
 
-    E.g. zenml.core.step will return full/path/to/zenml/core/step.
+    E.g. `zenml.core.step` will return `full/path/to/zenml/core/step`.
 
     Args:
-        module (str): A module e.g. zenml.core.step
+        module (str): A module e.g. `zenml.core.step`.
     """
     mod = importlib.import_module(module)
     return mod.__path__[0]
 
 
-def get_module_path_from_class(class_: Union[Type, Text]) -> Optional[Text]:
+def get_module_source_from_class(class_: Union[Type, Text]) -> Optional[Text]:
     """
-    Takes class input and returns module_path. If class is already string
+    Takes class input and returns module_source. If class is already string
     then returns the same.
 
     Args:
         class_: object of type class.
     """
     if type(class_) == str:
-        module_path_str = class_
+        module_source = class_
     else:
         # Infer it from the class provided
         if not inspect.isclass(class_):
             raise Exception('step_type is neither string nor class.')
-        module_path_str = class_.__module__ + '.' + class_.__name__
-    return module_path_str
+        module_source = class_.__module__ + '.' + class_.__name__
+    return module_source
 
 
 def resolve_class(class_: Type) -> Text:
@@ -206,7 +210,7 @@ def resolve_class(class_: Type) -> Text:
     Args:
         class_: A Python Class reference.
 
-    Returns: source, relative class path e.g. this.module.Class[@pin].
+    Returns: source_path e.g. this.module.Class[@pin].
     """
     initial_source = class_.__module__ + '.' + class_.__name__
     if is_standard_source(initial_source):
@@ -216,28 +220,28 @@ def resolve_class(class_: Type) -> Text:
     file_path = inspect.getfile(class_)
     module_source = get_module_source_from_file_path(file_path)
 
-    source = module_source + '.' + class_.__name__
-    return resolve_source(source)
+    class_source = module_source + '.' + class_.__name__
+    return resolve_class_source(class_source)
 
 
-def resolve_source(source: Text) -> Text:
+def resolve_class_source(class_source: Text) -> Text:
     """
-    Resolves source with an optional pin.
+    Resolves class_source with an optional pin.
 
     Args:
-        source (str): relative module path e.g. this.module.Class
+        class_source (str): class_source e.g. this.module.Class
     """
-    if '@' in source:
+    if '@' in class_source:
         # already pinned
-        return source
+        return class_source
 
-    if is_standard_source(source):
+    if is_standard_source(class_source):
         # that means use standard version
-        return resolve_standard_source(source)
+        return resolve_standard_source(class_source)
 
     # otherwise use Git resolution
     wrapper: GitWrapper = Repository.get_instance().get_git_wrapper()
-    resolved_source = wrapper.resolve_source(source)
+    resolved_source = wrapper.resolve_class_source(class_source)
     return resolved_source
 
 
@@ -246,7 +250,7 @@ def load_source_path_class(source: Text) -> Type:
     Loads a Python class from the source.
 
     Args:
-        source (str): relative module path e.g. this.module.Class[@sha]
+        source (str): class_source e.g. this.module.Class[@sha]
     """
     source = source.split('@')[0]
     pin = source.split('@')[-1]
@@ -257,11 +261,12 @@ def load_source_path_class(source: Text) -> Type:
                      'Loading class from git history.')
         wrapper: GitWrapper = Repository.get_instance().get_git_wrapper()
 
-        module_path = get_module_path_from_source(source)
-        relative_module_path = get_relative_path_from_module_path(module_path)
+        module_source = get_module_source_from_source(source)
+        relative_module_path = get_relative_path_from_module_source(
+            module_source)
 
         logger.warning('Found source with a pinned sha. Will now checkout '
-                       f'module: {module_path}')
+                       f'module: {module_source}')
 
         # critical step
         if not wrapper.check_module_clean(source):

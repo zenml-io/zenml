@@ -208,7 +208,7 @@ class TrainingPipeline(BasePipeline):
             eval_module = '.'.join(
                 constants.EVALUATOR_MODULE_FN.split('.')[:-1])
             eval_module_file = constants.EVALUATOR_MODULE_FN.split('.')[-1]
-            abs_path = source_utils.get_absolute_path_from_module_path(
+            abs_path = source_utils.get_absolute_path_from_module_source(
                 eval_module)
             custom_extractor_path = os.path.join(abs_path,
                                                  eval_module_file) + '.py'

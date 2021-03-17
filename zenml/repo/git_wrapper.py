@@ -109,14 +109,14 @@ class GitWrapper:
         from zenml.utils import source_utils
 
         # Get the module path
-        module_path = source_utils.get_module_path_from_source(source)
+        module_path = source_utils.get_module_source_from_source(source)
 
         # Get relative path of module because check_file_committed needs that
-        module_dir = source_utils.get_relative_path_from_module_path(
+        module_dir = source_utils.get_relative_path_from_module_source(
             module_path)
 
         # Get absolute path of module because path_utils.list_dir needs that
-        mod_abs_dir = source_utils.get_absolute_path_from_module_path(
+        mod_abs_dir = source_utils.get_absolute_path_from_module_source(
             module_path)
         module_file_names = path_utils.list_dir(
             mod_abs_dir, only_file_names=True)
@@ -141,7 +141,7 @@ class GitWrapper:
                 return False
         return True
 
-    def resolve_source(self, source: Text) -> Text:
+    def resolve_class_source(self, source: Text) -> Text:
         """
         Takes source (e.g. this.module.ClassName), and appends relevant
         sha to it if the files within `module` are all committed. If even one
