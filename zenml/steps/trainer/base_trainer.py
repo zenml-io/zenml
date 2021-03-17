@@ -76,7 +76,7 @@ class BaseTrainerStep(BaseStep):
                  file_pattern: List[Text],
                  tf_transform_output: tft.TFTransformOutput):
         """
-        Class method for loading data from TFRecords saved to a location on
+        Method for loading data from TFRecords saved to a location on
         disk. Override this method in subclasses to define your own custom
         data preparation flow.
 
@@ -95,7 +95,7 @@ class BaseTrainerStep(BaseStep):
     def model_fn(train_dataset,
                  eval_dataset):
         """
-        Class method defining the training flow of the model. Override this
+        Method defining the training flow of the model. Override this
         in subclasses to define your own custom training flow.
 
         Args:
@@ -109,11 +109,19 @@ class BaseTrainerStep(BaseStep):
 
     def run_fn(self):
         """
-        Class method defining the control flow of the training process inside
+        Method defining the control flow of the training process inside
         the TFX Trainer Component Executor. Override this method in subclasses
         to define your own custom training flow.
         """
         pass
 
     def test_fn(self):
+        """
+        Optional method for defining a test flow of the model. The goal of
+        this method is to give the user an interface to provide a testing
+        function, where the results (if given in the right format with
+        features, labels and predictions) will be ultimately saved to
+        disk using an output artifact. Once defined, it allows the user to
+        utilize the model agnostic evaluator in their training pipeline.
+        """
         pass
