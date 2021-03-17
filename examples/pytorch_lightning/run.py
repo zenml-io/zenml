@@ -1,4 +1,4 @@
-from examples.pytorch_lightning.step.trainer import MyPyTorchLightningTrainer
+from step.trainer import MyPyTorchLightningTrainer
 from zenml.datasources import CSVDatasource
 from zenml.pipelines import TrainingPipeline
 from zenml.repo import Repository

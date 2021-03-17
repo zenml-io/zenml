@@ -4,7 +4,7 @@ from zenml.repo import Repository
 from zenml.steps.preprocesser import StandardPreprocesser
 from zenml.steps.split import RandomSplit
 from zenml.exceptions import AlreadyExistsException
-from examples.scikit.step.trainer import MyScikitTrainer
+from step.trainer import MyScikitTrainer
 
 # Define the training pipeline
 training_pipeline = TrainingPipeline()

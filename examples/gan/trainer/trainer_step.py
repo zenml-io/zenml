@@ -18,9 +18,9 @@ from typing import List, Text
 import tensorflow as tf
 import tensorflow_transform as tft
 
-from examples.gan.trainer.gan_functions import Generator, Discriminator, \
+from gan_functions import Generator, Discriminator, \
     CycleGan, TensorBoardImage
-from examples.gan.trainer.gan_functions import discriminator_loss, \
+from gan_functions import discriminator_loss, \
     identity_loss, generator_loss, calc_cycle_loss
 from zenml.steps.trainer import TFFeedForwardTrainer
 
