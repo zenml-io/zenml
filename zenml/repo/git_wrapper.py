@@ -16,7 +16,7 @@
 import os
 from typing import Text, List
 
-from git import Repo as GitRepo
+from git import Repo as GitRepo, BadName
 
 from zenml.logger import get_logger
 from zenml.repo.constants import GIT_FOLDER_NAME
@@ -75,7 +75,13 @@ class GitWrapper:
             file_path (str): Path to any file within the ZenML repo.
         """
         uncommitted_files = [i.a_path for i in self.git_repo.index.diff(None)]
-        staged_files = [i.a_path for i in self.git_repo.index.diff('HEAD')]
+        try:
+            staged_files = [i.a_path for i in self.git_repo.index.diff('HEAD')]
+        except BadName:
+            # for Ref 'HEAD' did not resolve to an object
+            raise AssertionError(
+                'You do not have any committed files in your repo. Please '
+                'make at least one commit before running ZenML.')
 
         # source: https://stackoverflow.com/questions/3801321/
         untracked_files = self.git_repo.git.ls_files(
