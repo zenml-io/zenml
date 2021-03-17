@@ -27,8 +27,13 @@ from tfx.components.trainer.component import Trainer
 from tfx.components.transform.component import Transform
 from tfx.proto import trainer_pb2
 
+from zenml import constants
 from zenml.backends.training import TrainingBaseBackend
 from zenml.components import DataGen, Sequencer, SplitGen
+from zenml.enums import GDPComponent
+from zenml.exceptions import DoesNotExistException, \
+    PipelineNotSucceededException
+from zenml.logger import get_logger
 from zenml.pipelines import BasePipeline
 from zenml.standards import standard_keys as keys
 from zenml.steps.deployer import BaseDeployerStep
@@ -38,11 +43,6 @@ from zenml.steps.sequencer import BaseSequencerStep
 from zenml.steps.split import BaseSplit
 from zenml.steps.trainer import BaseTrainerStep
 from zenml.utils import path_utils
-from zenml import constants
-from zenml.enums import GDPComponent
-from zenml.exceptions import DoesNotExistException, \
-    PipelineNotSucceededException
-from zenml.logger import get_logger
 from zenml.utils.post_training.post_training_utils import \
     evaluate_single_pipeline, view_statistics, view_schema, detect_anomalies
 from zenml.utils.post_training.post_training_utils import \
@@ -208,7 +208,8 @@ class TrainingPipeline(BasePipeline):
             eval_module = '.'.join(
                 constants.EVALUATOR_MODULE_FN.split('.')[:-1])
             eval_module_file = constants.EVALUATOR_MODULE_FN.split('.')[-1]
-            abs_path = source_utils.get_absolute_path_from_module(eval_module)
+            abs_path = source_utils.get_absolute_path_from_module_source(
+                eval_module)
             custom_extractor_path = os.path.join(abs_path,
                                                  eval_module_file) + '.py'
             eval_step: TFMAEvaluator = TFMAEvaluator.from_config(

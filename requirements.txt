@@ -41,3 +41,4 @@ torch==1.7.0
 # Beam nuggets for postgres
 beam-nuggets==0.17.0
 pg8000==1.16.5
+sqlalchemy==1.3.22  # pinning due to `ImportError: cannot import name '_literal_as_text' from 'sqlalchemy.sql.expression' with `from beam_nuggets.io import relational_db`

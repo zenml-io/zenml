@@ -7,18 +7,58 @@ We intend for this to be a reflection of the _current_ thinking of what we and o
 ## Feature Roadmap \(Updated Feb 5 2021\)
 
 #### In Progress:
-* Hyper-parameter Tuning
-  * Status: `Not Started`
-  * Expected: Q3 2020
-* Distributed Training
-  * Status: `Not Started`
-  * Expected: Q4 2021
+* Refine API to make it simpler to create custom datasources
+  * Status: `WIP`
+  * Target Date: Q1 2021
+* Refine API to seperate configuration from execution
+  * Status: `WIP`
+  * Target Date: Q1 2021
+* Create a non Tensorflow Transform preprocesser step.
+  * Status: `WIP`
+  * Target Date: Q1 2021
+* Create a non Tensorflow Transform preprocesser step.
+  * Status: `WIP`
+  * Target Date: Q1 2021
+* Extend BatchInference to work with non-Tensorflow libraries
+  * Status: `WIP`
+  * Target Date: Q1 2021
+* Extend BatchInference to write to any data sink.
+  * Status: `WIP`
+  * Target Date: Q1 2021
+* Create data utility package to convert easily from TFRecords to other formats.
+  * Status: `WIP`
+  * Target Date: Q1 2021
+  
+#### Backlog
+We are actively looking for contributers to help us with the following features. If you see something that interests you, please reach out at 
+`hello@zenml.io` or on our [Slack](https://zenml.io/slack-invite/). Or just create a PR directly!
+
+* Terraform Bootstrapping script for AWS
+  * Status: `Not Done, looking for contributers`
+  * Target Date: Q2 2021
+* DeploymentStep for [Seldon Core](https://github.com/SeldonIO/seldon-core)
+  * Status: `Not Done, looking for contributers`
+  * Target Date: Q2 2021
+* Deployment for [BudgetML](https://github.com/ebhy/budgetml)
+  * Status: `Not Done, looking for contributers`
+  * Target Date: Q2 2021
+* Microsoft Azure orchestrator
+  * Status: `Not Done, looking for contributers`
+  * Target Date: Q3 2021
+  
+Other possible integrations:
+* Ray 
+* BentoML
+* ArizeAI
 
 #### Done:
-* More deployment strategies
+* Model agnostic evaluation using TFMA
   * Status: `Done`
   * Expected: Q1 2021
-* Support for PyTorch + Scikit learn
+* Cortex deployment
+  * Status: `Done`
+  * Expected: Q1 2021
+* Support for PyTorch + Scikit learn Trainers
   * Status: `Done`
   * Expected: Q1 2021
 * Ability to run a batch inference pipeline
@@ -26,7 +66,7 @@ We intend for this to be a reflection of the _current_ thinking of what we and o
   * Expected: Q1 2021
 * Ability to specify custom requirements:
   * Status: `Done`
-* Ability to run pipelines on users GCP:
+* Ability to run pipelines on users GCP and AWS
   * Status: `Done`
 * Images as a datasource:
   * Status: `Done`

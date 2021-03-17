@@ -19,19 +19,19 @@ from typing import Dict, Text, Any, Optional, List
 from uuid import uuid4
 
 from zenml.backends.orchestrator import OrchestratorBaseBackend
+from zenml.constants import CONFIG_VERSION
 from zenml.datasources import BaseDatasource
+from zenml.enums import PipelineStatusTypes
+from zenml.exceptions import AlreadyExistsException
+from zenml.logger import get_logger
 from zenml.metadata import ZenMLMetadataStore
 from zenml.repo import Repository, ArtifactStore
 from zenml.standards import standard_keys as keys
 from zenml.steps import BaseStep
 from zenml.utils import source_utils
-from zenml.constants import CONFIG_VERSION
-from zenml.enums import PipelineStatusTypes
-from zenml.exceptions import AlreadyExistsException
-from zenml.logger import get_logger
-from zenml.utils.print_utils import to_pretty_string, PrintStyles
 from zenml.utils.analytics_utils import track, CREATE_PIPELINE, RUN_PIPELINE, \
     GET_PIPELINE_ARTIFACTS
+from zenml.utils.print_utils import to_pretty_string, PrintStyles
 
 logger = get_logger(__name__)
 
@@ -124,9 +124,7 @@ class BasePipeline:
         else:
             self.datasource = None
 
-        self._source = source_utils.resolve_source_path(
-            self.__class__.__module__ + '.' + self.__class__.__name__
-        )
+        self._source = source_utils.resolve_class(self.__class__)
         self._kwargs = {
             keys.PipelineDetailKeys.NAME: self.pipeline_name,
             keys.PipelineDetailKeys.ENABLE_CACHE: self.enable_cache,
@@ -233,6 +231,14 @@ class BasePipeline:
                 self.name) is not None:
             raise AlreadyExistsException(
                 name=self.name, resource_type='pipeline')
+
+    def _validate_steps(self):
+        """Ensure that steps are of the right type"""
+        for step_name, step_val in self.steps_dict.items():
+            if not issubclass(type(step_val), BaseStep):
+                raise AssertionError(
+                    f'Step {step_name} needs to be an object that is a '
+                    f'sub-class of: {BaseStep}')
 
     def add_datasource(self, datasource: BaseDatasource):
         """
@@ -394,6 +400,9 @@ class BasePipeline:
 
         # Check if steps are complete
         self.steps_completed()
+
+        # Validate steps
+        self._validate_steps()
 
         if self._immutable:
             # This means its an 'older' pipeline that has been loaded in via

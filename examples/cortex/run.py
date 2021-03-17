@@ -1,6 +1,6 @@
 import os
 
-from examples.cortex.predictor.tf import TensorFlowPredictor
+from predictor.tf import TensorFlowPredictor
 from zenml.datasources import CSVDatasource
 from zenml.pipelines import TrainingPipeline
 from zenml.repo import ArtifactStore

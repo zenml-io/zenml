@@ -16,11 +16,11 @@ import inspect
 from typing import Dict
 
 from zenml.backends import BaseBackend
-from zenml.standards.standard_keys import StepKeys
 from zenml.enums import StepTypes
+from zenml.standards.standard_keys import StepKeys
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
-from zenml.utils.source_utils import resolve_source_path, \
-    load_source_path_class, is_source
+from zenml.utils.source_utils import resolve_class, \
+    load_source_path_class, is_valid_source
 
 
 class BaseStep:
@@ -42,9 +42,7 @@ class BaseStep:
         self._kwargs = kwargs
         self._immutable = False
         self.backend = backend
-        self._source = resolve_source_path(
-            self.__class__.__module__ + '.' + self.__class__.__name__
-        )
+        self._source = resolve_class(self.__class__)
 
     def __str__(self):
         return to_pretty_string(self.to_config())
@@ -82,7 +80,7 @@ class BaseStep:
 
             # resolve args for special cases
             for k, v in args.items():
-                if isinstance(v, str) and is_source(v):
+                if isinstance(v, str) and is_valid_source(v):
                     resolved_args[k] = load_source_path_class(v)
                 else:
                     resolved_args[k] = v
@@ -110,9 +108,7 @@ class BaseStep:
         kwargs = {}
         for key, kwarg in self._kwargs.items():
             if inspect.isclass(kwarg):
-                kwargs[key] = resolve_source_path(
-                    kwarg.__module__ + '.' + kwarg.__name__
-                )
+                kwargs[key] = resolve_class(kwarg)
             else:
                 kwargs[key] = kwarg
 

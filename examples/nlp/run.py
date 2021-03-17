@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from examples.nlp.training.trainer import UrduTrainer
+from training.trainer import UrduTrainer
 from zenml.datasources import CSVDatasource
 from zenml.exceptions import AlreadyExistsException
 from zenml.pipelines import NLPPipeline

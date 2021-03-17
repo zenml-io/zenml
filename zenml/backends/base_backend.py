@@ -15,9 +15,9 @@
 
 from typing import Dict
 
+from zenml.logger import get_logger
 from zenml.standards.standard_keys import BackendKeys
 from zenml.utils import source_utils
-from zenml.logger import get_logger
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
 
 logger = get_logger(__name__)
@@ -61,9 +61,7 @@ class BaseBackend:
         else:
             self._kwargs = {}
 
-        self._source = source_utils.resolve_source_path(
-            self.__class__.__module__ + '.' + self.__class__.__name__
-        )
+        self._source = source_utils.resolve_class(self.__class__)
         self._immutable = False
 
     def __str__(self):

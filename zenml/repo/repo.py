@@ -17,13 +17,13 @@ import os
 from pathlib import Path
 from typing import Text, List, Dict, Any, Optional, Union, Type
 
-from zenml.metadata import ZenMLMetadataStore
-from zenml.repo.constants import ZENML_DIR_NAME
-from zenml.repo import ArtifactStore, GitWrapper, GlobalConfig, ZenMLConfig
-from zenml.standards import standard_keys as keys
-from zenml.utils import path_utils, yaml_utils
 from zenml.exceptions import InitializationException
 from zenml.logger import get_logger
+from zenml.metadata import ZenMLMetadataStore
+from zenml.repo import ArtifactStore, GitWrapper, GlobalConfig, ZenMLConfig
+from zenml.repo.constants import ZENML_DIR_NAME
+from zenml.standards import standard_keys as keys
+from zenml.utils import path_utils, yaml_utils
 from zenml.utils.analytics_utils import track, CREATE_REPO, GET_PIPELINES, \
     GET_DATASOURCES, GET_STEPS_VERSIONS, \
     REGISTER_PIPELINE, GET_STEP_VERSION
@@ -156,23 +156,23 @@ class Repository:
         returns the first configuration that it matches.
 
         Args:
-            step_type: either a string specifying full path to the step or a
-            class path.
+            step_type: either a string specifying full source of the step or a
+            python class type.
             version: either sha pin or standard ZenML version pin.
         """
         from zenml.utils import source_utils
         from zenml.steps.base_step import BaseStep
 
-        type_str = source_utils.get_module_path_from_class(step_type)
+        type_str = source_utils.get_module_source_from_class(step_type)
 
         for file_path in self.get_pipeline_file_paths():
             c = yaml_utils.read_yaml(file_path)
             for step_name, step_config in c[keys.GlobalKeys.PIPELINE][
                 keys.PipelineKeys.STEPS].items():
                 # Get version from source
-                class_ = source_utils.get_class_path_from_source(
+                class_ = source_utils.get_class_source_from_source(
                     step_config[keys.StepKeys.SOURCE])
-                source_version = source_utils.get_version_from_source(
+                source_version = source_utils.get_pin_from_source(
                     step_config[keys.StepKeys.SOURCE])
 
                 if class_ == type_str and version == source_version:
@@ -183,11 +183,11 @@ class Repository:
         List all registered steps in repository by step_type.
 
         Args:
-            step_type: either a string specifying full path to the step or a
-            class path.
+            step_type: either a string specifying full source of the step or a
+            python class type.
         """
         from zenml.utils import source_utils
-        type_str = source_utils.get_module_path_from_class(step_type)
+        type_str = source_utils.get_module_source_from_class(step_type)
 
         steps_dict = self.get_step_versions()
         if type_str not in steps_dict:
@@ -206,9 +206,9 @@ class Repository:
             for step_name, step_config in c[keys.GlobalKeys.PIPELINE][
                 keys.PipelineKeys.STEPS].items():
                 # Get version from source
-                version = source_utils.get_version_from_source(
+                version = source_utils.get_pin_from_source(
                     step_config[keys.StepKeys.SOURCE])
-                class_ = source_utils.get_class_path_from_source(
+                class_ = source_utils.get_class_source_from_source(
                     step_config[keys.StepKeys.SOURCE])
 
                 # Add to set of versions
