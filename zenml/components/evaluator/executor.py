@@ -17,7 +17,8 @@ from zenml.components.evaluator import constants
 from zenml.logger import get_logger
 from zenml.standards.standard_keys import StepKeys
 from zenml.steps.evaluator.base_evaluator import BaseEvaluatorStep
-from zenml.utils import source_utils, path_utils
+from zenml.utils import path_utils as zenml_path_utils
+from zenml.utils import source_utils
 
 logger = get_logger(__name__)
 
@@ -46,7 +47,7 @@ class Executor(base_executor.BaseExecutor):
         examples_artifact = input_dict[constants.EXAMPLES]
 
         input_uri = artifact_utils.get_single_uri(examples_artifact)
-        if len(path_utils.list_dir(input_uri)) == 0:
+        if len(zenml_path_utils.list_dir(input_uri)) == 0:
             # TODO: This is quite specific to AgnosticEvaluators,
             logger.warning('ZenML can not run the evaluation as the provided '
                            'input configuration does not point towards any '
