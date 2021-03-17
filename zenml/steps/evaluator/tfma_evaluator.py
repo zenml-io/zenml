@@ -35,7 +35,7 @@ class TFMAEvaluator(BaseEvaluatorStep):
     Custom TFMA Evaluator step.
     """
 
-    CUSTOM_MODULE = 'zenml.core.steps.evaluator.tfma_evaluator.tfma_module'
+    CUSTOM_MODULE = 'zenml.steps.evaluator.tfma_module'
 
     def __init__(self,
                  slices: List[List[Text]] = None,
