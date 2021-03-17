@@ -39,7 +39,7 @@ def to_serialized_examples(instance) -> tf.train.Example:
             else:
                 feature[key] = tf.train.Feature(
                     bytes_list=tf.train.BytesList(
-                        value=list(map(tf.compat.as_bytes, [value]))))
+                        value=list(map(tf.compat.as_bytes, value))))
         example_list.append(tf.train.Example(
             features=tf.train.Features(feature=feature)
         ).SerializeToString())
