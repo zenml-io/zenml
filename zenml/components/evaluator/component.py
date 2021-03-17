@@ -15,9 +15,6 @@ from zenml.components.evaluator import executor
 
 
 class ZenMLEvaluatorSpec(ComponentSpec):
-    """
-
-    """
     PARAMETERS = {constants.SOURCE: ExecutionParameter(type=Text),
                   constants.ARGS: ExecutionParameter(type=Dict[Text, Any])}
 
@@ -29,6 +26,12 @@ class ZenMLEvaluatorSpec(ComponentSpec):
 
 
 class Evaluator(base_component.BaseComponent):
+    """
+    A new adapted version version of the TFX Evaluator component.
+
+    In contrast to the original evaluator component, it utilizes a ZenML
+    EvaluatorStep and allows the model agnostic evaluation.
+    """
     SPEC_CLASS = ZenMLEvaluatorSpec
     EXECUTOR_SPEC = executor_spec.ExecutorClassSpec(executor.Executor)
 
@@ -41,16 +44,7 @@ class Evaluator(base_component.BaseComponent):
             output: Optional[types.Channel] = None,
             instance_name: Optional[Text] = None,
             schema: Optional[types.Channel] = None):
-        """
 
-        :param source:
-        :param source_args:
-        :param examples:
-        :param model:
-        :param output:
-        :param instance_name:
-        :param schema:
-        """
         # Create the output artifact if not provided
         evaluation = output or types.Channel(type=ModelEvaluation)
 
