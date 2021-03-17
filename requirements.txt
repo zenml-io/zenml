@@ -22,8 +22,10 @@ jupyter-book==0.9.1
 matplotlib==3.3.3
 ghp-import==1.0.0
 jedi==0.17.2
+sphinx==3.3.1
 git+https://github.com/maiot-io/sphinx-book-theme.git
-sphinxext-opengraph
+sphinxext-opengraph==0.3.1
+
 
 # cortex
 cortex==0.29.0
