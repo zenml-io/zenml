@@ -21,6 +21,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as data
+from torch.utils.tensorboard import SummaryWriter
 
 from zenml.steps.trainer import TorchBaseTrainerStep
 from zenml.steps.trainer import utils
@@ -166,13 +167,19 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         criterion = nn.BCEWithLogitsLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.001)
 
+        writer = SummaryWriter(self.log_dir)
+
         model.train()
+
+        total_count = 0
+
         for e in range(1, self.epochs + 1):
             epoch_loss = 0
             epoch_acc = 0
             step_count = 0
             for x, y, _ in train_dataset:
                 step_count += 1
+                total_count += 1
 
                 x_batch = torch.cat([v.to(device) for v in x.values()], dim=-1)
                 y_batch = torch.cat([v.to(device) for v in y.values()], dim=-1)
@@ -188,6 +195,12 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
 
                 epoch_loss += loss.item()
                 epoch_acc += acc.item()
+
+                if e == 1 and step_count == 1:
+                    writer.add_graph(model, x_batch)
+
+                writer.add_scalar('training_loss', loss, total_count)
+                writer.add_scalar('training_accuracy', acc, total_count)
 
             print(f'Epoch {e + 0:03}: | Loss: '
                   f'{epoch_loss / step_count:.5f} | Acc: '
