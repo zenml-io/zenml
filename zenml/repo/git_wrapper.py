@@ -79,9 +79,8 @@ class GitWrapper:
             staged_files = [i.a_path for i in self.git_repo.index.diff('HEAD')]
         except BadName:
             # for Ref 'HEAD' did not resolve to an object
-            raise AssertionError(
-                'You do not have any committed files in your repo. Please '
-                'make at least one commit before running ZenML.')
+            logger.debug('No committed files in the repo. No staged files.')
+            staged_files = []
 
         # source: https://stackoverflow.com/questions/3801321/
         untracked_files = self.git_repo.git.ls_files(
