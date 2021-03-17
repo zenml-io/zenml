@@ -32,9 +32,9 @@ class TFMAEvaluator(BaseEvaluatorStep):
     """
     TFMA Evaluator step designed for the TF models in ZenML
 
-    It features a specific build_config method which produces a flexible
-    tfma.EvalConfig, which can work with a wide range of Tensorflow models and
-    TFMA
+    It features a specific build_config method which uses the zenml_eval
+    signature of the model and produces a flexible tfma.EvalConfig, which can
+    work with a wide range of Tensorflow models and TFMA
     """
 
     CUSTOM_MODULE = 'zenml.steps.evaluator.tfma_module'
