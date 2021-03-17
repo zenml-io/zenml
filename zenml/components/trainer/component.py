@@ -46,6 +46,10 @@ class ZenMLTrainerSpec(ComponentSpec):
 
 
 class Trainer(base_component.BaseComponent):
+    """
+    A slightly adjusted version of the TFX Trainer Component. It features an
+    additional output artifact to save the test results in.
+    """
     SPEC_CLASS = ZenMLTrainerSpec
     EXECUTOR_SPEC = executor_spec.ExecutorClassSpec(ZenMLTrainerExecutor)
 
