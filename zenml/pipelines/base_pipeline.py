@@ -124,7 +124,7 @@ class BasePipeline:
         else:
             self.datasource = None
 
-        self._source = source_utils.resolve_source_path(
+        self._source = source_utils.resolve_source(
             self.__class__.__module__ + '.' + self.__class__.__name__
         )
         self._kwargs = {

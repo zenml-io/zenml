@@ -72,7 +72,7 @@ class BaseDatasource:
 
         self.name = name
         self._immutable = False
-        self._source = source_utils.resolve_source_path(
+        self._source = source_utils.resolve_source(
             self.__class__.__module__ + '.' + self.__class__.__name__
         )
 

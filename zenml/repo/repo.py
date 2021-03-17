@@ -172,7 +172,7 @@ class Repository:
                 # Get version from source
                 class_ = source_utils.get_class_path_from_source(
                     step_config[keys.StepKeys.SOURCE])
-                source_version = source_utils.get_version_from_source(
+                source_version = source_utils.get_pin_from_source(
                     step_config[keys.StepKeys.SOURCE])
 
                 if class_ == type_str and version == source_version:
@@ -206,7 +206,7 @@ class Repository:
             for step_name, step_config in c[keys.GlobalKeys.PIPELINE][
                 keys.PipelineKeys.STEPS].items():
                 # Get version from source
-                version = source_utils.get_version_from_source(
+                version = source_utils.get_pin_from_source(
                     step_config[keys.StepKeys.SOURCE])
                 class_ = source_utils.get_class_path_from_source(
                     step_config[keys.StepKeys.SOURCE])
