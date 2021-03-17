@@ -123,9 +123,9 @@ class FeedForwardTrainer(TFBaseTrainerStep):
 
             batch_list.append(batch)
 
-        return batch_list
+        combined_batch = utils.combine_batch_results(batch_list)
 
-        # combined_batch = utils.combine_batch_results(batch_list)
+        return combined_batch
 
     def run_fn(self):
         tf_transform_output = tft.TFTransformOutput(self.transform_output)
@@ -219,11 +219,7 @@ class FeedForwardTrainer(TFBaseTrainerStep):
             parsed_features = tf.io.parse_example(serialized_tf_examples,
                                                   raw_feature_spec)
 
-            xf_feature_spec = tf_transform_output.transformed_feature_spec()
             transformed_features = model.tft_layer(parsed_features)
-            for f in xf_feature_spec:
-                if not naming_utils.check_if_transformed_feature(f):
-                    transformed_features.pop(f)
 
             return model(transformed_features)
 
