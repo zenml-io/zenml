@@ -21,12 +21,25 @@ from zenml.steps.evaluator.base_evaluator import BaseEvaluatorStep
 
 
 def to_camel_case(s):
+    """
+    Converts a given name to camel case and removes any '_'
+    """
     return ''.join(list(map(lambda x: x.capitalize(), s.split('_'))))
 
 
 class AgnosticEvaluator(BaseEvaluatorStep):
     """
+    AgnosticEvaluator step designed to work regardless of the type of the
+    trained model
 
+    Through this step, it is possible to use the model_agnostic capabilities of
+    TFMA, however this requires the test_results (tf.train.Example) to be saved
+    beforehand in a flat format in the trainer step. Once the results are
+    saved, you can use the label_key and the prediction_key to specify the
+    selected features and compute the desired metrics.
+
+    Note: As of now, it only supports a single label-prediction key pair, we
+    are working hard to bring you support for multi-output models as well.
     """
 
     def __init__(self,
@@ -35,7 +48,18 @@ class AgnosticEvaluator(BaseEvaluatorStep):
                  slices: List[List[Text]] = None,
                  metrics: List[Text] = None,
                  splits: List[Text] = None):
+        """
+        Init for the AgnosticEvaluator
 
+        :param label_key: string specifying the name of the label in the
+        flattened datapoint
+        :param prediction_key: string specifying the name of the output in the
+        flattened datapoint
+        :param slices: a list of lists, each element in the inner list include
+        a set of features which will be used for slicing on the results
+        :param metrics: list of metrics to be computed
+        :param splits: the list of splits to apply the evaluation on
+        """
         super().__init__(label_key=label_key,
                          prediction_key=prediction_key,
                          slices=slices,
