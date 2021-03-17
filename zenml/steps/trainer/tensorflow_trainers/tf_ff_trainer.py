@@ -89,9 +89,6 @@ class FeedForwardTrainer(TFBaseTrainerStep):
             **kwargs
         )
 
-    def get_run_fn(self):
-        return self.run_fn
-
     def test_fn(self, model, datasets):
         batch_list = []
         for x, y in datasets:
