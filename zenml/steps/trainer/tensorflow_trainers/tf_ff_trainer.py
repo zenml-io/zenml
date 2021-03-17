@@ -288,7 +288,7 @@ class FeedForwardTrainer(TFBaseTrainerStep):
         labels = list(train_dataset.element_spec[1].keys())
 
         input_layers = [tf.keras.layers.Input(shape=(1,), name=k)
-                        for k in features]
+                        for k in features if naming_utils.check_if_transformed_feature(k)]
 
         d = tf.keras.layers.Concatenate()(input_layers)
 
