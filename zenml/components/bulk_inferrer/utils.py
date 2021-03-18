@@ -28,12 +28,10 @@ def convert_to_dict(prediction_log: prediction_log_pb2.PredictionLog,
                     output_example_spec: _OutputExampleSpecType) \
         -> tf.train.Example:
     """Converts given `prediction_log` to a `tf.train.Example`.
-
     Args:
       prediction_log: The input prediction log.
       output_example_spec: The spec for how to map prediction results to
       columns in example.
-
     Returns:
       A `tf.train.Example` converted from the given prediction_log.
     Raises:

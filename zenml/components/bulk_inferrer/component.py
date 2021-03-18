@@ -21,7 +21,7 @@ from tfx.types.component_spec import ComponentSpec, ExecutionParameter, \
     ChannelParameter
 
 from zenml.components.bulk_inferrer.constants import MODEL, EXAMPLES, \
-    PREDICTIONS
+    MODEL_BLESSING, PREDICTIONS
 from zenml.components.bulk_inferrer.executor import BulkInferrerExecutor
 from zenml.standards.standard_keys import StepKeys
 
@@ -31,12 +31,13 @@ class BulkInferrerSpec(ComponentSpec):
         StepKeys.SOURCE: ExecutionParameter(type=Text),
         StepKeys.ARGS: ExecutionParameter(type=Dict[Text, Any]),
     }
-
     INPUTS = {
         MODEL: ChannelParameter(type=standard_artifacts.Model, optional=True),
         EXAMPLES: ChannelParameter(type=standard_artifacts.Examples),
-    }
+        MODEL_BLESSING: ChannelParameter(type=standard_artifacts.ModelBlessing,
+                                         optional=True)
 
+    }
     OUTPUTS = {
         PREDICTIONS: ChannelParameter(type=standard_artifacts.Examples)
     }
@@ -50,10 +51,23 @@ class BulkInferrer(BaseComponent):
                  source: Text,
                  source_args: Dict[Text, Any],
                  model: Optional[ChannelParameter] = None,
+                 model_blessing: Optional[ChannelParameter] = None,
                  instance_name: Optional[Text] = None,
                  examples: Optional[ChannelParameter] = None,
                  predictions: Optional[ChannelParameter] = None):
-        # Input and output examples
+        """
+        Interface for all DataGen components, the main component responsible
+        for reading data and converting to TFRecords. This is how we handle
+        versioning data for now.
+        Args:
+            source:
+            source_args:
+            model:
+            model_blessing:
+            instance_name:
+            examples:
+            predictions:
+        """
         examples = examples or Channel(type=standard_artifacts.Examples)
         predictions = predictions or Channel(type=standard_artifacts.Examples)
 
@@ -61,6 +75,7 @@ class BulkInferrer(BaseComponent):
         spec = self.SPEC_CLASS(source=source,
                                args=source_args,
                                model=model,
+                               model_blessing=model_blessing,
                                examples=examples,
                                predictions=predictions)
 
