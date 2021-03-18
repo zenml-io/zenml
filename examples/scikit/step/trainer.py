@@ -21,6 +21,7 @@ from sklearn import svm
 from sklearn.metrics import classification_report, confusion_matrix
 
 from zenml.steps.trainer import BaseTrainerStep
+from zenml.utils import naming_utils
 from zenml.utils import path_utils
 from zenml.utils.post_training.post_training_utils import \
     convert_raw_dataset_to_pandas
@@ -76,10 +77,6 @@ class MyScikitTrainer(BaseTrainerStep):
         """
         xf_feature_spec = tf_transform_output.transformed_feature_spec()
 
-        xf_feature_spec = {x: xf_feature_spec[x]
-                           for x in xf_feature_spec
-                           if x.endswith('_xf')}
-
         root_path = [x.replace("*", "") for x in file_pattern][0]
         dataset = tf.data.TFRecordDataset(
             path_utils.list_dir(root_path),  # a bit ugly
@@ -87,6 +84,8 @@ class MyScikitTrainer(BaseTrainerStep):
         df = convert_raw_dataset_to_pandas(dataset, xf_feature_spec, 100000)
 
         # Seperate labels
-        X = df[[x for x in df.columns if 'label_' not in x]]
-        y = df[[x for x in df.columns if 'label_' in x]]
+        X = df[[x for x in df.columns if
+                naming_utils.check_if_transformed_feature(x)]]
+        y = df[[x for x in df.columns if
+                naming_utils.check_if_transformed_label(x)]]
         return X, y
