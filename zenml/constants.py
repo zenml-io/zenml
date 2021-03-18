@@ -63,10 +63,8 @@ COMPARISON_NOTEBOOK = 'comparison_notebook.ipynb'
 EVALUATION_NOTEBOOK = 'evaluation_notebook.ipynb'
 
 # Pipeline related constants
-PREPROCESSING_FN = \
-    'zenml.components.transform.transform_module.preprocessing_fn'
+PREPROCESSING_FN = 'zenml.components.transform.transform_module.preprocessing_fn'
 TRAINER_FN = 'zenml.components.trainer.trainer_module.run_fn'
-EVALUATOR_MODULE_FN = 'zenml.components.evaluator.evaluator_module'
 
 # GCP Orchestration
 GCP_ENTRYPOINT = 'zenml.backends.orchestrator.entrypoint'

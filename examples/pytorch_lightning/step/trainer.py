@@ -20,6 +20,7 @@ from pytorch_lightning import Trainer
 from torch.nn import functional as F
 
 from zenml.steps.trainer import TorchFeedForwardTrainer
+from zenml.steps.trainer import utils
 from zenml.utils import path_utils
 
 
@@ -47,9 +48,11 @@ class MyPyTorchLightningTrainer(TorchFeedForwardTrainer):
                 return x
 
             def training_step(self, batch, batch_idx):
-                x, y = batch
-                y_hat = self(x)
-                loss = F.binary_cross_entropy_with_logits(y_hat, y)
+                x, y, z = batch
+                x_batch = torch.cat(list(x.values()), dim=-1)
+                y_t = torch.cat(list(y.values()), dim=-1)
+                y_hat = self(x_batch)
+                loss = F.binary_cross_entropy_with_logits(y_hat, y_t)
                 tensorboard_logs = {'train_loss': loss}
                 return {'loss': loss, 'log': tensorboard_logs}
 
@@ -60,10 +63,12 @@ class MyPyTorchLightningTrainer(TorchFeedForwardTrainer):
                 return train_dataset
 
             def validation_step(self, batch, batch_idx):
-                x, y = batch
-                y_hat = self(x)
+                x, y, z = batch
+                x_batch = torch.cat(list(x.values()), dim=-1)
+                y_t = torch.cat(list(y.values()), dim=-1)
+                y_hat = self(x_batch)
                 return {
-                    'val_loss': F.binary_cross_entropy_with_logits(y_hat, y)}
+                    'val_loss': F.binary_cross_entropy_with_logits(y_hat, y_t)}
 
             def validation_epoch_end(self, outputs):
                 avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
@@ -78,7 +83,7 @@ class MyPyTorchLightningTrainer(TorchFeedForwardTrainer):
         # most basic trainer, uses good defaults
         trainer = Trainer(
             default_root_dir=self.log_dir,
-            max_epochs=self.epoch,
+            max_epochs=self.epochs,
         )
         trainer.fit(model)
 
@@ -96,3 +101,7 @@ class MyPyTorchLightningTrainer(TorchFeedForwardTrainer):
         else:
             trainer.save_checkpoint(
                 os.path.join(self.serving_model_dir, 'model.ckpt'))
+
+        # test fn for evaluator
+        test_results = self.test_fn(model, eval_dataset)
+        utils.save_test_results(test_results, self.test_results)

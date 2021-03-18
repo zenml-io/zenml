@@ -12,13 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-# TODO: [LOW] Refactor into utility
-import importlib.util
-
-spec = importlib.util.find_spec('torch')
-if spec is None:
-    raise AssertionError("torch integration not installed. Please install "
-                         "zenml[torch] via `pip install zenml[pytorch]`")
 
 import os
 from typing import List, Text
@@ -28,11 +21,17 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as data
+from torch.utils.tensorboard import SummaryWriter
 
 from zenml.steps.trainer import TorchBaseTrainerStep
-from zenml.steps.trainer.pytorch_trainers.utils import \
-    TFRecordTorchDataset
+from zenml.steps.trainer import utils
+from zenml.steps.trainer.pytorch_trainers import utils as torch_utils
 from zenml.utils import path_utils
+
+FEATURES = 'features'
+LABELS = 'labels'
+PREDICTIONS = 'predictions'
+RAW = 'raw'
 
 
 class BinaryClassifier(nn.Module):
@@ -69,9 +68,9 @@ def binary_acc(y_pred, y_test):
 
 class FeedForwardTrainer(TorchBaseTrainerStep):
     def __init__(self,
-                 batch_size: int = 8,
+                 batch_size: int = 32,
                  lr: float = 0.0001,
-                 epoch: int = 50,
+                 epochs: int = 10,
                  dropout_chance: int = 0.2,
                  loss: str = 'mse',
                  metrics: List[str] = None,
@@ -84,7 +83,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                  ):
         self.batch_size = batch_size
         self.lr = lr
-        self.epoch = epoch
+        self.epochs = epochs
         self.dropout_chance = dropout_chance
         self.loss = loss
         self.metrics = metrics or []
@@ -96,7 +95,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         super(FeedForwardTrainer, self).__init__(
             batch_size=self.batch_size,
             lr=self.lr,
-            epoch=self.epoch,
+            epochs=self.epochs,
             dropout_chance=self.dropout_chance,
             loss=self.loss,
             metrics=self.metrics,
@@ -111,17 +110,48 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                  file_pattern: List[Text],
                  tf_transform_output: tft.TFTransformOutput):
         spec = tf_transform_output.transformed_feature_spec()
-        dataset = TFRecordTorchDataset(file_pattern, spec)
+        dataset = torch_utils.TFRecordTorchDataset(file_pattern, spec)
         loader = torch.utils.data.DataLoader(dataset,
                                              batch_size=self.batch_size,
-                                             )
+                                             drop_last=True)
         return loader
 
-    def model_fn(self,
-                 train_dataset,
-                 eval_dataset):
-
+    def model_fn(self, train_dataset, eval_dataset):
         return BinaryClassifier()
+
+    def test_fn(self, model, eval_dataset):
+        # Activate the evaluation mode
+        model.eval()
+
+        batch_list = []
+        for x, y, raw in eval_dataset:
+            # start with an empty batch
+            batch = {}
+
+            # add the raw features with the transformed features and labels
+            batch.update(x)
+            batch.update(y)
+            batch.update(raw)
+
+            # finally, add the output of the model
+            x_batch = torch.cat([v for v in x.values()], dim=-1)
+            p = model(x_batch)
+
+            if isinstance(p, torch.Tensor):
+                batch.update({'output': p})
+            elif isinstance(p, dict):
+                batch.update(p)
+            elif isinstance(p, list):
+                batch.update(
+                    {'output_{}'.format(i): v for i, v in enumerate(p)})
+            else:
+                raise TypeError('Unknown output format!')
+
+            batch_list.append(batch)
+
+        combined_batch = utils.combine_batch_results(batch_list)
+
+        return combined_batch
 
     def run_fn(self):
         train_dataset = self.input_fn(self.train_files,
@@ -137,16 +167,25 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         criterion = nn.BCEWithLogitsLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.001)
 
+        writer = SummaryWriter(self.log_dir)
+
         model.train()
-        for e in range(1, self.epoch + 1):
+
+        total_count = 0
+
+        for e in range(1, self.epochs + 1):
             epoch_loss = 0
             epoch_acc = 0
             step_count = 0
-            for x, y in train_dataset:
+            for x, y, _ in train_dataset:
                 step_count += 1
-                X_batch, y_batch = x.to(device), y.to(device)
+                total_count += 1
+
+                x_batch = torch.cat([v.to(device) for v in x.values()], dim=-1)
+                y_batch = torch.cat([v.to(device) for v in y.values()], dim=-1)
                 optimizer.zero_grad()
-                y_pred = model(X_batch)
+
+                y_pred = model(x_batch)
 
                 loss = criterion(y_pred, y_batch)
                 acc = binary_acc(y_pred, y_batch)
@@ -157,9 +196,19 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                 epoch_loss += loss.item()
                 epoch_acc += acc.item()
 
+                if e == 1 and step_count == 1:
+                    writer.add_graph(model, x_batch)
+
+                writer.add_scalar('training_loss', loss, total_count)
+                writer.add_scalar('training_accuracy', acc, total_count)
+
             print(f'Epoch {e + 0:03}: | Loss: '
                   f'{epoch_loss / step_count:.5f} | Acc: '
                   f'{epoch_acc / step_count:.3f}')
+
+        # test
+        test_results = self.test_fn(model, eval_dataset)
+        utils.save_test_results(test_results, self.test_results)
 
         path_utils.create_dir_if_not_exists(self.serving_model_dir)
         if path_utils.is_remote(self.serving_model_dir):

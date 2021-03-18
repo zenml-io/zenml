@@ -38,9 +38,6 @@ class BasePreprocesserStep(BaseStep):
 
         super().__init__(**kwargs)
 
-    def get_preprocessing_fn(self):
-        return self.preprocessing_fn
-
     def preprocessing_fn(self, inputs: Dict):
         """
         Function used in the Transform component. Override this to do custom

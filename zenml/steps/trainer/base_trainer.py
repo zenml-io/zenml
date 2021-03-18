@@ -17,8 +17,8 @@ from typing import List, Text
 
 import tensorflow_transform as tft
 
-from zenml.steps import BaseStep
 from zenml.enums import StepTypes
+from zenml.steps import BaseStep
 
 
 class BaseTrainerStep(BaseStep):
@@ -32,6 +32,7 @@ class BaseTrainerStep(BaseStep):
     def __init__(self,
                  serving_model_dir: Text = None,
                  transform_output: Text = None,
+                 test_results: Text = None,
                  train_files=None,
                  eval_files=None,
                  **kwargs):
@@ -55,6 +56,7 @@ class BaseTrainerStep(BaseStep):
         super().__init__(**kwargs)
         self.serving_model_dir = serving_model_dir
         self.transform_output = transform_output
+        self.test_results = test_results
         self.train_files = train_files
         self.eval_files = eval_files
         self.schema = None
@@ -63,8 +65,11 @@ class BaseTrainerStep(BaseStep):
 
         # Infer schema and log_dir
         if self.transform_output is not None:
-            self.tf_transform_output = tft.TFTransformOutput(self.transform_output)
-            self.schema = self.tf_transform_output.transformed_feature_spec().copy()
+            self.tf_transform_output = tft.TFTransformOutput(
+                self.transform_output)
+            self.schema = self.tf_transform_output.transformed_feature_spec(
+
+            ).copy()
 
         if self.serving_model_dir is not None:
             self.log_dir = os.path.join(
@@ -74,7 +79,7 @@ class BaseTrainerStep(BaseStep):
                  file_pattern: List[Text],
                  tf_transform_output: tft.TFTransformOutput):
         """
-        Class method for loading data from TFRecords saved to a location on
+        Method for loading data from TFRecords saved to a location on
         disk. Override this method in subclasses to define your own custom
         data preparation flow.
 
@@ -93,7 +98,7 @@ class BaseTrainerStep(BaseStep):
     def model_fn(train_dataset,
                  eval_dataset):
         """
-        Class method defining the training flow of the model. Override this
+        Method defining the training flow of the model. Override this
         in subclasses to define your own custom training flow.
 
         Args:
@@ -107,11 +112,19 @@ class BaseTrainerStep(BaseStep):
 
     def run_fn(self):
         """
-        Class method defining the control flow of the training process inside
+        Method defining the control flow of the training process inside
         the TFX Trainer Component Executor. Override this method in subclasses
         to define your own custom training flow.
         """
         pass
 
-    def get_run_fn(self):
-        return self.run_fn
+    def test_fn(self, *args, **kwargs):
+        """
+        Optional method for defining a test flow of the model. The goal of
+        this method is to give the user an interface to provide a testing
+        function, where the results (if given in the right format with
+        features, labels and predictions) will be ultimately saved to
+        disk using an output artifact. Once defined, it allows the user to
+        utilize the model agnostic evaluator in their training pipeline.
+        """
+        pass

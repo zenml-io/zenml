@@ -11,6 +11,8 @@ from zenml.steps.split import RandomSplit
 from zenml.steps.trainer import TFFeedForwardTrainer
 from zenml.exceptions import AlreadyExistsException
 
+from zenml.utils.naming_utils import transformed_label_name
+
 GCP_PROJECT = os.getenv('GCP_PROJECT')
 GCP_BUCKET = os.getenv('GCP_BUCKET')
 GCP_REGION = os.getenv('GCP_REGION')
@@ -71,8 +73,8 @@ training_pipeline.add_trainer(TFFeedForwardTrainer(
 # Add an evaluator
 training_pipeline.add_evaluator(
     TFMAEvaluator(slices=[['has_diabetes']],
-                  metrics={'has_diabetes': ['binary_crossentropy',
-                                            'binary_accuracy']}))
+                  metrics={transformed_label_name('has_diabetes'):
+                     ['binary_crossentropy', 'binary_accuracy']}))
 
 # Define the metadata store
 metadata_store = MySQLMetadataStore(

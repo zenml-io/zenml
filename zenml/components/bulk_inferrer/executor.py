@@ -42,7 +42,6 @@ class BulkInferrerExecutor(base_executor.BaseExecutor):
            output_dict: Dict[Text, List[types.Artifact]],
            exec_properties: Dict[Text, Any]) -> None:
         """Runs batch inference on a given model with given input examples.
-
         Args:
           input_dict: Input dict from input key to a list of Artifacts.
             - examples: examples for inference.
@@ -53,7 +52,6 @@ class BulkInferrerExecutor(base_executor.BaseExecutor):
           exec_properties: A dict of execution properties.
             - model_spec: JSON string of bulk_inferrer_pb2.ModelSpec instance.
             - data_spec: JSON string of bulk_inferrer_pb2.DataSpec instance.
-
         Returns:
           None
         """
@@ -121,7 +119,6 @@ class BulkInferrerExecutor(base_executor.BaseExecutor):
             inferrer_step: BaseInferrer,
     ) -> None:
         """Runs model inference on given examples data.
-
         Args:
           output_example_spec: bulk_inferrer_pb2.OutputExampleSpec instance.
           examples: List of `standard_artifacts.Examples` artifacts.

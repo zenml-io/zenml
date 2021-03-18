@@ -20,19 +20,8 @@ from zenml.standards.standard_keys import MethodKeys, DefaultKeys
 from zenml.steps.preprocesser import BasePreprocesserStep
 from zenml.steps.preprocesser.standard_preprocesser.methods.standard_methods \
     import NonSeqFillingMethods, TransformMethods
+from zenml.utils import naming_utils
 from zenml.utils.preprocessing_utils import parse_methods, DEFAULT_DICT
-
-XF_SUFFIX = '_xf'
-
-
-def transformed_name(key):
-    """
-    Appends a suffix to a feature name, indicating that it has been
-     transformed in a preprocessing step.
-    Args:
-        key: Name of the feature.
-    """
-    return key + XF_SUFFIX
 
 
 def infer_schema(schema):
@@ -138,21 +127,20 @@ class StandardPreprocesser(BasePreprocesserStep):
 
         output = {}
         for key, value in inputs.items():
-            if key in self.features or key in self.labels:
-                if key not in self.f_dict:
-                    self.f_dict[key] = self.f_d_dict[schema[key]]
-                value = self.apply_filling(value, self.f_dict[key])
+            if key not in self.f_dict:
+                self.f_dict[key] = self.f_d_dict[schema[key]]
+            value = self.apply_filling(value, self.f_dict[key])
 
+            if key in self.features or key in self.labels:
                 if key not in self.t_dict:
                     self.t_dict[key] = self.t_d_dict[schema[key]]
                 result = self.apply_transform(key, value, self.t_dict[key])
                 result = tf.cast(result, dtype=tf.float32)
 
                 if key in self.features:
-                    output[transformed_name(key)] = result
-
+                    output[naming_utils.transformed_feature_name(key)] = result
                 if key in self.labels:
-                    output[transformed_name('label_' + key)] = result
+                    output[naming_utils.transformed_label_name(key)] = result
 
             output[key] = value
 
