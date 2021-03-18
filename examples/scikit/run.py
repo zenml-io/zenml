@@ -44,16 +44,13 @@ training_pipeline.add_trainer(MyScikitTrainer(
 label_name = naming_utils.transformed_label_name('has_diabetes')
 training_pipeline.add_evaluator(
     AgnosticEvaluator(
-        prediction_key='output',
+        prediction_key=naming_utils.output_name(label_name),
         label_key=label_name,
         slices=[['has_diabetes']],
         metrics=['mean_squared_error']))
 
 # Run the pipeline locally
 training_pipeline.run()
-
-# See statistics of train and eval
-training_pipeline.view_statistics()
 
 # Evaluate
 training_pipeline.evaluate()

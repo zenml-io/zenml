@@ -14,6 +14,7 @@
 
 from typing import List, Text
 
+import numpy as np
 import tensorflow as tf
 import tensorflow_transform as tft
 from joblib import dump
@@ -21,11 +22,11 @@ from sklearn import svm
 from sklearn.metrics import classification_report, confusion_matrix
 
 from zenml.steps.trainer import BaseTrainerStep
+from zenml.steps.trainer import utils as trainer_utils
 from zenml.utils import naming_utils
 from zenml.utils import path_utils
 from zenml.utils.post_training.post_training_utils import \
     convert_raw_dataset_to_pandas
-from zenml.steps.trainer import utils as trainer_utils
 
 
 class MyScikitTrainer(BaseTrainerStep):
@@ -103,5 +104,6 @@ class MyScikitTrainer(BaseTrainerStep):
             label_name: y_eval.values,
             naming_utils.output_name(label_name): y_pred,
         }
-        out_dict.update(X_eval.to_dict())
+        out_dict.update({k: np.array(v) for k, v
+                         in X_eval.to_dict(orient='list').items()})
         return out_dict
