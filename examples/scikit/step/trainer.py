@@ -25,6 +25,7 @@ from zenml.utils import naming_utils
 from zenml.utils import path_utils
 from zenml.utils.post_training.post_training_utils import \
     convert_raw_dataset_to_pandas
+from zenml.steps.trainer import utils as trainer_utils
 
 
 class MyScikitTrainer(BaseTrainerStep):
@@ -61,6 +62,10 @@ class MyScikitTrainer(BaseTrainerStep):
         # Save to serving_model_dir
         dump(clf, self.serving_model_dir)
 
+        # for model agnostic evaluator
+        test_results = self.test_fn(clf, X_eval, y_eval)
+        trainer_utils.save_test_results(test_results, self.test_results)
+
     def input_fn(self,
                  file_pattern: List[Text],
                  tf_transform_output: tft.TFTransformOutput):
@@ -83,9 +88,20 @@ class MyScikitTrainer(BaseTrainerStep):
             compression_type='GZIP')
         df = convert_raw_dataset_to_pandas(dataset, xf_feature_spec, 100000)
 
-        # Seperate labels
+        # Separate labels
         X = df[[x for x in df.columns if
                 naming_utils.check_if_transformed_feature(x)]]
         y = df[[x for x in df.columns if
                 naming_utils.check_if_transformed_label(x)]]
         return X, y
+
+    def test_fn(self, model, X_eval, y_eval):
+        label_name = y_eval.columns[0]
+        y_pred = model.predict(X_eval)
+
+        out_dict = {
+            label_name: y_eval.values,
+            naming_utils.output_name(label_name): y_pred,
+        }
+        out_dict.update(X_eval.to_dict())
+        return out_dict

@@ -17,8 +17,8 @@ from typing import List, Text
 
 import tensorflow_transform as tft
 
-from zenml.steps import BaseStep
 from zenml.enums import StepTypes
+from zenml.steps import BaseStep
 
 
 class BaseTrainerStep(BaseStep):
@@ -65,8 +65,11 @@ class BaseTrainerStep(BaseStep):
 
         # Infer schema and log_dir
         if self.transform_output is not None:
-            self.tf_transform_output = tft.TFTransformOutput(self.transform_output)
-            self.schema = self.tf_transform_output.transformed_feature_spec().copy()
+            self.tf_transform_output = tft.TFTransformOutput(
+                self.transform_output)
+            self.schema = self.tf_transform_output.transformed_feature_spec(
+
+            ).copy()
 
         if self.serving_model_dir is not None:
             self.log_dir = os.path.join(
@@ -115,7 +118,7 @@ class BaseTrainerStep(BaseStep):
         """
         pass
 
-    def test_fn(self):
+    def test_fn(self, *args, **kwargs):
         """
         Optional method for defining a test flow of the model. The goal of
         this method is to give the user an interface to provide a testing
