@@ -40,7 +40,7 @@ training_pipeline.add_trainer(TorchFeedForwardTrainer(
     last_activation='sigmoid',
     output_units=1,
     metrics=['accuracy'],
-    epoch=100))
+    epochs=100))
 
 # Add an evaluator
 label_name = naming_utils.transformed_label_name('has_diabetes')
