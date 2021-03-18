@@ -48,13 +48,12 @@ class Executor(base_executor.BaseExecutor):
 
         input_uri = artifact_utils.get_single_uri(examples_artifact)
         if len(zenml_path_utils.list_dir(input_uri)) == 0:
-            # TODO: This is quite specific to AgnosticEvaluators,
-            logger.warning('ZenML can not run the evaluation as the provided '
-                           'input configuration does not point towards any '
-                           'data. Specifically, if you are using the agnostic '
-                           'evaluator, please make sure that you are using a '
-                           'proper test_fn in your trainer step to write '
-                           'these results.')
+            raise AssertionError(
+                'ZenML can not run the evaluation as the provided input '
+                'configuration does not point towards any data. Specifically, '
+                'if you are using the agnostic evaluator, please make sure '
+                'that you are using a proper test_fn in your trainer step to '
+                'write these results.')
 
         else:
             # Check the outputs
