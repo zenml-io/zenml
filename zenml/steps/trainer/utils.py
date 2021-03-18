@@ -22,24 +22,29 @@ def to_serialized_examples(instance) -> tf.train.Example:
     example_list = []
 
     keys = list(instance.keys())
-    size = instance[keys[0]].size
+    num_samples = instance[keys[0]].shape[0]
 
-    for i in range(size):
+    for i in range(num_samples):
         feature = {}
         for key in keys:
             value = instance[key][i]
+
             if value is None:
                 raise Exception('The value can not possibly be None!')
-            elif pd.api.types.is_integer_dtype(value):
+
+            if len(value.shape) < 1:
+                value = np.array([value])
+
+            if pd.api.types.is_integer_dtype(value):
                 feature[key] = tf.train.Feature(
-                    int64_list=tf.train.Int64List(value=[value]))
+                    int64_list=tf.train.Int64List(value=value))
             elif pd.api.types.is_float_dtype(value):
                 feature[key] = tf.train.Feature(
-                    float_list=tf.train.FloatList(value=[value]))
+                    float_list=tf.train.FloatList(value=value))
             else:
+                vec_F = np.vectorize(tf.compat.as_bytes)
                 feature[key] = tf.train.Feature(
-                    bytes_list=tf.train.BytesList(
-                        value=list(map(tf.compat.as_bytes, value))))
+                    bytes_list=tf.train.BytesList(value=vec_F(value)))
         example_list.append(tf.train.Example(
             features=tf.train.Features(feature=feature)
         ).SerializeToString())
