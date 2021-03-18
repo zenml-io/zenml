@@ -4,7 +4,7 @@ The roadmap is an encapsulation of the features that we intend to build for ZenM
 
 We intend for this to be a reflection of the _current_ thinking of what we and our users think are the most critical features to be prioritized and added to ZenML. If you do not agree with the prioritization, or see a feature here that you expect, please contact us at [support@zenml.io](mailto:support@zenml.io), or join the chat on our [Slack](https://zenml.io/slack-invite/) server. You can also start a thread at the[ GitHub discussion board](https://github.com/maiot-io/zenml/discussions).
 
-## Feature Roadmap \(Updated Feb 5 2021\)
+## Feature Roadmap \(Updated March 18 2021\)
 
 #### In Progress:
 * Refine API to make it simpler to create custom datasources
