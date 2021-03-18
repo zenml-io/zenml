@@ -14,6 +14,7 @@
 
 from typing import List, Text
 
+import numpy as np
 import tensorflow as tf
 import tensorflow_transform as tft
 from joblib import dump
@@ -21,6 +22,8 @@ from sklearn import svm
 from sklearn.metrics import classification_report, confusion_matrix
 
 from zenml.steps.trainer import BaseTrainerStep
+from zenml.steps.trainer import utils as trainer_utils
+from zenml.utils import naming_utils
 from zenml.utils import path_utils
 from zenml.utils.post_training.post_training_utils import \
     convert_raw_dataset_to_pandas
@@ -60,6 +63,10 @@ class MyScikitTrainer(BaseTrainerStep):
         # Save to serving_model_dir
         dump(clf, self.serving_model_dir)
 
+        # for model agnostic evaluator
+        test_results = self.test_fn(clf, X_eval, y_eval)
+        trainer_utils.save_test_results(test_results, self.test_results)
+
     def input_fn(self,
                  file_pattern: List[Text],
                  tf_transform_output: tft.TFTransformOutput):
@@ -76,17 +83,27 @@ class MyScikitTrainer(BaseTrainerStep):
         """
         xf_feature_spec = tf_transform_output.transformed_feature_spec()
 
-        xf_feature_spec = {x: xf_feature_spec[x]
-                           for x in xf_feature_spec
-                           if x.endswith('_xf')}
-
         root_path = [x.replace("*", "") for x in file_pattern][0]
         dataset = tf.data.TFRecordDataset(
             path_utils.list_dir(root_path),  # a bit ugly
             compression_type='GZIP')
         df = convert_raw_dataset_to_pandas(dataset, xf_feature_spec, 100000)
 
-        # Seperate labels
-        X = df[[x for x in df.columns if 'label_' not in x]]
-        y = df[[x for x in df.columns if 'label_' in x]]
+        # Separate labels
+        X = df[[x for x in df.columns if
+                naming_utils.check_if_transformed_feature(x)]]
+        y = df[[x for x in df.columns if
+                naming_utils.check_if_transformed_label(x)]]
         return X, y
+
+    def test_fn(self, model, X_eval, y_eval):
+        label_name = y_eval.columns[0]
+        y_pred = model.predict(X_eval)
+
+        out_dict = {
+            label_name: y_eval.values,
+            naming_utils.output_name(label_name): y_pred,
+        }
+        out_dict.update({k: np.array(v) for k, v
+                         in X_eval.to_dict(orient='list').items()})
+        return out_dict

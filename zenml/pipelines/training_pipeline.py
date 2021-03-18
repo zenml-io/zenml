@@ -19,17 +19,16 @@ from pathlib import Path
 from typing import Dict, Text, Any, List
 
 import tensorflow as tf
-from tfx.components.evaluator.component import Evaluator
 from tfx.components.pusher.component import Pusher
 from tfx.components.schema_gen.component import SchemaGen
 from tfx.components.statistics_gen.component import StatisticsGen
-from tfx.components.trainer.component import Trainer
 from tfx.components.transform.component import Transform
 from tfx.proto import trainer_pb2
 
 from zenml import constants
 from zenml.backends.training import TrainingBaseBackend
-from zenml.components import DataGen, Sequencer, SplitGen
+from zenml.components import DataGen, Sequencer, SplitGen, Trainer, Evaluator
+
 from zenml.enums import GDPComponent
 from zenml.exceptions import DoesNotExistException, \
     PipelineNotSucceededException
@@ -37,7 +36,7 @@ from zenml.logger import get_logger
 from zenml.pipelines import BasePipeline
 from zenml.standards import standard_keys as keys
 from zenml.steps.deployer import BaseDeployerStep
-from zenml.steps.evaluator import TFMAEvaluator
+from zenml.steps.evaluator import BaseEvaluatorStep
 from zenml.steps.preprocesser import BasePreprocesserStep
 from zenml.steps.sequencer import BaseSequencerStep
 from zenml.steps.split import BaseSplit
@@ -204,23 +203,26 @@ class TrainingPipeline(BasePipeline):
         # EVALUATOR #
         #############
         if keys.TrainingSteps.EVALUATOR in steps:
-            from zenml.utils import source_utils
-            eval_module = '.'.join(
-                constants.EVALUATOR_MODULE_FN.split('.')[:-1])
-            eval_module_file = constants.EVALUATOR_MODULE_FN.split('.')[-1]
-            abs_path = source_utils.get_absolute_path_from_module_source(
-                eval_module)
-            custom_extractor_path = os.path.join(abs_path,
-                                                 eval_module_file) + '.py'
-            eval_step: TFMAEvaluator = TFMAEvaluator.from_config(
-                steps[keys.TrainingSteps.EVALUATOR])
-            eval_config = eval_step.build_eval_config()
-            evaluator = Evaluator(
-                examples=transform.outputs.transformed_examples,
-                model=trainer.outputs.model,
-                eval_config=eval_config,
-                module_file=custom_extractor_path,
-            ).with_id(GDPComponent.Evaluator.name)
+            evaluator_config = steps[keys.TrainingSteps.EVALUATOR]
+            # TODO [MEDIUM]: This check should ideally not happen here,
+            #  integrate it into the component
+            eval_source = evaluator_config['source'].split('@')[0]
+            if eval_source == 'zenml.steps.evaluator.agnostic_evaluator.AgnosticEvaluator':
+                evaluator = Evaluator(
+                    source=evaluator_config[keys.StepKeys.SOURCE],
+                    source_args=evaluator_config[keys.StepKeys.ARGS],
+                    examples=trainer.outputs.test_results,
+                ).with_id(GDPComponent.Evaluator.name)
+            elif eval_source == 'zenml.steps.evaluator.tfma_evaluator.TFMAEvaluator':
+                evaluator = Evaluator(
+                    source=evaluator_config[keys.StepKeys.SOURCE],
+                    source_args=evaluator_config[keys.StepKeys.ARGS],
+                    examples=transform.outputs.transformed_examples,
+                    model=trainer.outputs.model,
+                ).with_id(GDPComponent.Evaluator.name)
+            else:
+                raise ValueError('Please use either the built-in TFMAEvaluator '
+                                 'or the AgnosticEvaluator')
             component_list.append(evaluator)
 
         ###########
@@ -252,7 +254,7 @@ class TrainingPipeline(BasePipeline):
     def add_trainer(self, trainer_step: BaseTrainerStep):
         self.steps_dict[keys.TrainingSteps.TRAINER] = trainer_step
 
-    def add_evaluator(self, evaluator_step: TFMAEvaluator):
+    def add_evaluator(self, evaluator_step: BaseEvaluatorStep):
         self.steps_dict[keys.TrainingSteps.EVALUATOR] = evaluator_step
 
     def add_deployment(self, deployment_step: BaseDeployerStep):

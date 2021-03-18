@@ -11,16 +11,17 @@ from tensorflow.python.data.ops import dataset_ops
 from tensorflow.python.data.ops import readers as core_readers
 from tensorflow.python.framework import dtypes
 
+from zenml.utils import naming_utils
+
 
 class TFRecordTorchDataset(data.IterableDataset, ABC):
     def __init__(self,
                  file_pattern,
                  spec) -> None:
         super(TFRecordTorchDataset, self).__init__()
-        xf_feature_spec = {x: spec[x] for x in spec if x.endswith('_xf')}
 
         self.dataset = create_tf_dataset(file_pattern=file_pattern,
-                                         spec=xf_feature_spec)
+                                         spec=spec)
 
     def __iter__(self):
         it = _create_iterator(self.dataset)
@@ -34,9 +35,10 @@ def _create_iterator(dataset):
     return iterator
 
 
-def _convert_to_tensors(features, label):
-    return torch.FloatTensor(list(features.values())).squeeze(dim=-1), \
-           torch.FloatTensor(list(label.values())).squeeze(dim=-1)
+def _convert_to_tensors(features, label, raw):
+    return {k: torch.from_numpy(v) for k, v in features.items()}, \
+           {k: torch.from_numpy(v) for k, v in label.items()}, \
+           raw
 
 
 def _shuffle_iterator(iterator,
@@ -46,7 +48,7 @@ def _shuffle_iterator(iterator,
         for _ in range(queue_size):
             buffer.append(next(iterator))
     except StopIteration:
-        raise Exception('asdf')
+        raise Exception('Iteration stopped!')
     while buffer:
         index = np.random.randint(len(buffer))
         try:
@@ -70,13 +72,16 @@ def _gzip_reader_fn(filenames):
 def _split_inputs_labels(x):
     inputs = {}
     labels = {}
+    raw = {}
     for e in x:
-        if not e.startswith('label'):
-            inputs[e[:-len('_xf')]] = x[e]
+        if naming_utils.check_if_transformed_label(e):
+            labels[e] = x[e]
+        elif naming_utils.check_if_transformed_feature(e):
+            inputs[e] = x[e]
         else:
-            labels[e[len('label_'):-len('_xf')]] = x[e]
+            raw[e] = x[e]
 
-    return inputs, labels
+    return inputs, labels, raw
 
 
 def create_tf_dataset(file_pattern,
@@ -86,33 +91,28 @@ def create_tf_dataset(file_pattern,
                       shuffle_seed=None,
                       shuffle_buffer_size=None,
                       reader_num_threads=None,
-                      parser_num_threads=None,
                       prefetch_buffer_size=None):
     reader = _gzip_reader_fn
 
     if reader_num_threads is None:
         reader_num_threads = 1
-    if parser_num_threads is None:
-        parser_num_threads = 2
     if prefetch_buffer_size is None:
         prefetch_buffer_size = dataset_ops.AUTOTUNE
 
-    # Create dataset of all matching filenames
     dataset = dataset_ops.Dataset.list_files(file_pattern=file_pattern,
                                              shuffle=shuffle,
                                              seed=shuffle_seed)
 
     if reader_num_threads == dataset_ops.AUTOTUNE:
-        dataset = dataset.interleave(
-            lambda filename: reader(filename),
-            num_parallel_calls=reader_num_threads)
+        dataset = dataset.interleave(lambda filename: reader(filename),
+                                     num_parallel_calls=reader_num_threads)
         options = dataset_ops.Options()
         options.experimental_deterministic = True
         dataset = dataset.with_options(options)
     else:
-        def apply_fn(dataset):
+        def apply_fn(d):
             return core_readers.ParallelInterleaveDataset(
-                dataset,
+                d,
                 lambda filename: reader(filename),
                 cycle_length=reader_num_threads,
                 block_length=1,

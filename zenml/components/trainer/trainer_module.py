@@ -30,4 +30,4 @@ def run_fn(fn_args):
     # We update users args first, because fn_args might have overlaps
     args.update(fn_args_dict)
 
-    return c(**args).get_run_fn()()
+    return c(**args).run_fn()

@@ -19,6 +19,8 @@ import tensorflow as tf
 import tensorflow_transform as tft
 
 from zenml.steps.trainer import TFBaseTrainerStep
+from zenml.steps.trainer import utils
+from zenml.utils import naming_utils
 
 
 class FeedForwardTrainer(TFBaseTrainerStep):
@@ -87,8 +89,40 @@ class FeedForwardTrainer(TFBaseTrainerStep):
             **kwargs
         )
 
-    def get_run_fn(self):
-        return self.run_fn
+    def test_fn(self, model, datasets):
+        batch_list = []
+        for x, y in datasets:
+            # start with an empty batch
+            batch = {}
+
+            transformed_f = {f: x[f] for f in x if
+                             naming_utils.check_if_transformed_feature(f)}
+            raw_f = {f: x[f] for f in x if
+                     not naming_utils.check_if_transformed_feature(f)}
+
+            # add the raw features with the transformed features and labels
+            batch.update(transformed_f)
+            batch.update(y)
+            batch.update(raw_f)
+
+            # finally, add the output of the
+            p = model.predict(x)
+
+            if isinstance(p, tf.Tensor):
+                batch.update({'output': p})
+            elif isinstance(p, dict):
+                batch.update({naming_utils.output_name(k): p[k] for k in p})
+            elif isinstance(p, list):
+                batch.update(
+                    {'output_{}'.format(i): v for i, v in enumerate(p)})
+            else:
+                raise TypeError('Unknown output format!')
+
+            batch_list.append(batch)
+
+        combined_batch = utils.combine_batch_results(batch_list)
+
+        return combined_batch
 
     def run_fn(self):
         tf_transform_output = tft.TFTransformOutput(self.transform_output)
@@ -98,6 +132,9 @@ class FeedForwardTrainer(TFBaseTrainerStep):
 
         model = self.model_fn(train_dataset=train_dataset,
                               eval_dataset=eval_dataset)
+
+        test_results = self.test_fn(model, eval_dataset)
+        utils.save_test_results(test_results, self.test_results)
 
         signatures = {
             'serving_default':
@@ -137,37 +174,25 @@ class FeedForwardTrainer(TFBaseTrainerStep):
 
         xf_feature_spec = tf_transform_output.transformed_feature_spec()
 
-        xf_feature_spec = {x: xf_feature_spec[x]
-                           for x in xf_feature_spec
-                           if x.endswith('_xf')}
-
         dataset = tf.data.experimental.make_batched_features_dataset(
             file_pattern=file_pattern,
             batch_size=self.batch_size,
             features=xf_feature_spec,
             reader=self._gzip_reader_fn,
-            num_epochs=1)
+            num_epochs=1,
+            drop_final_batch=True)
 
-        dataset = dataset.unbatch()
-
-        def split_inputs_labels(x):
+        def split_columns(x):
             inputs = {}
             labels = {}
             for e in x:
-                if not e.startswith('label'):
+                if not naming_utils.check_if_transformed_label(e):
                     inputs[e] = x[e]
                 else:
                     labels[e] = x[e]
-
-            labels = {
-                label[len('label_'):-len('_xf')]:
-                    labels[label]
-                for label in labels.keys()
-            }
-
             return inputs, labels
 
-        dataset = dataset.map(split_inputs_labels)
+        dataset = dataset.map(split_columns)
 
         return dataset
 
@@ -191,13 +216,7 @@ class FeedForwardTrainer(TFBaseTrainerStep):
             parsed_features = tf.io.parse_example(serialized_tf_examples,
                                                   raw_feature_spec)
 
-            xf_feature_spec = tf_transform_output.transformed_feature_spec()
             transformed_features = model.tft_layer(parsed_features)
-            for f in xf_feature_spec:
-                if f.startswith('label_'):
-                    transformed_features.pop(f)
-                if not f.endswith('_xf'):
-                    transformed_features.pop(f)
 
             return model(transformed_features)
 
@@ -222,14 +241,12 @@ class FeedForwardTrainer(TFBaseTrainerStep):
             """Returns the output to be used in the ce_eval signature."""
             xf_feature_spec = tf_transform_output.transformed_feature_spec()
 
-            label_spec = [f for f in xf_feature_spec if f.startswith('label_')]
-            eval_spec = [f for f in xf_feature_spec if not f.endswith('_xf')]
-
             transformed_features = tf.io.parse_example(serialized_tf_examples,
                                                        xf_feature_spec)
 
-            for f in label_spec + eval_spec:
-                transformed_features.pop(f)
+            for f in tf_transform_output.transformed_feature_spec():
+                if not naming_utils.transformed_feature_name(f):
+                    transformed_features.pop(f)
 
             outputs = model(transformed_features)
 
@@ -267,15 +284,11 @@ class FeedForwardTrainer(TFBaseTrainerStep):
             model: A trained feedforward neural network model.
         """
 
-        train_dataset = train_dataset.batch(self.batch_size,
-                                            drop_remainder=True)
-        eval_dataset = eval_dataset.batch(self.batch_size, drop_remainder=True)
-
         features = list(train_dataset.element_spec[0].keys())
         labels = list(train_dataset.element_spec[1].keys())
 
         input_layers = [tf.keras.layers.Input(shape=(1,), name=k)
-                        for k in features]
+                        for k in features if naming_utils.check_if_transformed_feature(k)]
 
         d = tf.keras.layers.Concatenate()(input_layers)
 

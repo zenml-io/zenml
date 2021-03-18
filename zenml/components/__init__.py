@@ -12,9 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.components.data_gen.component import DataGen
 from zenml.components.bulk_inferrer.component import BulkInferrer
+from zenml.components.data_gen.component import DataGen
+from zenml.components.evaluator.component import Evaluator
 from zenml.components.sequencer.component import Sequencer
-from zenml.components.tokenizer.component import Tokenizer
 from zenml.components.split_gen.component import SplitGen
+from zenml.components.tokenizer.component import Tokenizer
+from zenml.components.trainer.component import Trainer
 from zenml.components.transform_simple.component import SimpleTransform

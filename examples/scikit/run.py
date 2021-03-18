@@ -1,10 +1,12 @@
+from step.trainer import MyScikitTrainer
 from zenml.datasources import CSVDatasource
+from zenml.exceptions import AlreadyExistsException
 from zenml.pipelines import TrainingPipeline
 from zenml.repo import Repository
+from zenml.steps.evaluator import AgnosticEvaluator
 from zenml.steps.preprocesser import StandardPreprocesser
 from zenml.steps.split import RandomSplit
-from zenml.exceptions import AlreadyExistsException
-from step.trainer import MyScikitTrainer
+from zenml.utils import naming_utils
 
 # Define the training pipeline
 training_pipeline = TrainingPipeline()
@@ -34,13 +36,21 @@ training_pipeline.add_preprocesser(
 
 # Add a trainer
 training_pipeline.add_trainer(MyScikitTrainer(
-    C=1.0,
+    C=0.8,
     kernel='rbf',
 ))
 
+# Add an evaluator
+label_name = naming_utils.transformed_label_name('has_diabetes')
+training_pipeline.add_evaluator(
+    AgnosticEvaluator(
+        prediction_key=naming_utils.output_name(label_name),
+        label_key=label_name,
+        slices=[['has_diabetes']],
+        metrics=['mean_squared_error']))
 
 # Run the pipeline locally
 training_pipeline.run()
 
-# See statistics of train and eval
-training_pipeline.view_statistics()
+# Evaluate
+training_pipeline.evaluate()

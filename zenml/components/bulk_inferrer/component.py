@@ -20,9 +20,9 @@ from tfx.types import standard_artifacts, Channel
 from tfx.types.component_spec import ComponentSpec, ExecutionParameter, \
     ChannelParameter
 
-from zenml.components.bulk_inferrer.executor import BulkInferrerExecutor
 from zenml.components.bulk_inferrer.constants import MODEL, EXAMPLES, \
     MODEL_BLESSING, PREDICTIONS
+from zenml.components.bulk_inferrer.executor import BulkInferrerExecutor
 from zenml.standards.standard_keys import StepKeys
 
 
@@ -59,7 +59,6 @@ class BulkInferrer(BaseComponent):
         Interface for all DataGen components, the main component responsible
         for reading data and converting to TFRecords. This is how we handle
         versioning data for now.
-
         Args:
             source:
             source_args:

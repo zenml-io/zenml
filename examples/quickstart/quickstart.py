@@ -7,6 +7,8 @@ from zenml.steps.split import RandomSplit
 from zenml.steps.trainer import TFFeedForwardTrainer
 from zenml.exceptions import AlreadyExistsException
 
+from zenml.utils.naming_utils import transformed_label_name
+
 # Define the training pipeline
 training_pipeline = TrainingPipeline()
 
@@ -44,8 +46,8 @@ training_pipeline.add_trainer(TFFeedForwardTrainer(
 # Add an evaluator
 training_pipeline.add_evaluator(
     TFMAEvaluator(slices=[['has_diabetes']],
-                  metrics={'has_diabetes': ['binary_crossentropy',
-                                            'binary_accuracy']}))
+                  metrics={transformed_label_name('has_diabetes'):
+                               ['binary_crossentropy', 'binary_accuracy']}))
 
 # Run the pipeline locally
 training_pipeline.run()
