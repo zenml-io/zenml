@@ -61,7 +61,7 @@ infer_pipeline = BatchInferencePipeline(
 infer_pipeline.add_datasource(ds)
 infer_pipeline.add_infer_step(
     TensorflowInferrer(
-        labels=['has_diabetes'])
+        labels=[transformed_label_name('has_diabetes')])
 )
 infer_pipeline.run()
 df = infer_pipeline.get_predictions()
