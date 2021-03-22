@@ -56,8 +56,7 @@ class SplitGen(BaseComponent):
                  examples: types.Channel = None,  # output
                  statistics: types.Channel = None,
                  schema: types.Channel = None):
-        examples = examples or types.Channel(
-            type=standard_artifacts.Examples)
+        examples = examples or types.Channel(type=standard_artifacts.Examples)
 
         spec = SplitGenComponentSpec(
             source=source,
