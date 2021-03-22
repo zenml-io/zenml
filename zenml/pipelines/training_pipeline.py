@@ -192,8 +192,6 @@ class TrainingPipeline(BasePipeline):
             transform_graph=transform.outputs.transform_graph,
             run_fn=constants.TRAINER_FN,
             schema=schema,
-            train_args=trainer_pb2.TrainArgs(),
-            eval_args=trainer_pb2.EvalArgs(),
             **training_kwargs
         ).with_id(GDPComponent.Trainer.name)
 
