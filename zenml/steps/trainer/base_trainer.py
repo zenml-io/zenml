@@ -67,9 +67,7 @@ class BaseTrainerStep(BaseStep):
         if self.transform_output is not None:
             self.tf_transform_output = tft.TFTransformOutput(
                 self.transform_output)
-            self.schema = self.tf_transform_output.transformed_feature_spec(
-
-            ).copy()
+            self.schema = self.tf_transform_output.transformed_feature_spec().copy()
 
         if self.serving_model_dir is not None:
             self.log_dir = os.path.join(
@@ -95,8 +93,7 @@ class BaseTrainerStep(BaseStep):
         pass
 
     @staticmethod
-    def model_fn(train_dataset,
-                 eval_dataset):
+    def model_fn(train_dataset, eval_dataset):
         """
         Method defining the training flow of the model. Override this
         in subclasses to define your own custom training flow.
