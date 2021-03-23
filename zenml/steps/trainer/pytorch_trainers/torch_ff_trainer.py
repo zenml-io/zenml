@@ -14,7 +14,7 @@
 
 
 import os
-from typing import List, Text
+from typing import List, Text, Dict
 
 import tensorflow_transform as tft
 import torch
@@ -107,14 +107,31 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
             **kwargs)
 
     def input_fn(self,
-                 file_pattern: List[Text],
-                 tf_transform_output: tft.TFTransformOutput):
-        spec = tf_transform_output.transformed_feature_spec()
-        dataset = torch_utils.TFRecordTorchDataset(file_pattern, spec)
-        loader = torch.utils.data.DataLoader(dataset,
-                                             batch_size=self.batch_size,
-                                             drop_last=True)
-        return loader
+                 file_patterns: Dict[Text, Text],
+                 transformed_spec: Dict[Text, Text],
+                 combine_splits: bool = False):
+
+        if combine_splits:
+            pattern = list(file_patterns.values())
+            if pattern:
+                dataset = torch_utils.TFRecordTorchDataset(pattern,
+                                                           transformed_spec)
+                loader = torch.utils.data.DataLoader(dataset,
+                                                     batch_size=self.batch_size,
+                                                     drop_last=True)
+                return loader
+            else:
+                return None
+        else:
+            datasets = dict()
+            for split, pattern in file_patterns.items():
+                dataset = torch_utils.TFRecordTorchDataset(pattern,
+                                                           transformed_spec)
+                loader = torch.utils.data.DataLoader(dataset,
+                                                     batch_size=self.batch_size,
+                                                     drop_last=True)
+                datasets[split] = loader
+            return datasets
 
     def model_fn(self, train_dataset, eval_dataset):
         return BinaryClassifier()
@@ -155,10 +172,12 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
 
     def run_fn(self):
         train_dataset = self.input_fn(self.train_files,
-                                      self.tf_transform_output)
+                                      self.schema,
+                                      combine_splits=True)
 
         eval_dataset = self.input_fn(self.eval_files,
-                                     self.tf_transform_output)
+                                     self.schema,
+                                     combine_splits=True)
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model = self.model_fn(train_dataset, eval_dataset)
@@ -207,8 +226,13 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                   f'{epoch_acc / step_count:.3f}')
 
         # test
-        test_results = self.test_fn(model, eval_dataset)
-        utils.save_test_results(test_results, self.test_results)
+        test_datasets = self.input_fn(self.test_files,
+                                      self.schema,
+                                      combine_splits=False)
+
+        if test_datasets:
+            test_results = self.test_fn(model, eval_dataset)
+            utils.save_test_results(test_results, self.test_results)
 
         path_utils.create_dir_if_not_exists(self.serving_model_dir)
         if path_utils.is_remote(self.serving_model_dir):
