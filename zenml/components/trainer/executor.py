@@ -1,22 +1,16 @@
 import json
 from typing import Any, Dict, List, Text
-from typing import Callable, Iterator, Optional, NamedTuple
 
 import attr
-import pyarrow as pa
-import tensorflow as tf
 from tensorflow.python.lib.io import file_io
-from tensorflow_metadata.proto.v0 import schema_pb2
 from tfx import types
 from tfx.components.trainer import fn_args_utils
 from tfx.components.trainer.executor import GenericExecutor
 from tfx.components.trainer.fn_args_utils import FnArgs
-from tfx.components.util import tfxio_utils
 from tfx.types import artifact_utils
 from tfx.utils import io_utils
 from tfx.utils import json_utils
 from tfx.utils import path_utils
-from tfx_bsl.tfxio import dataset_options
 
 from zenml.components.trainer import constants
 from zenml.logger import get_logger
@@ -24,21 +18,6 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 _TELEMETRY_DESCRIPTORS = ['Trainer']
-
-DataAccessor = NamedTuple(
-    'DataAccessor',
-    [('tf_dataset_factory', Callable[
-        [List[Text],
-         dataset_options.TensorFlowDatasetOptions,
-         Optional[schema_pb2.Schema],
-         ], tf.data.Dataset]),
-     ('record_batch_factory', Callable[
-         [List[Text],
-          dataset_options.RecordBatchesOptions,
-          Optional[
-              schema_pb2.Schema],
-          ], Iterator[
-             pa.RecordBatch]])])
 
 
 class ZenMLTrainerArgs(FnArgs):
@@ -92,18 +71,9 @@ class ZenMLTrainerExecutor(GenericExecutor):
         else:
             schema_path = None
 
-        data_accessor = DataAccessor(
-            tf_dataset_factory=tfxio_utils.get_tf_dataset_factory_from_artifact(
-                input_dict[constants.EXAMPLES],
-                _TELEMETRY_DESCRIPTORS),
-            record_batch_factory=tfxio_utils.get_record_batch_factory_from_artifact(
-                input_dict[constants.EXAMPLES],
-                _TELEMETRY_DESCRIPTORS))
-
         result.base_model = base_model
         result.hyperparameters = hyperparameters_config
         result.schema_path = schema_path
-        result.data_accessor = data_accessor
         result.transform_graph_path = transform_graph_path
         result.transform_output = result.transform_graph_path
 
