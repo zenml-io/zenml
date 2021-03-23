@@ -35,6 +35,7 @@ class BaseTrainerStep(BaseStep):
                  test_results: Text = None,
                  train_files=None,
                  eval_files=None,
+                 test_files=None,
                  **kwargs):
         """
         Constructor for the BaseTrainerStep. All subclasses used for custom
@@ -59,6 +60,7 @@ class BaseTrainerStep(BaseStep):
         self.test_results = test_results
         self.train_files = train_files
         self.eval_files = eval_files
+        self.test_files = test_files
         self.schema = None
         self.log_dir = None
         self.tf_transform_output = None
