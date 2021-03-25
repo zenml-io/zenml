@@ -90,7 +90,10 @@ class StandardPreprocesser(BasePreprocesserStep):
             **unused_kwargs: Additional unused keyword arguments. Their usage
              might change in the future.
         """
-        super().__init__(features=features, labels=labels, overwrite=overwrite)
+        super(StandardPreprocesser, self).__init__(features=features,
+                                                   labels=labels,
+                                                   overwrite=overwrite,
+                                                   **unused_kwargs)
 
         # List of features and labels
         self.features = features or []

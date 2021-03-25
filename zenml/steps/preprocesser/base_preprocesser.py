@@ -12,10 +12,27 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Dict
+from typing import Dict, Text, List
 
-from zenml.steps import BaseStep
+from tfx.proto import transform_pb2
+
 from zenml.enums import StepTypes
+from zenml.steps import BaseStep
+
+SPLIT_MAPPING = 'split_mapping'
+
+
+def build_split_mapping(args):
+    if SPLIT_MAPPING in args:
+        splits_config = transform_pb2.SplitsConfig()
+        for process, splits in args[SPLIT_MAPPING].items():
+            for split in splits:
+                if process == 'train':
+                    splits_config.analyze.append(split)
+                splits_config.transform.append(split)
+        return splits_config
+    else:
+        return None
 
 
 class BasePreprocesserStep(BaseStep):
@@ -27,7 +44,9 @@ class BasePreprocesserStep(BaseStep):
 
     STEP_TYPE = StepTypes.preprocesser.name
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 split_mapping: Dict[Text, List[Text]] = None,
+                 **kwargs):
         """
         Base preprocessing step constructor. Custom preprocessing steps need
         to override the `preprocessing_fn` class method.
@@ -36,7 +55,8 @@ class BasePreprocesserStep(BaseStep):
             **kwargs: Additional keyword arguments.
         """
 
-        super().__init__(**kwargs)
+        super(BasePreprocesserStep, self).__init__(split_mapping=split_mapping,
+                                                   **kwargs)
 
     def preprocessing_fn(self, inputs: Dict):
         """
