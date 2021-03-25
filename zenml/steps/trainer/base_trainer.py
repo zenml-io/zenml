@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import List, Text
+from typing import Dict, List, Text
 
 import tensorflow_transform as tft
 
@@ -30,12 +30,10 @@ class BaseTrainerStep(BaseStep):
     STEP_TYPE = StepTypes.trainer.name
 
     def __init__(self,
+                 split_patterns: Dict[Text, Text] = None,
                  serving_model_dir: Text = None,
                  transform_output: Text = None,
-                 test_results: Text = None,
-                 train_files=None,
-                 eval_files=None,
-                 test_files=None,
+                 test_results_dir: Text = None,
                  **kwargs):
         """
         Constructor for the BaseTrainerStep. All subclasses used for custom
@@ -55,21 +53,19 @@ class BaseTrainerStep(BaseStep):
             schema: Schema file from a preceding SchemaGen.
         """
         super().__init__(**kwargs)
-        self.serving_model_dir = serving_model_dir
-        self.transform_output = transform_output
-        self.test_results = test_results
-        self.train_files = train_files
-        self.eval_files = eval_files
-        self.test_files = test_files
+        # Inputs
+        self.split_patterns = split_patterns
         self.schema = None
-        self.log_dir = None
         self.tf_transform_output = None
 
-        # Infer schema and log_dir
-        if self.transform_output is not None:
-            self.tf_transform_output = tft.TFTransformOutput(
-                self.transform_output)
-            self.schema = self.tf_transform_output.transformed_feature_spec().copy()
+        if transform_output is not None:
+            self.tf_transform_output = tft.TFTransformOutput(transform_output)
+            self.schema = self.tf_transform_output.transformed_feature_spec()
+
+        # Outputs
+        self.serving_model_dir = serving_model_dir
+        self.test_results_dir = test_results_dir
+        self.log_dir = None
 
         if self.serving_model_dir is not None:
             self.log_dir = os.path.join(
