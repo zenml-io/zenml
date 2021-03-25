@@ -16,7 +16,6 @@
 import os
 from typing import List, Text, Dict
 
-import tensorflow_transform as tft
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -79,8 +78,8 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                  last_activation: str = 'sigmoid',
                  input_units: int = 8,
                  output_units: int = 1,
-                 **kwargs
-                 ):
+                 split_mapping: Dict[Text, List[Text]] = None,
+                 **kwargs):
         self.batch_size = batch_size
         self.lr = lr
         self.epochs = epochs
@@ -92,6 +91,16 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         self.last_activation = last_activation
         self.input_units = input_units
         self.output_units = output_units
+
+        if split_mapping is None:
+            self.split_mapping = {'train': ['train'],
+                                  'eval': ['eval'],
+                                  'test': []}
+            if self.split_patterns and 'test' in self.split_patterns:
+                self.split_mapping = {'test': ['test']}
+        else:
+            self.split_mapping = split_mapping
+
         super(FeedForwardTrainer, self).__init__(
             batch_size=self.batch_size,
             lr=self.lr,
@@ -104,34 +113,19 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
             last_activation=self.last_activation,
             input_units=self.input_units,
             output_units=self.output_units,
+            split_mapping=self.split_mapping,
             **kwargs)
 
     def input_fn(self,
-                 file_patterns: Dict[Text, Text],
-                 transformed_spec: Dict[Text, Text],
-                 combine_splits: bool = False):
+                 file_patterns: List[Text],
+                 transformed_spec: Dict[Text, Text]):
 
-        if combine_splits:
-            pattern = list(file_patterns.values())
-            if pattern:
-                dataset = torch_utils.TFRecordTorchDataset(pattern,
-                                                           transformed_spec)
-                loader = torch.utils.data.DataLoader(dataset,
-                                                     batch_size=self.batch_size,
-                                                     drop_last=True)
-                return loader
-            else:
-                return None
-        else:
-            datasets = dict()
-            for split, pattern in file_patterns.items():
-                dataset = torch_utils.TFRecordTorchDataset(pattern,
-                                                           transformed_spec)
-                loader = torch.utils.data.DataLoader(dataset,
-                                                     batch_size=self.batch_size,
-                                                     drop_last=True)
-                datasets[split] = loader
-            return datasets
+        dataset = torch_utils.TFRecordTorchDataset(file_patterns,
+                                                   transformed_spec)
+        loader = torch.utils.data.DataLoader(dataset,
+                                             batch_size=self.batch_size,
+                                             drop_last=True)
+        return loader
 
     def model_fn(self, train_dataset, eval_dataset):
         return BinaryClassifier()
@@ -171,13 +165,13 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         return combined_batch
 
     def run_fn(self):
-        train_dataset = self.input_fn(self.train_files,
-                                      self.schema,
-                                      combine_splits=True)
+        train_split_patterns = [self.split_patterns[split]
+                                for split in self.split_mapping['train']]
+        train_dataset = self.input_fn(train_split_patterns, self.schema)
 
-        eval_dataset = self.input_fn(self.eval_files,
-                                     self.schema,
-                                     combine_splits=True)
+        eval_split_patterns = [self.split_patterns[split]
+                               for split in self.split_mapping['eval']]
+        eval_dataset = self.input_fn(eval_split_patterns, self.schema)
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model = self.model_fn(train_dataset, eval_dataset)
@@ -226,13 +220,12 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                   f'{epoch_acc / step_count:.3f}')
 
         # test
-        test_datasets = self.input_fn(self.test_files,
-                                      self.schema,
-                                      combine_splits=False)
-
-        if test_datasets:
-            test_results = self.test_fn(model, eval_dataset)
-            utils.save_test_results(test_results, self.test_results)
+        test_split_patterns = [self.split_patterns[split]
+                               for split in self.split_mapping['test']]
+        if test_split_patterns:
+            test_dataset = self.input_fn(test_split_patterns, self.schema)
+            test_results = self.test_fn(model, test_dataset)
+            utils.save_test_results(test_results, self.test_results_dir)
 
         path_utils.create_dir_if_not_exists(self.serving_model_dir)
         if path_utils.is_remote(self.serving_model_dir):
