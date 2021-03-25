@@ -1,8 +1,5 @@
 # ZenML constants
 TEST_RESULTS = 'test_results'
-TRAIN_SPLITS = 'train_splits'
-TEST_SPLITS = 'test_splits'
-EVAL_SPLITS = 'eval_splits'
 
 # TFX constants
 RUN_FN = 'run_fn'

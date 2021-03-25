@@ -24,13 +24,6 @@ class ZenMLTrainerSpec(ComponentSpec):
         constants.RUN_FN: ExecutionParameter(type=(str, Text), optional=True),
         constants.CUSTOM_CONFIG: ExecutionParameter(type=(str, Text),
                                                     optional=True),
-
-        constants.TRAIN_SPLITS: ExecutionParameter(type=List[Text],
-                                                   optional=True),
-        constants.TEST_SPLITS: ExecutionParameter(type=List[Text],
-                                                  optional=True),
-        constants.EVAL_SPLITS: ExecutionParameter(type=List[Text],
-                                                  optional=True)
     }
     INPUTS = {
         constants.EXAMPLES: ChannelParameter(type=Examples),
