@@ -18,6 +18,7 @@ from tfx.proto import transform_pb2
 
 from zenml.enums import StepTypes
 from zenml.steps import BaseStep
+from zenml.steps.trainer.utils import TRAIN_SPLITS
 
 SPLIT_MAPPING = 'split_mapping'
 
@@ -27,7 +28,7 @@ def build_split_mapping(args):
         splits_config = transform_pb2.SplitsConfig()
         for process, splits in args[SPLIT_MAPPING].items():
             for split in splits:
-                if process == 'train':
+                if process == TRAIN_SPLITS:
                     splits_config.analyze.append(split)
                 splits_config.transform.append(split)
         return splits_config
