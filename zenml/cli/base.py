@@ -31,19 +31,10 @@ from zenml.utils.analytics_utils import track, INITIALIZE
 @click.option('--analytics_opt_in', '-a', type=click.BOOL)
 @track(event=INITIALIZE)
 def init(repo_path: Text, pipelines_dir: Text = None,
-         analytics_opt_in: bool = None):
+         analytics_opt_in: bool = True):
     """Initialize ZenML on given path."""
     if repo_path is None:
         repo_path = os.getcwd()
-
-    if analytics_opt_in is None:
-        analytics_opt_in = confirmation(
-            "ZenML collects anonymized usage information. This data helps us "
-            "create a better product and understand the needs of the "
-            "community better. You can find more information about exactly "
-            "why, what and how we collect usage analytics statistics at: "
-            "https://docs.zenml.io/misc/usage-analytics.html. "
-            "Would you like to opt-in to usage analytics?")
 
     try:
         Repository.init_repo(

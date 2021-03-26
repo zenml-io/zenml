@@ -336,7 +336,7 @@ class TrainingPipeline(BasePipeline):
             split_name: name of split to detect anomalies on
         """
         stats_uri = self.get_artifacts_uri_by_component(
-            GDPComponent.SplitStatistics.name)
+            GDPComponent.SplitStatistics.name)[0]
         schema_uri = self.get_artifacts_uri_by_component(
             GDPComponent.SplitSchema.name)[0]
         detect_anomalies(stats_uri, schema_uri, split_name)

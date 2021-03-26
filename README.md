@@ -7,7 +7,7 @@
   <a href="https://zenml.io">ZenML.io</a> •
   <a href="https://docs.zenml.io">docs.ZenML.io</a> •
   <a href="#quickstart">Quickstart</a> •
-  <a href="https://github.com/maiot-io/zenml/discussions">GitHub Community</a> •
+  <a href="#community">Community</a> •
   <a href="https://zenml.io/slack-invite/">Join Slack</a>
 </p>
 
@@ -22,9 +22,14 @@
     <img width="25" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
 <b>Slack Community</b> </a> and become part of the ZenML family
 </div>
+<div align="center"> Have questions? Join our weekly
+<a href="#community">
+    <img width="25" src="https://upload.wikimedia.org/wikipedia/commons/f/f8/01_Icon-Community%402x.png" alt="Slack"/>
+<b>community hour</b> </a> and talk to us directly
+</div>
 <div align="center"> Give us a 
     <img width="25" src="https://cdn.iconscout.com/icon/free/png-256/github-153-675523.png" alt="Slack"/>
-<b>GitHub star</b> to show your love!
+<b>GitHub star</b> to show your love
 </div>
 
 ## Why?
@@ -219,6 +224,9 @@ Our community is the backbone of making ZenML a success! We are currently active
 
 * Our Slack Channel: Chat with us [here](https://zenml.io/slack-invite/).
 * The GitHub Community: Create your first thread [here](https://github.com/maiot-io/zenml/discussions).
+
+From March 23, 2021 onwards, we are hosting a weekly community hour with the entire ZenML fam. Come talk to us about ZenML (or whatever else tickles your fancy)! Community hour 
+happens at **Wednesday at 5PM GMT+1** at this [Google Hangouts link](https://meet.google.com/ydo-evfq-jpu).
 
 ## Contributing
 We would love to receive your contributions! Check our [Contributing Guide](CONTRIBUTING.md) for more details on how to contribute best.
