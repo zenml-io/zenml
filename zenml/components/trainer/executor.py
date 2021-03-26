@@ -76,7 +76,7 @@ class ZenMLTrainerExecutor(GenericExecutor):
         output_patterns = dict()
         for split in splits:
             output_patterns.update({
-                split: io_utils.all_files_pattern(uri) for uri in
+                split: uri for uri in
                 artifact_utils.get_split_uris(output_artifact, split)})
 
         out_path = artifact_utils.get_single_uri(output_dict[constants.MODEL])
