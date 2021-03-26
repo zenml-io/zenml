@@ -26,9 +26,6 @@ CategoricalValue = Union[Text, int]
 
 def lint_split_map(split_map: Dict[Text, float]):
     """Small utility to lint the split_map"""
-    if constants.TRAIN not in split_map.keys():
-        raise AssertionError(f'You have to define some values for '
-                             f'the {constants.TRAIN} split.')
     if len(split_map) <= 1:
         raise AssertionError('Please specify more than 1 split name in the '
                              'split_map!')
