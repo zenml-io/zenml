@@ -23,7 +23,7 @@ SPLIT_MAPPING = 'split_mapping'
 
 
 def build_split_mapping(args):
-    if SPLIT_MAPPING in args:
+    if SPLIT_MAPPING in args and args[SPLIT_MAPPING]:
         splits_config = transform_pb2.SplitsConfig()
         for process, splits in args[SPLIT_MAPPING].items():
             for split in splits:
