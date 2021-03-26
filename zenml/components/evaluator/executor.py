@@ -103,6 +103,7 @@ class Executor(base_executor.BaseExecutor):
             # Main pipeline
             logging.info('Evaluating model.')
             with self._make_beam_pipeline() as pipeline:
+                examples_list = []
                 tensor_adapter_config = None
                 if tfma.is_batched_input(eval_shared_model, eval_config):
                     tfxio_factory = tfxio_utils.get_tfxio_factory_from_artifact(
@@ -113,22 +114,29 @@ class Executor(base_executor.BaseExecutor):
                         schema=schema,
                         raw_record_column_name=tfma_constants.ARROW_INPUT_COLUMN)
 
-                    file_pattern = io_utils.all_files_pattern(
-                        artifact_utils.get_single_uri(examples_artifact))
-                    tfxio = tfxio_factory(file_pattern)
-                    data = (pipeline
-                            | 'ReadFromTFRecordToArrow' >> tfxio.BeamSource())
+                    for split in evaluator_step.splits:
+                        file_pattern = io_utils.all_files_pattern(
+                            artifact_utils.get_split_uri(examples_artifact,
+                                                         split))
+                        tfxio = tfxio_factory(file_pattern)
+                        data = (pipeline
+                                | 'ReadFromTFRecordToArrow[%s]' % split >> tfxio.BeamSource())
+                        examples_list.append(data)
                     if schema is not None:
                         tensor_adapter_config = tensor_adapter.TensorAdapterConfig(
                             arrow_schema=tfxio.ArrowSchema(),
                             tensor_representations=tfxio.TensorRepresentations())
                 else:
-                    file_pattern = io_utils.all_files_pattern(
-                        artifact_utils.get_single_uri(examples_artifact))
-                    data = (pipeline
-                            | 'ReadFromTFRecord' >> beam.io.ReadFromTFRecord(
-                                file_pattern=file_pattern))
-
+                    for split in evaluator_step.splits:
+                        file_pattern = io_utils.all_files_pattern(
+                            artifact_utils.get_split_uri(examples_artifact,
+                                                         split))
+                        data = (pipeline
+                                | 'ReadFromTFRecord[%s]' % split >>
+                                beam.io.ReadFromTFRecord(
+                                    file_pattern=file_pattern)
+                                )
+                        examples_list.append(data)
                 # Resolve custom extractors
                 custom_extractors = try_get_fn(evaluator_step.CUSTOM_MODULE,
                                                'custom_extractors')
@@ -150,8 +158,8 @@ class Executor(base_executor.BaseExecutor):
                         tensor_adapter_config=tensor_adapter_config)
 
                 # Extract, evaluate and write
-                (data |
-                 'ExtractEvaluateAndWriteResults' >> tfma.ExtractEvaluateAndWriteResults(
+                (examples_list | 'FlattenExamples' >> beam.Flatten()
+                 | 'ExtractEvaluateAndWriteResults' >> tfma.ExtractEvaluateAndWriteResults(
                             eval_config=eval_config,
                             eval_shared_model=eval_shared_model,
                             output_path=output_uri,
