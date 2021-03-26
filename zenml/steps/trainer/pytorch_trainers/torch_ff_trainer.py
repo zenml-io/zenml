@@ -106,11 +106,10 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
             **kwargs)
 
     def input_fn(self,
-                 file_patterns: List[Text],
-                 transformed_spec: Dict[Text, Text]):
+                 file_patterns: List[Text]):
 
         dataset = torch_utils.TFRecordTorchDataset(file_patterns,
-                                                   transformed_spec)
+                                                   self.schema)
         loader = torch.utils.data.DataLoader(dataset,
                                              batch_size=self.batch_size,
                                              drop_last=True)
@@ -156,11 +155,11 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
     def run_fn(self):
         train_split_patterns = [self.split_patterns[split]
                                 for split in self.split_mapping['train']]
-        train_dataset = self.input_fn(train_split_patterns, self.schema)
+        train_dataset = self.input_fn(train_split_patterns)
 
         eval_split_patterns = [self.split_patterns[split]
                                for split in self.split_mapping['eval']]
-        eval_dataset = self.input_fn(eval_split_patterns, self.schema)
+        eval_dataset = self.input_fn(eval_split_patterns)
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model = self.model_fn(train_dataset, eval_dataset)
@@ -212,7 +211,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         test_split_patterns = [self.split_patterns[split]
                                for split in self.split_mapping['test']]
         if test_split_patterns:
-            test_dataset = self.input_fn(test_split_patterns, self.schema)
+            test_dataset = self.input_fn(test_split_patterns)
             test_results = self.test_fn(model, test_dataset)
             utils.save_test_results(test_results, self.test_results_dir)
 
