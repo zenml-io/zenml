@@ -110,3 +110,11 @@ def check_integration(integration):
                 f"{integration} integration not installed. "
                 f"Please install zenml[{integration}] via "
                 f"`pip install zenml[{integration}]`")
+
+
+def list_integrations():
+    """Prints integrations in an easy to read format."""
+    for k, v in EXTRAS_REQUIRE.items():
+        print("*********")
+        print(f"The integration {k} has the following dependencies: {v}")
+        print(f'To install: pip install zenml[{k}]')
