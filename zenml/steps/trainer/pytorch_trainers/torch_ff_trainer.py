@@ -78,7 +78,6 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                  last_activation: str = 'sigmoid',
                  input_units: int = 8,
                  output_units: int = 1,
-                 split_mapping: Dict[Text, List[Text]] = None,
                  **kwargs):
         self.batch_size = batch_size
         self.lr = lr
@@ -92,15 +91,6 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         self.input_units = input_units
         self.output_units = output_units
 
-        if split_mapping is None:
-            self.split_mapping = {'train': ['train'],
-                                  'eval': ['eval'],
-                                  'test': []}
-            if self.split_patterns and 'test' in self.split_patterns:
-                self.split_mapping = {'test': ['test']}
-        else:
-            self.split_mapping = split_mapping
-
         super(FeedForwardTrainer, self).__init__(
             batch_size=self.batch_size,
             lr=self.lr,
@@ -113,7 +103,6 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
             last_activation=self.last_activation,
             input_units=self.input_units,
             output_units=self.output_units,
-            split_mapping=self.split_mapping,
             **kwargs)
 
     def input_fn(self,

@@ -34,6 +34,7 @@ class BaseTrainerStep(BaseStep):
                  serving_model_dir: Text = None,
                  transform_output: Text = None,
                  test_results_dir: Text = None,
+                 split_mapping: Dict[Text, List[Text]] = None,
                  **kwargs):
         """
         Constructor for the BaseTrainerStep. All subclasses used for custom
@@ -52,7 +53,6 @@ class BaseTrainerStep(BaseStep):
             log_dir: Logs output directory.
             schema: Schema file from a preceding SchemaGen.
         """
-        super().__init__(**kwargs)
         # Inputs
         self.split_patterns = split_patterns
         self.schema = None
@@ -62,6 +62,16 @@ class BaseTrainerStep(BaseStep):
             self.tf_transform_output = tft.TFTransformOutput(transform_output)
             self.schema = self.tf_transform_output.transformed_feature_spec()
 
+        # Parameters
+        if split_mapping is None:
+            self.split_mapping = {'train': ['train'],
+                                  'eval': ['eval'],
+                                  'test': []}
+            if self.split_patterns and 'test' in self.split_patterns:
+                self.split_mapping = {'test': ['test']}
+        else:
+            self.split_mapping = split_mapping
+
         # Outputs
         self.serving_model_dir = serving_model_dir
         self.test_results_dir = test_results_dir
@@ -70,6 +80,9 @@ class BaseTrainerStep(BaseStep):
         if self.serving_model_dir is not None:
             self.log_dir = os.path.join(
                 os.path.dirname(self.serving_model_dir), 'logs')
+
+        super(BaseTrainerStep, self).__init__(split_mapping=self.split_mapping,
+                                              **kwargs)
 
     def input_fn(self,
                  file_pattern: List[Text],
