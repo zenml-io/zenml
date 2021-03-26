@@ -1,6 +1,6 @@
 # Usage Analytics
 
-To help us better understand how the community uses ZenML, the pip package reports _anonymized_ usage statistics. You can also always opt-out by using the CLI command:
+To help us better understand how the community uses ZenML, the pip package reports _anonymized_ usage statistics. You can always opt-out by using the CLI command:
 
 ```bash
 zenml config analytics opt-out
