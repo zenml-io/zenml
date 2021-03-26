@@ -63,14 +63,7 @@ class BaseTrainerStep(BaseStep):
             self.schema = self.tf_transform_output.transformed_feature_spec()
 
         # Parameters
-        if split_mapping is None:
-            self.split_mapping = {'train': ['train'],
-                                  'eval': ['eval'],
-                                  'test': []}
-            if self.split_patterns and 'test' in self.split_patterns:
-                self.split_mapping = {'test': ['test']}
-        else:
-            self.split_mapping = split_mapping
+        self.split_mapping = split_mapping
 
         # Outputs
         self.serving_model_dir = serving_model_dir

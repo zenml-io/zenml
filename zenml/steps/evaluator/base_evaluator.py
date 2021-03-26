@@ -13,8 +13,10 @@
 #  permissions and limitations under the License.
 
 
-from zenml.steps import BaseStep
+from typing import Dict, List, Text
+
 from zenml.enums import StepTypes
+from zenml.steps import BaseStep
 
 
 class BaseEvaluatorStep(BaseStep):
@@ -24,6 +26,13 @@ class BaseEvaluatorStep(BaseStep):
     CUSTOM_MODULE = None
 
     STEP_TYPE = StepTypes.evaluator.name
+
+    def __init__(self,
+                 split_mapping: Dict[Text, List[Text]] = None,
+                 **kwargs):
+        self.split_mapping = split_mapping
+        super(BaseEvaluatorStep, self).__init__(split_mapping=split_mapping,
+                                                **kwargs)
 
     def build_config(self):
         pass

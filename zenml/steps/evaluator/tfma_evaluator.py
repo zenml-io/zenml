@@ -43,7 +43,7 @@ class TFMAEvaluator(BaseEvaluatorStep):
                  metrics: Dict[Text, List[Text]],
                  slices: List[List[Text]] = None,
                  output_mapping: Dict[Text, Text] = None,
-                 splits: List[Text] = None):
+                 **kwargs):
         """
         Init for the TFMA evaluator
 
@@ -57,15 +57,13 @@ class TFMAEvaluator(BaseEvaluatorStep):
         :param splits: the list of splits to apply the evaluation on
         """
 
-        super().__init__(slices=slices,
-                         metrics=metrics,
-                         splits=splits,
-                         output_mapping=output_mapping)
+        super(TFMAEvaluator, self).__init__(slices=slices,
+                                            metrics=metrics,
+                                            output_mapping=output_mapping,
+                                            **kwargs)
 
         self.metrics = metrics
-
         self.slices = slices or list()
-        self.splits = splits or ['eval']
 
         if output_mapping is None:
             if len(self.metrics.keys()) == 1:

@@ -47,7 +47,7 @@ class AgnosticEvaluator(BaseEvaluatorStep):
                  prediction_key: Text,
                  slices: List[List[Text]] = None,
                  metrics: List[Text] = None,
-                 splits: List[Text] = None):
+                 **kwargs):
         """
         Init for the AgnosticEvaluator
 
@@ -60,15 +60,14 @@ class AgnosticEvaluator(BaseEvaluatorStep):
         :param metrics: list of metrics to be computed
         :param splits: the list of splits to apply the evaluation on
         """
-        super().__init__(label_key=label_key,
-                         prediction_key=prediction_key,
-                         slices=slices,
-                         metrics=metrics,
-                         splits=splits)
+        super(AgnosticEvaluator, self).__init__(label_key=label_key,
+                                                prediction_key=prediction_key,
+                                                slices=slices,
+                                                metrics=metrics,
+                                                **kwargs)
 
         self.slices = slices or list()
         self.metrics = metrics or list()
-        self.splits = splits or ['eval']
 
         self.prediction_key = prediction_key
         self.label_key = label_key
