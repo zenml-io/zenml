@@ -30,10 +30,10 @@ class BaseTrainerStep(BaseStep):
     STEP_TYPE = StepTypes.trainer.name
 
     def __init__(self,
-                 split_patterns: Dict[Text, Text] = None,
+                 input_patterns: Dict[Text, Text] = None,
+                 output_patterns: Dict[Text, Text] = None,
                  serving_model_dir: Text = None,
                  transform_output: Text = None,
-                 test_results_dir: Text = None,
                  split_mapping: Dict[Text, List[Text]] = None,
                  **kwargs):
         """
@@ -54,7 +54,7 @@ class BaseTrainerStep(BaseStep):
             schema: Schema file from a preceding SchemaGen.
         """
         # Inputs
-        self.split_patterns = split_patterns
+        self.input_patterns = input_patterns
         self.schema = None
         self.tf_transform_output = None
 
@@ -66,8 +66,8 @@ class BaseTrainerStep(BaseStep):
         self.split_mapping = split_mapping
 
         # Outputs
+        self.output_patterns = output_patterns
         self.serving_model_dir = serving_model_dir
-        self.test_results_dir = test_results_dir
         self.log_dir = None
 
         if self.serving_model_dir is not None:
