@@ -1,6 +1,6 @@
 # Usage Analytics
 
-To help us better understand how the community uses ZenML, the pip package reports _anonymized_ usage statistics. You can opt-out of these at the time of initialization with `zenml init`. You can also always opt-out by using the CLI command:
+To help us better understand how the community uses ZenML, the pip package reports _anonymized_ usage statistics. You can also always opt-out by using the CLI command:
 
 ```bash
 zenml config analytics opt-out
@@ -15,8 +15,6 @@ Currently, opting in and out of analytics is a global setting applicable to all 
 In addition to the community at large, ZenML is created and maintained by a startup based in Munich, Germany called [maiot GmbH](https://maiot.io). We're a team of techies that love MLOps and want to build tools that fellow developers would love to use in their daily work. [This is us](https://maiot.io/team/), if you want to put faces to the names!
 
 However, in order to improve ZenML and understand how it is being used, we need to use analytics to have an overview of how its used 'in the wild'. This not only helps us find bugs, but also helps us prioritize features and commands that might be useful in future releases. If we did not have this information, all we really get is pip download statistics and chatting with people directly, which while being valuable, is not enough to seriously better the tool as a whole.
-
-We ask for anyone using ZenML, especially in this early release, to `opt-in`, as it helps us immensely. Thank you in advance!
 
 ## How ZenML collects these statistics <a id="implementation"></a>
 
