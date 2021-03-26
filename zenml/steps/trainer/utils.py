@@ -7,6 +7,32 @@ import torch
 
 from zenml.utils import path_utils
 
+SPLIT_MAPPING = 'split_mapping'
+
+TRAIN_SPLITS = 'train_splits'
+EVAL_SPLITS = 'eval_splits'
+TEST_SPLITS = 'test_splits'
+
+
+def fill_split_mapping_w_defaults(mapping=None, splits=None):
+    if mapping:
+        assert len(mapping[TRAIN_SPLITS]) > 0, \
+            'While defining your own mapping, you need to provide at least ' \
+            'one training split.'
+        assert len(mapping[EVAL_SPLITS]) > 0, \
+            'While defining your own mapping, you need to provide at least ' \
+            'one eval split.'
+        # TODO [LOW]: As a utility function, we can check whether any of the
+        #   test splits leaked into train or eval
+        return mapping
+    else:
+        mapping = {TRAIN_SPLITS: ['train'],
+                   EVAL_SPLITS: ['eval'],
+                   TEST_SPLITS: []}
+        if splits is not None and 'test' in splits:
+            mapping.update({TEST_SPLITS: ['test']})
+        return mapping
+
 
 def save_test_results(results, output_path):
     path_utils.create_dir_if_not_exists(output_path)
