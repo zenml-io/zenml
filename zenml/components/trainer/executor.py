@@ -19,8 +19,8 @@ _TELEMETRY_DESCRIPTORS = ['Trainer']
 
 
 class ZenMLTrainerArgs(FnArgs):
-    split_patterns = attr.ib(type=Dict[Text, Text], default=None)
-    test_results_dir = attr.ib(type=Text, default=None)
+    input_patterns = attr.ib(type=Dict[Text, Text], default=None)
+    output_patterns = attr.ib(type=Dict[Text, Text], default=None)
 
 
 class ZenMLTrainerExecutor(GenericExecutor):
@@ -54,15 +54,15 @@ class ZenMLTrainerExecutor(GenericExecutor):
         splits = artifact_utils.decode_split_names(
             artifact_utils.get_single_instance(input_examples).split_names)
 
-        split_patterns = dict()
+        input_patterns = dict()
         for split in splits:
-            split_patterns.update({
+            input_patterns.update({
                 split: io_utils.all_files_pattern(uri) for uri in
                 artifact_utils.get_split_uris(input_examples, split)})
 
         result.schema_path = schema_path
         result.transform_output = transform_graph_path
-        result.split_patterns = split_patterns
+        result.input_patterns = input_patterns
 
         # PARAMETERS ##########################################################
         custom_config = json_utils.loads(
@@ -70,13 +70,19 @@ class ZenMLTrainerExecutor(GenericExecutor):
         result.custom_config = custom_config
 
         # OUTPUTS #############################################################
-        test_results_dir = artifact_utils.get_single_uri(
-            output_dict[constants.TEST_RESULTS])
+        output_artifact = output_dict[constants.TEST_RESULTS]
+        output_instance = artifact_utils.get_single_instance(output_artifact)
+        output_instance.split_names = artifact_utils.encode_split_names(splits)
+        output_patterns = dict()
+        for split in splits:
+            output_patterns.update({
+                split: io_utils.all_files_pattern(uri) for uri in
+                artifact_utils.get_split_uris(output_artifact, split)})
 
         out_path = artifact_utils.get_single_uri(output_dict[constants.MODEL])
         serving_model_dir = path_utils.serving_model_dir(out_path)
 
-        result.test_results_dir = test_results_dir
+        result.output_patterns = output_patterns
         result.serving_model_dir = serving_model_dir
 
         return result
