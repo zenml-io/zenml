@@ -26,6 +26,9 @@ SPLIT_MAPPING = 'split_mapping'
 def build_split_mapping(args):
     if SPLIT_MAPPING in args and args[SPLIT_MAPPING]:
         splits_config = transform_pb2.SplitsConfig()
+        assert TRAIN_SPLITS in args[SPLIT_MAPPING], \
+            f'When you are defining a custom split mapping, please define ' \
+            f'{TRAIN_SPLITS}!'
         for process, splits in args[SPLIT_MAPPING].items():
             for split in splits:
                 if process == TRAIN_SPLITS:
