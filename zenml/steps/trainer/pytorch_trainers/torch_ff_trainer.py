@@ -27,11 +27,6 @@ from zenml.steps.trainer import utils
 from zenml.steps.trainer.pytorch_trainers import utils as torch_utils
 from zenml.utils import path_utils
 
-FEATURES = 'features'
-LABELS = 'labels'
-PREDICTIONS = 'predictions'
-RAW = 'raw'
-
 
 class BinaryClassifier(nn.Module):
     def __init__(self):
@@ -118,12 +113,12 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
     def model_fn(self, train_dataset, eval_dataset):
         return BinaryClassifier()
 
-    def test_fn(self, model, eval_dataset):
+    def test_fn(self, model, dataset):
         # Activate the evaluation mode
         model.eval()
 
         batch_list = []
-        for x, y, raw in eval_dataset:
+        for x, y, raw in dataset:
             # start with an empty batch
             batch = {}
 
@@ -153,12 +148,16 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         return combined_batch
 
     def run_fn(self):
-        train_split_patterns = [self.split_patterns[split]
-                                for split in self.split_mapping['train']]
+        split_mapping = utils.fill_split_mapping_w_defaults(
+            mapping=self.split_mapping,
+            splits=list(self.input_patterns.keys()))
+
+        train_split_patterns = [self.input_patterns[split]
+                                for split in split_mapping[utils.TRAIN_SPLITS]]
         train_dataset = self.input_fn(train_split_patterns)
 
-        eval_split_patterns = [self.split_patterns[split]
-                               for split in self.split_mapping['eval']]
+        eval_split_patterns = [self.input_patterns[split]
+                               for split in split_mapping[utils.TEST_SPLITS]]
         eval_dataset = self.input_fn(eval_split_patterns)
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -208,12 +207,13 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                   f'{epoch_acc / step_count:.3f}')
 
         # test
-        test_split_patterns = [self.split_patterns[split]
-                               for split in self.split_mapping['test']]
-        if test_split_patterns:
-            test_dataset = self.input_fn(test_split_patterns)
-            test_results = self.test_fn(model, test_dataset)
-            utils.save_test_results(test_results, self.test_results_dir)
+        if split_mapping[utils.TEST_SPLITS]:
+            for split in split_mapping[utils.TEST_SPLITS]:
+                pattern = self.input_patterns[split]
+                test_dataset = self.input_fn([pattern])
+                test_results = self.test_fn(model, test_dataset)
+                utils.save_test_results(test_results,
+                                        self.output_patterns[split])
 
         path_utils.create_dir_if_not_exists(self.serving_model_dir)
         if path_utils.is_remote(self.serving_model_dir):
