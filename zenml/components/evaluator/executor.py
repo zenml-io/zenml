@@ -17,6 +17,8 @@ from zenml.components.evaluator import constants
 from zenml.logger import get_logger
 from zenml.standards.standard_keys import StepKeys
 from zenml.steps.evaluator.base_evaluator import BaseEvaluatorStep
+from zenml.steps.trainer.utils import TEST_SPLITS
+from zenml.steps.trainer.utils import fill_split_mapping_w_defaults
 from zenml.utils import path_utils as zenml_path_utils
 from zenml.utils import source_utils
 
@@ -102,6 +104,16 @@ class Executor(base_executor.BaseExecutor):
 
             # Main pipeline
             logging.info('Evaluating model.')
+
+            input_splits = artifact_utils.decode_split_names(
+                artifact_utils.get_single_instance(
+                    examples_artifact).split_names)
+
+            split_mapping = fill_split_mapping_w_defaults(
+                mapping=evaluator_step.split_mapping,
+                splits=input_splits)
+            splits = split_mapping[TEST_SPLITS]
+
             with self._make_beam_pipeline() as pipeline:
                 examples_list = []
                 tensor_adapter_config = None
@@ -114,7 +126,7 @@ class Executor(base_executor.BaseExecutor):
                         schema=schema,
                         raw_record_column_name=tfma_constants.ARROW_INPUT_COLUMN)
 
-                    for split in evaluator_step.splits:
+                    for split in splits:
                         file_pattern = io_utils.all_files_pattern(
                             artifact_utils.get_split_uri(examples_artifact,
                                                          split))
@@ -127,7 +139,7 @@ class Executor(base_executor.BaseExecutor):
                             arrow_schema=tfxio.ArrowSchema(),
                             tensor_representations=tfxio.TensorRepresentations())
                 else:
-                    for split in evaluator_step.splits:
+                    for split in splits:
                         file_pattern = io_utils.all_files_pattern(
                             artifact_utils.get_split_uri(examples_artifact,
                                                          split))
