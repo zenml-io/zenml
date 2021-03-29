@@ -61,7 +61,7 @@ judge the performance and results of different configurations against each other
 from zenml.repo import Repository
 
 repo = Repository.get_instance()
-repo.compare_training_pipelines()
+repo.compare_training_runs()
 ```
 
 This will launch the `compare` tool that is built exclusively for TrainingPipeline comparisons. It is a local 

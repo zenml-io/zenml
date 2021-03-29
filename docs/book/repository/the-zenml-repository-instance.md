@@ -26,7 +26,7 @@ steps = repo.get_step_versions()
 step_object = get_step_by_version(step_type, version)
 
 # Compare all pipelines in the repository
-repo.compare_training_pipelines()
+repo.compare_training_runs()
 ```
 ```{note}
 The full list of commands can be found within the Repository class definition.

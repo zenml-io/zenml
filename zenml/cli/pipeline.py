@@ -36,7 +36,7 @@ def pipeline():
 def compare_pipelines(repo: Repository):
     """Compares pipelines in repo"""
     click.echo('Comparing training pipelines in repo: Starting app..')
-    repo.compare_training_pipelines()
+    repo.compare_training_runs()
 
 
 @pipeline.command('list')

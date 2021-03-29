@@ -173,9 +173,14 @@ class BaseDatasource:
             GDPComponent.DataSchema.name)[0]
         view_schema(uri)
 
-    def view_statistics(self):
-        """View statistics of data flowing in pipeline."""
+    def view_statistics(self, port):
+        """
+        View statistics of data flowing in pipeline.
+
+        Args:
+            port (int): Port at which to launch the statistics facet.
+        """
         pipeline = self._get_one_pipeline()
         uri = pipeline.get_artifacts_uri_by_component(
             GDPComponent.DataStatistics.name)[0]
-        view_statistics(uri)
+        view_statistics(uri, port=port)
