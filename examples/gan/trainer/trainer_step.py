@@ -16,13 +16,14 @@ import os
 from typing import List, Text
 
 import tensorflow as tf
-import tensorflow_transform as tft
 
 from trainer.gan_functions import Generator, Discriminator, \
     CycleGan, TensorBoardImage
 from trainer.gan_functions import discriminator_loss, \
     identity_loss, generator_loss, calc_cycle_loss
 from zenml.steps.trainer import TFFeedForwardTrainer
+from zenml.utils.naming_utils import check_if_transformed_feature, \
+    check_if_transformed_label
 
 
 class CycleGANTrainer(TFFeedForwardTrainer):
@@ -86,13 +87,11 @@ class CycleGANTrainer(TFFeedForwardTrainer):
         return cycle_gan_model
 
     def input_fn(self,
-                 file_pattern: List[Text],
-                 tf_transform_output: tft.TFTransformOutput):
-        xf_feature_spec = tf_transform_output.transformed_feature_spec()
-
-        xf_feature_spec = {x: xf_feature_spec[x]
-                           for x in xf_feature_spec
-                           if x.endswith('_xf')}
+                 file_pattern: List[Text]):
+        xf_feature_spec = {x: self.schema[x]
+                           for x in self.schema
+                           if check_if_transformed_feature(x)
+                           or check_if_transformed_label(x)}
 
         return tf.data.experimental.make_batched_features_dataset(
             file_pattern=file_pattern,
