@@ -30,11 +30,17 @@ class MyPyTorchLightningTrainer(TorchFeedForwardTrainer):
     """
 
     def run_fn(self):
-        train_dataset = self.input_fn(self.train_files,
-                                      self.tf_transform_output)
+        split_mapping = utils.fill_split_mapping_w_defaults(
+            mapping=self.split_mapping,
+            splits=list(self.input_patterns.keys()))
 
-        eval_dataset = self.input_fn(self.eval_files,
-                                     self.tf_transform_output)
+        train_split_patterns = [self.input_patterns[split]
+                                for split in split_mapping[utils.TRAIN_SPLITS]]
+        train_dataset = self.input_fn(train_split_patterns)
+
+        eval_split_patterns = [self.input_patterns[split]
+                               for split in split_mapping[utils.TEST_SPLITS]]
+        eval_dataset = self.input_fn(eval_split_patterns)
 
         class LitModel(pl.LightningModule):
             def __init__(self):
@@ -102,6 +108,11 @@ class MyPyTorchLightningTrainer(TorchFeedForwardTrainer):
             trainer.save_checkpoint(
                 os.path.join(self.serving_model_dir, 'model.ckpt'))
 
-        # test fn for evaluator
-        test_results = self.test_fn(model, eval_dataset)
-        utils.save_test_results(test_results, self.test_results)
+        # test
+        if split_mapping[utils.TEST_SPLITS]:
+            for split in split_mapping[utils.TEST_SPLITS]:
+                pattern = self.input_patterns[split]
+                test_dataset = self.input_fn([pattern])
+                test_results = self.test_fn(model, test_dataset)
+                utils.save_test_results(test_results,
+                                        self.output_patterns[split])
