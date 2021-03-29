@@ -82,13 +82,14 @@ def get_statistics_dataset_dict(stats_uri: Text):
     return result
 
 
-def view_statistics(artifact_uri, magic: bool = False):
+def view_statistics(artifact_uri, magic: bool = False, port: int = 0):
     """
     View statistics in HTML.
 
     Args:
         artifact_uri (Text):
         magic (bool):
+        port (int): Port at which to launch the visualization.
     """
     stats_dict = get_statistics_dataset_dict(artifact_uri)
     h = get_statistics_html(stats_dict)
@@ -102,7 +103,7 @@ def view_statistics(artifact_uri, magic: bool = False):
         from IPython.core.display import display, HTML
         display(HTML(h))
     else:
-        pn.serve(panels=pn.pane.HTML(h, width=1200), show=True)
+        pn.serve(panels=pn.pane.HTML(h, width=1200), port=port, show=True)
 
 
 def detect_anomalies(stats_uri: Text, schema_uri: Text, split_name: Text):
@@ -275,13 +276,15 @@ def evaluate_single_pipeline(
         pipeline,
         trainer_component_name: Text = None,
         evaluator_component_name: Text = None,
-        magic: bool = False):
+        magic: bool = False,
+        port: int = 0):
     """
     Args:
         pipeline: A ZenML pipeline
         trainer_component_name: name of trainer component.
         evaluator_component_name: name of evaluator component.
-        magic:
+        magic: Whether to create an in-place cell in a jupyter env or not.
+        port: At which port to create the jupyter notebook.
     """
     # Default to the standard names
     trainer_component_name = trainer_component_name \
@@ -326,10 +329,14 @@ def evaluate_single_pipeline(
 
         with open(final_out_path, 'w') as f:
             f.write(s)
-        os.system('jupyter notebook "{}"'.format(final_out_path))
+
+        if port == 0:
+            os.system('jupyter notebook "{}"'.format(final_out_path))
+        else:
+            os.system(f'jupyter notebook {final_out_path} --port {port}')
 
 
-def launch_compare_tool():
+def launch_compare_tool(port: int = 0):
     """Launches `compare` tool for comparing multiple training pipelines."""
     # assumes compare.py in the same folder
     template = \
@@ -358,4 +365,7 @@ def launch_compare_tool():
         f.write(s)
 
     # serve notebook
-    os.system('panel serve "{}" --show'.format(final_out_path))
+    if port == 0:
+        os.system('panel serve "{}" --show'.format(final_out_path))
+    else:
+        os.system(f'panel serve "{final_out_path}" --port {port} --show')
