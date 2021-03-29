@@ -39,7 +39,7 @@ class MyPyTorchLightningTrainer(TorchFeedForwardTrainer):
         train_dataset = self.input_fn(train_split_patterns)
 
         eval_split_patterns = [self.input_patterns[split]
-                               for split in split_mapping[utils.TEST_SPLITS]]
+                               for split in split_mapping[utils.EVAL_SPLITS]]
         eval_dataset = self.input_fn(eval_split_patterns)
 
         class LitModel(pl.LightningModule):
