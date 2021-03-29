@@ -48,15 +48,27 @@ class Executor(base_executor.BaseExecutor):
             raise ValueError(f'{constants.EXAMPLES} is missing from inputs')
         examples_artifact = input_dict[constants.EXAMPLES]
 
-        input_uri = artifact_utils.get_single_uri(examples_artifact)
-        if len(zenml_path_utils.list_dir(input_uri)) == 0:
-            raise AssertionError(
-                'ZenML can not run the evaluation as the provided input '
-                'configuration does not point towards any data. Specifically, '
-                'if you are using the agnostic evaluator, please make sure '
-                'that you are using a proper test_fn in your trainer step to '
-                'write these results.')
+        # Create the step with the schema attached if provided
+        source = exec_properties[StepKeys.SOURCE]
+        args = exec_properties[StepKeys.ARGS]
+        c = source_utils.load_source_path_class(source)
+        evaluator_step: BaseEvaluatorStep = c(**args)
 
+        input_splits = artifact_utils.decode_split_names(
+            artifact_utils.get_single_instance(
+                examples_artifact).split_names)
+
+        split_mapping = fill_split_mapping_w_defaults(
+            mapping=evaluator_step.split_mapping,
+            splits=input_splits)
+        splits = split_mapping[TEST_SPLITS]
+
+        if len(splits) == 0:
+            raise AssertionError(
+                'In the current configuration of the evaluator step or the '
+                'split mapping, there are no splits dedicated for the '
+                'evaluation. Either use a "test" split or define a dict '
+                'for the split mapping')
         else:
             # Check the outputs
             if constants.EVALUATION not in output_dict:
@@ -72,12 +84,6 @@ class Executor(base_executor.BaseExecutor):
                 schema_uri = artifact_utils.get_single_uri(schema_artifact)
                 reader = io_utils.SchemaReader()
                 schema = reader.read(io_utils.get_only_uri_in_dir(schema_uri))
-
-            # Create the step with the schema attached if provided
-            source = exec_properties[StepKeys.SOURCE]
-            args = exec_properties[StepKeys.ARGS]
-            c = source_utils.load_source_path_class(source)
-            evaluator_step: BaseEvaluatorStep = c(**args)
 
             # Check the execution parameters
             eval_config = evaluator_step.build_config()
@@ -105,15 +111,6 @@ class Executor(base_executor.BaseExecutor):
             # Main pipeline
             logging.info('Evaluating model.')
 
-            input_splits = artifact_utils.decode_split_names(
-                artifact_utils.get_single_instance(
-                    examples_artifact).split_names)
-
-            split_mapping = fill_split_mapping_w_defaults(
-                mapping=evaluator_step.split_mapping,
-                splits=input_splits)
-            splits = split_mapping[TEST_SPLITS]
-
             with self._make_beam_pipeline() as pipeline:
                 examples_list = []
                 tensor_adapter_config = None
@@ -127,9 +124,28 @@ class Executor(base_executor.BaseExecutor):
                         raw_record_column_name=tfma_constants.ARROW_INPUT_COLUMN)
 
                     for split in splits:
-                        file_pattern = io_utils.all_files_pattern(
-                            artifact_utils.get_split_uri(examples_artifact,
-                                                         split))
+                        split_uri = artifact_utils.get_split_uri(
+                            examples_artifact,
+                            split)
+
+                        try:
+                            if len(zenml_path_utils.list_dir(split_uri)) == 0:
+                                raise AssertionError(
+                                    f'The saved results found for the split: '
+                                    f'{split}. Please make sure that you '
+                                    f'run the test_fn in your trainer and '
+                                    f'you are working with the right '
+                                    f'split_mapping: {split_mapping}!')
+                        except:
+                            # TODO[LOW]: Merge into a single check
+                            raise AssertionError(
+                                f'The saved results found for the split: '
+                                f'{split}. Please make sure that you '
+                                f'run the test_fn in your trainer and '
+                                f'you are working with the right '
+                                f'split_mapping: {split_mapping}!')
+
+                        file_pattern = io_utils.all_files_pattern(split_uri)
                         tfxio = tfxio_factory(file_pattern)
                         data = (pipeline
                                 | 'ReadFromTFRecordToArrow[%s]' % split >> tfxio.BeamSource())
