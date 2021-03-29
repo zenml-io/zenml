@@ -277,7 +277,7 @@ def evaluate_single_pipeline(
         trainer_component_name: Text = None,
         evaluator_component_name: Text = None,
         magic: bool = False,
-        port: int = None):
+        port: int = 0):
     """
     Args:
         pipeline: A ZenML pipeline
@@ -330,13 +330,13 @@ def evaluate_single_pipeline(
         with open(final_out_path, 'w') as f:
             f.write(s)
 
-        if port is None:
+        if port == 0:
             os.system('jupyter notebook "{}"'.format(final_out_path))
         else:
             os.system(f'jupyter notebook {final_out_path} --port {port}')
 
 
-def launch_compare_tool(port: int = None):
+def launch_compare_tool(port: int = 0):
     """Launches `compare` tool for comparing multiple training pipelines."""
     # assumes compare.py in the same folder
     template = \
@@ -365,7 +365,7 @@ def launch_compare_tool(port: int = None):
         f.write(s)
 
     # serve notebook
-    if port is None:
+    if port == 0:
         os.system('panel serve "{}" --show'.format(final_out_path))
     else:
         os.system(f'panel serve "{final_out_path}" --port {port} --show')

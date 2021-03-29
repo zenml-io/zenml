@@ -283,7 +283,7 @@ class TrainingPipeline(BasePipeline):
             GDPComponent.SplitSchema.name)[0]
         view_schema(uri)
 
-    def evaluate(self, magic: bool = False, port: int = None):
+    def evaluate(self, magic: bool = False, port: int = 0):
         """
         Evaluate pipeline from the evaluator and trainer steps artifact.
 
