@@ -169,8 +169,9 @@ training_pipeline.evaluate()
 
 
 ### Compare training pipelines
+
 ```python
-repo.compare_training_pipelines()
+repo.compare_training_runs()
 ```
 
 ![ZenML built-in pipeline comparison](docs/compare.png)

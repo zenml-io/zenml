@@ -70,17 +70,18 @@ class DataPipeline(BasePipeline):
 
         return [data, statistics_data, schema_data]
 
-    def view_statistics(self, magic: bool = False):
+    def view_statistics(self, magic: bool = False, port: int = 0):
         """
         View statistics for data pipeline in HTML.
 
         Args:
             magic (bool): Creates HTML page if False, else
             creates a notebook cell.
+            port (int): Port at which to launch the statistics facet.
         """
         uri = self.get_artifacts_uri_by_component(
             GDPComponent.DataStatistics.name)[0]
-        view_statistics(uri, magic)
+        view_statistics(uri, magic, port)
 
     def view_schema(self):
         """View schema of data flowing in pipeline."""

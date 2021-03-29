@@ -260,13 +260,14 @@ class TrainingPipeline(BasePipeline):
     def add_deployment(self, deployment_step: BaseDeployerStep):
         self.steps_dict[keys.TrainingSteps.DEPLOYER] = deployment_step
 
-    def view_statistics(self, magic: bool = False):
+    def view_statistics(self, magic: bool = False, port: int = 0):
         """
         View statistics for training pipeline in HTML.
 
         Args:
             magic (bool): Creates HTML page if False, else
             creates a notebook cell.
+            port (int): Port at which to launch the statistics facet.
         """
         logger.info(
             'Viewing statistics. If magic=False then a new window will open '
@@ -274,7 +275,7 @@ class TrainingPipeline(BasePipeline):
             'attempt will be made to append to the current notebook.')
         uri = self.get_artifacts_uri_by_component(
             GDPComponent.SplitStatistics.name)[0]
-        view_statistics(uri, magic)
+        view_statistics(uri, magic, port)
 
     def view_schema(self):
         """View schema of data flowing in pipeline."""
@@ -282,12 +283,13 @@ class TrainingPipeline(BasePipeline):
             GDPComponent.SplitSchema.name)[0]
         view_schema(uri)
 
-    def evaluate(self, magic: bool = False):
+    def evaluate(self, magic: bool = False, port: int = None):
         """
         Evaluate pipeline from the evaluator and trainer steps artifact.
 
         Args:
             magic: Creates new window if False, else creates notebook cells.
+            port: At which port to deploy jupyter notebook.
         """
         from zenml.enums import PipelineStatusTypes
         if self.get_status() != PipelineStatusTypes.Succeeded.name:
@@ -311,7 +313,7 @@ class TrainingPipeline(BasePipeline):
             'Evaluating pipeline. If magic=False then a new window will open '
             'up with a notebook for evaluation. If magic=True, then an '
             'attempt will be made to append to the current notebook.')
-        return evaluate_single_pipeline(self, magic=magic)
+        return evaluate_single_pipeline(self, magic=magic, port=port)
 
     def download_model(self, out_path: Text = None, overwrite: bool = False):
         """Download model to out_path"""
