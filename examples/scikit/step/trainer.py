@@ -16,7 +16,6 @@ from typing import List, Text
 
 import numpy as np
 import tensorflow as tf
-import tensorflow_transform as tft
 from joblib import dump
 from sklearn import svm
 from sklearn.metrics import classification_report, confusion_matrix
@@ -34,23 +33,32 @@ class MyScikitTrainer(BaseTrainerStep):
     Scikit trainer to train a scikit-learn based classifier model.
     """
 
-    def __init__(self, C: float = 1.0, kernel: Text = 'rbf', **kwargs):
-        self.C = C
+    def __init__(self, c: float = 1.0, kernel: Text = 'rbf', **kwargs):
+        self.c = c
         self.kernel = kernel
 
         super(MyScikitTrainer, self).__init__(
-            C=self.C,
+            c=self.c,
             kernel=self.kernel,
             **kwargs
         )
 
     def run_fn(self):
-        tf_transform_output = tft.TFTransformOutput(self.transform_output)
+        split_mapping = trainer_utils.fill_split_mapping_w_defaults(
+            mapping=self.split_mapping,
+            splits=list(self.input_patterns.keys()))
 
-        X_train, y_train = self.input_fn(self.train_files, tf_transform_output)
-        X_eval, y_eval = self.input_fn(self.eval_files, tf_transform_output)
+        train_split_patterns = [
+            self.input_patterns[split]
+            for split in split_mapping[trainer_utils.TRAIN_SPLITS]]
+        X_train, y_train = self.input_fn(train_split_patterns)
 
-        clf = svm.SVC(C=self.C, kernel=self.kernel)
+        eval_split_patterns = [
+            self.input_patterns[split]
+            for split in split_mapping[trainer_utils.EVAL_SPLITS]]
+        X_eval, y_eval = self.input_fn(eval_split_patterns)
+
+        clf = svm.SVC(C=self.c, kernel=self.kernel)
         clf.fit(X_train, y_train)
 
         y_pred = clf.predict(X_eval)
@@ -64,30 +72,36 @@ class MyScikitTrainer(BaseTrainerStep):
         dump(clf, self.serving_model_dir)
 
         # for model agnostic evaluator
-        test_results = self.test_fn(clf, X_eval, y_eval)
-        trainer_utils.save_test_results(test_results, self.test_results)
+        if split_mapping[trainer_utils.TEST_SPLITS]:
+            for split in split_mapping[trainer_utils.TEST_SPLITS]:
+                pattern = self.input_patterns[split]
+                X_test, y_test = self.input_fn([pattern])
+                test_results = self.test_fn(clf, X_test, y_test)
+                trainer_utils.save_test_results(test_results,
+                                                self.output_patterns[split])
 
     def input_fn(self,
-                 file_pattern: List[Text],
-                 tf_transform_output: tft.TFTransformOutput):
+                 file_pattern: List[Text]):
         """
         Load TFRecords on disk to pandas dataframe.
 
         Args:
             file_pattern: File pattern matching saved TFRecords on disk.
-            tf_transform_output: Output of the preceding Transform /
-             Preprocessing component.
 
         Returns:
             dataset: tf.data.Dataset created out of the input files.
         """
-        xf_feature_spec = tf_transform_output.transformed_feature_spec()
+        root_paths = [x.replace("*", "") for x in file_pattern]
 
-        root_path = [x.replace("*", "") for x in file_pattern][0]
-        dataset = tf.data.TFRecordDataset(
-            path_utils.list_dir(root_path),  # a bit ugly
-            compression_type='GZIP')
-        df = convert_raw_dataset_to_pandas(dataset, xf_feature_spec, 100000)
+        file_paths = []
+        for root in root_paths:
+            file_paths.extend(path_utils.list_dir(root))
+
+        dataset = tf.data.TFRecordDataset(file_paths,
+                                          compression_type='GZIP')
+        df = convert_raw_dataset_to_pandas(dataset,
+                                           self.schema,
+                                           100000)
 
         # Separate labels
         X = df[[x for x in df.columns if
