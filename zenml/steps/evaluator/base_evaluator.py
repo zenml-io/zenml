@@ -17,6 +17,7 @@ from typing import Dict, List, Text
 
 from zenml.enums import StepTypes
 from zenml.steps import BaseStep
+from zenml.steps.trainer.utils import TRAIN_SPLITS, TEST_SPLITS, EVAL_SPLITS
 
 
 class BaseEvaluatorStep(BaseStep):
@@ -30,7 +31,27 @@ class BaseEvaluatorStep(BaseStep):
     def __init__(self,
                  split_mapping: Dict[Text, List[Text]] = None,
                  **kwargs):
-        self.split_mapping = split_mapping
+
+        if split_mapping:
+            assert len(split_mapping[TRAIN_SPLITS]) > 0, \
+                'While defining your own mapping, you need to provide at least ' \
+                'one training split.'
+            assert len(split_mapping[EVAL_SPLITS]) > 0, \
+                'While defining your own mapping, you need to provide at least ' \
+                'one eval split.'
+
+            if TEST_SPLITS not in split_mapping:
+                split_mapping.update({TEST_SPLITS: []})
+            assert len(split_mapping) == 3, \
+                f'While providing a split_mapping please only use ' \
+                f'{TRAIN_SPLITS}, {EVAL_SPLITS} and {TEST_SPLITS} as keys.'
+
+            self.split_mapping = split_mapping
+        else:
+            self.split_mapping = {TRAIN_SPLITS: ['train'],
+                                  EVAL_SPLITS: ['eval'],
+                                  TEST_SPLITS: ['test']}
+
         super(BaseEvaluatorStep, self).__init__(split_mapping=split_mapping,
                                                 **kwargs)
 

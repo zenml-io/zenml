@@ -19,6 +19,7 @@ import tensorflow_transform as tft
 
 from zenml.enums import StepTypes
 from zenml.steps import BaseStep
+from zenml.steps.trainer.utils import TRAIN_SPLITS, TEST_SPLITS, EVAL_SPLITS
 
 
 class BaseTrainerStep(BaseStep):
@@ -63,7 +64,25 @@ class BaseTrainerStep(BaseStep):
             self.schema = self.tf_transform_output.transformed_feature_spec()
 
         # Parameters
-        self.split_mapping = split_mapping
+        if split_mapping:
+            assert len(split_mapping[TRAIN_SPLITS]) > 0, \
+                'While defining your own mapping, you need to provide at least ' \
+                'one training split.'
+            assert len(split_mapping[EVAL_SPLITS]) > 0, \
+                'While defining your own mapping, you need to provide at least ' \
+                'one eval split.'
+
+            if TEST_SPLITS not in split_mapping:
+                split_mapping.update({TEST_SPLITS: []})
+            assert len(split_mapping) == 3, \
+                f'While providing a split_mapping please only use ' \
+                f'{TRAIN_SPLITS}, {EVAL_SPLITS} and {TEST_SPLITS} as keys.'
+
+            self.split_mapping = split_mapping
+        else:
+            self.split_mapping = {TRAIN_SPLITS: ['train'],
+                                  EVAL_SPLITS: ['eval'],
+                                  TEST_SPLITS: ['test']}
 
         # Outputs
         self.output_patterns = output_patterns
