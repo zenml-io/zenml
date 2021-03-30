@@ -1,3 +1,31 @@
+# 0.3.6
+0.3.6 is a more inwards-facing release as part of a bigger effort to create a more flexible ZenML. As a first step, ZenML now supports arbitrary splits for all components natively, freeing us from the `train/eval` split paradigm. Here is an overview of changes:
+
+## New Features
+* The inner-workings of the `BaseTrainerStep`, `BaseEvaluatorStep` and the `BasePreprocesserStep` have been modified along with their respective components to work with the new split_mapping. Now, users can define arbitrary splits (not just train/eval). E.g. Doing a `train/eval/test` split is possible.
+
+* Within the instance of a `TrainerStep`, the user has access to `input_patterns` and `output_patterns` which provide the required uris with respect to their splits for the input and output(test_results) examples.
+
+* The built-in trainers are modified to work with the new changes.
+
+## Bug Fixes + Refactor
+A big thanks to our new super supporter @zyfzjsc988 for most of the feedback that led to bug fixes and enhancements for this release: 
+
+* #63: Now one can specify which ports ZenML opens its add-on applications.
+* #64 Now there is a way to list integrations with the following code:
+```
+from zenml.utils.requirements_utils import list_integrations.
+list_integrations()
+```
+* Fixed #61: `view_anomalies()` breaking in the quickstart.
+* Analytics is now `opt-in` by default, to get rid of the unnecessary prompt at `zenml init`. Users can still freely `opt-out` by using the CLI:
+
+```
+zenml config analytics opt-out
+```
+
+Again, the telemetry data is fully anonymized and just used to improve the product. Read more [here](https://docs.zenml.io/misc/usage-analytics.html)
+
 # 0.3.5
 
 ## New Features
