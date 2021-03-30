@@ -124,28 +124,22 @@ class FeedForwardTrainer(TFBaseTrainerStep):
         return combined_batch
 
     def run_fn(self):
-        split_mapping = utils.fill_split_mapping_w_defaults(
-            mapping=self.split_mapping,
-            splits=list(self.input_patterns.keys()))
-
-        train_split_patterns = [self.input_patterns[split]
-                                for split in split_mapping[utils.TRAIN_SPLITS]]
+        train_split_patterns = [self.input_patterns[split] for split in
+                                self.split_mapping[utils.TRAIN_SPLITS]]
         train_dataset = self.input_fn(train_split_patterns)
 
-        eval_split_patterns = [self.input_patterns[split]
-                               for split in split_mapping[utils.EVAL_SPLITS]]
+        eval_split_patterns = [self.input_patterns[split] for split in
+                               self.split_mapping[utils.EVAL_SPLITS]]
         eval_dataset = self.input_fn(eval_split_patterns)
 
         model = self.model_fn(train_dataset=train_dataset,
                               eval_dataset=eval_dataset)
 
-        if split_mapping[utils.TEST_SPLITS]:
-            for split in split_mapping[utils.TEST_SPLITS]:
-                pattern = self.input_patterns[split]
-                test_dataset = self.input_fn([pattern])
-                test_results = self.test_fn(model, test_dataset)
-                utils.save_test_results(test_results,
-                                        self.output_patterns[split])
+        for split in self.split_mapping[utils.TEST_SPLITS]:
+            pattern = self.input_patterns[split]
+            test_dataset = self.input_fn([pattern])
+            test_results = self.test_fn(model, test_dataset)
+            utils.save_test_results(test_results, self.output_patterns[split])
 
         signatures = {
             'serving_default':

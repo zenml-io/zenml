@@ -148,16 +148,12 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         return combined_batch
 
     def run_fn(self):
-        split_mapping = utils.fill_split_mapping_w_defaults(
-            mapping=self.split_mapping,
-            splits=list(self.input_patterns.keys()))
-
-        train_split_patterns = [self.input_patterns[split]
-                                for split in split_mapping[utils.TRAIN_SPLITS]]
+        train_split_patterns = [self.input_patterns[split] for split in
+                                self.split_mapping[utils.TRAIN_SPLITS]]
         train_dataset = self.input_fn(train_split_patterns)
 
-        eval_split_patterns = [self.input_patterns[split]
-                               for split in split_mapping[utils.EVAL_SPLITS]]
+        eval_split_patterns = [self.input_patterns[split] for split in
+                               self.split_mapping[utils.EVAL_SPLITS]]
         eval_dataset = self.input_fn(eval_split_patterns)
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -207,13 +203,11 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                   f'{epoch_acc / step_count:.3f}')
 
         # test
-        if split_mapping[utils.TEST_SPLITS]:
-            for split in split_mapping[utils.TEST_SPLITS]:
-                pattern = self.input_patterns[split]
-                test_dataset = self.input_fn([pattern])
-                test_results = self.test_fn(model, test_dataset)
-                utils.save_test_results(test_results,
-                                        self.output_patterns[split])
+        for split in self.split_mapping[utils.TEST_SPLITS]:
+            pattern = self.input_patterns[split]
+            test_dataset = self.input_fn([pattern])
+            test_results = self.test_fn(model, test_dataset)
+            utils.save_test_results(test_results, self.output_patterns[split])
 
         path_utils.create_dir_if_not_exists(self.serving_model_dir)
         if path_utils.is_remote(self.serving_model_dir):
