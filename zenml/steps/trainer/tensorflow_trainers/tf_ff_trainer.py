@@ -136,6 +136,10 @@ class FeedForwardTrainer(TFBaseTrainerStep):
                               eval_dataset=eval_dataset)
 
         for split in self.split_mapping[utils.TEST_SPLITS]:
+            assert split in self.input_patterns, \
+                f'There are currently no inputs for the split "{split}" ' \
+                f'which is currently used in the {utils.TEST_SPLITS} of the ' \
+                f'split mapping.'
             pattern = self.input_patterns[split]
             test_dataset = self.input_fn([pattern])
             test_results = self.test_fn(model, test_dataset)
