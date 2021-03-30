@@ -90,13 +90,15 @@ ds = CSVDatasource(name='Pima Indians Diabetes Dataset',
 training_pipeline.add_datasource(ds)
 
 # Add a random 70/30 train-eval split
-training_pipeline.add_split(RandomSplit(split_map={'train': 0.7, 'eval': 0.3}))
+training_pipeline.add_split(RandomSplit(split_map={'train': 0.7, 
+                                                   'eval': 0.2,
+                                                   'test': 0.1}))
 
 # StandardPreprocesser() has sane defaults for normal preprocessing methods
 training_pipeline.add_preprocesser(
     StandardPreprocesser(
-        features=['times_pregnant', 'pgc', 'dbp', 'tst', 'insulin', 'bmi',
-                  'pedigree', 'age'],
+        features=['times_pregnant', 'pgc', 'dbp', 'tst', 
+                  'insulin', 'bmi', 'pedigree', 'age'],
         labels=['has_diabetes'],
         overwrite={'has_diabetes': {
             'transform': [{'method': 'no_transform', 'parameters': {}}]}}
