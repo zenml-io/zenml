@@ -17,6 +17,7 @@ from zenml.components.evaluator import constants
 from zenml.logger import get_logger
 from zenml.standards.standard_keys import StepKeys
 from zenml.steps.evaluator.base_evaluator import BaseEvaluatorStep
+from zenml.steps.trainer.utils import TEST_SPLITS
 from zenml.utils import path_utils as zenml_path_utils
 from zenml.utils import source_utils
 
@@ -46,15 +47,20 @@ class Executor(base_executor.BaseExecutor):
             raise ValueError(f'{constants.EXAMPLES} is missing from inputs')
         examples_artifact = input_dict[constants.EXAMPLES]
 
-        input_uri = artifact_utils.get_single_uri(examples_artifact)
-        if len(zenml_path_utils.list_dir(input_uri)) == 0:
-            raise AssertionError(
-                'ZenML can not run the evaluation as the provided input '
-                'configuration does not point towards any data. Specifically, '
-                'if you are using the agnostic evaluator, please make sure '
-                'that you are using a proper test_fn in your trainer step to '
-                'write these results.')
+        # Create the step with the schema attached if provided
+        source = exec_properties[StepKeys.SOURCE]
+        args = exec_properties[StepKeys.ARGS]
+        c = source_utils.load_source_path_class(source)
+        evaluator_step: BaseEvaluatorStep = c(**args)
 
+        splits = evaluator_step.split_mapping[TEST_SPLITS]
+
+        if len(splits) == 0:
+            raise AssertionError(
+                'In the current configuration of the evaluator step or the '
+                'split mapping, there are no splits dedicated for the '
+                'evaluation. Either use a "test" split or define a dict '
+                'for the split mapping')
         else:
             # Check the outputs
             if constants.EVALUATION not in output_dict:
@@ -70,12 +76,6 @@ class Executor(base_executor.BaseExecutor):
                 schema_uri = artifact_utils.get_single_uri(schema_artifact)
                 reader = io_utils.SchemaReader()
                 schema = reader.read(io_utils.get_only_uri_in_dir(schema_uri))
-
-            # Create the step with the schema attached if provided
-            source = exec_properties[StepKeys.SOURCE]
-            args = exec_properties[StepKeys.ARGS]
-            c = source_utils.load_source_path_class(source)
-            evaluator_step: BaseEvaluatorStep = c(**args)
 
             # Check the execution parameters
             eval_config = evaluator_step.build_config()
@@ -102,10 +102,10 @@ class Executor(base_executor.BaseExecutor):
 
             # Main pipeline
             logging.info('Evaluating model.')
+
             with self._make_beam_pipeline() as pipeline:
                 examples_list = []
                 tensor_adapter_config = None
-
                 if tfma.is_batched_input(eval_shared_model, eval_config):
                     tfxio_factory = tfxio_utils.get_tfxio_factory_from_artifact(
                         examples=[
@@ -114,10 +114,32 @@ class Executor(base_executor.BaseExecutor):
                         telemetry_descriptors=_TELEMETRY_DESCRIPTORS,
                         schema=schema,
                         raw_record_column_name=tfma_constants.ARROW_INPUT_COLUMN)
-                    for split in evaluator_step.splits:
-                        file_pattern = io_utils.all_files_pattern(
-                            artifact_utils.get_split_uri(examples_artifact,
-                                                         split))
+
+                    for split in splits:
+                        split_uri = artifact_utils.get_split_uri(
+                            examples_artifact,
+                            split)
+
+                        try:
+                            if len(zenml_path_utils.list_dir(split_uri)) == 0:
+                                raise AssertionError(
+                                    f'The saved results found for the split: '
+                                    f'{split}. Please make sure that you '
+                                    f'run the test_fn in your trainer and '
+                                    f'you are working with the right '
+                                    f'split_mapping: '
+                                    f'{evaluator_step.split_mapping}!')
+                        except:
+                            # TODO[LOW]: Merge into a single check
+                            raise AssertionError(
+                                f'The saved results found for the split: '
+                                f'{split}. Please make sure that you '
+                                f'run the test_fn in your trainer and '
+                                f'you are working with the right '
+                                f'split_mapping: '
+                                f'{evaluator_step.split_mapping}!')
+
+                        file_pattern = io_utils.all_files_pattern(split_uri)
                         tfxio = tfxio_factory(file_pattern)
                         data = (pipeline
                                 | 'ReadFromTFRecordToArrow[%s]' % split >> tfxio.BeamSource())
@@ -127,7 +149,7 @@ class Executor(base_executor.BaseExecutor):
                             arrow_schema=tfxio.ArrowSchema(),
                             tensor_representations=tfxio.TensorRepresentations())
                 else:
-                    for split in evaluator_step.splits:
+                    for split in splits:
                         file_pattern = io_utils.all_files_pattern(
                             artifact_utils.get_split_uri(examples_artifact,
                                                          split))
@@ -137,7 +159,6 @@ class Executor(base_executor.BaseExecutor):
                                     file_pattern=file_pattern)
                                 )
                         examples_list.append(data)
-
                 # Resolve custom extractors
                 custom_extractors = try_get_fn(evaluator_step.CUSTOM_MODULE,
                                                'custom_extractors')
@@ -160,8 +181,7 @@ class Executor(base_executor.BaseExecutor):
 
                 # Extract, evaluate and write
                 (examples_list | 'FlattenExamples' >> beam.Flatten()
-                 |
-                 'ExtractEvaluateAndWriteResults' >> tfma.ExtractEvaluateAndWriteResults(
+                 | 'ExtractEvaluateAndWriteResults' >> tfma.ExtractEvaluateAndWriteResults(
                             eval_config=eval_config,
                             eval_shared_model=eval_shared_model,
                             output_path=output_uri,

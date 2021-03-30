@@ -13,12 +13,13 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import List, Text
+from typing import Dict, List, Text
 
 import tensorflow_transform as tft
 
 from zenml.enums import StepTypes
 from zenml.steps import BaseStep
+from zenml.steps.trainer.utils import TRAIN_SPLITS, TEST_SPLITS, EVAL_SPLITS
 
 
 class BaseTrainerStep(BaseStep):
@@ -30,11 +31,11 @@ class BaseTrainerStep(BaseStep):
     STEP_TYPE = StepTypes.trainer.name
 
     def __init__(self,
+                 input_patterns: Dict[Text, Text] = None,
+                 output_patterns: Dict[Text, Text] = None,
                  serving_model_dir: Text = None,
                  transform_output: Text = None,
-                 test_results: Text = None,
-                 train_files=None,
-                 eval_files=None,
+                 split_mapping: Dict[Text, List[Text]] = None,
                  **kwargs):
         """
         Constructor for the BaseTrainerStep. All subclasses used for custom
@@ -53,27 +54,47 @@ class BaseTrainerStep(BaseStep):
             log_dir: Logs output directory.
             schema: Schema file from a preceding SchemaGen.
         """
-        super().__init__(**kwargs)
-        self.serving_model_dir = serving_model_dir
-        self.transform_output = transform_output
-        self.test_results = test_results
-        self.train_files = train_files
-        self.eval_files = eval_files
+        # Inputs
+        self.input_patterns = input_patterns
         self.schema = None
-        self.log_dir = None
         self.tf_transform_output = None
 
-        # Infer schema and log_dir
-        if self.transform_output is not None:
-            self.tf_transform_output = tft.TFTransformOutput(
-                self.transform_output)
-            self.schema = self.tf_transform_output.transformed_feature_spec(
+        if transform_output is not None:
+            self.tf_transform_output = tft.TFTransformOutput(transform_output)
+            self.schema = self.tf_transform_output.transformed_feature_spec()
 
-            ).copy()
+        # Parameters
+        if split_mapping:
+            assert len(split_mapping[TRAIN_SPLITS]) > 0, \
+                'While defining your own mapping, you need to provide at least ' \
+                'one training split.'
+            assert len(split_mapping[EVAL_SPLITS]) > 0, \
+                'While defining your own mapping, you need to provide at least ' \
+                'one eval split.'
+
+            if TEST_SPLITS not in split_mapping:
+                split_mapping.update({TEST_SPLITS: []})
+            assert len(split_mapping) == 3, \
+                f'While providing a split_mapping please only use ' \
+                f'{TRAIN_SPLITS}, {EVAL_SPLITS} and {TEST_SPLITS} as keys.'
+
+            self.split_mapping = split_mapping
+        else:
+            self.split_mapping = {TRAIN_SPLITS: ['train'],
+                                  EVAL_SPLITS: ['eval'],
+                                  TEST_SPLITS: ['test']}
+
+        # Outputs
+        self.output_patterns = output_patterns
+        self.serving_model_dir = serving_model_dir
+        self.log_dir = None
 
         if self.serving_model_dir is not None:
             self.log_dir = os.path.join(
                 os.path.dirname(self.serving_model_dir), 'logs')
+
+        super(BaseTrainerStep, self).__init__(split_mapping=self.split_mapping,
+                                              **kwargs)
 
     def input_fn(self,
                  file_pattern: List[Text],
@@ -95,8 +116,7 @@ class BaseTrainerStep(BaseStep):
         pass
 
     @staticmethod
-    def model_fn(train_dataset,
-                 eval_dataset):
+    def model_fn(train_dataset, eval_dataset):
         """
         Method defining the training flow of the model. Override this
         in subclasses to define your own custom training flow.

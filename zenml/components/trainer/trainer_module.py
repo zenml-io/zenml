@@ -19,15 +19,13 @@ from zenml.utils.source_utils import load_source_path_class
 def run_fn(fn_args):
     fn_args_dict = fn_args.__dict__
     custom_config = fn_args_dict.pop('custom_config')
-    c = load_source_path_class(custom_config.pop(StepKeys.SOURCE))
 
-    # Pop unnecessary args
+    # Get the user defined args
     args = custom_config.pop(StepKeys.ARGS)
-
-    # TODO: [LOW] Hard-coded
-    fn_args_dict.pop('data_accessor')
 
     # We update users args first, because fn_args might have overlaps
     args.update(fn_args_dict)
 
+    # Load the step, parameterize it and run it
+    c = load_source_path_class(custom_config.pop(StepKeys.SOURCE))
     return c(**args).run_fn()

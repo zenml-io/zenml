@@ -36,7 +36,7 @@ training_pipeline.add_datasource(ds)
 
 # Add a split
 training_pipeline.add_split(RandomSplit(
-    split_map={'eval': 0.3, 'train': 0.7}))
+    split_map={'train': 0.7, 'eval': 0.2, 'test': 0.1}))
 
 # Add a preprocessing unit
 training_pipeline.add_preprocesser(

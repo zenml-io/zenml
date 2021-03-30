@@ -14,9 +14,8 @@
 
 
 import os
-from typing import List, Text
+from typing import List, Text, Dict
 
-import tensorflow_transform as tft
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -27,11 +26,6 @@ from zenml.steps.trainer import TorchBaseTrainerStep
 from zenml.steps.trainer import utils
 from zenml.steps.trainer.pytorch_trainers import utils as torch_utils
 from zenml.utils import path_utils
-
-FEATURES = 'features'
-LABELS = 'labels'
-PREDICTIONS = 'predictions'
-RAW = 'raw'
 
 
 class BinaryClassifier(nn.Module):
@@ -79,8 +73,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                  last_activation: str = 'sigmoid',
                  input_units: int = 8,
                  output_units: int = 1,
-                 **kwargs
-                 ):
+                 **kwargs):
         self.batch_size = batch_size
         self.lr = lr
         self.epochs = epochs
@@ -92,6 +85,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         self.last_activation = last_activation
         self.input_units = input_units
         self.output_units = output_units
+
         super(FeedForwardTrainer, self).__init__(
             batch_size=self.batch_size,
             lr=self.lr,
@@ -107,10 +101,10 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
             **kwargs)
 
     def input_fn(self,
-                 file_pattern: List[Text],
-                 tf_transform_output: tft.TFTransformOutput):
-        spec = tf_transform_output.transformed_feature_spec()
-        dataset = torch_utils.TFRecordTorchDataset(file_pattern, spec)
+                 file_patterns: List[Text]):
+
+        dataset = torch_utils.TFRecordTorchDataset(file_patterns,
+                                                   self.schema)
         loader = torch.utils.data.DataLoader(dataset,
                                              batch_size=self.batch_size,
                                              drop_last=True)
@@ -119,12 +113,12 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
     def model_fn(self, train_dataset, eval_dataset):
         return BinaryClassifier()
 
-    def test_fn(self, model, eval_dataset):
+    def test_fn(self, model, dataset):
         # Activate the evaluation mode
         model.eval()
 
         batch_list = []
-        for x, y, raw in eval_dataset:
+        for x, y, raw in dataset:
             # start with an empty batch
             batch = {}
 
@@ -154,11 +148,13 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         return combined_batch
 
     def run_fn(self):
-        train_dataset = self.input_fn(self.train_files,
-                                      self.tf_transform_output)
+        train_split_patterns = [self.input_patterns[split] for split in
+                                self.split_mapping[utils.TRAIN_SPLITS]]
+        train_dataset = self.input_fn(train_split_patterns)
 
-        eval_dataset = self.input_fn(self.eval_files,
-                                     self.tf_transform_output)
+        eval_split_patterns = [self.input_patterns[split] for split in
+                               self.split_mapping[utils.EVAL_SPLITS]]
+        eval_dataset = self.input_fn(eval_split_patterns)
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model = self.model_fn(train_dataset, eval_dataset)
@@ -207,8 +203,15 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                   f'{epoch_acc / step_count:.3f}')
 
         # test
-        test_results = self.test_fn(model, eval_dataset)
-        utils.save_test_results(test_results, self.test_results)
+        for split in self.split_mapping[utils.TEST_SPLITS]:
+            assert split in self.input_patterns, \
+                f'There are currently no inputs for the split "{split}" ' \
+                f'which is currently used in the {utils.TEST_SPLITS} of the ' \
+                f'split mapping.'
+            pattern = self.input_patterns[split]
+            test_dataset = self.input_fn([pattern])
+            test_results = self.test_fn(model, test_dataset)
+            utils.save_test_results(test_results, self.output_patterns[split])
 
         path_utils.create_dir_if_not_exists(self.serving_model_dir)
         if path_utils.is_remote(self.serving_model_dir):

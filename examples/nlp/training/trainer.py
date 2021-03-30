@@ -21,15 +21,12 @@ from transformers import TFDistilBertForSequenceClassification
 from zenml.steps.trainer import TFBaseTrainerStep
 from zenml.utils.post_training.post_training_utils import \
     get_feature_spec_from_schema
+from zenml.steps.trainer import utils
 
 
 class UrduTrainer(TFBaseTrainerStep):
     def __init__(self,
                  model_name: Text,
-                 serving_model_dir: Text = None,
-                 transform_output: Text = None,
-                 train_files: List[Text] = None,
-                 eval_files: List[Text] = None,
                  batch_size: int = 64,
                  epochs: int = 25,
                  learning_rate: float = 1e-4,
@@ -38,10 +35,6 @@ class UrduTrainer(TFBaseTrainerStep):
                  ):
 
         super(UrduTrainer, self).__init__(model_name=model_name,
-                                          serving_model_dir=serving_model_dir,
-                                          transform_output=transform_output,
-                                          train_files=train_files,
-                                          eval_files=eval_files,
                                           batch_size=batch_size,
                                           epochs=epochs,
                                           learning_rate=learning_rate,
@@ -64,8 +57,15 @@ class UrduTrainer(TFBaseTrainerStep):
 
     def run_fn(self):
         feature_spec = get_feature_spec_from_schema(self.schema_path)
-        train_dataset = self.input_fn(self.train_files, feature_spec)
-        eval_dataset = self.input_fn(self.eval_files, feature_spec)
+        train_split_patterns = [self.input_patterns[split] for split in
+                                self.split_mapping[utils.TRAIN_SPLITS]]
+        train_dataset = self.input_fn(train_split_patterns,
+                                      feature_spec)
+
+        eval_split_patterns = [self.input_patterns[split] for split in
+                               self.split_mapping[utils.EVAL_SPLITS]]
+        eval_dataset = self.input_fn(eval_split_patterns,
+                                     feature_spec)
 
         model = self.model_fn(train_dataset=train_dataset,
                               eval_dataset=eval_dataset)

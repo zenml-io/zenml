@@ -7,6 +7,12 @@ import torch
 
 from zenml.utils import path_utils
 
+SPLIT_MAPPING = 'split_mapping'
+
+TRAIN_SPLITS = 'train_splits'
+EVAL_SPLITS = 'eval_splits'
+TEST_SPLITS = 'test_splits'
+
 
 def save_test_results(results, output_path):
     path_utils.create_dir_if_not_exists(output_path)

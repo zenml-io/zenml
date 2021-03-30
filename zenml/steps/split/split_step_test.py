@@ -86,13 +86,6 @@ def test_no_split(create_random_dummy_data):
 
 def test_random_split(create_random_dummy_data):
 
-    no_train = {"test": 0.5,
-                "eval": 0.5}
-
-    # no train argument present in split map
-    with pytest.raises(AssertionError):
-        _ = RandomSplit(split_map=no_train)
-
     one_fold = {"train": 1.0}
 
     # only one argument present in split map
@@ -129,14 +122,6 @@ def test_random_split(create_random_dummy_data):
 def test_categorical_domain_split(create_structured_dummy_data):
 
     cat_col = "my_cat_col"
-
-    no_train = {"test": [],
-                "eval": []}
-
-    # no train argument present in split map
-    with pytest.raises(AssertionError):
-        _ = CategoricalDomainSplit(categorical_column=cat_col,
-                                   split_map=no_train)
 
     one_fold = {"train": []}
 
@@ -211,16 +196,7 @@ def test_categorical_ratio_split(create_structured_dummy_data):
 
     cat_col = "my_cat_col"
 
-    no_train = {"test": 0.5,
-                "eval": 0.5}
-
     categories = []
-
-    # no train argument present in split map
-    with pytest.raises(AssertionError):
-        _ = CategoricalRatioSplit(categorical_column=cat_col,
-                                  categories=categories,
-                                  split_ratio=no_train)
 
     one_fold = {"train": 1.0}
 

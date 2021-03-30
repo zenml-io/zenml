@@ -22,7 +22,7 @@ training_pipeline.add_datasource(ds)
 
 # Add a split
 training_pipeline.add_split(RandomSplit(
-    split_map={'train': 0.7, 'eval': 0.3}))
+    split_map={'train': 0.7, 'eval': 0.2, 'test': 0.1}))
 
 # Add a preprocessing unit
 training_pipeline.add_preprocesser(
@@ -36,7 +36,7 @@ training_pipeline.add_preprocesser(
 
 # Add a trainer
 training_pipeline.add_trainer(MyScikitTrainer(
-    C=0.8,
+    c=0.8,
     kernel='rbf',
 ))
 

@@ -38,7 +38,7 @@ tokenizer_step = HuggingFaceTokenizerStep(
 nlp_pipeline.add_tokenizer(tokenizer_step=tokenizer_step)
 
 nlp_pipeline.add_split(RandomSplit(
-    split_map={"train": 0.9, "eval": 0.1}))
+    split_map={'train': 0.7, 'eval': 0.2, 'test': 0.1}))
 
 nlp_pipeline.add_trainer(
     UrduTrainer(

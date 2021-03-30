@@ -16,7 +16,6 @@
 from typing import List, Text
 
 import tensorflow as tf
-import tensorflow_transform as tft
 
 from zenml.steps.trainer import TFBaseTrainerStep
 from zenml.steps.trainer import utils
@@ -89,9 +88,9 @@ class FeedForwardTrainer(TFBaseTrainerStep):
             **kwargs
         )
 
-    def test_fn(self, model, datasets):
+    def test_fn(self, model, dataset):
         batch_list = []
-        for x, y in datasets:
+        for x, y in dataset:
             # start with an empty batch
             batch = {}
 
@@ -125,29 +124,39 @@ class FeedForwardTrainer(TFBaseTrainerStep):
         return combined_batch
 
     def run_fn(self):
-        tf_transform_output = tft.TFTransformOutput(self.transform_output)
+        train_split_patterns = [self.input_patterns[split] for split in
+                                self.split_mapping[utils.TRAIN_SPLITS]]
+        train_dataset = self.input_fn(train_split_patterns)
 
-        train_dataset = self.input_fn(self.train_files, tf_transform_output)
-        eval_dataset = self.input_fn(self.eval_files, tf_transform_output)
+        eval_split_patterns = [self.input_patterns[split] for split in
+                               self.split_mapping[utils.EVAL_SPLITS]]
+        eval_dataset = self.input_fn(eval_split_patterns)
 
         model = self.model_fn(train_dataset=train_dataset,
                               eval_dataset=eval_dataset)
 
-        test_results = self.test_fn(model, eval_dataset)
-        utils.save_test_results(test_results, self.test_results)
+        for split in self.split_mapping[utils.TEST_SPLITS]:
+            assert split in self.input_patterns, \
+                f'There are currently no inputs for the split "{split}" ' \
+                f'which is currently used in the {utils.TEST_SPLITS} of the ' \
+                f'split mapping.'
+            pattern = self.input_patterns[split]
+            test_dataset = self.input_fn([pattern])
+            test_results = self.test_fn(model, test_dataset)
+            utils.save_test_results(test_results, self.output_patterns[split])
 
         signatures = {
             'serving_default':
                 self._get_serve_tf_examples_fn(
                     model,
-                    tf_transform_output
+                    self.tf_transform_output
                 ).get_concrete_function(tf.TensorSpec(shape=[None],
                                                       dtype=tf.string,
                                                       name='examples')),
             'zen_eval':
                 self._get_zen_eval_tf_examples_fn(
                     model,
-                    tf_transform_output
+                    self.tf_transform_output
                 ).get_concrete_function(tf.TensorSpec(shape=[None],
                                                       dtype=tf.string,
                                                       name='examples'))}
@@ -157,27 +166,21 @@ class FeedForwardTrainer(TFBaseTrainerStep):
                    signatures=signatures)
 
     def input_fn(self,
-                 file_pattern: List[Text],
-                 tf_transform_output: tft.TFTransformOutput):
+                 file_pattern: List[Text]):
         """
         Feedforward input_fn for loading data from TFRecords saved to a
         location on disk.
 
         Args:
             file_pattern: File pattern matching saved TFRecords on disk.
-            tf_transform_output: Output of the preceding Transform /
-             Preprocessing component.
 
         Returns:
             dataset: tf.data.Dataset created out of the input files.
         """
-
-        xf_feature_spec = tf_transform_output.transformed_feature_spec()
-
         dataset = tf.data.experimental.make_batched_features_dataset(
             file_pattern=file_pattern,
             batch_size=self.batch_size,
-            features=xf_feature_spec,
+            features=self.schema,
             reader=self._gzip_reader_fn,
             num_epochs=1,
             drop_final_batch=True)
@@ -288,7 +291,8 @@ class FeedForwardTrainer(TFBaseTrainerStep):
         labels = list(train_dataset.element_spec[1].keys())
 
         input_layers = [tf.keras.layers.Input(shape=(1,), name=k)
-                        for k in features if naming_utils.check_if_transformed_feature(k)]
+                        for k in features if
+                        naming_utils.check_if_transformed_feature(k)]
 
         d = tf.keras.layers.Concatenate()(input_layers)
 

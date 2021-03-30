@@ -23,12 +23,10 @@ from tfx.components.pusher.component import Pusher
 from tfx.components.schema_gen.component import SchemaGen
 from tfx.components.statistics_gen.component import StatisticsGen
 from tfx.components.transform.component import Transform
-from tfx.proto import trainer_pb2
 
 from zenml import constants
 from zenml.backends.training import TrainingBaseBackend
 from zenml.components import DataGen, Sequencer, SplitGen, Trainer, Evaluator
-
 from zenml.enums import GDPComponent
 from zenml.exceptions import DoesNotExistException, \
     PipelineNotSucceededException
@@ -38,6 +36,7 @@ from zenml.standards import standard_keys as keys
 from zenml.steps.deployer import BaseDeployerStep
 from zenml.steps.evaluator import BaseEvaluatorStep
 from zenml.steps.preprocesser import BasePreprocesserStep
+from zenml.steps.preprocesser.base_preprocesser import build_split_mapping
 from zenml.steps.sequencer import BaseSequencerStep
 from zenml.steps.split import BaseSplit
 from zenml.steps.trainer import BaseTrainerStep
@@ -161,10 +160,14 @@ class TrainingPipeline(BasePipeline):
         #################
         # PREPROCESSING #
         #################
+        split_mapping = build_split_mapping(
+            steps[keys.TrainingSteps.PREPROCESSER][keys.StepKeys.ARGS])
+
         transform = Transform(
             preprocessing_fn=constants.PREPROCESSING_FN,
             examples=datapoints,
             schema=schema,
+            splits_config=split_mapping,
             custom_config=steps[keys.TrainingSteps.PREPROCESSER]
         ).with_id(GDPComponent.Transform.name)
 
@@ -192,8 +195,6 @@ class TrainingPipeline(BasePipeline):
             transform_graph=transform.outputs.transform_graph,
             run_fn=constants.TRAINER_FN,
             schema=schema,
-            train_args=trainer_pb2.TrainArgs(),
-            eval_args=trainer_pb2.EvalArgs(),
             **training_kwargs
         ).with_id(GDPComponent.Trainer.name)
 
@@ -221,8 +222,9 @@ class TrainingPipeline(BasePipeline):
                     model=trainer.outputs.model,
                 ).with_id(GDPComponent.Evaluator.name)
             else:
-                raise ValueError('Please use either the built-in TFMAEvaluator '
-                                 'or the AgnosticEvaluator')
+                raise ValueError(
+                    'Please use either the built-in TFMAEvaluator '
+                    'or the AgnosticEvaluator')
             component_list.append(evaluator)
 
         ###########

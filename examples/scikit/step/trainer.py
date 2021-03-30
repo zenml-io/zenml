@@ -16,7 +16,6 @@ from typing import List, Text
 
 import numpy as np
 import tensorflow as tf
-import tensorflow_transform as tft
 from joblib import dump
 from sklearn import svm
 from sklearn.metrics import classification_report, confusion_matrix
@@ -34,26 +33,29 @@ class MyScikitTrainer(BaseTrainerStep):
     Scikit trainer to train a scikit-learn based classifier model.
     """
 
-    def __init__(self, C: float = 1.0, kernel: Text = 'rbf', **kwargs):
-        self.C = C
+    def __init__(self, c: float = 1.0, kernel: Text = 'rbf', **kwargs):
+        self.c = c
         self.kernel = kernel
 
         super(MyScikitTrainer, self).__init__(
-            C=self.C,
+            c=self.c,
             kernel=self.kernel,
             **kwargs
         )
 
     def run_fn(self):
-        tf_transform_output = tft.TFTransformOutput(self.transform_output)
+        train_split_patterns = [self.input_patterns[split] for split in
+                                self.split_mapping[trainer_utils.TRAIN_SPLITS]]
+        x_train, y_train = self.input_fn(train_split_patterns)
 
-        X_train, y_train = self.input_fn(self.train_files, tf_transform_output)
-        X_eval, y_eval = self.input_fn(self.eval_files, tf_transform_output)
+        eval_split_patterns = [self.input_patterns[split] for split in
+                               self.split_mapping[trainer_utils.EVAL_SPLITS]]
+        x_eval, y_eval = self.input_fn(eval_split_patterns)
 
-        clf = svm.SVC(C=self.C, kernel=self.kernel)
-        clf.fit(X_train, y_train)
+        clf = svm.SVC(C=self.c, kernel=self.kernel)
+        clf.fit(x_train, y_train)
 
-        y_pred = clf.predict(X_eval)
+        y_pred = clf.predict(x_eval)
 
         print("*********EVALUATION START******************")
         print(confusion_matrix(y_eval, y_pred))
@@ -64,30 +66,35 @@ class MyScikitTrainer(BaseTrainerStep):
         dump(clf, self.serving_model_dir)
 
         # for model agnostic evaluator
-        test_results = self.test_fn(clf, X_eval, y_eval)
-        trainer_utils.save_test_results(test_results, self.test_results)
+        for split in self.split_mapping[trainer_utils.TEST_SPLITS]:
+            pattern = self.input_patterns[split]
+            x_test, y_test = self.input_fn([pattern])
+            test_results = self.test_fn(clf, x_test, y_test)
+            trainer_utils.save_test_results(test_results,
+                                            self.output_patterns[split])
 
     def input_fn(self,
-                 file_pattern: List[Text],
-                 tf_transform_output: tft.TFTransformOutput):
+                 file_pattern: List[Text]):
         """
         Load TFRecords on disk to pandas dataframe.
 
         Args:
             file_pattern: File pattern matching saved TFRecords on disk.
-            tf_transform_output: Output of the preceding Transform /
-             Preprocessing component.
 
         Returns:
             dataset: tf.data.Dataset created out of the input files.
         """
-        xf_feature_spec = tf_transform_output.transformed_feature_spec()
+        root_paths = [x.replace("*", "") for x in file_pattern]
 
-        root_path = [x.replace("*", "") for x in file_pattern][0]
-        dataset = tf.data.TFRecordDataset(
-            path_utils.list_dir(root_path),  # a bit ugly
-            compression_type='GZIP')
-        df = convert_raw_dataset_to_pandas(dataset, xf_feature_spec, 100000)
+        file_paths = []
+        for root in root_paths:
+            file_paths.extend(path_utils.list_dir(root))
+
+        dataset = tf.data.TFRecordDataset(file_paths,
+                                          compression_type='GZIP')
+        df = convert_raw_dataset_to_pandas(dataset,
+                                           self.schema,
+                                           100000)
 
         # Separate labels
         X = df[[x for x in df.columns if
@@ -96,14 +103,13 @@ class MyScikitTrainer(BaseTrainerStep):
                 naming_utils.check_if_transformed_label(x)]]
         return X, y
 
-    def test_fn(self, model, X_eval, y_eval):
+    def test_fn(self, model, x_eval, y_eval):
         label_name = y_eval.columns[0]
-        y_pred = model.predict(X_eval)
+        y_pred = model.predict(x_eval)
 
-        out_dict = {
-            label_name: y_eval.values,
-            naming_utils.output_name(label_name): y_pred,
-        }
+        out_dict = {label_name: y_eval.values,
+                    naming_utils.output_name(label_name): y_pred}
+
         out_dict.update({k: np.array(v) for k, v
-                         in X_eval.to_dict(orient='list').items()})
+                         in x_eval.to_dict(orient='list').items()})
         return out_dict
