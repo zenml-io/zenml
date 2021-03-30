@@ -54,14 +54,7 @@ class Executor(base_executor.BaseExecutor):
         c = source_utils.load_source_path_class(source)
         evaluator_step: BaseEvaluatorStep = c(**args)
 
-        input_splits = artifact_utils.decode_split_names(
-            artifact_utils.get_single_instance(
-                examples_artifact).split_names)
-
-        split_mapping = fill_split_mapping_w_defaults(
-            mapping=evaluator_step.split_mapping,
-            splits=input_splits)
-        splits = split_mapping[TEST_SPLITS]
+        splits = evaluator_step.split_mapping[TEST_SPLITS]
 
         if len(splits) == 0:
             raise AssertionError(
@@ -135,7 +128,8 @@ class Executor(base_executor.BaseExecutor):
                                     f'{split}. Please make sure that you '
                                     f'run the test_fn in your trainer and '
                                     f'you are working with the right '
-                                    f'split_mapping: {split_mapping}!')
+                                    f'split_mapping: '
+                                    f'{evaluator_step.split_mapping}!')
                         except:
                             # TODO[LOW]: Merge into a single check
                             raise AssertionError(
@@ -143,7 +137,8 @@ class Executor(base_executor.BaseExecutor):
                                 f'{split}. Please make sure that you '
                                 f'run the test_fn in your trainer and '
                                 f'you are working with the right '
-                                f'split_mapping: {split_mapping}!')
+                                f'split_mapping: '
+                                f'{evaluator_step.split_mapping}!')
 
                         file_pattern = io_utils.all_files_pattern(split_uri)
                         tfxio = tfxio_factory(file_pattern)
