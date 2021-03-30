@@ -63,7 +63,9 @@ try:
         # Add a split
         training_pipeline.add_split(CategoricalDomainSplit(
             categorical_column="name",
-            split_map={'train': ["arnold", "nicholas"], 'eval': ["lülük"]}))
+            split_map={'train': ["arnold"],
+                       'eval': ["lülük"],
+                       'test': ["nicholas"]}))
 
         # Add a preprocessing unit
         training_pipeline.add_preprocesser(
