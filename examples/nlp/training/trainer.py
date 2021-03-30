@@ -57,17 +57,13 @@ class UrduTrainer(TFBaseTrainerStep):
 
     def run_fn(self):
         feature_spec = get_feature_spec_from_schema(self.schema_path)
-        split_mapping = utils.fill_split_mapping_w_defaults(
-            mapping=self.split_mapping,
-            splits=list(self.input_patterns.keys()))
-
-        train_split_patterns = [self.input_patterns[split]
-                                for split in split_mapping[utils.TRAIN_SPLITS]]
+        train_split_patterns = [self.input_patterns[split] for split in
+                                self.split_mapping[utils.TRAIN_SPLITS]]
         train_dataset = self.input_fn(train_split_patterns,
                                       feature_spec)
 
-        eval_split_patterns = [self.input_patterns[split]
-                               for split in split_mapping[utils.EVAL_SPLITS]]
+        eval_split_patterns = [self.input_patterns[split] for split in
+                               self.split_mapping[utils.EVAL_SPLITS]]
         eval_dataset = self.input_fn(eval_split_patterns,
                                      feature_spec)
 

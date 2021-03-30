@@ -44,24 +44,18 @@ class MyScikitTrainer(BaseTrainerStep):
         )
 
     def run_fn(self):
-        split_mapping = trainer_utils.fill_split_mapping_w_defaults(
-            mapping=self.split_mapping,
-            splits=list(self.input_patterns.keys()))
+        train_split_patterns = [self.input_patterns[split] for split in
+                                self.split_mapping[trainer_utils.TRAIN_SPLITS]]
+        x_train, y_train = self.input_fn(train_split_patterns)
 
-        train_split_patterns = [
-            self.input_patterns[split]
-            for split in split_mapping[trainer_utils.TRAIN_SPLITS]]
-        X_train, y_train = self.input_fn(train_split_patterns)
-
-        eval_split_patterns = [
-            self.input_patterns[split]
-            for split in split_mapping[trainer_utils.EVAL_SPLITS]]
-        X_eval, y_eval = self.input_fn(eval_split_patterns)
+        eval_split_patterns = [self.input_patterns[split] for split in
+                               self.split_mapping[trainer_utils.EVAL_SPLITS]]
+        x_eval, y_eval = self.input_fn(eval_split_patterns)
 
         clf = svm.SVC(C=self.c, kernel=self.kernel)
-        clf.fit(X_train, y_train)
+        clf.fit(x_train, y_train)
 
-        y_pred = clf.predict(X_eval)
+        y_pred = clf.predict(x_eval)
 
         print("*********EVALUATION START******************")
         print(confusion_matrix(y_eval, y_pred))
@@ -72,13 +66,12 @@ class MyScikitTrainer(BaseTrainerStep):
         dump(clf, self.serving_model_dir)
 
         # for model agnostic evaluator
-        if split_mapping[trainer_utils.TEST_SPLITS]:
-            for split in split_mapping[trainer_utils.TEST_SPLITS]:
-                pattern = self.input_patterns[split]
-                X_test, y_test = self.input_fn([pattern])
-                test_results = self.test_fn(clf, X_test, y_test)
-                trainer_utils.save_test_results(test_results,
-                                                self.output_patterns[split])
+        for split in self.split_mapping[trainer_utils.TEST_SPLITS]:
+            pattern = self.input_patterns[split]
+            x_test, y_test = self.input_fn([pattern])
+            test_results = self.test_fn(clf, x_test, y_test)
+            trainer_utils.save_test_results(test_results,
+                                            self.output_patterns[split])
 
     def input_fn(self,
                  file_pattern: List[Text]):
@@ -110,14 +103,13 @@ class MyScikitTrainer(BaseTrainerStep):
                 naming_utils.check_if_transformed_label(x)]]
         return X, y
 
-    def test_fn(self, model, X_eval, y_eval):
+    def test_fn(self, model, x_eval, y_eval):
         label_name = y_eval.columns[0]
-        y_pred = model.predict(X_eval)
+        y_pred = model.predict(x_eval)
 
-        out_dict = {
-            label_name: y_eval.values,
-            naming_utils.output_name(label_name): y_pred,
-        }
+        out_dict = {label_name: y_eval.values,
+                    naming_utils.output_name(label_name): y_pred}
+
         out_dict.update({k: np.array(v) for k, v
-                         in X_eval.to_dict(orient='list').items()})
+                         in x_eval.to_dict(orient='list').items()})
         return out_dict
