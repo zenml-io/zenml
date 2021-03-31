@@ -229,7 +229,7 @@ Our community is the backbone of making ZenML a success! We are currently active
 * The GitHub Community: Create your first thread [here](https://github.com/maiot-io/zenml/discussions).
 
 From March 23, 2021 onwards, we are hosting a weekly community hour with the entire ZenML fam. Come talk to us about ZenML (or whatever else tickles your fancy)! Community hour 
-happens at **Wednesday at 5PM GMT+1** at this [Google Hangouts link](https://meet.google.com/ydo-evfq-jpu).
+happens at **Wednesday at 5PM GMT+1**. Please email us at hello@zenml.io if you would like to take part.
 
 ## Contributing
 We would love to receive your contributions! Check our [Contributing Guide](CONTRIBUTING.md) for more details on how to contribute best.
