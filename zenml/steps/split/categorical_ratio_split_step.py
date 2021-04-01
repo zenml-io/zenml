@@ -30,10 +30,6 @@ def lint_split_map(split_map: Dict[Text, float]):
         raise AssertionError('Please specify more than 1 split name in the '
                              'split_map!')
 
-    if not all(isinstance(v, (int, float)) for v in split_map.values()):
-        raise AssertionError("Only int or float values are allowed when "
-                             "specifying a random split!")
-
 
 class CategoricalRatioSplit(BaseSplit):
     """
