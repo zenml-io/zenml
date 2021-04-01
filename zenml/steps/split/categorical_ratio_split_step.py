@@ -30,6 +30,10 @@ def lint_split_map(split_map: Dict[Text, float]):
         raise AssertionError('Please specify more than 1 split name in the '
                              'split_map!')
 
+    if not all(isinstance(v, (int, float)) for v in split_map.values()):
+        raise AssertionError("Only int or float values are allowed when "
+                             "specifying a random split!")
+
 
 class CategoricalRatioSplit(BaseSplit):
     """
@@ -94,8 +98,8 @@ class CategoricalRatioSplit(BaseSplit):
              splitting.
             categories: List of categorical values found in the categorical
              column on which to split.
-            split_ratio: A dict mapping { split_name: percentage of categories
-                                    in split }.
+            split_ratio: A dict mapping { split_name: ratio of categories
+             in split }.
             unknown_category_policy: String, indicates how to handle categories
              in the data that are not present in the supplied category list.
         """

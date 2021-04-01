@@ -23,14 +23,13 @@ from zenml.steps.split import BaseSplit
 
 def lint_split_map(split_map: Dict[Text, float]):
     """Small utility to lint the split_map"""
-    # TODO[MEDIUM]: Currently, it does not fail when the sum is more than 1
     if len(split_map) <= 1:
         raise AssertionError('Please specify more than 1 split name in the '
                              'split_map!')
 
-    if not all(isinstance(v, float) for v in split_map.values()):
-        raise AssertionError("Only float values are allowed when specifying "
-                             "a random split!")
+    if not all(isinstance(v, (int, float)) for v in split_map.values()):
+        raise AssertionError("Only int or float values are allowed when "
+                             "specifying a random split!")
 
 
 def RandomSplitPartitionFn(element: Any,
@@ -45,19 +44,17 @@ def RandomSplitPartitionFn(element: Any,
     Args:
         element: Data point, in format tf.train.Example.
         num_partitions: Number of splits, unused here.
-        split_map: Dict mapping {split_name: percentage of data in split}.
+        split_map: Dict mapping {split_name: ratio of data in split}.
 
     Returns:
         An integer n, where 0 ≤ n ≤ num_partitions - 1.
     """
 
-    # calculates probability mass of each split (= interval on [0,1))
+    # calculates probability mass of each split
     probability_mass = np.cumsum(list(split_map.values()))
+    max_value = probability_mass[-1]
 
-    # excludes the right bound 1 as it is redundant
-    brackets = probability_mass[:-1]
-
-    return bisect.bisect(brackets, np.random.rand())
+    return bisect.bisect(probability_mass, np.random.rand(0, max_value))
 
 
 class RandomSplit(BaseSplit):
