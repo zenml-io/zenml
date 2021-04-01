@@ -54,7 +54,7 @@ def RandomSplitPartitionFn(element: Any,
     probability_mass = np.cumsum(list(split_map.values()))
     max_value = probability_mass[-1]
 
-    return bisect.bisect(probability_mass, np.random.rand(0, max_value))
+    return bisect.bisect(probability_mass, np.random.uniform(0, max_value))
 
 
 class RandomSplit(BaseSplit):
