@@ -63,8 +63,8 @@ def partition_cat_list(cat_list: List[CategoricalValue],
 
     Args:
         cat_list: List of categorical values found in the categorical column.
-        c_ratio: Dict {fold: percentage} mapping the percentage of all
-         categories to split folds.
+        c_ratio: Dict {fold: ratio} mapping the ratio of all categories to
+         split folds.
 
     Returns:
         cat_dict: Dict {fold: categorical_list} mapping lists of categorical
@@ -74,13 +74,14 @@ def partition_cat_list(cat_list: List[CategoricalValue],
     cat_dict = {}
 
     num_cats = len(cat_list)
+    sum_ratios = sum(c_ratio.values())
     ratio = 0
 
     # This might produce unexpected results if the number of categories
     # is lower than the number of folds.
     for fold, fold_pct in c_ratio.items():
         left_bound = round(num_cats * ratio)
-        ratio += fold_pct
+        ratio += fold_pct / sum_ratios
         right_bound = round(num_cats * ratio)
         # write categories for fold to the cat_list dict
         cat_dict[fold] = cat_list[left_bound:right_bound]
