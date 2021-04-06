@@ -51,7 +51,7 @@ Under-the-hood, these parameters are also captured as [ExecutionParameters](http
 `Execution` table of the MLMetadata store. 
 
 For most use-cases, ZenML exposes native interfaces to fetch these parameters after a pipeline has been run successfully. 
-E.g. the `repo.compare_pipelines()` method compares all pipelines in a Repository() and extensively uses the ML Metadata store 
+E.g. the `repo.compare_training_runs()` method compares all pipelines in a Repository() and extensively uses the ML Metadata store 
 to spin up a visualization of comparison of training pipeline results.
 
 However, if users would like direct access to the store, they can easily use the ML Metadata Python library to quickly access their 
