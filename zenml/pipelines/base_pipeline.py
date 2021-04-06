@@ -336,7 +336,7 @@ class BasePipeline:
             new_name (str): New name for copied pipeline.
         """
         class_ = self.__class__
-        args = self.__dict__
+        args = self.__dict__.copy()
 
         # Doing this will reset immutability
         args.pop('pipeline_name')
