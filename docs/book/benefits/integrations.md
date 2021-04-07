@@ -1,14 +1,12 @@
 # Extensibility with integrations
-The Machine Learning landscape is evolving at a rapid pace. ZenML decouples the experiment workflow from the tooling by providing integrations 
-to solutions for specific aspects of your ML pipelines. It is designed with extensibility in mind. 
 
-This means that the goal of ZenML is to be able to work with any 
-ML tool in the eco-system seamlessly. There are multiple ways to use ZenML with other libraries.
+The Machine Learning landscape is evolving at a rapid pace. ZenML decouples the experiment workflow from the tooling by providing integrations to solutions for specific aspects of your ML pipelines. It is designed with extensibility in mind.
+
+This means that the goal of ZenML is to be able to work with any ML tool in the eco-system seamlessly. There are multiple ways to use ZenML with other libraries.
 
 ## Integrations
-ZenML uses the `extra_requires` field provided in Python [setuptools](https://setuptools.readthedocs.io/en/latest/setuptools.html) 
-which allows for defining plugin-like dependencies for integrations. These integrations can then accessed via pip at installation time 
-with the `[]` operators. E.g.
+
+ZenML uses the `extra_requires` field provided in Python [setuptools](https://setuptools.readthedocs.io/en/latest/setuptools.html) which allows for defining plugin-like dependencies for integrations. These integrations can then accessed via pip at installation time with the `[]` operators. E.g.
 
 ```bash
 pip install zenml[pytorch]
@@ -22,21 +20,20 @@ To install all dependencies, use:
 pip install zenml[all]
 ```
 
-```{warning}
+```text
 Using the [all] keyword will result in a significantly bigger package installation.
 ```
 
 In order to see the full list of integrations available, see the [setup.py on GitHub](https://github.com/maiot-io/zenml/blob/main/setup.py).
 
-We would be happy to see [your contributions for more integrations](https://github.com/maiot-io/zenml/) if the ones we have currently support 
-not fulfil your requirements. Also let us know via [slack](https://zenml.io/slack-invite) what integrations to add!
+We would be happy to see [your contributions for more integrations](https://github.com/maiot-io/zenml/) if the ones we have currently support not fulfil your requirements. Also let us know via [slack](https://zenml.io/slack-invite) what integrations to add!
 
 ## Types of integrations
-Integrations can be in the form of `backends` and `steps`. One group of integrations might bring multiple of these. 
-E.g. The `gcp` integration brings orchestrator backends, dataflow processing backend and Google Cloud AI Platform training 
-backend.
+
+Integrations can be in the form of `backends` and `steps`. One group of integrations might bring multiple of these. E.g. The `gcp` integration brings orchestrator backends, dataflow processing backend and Google Cloud AI Platform training backend.
 
 ### Orchestration
+
 When you configure an orchestration backend for your pipeline, the environment you execute actual `pipeline.run()` will launch all pipeline steps at the configured orchestration backend, not the local environment. ZenML will attempt to use credentials for the orchestration backend in question from the current environment. **NOTE:** If no further pipeline configuration if provided \(e.g. processing or training backends\), the orchestration backend will also run all pipeline steps.
 
 A quick overview of the currently supported backends:
@@ -51,7 +48,7 @@ A quick overview of the currently supported backends:
 
 Integrating custom orchestration backends is fairly straightforward. Check out our example implementation of [Google Cloud VMs](../tutorials/running-a-pipeline-on-a-google-cloud-vm.md) to learn more about building your own integrations.
 
-### (Distributed) Processing
+### \(Distributed\) Processing
 
 Sometimes, pipeline steps just need more scalability than what your orchestration backend can offer. That’s when the natively distributable codebase of ZenML can shine - it’s straightforward to run pipeline steps on processing backends like Google Dataflow or Apache Spark.
 
@@ -83,8 +80,7 @@ Some of these integrations rely on Docker containers or other methods of transmi
 
 ### Serving
 
-Every ZenML pipeline yields a servable model, ready to be used in your existing architecture - for example as additional input for your CI/CD pipelines. To accommodate other architectures, ZenML has support for a growing number of dedicated serving integrations, with clear linkage and lineage from data to deployment.
-These serving integrations come mostly in the form of `DeployerStep`'s to be used inside ZenML pipelines.
+Every ZenML pipeline yields a servable model, ready to be used in your existing architecture - for example as additional input for your CI/CD pipelines. To accommodate other architectures, ZenML has support for a growing number of dedicated serving integrations, with clear linkage and lineage from data to deployment. These serving integrations come mostly in the form of `DeployerStep`'s to be used inside ZenML pipelines.
 
 | **Backend** | **Status** |
 | :--- | :--- |
@@ -95,8 +91,8 @@ These serving integrations come mostly in the form of `DeployerStep`'s to be use
 | Azure Machine Learning | planned: Q3/2021 |
 
 ## Other libraries
-If the integrations above do not fulfill your requirements and more dependencies are required, then there is always the option to simply 
-install the dependencies alongside ZenML in your repository, and then create [custom steps](../steps/what-is-a-step.md) for your logic. 
 
-If going down this route, one must ensure that the added dependencies do not clash with any [dependency bundled with ZenML](https://github.com/maiot-io/zenml/blob/main/setup.py). 
-A good way to check is to [create a custom Docker image](../backends/using-docker.md) with the ZenML base image and then run a simple pipeline to make sure everything works.
+If the integrations above do not fulfill your requirements and more dependencies are required, then there is always the option to simply install the dependencies alongside ZenML in your repository, and then create [custom steps](../steps/what-is-a-step.md) for your logic.
+
+If going down this route, one must ensure that the added dependencies do not clash with any [dependency bundled with ZenML](https://github.com/maiot-io/zenml/blob/main/setup.py). A good way to check is to [create a custom Docker image](../backends/using-docker.md) with the ZenML base image and then run a simple pipeline to make sure everything works.
+

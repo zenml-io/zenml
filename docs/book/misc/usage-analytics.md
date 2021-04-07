@@ -6,7 +6,7 @@ To help us better understand how the community uses ZenML, the pip package repor
 zenml config analytics opt-out
 ```
 
-```{attention}
+```text
 Currently, opting in and out of analytics is a global setting applicable to all ZenML repositories within your system.
 ```
 
@@ -60,7 +60,7 @@ CREATE_REPO = "Repository created"
 INITIALIZE = "ZenML initialized"
 ```
 
- In addition, each Segment Track event collects the following metadata:
+In addition, each Segment Track event collects the following metadata:
 
 * A unique UUID that is anonymous.
 * The ZenML version.

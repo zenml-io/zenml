@@ -1,15 +1,14 @@
 # Organize ML code into ZenML
-There is a good chance as a data scientist, you might already have code lying around that you would not like to re-write just 
-to start using ZenML. The following is a step-by-step guide on how to refactor Jupyter notebook PoC model training code into a 
-production-ready ZenML pipeline.
+
+There is a good chance as a data scientist, you might already have code lying around that you would not like to re-write just to start using ZenML. The following is a step-by-step guide on how to refactor Jupyter notebook PoC model training code into a production-ready ZenML pipeline.
 
 ## Why should I do this?
-Putting machine learning models in production is hard. Going from PoC quick scripting to actually having a model 
-deployed and staying healthy is usually a long an arduous journey for any ML team. By putting your ML code in the form 
-of ZenML pipelines, that journey is cut significantly shorter and is much easier.
+
+Putting machine learning models in production is hard. Going from PoC quick scripting to actually having a model deployed and staying healthy is usually a long an arduous journey for any ML team. By putting your ML code in the form of ZenML pipelines, that journey is cut significantly shorter and is much easier.
 
 ## A familar story
-As a data scientist the following (pseudo-)code might seem familiar:
+
+As a data scientist the following \(pseudo-\)code might seem familiar:
 
 ```python
 import libraries
@@ -45,9 +44,11 @@ evaluate_model(train)
 # CELL 6: Export (i.e. pickle it)
 export_model(model)
 ```
-The above, while being handy for quick results, does not really translate well in production. 
+
+The above, while being handy for quick results, does not really translate well in production.
 
 ## Organize legacy code into production pipelines in seven easy steps
+
 ZenML allows you to take the above code, and organize it into [ZenML pipelines](../pipelines/what-is-a-pipeline.md). Heres how:
 
 ### Step 0: Create the pipeline
@@ -126,16 +127,16 @@ training_pipeline.add_deployment(
 ```
 
 ### Step 7: Run the pipeline!
+
 ```python
 training_pipeline.run()
 ```
 
 ## So what just happened?
-By refactoring all parts of the afore-mentioned Jupyter notebook into neat little steps in a ZenML pipeline, you have gone from PoC machine learning to 
-production-ready in minutes! Not only is the code, data, configuraiton and environment versioned, tracked, and catalogued for you, you can now reproduce 
-your results any time, anywhere! Feel free to run the same code on powerful machines on the cloud, distribute the preprocessing step, and deploy the model 
-straight to a cluster! This all comes for free with ZenML.
+
+By refactoring all parts of the afore-mentioned Jupyter notebook into neat little steps in a ZenML pipeline, you have gone from PoC machine learning to production-ready in minutes! Not only is the code, data, configuraiton and environment versioned, tracked, and catalogued for you, you can now reproduce your results any time, anywhere! Feel free to run the same code on powerful machines on the cloud, distribute the preprocessing step, and deploy the model straight to a cluster! This all comes for free with ZenML.
 
 ## What to do next?
-Now what would be a great time to see what ZenML has to offer with standard powerful abstractions like [Pipelines](../pipelines/what-is-a-pipeline.md), 
-[Steps](../steps/what-is-a-step.md), [Datasources](../datasources/what-is-a-datasource.md) and [Backends](../backends/what-is-a-backend.md).
+
+Now what would be a great time to see what ZenML has to offer with standard powerful abstractions like [Pipelines](../pipelines/what-is-a-pipeline.md), [Steps](../steps/what-is-a-step.md), [Datasources](../datasources/what-is-a-datasource.md) and [Backends](../backends/what-is-a-backend.md).
+

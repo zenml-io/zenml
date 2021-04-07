@@ -2,15 +2,15 @@
 
 Kubernetes is the clear winner of the "_container wars_", and widely offered across public cloud providers.
 
-ZenML offers a clean and simple way to run your pipelines on any Kubernetes cluster as Jobs. 
+ZenML offers a clean and simple way to run your pipelines on any Kubernetes cluster as Jobs.
 
 ## Overview
-Quite similar to the [GCP Orchestrator](/tutorials/running-a-pipeline-on-a-google-cloud-vm.md), the Kubernetes Orchestrator will create a snapshot of your local environment on the Artifact Store and create a Job on your specified Kubernetes Cluster.
-The Job will be using a ZenML Docker Image, load the snapshot, connect to your Metadata Store and proceed to run your pipeline.
 
-If not specified further, all steps of your pipeline will be run on your Kubernetes cluster. However, you can mix-and-match to add even more power to your pipelines. A common scenario would be Google Cloud: pipelines are using Kubernetes as the main orchestrator, and training steps rely on [Google Cloud AI Platform](../backends/training-backends.md).  
+Quite similar to the [GCP Orchestrator](https://github.com/maiot-io/zenml/tree/e395e52ab42a2bfcabffb907329bcae09674b40b/tutorials/running-a-pipeline-on-a-google-cloud-vm.md), the Kubernetes Orchestrator will create a snapshot of your local environment on the Artifact Store and create a Job on your specified Kubernetes Cluster. The Job will be using a ZenML Docker Image, load the snapshot, connect to your Metadata Store and proceed to run your pipeline.
 
-## Example: Kubernetes on GCP (GKE)
+If not specified further, all steps of your pipeline will be run on your Kubernetes cluster. However, you can mix-and-match to add even more power to your pipelines. A common scenario would be Google Cloud: pipelines are using Kubernetes as the main orchestrator, and training steps rely on [Google Cloud AI Platform](../backends/training-backends.md).
+
+## Example: Kubernetes on GCP \(GKE\)
 
 ### Prerequisites
 
@@ -20,18 +20,29 @@ If you'd like a quick pointer on how to set up Google Cloud for ZenML, simply he
 
 Before we dive deeper, let's establish some helpers for later:
 
-- Your Google Cloud Project ID:
- `export PROJECT_ID="your-projects-name"`
-- Your Google Cloud region of choice:
- `export REGION="europe-west1"`
-- Your Google Cloud SQL metadata instance name:
- `export INSTANCE_NAME="zenml-metadata"`
-- Your Google Cloud Storage artifact store bucket name:
- `export BUCKET_NAME="gs://zenml-metadata-$(date +%s)"` 
-- Your Google Cloud Kubernetes Cluster name:
- `export CLUSTER_NAME=zenml`
-- Your Google Cloud Service Account name:
- `export SERVICE_ACCOUNT_ID=zenml`
+* Your Google Cloud Project ID:
+
+  `export PROJECT_ID="your-projects-name"`
+
+* Your Google Cloud region of choice:
+
+  `export REGION="europe-west1"`
+
+* Your Google Cloud SQL metadata instance name:
+
+  `export INSTANCE_NAME="zenml-metadata"`
+
+* Your Google Cloud Storage artifact store bucket name:
+
+  `export BUCKET_NAME="gs://zenml-metadata-$(date +%s)"` 
+
+* Your Google Cloud Kubernetes Cluster name:
+
+  `export CLUSTER_NAME=zenml`
+
+* Your Google Cloud Service Account name:
+
+  `export SERVICE_ACCOUNT_ID=zenml`
 
 #### The cluster
 
@@ -64,35 +75,42 @@ gcloud container clusters get-credentials ${CLUSTER_NAME} --region ${REGION}
 
 Another important aspect of successful pipelines on Kubernetes, as already pointed out, is a functioning connection to your Metadata Store. If you stuck to our Guide so far, you have created a [Google Cloud SQL MySQL instance](https://docs.zenml.io/tutorials/team-collaboration-with-zenml-and-google-cloud.html#create-a-google-cloud-sql-mysql-instance-as-the-metadata-store). This example will be using Google's ["Cloud SQL Proxy"](https://cloud.google.com/sql/docs/mysql/sql-proxy), a pre-built Docker image exactly for a purpose like this one.
 
-#### Service account  
+#### Service account
 
 A service account is advised, to facilitate the connection of the Cloud SQL Proxy to the Metadata Store. Kubernetes has a great concept for this, called Secrets. The steps are simple:
 
 1. Create a service account: 
-```bash
-gcloud iam service-accounts create ${SERVICE_ACCOUNT_ID} \
+
+   ```bash
+   gcloud iam service-accounts create ${SERVICE_ACCOUNT_ID} \
     --description="ZenML Cloud SQL Proxy Service Account" \
     --display-name="ZenML Cloud SQL Proxy"
-```
-2. Assign the correct permissions (in our case, **Cloud SQL Admin** (`roles/cloudsql.admin`)):
-```bash
-gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+   ```
+
+2. Assign the correct permissions \(in our case, **Cloud SQL Admin** \(`roles/cloudsql.admin`\)\):
+
+   ```bash
+   gcloud projects add-iam-policy-binding ${PROJECT_ID} \
     --member="serviceAccount:${SERVICE_ACCOUNT_ID}@${PROJECT_ID}.iam.gserviceaccount.com" \
     --role="roles/cloudsql.admin"
-```
+   ```
+
 3. Creating a key file for this new service account:
-```
-gcloud iam service-accounts keys create key.json \
-  --iam-account ${SERVICE_ACCOUNT_ID}@{PROJECT_ID}.iam.gserviceaccount.com
-```
+
+   ```text
+   gcloud iam service-accounts keys create key.json \
+   --iam-account ${SERVICE_ACCOUNT_ID}@{PROJECT_ID}.iam.gserviceaccount.com
+   ```
+
 4. Create a Kubernetes Secret for this Service account:
-```bash
-kubectl create secret generic zenml-cloudsql-key --from-file=key.json=key.json
-```
+
+   ```bash
+   kubectl create secret generic zenml-cloudsql-key --from-file=key.json=key.json
+   ```
 
 #### The Kubernetes Cloud SQL Proxy service
 
-Having the secret handled, you'll want to create a so called *Service* in Kubernetes. This Service is using the aforementioned Google Cloud SQL Proxy to funnel all connections of your ZenML pipeline to your Metadata Store. For convenience, here's a partially finished YAML you can use to create this Service. 
+Having the secret handled, you'll want to create a so called _Service_ in Kubernetes. This Service is using the aforementioned Google Cloud SQL Proxy to funnel all connections of your ZenML pipeline to your Metadata Store. For convenience, here's a partially finished YAML you can use to create this Service.
 
 **NOTE:** You will have to adjust the connection string for your Google Cloud SQL Instance. Finding that connection string is easy:
 
@@ -239,25 +257,27 @@ training_pipeline.run(
     ),
     artifact_store=ArtifactStore(artifact_store_bucket)
 )
-``` 
+```
 
 ### Logs and next steps
 
 Congratulations, you've successfully launched a training pipeline on Kubernetes. In the log output you'll notice a line like this:
 
-```
+```text
 2021-01-19 15:37:55,237 — zenml.backends.orchestrator.kubernetes.orchestrator_kubernetes_backend — INFO — Created k8s Job (batch/v1): zenml-training-kubernetes-5f4b60a6-477f-435b-9b1d-cf4523873fe5
 ```
 
 Now, just having a pipeline run is no fun at all, you'll probably want to check yourself, if the Job is actually launching successfully. A quick detour into Kubernetes territory is in order.
 
 First, let's check if the job actually launches properly:
+
 ```bash
 kubectl get jobs
 ```
 
 Your output should look similar to this:
-```
+
+```text
 zenml ❯❯❯ kubectl get jobs
 NAME                                                             COMPLETIONS   DURATION   AGE
 zenml-training-kubernetes-8627c912-95b6-409f-b4c7-563573cc1218   0/1           4s         4s
@@ -267,12 +287,14 @@ zenml-training-kubernetes-c8ef3c0d-f630-4edf-9215-7a87e05136fa   1/1           4
 But, what about logs? Unfortunately, you'll have to dig a bit deeper. The way Kubernetes works, when you create a Job, that launches a so-called "Pod". The Pod does the actual computation, and therefore is the Object to reference when it comes to Logs.
 
 Therefore, you should check your cluster's Pods:
+
 ```bash
 kubectl get pods
 ```
 
 ... with an expected output similar to:
-```
+
+```text
 zenml ❯❯❯ kubectl get pods
 NAME                                                              READY   STATUS      RESTARTS   AGE
 cloudsql-7b8b59f75b-p6sl4                                         1/1     Running     0          3d23h
@@ -291,3 +313,4 @@ kubectl logs -f zenml-training-kubernetes-8627c912-95b6-409f-b4c7-563573ccmfqzh
 Notice the `-f` in there? That'll keep the command active, and new logs will keep rolling in.
 
 Obviously, all intermediate and final results will be stored on the Artifact store, and all metadata ends up in the Metadata store. If you've followed this tutorial as well as the [Tutorial on Team Collaboration on Google Cloud](https://docs.zenml.io/tutorials/team-collaboration-with-zenml-and-google-cloud.html#setting-up-google-cloud), you can now even use your local project envirnment to compare and evaluate this pipeline.
+
