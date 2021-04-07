@@ -6,7 +6,7 @@ ZenML offers a clean and simple way to run your pipelines on any Kubernetes clus
 
 ## Overview
 
-Quite similar to the [GCP Orchestrator](https://github.com/maiot-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/tutorials/running-a-pipeline-on-a-google-cloud-vm.md), the Kubernetes Orchestrator will create a snapshot of your local environment on the Artifact Store and create a Job on your specified Kubernetes Cluster. The Job will be using a ZenML Docker Image, load the snapshot, connect to your Metadata Store and proceed to run your pipeline.
+Quite similar to the [GCP Orchestrator](tutorials/running-a-pipeline-on-a-google-cloud-vm.md), the Kubernetes Orchestrator will create a snapshot of your local environment on the Artifact Store and create a Job on your specified Kubernetes Cluster. The Job will be using a ZenML Docker Image, load the snapshot, connect to your Metadata Store and proceed to run your pipeline.
 
 If not specified further, all steps of your pipeline will be run on your Kubernetes cluster. However, you can mix-and-match to add even more power to your pipelines. A common scenario would be Google Cloud: pipelines are using Kubernetes as the main orchestrator, and training steps rely on [Google Cloud AI Platform](../backends/training-backends.md).
 

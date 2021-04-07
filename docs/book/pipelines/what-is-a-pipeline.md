@@ -1,6 +1,6 @@
 # What is a pipeline?
 
-A pipeline defines a sequence of \(usually data\) processing steps. Pipelines consist of [Steps](https://github.com/maiot-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/docs/book/steps/what-is-a-step.md) and each step is an independent entity that gets input and creates output. The output can potentially feed into other steps as inputs, and that's how the order of execution is decided.
+A pipeline defines a sequence of \(usually data\) processing steps. Pipelines consist of [Steps](steps/what-is-a-step.md) and each step is an independent entity that gets input and creates output. The output can potentially feed into other steps as inputs, and that's how the order of execution is decided.
 
 Every pipeline step produces `Artifacts` that are stored in the [Artifact Store](../repository/artifact-store.md) and tracked by the [Metadata Store](../repository/metadata-store.md) associated with the pipeline. These artifacts can be fetched directly or via helper methods. E.g. The `view_statistics()` and `view_schema()` are helper methods to easily view the artifacts from interim steps in a pipeline.
 
@@ -8,7 +8,7 @@ Every pipeline has an environment in which it executes, the so called `Orchestra
 
 ## Types of pipelines
 
-In ZenML, pipelines can be `Standard` and `Custom`. In case of using the Standard pipelines, the order of the Step execution need not be defined, as these are higher-level abstractions for standard ML tasks. E.g. A [TrainingPipeline](https://github.com/maiot-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/docs/book/pipelines/training-pipeline.md) is used to run a training experiment and deploy the resulting model.
+In ZenML, pipelines can be `Standard` and `Custom`. In case of using the Standard pipelines, the order of the Step execution need not be defined, as these are higher-level abstractions for standard ML tasks. E.g. A [TrainingPipeline](pipelines/training-pipeline.md) is used to run a training experiment and deploy the resulting model.
 
 Custom pipelines however are more involved and require a more involved definition.
 
@@ -16,7 +16,7 @@ Custom pipelines however are more involved and require a more involved definitio
 
 Currently, there are three standard types of pipelines that should be used for different use-cases for ML in production.
 
-* [TrainingPipeline](https://github.com/maiot-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/docs/book/pipelines/training-pipeline.md): To train a ML model and deploy it
+* [TrainingPipeline](pipelines/training-pipeline.md): To train a ML model and deploy it
 * [DataPipeline](data.md): To create an immutable snapshot/version of a datasource.
 * [BatchInferencePipeline](batch-inference.md): To run Batch Inference with new data on a trained ML model.
 
@@ -27,7 +27,7 @@ Before creating your own pipeline, please make sure to follow the [general rules
 for extending any first-class ZenML component.
 ```
 
-ZenML is designed in a way that the starting point to use it is to [create custom `Steps`](https://github.com/maiot-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/docs/book/steps/what-is-a-step.md) and use them in the Standard Pipelines defined above. However, there will always be use-cases which do no match these opinionated general Standard pipelines, therefore one can always create custom pipelines with arbitrary Steps.
+ZenML is designed in a way that the starting point to use it is to [create custom `Steps`](steps/what-is-a-step.md) and use them in the Standard Pipelines defined above. However, there will always be use-cases which do no match these opinionated general Standard pipelines, therefore one can always create custom pipelines with arbitrary Steps.
 
 The mechanism to create a custom Pipeline will be published in more detail soon in this space. As a teaser, it will involve overriding the `BasePipeline` class. However, the details of this are currently being worked out and will be made available in future releases.
 
@@ -148,11 +148,11 @@ The config above can be split into 5 distinct keys:
   * `source`: Path to pipeline code source code.
   * `args`: Individual args of the pipeline like `name` etc.
   * `datasource`: Details of the [datasource](../datasources/what-is-a-datasource.md) used in the pipeline. 
-  * `steps:`: Details of each [step](https://github.com/maiot-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/docs/book/steps/what-is-a-step.md) used in the pipeline.
+  * `steps:`: Details of each [step](steps/what-is-a-step.md) used in the pipeline.
 
 ## Immutability and Reusing Pipeline Logic
 
-After pipelines are run, they are marked as being `immutable`. This means that the internal [Steps](https://github.com/maiot-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/docs/book/steps/what-is-a-step.md) of these pipelines can no longer be changed. However, a common pattern in Machine Learning is to re-use logical components across the entire lifecycle. And that is after all, the whole purpose of creating steps in the first place.
+After pipelines are run, they are marked as being `immutable`. This means that the internal [Steps](steps/what-is-a-step.md) of these pipelines can no longer be changed. However, a common pattern in Machine Learning is to re-use logical components across the entire lifecycle. And that is after all, the whole purpose of creating steps in the first place.
 
 In order to re-use logic from another pipeline in ZenML, it is as simple as to execute:
 
@@ -173,7 +173,7 @@ Ensuring that run pipelines are immutable is crucial to maintain reproducibility
 
 ## Caching
 
-The `copy()` paradigm also helps in _re-usability_ of code across pipelines. E.g. If now only the TrainerStep is changed in `pipeline_b` above, then the corresponding `pipeline_b` pipeline run will skip splitting, preprocessing and re-use all the artifacts already produced by `pipeline_a`. Read more about [caching here](https://github.com/maiot-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/docs/book/benefits/reusing-artifacts.md).
+The `copy()` paradigm also helps in _re-usability_ of code across pipelines. E.g. If now only the TrainerStep is changed in `pipeline_b` above, then the corresponding `pipeline_b` pipeline run will skip splitting, preprocessing and re-use all the artifacts already produced by `pipeline_a`. Read more about [caching here](benefits/reusing-artifacts.md).
 
 ## Repository functionalities
 
@@ -199,7 +199,7 @@ train_pipelines = repo.get_pipelines_by_type(type_filter=['train'])
 
 ## Relation to Tensorflow Extended \(TFX\) pipelines
 
-A ZenML pipeline in the current version is a higher-level abstraction of an opinionated [TFX pipeline](https://www.tensorflow.org/tfx). [ZenML Steps](https://github.com/maiot-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/docs/book/steps/what-is-a-step.md) are in turn higher-level abstractions of TFX components.
+A ZenML pipeline in the current version is a higher-level abstraction of an opinionated [TFX pipeline](https://www.tensorflow.org/tfx). [ZenML Steps](steps/what-is-a-step.md) are in turn higher-level abstractions of TFX components.
 
 To be clear, currently ZenML is an easier way of defining and running TFX pipelines. However, unlike TFX, ZenML treats pipelines as first-class citizens. We will elaborate more on the difference in this space, but for now if you are coming from writing your own TFX pipelines, our [quickstart](../steps/quickstart.md) illustrates the difference well.
 

@@ -109,7 +109,7 @@ training_pipeline.view_statistics()
 training_pipeline.evaluate()
 ```
 
-Of course, each of these steps can be [extended quite easily](https://github.com/maiot-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/docs/book/steps/what-is-a-step.md) to accommodate more complex scenarios and use-cases. There is a steadily-growing number of integrations available, for example, [Google Dataflow for distributed preprocessing](../backends/what-is-a-backend.md) or Google Cloud AI Platform as a \[training\(../backends/training-backends.md\) backend\].
+Of course, each of these steps can be [extended quite easily](steps/what-is-a-step.md) to accommodate more complex scenarios and use-cases. There is a steadily-growing number of integrations available, for example, [Google Dataflow for distributed preprocessing](../backends/what-is-a-backend.md) or Google Cloud AI Platform as a \[training\(../backends/training-backends.md\) backend\].
 
 ## What to do next?
 
@@ -118,7 +118,7 @@ Of course, each of these steps can be [extended quite easily](https://github.com
 * Understand deeper what makes a [ZenML Repository](../repository/what-is-a-repository.md).
 * See what ZenML has to offer with standard powerful abstractions like [Pipelines](../pipelines/what-is-a-pipeline.md), 
 
-  [Steps](https://github.com/maiot-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/docs/book/steps/what-is-a-step.md), [Datasources](../datasources/what-is-a-datasource.md) and [Backends](../backends/what-is-a-backend.md). 
+  [Steps](steps/what-is-a-step.md), [Datasources](../datasources/what-is-a-datasource.md) and [Backends](../backends/what-is-a-backend.md). 
 
   If the standard ones don't fit your needs, you can also [create custom logic](../getting-started/creating-custom-logic.md) with ZenML.
 

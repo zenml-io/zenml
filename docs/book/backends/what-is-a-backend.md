@@ -6,9 +6,9 @@ ZenML backends define `how` and `where` ZenML pipelines are run. They are broadl
 
 * [orchestrator](orchestrator-backends.md): Orchestrator backends manage the running of each step of the pipeline
 * [processing](processing-backends.md): Processing backends defines the environment in which each step executes its workload
-* [training](training-backends.md): Training backends are special and meant only for [Training Pipelines.](https://github.com/maiot-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/docs/book/pipelines/training-pipeline.md) They define the environment in which the training happens
+* [training](training-backends.md): Training backends are special and meant only for [Training Pipelines.](pipelines/training-pipeline.md) They define the environment in which the training happens
 
-By separating backends from the actual pipeline logic, ZenML achieves a [Terraform](https://www.terraform.io/)-like scalability, [extensibility](https://github.com/maiot-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/docs/book/benefits/integrations.md) and reproducibility for all its pipelines. This is achieved whilst also maintaining comparability and consistent evaluation for all pipelines.
+By separating backends from the actual pipeline logic, ZenML achieves a [Terraform](https://www.terraform.io/)-like scalability, [extensibility](benefits/integrations.md) and reproducibility for all its pipelines. This is achieved whilst also maintaining comparability and consistent evaluation for all pipelines.
 
 Backends too are split into `standard` and `custom` categories. The standard ones can be found at: `zenml.core.backends.*` .
 

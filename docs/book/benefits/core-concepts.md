@@ -9,7 +9,7 @@ ZenML consists of the following key components:
 * [Repository](../repository/what-is-a-repository.md)
 * [Datasources](../datasources/what-is-a-datasource.md) 
 * [Pipelines](../pipelines/what-is-a-pipeline.md)
-* [Steps](https://github.com/maiot-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/docs/book/steps/what-is-a-step.md)
+* [Steps](steps/what-is-a-step.md)
 * [Backends](../backends/what-is-a-backend.md)
 * [Pipelines Directory](../repository/pipeline-directory.md)
 * [Artifact store](../repository/artifact-store.md)
@@ -55,7 +55,7 @@ BaseTrainerStep
 
 Each layer defines its own special interface that are essentially placeholder functions to override. So, someone looking to create a custom trainer step should sub-class the appropriate class based on the users requirements.
 
-Read more about steps [here](https://github.com/maiot-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/docs/book/steps/what-is-a-step.md).
+Read more about steps [here](steps/what-is-a-step.md).
 
 ### Backends
 
@@ -125,5 +125,5 @@ In different words, ZenML runs your **ML** code while taking care of the "**Op**
 * Ensuring immutability of your pipelines from data sourcing to model artifacts.
 * No matter where - Cloud, On-Premise, or locally.
 
-Since production scenarios often look complex, ZenML is built with integrations in mind. ZenML supports an ever-growing [range of integrations](https://github.com/maiot-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/docs/book/benefits/integrations.md) for processing, training, and serving, and you can always add custom integrations via our extensible interfaces.
+Since production scenarios often look complex, ZenML is built with integrations in mind. ZenML supports an ever-growing [range of integrations](benefits/integrations.md) for processing, training, and serving, and you can always add custom integrations via our extensible interfaces.
 

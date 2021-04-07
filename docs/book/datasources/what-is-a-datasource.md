@@ -38,7 +38,7 @@ All custom datasources must extend from the base class: `zenml.core.datasources.
 
 All datasources are have class variable called `DATA_STEP` . This variable defines a custom `BaseDataStep` class that binds the logic of the initialization of the datasource with the logic of actually reading and creating a version of the data itself. Therefore, every datasource has a data step.
 
-A `DATA_STEP` is like any other [Step](https://github.com/maiot-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/docs/book/steps/what-is-a-step.md), however every DATA\_STEP must inherit from the `BaseDataStep` class that defines a simple interface to create a Beam Pipeline that actually does the reading and versioning of the data. This interface is simply one function:
+A `DATA_STEP` is like any other [Step](steps/what-is-a-step.md), however every DATA\_STEP must inherit from the `BaseDataStep` class that defines a simple interface to create a Beam Pipeline that actually does the reading and versioning of the data. This interface is simply one function:
 
 ```python
 def read_from_source():

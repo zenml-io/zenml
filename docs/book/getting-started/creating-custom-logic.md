@@ -6,7 +6,7 @@ All components of ZenML are split into two categories: The `Standard` components
 
 Custom logic can be added to ZenML by extending the following standard components:
 
-* [Steps](https://github.com/maiot-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/docs/book/steps/what-is-a-step.md)
+* [Steps](steps/what-is-a-step.md)
 * [Datasources](../datasources/what-is-a-datasource.md)
 * [Pipelines](../pipelines/what-is-a-pipeline.md)
 * [Backends](../backends/what-is-a-backend.md)
