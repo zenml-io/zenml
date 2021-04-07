@@ -1,6 +1,6 @@
 # Installation
 
-TL;DR: Do `pip install zenml` to install
+TL;DR: Do `pip install zenml` to install.
 
 ## Welcome
 
