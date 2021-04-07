@@ -55,7 +55,7 @@ pipeline_b.add_trainer(...)  # change trainer step
 pipeline_b.run()
 ```
 
-In the above example, if there is a shared Metadata and Artifact Store, all steps preceding the TrainerStep in the pipeline will be [cached](benefits/reusing-artifacts.md) and re-used in Pipeline B. This way the entire team is benefiting from each other's work implicitly, and can see each other's results and progress as it evolves.
+In the above example, if there is a shared Metadata and Artifact Store, all steps preceding the TrainerStep in the pipeline will be [cached](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/repository/benefits/reusing-artifacts.md) and re-used in Pipeline B. This way the entire team is benefiting from each other's work implicitly, and can see each other's results and progress as it evolves.
 
 ## How to set it up
 

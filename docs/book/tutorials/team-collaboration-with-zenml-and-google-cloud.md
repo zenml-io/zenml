@@ -39,7 +39,7 @@ When working with the Google Cloud SDK CLI, `gcloud`, exporting a few helper var
 
 * Your Google Cloud Storage artifact store bucket name:
 
-  `export BUCKET_NAME="gs://zenml-metadata-$(date +%s)"` 
+  `export BUCKET_NAME="gs://zenml-metadata-$(date +%s)"`
 
   **NOTE:** The bucket name in this example features an epoch timestamp to ensure uniqueness.
 
@@ -67,7 +67,7 @@ For this example, we're gonna use a small and simple MySQL instance \(`db-n1-sta
 
 ### 2. Create a Google Cloud Storage bucket as the artifact store
 
-Google Cloud Storage is one of the natively support artifact stores for ZenML. All pipeline artifacts will be persisted in this bucket, and enable cool features like [caching](benefits/reusing-artifacts.md) across environments, the ability to evaluate and compare pipelines that were executed on different machines, and many others.
+Google Cloud Storage is one of the natively support artifact stores for ZenML. All pipeline artifacts will be persisted in this bucket, and enable cool features like [caching](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/tutorials/benefits/reusing-artifacts.md) across environments, the ability to evaluate and compare pipelines that were executed on different machines, and many others.
 
 **NOTE:** You do not need to use the name we chose \(`zenml-metadata`\) - feel free to pick your own.
 

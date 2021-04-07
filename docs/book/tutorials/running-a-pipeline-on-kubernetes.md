@@ -6,7 +6,7 @@ ZenML offers a clean and simple way to run your pipelines on any Kubernetes clus
 
 ## Overview
 
-Quite similar to the [GCP Orchestrator](tutorials/running-a-pipeline-on-a-google-cloud-vm.md), the Kubernetes Orchestrator will create a snapshot of your local environment on the Artifact Store and create a Job on your specified Kubernetes Cluster. The Job will be using a ZenML Docker Image, load the snapshot, connect to your Metadata Store and proceed to run your pipeline.
+Quite similar to the [GCP Orchestrator](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/tutorials/tutorials/running-a-pipeline-on-a-google-cloud-vm.md), the Kubernetes Orchestrator will create a snapshot of your local environment on the Artifact Store and create a Job on your specified Kubernetes Cluster. The Job will be using a ZenML Docker Image, load the snapshot, connect to your Metadata Store and proceed to run your pipeline.
 
 If not specified further, all steps of your pipeline will be run on your Kubernetes cluster. However, you can mix-and-match to add even more power to your pipelines. A common scenario would be Google Cloud: pipelines are using Kubernetes as the main orchestrator, and training steps rely on [Google Cloud AI Platform](../backends/training-backends.md).
 
@@ -34,7 +34,7 @@ Before we dive deeper, let's establish some helpers for later:
 
 * Your Google Cloud Storage artifact store bucket name:
 
-  `export BUCKET_NAME="gs://zenml-metadata-$(date +%s)"` 
+  `export BUCKET_NAME="gs://zenml-metadata-$(date +%s)"`
 
 * Your Google Cloud Kubernetes Cluster name:
 
@@ -79,7 +79,7 @@ Another important aspect of successful pipelines on Kubernetes, as already point
 
 A service account is advised, to facilitate the connection of the Cloud SQL Proxy to the Metadata Store. Kubernetes has a great concept for this, called Secrets. The steps are simple:
 
-1. Create a service account: 
+1. Create a service account:
 
    ```bash
    gcloud iam service-accounts create ${SERVICE_ACCOUNT_ID} \

@@ -6,7 +6,7 @@ All components of ZenML are split into two categories: The `Standard` components
 
 Custom logic can be added to ZenML by extending the following standard components:
 
-* [Steps](steps/what-is-a-step.md)
+* [Steps](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/getting-started/steps/what-is-a-step.md)
 * [Datasources](../datasources/what-is-a-datasource.md)
 * [Pipelines](../pipelines/what-is-a-pipeline.md)
 * [Backends](../backends/what-is-a-backend.md)
@@ -17,7 +17,7 @@ Each component has its own section in the docs and its own rules of precisely ho
 
 While each component has its own rules, there are some rules that are general when adding your own custom logic:
 
-* All components have `Base` classes, e.g., `BaseDatasource`, `BasePipeline`, `BaseStep` etc that need to be inherited from 
+* All components have `Base` classes, e.g., `BaseDatasource`, `BasePipeline`, `BaseStep` etc that need to be inherited from
 
   in order create your own custom logic.
 

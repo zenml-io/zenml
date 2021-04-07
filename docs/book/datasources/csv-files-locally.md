@@ -12,5 +12,5 @@ from zenml.datasources import CSVDatasource
 ds = CSVDatasource(name=f'Name', path='gs://path/to/csv')
 ```
 
-As CSVs are frequently used you'll find our [quickstart](datasources/getting-started/quickstart.md) using the `CSVDatasource`.
+As CSVs are frequently used you'll find our [quickstart](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/datasources/datasources/getting-started/quickstart.md) using the `CSVDatasource`.
 

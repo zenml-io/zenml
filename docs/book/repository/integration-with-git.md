@@ -1,131 +1,49 @@
 # Integration with Git
 
-## Versioning custom code
+**ZenML** is an extensible, open-source MLOps framework for using production-ready Machine Learning pipelines - in a simple way. At its core, ZenML will orchestrate your experiment pipelines from **sourcing data** to **splitting, preprocessing, training**, all the way to the **evaluation of results** and even **serving**.
 
-We are not looking to reinvent the wheel, and we're not trying to interfere too much with established workflows. When it comes to versioning of code, that means a solid integration into Git.
+While there are other pipelining solutions for Machine Learning experiments, ZenML is focussed on two unique approaches:
 
-In short: ZenML **optionally** uses Git SHAs to resolve your version-pinned pipeline code.
+* [Reproducibility](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/benefits/ensuring-ml-reproducibility.md). 
+* [Integrations](integration-with-git.md).
 
-When you [add custom code](../getting-started/creating-custom-logic.md) to ZenML, you have the ability to specify a specific Git SHA for your code. ZenML ties into your local Git history and will automatically try to resolve the SHA into usable code. Every pipeline configuration will persist the combination of the class used, and the related SHA in the [pipeline config](../pipelines/what-is-a-pipeline.md).
+## Why do I need ZenML?
 
-```text
-The format used is: `class@git_sha`, where:
+ZenML solves the problem of getting Machine Learning in models. You should use ZenML if you struggle with:
 
-* **class**: a fully-qualified python import path of a ZenML-compatible class, e.g. `my_module.my_class.MyClassName`
-* **git_sha** (optional): a 40-digit string representing the commit git sha at which the class exists
-```
+* **Reproducing** training results in production.
+* Managing ML **metadata**, including data, code, and model versioning.
+* Getting \(and keeping\) ML models in **production**.
+* **Reusing** code/data and reducing waste.
+* Maintaining **comparability** between ML models.
+* **Scaling ML** training/inference to large datasets.
+* Retaining code **quality** alongside development velocity.
+* Keeping up with the ML **tooling landscape** in a coherent manner.
 
-You can, of course, run your code as-is and maintain version control via your own logic and your own automation. This is why the `git_sha` above is optional: If you run a pipeline where the `class` is not committed \(i.e. unstaged or staged but not committed\), then no `git_sha` is added to the config. In this case, each time the pipeline is run or loaded the `class` is loaded **as is** from the `class` path, directly from the working tree's current state.
+## Awesome things you can do with ZenML
 
-```text
-While it is faster to just keep running pipelines with un-pinned classes, each un-pinned class adds a technical debt to the ZenML repository. This is because there are no 
-guarantees of reproducibility once a pipeline has a class that is un-pinned. We strongly advise to always commit all code before running pipelines.
-```
+* Reproduce experiments at any time, on any environment. \[[here's how](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/benefits/ensuring-ml-reproducibility.md)\].
+* Automatically track all parameters when creating ML experiments. \[[here's how](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/tutorials/creating-first-pipeline.ipynb)\].
+* Collaborate with your team using a git repo, re-use code, share results and compare experiments. \[[here's how](../tutorials/team-collaboration-with-zenml-and-google-cloud.md)\].
+* No-hassle preprocessing and training on big VM's on the, for 1/4th the price. \[[here's how](../tutorials/running-a-pipeline-on-a-google-cloud-vm.md)\].
+* Distribute preprocessing on hundreds of workers for millions of datapoints. \[[here's how](../tutorials/building-a-classifier-on-33m-samples.md)\].
+* Launching training jobs on GPUs on the cloud with a simple command. \[[here's how](https://github.com/maiot-io/zenml/tree/main/examples/gcp_gpu_training)\].
+* No-hassle evaluation of models with slicing metrics. \[[here's how](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/tutorials/creating-first-pipeline.ipynb)\]. 
+* Instantly deploy a model to the cloud. \[[here's how](https://github.com/maiot-io/zenml/tree/main/examples/gcp_gcaip_deployment)\].
+* De-couple infrastructure from ML code. \[[here's how](../backends/what-is-a-backend.md)\].
 
-### Versioning built-in methods
+## What do I do next?
 
-Since ZenML comes with a lot of batteries included, and as ZenML is undergoing rapid development, we're providing a way to version built-in methods, too.
+If one of the above links are too hands-on, then a good place to go from this point is:
 
-Specifying the version of a built-in method will be persisted in the pipeline config as `step.path@zenml_0.1.0`. E.g. `zenml.steps.data.bq_data_step.BQDataStep@zenml_0.1.4`
+* Get up and running with your first pipeline [with the Quickstart](../getting-started/quickstart.md).
+* Read more about [core concepts](../getting-started/core-concepts.md) to inform your decision about using ZenML.
+* Check out how to [convert your old ML code](../getting-started/organizing-zenml.md) into ZenML pipelines, or start from scratch with our [tutorials](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/tutorials/creating-first-pipeline.ipynb)
+* If you are working as a team, see how to [collaborate using ZenML in a team setting](team-collaboration-with-zenml.md).
 
-## Under the hood
+## Get involved
 
-When running a version-pinned piece of code, ZenML loads all SHA-pinned classes from your git history into memory. This is done via an - immediately reversed - in-memory checkout of the specified SHA.
+If you're just not ready to use ZenML for whatever reason, but still would like to stay updated, then the best way is to [star the GitHub repository](https://github.com/maiot-io/zenml)! You can then keep up with the latest going-on's of ZenML, and it would help us tremendously to get more people using it.
 
-### Safe-guards with in-memory loading
-
-In order to ensure this is not a destructive operation, ZenML does not allow the in-memory checkout if any of the files in the module folder where the `class` resides is un-committed. E.g. Attempting to load `my_module.step.MyStepClass@sha1` will fail if the `my_module.step` has any uncommitted files.
-
-### Organizing code
-
-It is important to understand that when a pipeline is run, all custom classes used, whether they be `Steps`, `Datasources`, or `Backends` under-go a so-called `git-resolution` process. This means that wherever there is a custom class referenced in a Pipeline, all files within the module are checked to see if they are committed or not. If they are committed, then the class is successfully pinned with the relevant sha. If they are not, then a warning is thrown but the class is not pinned in the corresponding config. Therefore, it is important to consider not only the file where custom logic resides, but the entire module. This is also the reason that `upwards` relative imports are not permitted within these class files.
-
-We recommend that users [follow our recommendation](../steps/organizing-zenml.md)to structure their ZenML repositories, to avoid any potential Git-related issues.
-
-### A concrete example
-
-Let's say we created a custom TrainerStep like and placed it in our ZenML repository here:
-
-```text
-repository
-│   requirements.txt
-│   pipeline_run.py
-│
-└───trainers
-    │   __init__.py
-    |
-    └───my_awesome_trainer
-        │   my_trainer_step.py
-        |   __init__.py
-```
-
-where the contents of `my_trainer_step.py` are:
-
-```python
-from zenml.steps.trainer import BaseTrainerStep
-
-
-class MyAwesomeTrainer(BaseTrainerStep):
-    def run_fn(self, *args, **kwargs):
-        a = 1
-        # create a great trainer here.
-```
-
-If we commit everything and then run a pipeline like so:
-
-```python
-from zenml.pipelines import TrainingPipeline
-from trainers.my_awesome_trainer.my_trainer_step import MyAwesomeTrainer
-
-training_pipeline = TrainingPipeline(name='My Awesome Pipeline')
-
-# Fill in other steps
-
-# Add a trainer
-training_pipeline.add_trainer(MyAwesomeTrainer(
-    loss='binary_crossentropy',
-    last_activation='sigmoid',
-    output_units=1,
-    metrics=['accuracy'],
-    epochs=20))
-
-training_pipeline.run()
-```
-
-Then the corresponding pipeline YAML may look like:
-
-```yaml
-version: '1'
-
-datasource:
-  ...
-
-environment:
-  ...
-
-steps:
-  training:
-    args: {}
-    source: trainers.my_awesome_trainer.my_trainer_step.MyAwesomeTrainer@e9448e0abbc6f03252578ca877bc80c94f137edd
-  ...
-```
-
-Notice the `source` key is tagged with the full path to trainer class and the sha `e9448e0abbc6f03252578ca877bc80c94f137edd`. If we ever load this pipeline or step using e.g. `repo.get_pipeline_by_name()` then the following would happen:
-
-```text
-We change `e9448e0abbc6f03252578ca877bc80c94f137edd` to `e9448e0a` for readability purposes.
-```
-
-* All files within the directory `trainers/my_awesome_trainer/` would be checked to see if committed or not. Only if all files are committed properly would 
-
-  ZenML allow for loading the pipeline.
-
-* The directory `repository/trainers/my_awesome_trainer/` would be checked out to sha `e9448e0a`. This is achieved by executing 
-
-  `git checkout e9448e0a -- trainers/my_awesome_trainer/`
-
-* The module is loaded using the standard Python `importlib` library.
-* The git checkout is reverted.
-
-This way, all ZenML custom classes can be used in different environments, and reproducibility is ensured.
+Contributions are also welcome! Please read out [contributing guide](https://github.com/maiot-io/zenml/blob/main/CONTRIBUTING.md) to get started.
 
