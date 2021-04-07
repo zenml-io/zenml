@@ -1,5 +1,4 @@
 # Google BigQuery
-
 Connect public and private Google BigQuery tables.
 
 Please refer to docstring at `BigQueryDatasource` for details.
@@ -19,6 +18,8 @@ ds = BigQueryDatasource(
 )
 ```
 
+
+
 ## Supported data types
 
 | BigQuery Data Type | Supported |
@@ -35,5 +36,6 @@ ds = BigQueryDatasource(
 | BYTES | NO |
 | GEOGRAPHY | NO |
 
-If you would like ZenMl to support more data types, then ping us on our [Slack](https://zenml.io/slack-invite) or [create an issue on GitHub](https://https://github.com/maiot-io/zenml) so that we know about it!
+If you would like ZenMl to support more data types, then ping us on our [Slack](https://zenml.io/slack-invite) or [create an issue on GitHub](https://https://github.com/maiot-io/zenml) 
+so that we know about it!
 

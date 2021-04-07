@@ -1,5 +1,4 @@
 # Installation
-
 TL;DR: Do `pip install zenml` to install.'
 
 ## Welcome
@@ -20,8 +19,8 @@ When you're set with your environment, run:
 pip install zenml
 ```
 
-```text
-`ZenML` requires &gt;= Python 3.6 and &lt; Python 3.9.0
+```{warning}
+`ZenML` requires &gt;= Python 3.6 and &lt; Python 3.9.0 
 ```
 
 Alternatively, if you’re feeling brave, feel free to install the bleeding edge: **NOTE:** Do so on your own risk, no guarantees given!
@@ -31,15 +30,14 @@ pip install git+https://github.com/maiot-io/zenml.git@main --upgrade
 ```
 
 ## Integrations
-
-The ZenML base package does not come up with all integrations pre-installed. Read more [here](../benefits/integrations.md). To install an integration, use the pattern:
+The ZenML base package does not come up with all integrations pre-installed. Read more [here](../benefits/integrations.md).
+To install an integration, use the pattern:
 
 ```bash
 pip install zenml[INTEGRATION]
 ```
 
 e.g.
-
 ```bash
 pip install zenml[pytorch]
 ```
@@ -49,14 +47,12 @@ Use the keyword `all` in the square brackets if you would like to install all in
 Once the installation is completed, you can check whether the installation was successful through:
 
 ### Bash
-
 ```bash
 zenml version
 ```
 
 ### Python
-
-```text
+```
 import zenml
 print(zenml.utils.version.__version__)
 ```
@@ -92,9 +88,8 @@ jupyter nbextension install --py --symlink tensorflow_model_analysis
 jupyter nbextension enable --py tensorflow_model_analysis
 ```
 
-```text
+```{warning}
 If you encounter a `File already exists in database error` error after the first command, this is most likely due to a [known bug](https://stackoverflow.com/questions/59165505/file-already-exists-in-database-error-from-protobuf-when-deploying-google-datafl) with one of our dependencies, namely [PyArrow](https://pypi.org/project/pyarrow/). Unfortunately, this will cause some features to not work on your machine \(namely pipeline evaluate and compare\).
 
 We are aware of this issue and are working hard to fix it. A future release of `zenml` will fix this issue.
 ```
-

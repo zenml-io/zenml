@@ -8,11 +8,11 @@ ZenML is an extensible, open-source MLOps framework for creating production-read
 
 If you'd like to develop on and build the ZenML Docs, you should:
 
-* Clone this repository and run
-* Run `pip install -r requirements.txt` \(it is recommended you do this within a virtual environment\)
-* `cd docs`
-* \(Recommended\) Remove the existing `book/_build/` directory
-* Run `jupyter-book build book/`
+- Clone this repository and run
+- Run `pip install -r requirements.txt` (it is recommended you do this within a virtual environment)
+- `cd docs`
+- (Recommended) Remove the existing `book/_build/` directory
+- Run `jupyter-book build book/`
 
 A fully-rendered HTML version of the docs will be built in `book/_build/html/`.
 
@@ -22,8 +22,8 @@ The html version of the docs is hosted on the `gh-pages` branch of this repo. A 
 
 If you wish to disable this automation, you may remove the GitHub actions workflow and build the book manually by:
 
-* Navigating to your local build; and running,
-* `ghp-import -n -p -f book/_build/html`
+- Navigating to your local build; and running,
+- `ghp-import -n -p -f book/_build/html`
 
 This will automatically push your build to the `gh-pages` branch. More information on this hosting process can be found [here](https://book.org/publish/gh-pages.html#manually-host-your-book-with-github-pages).
 
@@ -34,4 +34,3 @@ We welcome and recognize all contributions. You can see a list of current contri
 ## Credits
 
 This project is created using the excellent open source [Jupyter Book project](https://book.org/) and the [executablebooks/cookiecutter-jupyter-book template](https://github.com/executablebooks/cookiecutter-jupyter-book).
-

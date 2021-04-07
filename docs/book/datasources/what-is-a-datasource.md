@@ -5,7 +5,6 @@ Datasources come in all shapes and sizes. Even though most of the small projects
 That is exactly the point where ZenML comes into play with the concept of versioning datasources. When you create a datasource and add to a pipeline, ZenML creates a snapshot of your datasource and stores it. This way, you can collaborate with your teammates on the same version of your datasource and you end up with traceable and repeatable experiments even on dynamically changing datasources.
 
 ## Repository functionalities
-
 You can get all your datasources using the [Repository](../repository/what-is-a-repository.md) class:
 
 ```python
@@ -27,16 +26,16 @@ print(datasource.sample_data())
 
 ## Create your own datasource
 
-```text
+```{warning}
 Before creating your own datasource, please make sure to follow the [general rules](../getting-started/creating-custom-logic.md)
 for extending any first-class ZenML component.
 ```
 
-If the standard datasources do not meet your needs, or your require custom logic while versioning the datasource, you can create custom datasources.
+If the standard datasources do not meet your needs, or your require custom logic while versioning the datasource, you can create custom datasources. 
 
 All custom datasources must extend from the base class: `zenml.core.datasources.base_datasource.BaseDatasource.`
 
-All datasources are have class variable called `DATA_STEP` . This variable defines a custom `BaseDataStep` class that binds the logic of the initialization of the datasource with the logic of actually reading and creating a version of the data itself. Therefore, every datasource has a data step.
+All datasources are have class variable called `DATA_STEP` . This variable defines a custom `BaseDataStep` class that binds the logic of the initialization of the datasource with the logic of actually reading and creating a version of the data itself. Therefore, every datasource has a data step. 
 
 A `DATA_STEP` is like any other [Step](../steps/what-is-a-step.md), however every DATA\_STEP must inherit from the `BaseDataStep` class that defines a simple interface to create a Beam Pipeline that actually does the reading and versioning of the data. This interface is simply one function:
 

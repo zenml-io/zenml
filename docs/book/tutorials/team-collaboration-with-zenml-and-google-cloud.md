@@ -12,40 +12,30 @@ To achieve this, we will use Google Cloud SQL as the centralized metadata store 
 
 This guide assumes you have access to a Google Cloud account and the Google Cloud SDK installed on all team members' machines.
 
-#### **Suggested roles:**
+#### ****Suggested roles:****
 
-* **Cloud SQL Admin** \(`roles/cloudsql.admin`\) You will need to create a Cloud SQL MySQL instance.
-* **Storage Admin** \(`roles/storage.admin`\) You will need to create a bucket.
+- **Cloud SQL Admin** (`roles/cloudsql.admin`) You will need to create a Cloud SQL MySQL instance.
+- **Storage Admin** (`roles/storage.admin`) You will need to create a bucket.
 
 #### **Helper variables**
 
-When working with the Google Cloud SDK CLI, `gcloud`, exporting a few helper variables can make life a bit easier:
+When working with the Google Cloud SDK CLI, `gcloud`, exporting a few helper variables can make life a bit easier:
 
-* Your Google Cloud Project ID:
-
-  `export PROJECT_ID="your-projects-name"`
-
-* Your Google Cloud IAM user:
-
-  `export IAM_USER="your@user.id`
-
-* Your Google Cloud region of choice:
-
-  `export REGION="europe-west1"`
-
-* Your Google Cloud SQL metadata instance name:
-
-  `export INSTANCE_NAME="zenml-metadata"`
-
-* Your Google Cloud Storage artifact store bucket name:
-
-  `export BUCKET_NAME="gs://zenml-metadata-$(date +%s)"` 
-
-  **NOTE:** The bucket name in this example features an epoch timestamp to ensure uniqueness.
+- Your Google Cloud Project ID:
+ `export PROJECT_ID="your-projects-name"`
+- Your Google Cloud IAM user:
+ `export IAM_USER="your@user.id`
+- Your Google Cloud region of choice:
+ `export REGION="europe-west1"`
+- Your Google Cloud SQL metadata instance name:
+ `export INSTANCE_NAME="zenml-metadata"`
+- Your Google Cloud Storage artifact store bucket name:
+ `export BUCKET_NAME="gs://zenml-metadata-$(date +%s)"` 
+**NOTE:** The bucket name in this example features an epoch timestamp to ensure uniqueness.
 
 #### **Check your own permissions**
 
-Before we begin, you can make sure your Google Cloud User has at least the required permissions for this tutorial:
+Before we begin, you can make sure your Google Cloud User has at least the required permissions for this tutorial:
 
 ```bash
 gcloud projects get-iam-policy ${PROJECT_ID} \
@@ -55,9 +45,9 @@ gcloud projects get-iam-policy ${PROJECT_ID} \
 
 ### 1. Create a Google Cloud SQL MySQL instance as the metadata store
 
-For this example, we're gonna use a small and simple MySQL instance \(`db-n1-standard-1`\) on Google Cloud SQL, without any bells and whistles. Your individual use-case might vary - [feel free to extend your own approach](https://cloud.google.com/sql/docs/mysql/create-instance#gcloud), any MySQL instance will be suitable.‌
+For this example, we're gonna use a small and simple MySQL instance (`db-n1-standard-1`) on Google Cloud SQL, without any bells and whistles. Your individual use-case might vary - [feel free to extend your own approach](https://cloud.google.com/sql/docs/mysql/create-instance#gcloud), any MySQL instance will be suitable.‌
 
-**NOTE:** You do not need to use the name we chose \(`zenml-metadata`\) - feel free to pick your own.
+**NOTE:** You do not need to use the name we chose (`zenml-metadata`) - feel free to pick your own.
 
 ```bash
  gcloud sql instances create ${INSTANCE_NAME} \
@@ -69,7 +59,7 @@ For this example, we're gonna use a small and simple MySQL instance \(`db-n1-sta
 
 Google Cloud Storage is one of the natively support artifact stores for ZenML. All pipeline artifacts will be persisted in this bucket, and enable cool features like [caching](../benefits/reusing-artifacts.md) across environments, the ability to evaluate and compare pipelines that were executed on different machines, and many others.
 
-**NOTE:** You do not need to use the name we chose \(`zenml-metadata`\) - feel free to pick your own.
+**NOTE:** You do not need to use the name we chose (`zenml-metadata`) - feel free to pick your own.
 
 ```bash
   gsutil mb -p ${PROJECT_ID} \
@@ -86,8 +76,8 @@ Now it's time to make sure, all team members can access both the storage bucket 
 
 The recommended roles for your team members are:
 
-* **Cloud SQL Client** \(`roles/cloudsql.client`\) Team members need to be able to connect to Google Cloud SQL MySQL instances.
-* **Storage Admin** \(`roles/storage.admin`\) Team members need to be able to view buckets, view objects, and create objects.
+- **Cloud SQL Client** (`roles/cloudsql.client`) Team members need to be able to connect to Google Cloud SQL MySQL instances.
+- **Storage Admin** (`roles/storage.admin`) Team members need to be able to view buckets, view objects, and create objects.
 
 ## Configuring ZenML
 
@@ -95,7 +85,7 @@ After successfully setting up a Google Cloud SQL instance for your metadata trac
 
 ### 0. Initialize ZenML
 
-As a precursor, this tutorial assumes you have successfully initialized ZenML in a project of yours. As a reminder, initializing is as easy running the following command in a `git`-backed folder:
+As a precursor, this tutorial assumes you have successfully initialized ZenML in a project of yours. As a reminder, initializing is as easy running the following command in a `git`-backed folder:
 
 ```bash
 zenml init
@@ -103,7 +93,7 @@ zenml init
 
 ### 1. Connect your environment to the metadata store on Google Cloud SQL
 
-In order to successfully connect an environment to the Google Cloud SQL instance we plan on using as metadata store, it's recommended to use the Google Cloud SQL Proxy. This tutorial is going to use a Docker-based approach, but feel free to [use other ways, if more convenient or relevant to your use-case](https://cloud.google.com/sql/docs/mysql/connect-overview).
+In order to successfully connect an environment to the Google Cloud SQL instance we plan on using as metadata store, it's recommended to use the Google Cloud SQL Proxy. This tutorial is going to use a Docker-based approach, but feel free to [use other ways, if more convenient or relevant to your use-case](https://cloud.google.com/sql/docs/mysql/connect-overview).
 
 ```bash
 docker run -d \
@@ -112,11 +102,12 @@ docker run -d \
   gcr.io/cloudsql-docker/gce-proxy:1.19.1 /cloud_sql_proxy \
   -instances=$(gcloud sql instances describe ${INSTANCE_NAME} --flatten="connectionName" | grep -v '^-')=tcp:0.0.0.0:3306 \
   -token=${TOKEN}
+
 ```
 
 This will launch a docker container acting as a secure proxy to your metadata MySQL instance in Google Cloud. It's using token-based authentication, so no permanent credentials need to be maintained.
 
-Your metadata MySQL instance will be accessible on `127.0.0.1` via port `3306` .
+Your metadata MySQL instance will be accessible on `127.0.0.1` via port `3306` .
 
 ### 2. Configure the metadata and artifact store
 
@@ -147,5 +138,4 @@ zenml config artifacts set ${BUCKET_NAME}
 
 ### 3. Repeat for team members
 
-To get everyone on board, simply repeat the configuration steps 0, 1, and 2 for all team members. Make sure the Google Cloud User permissions are in line with our recommended roles, as missing permissions can be a common point of failure.
-
+To get everyone on board, simply repeat the configuration steps 0, 1, and 2 for all team members. Make sure the Google Cloud User permissions are in line with our recommended roles, as missing permissions can be a common point of failure.
