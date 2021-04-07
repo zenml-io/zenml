@@ -28,6 +28,7 @@ zenml config metadata set mysql \
 
 One particular configuration our team is very fond of internally leverages Google Cloud SQL and the docker-based cloudsql proxy to track experiments across team members and environments. Stay tuned for a tutorial on that!
 
-```{hint}
-ZenML relies on Google's [MLMetadata](https://github.com/google/ml-metadata) to track input parameters across your pipelines. 
+```text
+ZenML relies on Google's [MLMetadata](https://github.com/google/ml-metadata) to track input parameters across your pipelines.
 ```
+

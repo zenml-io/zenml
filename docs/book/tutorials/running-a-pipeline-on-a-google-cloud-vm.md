@@ -1,12 +1,8 @@
-# Running a training pipeline on a Google Cloud VM
+# Running a pipeline on Google Cloud VM
 
-Not all experiments are best-suited to local execution. Sometimes, you just need that additional power of a dedicated VM in the cloud - or just the ability to close your laptop and walk off, while the experiment continues to run.
-ZenML, with it's strong focus on integrations, provides a convenient way to achieve this with the built-in Google Cloud VM orchestration.
+Not all experiments are best-suited to local execution. Sometimes, you just need that additional power of a dedicated VM in the cloud - or just the ability to close your laptop and walk off, while the experiment continues to run. ZenML, with it's strong focus on integrations, provides a convenient way to achieve this with the built-in Google Cloud VM orchestration.
 
-An added plus to this integration is the ability to use [preemptible](https://cloud.google.com/compute/docs/instances/preemptible) instances, 
-which is a type of instance on GCP that you can create and run at a much lower price than normal instances. Usually, preemptible 
-instances come with a big disadvantage of being shut down at any point within 24 hours by GCP. However, most ZenML pipelines are done 
-well before that.
+An added plus to this integration is the ability to use [preemptible](https://cloud.google.com/compute/docs/instances/preemptible) instances, which is a type of instance on GCP that you can create and run at a much lower price than normal instances. Usually, preemptible instances come with a big disadvantage of being shut down at any point within 24 hours by GCP. However, most ZenML pipelines are done well before that.
 
 To directly see the code, head over to [GitHub](https://github.com/maiot-io/zenml/tree/main/examples/gcp_orchestrated). Otherwise, follow along here.
 
@@ -25,7 +21,7 @@ Running workloads on Google Cloud is simple to set up. Only a few requirements n
 
 ## Getting started
 
-This tutorial picks up where [the quickstart ends.](../getting-started/quickstart.md) Nevertheless, I'll walk you through a full pipeline, just to make sure nothing breaks at an unforseen stage. Feel free to [skip ahead](running-a-pipeline-on-a-google-cloud-vm.md#configure-the-orchestrator-backend) if you're already familiar with ZenML pipelines.
+This tutorial picks up where [the quickstart ends.](../steps/quickstart.md) Nevertheless, I'll walk you through a full pipeline, just to make sure nothing breaks at an unforseen stage. Feel free to [skip ahead](running-a-pipeline-on-a-google-cloud-vm.md#configure-the-orchestrator-backend) if you're already familiar with ZenML pipelines.
 
 ### Required imports
 
@@ -127,7 +123,6 @@ training_pipeline.run(
     ),
     artifact_store=ArtifactStore(artifact_store)
 )
-
 ```
 
 **Congratulation** - you've just launched a training pipeline on a Google Cloud VM. If that was your goal, you can stop here. For those who would like to dig a bit deeper, keep reading!
@@ -156,17 +151,15 @@ Every ZenML [`Pipeline`](../pipelines/what-is-a-pipeline.md) has a `run` method 
 * `preemptible`: Whether the VM is [preemptible](https://cloud.google.com/compute/docs/instances/preemptible) or not.
 * `image`: An \(optional\) Docker image with which to launch the VM. 
 
-Note the first three are mandatory arguments and the rest are optional that have sane defaults. 
+Note the first three are mandatory arguments and the rest are optional that have sane defaults.
 
 ### Using custom requirements
 
-In particular interest is the `image` argument. This argument need only be used when you have custom requirements that you would like to use in your pipeline. In order to do that, the image should be based on the base ZenML image found at: 
+In particular interest is the `image` argument. This argument need only be used when you have custom requirements that you would like to use in your pipeline. In order to do that, the image should be based on the base ZenML image found at:
 
 ```text
 http://eu.gcr.io/maiot-zenml/zenml:base-ZENML_VERSION
 ```
 
 Please do not change the entrypoint of the base image and verify that your custom requirements do not override any of the default [ZenML requirements](https://github.com/maiot-io/zenml/blob/main/requirements.txt).
-
-
 

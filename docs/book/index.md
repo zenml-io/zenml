@@ -5,7 +5,7 @@
 While there are other pipelining solutions for Machine Learning experiments, ZenML is focussed on two unique approaches:
 
 * [Reproducibility](https://github.com/maiot-io/zenml/tree/db07789420a55eef6491e6ce518802f04795051a/docs/book/benefits/ensuring-ml-reproducibility.md). 
-* [Integrations](https://github.com/maiot-io/zenml/tree/db07789420a55eef6491e6ce518802f04795051a/docs/book/benefits/integrations.md).
+* [Integrations](repository/integration-with-git.md).
 
 ## Why do I need ZenML?
 

@@ -12,10 +12,10 @@
 
 ## Benefits
 
-* [Installation](getting-started/installation.md)
-* [Quickstart](getting-started/quickstart.md)
-* [Core Concepts](getting-started/core-concepts.md)
-* [Organizing ML Code with ZenML](getting-started/organizing-zenml.md)
+* [Installation](benefits/installation.md)
+* [Quickstart](benefits/quickstart.md)
+* [Core Concepts](benefits/core-concepts.md)
+* [Organizing ML Code with ZenML](benefits/organizing-zenml.md)
 
 ## Repository
 
@@ -37,17 +37,17 @@
 ## Pipelines
 
 * [What is a pipeline?](pipelines/what-is-a-pipeline.md)
-* [Training](pipelines/training-pipelin.mde)
-* [Data [WIP]](pipelines/data.md)
-* [Batch Inference [WIP]](pipelines/batch-inference.md)
+* [Training](pipelines/training.md)
+* [Data \[WIP\]](pipelines/data.md)
+* [Batch Inference \[WIP\]](pipelines/batch-inference.md)
 * [Scheduling Jobs](pipelines/scheduling-jobs.md)
 
 ## Steps
 
-* [Installation](getting-started/installation.md)
-* [Quickstart](getting-started/quickstart.md)
-* [Core Concepts](getting-started/core-concepts.md)
-* [Organizing ML Code with ZenML](getting-started/organizing-zenml.md)
+* [Installation](steps/installation.md)
+* [Quickstart](steps/quickstart.md)
+* [Core Concepts](steps/core-concepts.md)
+* [Organizing ML Code with ZenML](steps/organizing-zenml.md)
 
 ## Backends
 
@@ -59,7 +59,7 @@
 
 ## Tutorials
 
-* [Creating your first pipeline](tutorials/creating-first-pipeline.ipynb)
+* [Creating your first pipeline](tutorials/creating-first-pipeline.md)
 * [Running a pipeline on Google Cloud VM](tutorials/running-a-pipeline-on-a-google-cloud-vm.md)
 * [Running a pipeline on Kubernetes](tutorials/running-a-pipeline-on-kubernetes.md)
 * [Team collaboration with ZenML and Google Cloud](tutorials/team-collaboration-with-zenml-and-google-cloud.md)
@@ -76,3 +76,4 @@
 
 * [Contact](support/contact.md)
 * [FAQ](support/faq-wip.md)
+

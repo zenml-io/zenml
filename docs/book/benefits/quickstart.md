@@ -120,5 +120,5 @@ Of course, each of these steps can be [extended quite easily](https://github.com
 
   [Steps](https://github.com/maiot-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/docs/book/steps/what-is-a-step.md), [Datasources](../datasources/what-is-a-datasource.md) and [Backends](../backends/what-is-a-backend.md). 
 
-  If the standard ones don't fit your needs, you can also [create custom logic](creating-custom-logic.md) with ZenML.
+  If the standard ones don't fit your needs, you can also [create custom logic](../getting-started/creating-custom-logic.md) with ZenML.
 

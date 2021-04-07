@@ -1,9 +1,8 @@
-# Training a ML classifier on 59M samples
+# Classification with 59M samples
 
-In this tutorial, we'll go through the step-by-step process of building a simple feedforward classifier trained on a 
-public BigQuery datasource. 
+In this tutorial, we'll go through the step-by-step process of building a simple feedforward classifier trained on a public BigQuery datasource.
 
-```{note}
+```text
 This tutorial is adapted **from the blog post:** [Deep Learning on 33,000,000 data points using a few lines of YAML](https://blog.maiot.io/deep_learning_33_million_with_few_lines_yaml/)
 ```
 
@@ -29,3 +28,4 @@ training_pipeline.run(
 Full code example can be found [here](https://github.com/maiot-io/zenml/blob/main/examples/gcp_dataflow_processing)
 
 Detailed tutorial to follow! Check out the [GitHub repo](https://github.com/maiot-io/zenml) to get updates!
+

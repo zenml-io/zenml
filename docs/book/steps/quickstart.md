@@ -15,7 +15,7 @@ kernelspec:
 
 # Quickstart
 
-Get up and running in \(almost\) 3 steps. Let’s get you started with a simple pipeline. Please make sure to also check out the [advanced concepts.](../steps/core-concepts.md) This quickstart uses some built-ins and a very simple model.
+Get up and running in \(almost\) 3 steps. Let’s get you started with a simple pipeline. Please make sure to also check out the [advanced concepts.](core-concepts.md) This quickstart uses some built-ins and a very simple model.
 
 ```text
 If you are here just to see the code, you can find it on [GitHub](https://github.com/maiot-io/zenml#quickstart).
@@ -113,12 +113,12 @@ Of course, each of these steps can be [extended quite easily](https://github.com
 
 ## What to do next?
 
-* Read about [core concepts](../steps/core-concepts.md) of ZenML.
-* [Convert your legacy code-base](../steps/organizing-zenml.md) to ZenML pipelines.
+* Read about [core concepts](core-concepts.md) of ZenML.
+* [Convert your legacy code-base](organizing-zenml.md) to ZenML pipelines.
 * Understand deeper what makes a [ZenML Repository](../repository/what-is-a-repository.md).
 * See what ZenML has to offer with standard powerful abstractions like [Pipelines](../pipelines/what-is-a-pipeline.md), 
 
   [Steps](https://github.com/maiot-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/docs/book/steps/what-is-a-step.md), [Datasources](../datasources/what-is-a-datasource.md) and [Backends](../backends/what-is-a-backend.md). 
 
-  If the standard ones don't fit your needs, you can also [create custom logic](creating-custom-logic.md) with ZenML.
+  If the standard ones don't fit your needs, you can also [create custom logic](../getting-started/creating-custom-logic.md) with ZenML.
 
