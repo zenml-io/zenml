@@ -1,11 +1,8 @@
-# Summary
+# Table of contents
+
+* [Introduction](index.md)
 
 ## Getting Started
 
-* [Installation](getting-started/installation.md)    
+* [Installation](getting-started/installation.md)
 
-## Benefits
-
-## Repository
-
-## Datasources
