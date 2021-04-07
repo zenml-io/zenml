@@ -2,7 +2,7 @@
 
 ## Getting Started
 
-* [Installation](getting-started/installation)    
+* [Installation](./getting-started/installation)    
 
 ## Benefits
 
