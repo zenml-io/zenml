@@ -143,3 +143,6 @@ docs/book/_build/
 
 # macOS specific
 .DS_Store
+
+# gitbook
+!.gitbook.yaml

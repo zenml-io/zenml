@@ -1,0 +1,8 @@
+root: ./docs/book/
+
+structure:
+  readme: index.md
+  summary: toc.md
+
+#redirects:
+#  help: ./support.md
