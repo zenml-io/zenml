@@ -79,4 +79,5 @@
 
 ## Test
 
-* [HTML test](zenml.steps.split.html)
+* [Index test](test/index2.md)
+
