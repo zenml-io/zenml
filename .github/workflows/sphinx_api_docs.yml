@@ -17,16 +17,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    # Commit and push to gitbook
-    - name: Commit and push to gitbook   test
-      run: |
-        date > generated.txt
-        git config user.name github-actions
-        git config user.email github-actions@github.com
-        git add .
-        git commit -m "generated"
-        git push
-
     # Install dependencies
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
