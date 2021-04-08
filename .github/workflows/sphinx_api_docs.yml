@@ -33,7 +33,19 @@ jobs:
         cd docs/sphinx_docs/
         make html
 
+    # Generate docstring documentation
+    - name: Appending to toc
+      run: |
+        cd docs/
+        python generate_api_docs.py
+
+#    # Generate docstring documentation
+#    - name: Appending to toc
+#      run: |
+#        cd docs/
+#        python generate_api_docs.py
+
     # Build the book
     - name: Print output
       run: |
-        ls sphinx_docs/_build/html
+        ls docs/sphinx_docs/_build/html
