@@ -17,6 +17,14 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    # Generate docstring documentation
+    - name: Commit and push to gitbook test
+      run: |
+        git add docs/sphinx_docs/_build/
+        git add docs/book/toc.md
+        git commit -m 'Generated docs [ci skip]'
+        git push
+
     # Install dependencies
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
