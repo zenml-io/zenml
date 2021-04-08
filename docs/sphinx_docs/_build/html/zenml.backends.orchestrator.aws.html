@@ -3,7 +3,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>zenml.backends.orchestrator.aws package &#8212; ZenML  documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
@@ -53,7 +54,7 @@
      href="index.html">Site <b class="caret"></b></a>
   <ul class="dropdown-menu globaltoc"
       role="menu"
-      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+      aria-labelledby="dLabelGlobalToc"><p><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
 </ul>
@@ -71,9 +72,9 @@
       aria-labelledby="dLabelLocalToc"><ul>
 <li><a class="reference internal" href="#">zenml.backends.orchestrator.aws package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-zenml.backends.orchestrator.aws.orchestrator_aws_backend">zenml.backends.orchestrator.aws.orchestrator_aws_backend module</a></li>
-<li><a class="reference internal" href="#module-zenml.backends.orchestrator.aws.utils">zenml.backends.orchestrator.aws.utils module</a></li>
-<li><a class="reference internal" href="#module-zenml.backends.orchestrator.aws">Module contents</a></li>
+<li><a class="reference internal" href="#zenml-backends-orchestrator-aws-orchestrator-aws-backend-module">zenml.backends.orchestrator.aws.orchestrator_aws_backend module</a></li>
+<li><a class="reference internal" href="#zenml-backends-orchestrator-aws-utils-module">zenml.backends.orchestrator.aws.utils module</a></li>
+<li><a class="reference internal" href="#module-contents">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -123,67 +124,21 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="zenml-backends-orchestrator-aws-package">
+  <section id="zenml-backends-orchestrator-aws-package">
 <h1>zenml.backends.orchestrator.aws package<a class="headerlink" href="#zenml-backends-orchestrator-aws-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="submodules">
+<section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="module-zenml.backends.orchestrator.aws.orchestrator_aws_backend">
-<span id="zenml-backends-orchestrator-aws-orchestrator-aws-backend-module"></span><h2>zenml.backends.orchestrator.aws.orchestrator_aws_backend module<a class="headerlink" href="#module-zenml.backends.orchestrator.aws.orchestrator_aws_backend" title="Permalink to this headline">¶</a></h2>
-<p>Orchestrator for simple AWS VM backend</p>
-<dl class="py class">
-<dt id="zenml.backends.orchestrator.aws.orchestrator_aws_backend.OrchestratorAWSBackend">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.backends.orchestrator.aws.orchestrator_aws_backend.</code><code class="sig-name descname">OrchestratorAWSBackend</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">iam_role</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">instance_type</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'t2.micro'</span></em>, <em class="sig-param"><span class="n">instance_image</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'ami-02e9f4e447e4cda79'</span></em>, <em class="sig-param"><span class="n">zenml_image</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">region</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">key_name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">security_group</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">min_count</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">max_count</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.orchestrator.aws.orchestrator_aws_backend.OrchestratorAWSBackend" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="zenml.backends.orchestrator.base.html#zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend" title="zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend</span></code></a></p>
-<p>Orchestrates pipeline on a AWS EC2 instance</p>
-<dl class="py method">
-<dt id="zenml.backends.orchestrator.aws.orchestrator_aws_backend.OrchestratorAWSBackend.launch_instance">
-<code class="sig-name descname">launch_instance</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.orchestrator.aws.orchestrator_aws_backend.OrchestratorAWSBackend.launch_instance" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt id="zenml.backends.orchestrator.aws.orchestrator_aws_backend.OrchestratorAWSBackend.make_unique_name">
-<em class="property">static </em><code class="sig-name descname">make_unique_name</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.orchestrator.aws.orchestrator_aws_backend.OrchestratorAWSBackend.make_unique_name" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt id="zenml.backends.orchestrator.aws.orchestrator_aws_backend.OrchestratorAWSBackend.run">
-<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span><span class="p">:</span> <span class="n"><span class="p">[</span>typing.Dict<span class="p">, </span>typing.Any<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.orchestrator.aws.orchestrator_aws_backend.OrchestratorAWSBackend.run" title="Permalink to this definition">¶</a></dt>
-<dd><p>This run function essentially calls an underlying TFX orchestrator run.
-However it is meant as a higher level abstraction with some
-opinionated decisions taken.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>config</strong> – a ZenML config dict</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.backends.orchestrator.aws.utils">
-<span id="zenml-backends-orchestrator-aws-utils-module"></span><h2>zenml.backends.orchestrator.aws.utils module<a class="headerlink" href="#module-zenml.backends.orchestrator.aws.utils" title="Permalink to this headline">¶</a></h2>
-<dl class="py function">
-<dt id="zenml.backends.orchestrator.aws.utils.get_startup_script">
-<code class="sig-prename descclassname">zenml.backends.orchestrator.aws.utils.</code><code class="sig-name descname">get_startup_script</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span><span class="p">:</span> <span class="n">Dict</span></em>, <em class="sig-param"><span class="n">region</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">zenml_image</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'eu.gcr.io/maiot-zenml/zenml:base-0.3.6.1'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.orchestrator.aws.utils.get_startup_script" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt id="zenml.backends.orchestrator.aws.utils.setup_region">
-<code class="sig-prename descclassname">zenml.backends.orchestrator.aws.utils.</code><code class="sig-name descname">setup_region</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">region</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.orchestrator.aws.utils.setup_region" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt id="zenml.backends.orchestrator.aws.utils.setup_session">
-<code class="sig-prename descclassname">zenml.backends.orchestrator.aws.utils.</code><code class="sig-name descname">setup_session</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.orchestrator.aws.utils.setup_session" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</div>
-<div class="section" id="module-zenml.backends.orchestrator.aws">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.backends.orchestrator.aws" title="Permalink to this headline">¶</a></h2>
-</div>
-</div>
+</section>
+<section id="zenml-backends-orchestrator-aws-orchestrator-aws-backend-module">
+<h2>zenml.backends.orchestrator.aws.orchestrator_aws_backend module<a class="headerlink" href="#zenml-backends-orchestrator-aws-orchestrator-aws-backend-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="zenml-backends-orchestrator-aws-utils-module">
+<h2>zenml.backends.orchestrator.aws.utils module<a class="headerlink" href="#zenml-backends-orchestrator-aws-utils-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-contents">
+<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
 
 
     </div>

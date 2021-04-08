@@ -3,7 +3,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>zenml.backends.orchestrator.gcp package &#8212; ZenML  documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
@@ -53,7 +54,7 @@
      href="index.html">Site <b class="caret"></b></a>
   <ul class="dropdown-menu globaltoc"
       role="menu"
-      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+      aria-labelledby="dLabelGlobalToc"><p><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
 </ul>
@@ -71,8 +72,8 @@
       aria-labelledby="dLabelLocalToc"><ul>
 <li><a class="reference internal" href="#">zenml.backends.orchestrator.gcp package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-zenml.backends.orchestrator.gcp.orchestrator_gcp_backend">zenml.backends.orchestrator.gcp.orchestrator_gcp_backend module</a></li>
-<li><a class="reference internal" href="#module-zenml.backends.orchestrator.gcp">Module contents</a></li>
+<li><a class="reference internal" href="#zenml-backends-orchestrator-gcp-orchestrator-gcp-backend-module">zenml.backends.orchestrator.gcp.orchestrator_gcp_backend module</a></li>
+<li><a class="reference internal" href="#module-contents">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -122,57 +123,18 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="zenml-backends-orchestrator-gcp-package">
+  <section id="zenml-backends-orchestrator-gcp-package">
 <h1>zenml.backends.orchestrator.gcp package<a class="headerlink" href="#zenml-backends-orchestrator-gcp-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="submodules">
+<section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="module-zenml.backends.orchestrator.gcp.orchestrator_gcp_backend">
-<span id="zenml-backends-orchestrator-gcp-orchestrator-gcp-backend-module"></span><h2>zenml.backends.orchestrator.gcp.orchestrator_gcp_backend module<a class="headerlink" href="#module-zenml.backends.orchestrator.gcp.orchestrator_gcp_backend" title="Permalink to this headline">¶</a></h2>
-<p>Orchestrator for simple GCP VM backend</p>
-<dl class="py class">
-<dt id="zenml.backends.orchestrator.gcp.orchestrator_gcp_backend.OrchestratorGCPBackend">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.backends.orchestrator.gcp.orchestrator_gcp_backend.</code><code class="sig-name descname">OrchestratorGCPBackend</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">project</span></em>, <em class="sig-param"><span class="n">cloudsql_connection_name</span></em>, <em class="sig-param"><span class="n">machine_type</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'e2-medium'</span></em>, <em class="sig-param"><span class="n">gpu</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">gpu_count</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em>, <em class="sig-param"><span class="n">zone</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'europe-west1-b'</span></em>, <em class="sig-param"><span class="n">instance_name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">disk_size</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">100</span></em>, <em class="sig-param"><span class="n">image</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">source_disk_image</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">preemptible</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">service_account</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.orchestrator.gcp.orchestrator_gcp_backend.OrchestratorGCPBackend" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="zenml.backends.orchestrator.base.html#zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend" title="zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend</span></code></a></p>
-<p>Orchestrates pipeline in a GCP Compute Instance.</p>
-<p>This orchestrator creates a .tar.gz of the current ZenML repository, sends
-it over to the artifact store, then launches a VM with the specified image.
-After pipeline is done, the VM automatically gets brought down, regardless
-of whether the pipeline failed or not. To see logs of the pipeline, use
-Logs Explorer &lt;<a class="reference external" href="https://console.cloud.google.com/logs/">https://console.cloud.google.com/logs/</a>&gt; and filter for
-<cite>logName=”projects/&lt;project_name&gt;/logs/gcplogs-docker-driver”</cite>. After
-running the VM, the logger returns the link directly to the logs.</p>
-<dl class="py method">
-<dt id="zenml.backends.orchestrator.gcp.orchestrator_gcp_backend.OrchestratorGCPBackend.launch_instance">
-<code class="sig-name descname">launch_instance</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.orchestrator.gcp.orchestrator_gcp_backend.OrchestratorGCPBackend.launch_instance" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function launches a GCP compute instance.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>config</strong> – a ZenML config dict</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="zenml.backends.orchestrator.gcp.orchestrator_gcp_backend.OrchestratorGCPBackend.run">
-<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.orchestrator.gcp.orchestrator_gcp_backend.OrchestratorGCPBackend.run" title="Permalink to this definition">¶</a></dt>
-<dd><p>This run function essentially calls an underlying TFX orchestrator run.
-However it is meant as a higher level abstraction with some
-opinionated decisions taken.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>config</strong> – a ZenML config dict</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.backends.orchestrator.gcp">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.backends.orchestrator.gcp" title="Permalink to this headline">¶</a></h2>
-</div>
-</div>
+</section>
+<section id="zenml-backends-orchestrator-gcp-orchestrator-gcp-backend-module">
+<h2>zenml.backends.orchestrator.gcp.orchestrator_gcp_backend module<a class="headerlink" href="#zenml-backends-orchestrator-gcp-orchestrator-gcp-backend-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-contents">
+<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
 
 
     </div>

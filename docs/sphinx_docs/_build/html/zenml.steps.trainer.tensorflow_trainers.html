@@ -3,7 +3,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>zenml.steps.trainer.tensorflow_trainers package &#8212; ZenML  documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
@@ -53,7 +54,7 @@
      href="index.html">Site <b class="caret"></b></a>
   <ul class="dropdown-menu globaltoc"
       role="menu"
-      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+      aria-labelledby="dLabelGlobalToc"><p><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
 </ul>
@@ -71,9 +72,9 @@
       aria-labelledby="dLabelLocalToc"><ul>
 <li><a class="reference internal" href="#">zenml.steps.trainer.tensorflow_trainers package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-zenml.steps.trainer.tensorflow_trainers.tf_base_trainer">zenml.steps.trainer.tensorflow_trainers.tf_base_trainer module</a></li>
-<li><a class="reference internal" href="#module-zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer">zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer module</a></li>
-<li><a class="reference internal" href="#module-zenml.steps.trainer.tensorflow_trainers">Module contents</a></li>
+<li><a class="reference internal" href="#zenml-steps-trainer-tensorflow-trainers-tf-base-trainer-module">zenml.steps.trainer.tensorflow_trainers.tf_base_trainer module</a></li>
+<li><a class="reference internal" href="#zenml-steps-trainer-tensorflow-trainers-tf-ff-trainer-module">zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer module</a></li>
+<li><a class="reference internal" href="#module-contents">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -123,97 +124,21 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="zenml-steps-trainer-tensorflow-trainers-package">
+  <section id="zenml-steps-trainer-tensorflow-trainers-package">
 <h1>zenml.steps.trainer.tensorflow_trainers package<a class="headerlink" href="#zenml-steps-trainer-tensorflow-trainers-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="submodules">
+<section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="module-zenml.steps.trainer.tensorflow_trainers.tf_base_trainer">
-<span id="zenml-steps-trainer-tensorflow-trainers-tf-base-trainer-module"></span><h2>zenml.steps.trainer.tensorflow_trainers.tf_base_trainer module<a class="headerlink" href="#module-zenml.steps.trainer.tensorflow_trainers.tf_base_trainer" title="Permalink to this headline">¶</a></h2>
-<dl class="py class">
-<dt id="zenml.steps.trainer.tensorflow_trainers.tf_base_trainer.TFBaseTrainerStep">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.steps.trainer.tensorflow_trainers.tf_base_trainer.</code><code class="sig-name descname">TFBaseTrainerStep</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_patterns</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">output_patterns</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">serving_model_dir</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">transform_output</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">split_mapping</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>List<span class="p">[</span>str<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.trainer.tensorflow_trainers.tf_base_trainer.TFBaseTrainerStep" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="zenml.steps.trainer.html#zenml.steps.trainer.base_trainer.BaseTrainerStep" title="zenml.steps.trainer.base_trainer.BaseTrainerStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.steps.trainer.base_trainer.BaseTrainerStep</span></code></a></p>
-<p>Base class for all Tensorflow-based trainer steps. All tensorflow based
-trainings should use this as the base class. An example is available
-with tf_ff_trainer.FeedForwardTrainer.</p>
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer">
-<span id="zenml-steps-trainer-tensorflow-trainers-tf-ff-trainer-module"></span><h2>zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer module<a class="headerlink" href="#module-zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer" title="Permalink to this headline">¶</a></h2>
-<dl class="py class">
-<dt id="zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.FeedForwardTrainer">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.</code><code class="sig-name descname">FeedForwardTrainer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">batch_size</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">8</span></em>, <em class="sig-param"><span class="n">lr</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.001</span></em>, <em class="sig-param"><span class="n">epochs</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">dropout_chance</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0.2</span></em>, <em class="sig-param"><span class="n">loss</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'mse'</span></em>, <em class="sig-param"><span class="n">metrics</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">hidden_layers</span><span class="p">:</span> <span class="n">List<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">hidden_activation</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'relu'</span></em>, <em class="sig-param"><span class="n">last_activation</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'sigmoid'</span></em>, <em class="sig-param"><span class="n">output_units</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.FeedForwardTrainer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#zenml.steps.trainer.tensorflow_trainers.tf_base_trainer.TFBaseTrainerStep" title="zenml.steps.trainer.tensorflow_trainers.tf_base_trainer.TFBaseTrainerStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.steps.trainer.tensorflow_trainers.tf_base_trainer.TFBaseTrainerStep</span></code></a></p>
-<p>Basic Feedforward Neural Network trainer. This step serves as an example
-of how to define your training logic to integrate well with TFX and
-Tensorflow Serving.</p>
-<dl class="py method">
-<dt id="zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.FeedForwardTrainer.input_fn">
-<code class="sig-name descname">input_fn</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file_pattern</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.FeedForwardTrainer.input_fn" title="Permalink to this definition">¶</a></dt>
-<dd><p>Feedforward input_fn for loading data from TFRecords saved to a
-location on disk.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>file_pattern</strong> – File pattern matching saved TFRecords on disk.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>tf.data.Dataset created out of the input files.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>dataset</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.FeedForwardTrainer.model_fn">
-<code class="sig-name descname">model_fn</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">train_dataset</span><span class="p">:</span> <span class="n">tensorflow.python.data.ops.dataset_ops.DatasetV2</span></em>, <em class="sig-param"><span class="n">eval_dataset</span><span class="p">:</span> <span class="n">tensorflow.python.data.ops.dataset_ops.DatasetV2</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.FeedForwardTrainer.model_fn" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function defining the training flow of the feedforward neural network
-model.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>train_dataset</strong> – tf.data.Dataset containing the training data.</p></li>
-<li><p><strong>eval_dataset</strong> – tf.data.Dataset containing the evaluation data.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A trained feedforward neural network model.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>model</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.FeedForwardTrainer.run_fn">
-<code class="sig-name descname">run_fn</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.FeedForwardTrainer.run_fn" title="Permalink to this definition">¶</a></dt>
-<dd><p>Method defining the control flow of the training process inside
-the TFX Trainer Component Executor. Override this method in subclasses
-to define your own custom training flow.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.FeedForwardTrainer.test_fn">
-<code class="sig-name descname">test_fn</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">dataset</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.FeedForwardTrainer.test_fn" title="Permalink to this definition">¶</a></dt>
-<dd><p>Optional method for defining a test flow of the model. The goal of
-this method is to give the user an interface to provide a testing
-function, where the results (if given in the right format with
-features, labels and predictions) will be ultimately saved to
-disk using an output artifact. Once defined, it allows the user to
-utilize the model agnostic evaluator in their training pipeline.</p>
-</dd></dl>
-
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.steps.trainer.tensorflow_trainers">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.steps.trainer.tensorflow_trainers" title="Permalink to this headline">¶</a></h2>
-</div>
-</div>
+</section>
+<section id="zenml-steps-trainer-tensorflow-trainers-tf-base-trainer-module">
+<h2>zenml.steps.trainer.tensorflow_trainers.tf_base_trainer module<a class="headerlink" href="#zenml-steps-trainer-tensorflow-trainers-tf-base-trainer-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="zenml-steps-trainer-tensorflow-trainers-tf-ff-trainer-module">
+<h2>zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer module<a class="headerlink" href="#zenml-steps-trainer-tensorflow-trainers-tf-ff-trainer-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-contents">
+<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
 
 
     </div>

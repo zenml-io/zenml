@@ -3,7 +3,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>zenml.steps.sequencer.standard_sequencer package &#8212; ZenML  documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
@@ -53,7 +54,7 @@
      href="index.html">Site <b class="caret"></b></a>
   <ul class="dropdown-menu globaltoc"
       role="menu"
-      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+      aria-labelledby="dLabelGlobalToc"><p><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
 </ul>
@@ -72,9 +73,9 @@
 <li><a class="reference internal" href="#">zenml.steps.sequencer.standard_sequencer package</a><ul>
 <li><a class="reference internal" href="#subpackages">Subpackages</a></li>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-zenml.steps.sequencer.standard_sequencer.standard_sequencer">zenml.steps.sequencer.standard_sequencer.standard_sequencer module</a></li>
-<li><a class="reference internal" href="#module-zenml.steps.sequencer.standard_sequencer.utils">zenml.steps.sequencer.standard_sequencer.utils module</a></li>
-<li><a class="reference internal" href="#module-zenml.steps.sequencer.standard_sequencer">Module contents</a></li>
+<li><a class="reference internal" href="#zenml-steps-sequencer-standard-sequencer-standard-sequencer-module">zenml.steps.sequencer.standard_sequencer.standard_sequencer module</a></li>
+<li><a class="reference internal" href="#zenml-steps-sequencer-standard-sequencer-utils-module">zenml.steps.sequencer.standard_sequencer.utils module</a></li>
+<li><a class="reference internal" href="#module-contents">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -124,139 +125,36 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="zenml-steps-sequencer-standard-sequencer-package">
+  <section id="zenml-steps-sequencer-standard-sequencer-package">
 <h1>zenml.steps.sequencer.standard_sequencer package<a class="headerlink" href="#zenml-steps-sequencer-standard-sequencer-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="subpackages">
+<section id="subpackages">
 <h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="zenml.steps.sequencer.standard_sequencer.methods.html">zenml.steps.sequencer.standard_sequencer.methods package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="zenml.steps.sequencer.standard_sequencer.methods.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.sequencer.standard_sequencer.methods.html#module-zenml.steps.sequencer.standard_sequencer.methods.methods_filling">zenml.steps.sequencer.standard_sequencer.methods.methods_filling module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.sequencer.standard_sequencer.methods.html#module-zenml.steps.sequencer.standard_sequencer.methods.methods_resampling">zenml.steps.sequencer.standard_sequencer.methods.methods_resampling module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.sequencer.standard_sequencer.methods.html#module-zenml.steps.sequencer.standard_sequencer.methods.standard_methods">zenml.steps.sequencer.standard_sequencer.methods.standard_methods module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.sequencer.standard_sequencer.methods.html#module-zenml.steps.sequencer.standard_sequencer.methods">Module contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.steps.sequencer.standard_sequencer.methods.html#zenml-steps-sequencer-standard-sequencer-methods-methods-filling-module">zenml.steps.sequencer.standard_sequencer.methods.methods_filling module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.steps.sequencer.standard_sequencer.methods.html#zenml-steps-sequencer-standard-sequencer-methods-methods-resampling-module">zenml.steps.sequencer.standard_sequencer.methods.methods_resampling module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.steps.sequencer.standard_sequencer.methods.html#zenml-steps-sequencer-standard-sequencer-methods-standard-methods-module">zenml.steps.sequencer.standard_sequencer.methods.standard_methods module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.steps.sequencer.standard_sequencer.methods.html#module-contents">Module contents</a></li>
 </ul>
 </li>
 </ul>
 </div>
-</div>
-<div class="section" id="submodules">
+</section>
+<section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="module-zenml.steps.sequencer.standard_sequencer.standard_sequencer">
-<span id="zenml-steps-sequencer-standard-sequencer-standard-sequencer-module"></span><h2>zenml.steps.sequencer.standard_sequencer.standard_sequencer module<a class="headerlink" href="#module-zenml.steps.sequencer.standard_sequencer.standard_sequencer" title="Permalink to this headline">¶</a></h2>
-<dl class="py class">
-<dt id="zenml.steps.sequencer.standard_sequencer.standard_sequencer.StandardSequencer">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.steps.sequencer.standard_sequencer.standard_sequencer.</code><code class="sig-name descname">StandardSequencer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">timestamp_column</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">category_column</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">overwrite</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">resampling_freq</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'1D'</span></em>, <em class="sig-param"><span class="n">gap_threshold</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">60000</span></em>, <em class="sig-param"><span class="n">sequence_length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">4</span></em>, <em class="sig-param"><span class="n">sequence_shift</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.standard_sequencer.StandardSequencer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="zenml.steps.sequencer.html#zenml.steps.sequencer.base_sequencer.BaseSequencerStep" title="zenml.steps.sequencer.base_sequencer.BaseSequencerStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.steps.sequencer.base_sequencer.BaseSequencerStep</span></code></a></p>
-<dl class="py method">
-<dt id="zenml.steps.sequencer.standard_sequencer.standard_sequencer.StandardSequencer.get_category_do_fn">
-<code class="sig-name descname">get_category_do_fn</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.standard_sequencer.StandardSequencer.get_category_do_fn" title="Permalink to this definition">¶</a></dt>
-<dd><p>Creates a class which inherits from beam.DoFn to add a categorical key
-to each datapoint</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>an instance of the beam.DoFn</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="zenml.steps.sequencer.standard_sequencer.standard_sequencer.StandardSequencer.get_combine_fn">
-<code class="sig-name descname">get_combine_fn</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.standard_sequencer.StandardSequencer.get_combine_fn" title="Permalink to this definition">¶</a></dt>
-<dd><p>Creates a class which inherits from beam.CombineFn which processes
-sessions and extracts sequences from it</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>an instance of the beam.CombineFn</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="zenml.steps.sequencer.standard_sequencer.standard_sequencer.StandardSequencer.get_timestamp_do_fn">
-<code class="sig-name descname">get_timestamp_do_fn</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.standard_sequencer.StandardSequencer.get_timestamp_do_fn" title="Permalink to this definition">¶</a></dt>
-<dd><p>Creates a class which inherits from beam.DoFn to add the timestamp
-to each datapoint</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>an instance of the beam.DoFn</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="zenml.steps.sequencer.standard_sequencer.standard_sequencer.StandardSequencer.get_window">
-<code class="sig-name descname">get_window</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.standard_sequencer.StandardSequencer.get_window" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a selected beam windowing strategy</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>the selected windowing strategy</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.steps.sequencer.standard_sequencer.utils">
-<span id="zenml-steps-sequencer-standard-sequencer-utils-module"></span><h2>zenml.steps.sequencer.standard_sequencer.utils module<a class="headerlink" href="#module-zenml.steps.sequencer.standard_sequencer.utils" title="Permalink to this headline">¶</a></h2>
-<dl class="py function">
-<dt id="zenml.steps.sequencer.standard_sequencer.utils.array_to_value">
-<code class="sig-prename descclassname">zenml.steps.sequencer.standard_sequencer.utils.</code><code class="sig-name descname">array_to_value</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.utils.array_to_value" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt id="zenml.steps.sequencer.standard_sequencer.utils.convert_datetime_to_secs">
-<code class="sig-prename descclassname">zenml.steps.sequencer.standard_sequencer.utils.</code><code class="sig-name descname">convert_datetime_to_secs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dt</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.utils.convert_datetime_to_secs" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt id="zenml.steps.sequencer.standard_sequencer.utils.extract_sequences">
-<code class="sig-prename descclassname">zenml.steps.sequencer.standard_sequencer.utils.</code><code class="sig-name descname">extract_sequences</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">session</span></em>, <em class="sig-param"><span class="n">seq_length</span></em>, <em class="sig-param"><span class="n">freq</span></em>, <em class="sig-param"><span class="n">shift</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.utils.extract_sequences" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt id="zenml.steps.sequencer.standard_sequencer.utils.fill_defaults">
-<code class="sig-prename descclassname">zenml.steps.sequencer.standard_sequencer.utils.</code><code class="sig-name descname">fill_defaults</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span></em>, <em class="sig-param"><span class="n">default_config</span></em>, <em class="sig-param"><span class="n">schema</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.utils.fill_defaults" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt id="zenml.steps.sequencer.standard_sequencer.utils.get_function_dict">
-<code class="sig-prename descclassname">zenml.steps.sequencer.standard_sequencer.utils.</code><code class="sig-name descname">get_function_dict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span></em>, <em class="sig-param"><span class="n">methods</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.utils.get_function_dict" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt id="zenml.steps.sequencer.standard_sequencer.utils.get_output_dtype">
-<code class="sig-prename descclassname">zenml.steps.sequencer.standard_sequencer.utils.</code><code class="sig-name descname">get_output_dtype</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_dtype</span></em>, <em class="sig-param"><span class="n">method</span></em>, <em class="sig-param"><span class="n">params</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.utils.get_output_dtype" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt id="zenml.steps.sequencer.standard_sequencer.utils.get_resample_output_dtype">
-<code class="sig-prename descclassname">zenml.steps.sequencer.standard_sequencer.utils.</code><code class="sig-name descname">get_resample_output_dtype</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">resampling_config</span></em>, <em class="sig-param"><span class="n">schema</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.utils.get_resample_output_dtype" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt id="zenml.steps.sequencer.standard_sequencer.utils.infer_schema">
-<code class="sig-prename descclassname">zenml.steps.sequencer.standard_sequencer.utils.</code><code class="sig-name descname">infer_schema</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.utils.infer_schema" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function to infer a schema from input data.
-:param schema: Input dict mapping features to tf.Tensors.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>Dict mapping features to their respective data types.</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>schema_dict</p>
-</dd>
-</dl>
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.steps.sequencer.standard_sequencer">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.steps.sequencer.standard_sequencer" title="Permalink to this headline">¶</a></h2>
-</div>
-</div>
+</section>
+<section id="zenml-steps-sequencer-standard-sequencer-standard-sequencer-module">
+<h2>zenml.steps.sequencer.standard_sequencer.standard_sequencer module<a class="headerlink" href="#zenml-steps-sequencer-standard-sequencer-standard-sequencer-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="zenml-steps-sequencer-standard-sequencer-utils-module">
+<h2>zenml.steps.sequencer.standard_sequencer.utils module<a class="headerlink" href="#zenml-steps-sequencer-standard-sequencer-utils-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-contents">
+<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
 
 
     </div>

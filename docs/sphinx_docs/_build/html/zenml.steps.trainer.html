@@ -3,7 +3,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>zenml.steps.trainer package &#8212; ZenML  documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
@@ -53,7 +54,7 @@
      href="index.html">Site <b class="caret"></b></a>
   <ul class="dropdown-menu globaltoc"
       role="menu"
-      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+      aria-labelledby="dLabelGlobalToc"><p><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
 </ul>
@@ -72,9 +73,9 @@
 <li><a class="reference internal" href="#">zenml.steps.trainer package</a><ul>
 <li><a class="reference internal" href="#subpackages">Subpackages</a></li>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-zenml.steps.trainer.base_trainer">zenml.steps.trainer.base_trainer module</a></li>
-<li><a class="reference internal" href="#module-zenml.steps.trainer.utils">zenml.steps.trainer.utils module</a></li>
-<li><a class="reference internal" href="#module-zenml.steps.trainer">Module contents</a></li>
+<li><a class="reference internal" href="#zenml-steps-trainer-base-trainer-module">zenml.steps.trainer.base_trainer module</a></li>
+<li><a class="reference internal" href="#zenml-steps-trainer-utils-module">zenml.steps.trainer.utils module</a></li>
+<li><a class="reference internal" href="#module-contents">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -124,138 +125,43 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="zenml-steps-trainer-package">
+  <section id="zenml-steps-trainer-package">
 <h1>zenml.steps.trainer package<a class="headerlink" href="#zenml-steps-trainer-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="subpackages">
+<section id="subpackages">
 <h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="zenml.steps.trainer.pytorch_trainers.html">zenml.steps.trainer.pytorch_trainers package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="zenml.steps.trainer.pytorch_trainers.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.trainer.pytorch_trainers.html#module-zenml.steps.trainer.pytorch_trainers.torch_base_trainer">zenml.steps.trainer.pytorch_trainers.torch_base_trainer module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.trainer.pytorch_trainers.html#module-zenml.steps.trainer.pytorch_trainers.torch_ff_trainer">zenml.steps.trainer.pytorch_trainers.torch_ff_trainer module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.trainer.pytorch_trainers.html#module-zenml.steps.trainer.pytorch_trainers.utils">zenml.steps.trainer.pytorch_trainers.utils module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.trainer.pytorch_trainers.html#module-zenml.steps.trainer.pytorch_trainers">Module contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.steps.trainer.pytorch_trainers.html#zenml-steps-trainer-pytorch-trainers-torch-base-trainer-module">zenml.steps.trainer.pytorch_trainers.torch_base_trainer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.steps.trainer.pytorch_trainers.html#zenml-steps-trainer-pytorch-trainers-torch-ff-trainer-module">zenml.steps.trainer.pytorch_trainers.torch_ff_trainer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.steps.trainer.pytorch_trainers.html#zenml-steps-trainer-pytorch-trainers-utils-module">zenml.steps.trainer.pytorch_trainers.utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.steps.trainer.pytorch_trainers.html#module-contents">Module contents</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="zenml.steps.trainer.tensorflow_trainers.html">zenml.steps.trainer.tensorflow_trainers package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="zenml.steps.trainer.tensorflow_trainers.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.trainer.tensorflow_trainers.html#module-zenml.steps.trainer.tensorflow_trainers.tf_base_trainer">zenml.steps.trainer.tensorflow_trainers.tf_base_trainer module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.trainer.tensorflow_trainers.html#module-zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer">zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.trainer.tensorflow_trainers.html#module-zenml.steps.trainer.tensorflow_trainers">Module contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.steps.trainer.tensorflow_trainers.html#zenml-steps-trainer-tensorflow-trainers-tf-base-trainer-module">zenml.steps.trainer.tensorflow_trainers.tf_base_trainer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.steps.trainer.tensorflow_trainers.html#zenml-steps-trainer-tensorflow-trainers-tf-ff-trainer-module">zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.steps.trainer.tensorflow_trainers.html#module-contents">Module contents</a></li>
 </ul>
 </li>
 </ul>
 </div>
-</div>
-<div class="section" id="submodules">
+</section>
+<section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="module-zenml.steps.trainer.base_trainer">
-<span id="zenml-steps-trainer-base-trainer-module"></span><h2>zenml.steps.trainer.base_trainer module<a class="headerlink" href="#module-zenml.steps.trainer.base_trainer" title="Permalink to this headline">¶</a></h2>
-<dl class="py class">
-<dt id="zenml.steps.trainer.base_trainer.BaseTrainerStep">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.steps.trainer.base_trainer.</code><code class="sig-name descname">BaseTrainerStep</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_patterns</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">output_patterns</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">serving_model_dir</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">transform_output</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">split_mapping</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>List<span class="p">[</span>str<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.trainer.base_trainer.BaseTrainerStep" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="zenml.steps.html#zenml.steps.base_step.BaseStep" title="zenml.steps.base_step.BaseStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.steps.base_step.BaseStep</span></code></a></p>
-<p>Base step interface for all Trainer steps. All of your code concerning
-model training should leverage subclasses of this class.</p>
-<dl class="py attribute">
-<dt id="zenml.steps.trainer.base_trainer.BaseTrainerStep.STEP_TYPE">
-<code class="sig-name descname">STEP_TYPE</code><em class="property"> = 'trainer'</em><a class="headerlink" href="#zenml.steps.trainer.base_trainer.BaseTrainerStep.STEP_TYPE" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt id="zenml.steps.trainer.base_trainer.BaseTrainerStep.input_fn">
-<code class="sig-name descname">input_fn</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file_pattern</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">tf_transform_output</span><span class="p">:</span> <span class="n">tensorflow_transform.output_wrapper.TFTransformOutput</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.trainer.base_trainer.BaseTrainerStep.input_fn" title="Permalink to this definition">¶</a></dt>
-<dd><p>Method for loading data from TFRecords saved to a location on
-disk. Override this method in subclasses to define your own custom
-data preparation flow.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>file_pattern</strong> – File pattern matching saved TFRecords on disk.</p></li>
-<li><p><strong>tf_transform_output</strong> – Output of the preceding Transform /
-Preprocessing component.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><dl class="simple">
-<dt>A tf.data.Dataset constructed from the input file</dt><dd><p>pattern and transform.</p>
-</dd>
-</dl>
-</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>dataset</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="zenml.steps.trainer.base_trainer.BaseTrainerStep.model_fn">
-<em class="property">static </em><code class="sig-name descname">model_fn</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">train_dataset</span></em>, <em class="sig-param"><span class="n">eval_dataset</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.trainer.base_trainer.BaseTrainerStep.model_fn" title="Permalink to this definition">¶</a></dt>
-<dd><p>Method defining the training flow of the model. Override this
-in subclasses to define your own custom training flow.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>train_dataset</strong> – tf.data.Dataset containing the training data.</p></li>
-<li><p><strong>eval_dataset</strong> – tf.data.Dataset containing the evaluation data.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A trained machine learning model.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>model</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="zenml.steps.trainer.base_trainer.BaseTrainerStep.run_fn">
-<code class="sig-name descname">run_fn</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.trainer.base_trainer.BaseTrainerStep.run_fn" title="Permalink to this definition">¶</a></dt>
-<dd><p>Method defining the control flow of the training process inside
-the TFX Trainer Component Executor. Override this method in subclasses
-to define your own custom training flow.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="zenml.steps.trainer.base_trainer.BaseTrainerStep.test_fn">
-<code class="sig-name descname">test_fn</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.trainer.base_trainer.BaseTrainerStep.test_fn" title="Permalink to this definition">¶</a></dt>
-<dd><p>Optional method for defining a test flow of the model. The goal of
-this method is to give the user an interface to provide a testing
-function, where the results (if given in the right format with
-features, labels and predictions) will be ultimately saved to
-disk using an output artifact. Once defined, it allows the user to
-utilize the model agnostic evaluator in their training pipeline.</p>
-</dd></dl>
-
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.steps.trainer.utils">
-<span id="zenml-steps-trainer-utils-module"></span><h2>zenml.steps.trainer.utils module<a class="headerlink" href="#module-zenml.steps.trainer.utils" title="Permalink to this headline">¶</a></h2>
-<dl class="py function">
-<dt id="zenml.steps.trainer.utils.combine_batch_results">
-<code class="sig-prename descclassname">zenml.steps.trainer.utils.</code><code class="sig-name descname">combine_batch_results</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.trainer.utils.combine_batch_results" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt id="zenml.steps.trainer.utils.save_test_results">
-<code class="sig-prename descclassname">zenml.steps.trainer.utils.</code><code class="sig-name descname">save_test_results</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">results</span></em>, <em class="sig-param"><span class="n">output_path</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.trainer.utils.save_test_results" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt id="zenml.steps.trainer.utils.to_serialized_examples">
-<code class="sig-prename descclassname">zenml.steps.trainer.utils.</code><code class="sig-name descname">to_serialized_examples</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">instance</span></em><span class="sig-paren">)</span> &#x2192; tensorflow.core.example.example_pb2.Example<a class="headerlink" href="#zenml.steps.trainer.utils.to_serialized_examples" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</div>
-<div class="section" id="module-zenml.steps.trainer">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.steps.trainer" title="Permalink to this headline">¶</a></h2>
-</div>
-</div>
+</section>
+<section id="zenml-steps-trainer-base-trainer-module">
+<h2>zenml.steps.trainer.base_trainer module<a class="headerlink" href="#zenml-steps-trainer-base-trainer-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="zenml-steps-trainer-utils-module">
+<h2>zenml.steps.trainer.utils module<a class="headerlink" href="#zenml-steps-trainer-utils-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-contents">
+<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
 
 
     </div>

@@ -3,7 +3,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>zenml.components.tokenizer package &#8212; ZenML  documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
@@ -53,7 +54,7 @@
      href="index.html">Site <b class="caret"></b></a>
   <ul class="dropdown-menu globaltoc"
       role="menu"
-      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+      aria-labelledby="dLabelGlobalToc"><p><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
 </ul>
@@ -71,10 +72,10 @@
       aria-labelledby="dLabelLocalToc"><ul>
 <li><a class="reference internal" href="#">zenml.components.tokenizer package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-zenml.components.tokenizer.component">zenml.components.tokenizer.component module</a></li>
-<li><a class="reference internal" href="#module-zenml.components.tokenizer.constants">zenml.components.tokenizer.constants module</a></li>
-<li><a class="reference internal" href="#module-zenml.components.tokenizer.executor">zenml.components.tokenizer.executor module</a></li>
-<li><a class="reference internal" href="#module-zenml.components.tokenizer">Module contents</a></li>
+<li><a class="reference internal" href="#zenml-components-tokenizer-component-module">zenml.components.tokenizer.component module</a></li>
+<li><a class="reference internal" href="#zenml-components-tokenizer-constants-module">zenml.components.tokenizer.constants module</a></li>
+<li><a class="reference internal" href="#zenml-components-tokenizer-executor-module">zenml.components.tokenizer.executor module</a></li>
+<li><a class="reference internal" href="#module-contents">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -124,118 +125,24 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="zenml-components-tokenizer-package">
+  <section id="zenml-components-tokenizer-package">
 <h1>zenml.components.tokenizer package<a class="headerlink" href="#zenml-components-tokenizer-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="submodules">
+<section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="module-zenml.components.tokenizer.component">
-<span id="zenml-components-tokenizer-component-module"></span><h2>zenml.components.tokenizer.component module<a class="headerlink" href="#module-zenml.components.tokenizer.component" title="Permalink to this headline">¶</a></h2>
-<dl class="py class">
-<dt id="zenml.components.tokenizer.component.Tokenizer">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.components.tokenizer.component.</code><code class="sig-name descname">Tokenizer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">source</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">source_args</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">examples</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>tfx.types.component_spec.ChannelParameter<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">tokenizer</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>tfx.types.component_spec.ChannelParameter<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">output_examples</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>tfx.types.component_spec.ChannelParameter<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">instance_name</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.components.tokenizer.component.Tokenizer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tfx.dsl.components.base.base_component.BaseComponent</span></code></p>
-<dl class="py attribute">
-<dt id="zenml.components.tokenizer.component.Tokenizer.EXECUTOR_SPEC">
-<code class="sig-name descname">EXECUTOR_SPEC</code><em class="property"> = &lt;tfx.dsl.components.base.executor_spec.ExecutorClassSpec object&gt;</em><a class="headerlink" href="#zenml.components.tokenizer.component.Tokenizer.EXECUTOR_SPEC" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt id="zenml.components.tokenizer.component.Tokenizer.SPEC_CLASS">
-<code class="sig-name descname">SPEC_CLASS</code><a class="headerlink" href="#zenml.components.tokenizer.component.Tokenizer.SPEC_CLASS" title="Permalink to this definition">¶</a></dt>
-<dd><p>alias of <a class="reference internal" href="#zenml.components.tokenizer.component.TokenizerSpec" title="zenml.components.tokenizer.component.TokenizerSpec"><code class="xref py py-class docutils literal notranslate"><span class="pre">TokenizerSpec</span></code></a></p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt id="zenml.components.tokenizer.component.TokenizerSpec">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.components.tokenizer.component.</code><code class="sig-name descname">TokenizerSpec</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.components.tokenizer.component.TokenizerSpec" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tfx.types.component_spec.ComponentSpec</span></code></p>
-<dl class="py attribute">
-<dt id="zenml.components.tokenizer.component.TokenizerSpec.INPUTS">
-<code class="sig-name descname">INPUTS</code><em class="property"> = {'examples': ChannelParameter(type: &lt;class 'tfx.types.standard_artifacts.Examples'&gt;)}</em><a class="headerlink" href="#zenml.components.tokenizer.component.TokenizerSpec.INPUTS" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt id="zenml.components.tokenizer.component.TokenizerSpec.OUTPUTS">
-<code class="sig-name descname">OUTPUTS</code><em class="property"> = {'output_examples': ChannelParameter(type: &lt;class 'tfx.types.standard_artifacts.Examples'&gt;), 'tokenizer': ChannelParameter(type: &lt;class 'tfx.types.standard_artifacts.Model'&gt;)}</em><a class="headerlink" href="#zenml.components.tokenizer.component.TokenizerSpec.OUTPUTS" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt id="zenml.components.tokenizer.component.TokenizerSpec.PARAMETERS">
-<code class="sig-name descname">PARAMETERS</code><em class="property"> = {'args': ExecutionParameter(type: typing.Dict[str, typing.Any], optional: False), 'source': ExecutionParameter(type: &lt;class 'str'&gt;, optional: False)}</em><a class="headerlink" href="#zenml.components.tokenizer.component.TokenizerSpec.PARAMETERS" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.components.tokenizer.constants">
-<span id="zenml-components-tokenizer-constants-module"></span><h2>zenml.components.tokenizer.constants module<a class="headerlink" href="#module-zenml.components.tokenizer.constants" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="module-zenml.components.tokenizer.executor">
-<span id="zenml-components-tokenizer-executor-module"></span><h2>zenml.components.tokenizer.executor module<a class="headerlink" href="#module-zenml.components.tokenizer.executor" title="Permalink to this headline">¶</a></h2>
-<dl class="py class">
-<dt id="zenml.components.tokenizer.executor.TokenizerExecutor">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.components.tokenizer.executor.</code><code class="sig-name descname">TokenizerExecutor</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">context</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>tfx.dsl.components.base.base_executor.BaseExecutor.Context<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.components.tokenizer.executor.TokenizerExecutor" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tfx.dsl.components.base.base_executor.BaseExecutor</span></code></p>
-<p>Tokenizer executor. This component uses a tokenizer, either already
-trained or newly instantiated, and uses it to transform the input data.</p>
-<dl class="py method">
-<dt id="zenml.components.tokenizer.executor.TokenizerExecutor.Do">
-<code class="sig-name descname">Do</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_dict</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>List<span class="p">[</span>tfx.types.artifact.Artifact<span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">output_dict</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>List<span class="p">[</span>tfx.types.artifact.Artifact<span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">exec_properties</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#zenml.components.tokenizer.executor.TokenizerExecutor.Do" title="Permalink to this definition">¶</a></dt>
-<dd><p>Execute underlying component implementation.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>input_dict</strong> – Input dict from input key to a list of Artifacts. These are
-often outputs of another component in the pipeline and passed to the
-component by the orchestration system.</p></li>
-<li><p><strong>output_dict</strong> – Output dict from output key to a list of Artifacts. These are
-often consumed by a dependent component.</p></li>
-<li><p><strong>exec_properties</strong> – A dict of execution properties. These are inputs to
-pipeline with primitive types (int, string, float) and fully
-materialized when a pipeline is constructed. No dependency to other
-component or later injection from orchestration systems is necessary or
-possible on these values.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>execution_result_pb2.ExecutorOutput or None.</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py function">
-<dt id="zenml.components.tokenizer.executor.append_tf_example">
-<code class="sig-prename descclassname">zenml.components.tokenizer.executor.</code><code class="sig-name descname">append_tf_example</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ex</span><span class="p">:</span> <span class="n">tensorflow.core.example.example_pb2.Example</span></em>, <em class="sig-param"><span class="n">tokenizer_step</span><span class="p">:</span> <span class="n"><a class="reference internal" href="zenml.steps.tokenizer.html#zenml.steps.tokenizer.base_tokenizer.BaseTokenizer" title="zenml.steps.tokenizer.base_tokenizer.BaseTokenizer">zenml.steps.tokenizer.base_tokenizer.BaseTokenizer</a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.components.tokenizer.executor.append_tf_example" title="Permalink to this definition">¶</a></dt>
-<dd><p>Append the tokenizer encoding outputs as features to the existing data
-in tf.train.Example format.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>ex</strong> – tf.train.Example with the raw input features.</p></li>
-<li><p><strong>tokenizer_step</strong> – Local tokenizer step used in the NLP pipeline.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><dl class="simple">
-<dt>A tf.train.Example with all of the features from the <cite>ex</cite> input,</dt><dd><p>plus two features <cite>input_ids</cite> and <cite>attention_mask</cite> holding the word
-IDs and attention mask outputs from the tokenizer.</p>
-</dd>
-</dl>
-</p>
-</dd>
-</dl>
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.components.tokenizer">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.components.tokenizer" title="Permalink to this headline">¶</a></h2>
-</div>
-</div>
+</section>
+<section id="zenml-components-tokenizer-component-module">
+<h2>zenml.components.tokenizer.component module<a class="headerlink" href="#zenml-components-tokenizer-component-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="zenml-components-tokenizer-constants-module">
+<h2>zenml.components.tokenizer.constants module<a class="headerlink" href="#zenml-components-tokenizer-constants-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="zenml-components-tokenizer-executor-module">
+<h2>zenml.components.tokenizer.executor module<a class="headerlink" href="#zenml-components-tokenizer-executor-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-contents">
+<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
 
 
     </div>

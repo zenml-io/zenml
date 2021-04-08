@@ -3,7 +3,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>zenml.components.sequencer package &#8212; ZenML  documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
@@ -53,7 +54,7 @@
      href="index.html">Site <b class="caret"></b></a>
   <ul class="dropdown-menu globaltoc"
       role="menu"
-      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+      aria-labelledby="dLabelGlobalToc"><p><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
 </ul>
@@ -71,11 +72,11 @@
       aria-labelledby="dLabelLocalToc"><ul>
 <li><a class="reference internal" href="#">zenml.components.sequencer package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-zenml.components.sequencer.component">zenml.components.sequencer.component module</a></li>
-<li><a class="reference internal" href="#module-zenml.components.sequencer.constants">zenml.components.sequencer.constants module</a></li>
-<li><a class="reference internal" href="#module-zenml.components.sequencer.executor">zenml.components.sequencer.executor module</a></li>
-<li><a class="reference internal" href="#module-zenml.components.sequencer.utils">zenml.components.sequencer.utils module</a></li>
-<li><a class="reference internal" href="#module-zenml.components.sequencer">Module contents</a></li>
+<li><a class="reference internal" href="#zenml-components-sequencer-component-module">zenml.components.sequencer.component module</a></li>
+<li><a class="reference internal" href="#zenml-components-sequencer-constants-module">zenml.components.sequencer.constants module</a></li>
+<li><a class="reference internal" href="#zenml-components-sequencer-executor-module">zenml.components.sequencer.executor module</a></li>
+<li><a class="reference internal" href="#zenml-components-sequencer-utils-module">zenml.components.sequencer.utils module</a></li>
+<li><a class="reference internal" href="#module-contents">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -125,181 +126,27 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="zenml-components-sequencer-package">
+  <section id="zenml-components-sequencer-package">
 <h1>zenml.components.sequencer package<a class="headerlink" href="#zenml-components-sequencer-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="submodules">
+<section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="module-zenml.components.sequencer.component">
-<span id="zenml-components-sequencer-component-module"></span><h2>zenml.components.sequencer.component module<a class="headerlink" href="#module-zenml.components.sequencer.component" title="Permalink to this headline">¶</a></h2>
-<dl class="py class">
-<dt id="zenml.components.sequencer.component.Sequencer">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.components.sequencer.component.</code><code class="sig-name descname">Sequencer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">source</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">source_args</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">input_examples</span><span class="p">:</span> <span class="n">tfx.types.channel.Channel</span></em>, <em class="sig-param"><span class="n">statistics</span><span class="p">:</span> <span class="n">tfx.types.channel.Channel</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">schema</span><span class="p">:</span> <span class="n">tfx.types.channel.Channel</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.components.sequencer.component.Sequencer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tfx.dsl.components.base.base_component.BaseComponent</span></code></p>
-<dl class="py attribute">
-<dt id="zenml.components.sequencer.component.Sequencer.EXECUTOR_SPEC">
-<code class="sig-name descname">EXECUTOR_SPEC</code><em class="property"> = &lt;tfx.dsl.components.base.executor_spec.ExecutorClassSpec object&gt;</em><a class="headerlink" href="#zenml.components.sequencer.component.Sequencer.EXECUTOR_SPEC" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt id="zenml.components.sequencer.component.Sequencer.SPEC_CLASS">
-<code class="sig-name descname">SPEC_CLASS</code><a class="headerlink" href="#zenml.components.sequencer.component.Sequencer.SPEC_CLASS" title="Permalink to this definition">¶</a></dt>
-<dd><p>alias of <a class="reference internal" href="#zenml.components.sequencer.component.SequencerComponentSpec" title="zenml.components.sequencer.component.SequencerComponentSpec"><code class="xref py py-class docutils literal notranslate"><span class="pre">SequencerComponentSpec</span></code></a></p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt id="zenml.components.sequencer.component.SequencerComponentSpec">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.components.sequencer.component.</code><code class="sig-name descname">SequencerComponentSpec</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.components.sequencer.component.SequencerComponentSpec" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tfx.types.component_spec.ComponentSpec</span></code></p>
-<p>Sequencer component spec.</p>
-<dl class="py attribute">
-<dt id="zenml.components.sequencer.component.SequencerComponentSpec.INPUTS">
-<code class="sig-name descname">INPUTS</code><em class="property"> = {'input_examples': ChannelParameter(type: &lt;class 'tfx.types.standard_artifacts.Examples'&gt;), 'schema': ChannelParameter(type: &lt;class 'tfx.types.standard_artifacts.Schema'&gt;), 'statistics': ChannelParameter(type: &lt;class 'tfx.types.standard_artifacts.ExampleStatistics'&gt;)}</em><a class="headerlink" href="#zenml.components.sequencer.component.SequencerComponentSpec.INPUTS" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt id="zenml.components.sequencer.component.SequencerComponentSpec.OUTPUTS">
-<code class="sig-name descname">OUTPUTS</code><em class="property"> = {'output_examples': ChannelParameter(type: &lt;class 'tfx.types.standard_artifacts.Examples'&gt;)}</em><a class="headerlink" href="#zenml.components.sequencer.component.SequencerComponentSpec.OUTPUTS" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt id="zenml.components.sequencer.component.SequencerComponentSpec.PARAMETERS">
-<code class="sig-name descname">PARAMETERS</code><em class="property"> = {'args': ExecutionParameter(type: typing.Dict[str, typing.Any], optional: False), 'source': ExecutionParameter(type: &lt;class 'str'&gt;, optional: False)}</em><a class="headerlink" href="#zenml.components.sequencer.component.SequencerComponentSpec.PARAMETERS" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.components.sequencer.constants">
-<span id="zenml-components-sequencer-constants-module"></span><h2>zenml.components.sequencer.constants module<a class="headerlink" href="#module-zenml.components.sequencer.constants" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="module-zenml.components.sequencer.executor">
-<span id="zenml-components-sequencer-executor-module"></span><h2>zenml.components.sequencer.executor module<a class="headerlink" href="#module-zenml.components.sequencer.executor" title="Permalink to this headline">¶</a></h2>
-<dl class="py class">
-<dt id="zenml.components.sequencer.executor.Executor">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.components.sequencer.executor.</code><code class="sig-name descname">Executor</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">context</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>tfx.dsl.components.base.base_executor.BaseExecutor.Context<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.components.sequencer.executor.Executor" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tfx.dsl.components.base.base_executor.BaseExecutor</span></code></p>
-<dl class="py method">
-<dt id="zenml.components.sequencer.executor.Executor.Do">
-<code class="sig-name descname">Do</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_dict</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>List<span class="p">[</span>tfx.types.artifact.Artifact<span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">output_dict</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>List<span class="p">[</span>tfx.types.artifact.Artifact<span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">exec_properties</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#zenml.components.sequencer.executor.Executor.Do" title="Permalink to this definition">¶</a></dt>
-<dd><p>Main execution logic for the Sequencer component</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>input_dict</strong> – input channels</p></li>
-<li><p><strong>output_dict</strong> – output channels</p></li>
-<li><p><strong>exec_properties</strong> – the execution properties defined in the spec</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt id="zenml.components.sequencer.executor.RemoveKey">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.components.sequencer.executor.</code><code class="sig-name descname">RemoveKey</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">unused_args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">unused_kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.components.sequencer.executor.RemoveKey" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">apache_beam.transforms.core.DoFn</span></code></p>
-<dl class="py method">
-<dt id="zenml.components.sequencer.executor.RemoveKey.process">
-<code class="sig-name descname">process</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">element</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.components.sequencer.executor.RemoveKey.process" title="Permalink to this definition">¶</a></dt>
-<dd><p>Remove the key from the output of the CombineFn and return the
-resulting datapoints</p>
-</dd></dl>
-
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.components.sequencer.utils">
-<span id="zenml-components-sequencer-utils-module"></span><h2>zenml.components.sequencer.utils module<a class="headerlink" href="#module-zenml.components.sequencer.utils" title="Permalink to this headline">¶</a></h2>
-<dl class="py class">
-<dt id="zenml.components.sequencer.utils.ConvertToDataframe">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.components.sequencer.utils.</code><code class="sig-name descname">ConvertToDataframe</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">unused_args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">unused_kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.components.sequencer.utils.ConvertToDataframe" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">apache_beam.transforms.core.DoFn</span></code></p>
-<p>Beam PTransform responsible for converting the incoming Arrow table into
-a pandas dataframe</p>
-<dl class="py method">
-<dt id="zenml.components.sequencer.utils.ConvertToDataframe.process">
-<code class="sig-name descname">process</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">element</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.components.sequencer.utils.ConvertToDataframe.process" title="Permalink to this definition">¶</a></dt>
-<dd><p>Method to use for processing elements.</p>
-<p>This is invoked by <code class="docutils literal notranslate"><span class="pre">DoFnRunner</span></code> for each element of a input
-<code class="docutils literal notranslate"><span class="pre">PCollection</span></code>.</p>
-<p>The following parameters can be used as default values on <code class="docutils literal notranslate"><span class="pre">process</span></code>
-arguments to indicate that a DoFn accepts the corresponding parameters. For
-example, a DoFn might accept the element and its timestamp with the
-following signature:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="n">element</span><span class="o">=</span><span class="n">DoFn</span><span class="o">.</span><span class="n">ElementParam</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="n">DoFn</span><span class="o">.</span><span class="n">TimestampParam</span><span class="p">):</span>
-  <span class="o">...</span>
-</pre></div>
-</div>
-<p>The full set of parameters is:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">DoFn.ElementParam</span></code>: element to be processed, should not be mutated.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">DoFn.SideInputParam</span></code>: a side input that may be used when processing.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">DoFn.TimestampParam</span></code>: timestamp of the input element.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">DoFn.WindowParam</span></code>: <code class="docutils literal notranslate"><span class="pre">Window</span></code> the input element belongs to.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">DoFn.TimerParam</span></code>: a <code class="docutils literal notranslate"><span class="pre">userstate.RuntimeTimer</span></code> object defined by the
-spec of the parameter.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">DoFn.StateParam</span></code>: a <code class="docutils literal notranslate"><span class="pre">userstate.RuntimeState</span></code> object defined by the
-spec of the parameter.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">DoFn.KeyParam</span></code>: key associated with the element.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">DoFn.RestrictionParam</span></code>: an <code class="docutils literal notranslate"><span class="pre">iobase.RestrictionTracker</span></code> will be
-provided here to allow treatment as a Splittable <code class="docutils literal notranslate"><span class="pre">DoFn</span></code>. The restriction
-tracker will be derived from the restriction provider in the parameter.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">DoFn.WatermarkEstimatorParam</span></code>: a function that can be used to track
-output watermark of Splittable <code class="docutils literal notranslate"><span class="pre">DoFn</span></code> implementations.</p></li>
-</ul>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>element</strong> – The element to be processed</p></li>
-<li><p><strong>*args</strong> – side inputs</p></li>
-<li><p><strong>**kwargs</strong> – other keyword arguments.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>An Iterable of output elements or None.</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py function">
-<dt id="zenml.components.sequencer.utils.df_to_example">
-<code class="sig-prename descclassname">zenml.components.sequencer.utils.</code><code class="sig-name descname">df_to_example</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">instance</span></em><span class="sig-paren">)</span> &#x2192; tensorflow.core.example.example_pb2.Example<a class="headerlink" href="#zenml.components.sequencer.utils.df_to_example" title="Permalink to this definition">¶</a></dt>
-<dd><p>Auxiliary function to create a tf.train.Example from a pandas dataframe</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>instance</strong> – pd.DataFrame, the datapoint</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>tf.train.Example, the result</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="zenml.components.sequencer.utils.serialize">
-<code class="sig-prename descclassname">zenml.components.sequencer.utils.</code><code class="sig-name descname">serialize</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">instance</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.components.sequencer.utils.serialize" title="Permalink to this definition">¶</a></dt>
-<dd><p>Helper function to serialize a tf.train.Example in the beam pipeline</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>instance</strong> – the input, tf.train.Example</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>serialized version of the input</p>
-</dd>
-</dl>
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.components.sequencer">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.components.sequencer" title="Permalink to this headline">¶</a></h2>
-</div>
-</div>
+</section>
+<section id="zenml-components-sequencer-component-module">
+<h2>zenml.components.sequencer.component module<a class="headerlink" href="#zenml-components-sequencer-component-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="zenml-components-sequencer-constants-module">
+<h2>zenml.components.sequencer.constants module<a class="headerlink" href="#zenml-components-sequencer-constants-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="zenml-components-sequencer-executor-module">
+<h2>zenml.components.sequencer.executor module<a class="headerlink" href="#zenml-components-sequencer-executor-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="zenml-components-sequencer-utils-module">
+<h2>zenml.components.sequencer.utils module<a class="headerlink" href="#zenml-components-sequencer-utils-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-contents">
+<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
 
 
     </div>

@@ -3,7 +3,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>zenml.steps.preprocesser.standard_preprocesser package &#8212; ZenML  documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
@@ -53,7 +54,7 @@
      href="index.html">Site <b class="caret"></b></a>
   <ul class="dropdown-menu globaltoc"
       role="menu"
-      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+      aria-labelledby="dLabelGlobalToc"><p><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
 </ul>
@@ -72,8 +73,8 @@
 <li><a class="reference internal" href="#">zenml.steps.preprocesser.standard_preprocesser package</a><ul>
 <li><a class="reference internal" href="#subpackages">Subpackages</a></li>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser">zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser module</a></li>
-<li><a class="reference internal" href="#module-zenml.steps.preprocesser.standard_preprocesser">Module contents</a></li>
+<li><a class="reference internal" href="#zenml-steps-preprocesser-standard-preprocesser-standard-preprocesser-module">zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser module</a></li>
+<li><a class="reference internal" href="#module-contents">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -123,122 +124,33 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="zenml-steps-preprocesser-standard-preprocesser-package">
+  <section id="zenml-steps-preprocesser-standard-preprocesser-package">
 <h1>zenml.steps.preprocesser.standard_preprocesser package<a class="headerlink" href="#zenml-steps-preprocesser-standard-preprocesser-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="subpackages">
+<section id="subpackages">
 <h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="zenml.steps.preprocesser.standard_preprocesser.methods.html">zenml.steps.preprocesser.standard_preprocesser.methods package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="zenml.steps.preprocesser.standard_preprocesser.methods.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.preprocesser.standard_preprocesser.methods.html#module-zenml.steps.preprocesser.standard_preprocesser.methods.methods_nonseq_filling">zenml.steps.preprocesser.standard_preprocesser.methods.methods_nonseq_filling module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.preprocesser.standard_preprocesser.methods.html#module-zenml.steps.preprocesser.standard_preprocesser.methods.methods_transform">zenml.steps.preprocesser.standard_preprocesser.methods.methods_transform module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.preprocesser.standard_preprocesser.methods.html#module-zenml.steps.preprocesser.standard_preprocesser.methods.standard_methods">zenml.steps.preprocesser.standard_preprocesser.methods.standard_methods module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.preprocesser.standard_preprocesser.methods.html#module-zenml.steps.preprocesser.standard_preprocesser.methods">Module contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.steps.preprocesser.standard_preprocesser.methods.html#zenml-steps-preprocesser-standard-preprocesser-methods-methods-nonseq-filling-module">zenml.steps.preprocesser.standard_preprocesser.methods.methods_nonseq_filling module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.steps.preprocesser.standard_preprocesser.methods.html#zenml-steps-preprocesser-standard-preprocesser-methods-methods-transform-module">zenml.steps.preprocesser.standard_preprocesser.methods.methods_transform module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.steps.preprocesser.standard_preprocesser.methods.html#zenml-steps-preprocesser-standard-preprocesser-methods-standard-methods-module">zenml.steps.preprocesser.standard_preprocesser.methods.standard_methods module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.steps.preprocesser.standard_preprocesser.methods.html#module-contents">Module contents</a></li>
 </ul>
 </li>
 </ul>
 </div>
-</div>
-<div class="section" id="submodules">
+</section>
+<section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="module-zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser">
-<span id="zenml-steps-preprocesser-standard-preprocesser-standard-preprocesser-module"></span><h2>zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser module<a class="headerlink" href="#module-zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser" title="Permalink to this headline">¶</a></h2>
-<dl class="py class">
-<dt id="zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.StandardPreprocesser">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.</code><code class="sig-name descname">StandardPreprocesser</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">features</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">labels</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">overwrite</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">unused_kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.StandardPreprocesser" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="zenml.steps.preprocesser.html#zenml.steps.preprocesser.base_preprocesser.BasePreprocesserStep" title="zenml.steps.preprocesser.base_preprocesser.BasePreprocesserStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.steps.preprocesser.base_preprocesser.BasePreprocesserStep</span></code></a></p>
-<p>Standard Preprocessor step. This step can be used to apply a variety of
-standard preprocessing techniques from the field of Machine Learning,
-which are predefined in ZenML, to the data.</p>
-<dl class="py method">
-<dt id="zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.StandardPreprocesser.apply_filling">
-<em class="property">static </em><code class="sig-name descname">apply_filling</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">filling_list</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.StandardPreprocesser.apply_filling" title="Permalink to this definition">¶</a></dt>
-<dd><p>Apply a list of fillings to input data.
-:param data: Data to be input into the transform functions.
-:param filling_list: List of fillings to apply to the data. As of now,</p>
-<blockquote>
-<div><p>only the first filling in the list will be applied.</p>
-</div></blockquote>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>Imputed data after the first filling in filling_list
-has been applied.</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>data</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.StandardPreprocesser.apply_transform">
-<em class="property">static </em><code class="sig-name descname">apply_transform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">transform_list</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.StandardPreprocesser.apply_transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>Apply a list of transformations to input data.
-:param key: Key argument specific to vocabulary computation.
-:param data: Data to be input into the transform functions.
-:param transform_list: List of transforms to apply to the data.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p><dl class="simple">
-<dt>Transformed data after each of the transforms in</dt><dd><p>transform_list have been applied.</p>
-</dd>
-</dl>
-</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>data</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.StandardPreprocesser.get_preprocessing_fn">
-<code class="sig-name descname">get_preprocessing_fn</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.StandardPreprocesser.get_preprocessing_fn" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt id="zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.StandardPreprocesser.preprocessing_fn">
-<code class="sig-name descname">preprocessing_fn</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.StandardPreprocesser.preprocessing_fn" title="Permalink to this definition">¶</a></dt>
-<dd><p>Standard preprocessing function.
-:param inputs: Dict mapping features to their respective data.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p><dl class="simple">
-<dt>Dict mapping transformed features to their respective</dt><dd><p>transformed data.</p>
-</dd>
-</dl>
-</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>output</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py function">
-<dt id="zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.infer_schema">
-<code class="sig-prename descclassname">zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.</code><code class="sig-name descname">infer_schema</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.infer_schema" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function to infer a schema from input data.
-:param schema: Input dict mapping features to tf.Tensors.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>Dict mapping features to their respective data types.</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>schema_dict</p>
-</dd>
-</dl>
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.steps.preprocesser.standard_preprocesser">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.steps.preprocesser.standard_preprocesser" title="Permalink to this headline">¶</a></h2>
-</div>
-</div>
+</section>
+<section id="zenml-steps-preprocesser-standard-preprocesser-standard-preprocesser-module">
+<h2>zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser module<a class="headerlink" href="#zenml-steps-preprocesser-standard-preprocesser-standard-preprocesser-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-contents">
+<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
 
 
     </div>

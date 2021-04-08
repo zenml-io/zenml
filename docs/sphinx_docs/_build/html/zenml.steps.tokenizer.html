@@ -3,7 +3,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>zenml.steps.tokenizer package &#8212; ZenML  documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
@@ -53,7 +54,7 @@
      href="index.html">Site <b class="caret"></b></a>
   <ul class="dropdown-menu globaltoc"
       role="menu"
-      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+      aria-labelledby="dLabelGlobalToc"><p><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
 </ul>
@@ -71,10 +72,10 @@
       aria-labelledby="dLabelLocalToc"><ul>
 <li><a class="reference internal" href="#">zenml.steps.tokenizer package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-zenml.steps.tokenizer.base_tokenizer">zenml.steps.tokenizer.base_tokenizer module</a></li>
-<li><a class="reference internal" href="#module-zenml.steps.tokenizer.hf_tokenizer">zenml.steps.tokenizer.hf_tokenizer module</a></li>
-<li><a class="reference internal" href="#module-zenml.steps.tokenizer.utils">zenml.steps.tokenizer.utils module</a></li>
-<li><a class="reference internal" href="#module-zenml.steps.tokenizer">Module contents</a></li>
+<li><a class="reference internal" href="#zenml-steps-tokenizer-base-tokenizer-module">zenml.steps.tokenizer.base_tokenizer module</a></li>
+<li><a class="reference internal" href="#zenml-steps-tokenizer-hf-tokenizer-module">zenml.steps.tokenizer.hf_tokenizer module</a></li>
+<li><a class="reference internal" href="#zenml-steps-tokenizer-utils-module">zenml.steps.tokenizer.utils module</a></li>
+<li><a class="reference internal" href="#module-contents">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -124,124 +125,24 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="zenml-steps-tokenizer-package">
+  <section id="zenml-steps-tokenizer-package">
 <h1>zenml.steps.tokenizer package<a class="headerlink" href="#zenml-steps-tokenizer-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="submodules">
+<section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="module-zenml.steps.tokenizer.base_tokenizer">
-<span id="zenml-steps-tokenizer-base-tokenizer-module"></span><h2>zenml.steps.tokenizer.base_tokenizer module<a class="headerlink" href="#module-zenml.steps.tokenizer.base_tokenizer" title="Permalink to this headline">¶</a></h2>
-<dl class="py class">
-<dt id="zenml.steps.tokenizer.base_tokenizer.BaseTokenizer">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.steps.tokenizer.base_tokenizer.</code><code class="sig-name descname">BaseTokenizer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">text_feature</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">skip_training</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.tokenizer.base_tokenizer.BaseTokenizer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="zenml.steps.html#zenml.steps.base_step.BaseStep" title="zenml.steps.base_step.BaseStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.steps.base_step.BaseStep</span></code></a></p>
-<p>Base step class for all tokenizers.</p>
-<dl class="py method">
-<dt id="zenml.steps.tokenizer.base_tokenizer.BaseTokenizer.encode">
-<code class="sig-name descname">encode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sequence</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">output_format</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.tokenizer.base_tokenizer.BaseTokenizer.encode" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt id="zenml.steps.tokenizer.base_tokenizer.BaseTokenizer.load_vocab">
-<code class="sig-name descname">load_vocab</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path_to_vocab</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.tokenizer.base_tokenizer.BaseTokenizer.load_vocab" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt id="zenml.steps.tokenizer.base_tokenizer.BaseTokenizer.save">
-<code class="sig-name descname">save</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">output_dir</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.tokenizer.base_tokenizer.BaseTokenizer.save" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt id="zenml.steps.tokenizer.base_tokenizer.BaseTokenizer.train">
-<code class="sig-name descname">train</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">files</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.tokenizer.base_tokenizer.BaseTokenizer.train" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.steps.tokenizer.hf_tokenizer">
-<span id="zenml-steps-tokenizer-hf-tokenizer-module"></span><h2>zenml.steps.tokenizer.hf_tokenizer module<a class="headerlink" href="#module-zenml.steps.tokenizer.hf_tokenizer" title="Permalink to this headline">¶</a></h2>
-<dl class="py class">
-<dt id="zenml.steps.tokenizer.hf_tokenizer.HuggingFaceTokenizerStep">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.steps.tokenizer.hf_tokenizer.</code><code class="sig-name descname">HuggingFaceTokenizerStep</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">text_feature</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">tokenizer</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">tokenizer_params</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">skip_training</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">vocab_size</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">30000</span></em>, <em class="sig-param"><span class="n">min_frequency</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">2</span></em>, <em class="sig-param"><span class="n">sentence_length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">128</span></em>, <em class="sig-param"><span class="n">special_tokens</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">batch_size</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">64</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.tokenizer.hf_tokenizer.HuggingFaceTokenizerStep" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#zenml.steps.tokenizer.base_tokenizer.BaseTokenizer" title="zenml.steps.tokenizer.base_tokenizer.BaseTokenizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.steps.tokenizer.base_tokenizer.BaseTokenizer</span></code></a></p>
-<p>Base step for Tokenizer usage in NLP pipelines.</p>
-<p>This step can be used in Natural Language Processing (NLP) pipelines,
-where tokenization is a special form of preprocessing for text data in
-sequence form.</p>
-<p>This step was primarily designed to integrate the Huggingface ecosystem
-(transformers, tokenizers, datasets) into ZenML. Other tokenization
-libraries can work with this step, but are not guaranteed to work.</p>
-<dl class="py method">
-<dt id="zenml.steps.tokenizer.hf_tokenizer.HuggingFaceTokenizerStep.encode">
-<code class="sig-name descname">encode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sequence</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">output_format</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'tf_example'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.tokenizer.hf_tokenizer.HuggingFaceTokenizerStep.encode" title="Permalink to this definition">¶</a></dt>
-<dd><p>Encode a sentence with the tokenizer in this class and output it into
-the specified output format. Supported return types are “tf_tensors”,
-returning a dictionary of tensorflow tensor objects, “dict”, returning
-a dictionary of lists, and “tf_example”, returning a tf.train.Example
-proto file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>sequence</strong> – String, sentence to encode with the trained tokenizer.</p></li>
-<li><p><strong>output_format</strong> – String specifying output format. Can be either
-<cite>tf_tensors</cite>, <cite>dict</cite> or <cite>tf_example</cite>.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><dl class="simple">
-<dt>A representation of the sentence in IDs based on the vocabulary</dt><dd><p>of the tokenizer.</p>
-</dd>
-</dl>
-</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="zenml.steps.tokenizer.hf_tokenizer.HuggingFaceTokenizerStep.load_vocab">
-<code class="sig-name descname">load_vocab</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path_to_vocab</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.tokenizer.hf_tokenizer.HuggingFaceTokenizerStep.load_vocab" title="Permalink to this definition">¶</a></dt>
-<dd><p>Re-instantiate the class tokenizer with output vocabulary / merges.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>path_to_vocab</strong> – Path to vocab / merges files from a training run.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="zenml.steps.tokenizer.hf_tokenizer.HuggingFaceTokenizerStep.save">
-<code class="sig-name descname">save</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">output_dir</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.tokenizer.hf_tokenizer.HuggingFaceTokenizerStep.save" title="Permalink to this definition">¶</a></dt>
-<dd><p>Save a trained tokenizer model to disk.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>output_dir</strong> – Path to which to save the trained tokenizer.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="zenml.steps.tokenizer.hf_tokenizer.HuggingFaceTokenizerStep.train">
-<code class="sig-name descname">train</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">files</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.tokenizer.hf_tokenizer.HuggingFaceTokenizerStep.train" title="Permalink to this definition">¶</a></dt>
-<dd><p>Method for training a tokenizer on a data iterator. The iterator is
-constructed inside the function in a closure from a TFRecord dataset.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>files</strong> – List of TFRecord files in GZIP format to ingest.</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.steps.tokenizer.utils">
-<span id="zenml-steps-tokenizer-utils-module"></span><h2>zenml.steps.tokenizer.utils module<a class="headerlink" href="#module-zenml.steps.tokenizer.utils" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="module-zenml.steps.tokenizer">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.steps.tokenizer" title="Permalink to this headline">¶</a></h2>
-</div>
-</div>
+</section>
+<section id="zenml-steps-tokenizer-base-tokenizer-module">
+<h2>zenml.steps.tokenizer.base_tokenizer module<a class="headerlink" href="#zenml-steps-tokenizer-base-tokenizer-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="zenml-steps-tokenizer-hf-tokenizer-module">
+<h2>zenml.steps.tokenizer.hf_tokenizer module<a class="headerlink" href="#zenml-steps-tokenizer-hf-tokenizer-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="zenml-steps-tokenizer-utils-module">
+<h2>zenml.steps.tokenizer.utils module<a class="headerlink" href="#zenml-steps-tokenizer-utils-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-contents">
+<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
 
 
     </div>

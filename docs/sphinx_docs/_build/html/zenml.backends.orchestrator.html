@@ -3,7 +3,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>zenml.backends.orchestrator package &#8212; ZenML  documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
@@ -53,7 +54,7 @@
      href="index.html">Site <b class="caret"></b></a>
   <ul class="dropdown-menu globaltoc"
       role="menu"
-      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+      aria-labelledby="dLabelGlobalToc"><p><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
 </ul>
@@ -72,8 +73,8 @@
 <li><a class="reference internal" href="#">zenml.backends.orchestrator package</a><ul>
 <li><a class="reference internal" href="#subpackages">Subpackages</a></li>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-zenml.backends.orchestrator.entrypoint">zenml.backends.orchestrator.entrypoint module</a></li>
-<li><a class="reference internal" href="#module-zenml.backends.orchestrator">Module contents</a></li>
+<li><a class="reference internal" href="#zenml-backends-orchestrator-entrypoint-module">zenml.backends.orchestrator.entrypoint module</a></li>
+<li><a class="reference internal" href="#module-contents">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -123,76 +124,64 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="zenml-backends-orchestrator-package">
+  <section id="zenml-backends-orchestrator-package">
 <h1>zenml.backends.orchestrator package<a class="headerlink" href="#zenml-backends-orchestrator-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="subpackages">
+<section id="subpackages">
 <h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="zenml.backends.orchestrator.aws.html">zenml.backends.orchestrator.aws package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.aws.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.aws.html#module-zenml.backends.orchestrator.aws.orchestrator_aws_backend">zenml.backends.orchestrator.aws.orchestrator_aws_backend module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.aws.html#module-zenml.backends.orchestrator.aws.utils">zenml.backends.orchestrator.aws.utils module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.aws.html#module-zenml.backends.orchestrator.aws">Module contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.aws.html#zenml-backends-orchestrator-aws-orchestrator-aws-backend-module">zenml.backends.orchestrator.aws.orchestrator_aws_backend module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.aws.html#zenml-backends-orchestrator-aws-utils-module">zenml.backends.orchestrator.aws.utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.aws.html#module-contents">Module contents</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="zenml.backends.orchestrator.base.html">zenml.backends.orchestrator.base package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.base.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.base.html#module-zenml.backends.orchestrator.base.orchestrator_base_backend">zenml.backends.orchestrator.base.orchestrator_base_backend module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.base.html#module-zenml.backends.orchestrator.base.zenml_local_orchestrator">zenml.backends.orchestrator.base.zenml_local_orchestrator module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.base.html#module-zenml.backends.orchestrator.base">Module contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.base.html#zenml-backends-orchestrator-base-orchestrator-base-backend-module">zenml.backends.orchestrator.base.orchestrator_base_backend module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.base.html#zenml-backends-orchestrator-base-zenml-local-orchestrator-module">zenml.backends.orchestrator.base.zenml_local_orchestrator module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.base.html#module-contents">Module contents</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="zenml.backends.orchestrator.beam.html">zenml.backends.orchestrator.beam package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.beam.html#submodules">Submodules</a></li>
 <li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.beam.html#zenml-backends-orchestrator-beam-orchestrator-beam-backend-module">zenml.backends.orchestrator.beam.orchestrator_beam_backend module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.beam.html#zenml-backends-orchestrator-beam-zenml-beam-orchestrator-module">zenml.backends.orchestrator.beam.zenml_beam_orchestrator module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.beam.html#module-zenml.backends.orchestrator.beam">Module contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.beam.html#module-contents">Module contents</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="zenml.backends.orchestrator.gcp.html">zenml.backends.orchestrator.gcp package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.gcp.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.gcp.html#module-zenml.backends.orchestrator.gcp.orchestrator_gcp_backend">zenml.backends.orchestrator.gcp.orchestrator_gcp_backend module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.gcp.html#module-zenml.backends.orchestrator.gcp">Module contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.gcp.html#zenml-backends-orchestrator-gcp-orchestrator-gcp-backend-module">zenml.backends.orchestrator.gcp.orchestrator_gcp_backend module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.gcp.html#module-contents">Module contents</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="zenml.backends.orchestrator.kubeflow.html">zenml.backends.orchestrator.kubeflow package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.kubeflow.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.kubeflow.html#module-zenml.backends.orchestrator.kubeflow.orchestrator_kubeflow_backend">zenml.backends.orchestrator.kubeflow.orchestrator_kubeflow_backend module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.kubeflow.html#module-zenml.backends.orchestrator.kubeflow">Module contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.kubeflow.html#zenml-backends-orchestrator-kubeflow-orchestrator-kubeflow-backend-module">zenml.backends.orchestrator.kubeflow.orchestrator_kubeflow_backend module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.kubeflow.html#module-contents">Module contents</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="zenml.backends.orchestrator.kubernetes.html">zenml.backends.orchestrator.kubernetes package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.kubernetes.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.kubernetes.html#module-zenml.backends.orchestrator.kubernetes.orchestrator_kubernetes_backend">zenml.backends.orchestrator.kubernetes.orchestrator_kubernetes_backend module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.kubernetes.html#module-zenml.backends.orchestrator.kubernetes">Module contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.kubernetes.html#zenml-backends-orchestrator-kubernetes-orchestrator-kubernetes-backend-module">zenml.backends.orchestrator.kubernetes.orchestrator_kubernetes_backend module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.kubernetes.html#module-contents">Module contents</a></li>
 </ul>
 </li>
 </ul>
 </div>
-</div>
-<div class="section" id="submodules">
+</section>
+<section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="module-zenml.backends.orchestrator.entrypoint">
-<span id="zenml-backends-orchestrator-entrypoint-module"></span><h2>zenml.backends.orchestrator.entrypoint module<a class="headerlink" href="#module-zenml.backends.orchestrator.entrypoint" title="Permalink to this headline">¶</a></h2>
-<p>Entrypoint for gcp orchestrator</p>
-<dl class="py class">
-<dt id="zenml.backends.orchestrator.entrypoint.PipelineRunner">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.backends.orchestrator.entrypoint.</code><code class="sig-name descname">PipelineRunner</code><a class="headerlink" href="#zenml.backends.orchestrator.entrypoint.PipelineRunner" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<dl class="py method">
-<dt id="zenml.backends.orchestrator.entrypoint.PipelineRunner.run_pipeline">
-<code class="sig-name descname">run_pipeline</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config_b64</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.orchestrator.entrypoint.PipelineRunner.run_pipeline" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.backends.orchestrator">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.backends.orchestrator" title="Permalink to this headline">¶</a></h2>
-</div>
-</div>
+</section>
+<section id="zenml-backends-orchestrator-entrypoint-module">
+<h2>zenml.backends.orchestrator.entrypoint module<a class="headerlink" href="#zenml-backends-orchestrator-entrypoint-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-contents">
+<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
 
 
     </div>

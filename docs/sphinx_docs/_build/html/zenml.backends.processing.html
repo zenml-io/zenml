@@ -3,7 +3,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>zenml.backends.processing package &#8212; ZenML  documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
@@ -53,7 +54,7 @@
      href="index.html">Site <b class="caret"></b></a>
   <ul class="dropdown-menu globaltoc"
       role="menu"
-      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+      aria-labelledby="dLabelGlobalToc"><p><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
 </ul>
@@ -71,10 +72,10 @@
       aria-labelledby="dLabelLocalToc"><ul>
 <li><a class="reference internal" href="#">zenml.backends.processing package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-zenml.backends.processing.processing_base_backend">zenml.backends.processing.processing_base_backend module</a></li>
-<li><a class="reference internal" href="#module-zenml.backends.processing.processing_dataflow_backend">zenml.backends.processing.processing_dataflow_backend module</a></li>
-<li><a class="reference internal" href="#module-zenml.backends.processing.processing_spark_backend">zenml.backends.processing.processing_spark_backend module</a></li>
-<li><a class="reference internal" href="#module-zenml.backends.processing">Module contents</a></li>
+<li><a class="reference internal" href="#zenml-backends-processing-processing-base-backend-module">zenml.backends.processing.processing_base_backend module</a></li>
+<li><a class="reference internal" href="#zenml-backends-processing-processing-dataflow-backend-module">zenml.backends.processing.processing_dataflow_backend module</a></li>
+<li><a class="reference internal" href="#zenml-backends-processing-processing-spark-backend-module">zenml.backends.processing.processing_spark_backend module</a></li>
+<li><a class="reference internal" href="#module-contents">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -124,97 +125,24 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="zenml-backends-processing-package">
+  <section id="zenml-backends-processing-package">
 <h1>zenml.backends.processing package<a class="headerlink" href="#zenml-backends-processing-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="submodules">
+<section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="module-zenml.backends.processing.processing_base_backend">
-<span id="zenml-backends-processing-processing-base-backend-module"></span><h2>zenml.backends.processing.processing_base_backend module<a class="headerlink" href="#module-zenml.backends.processing.processing_base_backend" title="Permalink to this headline">¶</a></h2>
-<p>Definition of the data Processing Backend</p>
-<dl class="py class">
-<dt id="zenml.backends.processing.processing_base_backend.ProcessingBaseBackend">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.backends.processing.processing_base_backend.</code><code class="sig-name descname">ProcessingBaseBackend</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.processing.processing_base_backend.ProcessingBaseBackend" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="zenml.backends.html#zenml.backends.base_backend.BaseBackend" title="zenml.backends.base_backend.BaseBackend"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.backends.base_backend.BaseBackend</span></code></a></p>
-<p>Use this class to run a ZenML pipeline locally.</p>
-<p>Every ZenML pipeline runs in backends.</p>
-<p>A dedicated processing backend can be used to efficiently process large
-amounts of incoming data in parallel, potentially distributed across
-multiple machines. This can happen on local processing backends as well
-as cloud-based variants like Google Cloud Dataflow. More powerful machines
-with higher core counts and clock speeds can be leveraged to increase
-processing throughput significantly.</p>
-<dl class="py attribute">
-<dt id="zenml.backends.processing.processing_base_backend.ProcessingBaseBackend.BACKEND_TYPE">
-<code class="sig-name descname">BACKEND_TYPE</code><em class="property"> = 'processing'</em><a class="headerlink" href="#zenml.backends.processing.processing_base_backend.ProcessingBaseBackend.BACKEND_TYPE" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt id="zenml.backends.processing.processing_base_backend.ProcessingBaseBackend.get_beam_args">
-<code class="sig-name descname">get_beam_args</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline_name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pipeline_root</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span>List<span class="p">[</span>str<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#zenml.backends.processing.processing_base_backend.ProcessingBaseBackend.get_beam_args" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a list of beam args for the pipeline.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>pipeline_name</strong> – Name of the pipeline.</p></li>
-<li><p><strong>pipeline_root</strong> – Root dir of pipeline.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.backends.processing.processing_dataflow_backend">
-<span id="zenml-backends-processing-processing-dataflow-backend-module"></span><h2>zenml.backends.processing.processing_dataflow_backend module<a class="headerlink" href="#module-zenml.backends.processing.processing_dataflow_backend" title="Permalink to this headline">¶</a></h2>
-<p>Definition of the DataFlow Processing Backend</p>
-<dl class="py class">
-<dt id="zenml.backends.processing.processing_dataflow_backend.ProcessingDataFlowBackend">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.backends.processing.processing_dataflow_backend.</code><code class="sig-name descname">ProcessingDataFlowBackend</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">project</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">staging_location</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">temp_location</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">region</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'europe-west1'</span></em>, <em class="sig-param"><span class="n">job_name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'zen_1617886389'</span></em>, <em class="sig-param"><span class="n">image</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'eu.gcr.io/maiot-zenml/zenml:dataflow-0.3.6.1'</span></em>, <em class="sig-param"><span class="n">machine_type</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'n1-standard-4'</span></em>, <em class="sig-param"><span class="n">num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">4</span></em>, <em class="sig-param"><span class="n">max_num_workers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">10</span></em>, <em class="sig-param"><span class="n">disk_size_gb</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">50</span></em>, <em class="sig-param"><span class="n">autoscaling_algorithm</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'THROUGHPUT_BASED'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.processing.processing_dataflow_backend.ProcessingDataFlowBackend" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#zenml.backends.processing.processing_base_backend.ProcessingBaseBackend" title="zenml.backends.processing.processing_base_backend.ProcessingBaseBackend"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.backends.processing.processing_base_backend.ProcessingBaseBackend</span></code></a></p>
-<p>Use this to run a ZenML pipeline on Google Dataflow.</p>
-<p>This backend utilizes the beam v2 runner to run a custom docker image on
-the Dataflow job.</p>
-<dl class="py method">
-<dt id="zenml.backends.processing.processing_dataflow_backend.ProcessingDataFlowBackend.get_beam_args">
-<code class="sig-name descname">get_beam_args</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline_name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pipeline_root</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span>List<span class="p">[</span>str<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#zenml.backends.processing.processing_dataflow_backend.ProcessingDataFlowBackend.get_beam_args" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a list of beam args for the pipeline.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>pipeline_name</strong> – Name of the pipeline.</p></li>
-<li><p><strong>pipeline_root</strong> – Root dir of pipeline.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.backends.processing.processing_spark_backend">
-<span id="zenml-backends-processing-processing-spark-backend-module"></span><h2>zenml.backends.processing.processing_spark_backend module<a class="headerlink" href="#module-zenml.backends.processing.processing_spark_backend" title="Permalink to this headline">¶</a></h2>
-<p>Definition of the Spark Processing Backend</p>
-<dl class="py class">
-<dt id="zenml.backends.processing.processing_spark_backend.ProcessingSparkBackend">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.backends.processing.processing_spark_backend.</code><code class="sig-name descname">ProcessingSparkBackend</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.processing.processing_spark_backend.ProcessingSparkBackend" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#zenml.backends.processing.processing_base_backend.ProcessingBaseBackend" title="zenml.backends.processing.processing_base_backend.ProcessingBaseBackend"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.backends.processing.processing_base_backend.ProcessingBaseBackend</span></code></a></p>
-<p>Use this to run pipelines on Apache Spark.</p>
-<p>A dedicated processing backend can be used to efficiently process large
-amounts of incoming data in parallel, potentially distributed across
-multiple machines. This can happen on base processing backends as well
-as cloud-based variants like Google Cloud Dataflow. More powerful machines
-with higher core counts and clock speeds can be leveraged to increase
-processing throughput significantly.</p>
-<p>This backend is not implemented yet.</p>
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.backends.processing">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.backends.processing" title="Permalink to this headline">¶</a></h2>
-</div>
-</div>
+</section>
+<section id="zenml-backends-processing-processing-base-backend-module">
+<h2>zenml.backends.processing.processing_base_backend module<a class="headerlink" href="#zenml-backends-processing-processing-base-backend-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="zenml-backends-processing-processing-dataflow-backend-module">
+<h2>zenml.backends.processing.processing_dataflow_backend module<a class="headerlink" href="#zenml-backends-processing-processing-dataflow-backend-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="zenml-backends-processing-processing-spark-backend-module">
+<h2>zenml.backends.processing.processing_spark_backend module<a class="headerlink" href="#zenml-backends-processing-processing-spark-backend-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-contents">
+<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
 
 
     </div>

@@ -3,7 +3,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>zenml.components.data_gen package &#8212; ZenML  documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
@@ -53,7 +54,7 @@
      href="index.html">Site <b class="caret"></b></a>
   <ul class="dropdown-menu globaltoc"
       role="menu"
-      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+      aria-labelledby="dLabelGlobalToc"><p><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
 </ul>
@@ -71,11 +72,11 @@
       aria-labelledby="dLabelLocalToc"><ul>
 <li><a class="reference internal" href="#">zenml.components.data_gen package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-zenml.components.data_gen.component">zenml.components.data_gen.component module</a></li>
-<li><a class="reference internal" href="#module-zenml.components.data_gen.constants">zenml.components.data_gen.constants module</a></li>
-<li><a class="reference internal" href="#module-zenml.components.data_gen.executor">zenml.components.data_gen.executor module</a></li>
-<li><a class="reference internal" href="#module-zenml.components.data_gen.utils">zenml.components.data_gen.utils module</a></li>
-<li><a class="reference internal" href="#module-zenml.components.data_gen">Module contents</a></li>
+<li><a class="reference internal" href="#zenml-components-data-gen-component-module">zenml.components.data_gen.component module</a></li>
+<li><a class="reference internal" href="#zenml-components-data-gen-constants-module">zenml.components.data_gen.constants module</a></li>
+<li><a class="reference internal" href="#zenml-components-data-gen-executor-module">zenml.components.data_gen.executor module</a></li>
+<li><a class="reference internal" href="#zenml-components-data-gen-utils-module">zenml.components.data_gen.utils module</a></li>
+<li><a class="reference internal" href="#module-contents">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -125,201 +126,27 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="zenml-components-data-gen-package">
+  <section id="zenml-components-data-gen-package">
 <h1>zenml.components.data_gen package<a class="headerlink" href="#zenml-components-data-gen-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="submodules">
+<section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="module-zenml.components.data_gen.component">
-<span id="zenml-components-data-gen-component-module"></span><h2>zenml.components.data_gen.component module<a class="headerlink" href="#module-zenml.components.data_gen.component" title="Permalink to this headline">¶</a></h2>
-<dl class="py class">
-<dt id="zenml.components.data_gen.component.DataGen">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.components.data_gen.component.</code><code class="sig-name descname">DataGen</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">source</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">source_args</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">instance_name</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">examples</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>tfx.types.component_spec.ChannelParameter<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.components.data_gen.component.DataGen" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tfx.dsl.components.base.base_component.BaseComponent</span></code></p>
-<dl class="py attribute">
-<dt id="zenml.components.data_gen.component.DataGen.EXECUTOR_SPEC">
-<code class="sig-name descname">EXECUTOR_SPEC</code><em class="property"> = &lt;tfx.dsl.components.base.executor_spec.ExecutorClassSpec object&gt;</em><a class="headerlink" href="#zenml.components.data_gen.component.DataGen.EXECUTOR_SPEC" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt id="zenml.components.data_gen.component.DataGen.SPEC_CLASS">
-<code class="sig-name descname">SPEC_CLASS</code><a class="headerlink" href="#zenml.components.data_gen.component.DataGen.SPEC_CLASS" title="Permalink to this definition">¶</a></dt>
-<dd><p>alias of <a class="reference internal" href="#zenml.components.data_gen.component.DataGenSpec" title="zenml.components.data_gen.component.DataGenSpec"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataGenSpec</span></code></a></p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt id="zenml.components.data_gen.component.DataGenSpec">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.components.data_gen.component.</code><code class="sig-name descname">DataGenSpec</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.components.data_gen.component.DataGenSpec" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tfx.types.component_spec.ComponentSpec</span></code></p>
-<dl class="py attribute">
-<dt id="zenml.components.data_gen.component.DataGenSpec.INPUTS">
-<code class="sig-name descname">INPUTS</code><em class="property"> = {}</em><a class="headerlink" href="#zenml.components.data_gen.component.DataGenSpec.INPUTS" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt id="zenml.components.data_gen.component.DataGenSpec.OUTPUTS">
-<code class="sig-name descname">OUTPUTS</code><em class="property"> = {'examples': ChannelParameter(type: &lt;class 'tfx.types.standard_artifacts.Examples'&gt;)}</em><a class="headerlink" href="#zenml.components.data_gen.component.DataGenSpec.OUTPUTS" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt id="zenml.components.data_gen.component.DataGenSpec.PARAMETERS">
-<code class="sig-name descname">PARAMETERS</code><em class="property"> = {'args': ExecutionParameter(type: typing.Dict[str, typing.Any], optional: False), 'name': ExecutionParameter(type: &lt;class 'str'&gt;, optional: False), 'source': ExecutionParameter(type: &lt;class 'str'&gt;, optional: False)}</em><a class="headerlink" href="#zenml.components.data_gen.component.DataGenSpec.PARAMETERS" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.components.data_gen.constants">
-<span id="zenml-components-data-gen-constants-module"></span><h2>zenml.components.data_gen.constants module<a class="headerlink" href="#module-zenml.components.data_gen.constants" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="module-zenml.components.data_gen.executor">
-<span id="zenml-components-data-gen-executor-module"></span><h2>zenml.components.data_gen.executor module<a class="headerlink" href="#module-zenml.components.data_gen.executor" title="Permalink to this headline">¶</a></h2>
-<dl class="py class">
-<dt id="zenml.components.data_gen.executor.DataExecutor">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.components.data_gen.executor.</code><code class="sig-name descname">DataExecutor</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">context</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>tfx.dsl.components.base.base_executor.BaseExecutor.Context<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.components.data_gen.executor.DataExecutor" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tfx.dsl.components.base.base_executor.BaseExecutor</span></code></p>
-<dl class="py method">
-<dt id="zenml.components.data_gen.executor.DataExecutor.Do">
-<code class="sig-name descname">Do</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_dict</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>List<span class="p">[</span>tfx.types.artifact.Artifact<span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">output_dict</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>List<span class="p">[</span>tfx.types.artifact.Artifact<span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">exec_properties</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#zenml.components.data_gen.executor.DataExecutor.Do" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>input_dict</strong> – </p></li>
-<li><p><strong>output_dict</strong> – </p></li>
-<li><p><strong>exec_properties</strong> – </p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py function">
-<dt id="zenml.components.data_gen.executor.WriteToTFRecord">
-<code class="sig-prename descclassname">zenml.components.data_gen.executor.</code><code class="sig-name descname">WriteToTFRecord</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">datapoints</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">schema</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">output_split_path</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; apache_beam.pvalue.PDone<a class="headerlink" href="#zenml.components.data_gen.executor.WriteToTFRecord" title="Permalink to this definition">¶</a></dt>
-<dd><p>Infers schema and writes to TFRecord</p>
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.components.data_gen.utils">
-<span id="zenml-components-data-gen-utils-module"></span><h2>zenml.components.data_gen.utils module<a class="headerlink" href="#module-zenml.components.data_gen.utils" title="Permalink to this headline">¶</a></h2>
-<p>Utils for data_gen</p>
-<dl class="py class">
-<dt id="zenml.components.data_gen.utils.DataType">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.components.data_gen.utils.</code><code class="sig-name descname">DataType</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.components.data_gen.utils.DataType" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.IntEnum</span></code></p>
-<p>An enumeration.</p>
-<dl class="py attribute">
-<dt id="zenml.components.data_gen.utils.DataType.BYTES">
-<code class="sig-name descname">BYTES</code><em class="property"> = 2</em><a class="headerlink" href="#zenml.components.data_gen.utils.DataType.BYTES" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt id="zenml.components.data_gen.utils.DataType.FLOAT">
-<code class="sig-name descname">FLOAT</code><em class="property"> = 1</em><a class="headerlink" href="#zenml.components.data_gen.utils.DataType.FLOAT" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt id="zenml.components.data_gen.utils.DataType.INT">
-<code class="sig-name descname">INT</code><em class="property"> = 0</em><a class="headerlink" href="#zenml.components.data_gen.utils.DataType.INT" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt id="zenml.components.data_gen.utils.DataType.UNKNOWN">
-<code class="sig-name descname">UNKNOWN</code><em class="property"> = -1</em><a class="headerlink" href="#zenml.components.data_gen.utils.DataType.UNKNOWN" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt id="zenml.components.data_gen.utils.DtypeInferrer">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.components.data_gen.utils.</code><code class="sig-name descname">DtypeInferrer</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">unused_args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">unused_kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.components.data_gen.utils.DtypeInferrer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">apache_beam.transforms.core.CombineFn</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
-<p>A beam.CombineFn to infer data types</p>
-<dl class="py method">
-<dt id="zenml.components.data_gen.utils.DtypeInferrer.add_input">
-<code class="sig-name descname">add_input</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">accumulator</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span><a class="reference internal" href="#zenml.components.data_gen.utils.DataType" title="zenml.components.data_gen.utils.DataType">zenml.components.data_gen.utils.DataType</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">element</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>bytes<span class="p">]</span></span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; Dict<span class="p">[</span>str<span class="p">, </span><a class="reference internal" href="#zenml.components.data_gen.utils.DataType" title="zenml.components.data_gen.utils.DataType">zenml.components.data_gen.utils.DataType</a><span class="p">]</span><a class="headerlink" href="#zenml.components.data_gen.utils.DtypeInferrer.add_input" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return result of folding element into accumulator.</p>
-<p>CombineFn implementors must override add_input.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>mutable_accumulator</strong> – the current accumulator,
-may be modified and returned for efficiency</p></li>
-<li><p><strong>element</strong> – the element to add, should not be mutated</p></li>
-<li><p><strong>*args</strong> – Additional arguments and side inputs.</p></li>
-<li><p><strong>**kwargs</strong> – Additional arguments and side inputs.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="zenml.components.data_gen.utils.DtypeInferrer.create_accumulator">
-<code class="sig-name descname">create_accumulator</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; Dict<span class="p">[</span>str<span class="p">, </span><a class="reference internal" href="#zenml.components.data_gen.utils.DataType" title="zenml.components.data_gen.utils.DataType">zenml.components.data_gen.utils.DataType</a><span class="p">]</span><a class="headerlink" href="#zenml.components.data_gen.utils.DtypeInferrer.create_accumulator" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a fresh, empty accumulator for the combine operation.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>*args</strong> – Additional arguments and side inputs.</p></li>
-<li><p><strong>**kwargs</strong> – Additional arguments and side inputs.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="zenml.components.data_gen.utils.DtypeInferrer.extract_output">
-<code class="sig-name descname">extract_output</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">accumulator</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; Dict<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span><a class="headerlink" href="#zenml.components.data_gen.utils.DtypeInferrer.extract_output" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return result of converting accumulator into the output value.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>accumulator</strong> – the final accumulator value computed by this CombineFn
-for the entire input key or PCollection. Can be modified for
-efficiency.</p></li>
-<li><p><strong>*args</strong> – Additional arguments and side inputs.</p></li>
-<li><p><strong>**kwargs</strong> – Additional arguments and side inputs.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="zenml.components.data_gen.utils.DtypeInferrer.merge_accumulators">
-<code class="sig-name descname">merge_accumulators</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">accumulators</span><span class="p">:</span> <span class="n">List<span class="p">[</span>Dict<span class="p">[</span>str<span class="p">, </span><a class="reference internal" href="#zenml.components.data_gen.utils.DataType" title="zenml.components.data_gen.utils.DataType">zenml.components.data_gen.utils.DataType</a><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; Dict<span class="p">[</span>str<span class="p">, </span><a class="reference internal" href="#zenml.components.data_gen.utils.DataType" title="zenml.components.data_gen.utils.DataType">zenml.components.data_gen.utils.DataType</a><span class="p">]</span><a class="headerlink" href="#zenml.components.data_gen.utils.DtypeInferrer.merge_accumulators" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the result of merging several accumulators
-to a single accumulator value.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>accumulators</strong> – the accumulators to merge.
-Only the first accumulator may be modified and returned for efficiency;
-the other accumulators should not be mutated, because they may be
-shared with other code and mutating them could lead to incorrect
-results or data corruption.</p></li>
-<li><p><strong>*args</strong> – Additional arguments and side inputs.</p></li>
-<li><p><strong>**kwargs</strong> – Additional arguments and side inputs.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py function">
-<dt id="zenml.components.data_gen.utils.append_tf_example">
-<code class="sig-prename descclassname">zenml.components.data_gen.utils.</code><code class="sig-name descname">append_tf_example</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">schema</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; tensorflow.core.example.example_pb2.Example<a class="headerlink" href="#zenml.components.data_gen.utils.append_tf_example" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add tf example to row</p>
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.components.data_gen">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.components.data_gen" title="Permalink to this headline">¶</a></h2>
-</div>
-</div>
+</section>
+<section id="zenml-components-data-gen-component-module">
+<h2>zenml.components.data_gen.component module<a class="headerlink" href="#zenml-components-data-gen-component-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="zenml-components-data-gen-constants-module">
+<h2>zenml.components.data_gen.constants module<a class="headerlink" href="#zenml-components-data-gen-constants-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="zenml-components-data-gen-executor-module">
+<h2>zenml.components.data_gen.executor module<a class="headerlink" href="#zenml-components-data-gen-executor-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="zenml-components-data-gen-utils-module">
+<h2>zenml.components.data_gen.utils module<a class="headerlink" href="#zenml-components-data-gen-utils-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-contents">
+<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
 
 
     </div>

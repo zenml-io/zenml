@@ -3,7 +3,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>zenml.backends.training package &#8212; ZenML  documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
@@ -53,7 +54,7 @@
      href="index.html">Site <b class="caret"></b></a>
   <ul class="dropdown-menu globaltoc"
       role="menu"
-      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+      aria-labelledby="dLabelGlobalToc"><p><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
 </ul>
@@ -71,9 +72,9 @@
       aria-labelledby="dLabelLocalToc"><ul>
 <li><a class="reference internal" href="#">zenml.backends.training package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-zenml.backends.training.training_base_backend">zenml.backends.training.training_base_backend module</a></li>
-<li><a class="reference internal" href="#module-zenml.backends.training.training_gcaip_backend">zenml.backends.training.training_gcaip_backend module</a></li>
-<li><a class="reference internal" href="#module-zenml.backends.training">Module contents</a></li>
+<li><a class="reference internal" href="#zenml-backends-training-training-base-backend-module">zenml.backends.training.training_base_backend module</a></li>
+<li><a class="reference internal" href="#zenml-backends-training-training-gcaip-backend-module">zenml.backends.training.training_gcaip_backend module</a></li>
+<li><a class="reference internal" href="#module-contents">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -123,78 +124,21 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="zenml-backends-training-package">
+  <section id="zenml-backends-training-package">
 <h1>zenml.backends.training package<a class="headerlink" href="#zenml-backends-training-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="submodules">
+<section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="module-zenml.backends.training.training_base_backend">
-<span id="zenml-backends-training-training-base-backend-module"></span><h2>zenml.backends.training.training_base_backend module<a class="headerlink" href="#module-zenml.backends.training.training_base_backend" title="Permalink to this headline">¶</a></h2>
-<p>Definition of the base Training Backend</p>
-<dl class="py class">
-<dt id="zenml.backends.training.training_base_backend.TrainingBaseBackend">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.backends.training.training_base_backend.</code><code class="sig-name descname">TrainingBaseBackend</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.training.training_base_backend.TrainingBaseBackend" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="zenml.backends.html#zenml.backends.base_backend.BaseBackend" title="zenml.backends.base_backend.BaseBackend"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.backends.base_backend.BaseBackend</span></code></a></p>
-<p>Base class for all base Training ZenML backends.</p>
-<p>Every ZenML pipeline runs in backends.</p>
-<p>A training backend can be used to efficiently train a machine learning
-model on large amounts of data. Since most common machine learning models
-leverage mainly linear algebra operations under the hood, they can
-potentially benefit a lot from dedicated training hardware like Graphics
-Processing Units (GPUs) or application-specific integrated circuits
-(ASICs).</p>
-<dl class="py attribute">
-<dt id="zenml.backends.training.training_base_backend.TrainingBaseBackend.BACKEND_TYPE">
-<code class="sig-name descname">BACKEND_TYPE</code><em class="property"> = 'training'</em><a class="headerlink" href="#zenml.backends.training.training_base_backend.TrainingBaseBackend.BACKEND_TYPE" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt id="zenml.backends.training.training_base_backend.TrainingBaseBackend.get_custom_config">
-<code class="sig-name descname">get_custom_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.training.training_base_backend.TrainingBaseBackend.get_custom_config" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a dict to be passed as a custom_config to the Trainer.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="zenml.backends.training.training_base_backend.TrainingBaseBackend.get_executor_spec">
-<code class="sig-name descname">get_executor_spec</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.training.training_base_backend.TrainingBaseBackend.get_executor_spec" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a TFX Executor spec for the Trainer Component.</p>
-</dd></dl>
-
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.backends.training.training_gcaip_backend">
-<span id="zenml-backends-training-training-gcaip-backend-module"></span><h2>zenml.backends.training.training_gcaip_backend module<a class="headerlink" href="#module-zenml.backends.training.training_gcaip_backend" title="Permalink to this headline">¶</a></h2>
-<p>Definition of the GCAIP Training Backend</p>
-<dl class="py class">
-<dt id="zenml.backends.training.training_gcaip_backend.SingleGPUTrainingGCAIPBackend">
-<em class="property">class </em><code class="sig-prename descclassname">zenml.backends.training.training_gcaip_backend.</code><code class="sig-name descname">SingleGPUTrainingGCAIPBackend</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">project</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">job_dir</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">gpu_type</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'K80'</span></em>, <em class="sig-param"><span class="n">machine_type</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'n1-standard-4'</span></em>, <em class="sig-param"><span class="n">image</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'eu.gcr.io/maiot-zenml/zenml:cuda-0.3.6.1'</span></em>, <em class="sig-param"><span class="n">job_name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'train_1617886391'</span></em>, <em class="sig-param"><span class="n">region</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'europe-west1'</span></em>, <em class="sig-param"><span class="n">python_version</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'3.7'</span></em>, <em class="sig-param"><span class="n">max_running_time</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">7200</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.training.training_gcaip_backend.SingleGPUTrainingGCAIPBackend" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#zenml.backends.training.training_base_backend.TrainingBaseBackend" title="zenml.backends.training.training_base_backend.TrainingBaseBackend"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.backends.training.training_base_backend.TrainingBaseBackend</span></code></a></p>
-<p>Runs a TrainerStep on Google Cloud AI Platform.</p>
-<p>A training backend can be used to efficiently train a machine learning
-model on large amounts of data. This triggers a Training job on the Google
-Cloud AI Platform service: <a class="reference external" href="https://cloud.google.com/ai-platform">https://cloud.google.com/ai-platform</a>.</p>
-<p>This backend is meant for a training job with a single GPU only. The user
-has a choice of three GPUs, specified in the GCPGPUTypes Enum.</p>
-<dl class="py method">
-<dt id="zenml.backends.training.training_gcaip_backend.SingleGPUTrainingGCAIPBackend.get_custom_config">
-<code class="sig-name descname">get_custom_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.training.training_gcaip_backend.SingleGPUTrainingGCAIPBackend.get_custom_config" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a dict to be passed as a custom_config to the Trainer.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="zenml.backends.training.training_gcaip_backend.SingleGPUTrainingGCAIPBackend.get_executor_spec">
-<code class="sig-name descname">get_executor_spec</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.training.training_gcaip_backend.SingleGPUTrainingGCAIPBackend.get_executor_spec" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a TFX Executor spec for the Trainer Component.</p>
-</dd></dl>
-
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.backends.training">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.backends.training" title="Permalink to this headline">¶</a></h2>
-</div>
-</div>
+</section>
+<section id="zenml-backends-training-training-base-backend-module">
+<h2>zenml.backends.training.training_base_backend module<a class="headerlink" href="#zenml-backends-training-training-base-backend-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="zenml-backends-training-training-gcaip-backend-module">
+<h2>zenml.backends.training.training_gcaip_backend module<a class="headerlink" href="#zenml-backends-training-training-gcaip-backend-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-contents">
+<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
 
 
     </div>
