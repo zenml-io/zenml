@@ -1,0 +1,568 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zenml.steps.split package &#8212; ZenML  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="zenml-steps-split-package">
+<h1>zenml.steps.split package<a class="headerlink" href="#zenml-steps-split-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.steps.split.base_split_step">
+<span id="zenml-steps-split-base-split-step-module"></span><h2>zenml.steps.split.base_split_step module<a class="headerlink" href="#module-zenml.steps.split.base_split_step" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="zenml.steps.split.base_split_step.BaseSplit">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">zenml.steps.split.base_split_step.</span></code><code class="sig-name descname"><span class="pre">BaseSplit</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">statistics</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">tensorflow_metadata.proto.v0.statistics_pb2.DatasetFeatureStatisticsList</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">schema</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">tensorflow_metadata.proto.v0.schema_pb2.Schema</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.base_split_step.BaseSplit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="zenml.steps.html#zenml.steps.base_step.BaseStep" title="zenml.steps.base_step.BaseStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.steps.base_step.BaseStep</span></code></a></p>
+<p>Base split class. Each custom data split should derive from this.
+In order to define a custom split, override the base split’s partition_fn
+method.</p>
+<dl class="py attribute">
+<dt id="zenml.steps.split.base_split_step.BaseSplit.STEP_TYPE">
+<code class="sig-name descname"><span class="pre">STEP_TYPE</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'split'</span></em><a class="headerlink" href="#zenml.steps.split.base_split_step.BaseSplit.STEP_TYPE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.steps.split.base_split_step.BaseSplit.get_num_splits">
+<code class="sig-name descname"><span class="pre">get_num_splits</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.base_split_step.BaseSplit.get_num_splits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the total number of splits.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>A positive integer, the number of splits.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.steps.split.base_split_step.BaseSplit.get_split_names">
+<em class="property"><span class="pre">abstract</span> </em><code class="sig-name descname"><span class="pre">get_split_names</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#zenml.steps.split.base_split_step.BaseSplit.get_split_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the names of the splits associated with this split step.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>A list of strings, which are the split names.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.steps.split.base_split_step.BaseSplit.partition_fn">
+<em class="property"><span class="pre">abstract</span> </em><code class="sig-name descname"><span class="pre">partition_fn</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.base_split_step.BaseSplit.partition_fn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the partition function associated with the current split type,
+along with keyword arguments used in the signature of the partition
+function.</p>
+<p>To be eligible in use in a Split Step, the partition_fn has to adhere
+to the following design contract:</p>
+<ol class="arabic">
+<li><p>The signature is of the following type:</p>
+<blockquote>
+<div><div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">partition_fn</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">,</span>
+</pre></div>
+</div>
+<p>where n is the number of splits;</p>
+</div></blockquote>
+</li>
+<li><p>The partition_fn only returns signed integers i less than n, i.e.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>0 ≤ i ≤ n - 1.
+</pre></div>
+</div>
+</li>
+</ol>
+<dl class="simple">
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>A tuple (partition_fn, kwargs) of the partition function and its</dt><dd><p>additional keyword arguments (see above).</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.steps.split.categorical_domain_split_step">
+<span id="zenml-steps-split-categorical-domain-split-step-module"></span><h2>zenml.steps.split.categorical_domain_split_step module<a class="headerlink" href="#module-zenml.steps.split.categorical_domain_split_step" title="Permalink to this headline">¶</a></h2>
+<p>Implementation of the categorical domain split.</p>
+<dl class="py class">
+<dt id="zenml.steps.split.categorical_domain_split_step.CategoricalDomainSplit">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">zenml.steps.split.categorical_domain_split_step.</span></code><code class="sig-name descname"><span class="pre">CategoricalDomainSplit</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">categorical_column</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split_map</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unknown_category_policy</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'skip'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">statistics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">schema</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.categorical_domain_split_step.CategoricalDomainSplit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.steps.split.base_split_step.BaseSplit" title="zenml.steps.split.base_split_step.BaseSplit"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.steps.split.base_split_step.BaseSplit</span></code></a></p>
+<p>Categorical domain split. Use this to split data based on values in
+a single categorical column. A categorical column is defined here as a
+column with finitely many values of type <cite>integer</cite> or <cite>string</cite>.</p>
+<dl class="py method">
+<dt id="zenml.steps.split.categorical_domain_split_step.CategoricalDomainSplit.get_split_names">
+<code class="sig-name descname"><span class="pre">get_split_names</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#zenml.steps.split.categorical_domain_split_step.CategoricalDomainSplit.get_split_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the names of the splits associated with this split step.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>A list of strings, which are the split names.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.steps.split.categorical_domain_split_step.CategoricalDomainSplit.partition_fn">
+<code class="sig-name descname"><span class="pre">partition_fn</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.categorical_domain_split_step.CategoricalDomainSplit.partition_fn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the partition function associated with the current split type,
+along with keyword arguments used in the signature of the partition
+function.</p>
+<p>To be eligible in use in a Split Step, the partition_fn has to adhere
+to the following design contract:</p>
+<ol class="arabic">
+<li><p>The signature is of the following type:</p>
+<blockquote>
+<div><div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">partition_fn</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">,</span>
+</pre></div>
+</div>
+<p>where n is the number of splits;</p>
+</div></blockquote>
+</li>
+<li><p>The partition_fn only returns signed integers i less than n, i.e.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>0 ≤ i ≤ n - 1.
+</pre></div>
+</div>
+</li>
+</ol>
+<dl class="simple">
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>A tuple (partition_fn, kwargs) of the partition function and its</dt><dd><p>additional keyword arguments (see above).</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.split.categorical_domain_split_step.CategoricalPartitionFn">
+<code class="sig-prename descclassname"><span class="pre">zenml.steps.split.categorical_domain_split_step.</span></code><code class="sig-name descname"><span class="pre">CategoricalPartitionFn</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">element</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_partitions</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categorical_column</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split_map</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unknown_category_policy</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">int</span><a class="headerlink" href="#zenml.steps.split.categorical_domain_split_step.CategoricalPartitionFn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for a categorical split on data to be used in a beam.Partition.
+Args:</p>
+<blockquote>
+<div><p>element: Data point, given as a tf.train.Example.
+num_partitions: Number of splits, unused here.
+categorical_column: Name of the categorical column in the data on which</p>
+<blockquote>
+<div><p>to perform the split.</p>
+</div></blockquote>
+<dl class="simple">
+<dt>split_map: Dict {split_name: [category_list]} mapping the categorical</dt><dd><p>values in categorical_column to their respective splits.</p>
+</dd>
+<dt>unknown_category_policy: Text, identifier on how to handle categorical</dt><dd><p>values not present in the split_map.</p>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>An integer n, where 0 ≤ n ≤ num_partitions - 1.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.split.categorical_domain_split_step.lint_split_map">
+<code class="sig-prename descclassname"><span class="pre">zenml.steps.split.categorical_domain_split_step.</span></code><code class="sig-name descname"><span class="pre">lint_split_map</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split_map</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.categorical_domain_split_step.lint_split_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Small utility to lint the split_map</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.steps.split.categorical_ratio_split_step">
+<span id="zenml-steps-split-categorical-ratio-split-step-module"></span><h2>zenml.steps.split.categorical_ratio_split_step module<a class="headerlink" href="#module-zenml.steps.split.categorical_ratio_split_step" title="Permalink to this headline">¶</a></h2>
+<p>Implementation of the ratio-based categorical split.</p>
+<dl class="py class">
+<dt id="zenml.steps.split.categorical_ratio_split_step.CategoricalRatioSplit">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">zenml.steps.split.categorical_ratio_split_step.</span></code><code class="sig-name descname"><span class="pre">CategoricalRatioSplit</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">categorical_column</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categories</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split_ratio</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unknown_category_policy</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'skip'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">statistics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">schema</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.categorical_ratio_split_step.CategoricalRatioSplit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.steps.split.base_split_step.BaseSplit" title="zenml.steps.split.base_split_step.BaseSplit"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.steps.split.base_split_step.BaseSplit</span></code></a></p>
+<p>Categorical ratio split. Use this to split data based on a list of values
+of interest in a single categorical column. A categorical column is
+defined here as a column with finitely many values of type <cite>integer</cite> or
+<cite>string</cite>. In contrast to the categorical domain split, here categorical
+values are assigned to different splits by the corresponding percentages,
+defined inside a split ratio object.</p>
+<dl class="py method">
+<dt id="zenml.steps.split.categorical_ratio_split_step.CategoricalRatioSplit.get_split_names">
+<code class="sig-name descname"><span class="pre">get_split_names</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#zenml.steps.split.categorical_ratio_split_step.CategoricalRatioSplit.get_split_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the names of the splits associated with this split step.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>A list of strings, which are the split names.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.steps.split.categorical_ratio_split_step.CategoricalRatioSplit.partition_fn">
+<code class="sig-name descname"><span class="pre">partition_fn</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.categorical_ratio_split_step.CategoricalRatioSplit.partition_fn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the partition function associated with the current split type,
+along with keyword arguments used in the signature of the partition
+function.</p>
+<p>To be eligible in use in a Split Step, the partition_fn has to adhere
+to the following design contract:</p>
+<ol class="arabic">
+<li><p>The signature is of the following type:</p>
+<blockquote>
+<div><div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">partition_fn</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">,</span>
+</pre></div>
+</div>
+<p>where n is the number of splits;</p>
+</div></blockquote>
+</li>
+<li><p>The partition_fn only returns signed integers i less than n, i.e.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>0 ≤ i ≤ n - 1.
+</pre></div>
+</div>
+</li>
+</ol>
+<dl class="simple">
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>A tuple (partition_fn, kwargs) of the partition function and its</dt><dd><p>additional keyword arguments (see above).</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.split.categorical_ratio_split_step.lint_split_map">
+<code class="sig-prename descclassname"><span class="pre">zenml.steps.split.categorical_ratio_split_step.</span></code><code class="sig-name descname"><span class="pre">lint_split_map</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split_map</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.categorical_ratio_split_step.lint_split_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Small utility to lint the split_map</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.steps.split.constants">
+<span id="zenml-steps-split-constants-module"></span><h2>zenml.steps.split.constants module<a class="headerlink" href="#module-zenml.steps.split.constants" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.steps.split.no_split_step">
+<span id="zenml-steps-split-no-split-step-module"></span><h2>zenml.steps.split.no_split_step module<a class="headerlink" href="#module-zenml.steps.split.no_split_step" title="Permalink to this headline">¶</a></h2>
+<p>Implementation of the identity split.</p>
+<dl class="py class">
+<dt id="zenml.steps.split.no_split_step.NoSplit">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">zenml.steps.split.no_split_step.</span></code><code class="sig-name descname"><span class="pre">NoSplit</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">statistics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">schema</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.no_split_step.NoSplit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.steps.split.base_split_step.BaseSplit" title="zenml.steps.split.base_split_step.BaseSplit"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.steps.split.base_split_step.BaseSplit</span></code></a></p>
+<p>No split function. Use this to pass your entire data forward completely
+unchanged.</p>
+<dl class="py method">
+<dt id="zenml.steps.split.no_split_step.NoSplit.get_split_names">
+<code class="sig-name descname"><span class="pre">get_split_names</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#zenml.steps.split.no_split_step.NoSplit.get_split_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the names of the splits associated with this split step.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>A list of strings, which are the split names.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.steps.split.no_split_step.NoSplit.partition_fn">
+<code class="sig-name descname"><span class="pre">partition_fn</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.no_split_step.NoSplit.partition_fn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the partition function associated with the current split type,
+along with keyword arguments used in the signature of the partition
+function.</p>
+<p>To be eligible in use in a Split Step, the partition_fn has to adhere
+to the following design contract:</p>
+<ol class="arabic">
+<li><p>The signature is of the following type:</p>
+<blockquote>
+<div><div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">partition_fn</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">,</span>
+</pre></div>
+</div>
+<p>where n is the number of splits;</p>
+</div></blockquote>
+</li>
+<li><p>The partition_fn only returns signed integers i less than n, i.e.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>0 ≤ i ≤ n - 1.
+</pre></div>
+</div>
+</li>
+</ol>
+<dl class="simple">
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>A tuple (partition_fn, kwargs) of the partition function and its</dt><dd><p>additional keyword arguments (see above).</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.split.no_split_step.NoSplitPartitionFn">
+<code class="sig-prename descclassname"><span class="pre">zenml.steps.split.no_split_step.</span></code><code class="sig-name descname"><span class="pre">NoSplitPartitionFn</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">element</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_partitions</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">int</span><a class="headerlink" href="#zenml.steps.split.no_split_step.NoSplitPartitionFn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for no split on data; to be used in a beam.Partition.
+Args:</p>
+<blockquote>
+<div><p>element: Data point, given as a tf.train.Example.
+num_partitions: Number of splits, unused here.</p>
+</div></blockquote>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>An integer n, where 0 ≤ n ≤ num_partitions - 1.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.steps.split.random_split">
+<span id="zenml-steps-split-random-split-module"></span><h2>zenml.steps.split.random_split module<a class="headerlink" href="#module-zenml.steps.split.random_split" title="Permalink to this headline">¶</a></h2>
+<p>Implementation of a random split of the input data set.</p>
+<dl class="py class">
+<dt id="zenml.steps.split.random_split.RandomSplit">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">zenml.steps.split.random_split.</span></code><code class="sig-name descname"><span class="pre">RandomSplit</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split_map</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">statistics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">schema</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.random_split.RandomSplit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.steps.split.base_split_step.BaseSplit" title="zenml.steps.split.base_split_step.BaseSplit"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.steps.split.base_split_step.BaseSplit</span></code></a></p>
+<p>Random split. Use this to randomly split data based on a cumulative
+distribution function defined by a split_map dict.</p>
+<dl class="py method">
+<dt id="zenml.steps.split.random_split.RandomSplit.get_split_names">
+<code class="sig-name descname"><span class="pre">get_split_names</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#zenml.steps.split.random_split.RandomSplit.get_split_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the names of the splits associated with this split step.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>A list of strings, which are the split names.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.steps.split.random_split.RandomSplit.partition_fn">
+<code class="sig-name descname"><span class="pre">partition_fn</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.random_split.RandomSplit.partition_fn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the partition function associated with the current split type,
+along with keyword arguments used in the signature of the partition
+function.</p>
+<p>To be eligible in use in a Split Step, the partition_fn has to adhere
+to the following design contract:</p>
+<ol class="arabic">
+<li><p>The signature is of the following type:</p>
+<blockquote>
+<div><div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">partition_fn</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">,</span>
+</pre></div>
+</div>
+<p>where n is the number of splits;</p>
+</div></blockquote>
+</li>
+<li><p>The partition_fn only returns signed integers i less than n, i.e.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>0 ≤ i ≤ n - 1.
+</pre></div>
+</div>
+</li>
+</ol>
+<dl class="simple">
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>A tuple (partition_fn, kwargs) of the partition function and its</dt><dd><p>additional keyword arguments (see above).</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.split.random_split.RandomSplitPartitionFn">
+<code class="sig-prename descclassname"><span class="pre">zenml.steps.split.random_split.</span></code><code class="sig-name descname"><span class="pre">RandomSplitPartitionFn</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">element</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_partitions</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split_map</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">int</span><a class="headerlink" href="#zenml.steps.split.random_split.RandomSplitPartitionFn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for a random split of the data; to be used in a beam.Partition.
+This function implements a simple random split algorithm by drawing
+integers from a categorical distribution defined by the values in
+split_map.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>element: Data point, in format tf.train.Example.
+num_partitions: Number of splits, unused here.
+split_map: Dict mapping {split_name: ratio of data in split}.</p>
+</dd>
+<dt>Returns:</dt><dd><p>An integer n, where 0 ≤ n ≤ num_partitions - 1.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.split.random_split.lint_split_map">
+<code class="sig-prename descclassname"><span class="pre">zenml.steps.split.random_split.</span></code><code class="sig-name descname"><span class="pre">lint_split_map</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split_map</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.random_split.lint_split_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Small utility to lint the split_map</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.steps.split.split_step_test">
+<span id="zenml-steps-split-split-step-test-module"></span><h2>zenml.steps.split.split_step_test module<a class="headerlink" href="#module-zenml.steps.split.split_step_test" title="Permalink to this headline">¶</a></h2>
+<p>Tests for different split steps.</p>
+<dl class="py function">
+<dt id="zenml.steps.split.split_step_test.create_random_dummy_data">
+<code class="sig-prename descclassname"><span class="pre">zenml.steps.split.split_step_test.</span></code><code class="sig-name descname"><span class="pre">create_random_dummy_data</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.split_step_test.create_random_dummy_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.split.split_step_test.create_structured_dummy_data">
+<code class="sig-prename descclassname"><span class="pre">zenml.steps.split.split_step_test.</span></code><code class="sig-name descname"><span class="pre">create_structured_dummy_data</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.split_step_test.create_structured_dummy_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.split.split_step_test.test_categorical_domain_split">
+<code class="sig-prename descclassname"><span class="pre">zenml.steps.split.split_step_test.</span></code><code class="sig-name descname"><span class="pre">test_categorical_domain_split</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">create_structured_dummy_data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.split_step_test.test_categorical_domain_split" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.split.split_step_test.test_categorical_ratio_split">
+<code class="sig-prename descclassname"><span class="pre">zenml.steps.split.split_step_test.</span></code><code class="sig-name descname"><span class="pre">test_categorical_ratio_split</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">create_structured_dummy_data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.split_step_test.test_categorical_ratio_split" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.split.split_step_test.test_categorical_split_ordering">
+<code class="sig-prename descclassname"><span class="pre">zenml.steps.split.split_step_test.</span></code><code class="sig-name descname"><span class="pre">test_categorical_split_ordering</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">create_structured_dummy_data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.split_step_test.test_categorical_split_ordering" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.split.split_step_test.test_no_split">
+<code class="sig-prename descclassname"><span class="pre">zenml.steps.split.split_step_test.</span></code><code class="sig-name descname"><span class="pre">test_no_split</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">create_random_dummy_data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.split_step_test.test_no_split" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.split.split_step_test.test_random_split">
+<code class="sig-prename descclassname"><span class="pre">zenml.steps.split.split_step_test.</span></code><code class="sig-name descname"><span class="pre">test_random_split</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">create_random_dummy_data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.split_step_test.test_random_split" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-zenml.steps.split.utils">
+<span id="zenml-steps-split-utils-module"></span><h2>zenml.steps.split.utils module<a class="headerlink" href="#module-zenml.steps.split.utils" title="Permalink to this headline">¶</a></h2>
+<p>Some split step utilities are implemented here.</p>
+<dl class="py function">
+<dt id="zenml.steps.split.utils.get_categorical_value">
+<code class="sig-prename descclassname"><span class="pre">zenml.steps.split.utils.</span></code><code class="sig-name descname"><span class="pre">get_categorical_value</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">example</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">tensorflow.core.example.example_pb2.Example</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cat_col</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.utils.get_categorical_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function to get the categorical value from a tf.train.Example.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>example: tf.train.Example, data point in proto format.
+cat_col: Name of the categorical feature of which to extract the
+value from.</p>
+</dd>
+<dt>Returns:</dt><dd><p>value: The categorical value found in the <cite>cat_col</cite> feature inside
+the tf.train.Example.</p>
+</dd>
+<dt>Raises:</dt><dd><p>AssertionError: If the <cite>cat_col</cite> feature is not present in the
+tf.train.Example.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.split.utils.partition_cat_list">
+<code class="sig-prename descclassname"><span class="pre">zenml.steps.split.utils.</span></code><code class="sig-name descname"><span class="pre">partition_cat_list</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cat_list</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_ratio</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.utils.partition_cat_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper to split a category list by the entries in a category split dict.</p>
+<dl>
+<dt>Args:</dt><dd><p>cat_list: List of categorical values found in the categorical column.
+c_ratio: Dict {fold: ratio} mapping the ratio of all categories to</p>
+<blockquote>
+<div><p>split folds.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>cat_dict: Dict {fold: categorical_list} mapping lists of categorical</dt><dd><p>values in the data to their designated split folds.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.steps.split.utils_test">
+<span id="zenml-steps-split-utils-test-module"></span><h2>zenml.steps.split.utils_test module<a class="headerlink" href="#module-zenml.steps.split.utils_test" title="Permalink to this headline">¶</a></h2>
+<p>Split step utils tests.</p>
+<dl class="py function">
+<dt id="zenml.steps.split.utils_test.test_get_categorical_value">
+<code class="sig-prename descclassname"><span class="pre">zenml.steps.split.utils_test.</span></code><code class="sig-name descname"><span class="pre">test_get_categorical_value</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.utils_test.test_get_categorical_value" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.split.utils_test.test_partition_cat_list">
+<code class="sig-prename descclassname"><span class="pre">zenml.steps.split.utils_test.</span></code><code class="sig-name descname"><span class="pre">test_partition_cat_list</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.split.utils_test.test_partition_cat_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-zenml.steps.split">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.steps.split" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">ZenML</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, maiot GmbH.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/zenml.steps.split.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
