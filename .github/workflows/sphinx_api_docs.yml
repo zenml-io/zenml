@@ -18,7 +18,7 @@ jobs:
     - uses: actions/checkout@v2
 
     # Commit and push to gitbook
-    - uses: actions/checkout@v2
+    - name: Commit and push to gitbook   test
       run: |
         date > generated.txt
         git config user.name github-actions
