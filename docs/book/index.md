@@ -1,5 +1,11 @@
 # Introduction
 
+{% hint style="danger" %}
+**IMPORTANT NOTICE**: As of **April 8th, 2021**, we are migrating and reworking our docs for a better developer experience. We expect the migration to be complete by **April 15th.**   
+  
+During the migration, you might experience broken links, images and more. We apologize for the inconvenience. Please bear with us as we make the docs a better developer experience for you. Thank you!
+{% endhint %}
+
 **ZenML** is an extensible, open-source MLOps framework for using production-ready Machine Learning pipelines, in a simple way. At its core, ZenML will orchestrate your experiment pipelines from **sourcing data** to **splitting, preprocessing, training**, all the way to the **evaluation of results** and even **serving**.
 
 While there are other pipelining solutions for Machine Learning experiments, ZenML is focussed on two unique approaches:
