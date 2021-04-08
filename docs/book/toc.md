@@ -77,6 +77,3 @@
 * [Contact](support/contact.md)
 * [FAQ](support/faq-wip.md)
 
-## Test
-* [Index test](index.md)
-* [HTML test](zenml.steps.split.html)
