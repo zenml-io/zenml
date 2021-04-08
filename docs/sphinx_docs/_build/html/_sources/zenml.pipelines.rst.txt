@@ -1,0 +1,85 @@
+zenml.pipelines package
+=======================
+
+Submodules
+----------
+
+zenml.pipelines.base\_pipeline module
+-------------------------------------
+
+.. automodule:: zenml.pipelines.base_pipeline
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.pipelines.base\_pipeline\_test module
+-------------------------------------------
+
+.. automodule:: zenml.pipelines.base_pipeline_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.pipelines.data\_pipeline module
+-------------------------------------
+
+.. automodule:: zenml.pipelines.data_pipeline
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.pipelines.deploy\_pipeline module
+---------------------------------------
+
+.. automodule:: zenml.pipelines.deploy_pipeline
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.pipelines.infer\_pipeline module
+--------------------------------------
+
+.. automodule:: zenml.pipelines.infer_pipeline
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.pipelines.nlp\_pipeline module
+------------------------------------
+
+.. automodule:: zenml.pipelines.nlp_pipeline
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.pipelines.training\_pipeline module
+-----------------------------------------
+
+.. automodule:: zenml.pipelines.training_pipeline
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.pipelines.training\_pipeline\_test module
+-----------------------------------------------
+
+.. automodule:: zenml.pipelines.training_pipeline_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.pipelines.utils module
+----------------------------
+
+.. automodule:: zenml.pipelines.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: zenml.pipelines
+   :members:
+   :undoc-members:
+   :show-inheritance:

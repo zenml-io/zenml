@@ -39,11 +39,13 @@ jobs:
         cd docs/
         python generate_api_docs.py
 
-#    # Generate docstring documentation
-#    - name: Appending to toc
-#      run: |
-#        cd docs/
-#        python generate_api_docs.py
+    # Generate docstring documentation
+    - name: Commit and push to gitbook
+      run: |
+        git add docs/sphinx_docs/_build/
+        git add docs/book/toc.md
+        git commit -m 'Generated docs [ci skip]'
+        git push
 
     # Build the book
     - name: Print output

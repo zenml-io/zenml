@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zenml.backends package &#8212; ZenML  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="zenml.backends.orchestrator package" href="zenml.backends.orchestrator.html" />
+    <link rel="prev" title="zenml package" href="zenml.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          ZenML</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">zenml.backends package</a><ul>
+<li><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-zenml.backends.base_backend">zenml.backends.base_backend module</a></li>
+<li><a class="reference internal" href="#module-zenml.backends.base_backend_test">zenml.backends.base_backend_test module</a></li>
+<li><a class="reference internal" href="#module-zenml.backends">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="zenml.html" title="Previous Chapter: zenml package"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; zenml package</span>
+    </a>
+  </li>
+  <li>
+    <a href="zenml.backends.orchestrator.html" title="Next Chapter: zenml.backends.orchestrator package"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">zenml.backend... &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/zenml.backends.rst.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="section" id="zenml-backends-package">
+<h1>zenml.backends package<a class="headerlink" href="#zenml-backends-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="zenml.backends.orchestrator.html">zenml.backends.orchestrator package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="zenml.backends.orchestrator.aws.html">zenml.backends.orchestrator.aws package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="zenml.backends.orchestrator.aws.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.backends.orchestrator.aws.html#module-zenml.backends.orchestrator.aws.orchestrator_aws_backend">zenml.backends.orchestrator.aws.orchestrator_aws_backend module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.backends.orchestrator.aws.html#module-zenml.backends.orchestrator.aws.utils">zenml.backends.orchestrator.aws.utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.backends.orchestrator.aws.html#module-zenml.backends.orchestrator.aws">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="zenml.backends.orchestrator.base.html">zenml.backends.orchestrator.base package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="zenml.backends.orchestrator.base.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.backends.orchestrator.base.html#module-zenml.backends.orchestrator.base.orchestrator_base_backend">zenml.backends.orchestrator.base.orchestrator_base_backend module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.backends.orchestrator.base.html#module-zenml.backends.orchestrator.base.zenml_local_orchestrator">zenml.backends.orchestrator.base.zenml_local_orchestrator module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.backends.orchestrator.base.html#module-zenml.backends.orchestrator.base">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="zenml.backends.orchestrator.beam.html">zenml.backends.orchestrator.beam package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="zenml.backends.orchestrator.beam.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.backends.orchestrator.beam.html#zenml-backends-orchestrator-beam-orchestrator-beam-backend-module">zenml.backends.orchestrator.beam.orchestrator_beam_backend module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.backends.orchestrator.beam.html#zenml-backends-orchestrator-beam-zenml-beam-orchestrator-module">zenml.backends.orchestrator.beam.zenml_beam_orchestrator module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.backends.orchestrator.beam.html#module-zenml.backends.orchestrator.beam">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="zenml.backends.orchestrator.gcp.html">zenml.backends.orchestrator.gcp package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="zenml.backends.orchestrator.gcp.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.backends.orchestrator.gcp.html#module-zenml.backends.orchestrator.gcp.orchestrator_gcp_backend">zenml.backends.orchestrator.gcp.orchestrator_gcp_backend module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.backends.orchestrator.gcp.html#module-zenml.backends.orchestrator.gcp">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="zenml.backends.orchestrator.kubeflow.html">zenml.backends.orchestrator.kubeflow package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="zenml.backends.orchestrator.kubeflow.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.backends.orchestrator.kubeflow.html#module-zenml.backends.orchestrator.kubeflow.orchestrator_kubeflow_backend">zenml.backends.orchestrator.kubeflow.orchestrator_kubeflow_backend module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.backends.orchestrator.kubeflow.html#module-zenml.backends.orchestrator.kubeflow">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="zenml.backends.orchestrator.kubernetes.html">zenml.backends.orchestrator.kubernetes package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="zenml.backends.orchestrator.kubernetes.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.backends.orchestrator.kubernetes.html#module-zenml.backends.orchestrator.kubernetes.orchestrator_kubernetes_backend">zenml.backends.orchestrator.kubernetes.orchestrator_kubernetes_backend module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.backends.orchestrator.kubernetes.html#module-zenml.backends.orchestrator.kubernetes">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.html#module-zenml.backends.orchestrator.entrypoint">zenml.backends.orchestrator.entrypoint module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.orchestrator.html#module-zenml.backends.orchestrator">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="zenml.backends.processing.html">zenml.backends.processing package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.processing.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.processing.html#module-zenml.backends.processing.processing_base_backend">zenml.backends.processing.processing_base_backend module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.processing.html#module-zenml.backends.processing.processing_dataflow_backend">zenml.backends.processing.processing_dataflow_backend module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.processing.html#module-zenml.backends.processing.processing_spark_backend">zenml.backends.processing.processing_spark_backend module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.processing.html#module-zenml.backends.processing">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="zenml.backends.training.html">zenml.backends.training package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.training.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.training.html#module-zenml.backends.training.training_base_backend">zenml.backends.training.training_base_backend module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.training.html#module-zenml.backends.training.training_gcaip_backend">zenml.backends.training.training_gcaip_backend module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.backends.training.html#module-zenml.backends.training">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.backends.base_backend">
+<span id="zenml-backends-base-backend-module"></span><h2>zenml.backends.base_backend module<a class="headerlink" href="#module-zenml.backends.base_backend" title="Permalink to this headline">¶</a></h2>
+<p>Definition of a the base Backend</p>
+<dl class="py class">
+<dt id="zenml.backends.base_backend.BaseBackend">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.backends.base_backend.</code><code class="sig-name descname">BaseBackend</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.base_backend.BaseBackend" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Base class for all ZenML backends.</p>
+<p>Every ZenML pipeline runs in backends that defines where and how the
+pipeline runs. Override this base class to define your own custom Pipeline
+backend.</p>
+<p>There are three types of backends available in ZenML: Orchestration
+backends, processing backends and training backends. Each of them serve
+different purposes in different stages of the pipeline.
+An orchestration backend is useful for scheduling and executing the
+different pipeline components.</p>
+<p>A dedicated processing backend can be used to efficiently process large
+amounts of incoming data in parallel, potentially distributed across
+multiple machines. This can happen on local processing backends as well
+as cloud-based variants like Google Cloud Dataflow. More powerful machines
+with higher core counts and clock speeds can be leveraged to increase
+processing throughput significantly.</p>
+<p>A training backend can be used to efficiently train a machine learning
+model on large amounts of data. Since most common machine learning models
+leverage mainly linear algebra operations under the hood, they can
+potentially benefit a lot from dedicated training hardware like Graphics
+Processing Units (GPUs) or application-specific integrated circuits
+(ASICs). Again, local training backends or cloud-based training backends
+like Google Cloud AI Platform (GCAIP) with or without GPU/ASIC support
+can be used.</p>
+<dl class="py attribute">
+<dt id="zenml.backends.base_backend.BaseBackend.BACKEND_TYPE">
+<code class="sig-name descname">BACKEND_TYPE</code><em class="property"> = None</em><a class="headerlink" href="#zenml.backends.base_backend.BaseBackend.BACKEND_TYPE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.backends.base_backend.BaseBackend.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span><span class="p">:</span> <span class="n">Dict</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.base_backend.BaseBackend.from_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert from ZenML config dict to ZenML Backend object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> – a ZenML config in dict-form (probably loaded from YAML)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.backends.base_backend.BaseBackend.to_config">
+<code class="sig-name descname">to_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.base_backend.BaseBackend.to_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts Backend to ZenML config block.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.backends.base_backend_test">
+<span id="zenml-backends-base-backend-test-module"></span><h2>zenml.backends.base_backend_test module<a class="headerlink" href="#module-zenml.backends.base_backend_test" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="zenml.backends.base_backend_test.test_to_from_config">
+<code class="sig-prename descclassname">zenml.backends.base_backend_test.</code><code class="sig-name descname">test_to_from_config</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">equal_backends</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.base_backend_test.test_to_from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-zenml.backends">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.backends" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2021, maiot GmbH.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.3.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

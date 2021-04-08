@@ -1,0 +1,21 @@
+zenml.standards package
+=======================
+
+Submodules
+----------
+
+zenml.standards.standard\_keys module
+-------------------------------------
+
+.. automodule:: zenml.standards.standard_keys
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: zenml.standards
+   :members:
+   :undoc-members:
+   :show-inheritance:

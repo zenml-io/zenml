@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zenml.pipelines package &#8212; ZenML  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="zenml.repo package" href="zenml.repo.html" />
+    <link rel="prev" title="zenml.metadata package" href="zenml.metadata.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          ZenML</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">zenml.pipelines package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-zenml.pipelines.base_pipeline">zenml.pipelines.base_pipeline module</a></li>
+<li><a class="reference internal" href="#module-zenml.pipelines.base_pipeline_test">zenml.pipelines.base_pipeline_test module</a></li>
+<li><a class="reference internal" href="#module-zenml.pipelines.data_pipeline">zenml.pipelines.data_pipeline module</a></li>
+<li><a class="reference internal" href="#module-zenml.pipelines.deploy_pipeline">zenml.pipelines.deploy_pipeline module</a></li>
+<li><a class="reference internal" href="#module-zenml.pipelines.infer_pipeline">zenml.pipelines.infer_pipeline module</a></li>
+<li><a class="reference internal" href="#module-zenml.pipelines.nlp_pipeline">zenml.pipelines.nlp_pipeline module</a></li>
+<li><a class="reference internal" href="#module-zenml.pipelines.training_pipeline">zenml.pipelines.training_pipeline module</a></li>
+<li><a class="reference internal" href="#module-zenml.pipelines.training_pipeline_test">zenml.pipelines.training_pipeline_test module</a></li>
+<li><a class="reference internal" href="#module-zenml.pipelines.utils">zenml.pipelines.utils module</a></li>
+<li><a class="reference internal" href="#module-zenml.pipelines">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="zenml.metadata.html" title="Previous Chapter: zenml.metadata package"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; zenml.metadat...</span>
+    </a>
+  </li>
+  <li>
+    <a href="zenml.repo.html" title="Next Chapter: zenml.repo package"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">zenml.repo package &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/zenml.pipelines.rst.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="section" id="zenml-pipelines-package">
+<h1>zenml.pipelines package<a class="headerlink" href="#zenml-pipelines-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.pipelines.base_pipeline">
+<span id="zenml-pipelines-base-pipeline-module"></span><h2>zenml.pipelines.base_pipeline module<a class="headerlink" href="#module-zenml.pipelines.base_pipeline" title="Permalink to this headline">¶</a></h2>
+<p>Base High-level ZenML Pipeline definition</p>
+<dl class="py class">
+<dt id="zenml.pipelines.base_pipeline.BasePipeline">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.pipelines.base_pipeline.</code><code class="sig-name descname">BasePipeline</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">enable_cache</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">steps_dict</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span><a class="reference internal" href="zenml.steps.html#zenml.steps.base_step.BaseStep" title="zenml.steps.base_step.BaseStep">zenml.steps.base_step.BaseStep</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">backend</span><span class="p">:</span> <span class="n"><a class="reference internal" href="zenml.backends.orchestrator.base.html#zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend" title="zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend">zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">metadata_store</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="zenml.metadata.html#zenml.metadata.metadata_wrapper.ZenMLMetadataStore" title="zenml.metadata.metadata_wrapper.ZenMLMetadataStore">zenml.metadata.metadata_wrapper.ZenMLMetadataStore</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">artifact_store</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="zenml.repo.html#zenml.repo.artifact_store.ArtifactStore" title="zenml.repo.artifact_store.ArtifactStore">zenml.repo.artifact_store.ArtifactStore</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">datasource</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="zenml.datasources.html#zenml.datasources.base_datasource.BaseDatasource" title="zenml.datasources.base_datasource.BaseDatasource">zenml.datasources.base_datasource.BaseDatasource</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pipeline_name</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Base class for all ZenML pipelines.</p>
+<p>Every ZenML pipeline should override this class.</p>
+<dl class="py attribute">
+<dt id="zenml.pipelines.base_pipeline.BasePipeline.PIPELINE_TYPE">
+<code class="sig-name descname">PIPELINE_TYPE</code><em class="property"> = 'base'</em><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.PIPELINE_TYPE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.base_pipeline.BasePipeline.add_datasource">
+<code class="sig-name descname">add_datasource</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">datasource</span><span class="p">:</span> <span class="n"><a class="reference internal" href="zenml.datasources.html#zenml.datasources.base_datasource.BaseDatasource" title="zenml.datasources.base_datasource.BaseDatasource">zenml.datasources.base_datasource.BaseDatasource</a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.add_datasource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add datasource to pipeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>datasource</strong> – class of type BaseDatasource</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.base_pipeline.BasePipeline.copy">
+<code class="sig-name descname">copy</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">new_name</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deep copy the pipeline and therefore remove mutability requirement.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>new_name</strong> (<em>str</em>) – New name for copied pipeline.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.base_pipeline.BasePipeline.create_pipeline_name_from_name">
+<code class="sig-name descname">create_pipeline_name_from_name</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.create_pipeline_name_from_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a unique pipeline name from user-provided name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.base_pipeline.BasePipeline.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span><span class="p">:</span> <span class="n">Dict</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.from_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert from pipeline config to ZenML Pipeline object.</p>
+<p>All steps are also populated and configuration set to parameters set
+in the config file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> – a ZenML config in dict-form (probably loaded from YAML).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.base_pipeline.BasePipeline.get_artifacts_uri_by_component">
+<code class="sig-name descname">get_artifacts_uri_by_component</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.get_artifacts_uri_by_component" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.base_pipeline.BasePipeline.get_name_from_pipeline_name">
+<em class="property">static </em><code class="sig-name descname">get_name_from_pipeline_name</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline_name</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.get_name_from_pipeline_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets name from pipeline name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>pipeline_name</strong> (<em>str</em>) – simple string name.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.base_pipeline.BasePipeline.get_pipeline_config">
+<code class="sig-name descname">get_pipeline_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.get_pipeline_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get pipeline config</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.base_pipeline.BasePipeline.get_status">
+<code class="sig-name descname">get_status</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.get_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get status of pipeline.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.base_pipeline.BasePipeline.get_steps_config">
+<code class="sig-name descname">get_steps_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Dict<a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.get_steps_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert Step classes to steps config dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.base_pipeline.BasePipeline.get_tfx_component_list">
+<em class="property">abstract </em><code class="sig-name descname">get_tfx_component_list</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; List<a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.get_tfx_component_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts config to TFX components list. This is the point in the
+framework where ZenML Steps get translated into TFX pipelines.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> – dict of ZenML config.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.base_pipeline.BasePipeline.is_executed_in_metadata_store">
+<em class="property">property </em><code class="sig-name descname">is_executed_in_metadata_store</code><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.is_executed_in_metadata_store" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.base_pipeline.BasePipeline.load_config">
+<code class="sig-name descname">load_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.load_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads a config dict from yaml file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.base_pipeline.BasePipeline.register_pipeline">
+<code class="sig-name descname">register_pipeline</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.register_pipeline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registers a pipeline in the artifact store as a YAML file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> – dict representation of ZenML config.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.base_pipeline.BasePipeline.run">
+<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.base_pipeline.BasePipeline.run_config">
+<code class="sig-name descname">run_config</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.run_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets TFX pipeline from config.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> – dict of ZenML config.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.base_pipeline.BasePipeline.steps_completed">
+<em class="property">abstract </em><code class="sig-name descname">steps_completed</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.steps_completed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if all steps complete, else raises exception</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.base_pipeline.BasePipeline.to_config">
+<code class="sig-name descname">to_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Dict<a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.to_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts entire pipeline to ZenML config.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.pipelines.base_pipeline_test">
+<span id="zenml-pipelines-base-pipeline-test-module"></span><h2>zenml.pipelines.base_pipeline_test module<a class="headerlink" href="#module-zenml.pipelines.base_pipeline_test" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="zenml.pipelines.base_pipeline_test.test_add_datasource">
+<code class="sig-prename descclassname">zenml.pipelines.base_pipeline_test.</code><code class="sig-name descname">test_add_datasource</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline_test.test_add_datasource" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.pipelines.base_pipeline_test.test_executed">
+<code class="sig-prename descclassname">zenml.pipelines.base_pipeline_test.</code><code class="sig-name descname">test_executed</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline_test.test_executed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.pipelines.base_pipeline_test.test_get_artifacts_uri_by_component">
+<code class="sig-prename descclassname">zenml.pipelines.base_pipeline_test.</code><code class="sig-name descname">test_get_artifacts_uri_by_component</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline_test.test_get_artifacts_uri_by_component" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.pipelines.base_pipeline_test.test_get_pipeline_config">
+<code class="sig-prename descclassname">zenml.pipelines.base_pipeline_test.</code><code class="sig-name descname">test_get_pipeline_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline_test.test_get_pipeline_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.pipelines.base_pipeline_test.test_get_status">
+<code class="sig-prename descclassname">zenml.pipelines.base_pipeline_test.</code><code class="sig-name descname">test_get_status</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline_test.test_get_status" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.pipelines.base_pipeline_test.test_get_steps_config">
+<code class="sig-prename descclassname">zenml.pipelines.base_pipeline_test.</code><code class="sig-name descname">test_get_steps_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline_test.test_get_steps_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.pipelines.base_pipeline_test.test_load_config">
+<code class="sig-prename descclassname">zenml.pipelines.base_pipeline_test.</code><code class="sig-name descname">test_load_config</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em>, <em class="sig-param"><span class="n">equal_pipelines</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline_test.test_load_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.pipelines.base_pipeline_test.test_naming">
+<code class="sig-prename descclassname">zenml.pipelines.base_pipeline_test.</code><code class="sig-name descname">test_naming</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline_test.test_naming" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.pipelines.base_pipeline_test.test_pipeline_copy">
+<code class="sig-prename descclassname">zenml.pipelines.base_pipeline_test.</code><code class="sig-name descname">test_pipeline_copy</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline_test.test_pipeline_copy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.pipelines.base_pipeline_test.test_register_pipeline">
+<code class="sig-prename descclassname">zenml.pipelines.base_pipeline_test.</code><code class="sig-name descname">test_register_pipeline</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em>, <em class="sig-param"><span class="n">delete_config</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline_test.test_register_pipeline" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.pipelines.base_pipeline_test.test_run_base">
+<code class="sig-prename descclassname">zenml.pipelines.base_pipeline_test.</code><code class="sig-name descname">test_run_base</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">delete_config</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline_test.test_run_base" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.pipelines.base_pipeline_test.test_run_config">
+<code class="sig-prename descclassname">zenml.pipelines.base_pipeline_test.</code><code class="sig-name descname">test_run_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline_test.test_run_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.pipelines.base_pipeline_test.test_to_from_config">
+<code class="sig-prename descclassname">zenml.pipelines.base_pipeline_test.</code><code class="sig-name descname">test_to_from_config</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">equal_pipelines</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline_test.test_to_from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-zenml.pipelines.data_pipeline">
+<span id="zenml-pipelines-data-pipeline-module"></span><h2>zenml.pipelines.data_pipeline module<a class="headerlink" href="#module-zenml.pipelines.data_pipeline" title="Permalink to this headline">¶</a></h2>
+<p>Pipeline to create data sources</p>
+<dl class="py class">
+<dt id="zenml.pipelines.data_pipeline.DataPipeline">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.pipelines.data_pipeline.</code><code class="sig-name descname">DataPipeline</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">enable_cache</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">steps_dict</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span><a class="reference internal" href="zenml.steps.html#zenml.steps.base_step.BaseStep" title="zenml.steps.base_step.BaseStep">zenml.steps.base_step.BaseStep</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">backend</span><span class="p">:</span> <span class="n"><a class="reference internal" href="zenml.backends.orchestrator.base.html#zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend" title="zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend">zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">metadata_store</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="zenml.metadata.html#zenml.metadata.metadata_wrapper.ZenMLMetadataStore" title="zenml.metadata.metadata_wrapper.ZenMLMetadataStore">zenml.metadata.metadata_wrapper.ZenMLMetadataStore</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">artifact_store</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="zenml.repo.html#zenml.repo.artifact_store.ArtifactStore" title="zenml.repo.artifact_store.ArtifactStore">zenml.repo.artifact_store.ArtifactStore</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">datasource</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="zenml.datasources.html#zenml.datasources.base_datasource.BaseDatasource" title="zenml.datasources.base_datasource.BaseDatasource">zenml.datasources.base_datasource.BaseDatasource</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pipeline_name</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.data_pipeline.DataPipeline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.pipelines.base_pipeline.BasePipeline" title="zenml.pipelines.base_pipeline.BasePipeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.pipelines.base_pipeline.BasePipeline</span></code></a></p>
+<p>DataPipeline definition to create datasources.</p>
+<p>A DataPipeline is used to create datasources in ZenML. Each data pipeline
+creates a snapshot of the datasource in time. All datasources are consumed
+by different ZenML pipelines like the TrainingPipeline.</p>
+<dl class="py attribute">
+<dt id="zenml.pipelines.data_pipeline.DataPipeline.PIPELINE_TYPE">
+<code class="sig-name descname">PIPELINE_TYPE</code><em class="property"> = 'data'</em><a class="headerlink" href="#zenml.pipelines.data_pipeline.DataPipeline.PIPELINE_TYPE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.data_pipeline.DataPipeline.get_tfx_component_list">
+<code class="sig-name descname">get_tfx_component_list</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; List<a class="headerlink" href="#zenml.pipelines.data_pipeline.DataPipeline.get_tfx_component_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a data pipeline out of TFX components.</p>
+<p>A data pipeline is used to ingest data from a configured source, e.g.
+local files or cloud storage. In addition, a schema and statistics are
+also computed immediately afterwards for the processed data points.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> – Dict. Contains a ZenML configuration used to build the
+data pipeline.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A list of TFX components making up the data pipeline.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.data_pipeline.DataPipeline.steps_completed">
+<code class="sig-name descname">steps_completed</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#zenml.pipelines.data_pipeline.DataPipeline.steps_completed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if all steps complete, else raises exception</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.data_pipeline.DataPipeline.view_schema">
+<code class="sig-name descname">view_schema</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.data_pipeline.DataPipeline.view_schema" title="Permalink to this definition">¶</a></dt>
+<dd><p>View schema of data flowing in pipeline.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.data_pipeline.DataPipeline.view_statistics">
+<code class="sig-name descname">view_statistics</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">magic</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">port</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.data_pipeline.DataPipeline.view_statistics" title="Permalink to this definition">¶</a></dt>
+<dd><p>View statistics for data pipeline in HTML.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>magic</strong> (<em>bool</em>) – Creates HTML page if False, else</p></li>
+<li><p><strong>a notebook cell.</strong> (<em>creates</em>) – </p></li>
+<li><p><strong>port</strong> (<em>int</em>) – Port at which to launch the statistics facet.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.pipelines.deploy_pipeline">
+<span id="zenml-pipelines-deploy-pipeline-module"></span><h2>zenml.pipelines.deploy_pipeline module<a class="headerlink" href="#module-zenml.pipelines.deploy_pipeline" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="zenml.pipelines.deploy_pipeline.DeploymentPipeline">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.pipelines.deploy_pipeline.</code><code class="sig-name descname">DeploymentPipeline</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_uri</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">enable_cache</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">steps_dict</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span><a class="reference internal" href="zenml.steps.html#zenml.steps.base_step.BaseStep" title="zenml.steps.base_step.BaseStep">zenml.steps.base_step.BaseStep</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">backend</span><span class="p">:</span> <span class="n"><a class="reference internal" href="zenml.backends.orchestrator.base.html#zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend" title="zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend">zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">metadata_store</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="zenml.metadata.html#zenml.metadata.metadata_wrapper.ZenMLMetadataStore" title="zenml.metadata.metadata_wrapper.ZenMLMetadataStore">zenml.metadata.metadata_wrapper.ZenMLMetadataStore</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">artifact_store</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="zenml.repo.html#zenml.repo.artifact_store.ArtifactStore" title="zenml.repo.artifact_store.ArtifactStore">zenml.repo.artifact_store.ArtifactStore</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">datasource</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="zenml.datasources.html#zenml.datasources.base_datasource.BaseDatasource" title="zenml.datasources.base_datasource.BaseDatasource">zenml.datasources.base_datasource.BaseDatasource</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pipeline_name</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.deploy_pipeline.DeploymentPipeline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.pipelines.base_pipeline.BasePipeline" title="zenml.pipelines.base_pipeline.BasePipeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.pipelines.base_pipeline.BasePipeline</span></code></a></p>
+<p>BatchInferencePipeline definition to run batch inference pipelines.</p>
+<p>A BatchInferencePipeline is used to run an inference based on a
+TrainingPipeline.</p>
+<dl class="py attribute">
+<dt id="zenml.pipelines.deploy_pipeline.DeploymentPipeline.PIPELINE_TYPE">
+<code class="sig-name descname">PIPELINE_TYPE</code><em class="property"> = 'deploy'</em><a class="headerlink" href="#zenml.pipelines.deploy_pipeline.DeploymentPipeline.PIPELINE_TYPE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.deploy_pipeline.DeploymentPipeline.add_deployment">
+<code class="sig-name descname">add_deployment</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">deployment_step</span><span class="p">:</span> <span class="n"><a class="reference internal" href="zenml.steps.deployer.html#zenml.steps.deployer.base_deployer.BaseDeployerStep" title="zenml.steps.deployer.base_deployer.BaseDeployerStep">zenml.steps.deployer.base_deployer.BaseDeployerStep</a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.deploy_pipeline.DeploymentPipeline.add_deployment" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.deploy_pipeline.DeploymentPipeline.get_tfx_component_list">
+<code class="sig-name descname">get_tfx_component_list</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; List<a class="headerlink" href="#zenml.pipelines.deploy_pipeline.DeploymentPipeline.get_tfx_component_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates an inference pipeline out of TFX components.</p>
+<p>A inference pipeline is used to run a batch of data through a
+ML model via the BulkInferrer TFX component.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> – Dict. Contains a ZenML configuration used to build the
+data pipeline.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A list of TFX components making up the data pipeline.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.deploy_pipeline.DeploymentPipeline.steps_completed">
+<code class="sig-name descname">steps_completed</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#zenml.pipelines.deploy_pipeline.DeploymentPipeline.steps_completed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if all steps complete, else raises exception</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.pipelines.infer_pipeline">
+<span id="zenml-pipelines-infer-pipeline-module"></span><h2>zenml.pipelines.infer_pipeline module<a class="headerlink" href="#module-zenml.pipelines.infer_pipeline" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="zenml.pipelines.infer_pipeline.BatchInferencePipeline">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.pipelines.infer_pipeline.</code><code class="sig-name descname">BatchInferencePipeline</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_uri</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">enable_cache</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">steps_dict</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span><a class="reference internal" href="zenml.steps.html#zenml.steps.base_step.BaseStep" title="zenml.steps.base_step.BaseStep">zenml.steps.base_step.BaseStep</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">backend</span><span class="p">:</span> <span class="n"><a class="reference internal" href="zenml.backends.orchestrator.base.html#zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend" title="zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend">zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">metadata_store</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="zenml.metadata.html#zenml.metadata.metadata_wrapper.ZenMLMetadataStore" title="zenml.metadata.metadata_wrapper.ZenMLMetadataStore">zenml.metadata.metadata_wrapper.ZenMLMetadataStore</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">artifact_store</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="zenml.repo.html#zenml.repo.artifact_store.ArtifactStore" title="zenml.repo.artifact_store.ArtifactStore">zenml.repo.artifact_store.ArtifactStore</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">datasource</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="zenml.datasources.html#zenml.datasources.base_datasource.BaseDatasource" title="zenml.datasources.base_datasource.BaseDatasource">zenml.datasources.base_datasource.BaseDatasource</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pipeline_name</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.infer_pipeline.BatchInferencePipeline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.pipelines.base_pipeline.BasePipeline" title="zenml.pipelines.base_pipeline.BasePipeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.pipelines.base_pipeline.BasePipeline</span></code></a></p>
+<p>BatchInferencePipeline definition to run batch inference pipelines.</p>
+<p>A BatchInferencePipeline is used to run an inference based on a
+TrainingPipeline.</p>
+<dl class="py attribute">
+<dt id="zenml.pipelines.infer_pipeline.BatchInferencePipeline.PIPELINE_TYPE">
+<code class="sig-name descname">PIPELINE_TYPE</code><em class="property"> = 'infer'</em><a class="headerlink" href="#zenml.pipelines.infer_pipeline.BatchInferencePipeline.PIPELINE_TYPE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.infer_pipeline.BatchInferencePipeline.add_infer_step">
+<code class="sig-name descname">add_infer_step</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">infer_step</span><span class="p">:</span> <span class="n"><a class="reference internal" href="zenml.steps.inferrer.html#zenml.steps.inferrer.base_inferrer_step.BaseInferrer" title="zenml.steps.inferrer.base_inferrer_step.BaseInferrer">zenml.steps.inferrer.base_inferrer_step.BaseInferrer</a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.infer_pipeline.BatchInferencePipeline.add_infer_step" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.infer_pipeline.BatchInferencePipeline.get_predictions">
+<code class="sig-name descname">get_predictions</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sample_size</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">100000</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.infer_pipeline.BatchInferencePipeline.get_predictions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Samples prediction data as a pandas DataFrame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>sample_size</strong> – # of rows to sample.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.infer_pipeline.BatchInferencePipeline.get_tfx_component_list">
+<code class="sig-name descname">get_tfx_component_list</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; List<a class="headerlink" href="#zenml.pipelines.infer_pipeline.BatchInferencePipeline.get_tfx_component_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates an inference pipeline out of TFX components.</p>
+<p>A inference pipeline is used to run a batch of data through a
+ML model via the BulkInferrer TFX component.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> – Dict. Contains a ZenML configuration used to build the
+data pipeline.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A list of TFX components making up the data pipeline.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.infer_pipeline.BatchInferencePipeline.steps_completed">
+<code class="sig-name descname">steps_completed</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#zenml.pipelines.infer_pipeline.BatchInferencePipeline.steps_completed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if all steps complete, else raises exception</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.infer_pipeline.BatchInferencePipeline.view_schema">
+<code class="sig-name descname">view_schema</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.infer_pipeline.BatchInferencePipeline.view_schema" title="Permalink to this definition">¶</a></dt>
+<dd><p>View schema of data flowing in pipeline.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.infer_pipeline.BatchInferencePipeline.view_statistics">
+<code class="sig-name descname">view_statistics</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">magic</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">port</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.infer_pipeline.BatchInferencePipeline.view_statistics" title="Permalink to this definition">¶</a></dt>
+<dd><p>View statistics for infer pipeline in HTML.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>magic</strong> (<em>bool</em>) – Creates HTML page if False, else</p></li>
+<li><p><strong>a notebook cell.</strong> (<em>creates</em>) – </p></li>
+<li><p><strong>port</strong> (<em>int</em>) – Port at which to launch the statistics facet.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.pipelines.nlp_pipeline">
+<span id="zenml-pipelines-nlp-pipeline-module"></span><h2>zenml.pipelines.nlp_pipeline module<a class="headerlink" href="#module-zenml.pipelines.nlp_pipeline" title="Permalink to this headline">¶</a></h2>
+<p>ZenML NLP Pipeline Prototype.</p>
+<dl class="py class">
+<dt id="zenml.pipelines.nlp_pipeline.NLPPipeline">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.pipelines.nlp_pipeline.</code><code class="sig-name descname">NLPPipeline</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">enable_cache</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">steps_dict</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span><a class="reference internal" href="zenml.steps.html#zenml.steps.base_step.BaseStep" title="zenml.steps.base_step.BaseStep">zenml.steps.base_step.BaseStep</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">backend</span><span class="p">:</span> <span class="n"><a class="reference internal" href="zenml.backends.orchestrator.base.html#zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend" title="zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend">zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">metadata_store</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="zenml.metadata.html#zenml.metadata.metadata_wrapper.ZenMLMetadataStore" title="zenml.metadata.metadata_wrapper.ZenMLMetadataStore">zenml.metadata.metadata_wrapper.ZenMLMetadataStore</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">artifact_store</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="zenml.repo.html#zenml.repo.artifact_store.ArtifactStore" title="zenml.repo.artifact_store.ArtifactStore">zenml.repo.artifact_store.ArtifactStore</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">datasource</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="zenml.datasources.html#zenml.datasources.base_datasource.BaseDatasource" title="zenml.datasources.base_datasource.BaseDatasource">zenml.datasources.base_datasource.BaseDatasource</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pipeline_name</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.nlp_pipeline.NLPPipeline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.pipelines.base_pipeline.BasePipeline" title="zenml.pipelines.base_pipeline.BasePipeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.pipelines.base_pipeline.BasePipeline</span></code></a></p>
+<dl class="py attribute">
+<dt id="zenml.pipelines.nlp_pipeline.NLPPipeline.PIPELINE_TYPE">
+<code class="sig-name descname">PIPELINE_TYPE</code><em class="property"> = 'nlp'</em><a class="headerlink" href="#zenml.pipelines.nlp_pipeline.NLPPipeline.PIPELINE_TYPE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.nlp_pipeline.NLPPipeline.add_split">
+<code class="sig-name descname">add_split</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">split_step</span><span class="p">:</span> <span class="n"><a class="reference internal" href="zenml.steps.split.html#zenml.steps.split.base_split_step.BaseSplit" title="zenml.steps.split.base_split_step.BaseSplit">zenml.steps.split.base_split_step.BaseSplit</a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.nlp_pipeline.NLPPipeline.add_split" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.nlp_pipeline.NLPPipeline.add_tokenizer">
+<code class="sig-name descname">add_tokenizer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tokenizer_step</span><span class="p">:</span> <span class="n"><a class="reference internal" href="zenml.steps.tokenizer.html#zenml.steps.tokenizer.base_tokenizer.BaseTokenizer" title="zenml.steps.tokenizer.base_tokenizer.BaseTokenizer">zenml.steps.tokenizer.base_tokenizer.BaseTokenizer</a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.nlp_pipeline.NLPPipeline.add_tokenizer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.nlp_pipeline.NLPPipeline.add_trainer">
+<code class="sig-name descname">add_trainer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">trainer_step</span><span class="p">:</span> <span class="n"><a class="reference internal" href="zenml.steps.trainer.html#zenml.steps.trainer.base_trainer.BaseTrainerStep" title="zenml.steps.trainer.base_trainer.BaseTrainerStep">zenml.steps.trainer.base_trainer.BaseTrainerStep</a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.nlp_pipeline.NLPPipeline.add_trainer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.nlp_pipeline.NLPPipeline.get_model_uri">
+<code class="sig-name descname">get_model_uri</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.nlp_pipeline.NLPPipeline.get_model_uri" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets model artifact.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.nlp_pipeline.NLPPipeline.get_schema_uri">
+<code class="sig-name descname">get_schema_uri</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.nlp_pipeline.NLPPipeline.get_schema_uri" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets transform artifact.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.nlp_pipeline.NLPPipeline.get_tfx_component_list">
+<code class="sig-name descname">get_tfx_component_list</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; List<a class="headerlink" href="#zenml.pipelines.nlp_pipeline.NLPPipeline.get_tfx_component_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds the NLP pipeline as a series of TFX components.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> – A ZenML configuration in dictionary format.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>A chronological list of TFX components making up the NLP</dt><dd><p>pipeline.</p>
+</dd>
+</dl>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.nlp_pipeline.NLPPipeline.get_tokenizer_uri">
+<code class="sig-name descname">get_tokenizer_uri</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.nlp_pipeline.NLPPipeline.get_tokenizer_uri" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets transform artifact.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.nlp_pipeline.NLPPipeline.predict_sentence">
+<code class="sig-name descname">predict_sentence</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sequence</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>List<span class="p">[</span>str<span class="p">]</span><span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.nlp_pipeline.NLPPipeline.predict_sentence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Call operator for local inference method</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.nlp_pipeline.NLPPipeline.steps_completed">
+<code class="sig-name descname">steps_completed</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#zenml.pipelines.nlp_pipeline.NLPPipeline.steps_completed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if all steps complete, else raises exception</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.pipelines.training_pipeline">
+<span id="zenml-pipelines-training-pipeline-module"></span><h2>zenml.pipelines.training_pipeline module<a class="headerlink" href="#module-zenml.pipelines.training_pipeline" title="Permalink to this headline">¶</a></h2>
+<p>Training pipeline step to create a pipeline that trains on data.</p>
+<dl class="py class">
+<dt id="zenml.pipelines.training_pipeline.TrainingPipeline">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.pipelines.training_pipeline.</code><code class="sig-name descname">TrainingPipeline</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">enable_cache</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">steps_dict</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span><a class="reference internal" href="zenml.steps.html#zenml.steps.base_step.BaseStep" title="zenml.steps.base_step.BaseStep">zenml.steps.base_step.BaseStep</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">backend</span><span class="p">:</span> <span class="n"><a class="reference internal" href="zenml.backends.orchestrator.base.html#zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend" title="zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend">zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">metadata_store</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="zenml.metadata.html#zenml.metadata.metadata_wrapper.ZenMLMetadataStore" title="zenml.metadata.metadata_wrapper.ZenMLMetadataStore">zenml.metadata.metadata_wrapper.ZenMLMetadataStore</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">artifact_store</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="zenml.repo.html#zenml.repo.artifact_store.ArtifactStore" title="zenml.repo.artifact_store.ArtifactStore">zenml.repo.artifact_store.ArtifactStore</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">datasource</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="zenml.datasources.html#zenml.datasources.base_datasource.BaseDatasource" title="zenml.datasources.base_datasource.BaseDatasource">zenml.datasources.base_datasource.BaseDatasource</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pipeline_name</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.training_pipeline.TrainingPipeline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.pipelines.base_pipeline.BasePipeline" title="zenml.pipelines.base_pipeline.BasePipeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.pipelines.base_pipeline.BasePipeline</span></code></a></p>
+<p>Definition of the Training Pipeline class.</p>
+<p>TrainingPipeline is a general-purpose training pipeline for most ML
+training runs. One pipeline runs one experiment on a single datasource.</p>
+<dl class="py attribute">
+<dt id="zenml.pipelines.training_pipeline.TrainingPipeline.PIPELINE_TYPE">
+<code class="sig-name descname">PIPELINE_TYPE</code><em class="property"> = 'training'</em><a class="headerlink" href="#zenml.pipelines.training_pipeline.TrainingPipeline.PIPELINE_TYPE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.training_pipeline.TrainingPipeline.add_deployment">
+<code class="sig-name descname">add_deployment</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">deployment_step</span><span class="p">:</span> <span class="n"><a class="reference internal" href="zenml.steps.deployer.html#zenml.steps.deployer.base_deployer.BaseDeployerStep" title="zenml.steps.deployer.base_deployer.BaseDeployerStep">zenml.steps.deployer.base_deployer.BaseDeployerStep</a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.training_pipeline.TrainingPipeline.add_deployment" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.training_pipeline.TrainingPipeline.add_evaluator">
+<code class="sig-name descname">add_evaluator</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">evaluator_step</span><span class="p">:</span> <span class="n"><a class="reference internal" href="zenml.steps.evaluator.html#zenml.steps.evaluator.base_evaluator.BaseEvaluatorStep" title="zenml.steps.evaluator.base_evaluator.BaseEvaluatorStep">zenml.steps.evaluator.base_evaluator.BaseEvaluatorStep</a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.training_pipeline.TrainingPipeline.add_evaluator" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.training_pipeline.TrainingPipeline.add_preprocesser">
+<code class="sig-name descname">add_preprocesser</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">preprocessor_step</span><span class="p">:</span> <span class="n"><a class="reference internal" href="zenml.steps.preprocesser.html#zenml.steps.preprocesser.base_preprocesser.BasePreprocesserStep" title="zenml.steps.preprocesser.base_preprocesser.BasePreprocesserStep">zenml.steps.preprocesser.base_preprocesser.BasePreprocesserStep</a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.training_pipeline.TrainingPipeline.add_preprocesser" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.training_pipeline.TrainingPipeline.add_sequencer">
+<code class="sig-name descname">add_sequencer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sequencer_step</span><span class="p">:</span> <span class="n"><a class="reference internal" href="zenml.steps.sequencer.html#zenml.steps.sequencer.base_sequencer.BaseSequencerStep" title="zenml.steps.sequencer.base_sequencer.BaseSequencerStep">zenml.steps.sequencer.base_sequencer.BaseSequencerStep</a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.training_pipeline.TrainingPipeline.add_sequencer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.training_pipeline.TrainingPipeline.add_split">
+<code class="sig-name descname">add_split</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">split_step</span><span class="p">:</span> <span class="n"><a class="reference internal" href="zenml.steps.split.html#zenml.steps.split.base_split_step.BaseSplit" title="zenml.steps.split.base_split_step.BaseSplit">zenml.steps.split.base_split_step.BaseSplit</a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.training_pipeline.TrainingPipeline.add_split" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.training_pipeline.TrainingPipeline.add_trainer">
+<code class="sig-name descname">add_trainer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">trainer_step</span><span class="p">:</span> <span class="n"><a class="reference internal" href="zenml.steps.trainer.html#zenml.steps.trainer.base_trainer.BaseTrainerStep" title="zenml.steps.trainer.base_trainer.BaseTrainerStep">zenml.steps.trainer.base_trainer.BaseTrainerStep</a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.training_pipeline.TrainingPipeline.add_trainer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.training_pipeline.TrainingPipeline.download_model">
+<code class="sig-name descname">download_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">out_path</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">overwrite</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.training_pipeline.TrainingPipeline.download_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download model to out_path</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.training_pipeline.TrainingPipeline.evaluate">
+<code class="sig-name descname">evaluate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">magic</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">port</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.training_pipeline.TrainingPipeline.evaluate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate pipeline from the evaluator and trainer steps artifact.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>magic</strong> – Creates new window if False, else creates notebook cells.</p></li>
+<li><p><strong>port</strong> – At which port to deploy jupyter notebook.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.training_pipeline.TrainingPipeline.get_hyperparameters">
+<code class="sig-name descname">get_hyperparameters</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Dict<a class="headerlink" href="#zenml.pipelines.training_pipeline.TrainingPipeline.get_hyperparameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets all hyper-parameters of pipeline.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.training_pipeline.TrainingPipeline.get_model_uri">
+<code class="sig-name descname">get_model_uri</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.training_pipeline.TrainingPipeline.get_model_uri" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets model artifact.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.training_pipeline.TrainingPipeline.get_tfx_component_list">
+<code class="sig-name descname">get_tfx_component_list</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; List<a class="headerlink" href="#zenml.pipelines.training_pipeline.TrainingPipeline.get_tfx_component_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds the training pipeline as a series of TFX components.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> – A ZenML configuration in dictionary format.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>A chronological list of TFX components making up the training</dt><dd><p>pipeline.</p>
+</dd>
+</dl>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.training_pipeline.TrainingPipeline.sample_transformed_data">
+<code class="sig-name descname">sample_transformed_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">split_name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'eval'</span></em>, <em class="sig-param"><span class="n">sample_size</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">100000</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.training_pipeline.TrainingPipeline.sample_transformed_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Samples transformed data as a pandas DataFrame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>split_name</strong> – name of split to see</p></li>
+<li><p><strong>sample_size</strong> – # of rows to sample.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.training_pipeline.TrainingPipeline.steps_completed">
+<code class="sig-name descname">steps_completed</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#zenml.pipelines.training_pipeline.TrainingPipeline.steps_completed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if all steps complete, else raises exception</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.training_pipeline.TrainingPipeline.view_anomalies">
+<code class="sig-name descname">view_anomalies</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">split_name</span><span class="o">=</span><span class="default_value">'eval'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.training_pipeline.TrainingPipeline.view_anomalies" title="Permalink to this definition">¶</a></dt>
+<dd><p>View schema of data flowing in pipeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>split_name</strong> – name of split to detect anomalies on</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.training_pipeline.TrainingPipeline.view_schema">
+<code class="sig-name descname">view_schema</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.training_pipeline.TrainingPipeline.view_schema" title="Permalink to this definition">¶</a></dt>
+<dd><p>View schema of data flowing in pipeline.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.pipelines.training_pipeline.TrainingPipeline.view_statistics">
+<code class="sig-name descname">view_statistics</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">magic</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">port</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.training_pipeline.TrainingPipeline.view_statistics" title="Permalink to this definition">¶</a></dt>
+<dd><p>View statistics for training pipeline in HTML.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>magic</strong> (<em>bool</em>) – Creates HTML page if False, else</p></li>
+<li><p><strong>a notebook cell.</strong> (<em>creates</em>) – </p></li>
+<li><p><strong>port</strong> (<em>int</em>) – Port at which to launch the statistics facet.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.pipelines.training_pipeline_test">
+<span id="zenml-pipelines-training-pipeline-test-module"></span><h2>zenml.pipelines.training_pipeline_test module<a class="headerlink" href="#module-zenml.pipelines.training_pipeline_test" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="zenml.pipelines.training_pipeline_test.test_view_anomalies">
+<code class="sig-prename descclassname">zenml.pipelines.training_pipeline_test.</code><code class="sig-name descname">test_view_anomalies</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.training_pipeline_test.test_view_anomalies" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-zenml.pipelines.utils">
+<span id="zenml-pipelines-utils-module"></span><h2>zenml.pipelines.utils module<a class="headerlink" href="#module-zenml.pipelines.utils" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="zenml.pipelines.utils.generate_unique_name">
+<code class="sig-prename descclassname">zenml.pipelines.utils.</code><code class="sig-name descname">generate_unique_name</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">base_name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.utils.generate_unique_name" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>base_name</strong> – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.pipelines.utils.parse_yaml_beam_args">
+<code class="sig-prename descclassname">zenml.pipelines.utils.</code><code class="sig-name descname">parse_yaml_beam_args</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline_args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.utils.parse_yaml_beam_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts yaml beam args to list of args TFX accepts</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>pipeline_args</strong> – dict specified in the config.yml</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of strings, where each string is a beam argument</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.pipelines.utils.prepare_sdist">
+<code class="sig-prename descclassname">zenml.pipelines.utils.</code><code class="sig-name descname">prepare_sdist</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.utils.prepare_sdist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Refer to the README.md in the docs folder</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.pipelines.utils.sanitize_name_for_ai_platform">
+<code class="sig-prename descclassname">zenml.pipelines.utils.</code><code class="sig-name descname">sanitize_name_for_ai_platform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.utils.sanitize_name_for_ai_platform" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.pipelines">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.pipelines" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2021, maiot GmbH.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.3.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

@@ -149,6 +149,3 @@ docs/book/_build/
 
 # all rst's
 *.rst
-
-# docs
-docs/sphinx_docs/_build/

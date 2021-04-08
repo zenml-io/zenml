@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zenml.cli package &#8212; ZenML  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="zenml.components package" href="zenml.components.html" />
+    <link rel="prev" title="zenml.backends.training package" href="zenml.backends.training.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          ZenML</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">zenml.cli package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-zenml.cli.base">zenml.cli.base module</a></li>
+<li><a class="reference internal" href="#module-zenml.cli.cli">zenml.cli.cli module</a></li>
+<li><a class="reference internal" href="#module-zenml.cli.config">zenml.cli.config module</a></li>
+<li><a class="reference internal" href="#module-zenml.cli.datasource">zenml.cli.datasource module</a></li>
+<li><a class="reference internal" href="#module-zenml.cli.pipeline">zenml.cli.pipeline module</a></li>
+<li><a class="reference internal" href="#module-zenml.cli.step">zenml.cli.step module</a></li>
+<li><a class="reference internal" href="#module-zenml.cli.utils">zenml.cli.utils module</a></li>
+<li><a class="reference internal" href="#module-zenml.cli.version">zenml.cli.version module</a></li>
+<li><a class="reference internal" href="#module-zenml.cli">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="zenml.backends.training.html" title="Previous Chapter: zenml.backends.training package"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; zenml.backend...</span>
+    </a>
+  </li>
+  <li>
+    <a href="zenml.components.html" title="Next Chapter: zenml.components package"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">zenml.compone... &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/zenml.cli.rst.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="section" id="zenml-cli-package">
+<h1>zenml.cli package<a class="headerlink" href="#zenml-cli-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.cli.base">
+<span id="zenml-cli-base-module"></span><h2>zenml.cli.base module<a class="headerlink" href="#module-zenml.cli.base" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.cli.cli">
+<span id="zenml-cli-cli-module"></span><h2>zenml.cli.cli module<a class="headerlink" href="#module-zenml.cli.cli" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.cli.config">
+<span id="zenml-cli-config-module"></span><h2>zenml.cli.config module<a class="headerlink" href="#module-zenml.cli.config" title="Permalink to this headline">¶</a></h2>
+<p>CLI for manipulating ZenML local and global config file.</p>
+</div>
+<div class="section" id="module-zenml.cli.datasource">
+<span id="zenml-cli-datasource-module"></span><h2>zenml.cli.datasource module<a class="headerlink" href="#module-zenml.cli.datasource" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.cli.pipeline">
+<span id="zenml-cli-pipeline-module"></span><h2>zenml.cli.pipeline module<a class="headerlink" href="#module-zenml.cli.pipeline" title="Permalink to this headline">¶</a></h2>
+<p>CLI for pipelines.</p>
+</div>
+<div class="section" id="module-zenml.cli.step">
+<span id="zenml-cli-step-module"></span><h2>zenml.cli.step module<a class="headerlink" href="#module-zenml.cli.step" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.cli.utils">
+<span id="zenml-cli-utils-module"></span><h2>zenml.cli.utils module<a class="headerlink" href="#module-zenml.cli.utils" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="zenml.cli.utils.confirmation">
+<code class="sig-prename descclassname">zenml.cli.utils.</code><code class="sig-name descname">confirmation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">text</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.cli.utils.confirmation" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> – </p></li>
+<li><p><strong>*args</strong> – </p></li>
+<li><p><strong>**kwargs</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.cli.utils.declare">
+<code class="sig-prename descclassname">zenml.cli.utils.</code><code class="sig-name descname">declare</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">text</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.cli.utils.declare" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>text</strong> – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.cli.utils.error">
+<code class="sig-prename descclassname">zenml.cli.utils.</code><code class="sig-name descname">error</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">text</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.cli.utils.error" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>text</strong> – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.cli.utils.format_date">
+<code class="sig-prename descclassname">zenml.cli.utils.</code><code class="sig-name descname">format_date</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dt</span></em>, <em class="sig-param"><span class="n">format</span><span class="o">=</span><span class="default_value">'%Y-%m-%d %H:%M:%S'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.cli.utils.format_date" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dt</strong> – </p></li>
+<li><p><strong>format</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.cli.utils.format_timedelta">
+<code class="sig-prename descclassname">zenml.cli.utils.</code><code class="sig-name descname">format_timedelta</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">td</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.cli.utils.format_timedelta" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>td</strong> – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.cli.utils.notice">
+<code class="sig-prename descclassname">zenml.cli.utils.</code><code class="sig-name descname">notice</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">text</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.cli.utils.notice" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>text</strong> – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.cli.utils.parse_unknown_options">
+<code class="sig-prename descclassname">zenml.cli.utils.</code><code class="sig-name descname">parse_unknown_options</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.cli.utils.parse_unknown_options" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>args</strong> – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.cli.utils.pretty_print">
+<code class="sig-prename descclassname">zenml.cli.utils.</code><code class="sig-name descname">pretty_print</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obj</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.cli.utils.pretty_print" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>obj</strong> – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.cli.utils.question">
+<code class="sig-prename descclassname">zenml.cli.utils.</code><code class="sig-name descname">question</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">text</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.cli.utils.question" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> – </p></li>
+<li><p><strong>*args</strong> – </p></li>
+<li><p><strong>**kwargs</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.cli.utils.title">
+<code class="sig-prename descclassname">zenml.cli.utils.</code><code class="sig-name descname">title</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">text</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.cli.utils.title" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>text</strong> – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.cli.utils.warning">
+<code class="sig-prename descclassname">zenml.cli.utils.</code><code class="sig-name descname">warning</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">text</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.cli.utils.warning" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>text</strong> – </p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.cli.version">
+<span id="zenml-cli-version-module"></span><h2>zenml.cli.version module<a class="headerlink" href="#module-zenml.cli.version" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.cli">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.cli" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2021, maiot GmbH.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.3.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

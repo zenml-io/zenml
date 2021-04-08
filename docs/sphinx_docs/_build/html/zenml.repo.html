@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zenml.repo package &#8212; ZenML  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="zenml.standards package" href="zenml.standards.html" />
+    <link rel="prev" title="zenml.pipelines package" href="zenml.pipelines.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          ZenML</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">zenml.repo package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-zenml.repo.artifact_store">zenml.repo.artifact_store module</a></li>
+<li><a class="reference internal" href="#module-zenml.repo.constants">zenml.repo.constants module</a></li>
+<li><a class="reference internal" href="#module-zenml.repo.git_wrapper">zenml.repo.git_wrapper module</a></li>
+<li><a class="reference internal" href="#module-zenml.repo.global_config">zenml.repo.global_config module</a></li>
+<li><a class="reference internal" href="#module-zenml.repo.repo">zenml.repo.repo module</a></li>
+<li><a class="reference internal" href="#module-zenml.repo.repo_test">zenml.repo.repo_test module</a></li>
+<li><a class="reference internal" href="#module-zenml.repo.zenml_config">zenml.repo.zenml_config module</a></li>
+<li><a class="reference internal" href="#module-zenml.repo.zenml_config_test">zenml.repo.zenml_config_test module</a></li>
+<li><a class="reference internal" href="#module-zenml.repo">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="zenml.pipelines.html" title="Previous Chapter: zenml.pipelines package"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; zenml.pipelin...</span>
+    </a>
+  </li>
+  <li>
+    <a href="zenml.standards.html" title="Next Chapter: zenml.standards package"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">zenml.standar... &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/zenml.repo.rst.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="section" id="zenml-repo-package">
+<h1>zenml.repo package<a class="headerlink" href="#zenml-repo-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.repo.artifact_store">
+<span id="zenml-repo-artifact-store-module"></span><h2>zenml.repo.artifact_store module<a class="headerlink" href="#module-zenml.repo.artifact_store" title="Permalink to this headline">¶</a></h2>
+<p>Definition of an Artifact Store</p>
+<dl class="py class">
+<dt id="zenml.repo.artifact_store.ArtifactStore">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.repo.artifact_store.</code><code class="sig-name descname">ArtifactStore</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.artifact_store.ArtifactStore" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Base class for all ZenML datasources.</p>
+<p>Every ZenML datasource should override this class.</p>
+<dl class="py method">
+<dt id="zenml.repo.artifact_store.ArtifactStore.get_component_name_from_uri">
+<em class="property">static </em><code class="sig-name descname">get_component_name_from_uri</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">artifact_uri</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.artifact_store.ArtifactStore.get_component_name_from_uri" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets component name from artifact URI.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>artifact_uri</strong> (<em>str</em>) – URI to artifact.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.artifact_store.ArtifactStore.resolve_uri_locally">
+<code class="sig-name descname">resolve_uri_locally</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">artifact_uri</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">path</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.artifact_store.ArtifactStore.resolve_uri_locally" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a URI that points within the artifact store, downloads the
+URI locally, then returns local URI.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>artifact_uri</strong> – uri to artifact.</p></li>
+<li><p><strong>path</strong> – optional path to download to. If None, is inferred.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.repo.constants">
+<span id="zenml-repo-constants-module"></span><h2>zenml.repo.constants module<a class="headerlink" href="#module-zenml.repo.constants" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.repo.git_wrapper">
+<span id="zenml-repo-git-wrapper-module"></span><h2>zenml.repo.git_wrapper module<a class="headerlink" href="#module-zenml.repo.git_wrapper" title="Permalink to this headline">¶</a></h2>
+<p>Wrapper class to handle Git integration</p>
+<dl class="py class">
+<dt id="zenml.repo.git_wrapper.GitWrapper">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.repo.git_wrapper.</code><code class="sig-name descname">GitWrapper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo_path</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.git_wrapper.GitWrapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Wrapper class for Git.</p>
+<p>This class is responsible for handling git interactions, primarily
+handling versioning of different steps in pipelines.</p>
+<dl class="py method">
+<dt id="zenml.repo.git_wrapper.GitWrapper.add_gitignore">
+<code class="sig-name descname">add_gitignore</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">items</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.git_wrapper.GitWrapper.add_gitignore" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds <cite>items</cite> to .gitignore, if .gitignore exists. Otherwise creates
+and adds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>items</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – Items to add.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.git_wrapper.GitWrapper.check_file_committed">
+<code class="sig-name descname">check_file_committed</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file_path</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#zenml.repo.git_wrapper.GitWrapper.check_file_committed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks file is committed. If yes, return True, else False.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>file_path</strong> (<em>str</em>) – Path to any file within the ZenML repo.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.git_wrapper.GitWrapper.check_module_clean">
+<code class="sig-name descname">check_module_clean</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">source</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.git_wrapper.GitWrapper.check_module_clean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if all files within source’s module are committed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>source</strong> (<em>str</em>) – relative module path pointing to a Class.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.git_wrapper.GitWrapper.checkout">
+<code class="sig-name descname">checkout</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sha_or_branch</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">directory</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.git_wrapper.GitWrapper.checkout" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper for git checkout</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sha_or_branch</strong> – hex string of len 40 representing git sha OR</p></li>
+<li><p><strong>of branch</strong> (<em>name</em>) – </p></li>
+<li><p><strong>directory</strong> (<em>str</em>) – relative path to directory to scope checkout</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.git_wrapper.GitWrapper.get_current_sha">
+<code class="sig-name descname">get_current_sha</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#zenml.repo.git_wrapper.GitWrapper.get_current_sha" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds the git sha that each file within the module is currently on.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.git_wrapper.GitWrapper.reset">
+<code class="sig-name descname">reset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">directory</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.git_wrapper.GitWrapper.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper for <cite>git reset HEAD &lt;directory&gt;</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>directory</strong> (<em>str</em>) – relative path to directory to scope checkout</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.git_wrapper.GitWrapper.resolve_class_source">
+<code class="sig-name descname">resolve_class_source</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">source</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#zenml.repo.git_wrapper.GitWrapper.resolve_class_source" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes source (e.g. this.module.ClassName), and appends relevant
+sha to it if the files within <cite>module</cite> are all committed. If even one
+file is not committed, then returns <cite>source</cite> unchanged.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>source</strong> (<em>str</em>) – relative module path pointing to a Class.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.git_wrapper.GitWrapper.stash">
+<code class="sig-name descname">stash</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.git_wrapper.GitWrapper.stash" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper for git stash</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.git_wrapper.GitWrapper.stash_pop">
+<code class="sig-name descname">stash_pop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.git_wrapper.GitWrapper.stash_pop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper for git stash pop. Only pops if there’s something to pop.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.repo.global_config">
+<span id="zenml-repo-global-config-module"></span><h2>zenml.repo.global_config module<a class="headerlink" href="#module-zenml.repo.global_config" title="Permalink to this headline">¶</a></h2>
+<p>Global config for the ZenML installation.</p>
+<dl class="py class">
+<dt id="zenml.repo.global_config.GlobalConfig">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.repo.global_config.</code><code class="sig-name descname">GlobalConfig</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.global_config.GlobalConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
+<p>Class definition for the global config.</p>
+<dl class="py method">
+<dt id="zenml.repo.global_config.GlobalConfig.create_user_id">
+<code class="sig-name descname">create_user_id</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.global_config.GlobalConfig.create_user_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates user_id if it does not exist.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.global_config.GlobalConfig.get_analytics_opt_in">
+<code class="sig-name descname">get_analytics_opt_in</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#zenml.repo.global_config.GlobalConfig.get_analytics_opt_in" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets user_id from config. If not present, creates a new one.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.global_config.GlobalConfig.get_config_dir">
+<em class="property">static </em><code class="sig-name descname">get_config_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.global_config.GlobalConfig.get_config_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets config dir.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.global_config.GlobalConfig.get_instance">
+<em class="property">static </em><code class="sig-name descname">get_instance</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.global_config.GlobalConfig.get_instance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Static method to fetch the current instance.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.global_config.GlobalConfig.get_user_id">
+<code class="sig-name descname">get_user_id</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.global_config.GlobalConfig.get_user_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets user_id from config. If not present, creates a new one.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.global_config.GlobalConfig.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.global_config.GlobalConfig.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load from YAML file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.global_config.GlobalConfig.save">
+<code class="sig-name descname">save</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.global_config.GlobalConfig.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save current config to YAML file</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.global_config.GlobalConfig.set_analytics_opt_in">
+<code class="sig-name descname">set_analytics_opt_in</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">toggle</span><span class="p">:</span> <span class="n">bool</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.global_config.GlobalConfig.set_analytics_opt_in" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set opt-in flag for analytics</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.repo.repo">
+<span id="zenml-repo-repo-module"></span><h2>zenml.repo.repo module<a class="headerlink" href="#module-zenml.repo.repo" title="Permalink to this headline">¶</a></h2>
+<p>Base ZenML repository</p>
+<dl class="py class">
+<dt id="zenml.repo.repo.Repository">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.repo.repo.</code><code class="sig-name descname">Repository</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo.Repository" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>ZenML repository definition. This is a Singleton class.</p>
+<p>Every ZenML project exists inside a ZenML repository.</p>
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.clean">
+<code class="sig-name descname">clean</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo.Repository.clean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes associated metadata store, pipelines dir and artifacts</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.compare_training_runs">
+<code class="sig-name descname">compare_training_runs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">port</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo.Repository.compare_training_runs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Launch the compare app for all training pipelines in repo</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.get_datasource_by_name">
+<code class="sig-name descname">get_datasource_by_name</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo.Repository.get_datasource_by_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all datasources in this repo.</p>
+<p>Returns: list of datasources used in this repo</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.get_datasource_id_by_name">
+<code class="sig-name descname">get_datasource_id_by_name</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; List<a class="headerlink" href="#zenml.repo.repo.Repository.get_datasource_id_by_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get ID of a datasource by just its name.</p>
+<p>Returns: ID of datasource.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.get_datasource_names">
+<code class="sig-name descname">get_datasource_names</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; List<a class="headerlink" href="#zenml.repo.repo.Repository.get_datasource_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all datasources in this repo.</p>
+<p>Returns: List of datasource names used in this repo.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.get_datasources">
+<code class="sig-name descname">get_datasources</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo.Repository.get_datasources" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.get_default_artifact_store">
+<code class="sig-name descname">get_default_artifact_store</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span><a class="reference internal" href="#zenml.repo.artifact_store.ArtifactStore" title="zenml.repo.artifact_store.ArtifactStore">zenml.repo.artifact_store.ArtifactStore</a><span class="p">]</span><a class="headerlink" href="#zenml.repo.repo.Repository.get_default_artifact_store" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.get_default_metadata_store">
+<code class="sig-name descname">get_default_metadata_store</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo.Repository.get_default_metadata_store" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.get_default_pipelines_dir">
+<code class="sig-name descname">get_default_pipelines_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#zenml.repo.repo.Repository.get_default_pipelines_dir" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.get_git_wrapper">
+<code class="sig-name descname">get_git_wrapper</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#zenml.repo.git_wrapper.GitWrapper" title="zenml.repo.git_wrapper.GitWrapper">zenml.repo.git_wrapper.GitWrapper</a><a class="headerlink" href="#zenml.repo.repo.Repository.get_git_wrapper" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.get_instance">
+<em class="property">static </em><code class="sig-name descname">get_instance</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo.Repository.get_instance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Static method to fetch the current instance.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.get_pipeline_by_name">
+<code class="sig-name descname">get_pipeline_by_name</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline_name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo.Repository.get_pipeline_by_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads a pipeline just by its name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>pipeline_name</strong> (<em>str</em>) – Name of pipeline.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.get_pipeline_file_paths">
+<code class="sig-name descname">get_pipeline_file_paths</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">only_file_names</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span>List<span class="p">[</span>str<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#zenml.repo.repo.Repository.get_pipeline_file_paths" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets list of pipeline file path</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.get_pipeline_names">
+<code class="sig-name descname">get_pipeline_names</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span>List<span class="p">[</span>str<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#zenml.repo.repo.Repository.get_pipeline_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets list of pipeline (unique) names</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.get_pipelines">
+<code class="sig-name descname">get_pipelines</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo.Repository.get_pipelines" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.get_pipelines_by_datasource">
+<code class="sig-name descname">get_pipelines_by_datasource</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">datasource</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo.Repository.get_pipelines_by_datasource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets list of pipelines associated with datasource.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>datasource</strong> (<a class="reference internal" href="zenml.datasources.html#zenml.datasources.base_datasource.BaseDatasource" title="zenml.datasources.base_datasource.BaseDatasource"><em>BaseDatasource</em></a>) – object of type BaseDatasource.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.get_pipelines_by_type">
+<code class="sig-name descname">get_pipelines_by_type</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">type_filter</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; List<a class="headerlink" href="#zenml.repo.repo.Repository.get_pipelines_by_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets list of pipelines filtered by type.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>type_filter</strong> (<em>list</em>) – list of types to filter by.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.get_step_by_version">
+<code class="sig-name descname">get_step_by_version</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo.Repository.get_step_by_version" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.get_step_versions">
+<code class="sig-name descname">get_step_versions</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo.Repository.get_step_versions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.get_step_versions_by_type">
+<code class="sig-name descname">get_step_versions_by_type</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">step_type</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>Type<span class="p">, </span>str<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo.Repository.get_step_versions_by_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>List all registered steps in repository by step_type.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>step_type</strong> – either a string specifying full source of the step or a</p></li>
+<li><p><strong>class type.</strong> (<em>python</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.get_zenml_dir">
+<em class="property">static </em><code class="sig-name descname">get_zenml_dir</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo.Repository.get_zenml_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Recursive function to find the zenml config starting from path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – starting path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.init_repo">
+<em class="property">static </em><code class="sig-name descname">init_repo</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo.Repository.init_repo" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.load_pipeline_config">
+<code class="sig-name descname">load_pipeline_config</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file_name</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><a class="headerlink" href="#zenml.repo.repo.Repository.load_pipeline_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads a ZenML config from YAML.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>file_name</strong> (<em>str</em>) – file name of pipeline</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.repo.Repository.register_pipeline">
+<code class="sig-name descname">register_pipeline</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo.Repository.register_pipeline" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.repo.repo_test">
+<span id="zenml-repo-repo-test-module"></span><h2>zenml.repo.repo_test module<a class="headerlink" href="#module-zenml.repo.repo_test" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="zenml.repo.repo_test.test_get_datasource_by_name">
+<code class="sig-prename descclassname">zenml.repo.repo_test.</code><code class="sig-name descname">test_get_datasource_by_name</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo_test.test_get_datasource_by_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.repo.repo_test.test_get_datasource_names">
+<code class="sig-prename descclassname">zenml.repo.repo_test.</code><code class="sig-name descname">test_get_datasource_names</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo_test.test_get_datasource_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.repo.repo_test.test_get_datasources">
+<code class="sig-prename descclassname">zenml.repo.repo_test.</code><code class="sig-name descname">test_get_datasources</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo_test.test_get_datasources" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.repo.repo_test.test_get_pipeline_by_name">
+<code class="sig-prename descclassname">zenml.repo.repo_test.</code><code class="sig-name descname">test_get_pipeline_by_name</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em>, <em class="sig-param"><span class="n">equal_pipelines</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo_test.test_get_pipeline_by_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.repo.repo_test.test_get_pipeline_file_paths">
+<code class="sig-prename descclassname">zenml.repo.repo_test.</code><code class="sig-name descname">test_get_pipeline_file_paths</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em>, <em class="sig-param"><span class="n">monkeypatch</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo_test.test_get_pipeline_file_paths" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.repo.repo_test.test_get_pipeline_names">
+<code class="sig-prename descclassname">zenml.repo.repo_test.</code><code class="sig-name descname">test_get_pipeline_names</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo_test.test_get_pipeline_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.repo.repo_test.test_get_pipelines">
+<code class="sig-prename descclassname">zenml.repo.repo_test.</code><code class="sig-name descname">test_get_pipelines</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo_test.test_get_pipelines" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.repo.repo_test.test_get_pipelines_by_datasource">
+<code class="sig-prename descclassname">zenml.repo.repo_test.</code><code class="sig-name descname">test_get_pipelines_by_datasource</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo_test.test_get_pipelines_by_datasource" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.repo.repo_test.test_get_pipelines_by_type">
+<code class="sig-prename descclassname">zenml.repo.repo_test.</code><code class="sig-name descname">test_get_pipelines_by_type</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo_test.test_get_pipelines_by_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.repo.repo_test.test_get_step_by_version">
+<code class="sig-prename descclassname">zenml.repo.repo_test.</code><code class="sig-name descname">test_get_step_by_version</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo_test.test_get_step_by_version" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.repo.repo_test.test_get_step_versions">
+<code class="sig-prename descclassname">zenml.repo.repo_test.</code><code class="sig-name descname">test_get_step_versions</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo_test.test_get_step_versions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.repo.repo_test.test_get_step_versions_by_type">
+<code class="sig-prename descclassname">zenml.repo.repo_test.</code><code class="sig-name descname">test_get_step_versions_by_type</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo_test.test_get_step_versions_by_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.repo.repo_test.test_repo_double_init">
+<code class="sig-prename descclassname">zenml.repo.repo_test.</code><code class="sig-name descname">test_repo_double_init</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.repo_test.test_repo_double_init" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-zenml.repo.zenml_config">
+<span id="zenml-repo-zenml-config-module"></span><h2>zenml.repo.zenml_config module<a class="headerlink" href="#module-zenml.repo.zenml_config" title="Permalink to this headline">¶</a></h2>
+<p>Functions to handle ZenML config</p>
+<dl class="py class">
+<dt id="zenml.repo.zenml_config.ZenMLConfig">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.repo.zenml_config.</code><code class="sig-name descname">ZenMLConfig</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo_path</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.zenml_config.ZenMLConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>ZenML config class to handle config operations.</p>
+<p>This is an internal class and should not be used by the user.</p>
+<dl class="py method">
+<dt id="zenml.repo.zenml_config.ZenMLConfig.from_config">
+<code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config_dict</span><span class="p">:</span> <span class="n">Dict</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.zenml_config.ZenMLConfig.from_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets metadata and artifact_store variables</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config_dict</strong> (<em>dict</em>) – .zenml config object in dict format.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.zenml_config.ZenMLConfig.get_artifact_store">
+<code class="sig-name descname">get_artifact_store</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#zenml.repo.artifact_store.ArtifactStore" title="zenml.repo.artifact_store.ArtifactStore">zenml.repo.artifact_store.ArtifactStore</a><a class="headerlink" href="#zenml.repo.zenml_config.ZenMLConfig.get_artifact_store" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get artifact store from config</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.zenml_config.ZenMLConfig.get_metadata_store">
+<code class="sig-name descname">get_metadata_store</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="zenml.metadata.html#zenml.metadata.metadata_wrapper.ZenMLMetadataStore" title="zenml.metadata.metadata_wrapper.ZenMLMetadataStore">zenml.metadata.metadata_wrapper.ZenMLMetadataStore</a><a class="headerlink" href="#zenml.repo.zenml_config.ZenMLConfig.get_metadata_store" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get metadata store from config.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.zenml_config.ZenMLConfig.get_pipelines_dir">
+<code class="sig-name descname">get_pipelines_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#zenml.repo.zenml_config.ZenMLConfig.get_pipelines_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get absolute path of pipelines dir from config</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.zenml_config.ZenMLConfig.is_zenml_dir">
+<em class="property">static </em><code class="sig-name descname">is_zenml_dir</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.zenml_config.ZenMLConfig.is_zenml_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if dir is a zenml dir or not.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – path to the root.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.zenml_config.ZenMLConfig.save">
+<code class="sig-name descname">save</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.zenml_config.ZenMLConfig.save" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.zenml_config.ZenMLConfig.set_artifact_store">
+<code class="sig-name descname">set_artifact_store</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">artifact_store_path</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.zenml_config.ZenMLConfig.set_artifact_store" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates artifact store to point to path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>artifact_store_path</strong> – new path to artifact store</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.zenml_config.ZenMLConfig.set_metadata_store">
+<code class="sig-name descname">set_metadata_store</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">metadata_store</span><span class="p">:</span> <span class="n"><a class="reference internal" href="zenml.metadata.html#zenml.metadata.metadata_wrapper.ZenMLMetadataStore" title="zenml.metadata.metadata_wrapper.ZenMLMetadataStore">zenml.metadata.metadata_wrapper.ZenMLMetadataStore</a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.zenml_config.ZenMLConfig.set_metadata_store" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates artifact store to point to path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>metadata_store</strong> – metadata store</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.zenml_config.ZenMLConfig.set_pipelines_dir">
+<code class="sig-name descname">set_pipelines_dir</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipelines_dir</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.zenml_config.ZenMLConfig.set_pipelines_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates artifact store to point to path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>pipelines_dir</strong> – new path to pipelines dir</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.repo.zenml_config.ZenMLConfig.to_config">
+<em class="property">static </em><code class="sig-name descname">to_config</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">artifact_store_path</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">metadata_store</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Type<span class="p">[</span><a class="reference internal" href="zenml.metadata.html#zenml.metadata.metadata_wrapper.ZenMLMetadataStore" title="zenml.metadata.metadata_wrapper.ZenMLMetadataStore">zenml.metadata.metadata_wrapper.ZenMLMetadataStore</a><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pipelines_dir</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.zenml_config.ZenMLConfig.to_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a default .zenml config at path/zenml/.zenml_config.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<em>str</em>) – path to a directory.</p></li>
+<li><p><strong>metadata_store</strong> – metadata store definition.</p></li>
+<li><p><strong>artifact_store_path</strong> (<em>str</em>) – path where to store artifacts.</p></li>
+<li><p><strong>pipelines_dir</strong> (<em>str</em>) – path where to store pipeline configs.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.repo.zenml_config_test">
+<span id="zenml-repo-zenml-config-test-module"></span><h2>zenml.repo.zenml_config_test module<a class="headerlink" href="#module-zenml.repo.zenml_config_test" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="zenml.repo.zenml_config_test.test_is_zenml_dir">
+<code class="sig-prename descclassname">zenml.repo.zenml_config_test.</code><code class="sig-name descname">test_is_zenml_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.zenml_config_test.test_is_zenml_dir" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.repo.zenml_config_test.test_zenml_config_getters">
+<code class="sig-prename descclassname">zenml.repo.zenml_config_test.</code><code class="sig-name descname">test_zenml_config_getters</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.zenml_config_test.test_zenml_config_getters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.repo.zenml_config_test.test_zenml_config_init">
+<code class="sig-prename descclassname">zenml.repo.zenml_config_test.</code><code class="sig-name descname">test_zenml_config_init</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.zenml_config_test.test_zenml_config_init" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.repo.zenml_config_test.test_zenml_config_setters">
+<code class="sig-prename descclassname">zenml.repo.zenml_config_test.</code><code class="sig-name descname">test_zenml_config_setters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">equal_md_stores</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.repo.zenml_config_test.test_zenml_config_setters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-zenml.repo">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.repo" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2021, maiot GmbH.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.3.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

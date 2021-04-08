@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zenml.datasources package &#8212; ZenML  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="zenml.metadata package" href="zenml.metadata.html" />
+    <link rel="prev" title="zenml.components.transform_simple package" href="zenml.components.transform_simple.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          ZenML</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">zenml.datasources package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-zenml.datasources.base_datasource">zenml.datasources.base_datasource module</a></li>
+<li><a class="reference internal" href="#module-zenml.datasources.base_datasource_test">zenml.datasources.base_datasource_test module</a></li>
+<li><a class="reference internal" href="#module-zenml.datasources.bq_datasource">zenml.datasources.bq_datasource module</a></li>
+<li><a class="reference internal" href="#module-zenml.datasources.csv_datasource">zenml.datasources.csv_datasource module</a></li>
+<li><a class="reference internal" href="#module-zenml.datasources.image_datasource">zenml.datasources.image_datasource module</a></li>
+<li><a class="reference internal" href="#module-zenml.datasources.json_datasource">zenml.datasources.json_datasource module</a></li>
+<li><a class="reference internal" href="#module-zenml.datasources.numpy_datasource">zenml.datasources.numpy_datasource module</a></li>
+<li><a class="reference internal" href="#module-zenml.datasources.pandas_datasource">zenml.datasources.pandas_datasource module</a></li>
+<li><a class="reference internal" href="#zenml-datasources-postgres-datasource-module">zenml.datasources.postgres_datasource module</a></li>
+<li><a class="reference internal" href="#module-zenml.datasources">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="zenml.components.transform_simple.html" title="Previous Chapter: zenml.components.transform_simple package"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; zenml.compone...</span>
+    </a>
+  </li>
+  <li>
+    <a href="zenml.metadata.html" title="Next Chapter: zenml.metadata package"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">zenml.metadat... &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/zenml.datasources.rst.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="section" id="zenml-datasources-package">
+<h1>zenml.datasources package<a class="headerlink" href="#zenml-datasources-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.datasources.base_datasource">
+<span id="zenml-datasources-base-datasource-module"></span><h2>zenml.datasources.base_datasource module<a class="headerlink" href="#module-zenml.datasources.base_datasource" title="Permalink to this headline">¶</a></h2>
+<p>Base Class for all ZenML datasources</p>
+<dl class="py class">
+<dt id="zenml.datasources.base_datasource.BaseDatasource">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.datasources.base_datasource.</code><code class="sig-name descname">BaseDatasource</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">_id</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.base_datasource.BaseDatasource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Base class for all ZenML datasources.
+Every ZenML datasource should override this class.</p>
+<dl class="py method">
+<dt id="zenml.datasources.base_datasource.BaseDatasource.from_config">
+<em class="property">classmethod </em><code class="sig-name descname">from_config</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span><span class="p">:</span> <span class="n">Dict</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.base_datasource.BaseDatasource.from_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert from Data Step config to ZenML Datasource object.
+Data step is also populated and configuration set to parameters set
+in the config file.
+:param config: a DataStep config in dict-form (probably loaded from YAML).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.datasources.base_datasource.BaseDatasource.get_data_step">
+<em class="property">abstract </em><code class="sig-name descname">get_data_step</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.base_datasource.BaseDatasource.get_data_step" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.datasources.base_datasource.BaseDatasource.get_datapoints">
+<code class="sig-name descname">get_datapoints</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.base_datasource.BaseDatasource.get_datapoints" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets total number of datapoints in datasource</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.datasources.base_datasource.BaseDatasource.sample_data">
+<code class="sig-name descname">sample_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sample_size</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">100000</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.base_datasource.BaseDatasource.sample_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sampels data from datasource as a pandas DataFrame.
+:param sample_size: # of rows to sample.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.datasources.base_datasource.BaseDatasource.to_config">
+<code class="sig-name descname">to_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.base_datasource.BaseDatasource.to_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts datasource to ZenML config block.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.datasources.base_datasource.BaseDatasource.view_schema">
+<code class="sig-name descname">view_schema</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.base_datasource.BaseDatasource.view_schema" title="Permalink to this definition">¶</a></dt>
+<dd><p>View schema of data flowing in pipeline.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.datasources.base_datasource.BaseDatasource.view_statistics">
+<code class="sig-name descname">view_statistics</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">port</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.base_datasource.BaseDatasource.view_statistics" title="Permalink to this definition">¶</a></dt>
+<dd><p>View statistics of data flowing in pipeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>port</strong> (<em>int</em>) – Port at which to launch the statistics facet.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.datasources.base_datasource_test">
+<span id="zenml-datasources-base-datasource-test-module"></span><h2>zenml.datasources.base_datasource_test module<a class="headerlink" href="#module-zenml.datasources.base_datasource_test" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="zenml.datasources.base_datasource_test.test_datasource_create">
+<code class="sig-prename descclassname">zenml.datasources.base_datasource_test.</code><code class="sig-name descname">test_datasource_create</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.base_datasource_test.test_datasource_create" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.datasources.base_datasource_test.test_get_data_file_paths">
+<code class="sig-prename descclassname">zenml.datasources.base_datasource_test.</code><code class="sig-name descname">test_get_data_file_paths</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.base_datasource_test.test_get_data_file_paths" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.datasources.base_datasource_test.test_get_datapoints">
+<code class="sig-prename descclassname">zenml.datasources.base_datasource_test.</code><code class="sig-name descname">test_get_datapoints</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.base_datasource_test.test_get_datapoints" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.datasources.base_datasource_test.test_get_datastep">
+<code class="sig-prename descclassname">zenml.datasources.base_datasource_test.</code><code class="sig-name descname">test_get_datastep</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.base_datasource_test.test_get_datastep" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.datasources.base_datasource_test.test_get_one_pipeline">
+<code class="sig-prename descclassname">zenml.datasources.base_datasource_test.</code><code class="sig-name descname">test_get_one_pipeline</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.base_datasource_test.test_get_one_pipeline" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.datasources.base_datasource_test.test_sample_data">
+<code class="sig-prename descclassname">zenml.datasources.base_datasource_test.</code><code class="sig-name descname">test_sample_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repo</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.base_datasource_test.test_sample_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.datasources.base_datasource_test.test_to_from_config">
+<code class="sig-prename descclassname">zenml.datasources.base_datasource_test.</code><code class="sig-name descname">test_to_from_config</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">equal_datasources</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.base_datasource_test.test_to_from_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-zenml.datasources.bq_datasource">
+<span id="zenml-datasources-bq-datasource-module"></span><h2>zenml.datasources.bq_datasource module<a class="headerlink" href="#module-zenml.datasources.bq_datasource" title="Permalink to this headline">¶</a></h2>
+<p>BigQuery Datasource definition</p>
+<dl class="py class">
+<dt id="zenml.datasources.bq_datasource.BigQueryDatasource">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.datasources.bq_datasource.</code><code class="sig-name descname">BigQueryDatasource</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">query_project</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">query_dataset</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">query_table</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">gcs_location</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">query_limit</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dest_project</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">schema</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.bq_datasource.BigQueryDatasource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.datasources.base_datasource.BaseDatasource" title="zenml.datasources.base_datasource.BaseDatasource"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.datasources.base_datasource.BaseDatasource</span></code></a></p>
+<p>ZenML BigQuery datasource definition.</p>
+<p>Use this for BigQuery training pipelines.</p>
+<dl class="py method">
+<dt id="zenml.datasources.bq_datasource.BigQueryDatasource.get_data_step">
+<code class="sig-name descname">get_data_step</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.bq_datasource.BigQueryDatasource.get_data_step" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.datasources.csv_datasource">
+<span id="zenml-datasources-csv-datasource-module"></span><h2>zenml.datasources.csv_datasource module<a class="headerlink" href="#module-zenml.datasources.csv_datasource" title="Permalink to this headline">¶</a></h2>
+<p>CSv Datasource definition</p>
+<dl class="py class">
+<dt id="zenml.datasources.csv_datasource.CSVDatasource">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.datasources.csv_datasource.</code><code class="sig-name descname">CSVDatasource</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">path</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">schema</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.csv_datasource.CSVDatasource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.datasources.base_datasource.BaseDatasource" title="zenml.datasources.base_datasource.BaseDatasource"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.datasources.base_datasource.BaseDatasource</span></code></a></p>
+<p>ZenML CSV datasource definition.</p>
+<p>Use this for CSV training pipelines.</p>
+<dl class="py method">
+<dt id="zenml.datasources.csv_datasource.CSVDatasource.get_data_step">
+<code class="sig-name descname">get_data_step</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.csv_datasource.CSVDatasource.get_data_step" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.datasources.image_datasource">
+<span id="zenml-datasources-image-datasource-module"></span><h2>zenml.datasources.image_datasource module<a class="headerlink" href="#module-zenml.datasources.image_datasource" title="Permalink to this headline">¶</a></h2>
+<p>Image Datasource definition</p>
+<dl class="py class">
+<dt id="zenml.datasources.image_datasource.ImageDatasource">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.datasources.image_datasource.</code><code class="sig-name descname">ImageDatasource</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">base_path</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">schema</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.image_datasource.ImageDatasource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.datasources.base_datasource.BaseDatasource" title="zenml.datasources.base_datasource.BaseDatasource"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.datasources.base_datasource.BaseDatasource</span></code></a></p>
+<p>ZenML Image datasource definition.</p>
+<p>Use this for image training pipelines.</p>
+<dl class="py method">
+<dt id="zenml.datasources.image_datasource.ImageDatasource.get_data_step">
+<code class="sig-name descname">get_data_step</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.image_datasource.ImageDatasource.get_data_step" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.datasources.json_datasource">
+<span id="zenml-datasources-json-datasource-module"></span><h2>zenml.datasources.json_datasource module<a class="headerlink" href="#module-zenml.datasources.json_datasource" title="Permalink to this headline">¶</a></h2>
+<p>JSON Datasource definition</p>
+<dl class="py class">
+<dt id="zenml.datasources.json_datasource.JSONDatasource">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.datasources.json_datasource.</code><code class="sig-name descname">JSONDatasource</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">json_obj</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.json_datasource.JSONDatasource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.datasources.base_datasource.BaseDatasource" title="zenml.datasources.base_datasource.BaseDatasource"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.datasources.base_datasource.BaseDatasource</span></code></a></p>
+<p>ZenML JSON datasource definition.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.datasources.numpy_datasource">
+<span id="zenml-datasources-numpy-datasource-module"></span><h2>zenml.datasources.numpy_datasource module<a class="headerlink" href="#module-zenml.datasources.numpy_datasource" title="Permalink to this headline">¶</a></h2>
+<p>Numpy Datasource definition</p>
+<dl class="py class">
+<dt id="zenml.datasources.numpy_datasource.NumpyDatasource">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.datasources.numpy_datasource.</code><code class="sig-name descname">NumpyDatasource</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">np_array</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.numpy_datasource.NumpyDatasource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.datasources.base_datasource.BaseDatasource" title="zenml.datasources.base_datasource.BaseDatasource"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.datasources.base_datasource.BaseDatasource</span></code></a></p>
+<p>ZenML Numpy datasource definition.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.datasources.pandas_datasource">
+<span id="zenml-datasources-pandas-datasource-module"></span><h2>zenml.datasources.pandas_datasource module<a class="headerlink" href="#module-zenml.datasources.pandas_datasource" title="Permalink to this headline">¶</a></h2>
+<p>Pandas Datasource definition</p>
+<dl class="py class">
+<dt id="zenml.datasources.pandas_datasource.PandasDatasource">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.datasources.pandas_datasource.</code><code class="sig-name descname">PandasDatasource</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.datasources.pandas_datasource.PandasDatasource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.datasources.base_datasource.BaseDatasource" title="zenml.datasources.base_datasource.BaseDatasource"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.datasources.base_datasource.BaseDatasource</span></code></a></p>
+<p>ZenML Pandas datasource definition.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="zenml-datasources-postgres-datasource-module">
+<h2>zenml.datasources.postgres_datasource module<a class="headerlink" href="#zenml-datasources-postgres-datasource-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.datasources">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.datasources" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2021, maiot GmbH.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.3.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

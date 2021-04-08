@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zenml.backends.orchestrator.base package &#8212; ZenML  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="zenml.backends.orchestrator.beam package" href="zenml.backends.orchestrator.beam.html" />
+    <link rel="prev" title="zenml.backends.orchestrator.aws package" href="zenml.backends.orchestrator.aws.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          ZenML</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">zenml.backends.orchestrator.base package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-zenml.backends.orchestrator.base.orchestrator_base_backend">zenml.backends.orchestrator.base.orchestrator_base_backend module</a></li>
+<li><a class="reference internal" href="#module-zenml.backends.orchestrator.base.zenml_local_orchestrator">zenml.backends.orchestrator.base.zenml_local_orchestrator module</a></li>
+<li><a class="reference internal" href="#module-zenml.backends.orchestrator.base">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="zenml.backends.orchestrator.aws.html" title="Previous Chapter: zenml.backends.orchestrator.aws package"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; zenml.backend...</span>
+    </a>
+  </li>
+  <li>
+    <a href="zenml.backends.orchestrator.beam.html" title="Next Chapter: zenml.backends.orchestrator.beam package"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">zenml.backend... &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/zenml.backends.orchestrator.base.rst.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="section" id="zenml-backends-orchestrator-base-package">
+<h1>zenml.backends.orchestrator.base package<a class="headerlink" href="#zenml-backends-orchestrator-base-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.backends.orchestrator.base.orchestrator_base_backend">
+<span id="zenml-backends-orchestrator-base-orchestrator-base-backend-module"></span><h2>zenml.backends.orchestrator.base.orchestrator_base_backend module<a class="headerlink" href="#module-zenml.backends.orchestrator.base.orchestrator_base_backend" title="Permalink to this headline">¶</a></h2>
+<p>Definition of the base Orchestrator Backend</p>
+<dl class="py class">
+<dt id="zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.backends.orchestrator.base.orchestrator_base_backend.</code><code class="sig-name descname">OrchestratorBaseBackend</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="zenml.backends.html#zenml.backends.base_backend.BaseBackend" title="zenml.backends.base_backend.BaseBackend"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.backends.base_backend.BaseBackend</span></code></a></p>
+<p>Local ZenML orchestrator backend. Use this to run a ZenML pipeline
+locally on a machine.</p>
+<p>An orchestrator backend is responsible for scheduling, initializing and
+running different pipeline components. Examples of orchestrators are
+Apache Beam, Kubeflow or (here) Local Orchestration.</p>
+<p>Abstracting the pipeline logic from the orchestrator backend enables
+machine learning workloads to be run in different kinds of environments.
+For larger, decentralized data processing applications, a cloud-based
+backend can be used to distribute work across multiple machines.
+For quick prototyping and local tests, a single-machine direct backend can
+be selected to execute an ML Pipeline with minimal orchestration overhead.</p>
+<dl class="py attribute">
+<dt id="zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend.BACKEND_TYPE">
+<code class="sig-name descname">BACKEND_TYPE</code><em class="property"> = 'orchestrator'</em><a class="headerlink" href="#zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend.BACKEND_TYPE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend.get_tfx_pipeline">
+<em class="property">static </em><code class="sig-name descname">get_tfx_pipeline</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; tfx.orchestration.pipeline.Pipeline<a class="headerlink" href="#zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend.get_tfx_pipeline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts ZenML config dict to TFX pipeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> – A ZenML config dict</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A TFX pipeline object.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tfx_pipeline</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend.run">
+<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>This run function essentially calls an underlying TFX orchestrator run.
+However it is meant as a higher level abstraction with some
+opinionated decisions taken.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config</strong> – a ZenML config dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.backends.orchestrator.base.zenml_local_orchestrator">
+<span id="zenml-backends-orchestrator-base-zenml-local-orchestrator-module"></span><h2>zenml.backends.orchestrator.base.zenml_local_orchestrator module<a class="headerlink" href="#module-zenml.backends.orchestrator.base.zenml_local_orchestrator" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="zenml.backends.orchestrator.base.zenml_local_orchestrator.ZenMLLocalDagRunner">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.backends.orchestrator.base.zenml_local_orchestrator.</code><code class="sig-name descname">ZenMLLocalDagRunner</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>tfx.orchestration.config.pipeline_config.PipelineConfig<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.backends.orchestrator.base.zenml_local_orchestrator.ZenMLLocalDagRunner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tfx.orchestration.local.local_dag_runner.LocalDagRunner</span></code></p>
+<p>This is the almost the same as the super class from tfx:
+tfx.orchestration.base.local_dag_runner.LocalDagRunner with the exception
+being that the pipeline_run is not overridden. Full credit to Google LLC
+for the original source code found at:
+<a class="reference external" href="https://github.com/tensorflow/tfx/blob/master/tfx/orchestration/local/">https://github.com/tensorflow/tfx/blob/master/tfx/orchestration/local/</a></p>
+<dl class="py method">
+<dt id="zenml.backends.orchestrator.base.zenml_local_orchestrator.ZenMLLocalDagRunner.run">
+<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tfx_pipeline</span><span class="p">:</span> <span class="n">tfx.orchestration.pipeline.Pipeline</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#zenml.backends.orchestrator.base.zenml_local_orchestrator.ZenMLLocalDagRunner.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs given logical pipeline locally.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>tfx_pipeline</strong> – Logical pipeline containing pipeline args and components.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.backends.orchestrator.base">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.backends.orchestrator.base" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2021, maiot GmbH.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.3.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

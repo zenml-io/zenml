@@ -1,0 +1,45 @@
+zenml.components.transform\_simple package
+==========================================
+
+Submodules
+----------
+
+zenml.components.transform\_simple.component module
+---------------------------------------------------
+
+.. automodule:: zenml.components.transform_simple.component
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.components.transform\_simple.constants module
+---------------------------------------------------
+
+.. automodule:: zenml.components.transform_simple.constants
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.components.transform\_simple.executor module
+--------------------------------------------------
+
+.. automodule:: zenml.components.transform_simple.executor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.components.transform\_simple.utils module
+-----------------------------------------------
+
+.. automodule:: zenml.components.transform_simple.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: zenml.components.transform_simple
+   :members:
+   :undoc-members:
+   :show-inheritance:

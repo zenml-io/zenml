@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zenml.steps.deployer package &#8212; ZenML  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="zenml.steps.evaluator package" href="zenml.steps.evaluator.html" />
+    <link rel="prev" title="zenml.steps.data package" href="zenml.steps.data.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          ZenML</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">zenml.steps.deployer package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-zenml.steps.deployer.base_deployer">zenml.steps.deployer.base_deployer module</a></li>
+<li><a class="reference internal" href="#module-zenml.steps.deployer.cortex_deployer">zenml.steps.deployer.cortex_deployer module</a></li>
+<li><a class="reference internal" href="#module-zenml.steps.deployer.gcaip_deployer">zenml.steps.deployer.gcaip_deployer module</a></li>
+<li><a class="reference internal" href="#module-zenml.steps.deployer">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="zenml.steps.data.html" title="Previous Chapter: zenml.steps.data package"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; zenml.steps.d...</span>
+    </a>
+  </li>
+  <li>
+    <a href="zenml.steps.evaluator.html" title="Next Chapter: zenml.steps.evaluator package"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">zenml.steps.e... &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/zenml.steps.deployer.rst.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="section" id="zenml-steps-deployer-package">
+<h1>zenml.steps.deployer package<a class="headerlink" href="#zenml-steps-deployer-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.steps.deployer.base_deployer">
+<span id="zenml-steps-deployer-base-deployer-module"></span><h2>zenml.steps.deployer.base_deployer module<a class="headerlink" href="#module-zenml.steps.deployer.base_deployer" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="zenml.steps.deployer.base_deployer.BaseDeployerStep">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.steps.deployer.base_deployer.</code><code class="sig-name descname">BaseDeployerStep</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.deployer.base_deployer.BaseDeployerStep" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="zenml.steps.html#zenml.steps.base_step.BaseStep" title="zenml.steps.base_step.BaseStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.steps.base_step.BaseStep</span></code></a></p>
+<p>Base class for all deployer steps. These steps are used to specify a
+configuration for a Pusher component that uploads the model to a selected
+location and opens an endpoint to it from where it serves predictions upon
+request.</p>
+<dl class="py method">
+<dt id="zenml.steps.deployer.base_deployer.BaseDeployerStep.build_push_destination">
+<code class="sig-name descname">build_push_destination</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.deployer.base_deployer.BaseDeployerStep.build_push_destination" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.steps.deployer.base_deployer.BaseDeployerStep.get_config">
+<code class="sig-name descname">get_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.deployer.base_deployer.BaseDeployerStep.get_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.steps.deployer.base_deployer.BaseDeployerStep.get_executor">
+<code class="sig-name descname">get_executor</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Type<span class="p">[</span>tfx.dsl.components.base.base_executor.BaseExecutor<span class="p">]</span><a class="headerlink" href="#zenml.steps.deployer.base_deployer.BaseDeployerStep.get_executor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.steps.deployer.cortex_deployer">
+<span id="zenml-steps-deployer-cortex-deployer-module"></span><h2>zenml.steps.deployer.cortex_deployer module<a class="headerlink" href="#module-zenml.steps.deployer.cortex_deployer" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="zenml.steps.deployer.cortex_deployer.CortexDeployer">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.steps.deployer.cortex_deployer.</code><code class="sig-name descname">CortexDeployer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">api_config</span><span class="p">:</span> <span class="n">Dict</span></em>, <em class="sig-param"><span class="n">predictor</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">requirements</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">conda_packages</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">env</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'gcp'</span></em>, <em class="sig-param"><span class="n">force</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">wait</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.deployer.cortex_deployer.CortexDeployer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.steps.deployer.base_deployer.BaseDeployerStep" title="zenml.steps.deployer.base_deployer.BaseDeployerStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.steps.deployer.base_deployer.BaseDeployerStep</span></code></a></p>
+<p>Step class for deploying models using Cortex.</p>
+<dl class="py method">
+<dt id="zenml.steps.deployer.cortex_deployer.CortexDeployer.get_config">
+<code class="sig-name descname">get_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.deployer.cortex_deployer.CortexDeployer.get_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.steps.deployer.cortex_deployer.CortexDeployer.get_executor">
+<code class="sig-name descname">get_executor</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.deployer.cortex_deployer.CortexDeployer.get_executor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.steps.deployer.gcaip_deployer">
+<span id="zenml-steps-deployer-gcaip-deployer-module"></span><h2>zenml.steps.deployer.gcaip_deployer module<a class="headerlink" href="#module-zenml.steps.deployer.gcaip_deployer" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="zenml.steps.deployer.gcaip_deployer.GCAIPDeployer">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.steps.deployer.gcaip_deployer.</code><code class="sig-name descname">GCAIPDeployer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">project_id</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.deployer.gcaip_deployer.GCAIPDeployer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.steps.deployer.base_deployer.BaseDeployerStep" title="zenml.steps.deployer.base_deployer.BaseDeployerStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.steps.deployer.base_deployer.BaseDeployerStep</span></code></a></p>
+<p>Step class for deploying models on Google Cloud AI Platform.</p>
+<dl class="py method">
+<dt id="zenml.steps.deployer.gcaip_deployer.GCAIPDeployer.get_config">
+<code class="sig-name descname">get_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.deployer.gcaip_deployer.GCAIPDeployer.get_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.steps.deployer.gcaip_deployer.GCAIPDeployer.get_executor">
+<code class="sig-name descname">get_executor</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.deployer.gcaip_deployer.GCAIPDeployer.get_executor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.steps.deployer">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.steps.deployer" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2021, maiot GmbH.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.3.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

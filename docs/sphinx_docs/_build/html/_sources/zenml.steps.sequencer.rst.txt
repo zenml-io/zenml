@@ -1,0 +1,29 @@
+zenml.steps.sequencer package
+=============================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   zenml.steps.sequencer.standard_sequencer
+
+Submodules
+----------
+
+zenml.steps.sequencer.base\_sequencer module
+--------------------------------------------
+
+.. automodule:: zenml.steps.sequencer.base_sequencer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: zenml.steps.sequencer
+   :members:
+   :undoc-members:
+   :show-inheritance:

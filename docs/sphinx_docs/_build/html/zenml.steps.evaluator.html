@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zenml.steps.evaluator package &#8212; ZenML  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="zenml.steps.inferrer package" href="zenml.steps.inferrer.html" />
+    <link rel="prev" title="zenml.steps.deployer package" href="zenml.steps.deployer.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          ZenML</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">zenml.steps.evaluator package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-zenml.steps.evaluator.agnostic_evaluator">zenml.steps.evaluator.agnostic_evaluator module</a></li>
+<li><a class="reference internal" href="#module-zenml.steps.evaluator.base_evaluator">zenml.steps.evaluator.base_evaluator module</a></li>
+<li><a class="reference internal" href="#module-zenml.steps.evaluator.tfma_evaluator">zenml.steps.evaluator.tfma_evaluator module</a></li>
+<li><a class="reference internal" href="#module-zenml.steps.evaluator.tfma_module">zenml.steps.evaluator.tfma_module module</a></li>
+<li><a class="reference internal" href="#module-zenml.steps.evaluator">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="zenml.steps.deployer.html" title="Previous Chapter: zenml.steps.deployer package"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; zenml.steps.d...</span>
+    </a>
+  </li>
+  <li>
+    <a href="zenml.steps.inferrer.html" title="Next Chapter: zenml.steps.inferrer package"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">zenml.steps.i... &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/zenml.steps.evaluator.rst.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="section" id="zenml-steps-evaluator-package">
+<h1>zenml.steps.evaluator package<a class="headerlink" href="#zenml-steps-evaluator-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.steps.evaluator.agnostic_evaluator">
+<span id="zenml-steps-evaluator-agnostic-evaluator-module"></span><h2>zenml.steps.evaluator.agnostic_evaluator module<a class="headerlink" href="#module-zenml.steps.evaluator.agnostic_evaluator" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="zenml.steps.evaluator.agnostic_evaluator.AgnosticEvaluator">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.steps.evaluator.agnostic_evaluator.</code><code class="sig-name descname">AgnosticEvaluator</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">label_key</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">prediction_key</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">slices</span><span class="p">:</span> <span class="n">List<span class="p">[</span>List<span class="p">[</span>str<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">metrics</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.evaluator.agnostic_evaluator.AgnosticEvaluator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.steps.evaluator.base_evaluator.BaseEvaluatorStep" title="zenml.steps.evaluator.base_evaluator.BaseEvaluatorStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.steps.evaluator.base_evaluator.BaseEvaluatorStep</span></code></a></p>
+<p>AgnosticEvaluator step designed to work regardless of the type of the
+trained model</p>
+<p>Through this step, it is possible to use the model_agnostic capabilities of
+TFMA, however this requires the test_results (tf.train.Example) to be saved
+beforehand in a flat format in the trainer step. Once the results are
+saved, you can use the label_key and the prediction_key to specify the
+selected features and compute the desired metrics.</p>
+<p>Note: As of now, it only supports a single label-prediction key pair, we
+are working hard to bring you support for multi-output models as well.</p>
+<dl class="py method">
+<dt id="zenml.steps.evaluator.agnostic_evaluator.AgnosticEvaluator.build_config">
+<code class="sig-name descname">build_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.evaluator.agnostic_evaluator.AgnosticEvaluator.build_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.evaluator.agnostic_evaluator.to_camel_case">
+<code class="sig-prename descclassname">zenml.steps.evaluator.agnostic_evaluator.</code><code class="sig-name descname">to_camel_case</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">s</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.evaluator.agnostic_evaluator.to_camel_case" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a given name to camel case and removes any ‘_’</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.steps.evaluator.base_evaluator">
+<span id="zenml-steps-evaluator-base-evaluator-module"></span><h2>zenml.steps.evaluator.base_evaluator module<a class="headerlink" href="#module-zenml.steps.evaluator.base_evaluator" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="zenml.steps.evaluator.base_evaluator.BaseEvaluatorStep">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.steps.evaluator.base_evaluator.</code><code class="sig-name descname">BaseEvaluatorStep</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">split_mapping</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>List<span class="p">[</span>str<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.evaluator.base_evaluator.BaseEvaluatorStep" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="zenml.steps.html#zenml.steps.base_step.BaseStep" title="zenml.steps.base_step.BaseStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.steps.base_step.BaseStep</span></code></a></p>
+<p>Base evaluator step. All evaluator steps should inherit from this class.</p>
+<dl class="py attribute">
+<dt id="zenml.steps.evaluator.base_evaluator.BaseEvaluatorStep.CUSTOM_MODULE">
+<code class="sig-name descname">CUSTOM_MODULE</code><em class="property"> = None</em><a class="headerlink" href="#zenml.steps.evaluator.base_evaluator.BaseEvaluatorStep.CUSTOM_MODULE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zenml.steps.evaluator.base_evaluator.BaseEvaluatorStep.STEP_TYPE">
+<code class="sig-name descname">STEP_TYPE</code><em class="property"> = 'evaluator'</em><a class="headerlink" href="#zenml.steps.evaluator.base_evaluator.BaseEvaluatorStep.STEP_TYPE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.steps.evaluator.base_evaluator.BaseEvaluatorStep.build_config">
+<code class="sig-name descname">build_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.evaluator.base_evaluator.BaseEvaluatorStep.build_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.steps.evaluator.tfma_evaluator">
+<span id="zenml-steps-evaluator-tfma-evaluator-module"></span><h2>zenml.steps.evaluator.tfma_evaluator module<a class="headerlink" href="#module-zenml.steps.evaluator.tfma_evaluator" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="zenml.steps.evaluator.tfma_evaluator.TFMAEvaluator">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.steps.evaluator.tfma_evaluator.</code><code class="sig-name descname">TFMAEvaluator</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">metrics</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>List<span class="p">[</span>str<span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">slices</span><span class="p">:</span> <span class="n">List<span class="p">[</span>List<span class="p">[</span>str<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">output_mapping</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.evaluator.tfma_evaluator.TFMAEvaluator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.steps.evaluator.base_evaluator.BaseEvaluatorStep" title="zenml.steps.evaluator.base_evaluator.BaseEvaluatorStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.steps.evaluator.base_evaluator.BaseEvaluatorStep</span></code></a></p>
+<p>TFMA Evaluator step designed for the TF models in ZenML</p>
+<p>It features a specific build_config method which uses the zenml_eval
+signature of the model and produces a flexible tfma.EvalConfig, which can
+work with a wide range of Tensorflow models and TFMA</p>
+<dl class="py attribute">
+<dt id="zenml.steps.evaluator.tfma_evaluator.TFMAEvaluator.CUSTOM_MODULE">
+<code class="sig-name descname">CUSTOM_MODULE</code><em class="property"> = 'zenml.steps.evaluator.tfma_module'</em><a class="headerlink" href="#zenml.steps.evaluator.tfma_evaluator.TFMAEvaluator.CUSTOM_MODULE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.steps.evaluator.tfma_evaluator.TFMAEvaluator.build_config">
+<code class="sig-name descname">build_config</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">use_defaults</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.evaluator.tfma_evaluator.TFMAEvaluator.build_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.evaluator.tfma_evaluator.to_camel_case">
+<code class="sig-prename descclassname">zenml.steps.evaluator.tfma_evaluator.</code><code class="sig-name descname">to_camel_case</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">s</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.evaluator.tfma_evaluator.to_camel_case" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a given name to camel case and removes any ‘_’</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.steps.evaluator.tfma_module">
+<span id="zenml-steps-evaluator-tfma-module-module"></span><h2>zenml.steps.evaluator.tfma_module module<a class="headerlink" href="#module-zenml.steps.evaluator.tfma_module" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="zenml.steps.evaluator.tfma_module.BatchedPredictExtractor">
+<code class="sig-prename descclassname">zenml.steps.evaluator.tfma_module.</code><code class="sig-name descname">BatchedPredictExtractor</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">eval_config</span><span class="p">:</span> <span class="n">tensorflow_model_analysis.proto.config_pb2.EvalConfig</span></em>, <em class="sig-param"><span class="n">eval_shared_model</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>tensorflow_model_analysis.types.EvalSharedModel<span class="p">, </span>List<span class="p">[</span>tensorflow_model_analysis.types.EvalSharedModel<span class="p">]</span><span class="p">, </span>Dict<span class="p">[</span>str<span class="p">, </span>tensorflow_model_analysis.types.EvalSharedModel<span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">tensor_adapter_config</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>tfx_bsl.tfxio.tensor_adapter.TensorAdapterConfig<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; tensorflow_model_analysis.extractors.extractor.Extractor<a class="headerlink" href="#zenml.steps.evaluator.tfma_module.BatchedPredictExtractor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.evaluator.tfma_module.custom_extractors">
+<code class="sig-prename descclassname">zenml.steps.evaluator.tfma_module.</code><code class="sig-name descname">custom_extractors</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">eval_config</span></em>, <em class="sig-param"><span class="n">eval_shared_model</span></em>, <em class="sig-param"><span class="n">tensor_adapter_config</span></em><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span>tensorflow_model_analysis.extractors.extractor.Extractor<span class="p">]</span><a class="headerlink" href="#zenml.steps.evaluator.tfma_module.custom_extractors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-zenml.steps.evaluator">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.steps.evaluator" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2021, maiot GmbH.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.3.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

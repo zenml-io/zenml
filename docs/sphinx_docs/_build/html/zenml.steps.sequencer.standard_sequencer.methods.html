@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zenml.steps.sequencer.standard_sequencer.methods package &#8212; ZenML  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="zenml.steps.split package" href="zenml.steps.split.html" />
+    <link rel="prev" title="zenml.steps.sequencer.standard_sequencer package" href="zenml.steps.sequencer.standard_sequencer.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          ZenML</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">zenml.steps.sequencer.standard_sequencer.methods package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-zenml.steps.sequencer.standard_sequencer.methods.methods_filling">zenml.steps.sequencer.standard_sequencer.methods.methods_filling module</a></li>
+<li><a class="reference internal" href="#module-zenml.steps.sequencer.standard_sequencer.methods.methods_resampling">zenml.steps.sequencer.standard_sequencer.methods.methods_resampling module</a></li>
+<li><a class="reference internal" href="#module-zenml.steps.sequencer.standard_sequencer.methods.standard_methods">zenml.steps.sequencer.standard_sequencer.methods.standard_methods module</a></li>
+<li><a class="reference internal" href="#module-zenml.steps.sequencer.standard_sequencer.methods">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="zenml.steps.sequencer.standard_sequencer.html" title="Previous Chapter: zenml.steps.sequencer.standard_sequencer package"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; zenml.steps.s...</span>
+    </a>
+  </li>
+  <li>
+    <a href="zenml.steps.split.html" title="Next Chapter: zenml.steps.split package"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">zenml.steps.s... &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/zenml.steps.sequencer.standard_sequencer.methods.rst.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="section" id="zenml-steps-sequencer-standard-sequencer-methods-package">
+<h1>zenml.steps.sequencer.standard_sequencer.methods package<a class="headerlink" href="#zenml-steps-sequencer-standard-sequencer-methods-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.steps.sequencer.standard_sequencer.methods.methods_filling">
+<span id="zenml-steps-sequencer-standard-sequencer-methods-methods-filling-module"></span><h2>zenml.steps.sequencer.standard_sequencer.methods.methods_filling module<a class="headerlink" href="#module-zenml.steps.sequencer.standard_sequencer.methods.methods_filling" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="zenml.steps.sequencer.standard_sequencer.methods.methods_filling.backwards_f">
+<code class="sig-prename descclassname">zenml.steps.sequencer.standard_sequencer.methods.methods_filling.</code><code class="sig-name descname">backwards_f</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.methods.methods_filling.backwards_f" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.sequencer.standard_sequencer.methods.methods_filling.custom_f">
+<code class="sig-prename descclassname">zenml.steps.sequencer.standard_sequencer.methods.methods_filling.</code><code class="sig-name descname">custom_f</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">custom_value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.methods.methods_filling.custom_f" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.sequencer.standard_sequencer.methods.methods_filling.forward_f">
+<code class="sig-prename descclassname">zenml.steps.sequencer.standard_sequencer.methods.methods_filling.</code><code class="sig-name descname">forward_f</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.methods.methods_filling.forward_f" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.sequencer.standard_sequencer.methods.methods_filling.infer_default_value">
+<code class="sig-prename descclassname">zenml.steps.sequencer.standard_sequencer.methods.methods_filling.</code><code class="sig-name descname">infer_default_value</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.methods.methods_filling.infer_default_value" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.sequencer.standard_sequencer.methods.methods_filling.max_f">
+<code class="sig-prename descclassname">zenml.steps.sequencer.standard_sequencer.methods.methods_filling.</code><code class="sig-name descname">max_f</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.methods.methods_filling.max_f" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.sequencer.standard_sequencer.methods.methods_filling.mean_f">
+<code class="sig-prename descclassname">zenml.steps.sequencer.standard_sequencer.methods.methods_filling.</code><code class="sig-name descname">mean_f</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.methods.methods_filling.mean_f" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.sequencer.standard_sequencer.methods.methods_filling.min_f">
+<code class="sig-prename descclassname">zenml.steps.sequencer.standard_sequencer.methods.methods_filling.</code><code class="sig-name descname">min_f</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.methods.methods_filling.min_f" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-zenml.steps.sequencer.standard_sequencer.methods.methods_resampling">
+<span id="zenml-steps-sequencer-standard-sequencer-methods-methods-resampling-module"></span><h2>zenml.steps.sequencer.standard_sequencer.methods.methods_resampling module<a class="headerlink" href="#module-zenml.steps.sequencer.standard_sequencer.methods.methods_resampling" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="zenml.steps.sequencer.standard_sequencer.methods.methods_resampling.get_output_dtype">
+<code class="sig-prename descclassname">zenml.steps.sequencer.standard_sequencer.methods.methods_resampling.</code><code class="sig-name descname">get_output_dtype</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_dtype</span></em>, <em class="sig-param"><span class="n">method</span></em>, <em class="sig-param"><span class="n">params</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.methods.methods_resampling.get_output_dtype" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.sequencer.standard_sequencer.methods.methods_resampling.resample_mean">
+<code class="sig-prename descclassname">zenml.steps.sequencer.standard_sequencer.methods.methods_resampling.</code><code class="sig-name descname">resample_mean</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.methods.methods_resampling.resample_mean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.sequencer.standard_sequencer.methods.methods_resampling.resample_median">
+<code class="sig-prename descclassname">zenml.steps.sequencer.standard_sequencer.methods.methods_resampling.</code><code class="sig-name descname">resample_median</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.methods.methods_resampling.resample_median" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.sequencer.standard_sequencer.methods.methods_resampling.resample_mode">
+<code class="sig-prename descclassname">zenml.steps.sequencer.standard_sequencer.methods.methods_resampling.</code><code class="sig-name descname">resample_mode</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.methods.methods_resampling.resample_mode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.sequencer.standard_sequencer.methods.methods_resampling.resample_thresholding">
+<code class="sig-prename descclassname">zenml.steps.sequencer.standard_sequencer.methods.methods_resampling.</code><code class="sig-name descname">resample_thresholding</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cond</span></em>, <em class="sig-param"><span class="n">c_value</span></em>, <em class="sig-param"><span class="n">threshold</span></em>, <em class="sig-param"><span class="n">set_value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.methods.methods_resampling.resample_thresholding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-zenml.steps.sequencer.standard_sequencer.methods.standard_methods">
+<span id="zenml-steps-sequencer-standard-sequencer-methods-standard-methods-module"></span><h2>zenml.steps.sequencer.standard_sequencer.methods.standard_methods module<a class="headerlink" href="#module-zenml.steps.sequencer.standard_sequencer.methods.standard_methods" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="zenml.steps.sequencer.standard_sequencer.methods.standard_methods.FillingMethods">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.steps.sequencer.standard_sequencer.methods.standard_methods.</code><code class="sig-name descname">FillingMethods</code><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.methods.standard_methods.FillingMethods" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="zenml.utils.html#zenml.utils.preprocessing_utils.MethodDescriptions" title="zenml.utils.preprocessing_utils.MethodDescriptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.utils.preprocessing_utils.MethodDescriptions</span></code></a></p>
+<dl class="py attribute">
+<dt id="zenml.steps.sequencer.standard_sequencer.methods.standard_methods.FillingMethods.MODES">
+<code class="sig-name descname">MODES</code><em class="property"> = {'backwards': (&lt;function backwards_f&gt;, []), 'custom': (&lt;function custom_f&gt;, ['custom_value']), 'forward': (&lt;function forward_f&gt;, []), 'max': (&lt;function max_f&gt;, []), 'mean': (&lt;function mean_f&gt;, []), 'min': (&lt;function min_f&gt;, [])}</em><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.methods.standard_methods.FillingMethods.MODES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="zenml.steps.sequencer.standard_sequencer.methods.standard_methods.ResamplingMethods">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.steps.sequencer.standard_sequencer.methods.standard_methods.</code><code class="sig-name descname">ResamplingMethods</code><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.methods.standard_methods.ResamplingMethods" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="zenml.utils.html#zenml.utils.preprocessing_utils.MethodDescriptions" title="zenml.utils.preprocessing_utils.MethodDescriptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.utils.preprocessing_utils.MethodDescriptions</span></code></a></p>
+<dl class="py attribute">
+<dt id="zenml.steps.sequencer.standard_sequencer.methods.standard_methods.ResamplingMethods.MODES">
+<code class="sig-name descname">MODES</code><em class="property"> = {'mean': (&lt;function resample_mean&gt;, []), 'median': (&lt;function resample_median&gt;, []), 'mode': (&lt;function resample_mode&gt;, []), 'threshold': (&lt;function resample_thresholding&gt;, ['cond', 'c_value', 'threshold', 'set_value'])}</em><a class="headerlink" href="#zenml.steps.sequencer.standard_sequencer.methods.standard_methods.ResamplingMethods.MODES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.steps.sequencer.standard_sequencer.methods">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.steps.sequencer.standard_sequencer.methods" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2021, maiot GmbH.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.3.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

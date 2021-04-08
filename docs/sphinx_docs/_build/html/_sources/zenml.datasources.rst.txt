@@ -1,0 +1,85 @@
+zenml.datasources package
+=========================
+
+Submodules
+----------
+
+zenml.datasources.base\_datasource module
+-----------------------------------------
+
+.. automodule:: zenml.datasources.base_datasource
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.datasources.base\_datasource\_test module
+-----------------------------------------------
+
+.. automodule:: zenml.datasources.base_datasource_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.datasources.bq\_datasource module
+---------------------------------------
+
+.. automodule:: zenml.datasources.bq_datasource
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.datasources.csv\_datasource module
+----------------------------------------
+
+.. automodule:: zenml.datasources.csv_datasource
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.datasources.image\_datasource module
+------------------------------------------
+
+.. automodule:: zenml.datasources.image_datasource
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.datasources.json\_datasource module
+-----------------------------------------
+
+.. automodule:: zenml.datasources.json_datasource
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.datasources.numpy\_datasource module
+------------------------------------------
+
+.. automodule:: zenml.datasources.numpy_datasource
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.datasources.pandas\_datasource module
+-------------------------------------------
+
+.. automodule:: zenml.datasources.pandas_datasource
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.datasources.postgres\_datasource module
+---------------------------------------------
+
+.. automodule:: zenml.datasources.postgres_datasource
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: zenml.datasources
+   :members:
+   :undoc-members:
+   :show-inheritance:

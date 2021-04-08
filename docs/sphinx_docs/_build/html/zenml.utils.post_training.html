@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zenml.utils.post_training package &#8212; ZenML  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="zenml.utils package" href="zenml.utils.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          ZenML</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">zenml.utils.post_training package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-zenml.utils.post_training.compare">zenml.utils.post_training.compare module</a></li>
+<li><a class="reference internal" href="#module-zenml.utils.post_training.post_training_utils">zenml.utils.post_training.post_training_utils module</a></li>
+<li><a class="reference internal" href="#module-zenml.utils.post_training">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="zenml.utils.html" title="Previous Chapter: zenml.utils package"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; zenml.utils package</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/zenml.utils.post_training.rst.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="section" id="zenml-utils-post-training-package">
+<h1>zenml.utils.post_training package<a class="headerlink" href="#zenml-utils-post-training-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.utils.post_training.compare">
+<span id="zenml-utils-post-training-compare-module"></span><h2>zenml.utils.post_training.compare module<a class="headerlink" href="#module-zenml.utils.post_training.compare" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="zenml.utils.post_training.compare.Application">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.utils.post_training.compare.</code><code class="sig-name descname">Application</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">params</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.post_training.compare.Application" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">param.parameterized.Parameterized</span></code></p>
+<p>params(hyperparameter_selector=ListSelector, performance_metric_selector=ObjectSelector, pipeline_run_selector=ListSelector, slicing_metric_selector=ObjectSelector, name=String)
+[1;32mParameters of ‘Application’
+===========================
+[0m
+[1;31mParameters changed from their default values are marked in red.[0m
+[1;36mSoft bound values are marked in cyan.[0m
+C/V= Constant/Variable, RO/RW = ReadOnly/ReadWrite, AN=Allow None</p>
+<p>[1;34mName                         Value       Type       Mode [0m</p>
+<p>hyperparameter_selector        []    ListSelector   V RW
+performance_metric_selector   None  ObjectSelector  V RW
+pipeline_run_selector          []    ListSelector   V RW
+slicing_metric_selector        ‘’   ObjectSelector  V RW</p>
+<p>[1;32mParameter docstrings:
+=====================[0m</p>
+<p>[1;34mhyperparameter_selector:     &lt; No docstring available &gt;[0m
+[1;31mperformance_metric_selector: &lt; No docstring available &gt;[0m
+[1;34mpipeline_run_selector:       &lt; No docstring available &gt;[0m
+[1;31mslicing_metric_selector:     &lt; No docstring available &gt;[0m</p>
+<dl class="py attribute">
+<dt id="zenml.utils.post_training.compare.Application.hyperparameter_selector">
+<code class="sig-name descname">hyperparameter_selector</code><em class="property"> = []</em><a class="headerlink" href="#zenml.utils.post_training.compare.Application.hyperparameter_selector" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zenml.utils.post_training.compare.Application.name">
+<code class="sig-name descname">name</code><em class="property"> = 'Application'</em><a class="headerlink" href="#zenml.utils.post_training.compare.Application.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.utils.post_training.compare.Application.parameter_graph">
+<code class="sig-name descname">parameter_graph</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.post_training.compare.Application.parameter_graph" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zenml.utils.post_training.compare.Application.performance_graph">
+<code class="sig-name descname">performance_graph</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.post_training.compare.Application.performance_graph" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zenml.utils.post_training.compare.Application.performance_metric_selector">
+<code class="sig-name descname">performance_metric_selector</code><em class="property"> = None</em><a class="headerlink" href="#zenml.utils.post_training.compare.Application.performance_metric_selector" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zenml.utils.post_training.compare.Application.pipeline_run_selector">
+<code class="sig-name descname">pipeline_run_selector</code><em class="property"> = []</em><a class="headerlink" href="#zenml.utils.post_training.compare.Application.pipeline_run_selector" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zenml.utils.post_training.compare.Application.slicing_metric_selector">
+<code class="sig-name descname">slicing_metric_selector</code><em class="property"> = ''</em><a class="headerlink" href="#zenml.utils.post_training.compare.Application.slicing_metric_selector" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.utils.post_training.compare.generate_interface">
+<code class="sig-prename descclassname">zenml.utils.post_training.compare.</code><code class="sig-name descname">generate_interface</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.post_training.compare.generate_interface" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.utils.post_training.compare.parse_metrics">
+<code class="sig-prename descclassname">zenml.utils.post_training.compare.</code><code class="sig-name descname">parse_metrics</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">d</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.post_training.compare.parse_metrics" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-zenml.utils.post_training.post_training_utils">
+<span id="zenml-utils-post-training-post-training-utils-module"></span><h2>zenml.utils.post_training.post_training_utils module<a class="headerlink" href="#module-zenml.utils.post_training.post_training_utils" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="zenml.utils.post_training.post_training_utils.convert_data_to_numpy">
+<code class="sig-prename descclassname">zenml.utils.post_training.post_training_utils.</code><code class="sig-name descname">convert_data_to_numpy</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataset</span></em>, <em class="sig-param"><span class="n">sample_size</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.post_training.post_training_utils.convert_data_to_numpy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes tf.data.Dataset and converts to numpy array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> – a tf.data.Dataset object</p></li>
+<li><p><strong>sample_size</strong> – number of rows to limit to</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.utils.post_training.post_training_utils.convert_raw_dataset_to_pandas">
+<code class="sig-prename descclassname">zenml.utils.post_training.post_training_utils.</code><code class="sig-name descname">convert_raw_dataset_to_pandas</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataset</span></em>, <em class="sig-param"><span class="n">spec</span></em>, <em class="sig-param"><span class="n">sample_size</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.post_training.post_training_utils.convert_raw_dataset_to_pandas" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes tf.data.Dataset and converts to a Pandas DataFrame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> – a tf.data.Dataset object</p></li>
+<li><p><strong>spec</strong> – the spec to parse from</p></li>
+<li><p><strong>sample_size</strong> – number of rows to limit to</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.utils.post_training.post_training_utils.create_new_cell">
+<code class="sig-prename descclassname">zenml.utils.post_training.post_training_utils.</code><code class="sig-name descname">create_new_cell</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">contents</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.post_training.post_training_utils.create_new_cell" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates new cell in jupyter notebook.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>contents</strong> – contents of cell.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.utils.post_training.post_training_utils.detect_anomalies">
+<code class="sig-prename descclassname">zenml.utils.post_training.post_training_utils.</code><code class="sig-name descname">detect_anomalies</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stats_uri</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">schema_uri</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">split_name</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.post_training.post_training_utils.detect_anomalies" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.utils.post_training.post_training_utils.evaluate_single_pipeline">
+<code class="sig-prename descclassname">zenml.utils.post_training.post_training_utils.</code><code class="sig-name descname">evaluate_single_pipeline</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pipeline</span></em>, <em class="sig-param"><span class="n">trainer_component_name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">evaluator_component_name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">magic</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">port</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.post_training.post_training_utils.evaluate_single_pipeline" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pipeline</strong> – A ZenML pipeline</p></li>
+<li><p><strong>trainer_component_name</strong> – name of trainer component.</p></li>
+<li><p><strong>evaluator_component_name</strong> – name of evaluator component.</p></li>
+<li><p><strong>magic</strong> – Whether to create an in-place cell in a jupyter env or not.</p></li>
+<li><p><strong>port</strong> – At which port to create the jupyter notebook.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.utils.post_training.post_training_utils.get_eval_block">
+<code class="sig-prename descclassname">zenml.utils.post_training.post_training_utils.</code><code class="sig-name descname">get_eval_block</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">eval_dir</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.post_training.post_training_utils.get_eval_block" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.utils.post_training.post_training_utils.get_feature_spec_from_schema">
+<code class="sig-prename descclassname">zenml.utils.post_training.post_training_utils.</code><code class="sig-name descname">get_feature_spec_from_schema</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">schema_uri</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.post_training.post_training_utils.get_feature_spec_from_schema" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get schema artifact from pipeline</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>schema_uri</strong> – path to schema</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.utils.post_training.post_training_utils.get_parsed_dataset">
+<code class="sig-prename descclassname">zenml.utils.post_training.post_training_utils.</code><code class="sig-name descname">get_parsed_dataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataset</span></em>, <em class="sig-param"><span class="n">spec</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.post_training.post_training_utils.get_parsed_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes tf.data.Dataset and parses it based on spec</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> – a tf.data.Dataset object</p></li>
+<li><p><strong>spec</strong> – the spec to parse from</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.utils.post_training.post_training_utils.get_schema_proto">
+<code class="sig-prename descclassname">zenml.utils.post_training.post_training_utils.</code><code class="sig-name descname">get_schema_proto</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">artifact_uri</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.post_training.post_training_utils.get_schema_proto" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.utils.post_training.post_training_utils.get_statistics_dataset_dict">
+<code class="sig-prename descclassname">zenml.utils.post_training.post_training_utils.</code><code class="sig-name descname">get_statistics_dataset_dict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stats_uri</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.post_training.post_training_utils.get_statistics_dataset_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get DatasetFeatureStatisticsList from stats URI</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.utils.post_training.post_training_utils.get_statistics_html">
+<code class="sig-prename descclassname">zenml.utils.post_training.post_training_utils.</code><code class="sig-name descname">get_statistics_html</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stats_dict</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.post_training.post_training_utils.get_statistics_html" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>stats_dict</strong> – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.utils.post_training.post_training_utils.get_tensorboard_block">
+<code class="sig-prename descclassname">zenml.utils.post_training.post_training_utils.</code><code class="sig-name descname">get_tensorboard_block</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">log_dir</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.post_training.post_training_utils.get_tensorboard_block" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="zenml.utils.post_training.post_training_utils.launch_compare_tool">
+<code class="sig-prename descclassname">zenml.utils.post_training.post_training_utils.</code><code class="sig-name descname">launch_compare_tool</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">port</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.post_training.post_training_utils.launch_compare_tool" title="Permalink to this definition">¶</a></dt>
+<dd><p>Launches <cite>compare</cite> tool for comparing multiple training pipelines.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.utils.post_training.post_training_utils.view_schema">
+<code class="sig-prename descclassname">zenml.utils.post_training.post_training_utils.</code><code class="sig-name descname">view_schema</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">uri</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.post_training.post_training_utils.view_schema" title="Permalink to this definition">¶</a></dt>
+<dd><p>View schema .</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>uri</strong> – URI to schema.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.utils.post_training.post_training_utils.view_statistics">
+<code class="sig-prename descclassname">zenml.utils.post_training.post_training_utils.</code><code class="sig-name descname">view_statistics</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">artifact_uri</span></em>, <em class="sig-param"><span class="n">magic</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">port</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.post_training.post_training_utils.view_statistics" title="Permalink to this definition">¶</a></dt>
+<dd><p>View statistics in HTML.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>artifact_uri</strong> (<em>Text</em>) – </p></li>
+<li><p><strong>magic</strong> (<em>bool</em>) – </p></li>
+<li><p><strong>port</strong> (<em>int</em>) – Port at which to launch the visualization.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.utils.post_training">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.utils.post_training" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2021, maiot GmbH.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.3.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

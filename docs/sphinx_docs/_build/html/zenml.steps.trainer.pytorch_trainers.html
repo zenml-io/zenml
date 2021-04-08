@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zenml.steps.trainer.pytorch_trainers package &#8212; ZenML  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="zenml.steps.trainer.tensorflow_trainers package" href="zenml.steps.trainer.tensorflow_trainers.html" />
+    <link rel="prev" title="zenml.steps.trainer package" href="zenml.steps.trainer.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          ZenML</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">zenml.steps.trainer.pytorch_trainers package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-zenml.steps.trainer.pytorch_trainers.torch_base_trainer">zenml.steps.trainer.pytorch_trainers.torch_base_trainer module</a></li>
+<li><a class="reference internal" href="#module-zenml.steps.trainer.pytorch_trainers.torch_ff_trainer">zenml.steps.trainer.pytorch_trainers.torch_ff_trainer module</a></li>
+<li><a class="reference internal" href="#module-zenml.steps.trainer.pytorch_trainers.utils">zenml.steps.trainer.pytorch_trainers.utils module</a></li>
+<li><a class="reference internal" href="#module-zenml.steps.trainer.pytorch_trainers">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="zenml.steps.trainer.html" title="Previous Chapter: zenml.steps.trainer package"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; zenml.steps.t...</span>
+    </a>
+  </li>
+  <li>
+    <a href="zenml.steps.trainer.tensorflow_trainers.html" title="Next Chapter: zenml.steps.trainer.tensorflow_trainers package"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">zenml.steps.t... &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/zenml.steps.trainer.pytorch_trainers.rst.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="section" id="zenml-steps-trainer-pytorch-trainers-package">
+<h1>zenml.steps.trainer.pytorch_trainers package<a class="headerlink" href="#zenml-steps-trainer-pytorch-trainers-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.steps.trainer.pytorch_trainers.torch_base_trainer">
+<span id="zenml-steps-trainer-pytorch-trainers-torch-base-trainer-module"></span><h2>zenml.steps.trainer.pytorch_trainers.torch_base_trainer module<a class="headerlink" href="#module-zenml.steps.trainer.pytorch_trainers.torch_base_trainer" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="zenml.steps.trainer.pytorch_trainers.torch_base_trainer.TorchBaseTrainerStep">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.steps.trainer.pytorch_trainers.torch_base_trainer.</code><code class="sig-name descname">TorchBaseTrainerStep</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_patterns</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">output_patterns</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">serving_model_dir</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">transform_output</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">split_mapping</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>List<span class="p">[</span>str<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.trainer.pytorch_trainers.torch_base_trainer.TorchBaseTrainerStep" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="zenml.steps.trainer.html#zenml.steps.trainer.base_trainer.BaseTrainerStep" title="zenml.steps.trainer.base_trainer.BaseTrainerStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.steps.trainer.base_trainer.BaseTrainerStep</span></code></a></p>
+<p>Base class for all PyTorch based trainer steps. All pytorch based
+trainings should use this as the base class. An example is available
+with torch_ff_trainer.FeedForwardTrainer.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.steps.trainer.pytorch_trainers.torch_ff_trainer">
+<span id="zenml-steps-trainer-pytorch-trainers-torch-ff-trainer-module"></span><h2>zenml.steps.trainer.pytorch_trainers.torch_ff_trainer module<a class="headerlink" href="#module-zenml.steps.trainer.pytorch_trainers.torch_ff_trainer" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="zenml.steps.trainer.pytorch_trainers.torch_ff_trainer.BinaryClassifier">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.steps.trainer.pytorch_trainers.torch_ff_trainer.</code><code class="sig-name descname">BinaryClassifier</code><a class="headerlink" href="#zenml.steps.trainer.pytorch_trainers.torch_ff_trainer.BinaryClassifier" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<dl class="py method">
+<dt id="zenml.steps.trainer.pytorch_trainers.torch_ff_trainer.BinaryClassifier.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">inputs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.trainer.pytorch_trainers.torch_ff_trainer.BinaryClassifier.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="zenml.steps.trainer.pytorch_trainers.torch_ff_trainer.BinaryClassifier.training">
+<code class="sig-name descname">training</code><em class="property">: bool</em><a class="headerlink" href="#zenml.steps.trainer.pytorch_trainers.torch_ff_trainer.BinaryClassifier.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="zenml.steps.trainer.pytorch_trainers.torch_ff_trainer.FeedForwardTrainer">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.steps.trainer.pytorch_trainers.torch_ff_trainer.</code><code class="sig-name descname">FeedForwardTrainer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">batch_size</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">32</span></em>, <em class="sig-param"><span class="n">lr</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.0001</span></em>, <em class="sig-param"><span class="n">epochs</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">10</span></em>, <em class="sig-param"><span class="n">dropout_chance</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0.2</span></em>, <em class="sig-param"><span class="n">loss</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'mse'</span></em>, <em class="sig-param"><span class="n">metrics</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">hidden_layers</span><span class="p">:</span> <span class="n">List<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">hidden_activation</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'relu'</span></em>, <em class="sig-param"><span class="n">last_activation</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'sigmoid'</span></em>, <em class="sig-param"><span class="n">input_units</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">8</span></em>, <em class="sig-param"><span class="n">output_units</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.trainer.pytorch_trainers.torch_ff_trainer.FeedForwardTrainer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.steps.trainer.pytorch_trainers.torch_base_trainer.TorchBaseTrainerStep" title="zenml.steps.trainer.pytorch_trainers.torch_base_trainer.TorchBaseTrainerStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.steps.trainer.pytorch_trainers.torch_base_trainer.TorchBaseTrainerStep</span></code></a></p>
+<dl class="py method">
+<dt id="zenml.steps.trainer.pytorch_trainers.torch_ff_trainer.FeedForwardTrainer.input_fn">
+<code class="sig-name descname">input_fn</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file_patterns</span><span class="p">:</span> <span class="n">List<span class="p">[</span>str<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.trainer.pytorch_trainers.torch_ff_trainer.FeedForwardTrainer.input_fn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method for loading data from TFRecords saved to a location on
+disk. Override this method in subclasses to define your own custom
+data preparation flow.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_pattern</strong> – File pattern matching saved TFRecords on disk.</p></li>
+<li><p><strong>tf_transform_output</strong> – Output of the preceding Transform /
+Preprocessing component.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>A tf.data.Dataset constructed from the input file</dt><dd><p>pattern and transform.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dataset</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.steps.trainer.pytorch_trainers.torch_ff_trainer.FeedForwardTrainer.model_fn">
+<code class="sig-name descname">model_fn</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">train_dataset</span></em>, <em class="sig-param"><span class="n">eval_dataset</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.trainer.pytorch_trainers.torch_ff_trainer.FeedForwardTrainer.model_fn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method defining the training flow of the model. Override this
+in subclasses to define your own custom training flow.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>train_dataset</strong> – tf.data.Dataset containing the training data.</p></li>
+<li><p><strong>eval_dataset</strong> – tf.data.Dataset containing the evaluation data.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A trained machine learning model.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>model</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.steps.trainer.pytorch_trainers.torch_ff_trainer.FeedForwardTrainer.run_fn">
+<code class="sig-name descname">run_fn</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.trainer.pytorch_trainers.torch_ff_trainer.FeedForwardTrainer.run_fn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method defining the control flow of the training process inside
+the TFX Trainer Component Executor. Override this method in subclasses
+to define your own custom training flow.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zenml.steps.trainer.pytorch_trainers.torch_ff_trainer.FeedForwardTrainer.test_fn">
+<code class="sig-name descname">test_fn</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">dataset</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.trainer.pytorch_trainers.torch_ff_trainer.FeedForwardTrainer.test_fn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional method for defining a test flow of the model. The goal of
+this method is to give the user an interface to provide a testing
+function, where the results (if given in the right format with
+features, labels and predictions) will be ultimately saved to
+disk using an output artifact. Once defined, it allows the user to
+utilize the model agnostic evaluator in their training pipeline.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.trainer.pytorch_trainers.torch_ff_trainer.binary_acc">
+<code class="sig-prename descclassname">zenml.steps.trainer.pytorch_trainers.torch_ff_trainer.</code><code class="sig-name descname">binary_acc</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">y_pred</span></em>, <em class="sig-param"><span class="n">y_test</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.trainer.pytorch_trainers.torch_ff_trainer.binary_acc" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-zenml.steps.trainer.pytorch_trainers.utils">
+<span id="zenml-steps-trainer-pytorch-trainers-utils-module"></span><h2>zenml.steps.trainer.pytorch_trainers.utils module<a class="headerlink" href="#module-zenml.steps.trainer.pytorch_trainers.utils" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="zenml.steps.trainer.pytorch_trainers.utils.TFRecordTorchDataset">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.steps.trainer.pytorch_trainers.utils.</code><code class="sig-name descname">TFRecordTorchDataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file_pattern</span></em>, <em class="sig-param"><span class="n">spec</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.trainer.pytorch_trainers.utils.TFRecordTorchDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.data.dataset.IterableDataset</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.steps.trainer.pytorch_trainers.utils.create_tf_dataset">
+<code class="sig-prename descclassname">zenml.steps.trainer.pytorch_trainers.utils.</code><code class="sig-name descname">create_tf_dataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file_pattern</span></em>, <em class="sig-param"><span class="n">spec</span></em>, <em class="sig-param"><span class="n">num_epochs</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">shuffle</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">shuffle_seed</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">shuffle_buffer_size</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">reader_num_threads</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">prefetch_buffer_size</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.trainer.pytorch_trainers.utils.create_tf_dataset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-zenml.steps.trainer.pytorch_trainers">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.steps.trainer.pytorch_trainers" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2021, maiot GmbH.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.3.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

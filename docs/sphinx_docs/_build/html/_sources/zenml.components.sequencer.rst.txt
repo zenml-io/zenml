@@ -1,0 +1,45 @@
+zenml.components.sequencer package
+==================================
+
+Submodules
+----------
+
+zenml.components.sequencer.component module
+-------------------------------------------
+
+.. automodule:: zenml.components.sequencer.component
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.components.sequencer.constants module
+-------------------------------------------
+
+.. automodule:: zenml.components.sequencer.constants
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.components.sequencer.executor module
+------------------------------------------
+
+.. automodule:: zenml.components.sequencer.executor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.components.sequencer.utils module
+---------------------------------------
+
+.. automodule:: zenml.components.sequencer.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: zenml.components.sequencer
+   :members:
+   :undoc-members:
+   :show-inheritance:

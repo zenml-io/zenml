@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zenml.components.bulk_inferrer package &#8212; ZenML  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="zenml.components.data_gen package" href="zenml.components.data_gen.html" />
+    <link rel="prev" title="zenml.components package" href="zenml.components.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          ZenML</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">zenml.components.bulk_inferrer package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-zenml.components.bulk_inferrer.component">zenml.components.bulk_inferrer.component module</a></li>
+<li><a class="reference internal" href="#module-zenml.components.bulk_inferrer.constants">zenml.components.bulk_inferrer.constants module</a></li>
+<li><a class="reference internal" href="#module-zenml.components.bulk_inferrer.executor">zenml.components.bulk_inferrer.executor module</a></li>
+<li><a class="reference internal" href="#module-zenml.components.bulk_inferrer.utils">zenml.components.bulk_inferrer.utils module</a></li>
+<li><a class="reference internal" href="#module-zenml.components.bulk_inferrer">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="zenml.components.html" title="Previous Chapter: zenml.components package"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; zenml.compone...</span>
+    </a>
+  </li>
+  <li>
+    <a href="zenml.components.data_gen.html" title="Next Chapter: zenml.components.data_gen package"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">zenml.compone... &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/zenml.components.bulk_inferrer.rst.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="section" id="zenml-components-bulk-inferrer-package">
+<h1>zenml.components.bulk_inferrer package<a class="headerlink" href="#zenml-components-bulk-inferrer-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.components.bulk_inferrer.component">
+<span id="zenml-components-bulk-inferrer-component-module"></span><h2>zenml.components.bulk_inferrer.component module<a class="headerlink" href="#module-zenml.components.bulk_inferrer.component" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="zenml.components.bulk_inferrer.component.BulkInferrer">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.components.bulk_inferrer.component.</code><code class="sig-name descname">BulkInferrer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">source</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">source_args</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>tfx.types.component_spec.ChannelParameter<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">model_blessing</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>tfx.types.component_spec.ChannelParameter<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">instance_name</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">examples</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>tfx.types.component_spec.ChannelParameter<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">predictions</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>tfx.types.component_spec.ChannelParameter<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.components.bulk_inferrer.component.BulkInferrer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tfx.dsl.components.base.base_component.BaseComponent</span></code></p>
+<dl class="py attribute">
+<dt id="zenml.components.bulk_inferrer.component.BulkInferrer.EXECUTOR_SPEC">
+<code class="sig-name descname">EXECUTOR_SPEC</code><em class="property"> = &lt;tfx.dsl.components.base.executor_spec.ExecutorClassSpec object&gt;</em><a class="headerlink" href="#zenml.components.bulk_inferrer.component.BulkInferrer.EXECUTOR_SPEC" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zenml.components.bulk_inferrer.component.BulkInferrer.SPEC_CLASS">
+<code class="sig-name descname">SPEC_CLASS</code><a class="headerlink" href="#zenml.components.bulk_inferrer.component.BulkInferrer.SPEC_CLASS" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#zenml.components.bulk_inferrer.component.BulkInferrerSpec" title="zenml.components.bulk_inferrer.component.BulkInferrerSpec"><code class="xref py py-class docutils literal notranslate"><span class="pre">BulkInferrerSpec</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="zenml.components.bulk_inferrer.component.BulkInferrerSpec">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.components.bulk_inferrer.component.</code><code class="sig-name descname">BulkInferrerSpec</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.components.bulk_inferrer.component.BulkInferrerSpec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tfx.types.component_spec.ComponentSpec</span></code></p>
+<dl class="py attribute">
+<dt id="zenml.components.bulk_inferrer.component.BulkInferrerSpec.INPUTS">
+<code class="sig-name descname">INPUTS</code><em class="property"> = {'examples': ChannelParameter(type: &lt;class 'tfx.types.standard_artifacts.Examples'&gt;), 'model': ChannelParameter(type: &lt;class 'tfx.types.standard_artifacts.Model'&gt;), 'model_blessing': ChannelParameter(type: &lt;class 'tfx.types.standard_artifacts.ModelBlessing'&gt;)}</em><a class="headerlink" href="#zenml.components.bulk_inferrer.component.BulkInferrerSpec.INPUTS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zenml.components.bulk_inferrer.component.BulkInferrerSpec.OUTPUTS">
+<code class="sig-name descname">OUTPUTS</code><em class="property"> = {'predictions': ChannelParameter(type: &lt;class 'tfx.types.standard_artifacts.Examples'&gt;)}</em><a class="headerlink" href="#zenml.components.bulk_inferrer.component.BulkInferrerSpec.OUTPUTS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zenml.components.bulk_inferrer.component.BulkInferrerSpec.PARAMETERS">
+<code class="sig-name descname">PARAMETERS</code><em class="property"> = {'args': ExecutionParameter(type: typing.Dict[str, typing.Any], optional: False), 'source': ExecutionParameter(type: &lt;class 'str'&gt;, optional: False)}</em><a class="headerlink" href="#zenml.components.bulk_inferrer.component.BulkInferrerSpec.PARAMETERS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.components.bulk_inferrer.constants">
+<span id="zenml-components-bulk-inferrer-constants-module"></span><h2>zenml.components.bulk_inferrer.constants module<a class="headerlink" href="#module-zenml.components.bulk_inferrer.constants" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.components.bulk_inferrer.executor">
+<span id="zenml-components-bulk-inferrer-executor-module"></span><h2>zenml.components.bulk_inferrer.executor module<a class="headerlink" href="#module-zenml.components.bulk_inferrer.executor" title="Permalink to this headline">¶</a></h2>
+<p>ZenML bulk inferrer executor.</p>
+<dl class="py class">
+<dt id="zenml.components.bulk_inferrer.executor.BulkInferrerExecutor">
+<em class="property">class </em><code class="sig-prename descclassname">zenml.components.bulk_inferrer.executor.</code><code class="sig-name descname">BulkInferrerExecutor</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">context</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>tfx.dsl.components.base.base_executor.BaseExecutor.Context<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.components.bulk_inferrer.executor.BulkInferrerExecutor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tfx.dsl.components.base.base_executor.BaseExecutor</span></code></p>
+<p>TFX bulk inferrer executor.</p>
+<dl class="py method">
+<dt id="zenml.components.bulk_inferrer.executor.BulkInferrerExecutor.Do">
+<code class="sig-name descname">Do</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_dict</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>List<span class="p">[</span>tfx.types.artifact.Artifact<span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">output_dict</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>List<span class="p">[</span>tfx.types.artifact.Artifact<span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">exec_properties</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#zenml.components.bulk_inferrer.executor.BulkInferrerExecutor.Do" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs batch inference on a given model with given input examples.
+:param input_dict: Input dict from input key to a list of Artifacts.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>examples: examples for inference.</p></li>
+<li><p>model: exported model.</p></li>
+<li><p>model_blessing: model blessing result, optional.</p></li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>output_dict</strong> – Output dict from output key to a list of Artifacts.
+- output: bulk inference results.</p></li>
+<li><p><strong>exec_properties</strong> – A dict of execution properties.
+- model_spec: JSON string of bulk_inferrer_pb2.ModelSpec instance.
+- data_spec: JSON string of bulk_inferrer_pb2.DataSpec instance.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.components.bulk_inferrer.utils">
+<span id="zenml-components-bulk-inferrer-utils-module"></span><h2>zenml.components.bulk_inferrer.utils module<a class="headerlink" href="#module-zenml.components.bulk_inferrer.utils" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="zenml.components.bulk_inferrer.utils.convert_to_dict">
+<code class="sig-prename descclassname">zenml.components.bulk_inferrer.utils.</code><code class="sig-name descname">convert_to_dict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">prediction_log</span><span class="p">:</span> <span class="n">tensorflow_serving.apis.prediction_log_pb2.PredictionLog</span></em>, <em class="sig-param"><span class="n">output_example_spec</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>tfx.proto.bulk_inferrer_pb2.OutputExampleSpec<span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; tensorflow.core.example.example_pb2.Example<a class="headerlink" href="#zenml.components.bulk_inferrer.utils.convert_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts given <cite>prediction_log</cite> to a <cite>tf.train.Example</cite>.
+:param prediction_log: The input prediction log.
+:param output_example_spec: The spec for how to map prediction results to
+:param columns in example.:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A <cite>tf.train.Example</cite> converted from the given prediction_log.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If the inference type or signature name in spec does not</p></li>
+<li><p><strong>match that in prediction_log.</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="zenml.components.bulk_inferrer.utils.to_dict">
+<code class="sig-prename descclassname">zenml.components.bulk_inferrer.utils.</code><code class="sig-name descname">to_dict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">example</span><span class="p">:</span> <span class="n">tensorflow.core.example.example_pb2.Example</span></em><span class="sig-paren">)</span> &#x2192; Dict<span class="p">[</span>str<span class="p">, </span>Any<span class="p">]</span><a class="headerlink" href="#zenml.components.bulk_inferrer.utils.to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add given features to <cite>example</cite>.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.components.bulk_inferrer">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.components.bulk_inferrer" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2021, maiot GmbH.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.3.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>
