@@ -15,6 +15,22 @@ kernelspec:
 
 # Designing your first training pipeline
 
+A pipeline defines a sequence of \(usually data\) processing steps. Pipelines consist of [Steps](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/pipelines/steps/what-is-a-step.md) and each step is an independent entity that gets input and creates output. The output can potentially feed into other steps as inputs, and that’s how the order of execution is decided.
+
+Every pipeline step produces `Artifacts` that are stored in the [Artifact Store](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/repository/artifact-store.html) and tracked by the [Metadata Store](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/repository/metadata-store.html) associated with the pipeline. These artifacts can be fetched directly or via helper methods. E.g. The `view_statistics()` and `view_schema()` are helper methods to easily view the artifacts from interim steps in a pipeline. Every pipeline has an environment in which it executes, the so called `Orchestration` environment. This is defined by the [Orchestrator Backend](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/orchestrator-backends.html). Read more in the [Backends docs](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/what-is-a-backend.html). 
+
+A ZenML pipeline in the current version is a higher-level abstraction of an opinionated [TFX pipeline](https://www.tensorflow.org/tfx). [ZenML Steps](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/pipelines/steps/what-is-a-step.md) are in turn higher-level abstractions of TFX components. To be clear, currently ZenML is an easier way of defining and running TFX pipelines. However, unlike TFX, ZenML treats pipelines as first-class citizens. We will elaborate more on the difference in this space, but for now if you are coming from writing your own TFX pipelines, our [quickstart](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/steps/quickstart.html) illustrates the difference well.
+
+### Types of pipelines
+
+In ZenML, pipelines are higher-order abstractions for standard ML tasks. E.g. A [TrainingPipeline]() is used to run a training experiment and deploy the resulting model. These pipelines can be used as base classes and extended to create specialized pipelines for your use-case. However, in many cases, the standard pipeline definitions can be used directly, and only the steps need to be manipulated. In general, you would only need to create your own Pipeline classes if you require a more flexible order of execution of the steps within the pipeline.
+
+```text
+Baris: Maybe leave a little note of how to extend BasePipeline here just as is mentioned
+```
+
+The mechanism to create a custom Pipeline will be published in more detail soon in this space. As a teaser, it will involve overriding the `BasePipeline` class. However, the details of this are currently being worked out and will be made available in future releases. For those of you brave enough to see the source-code, it should be simply done.
+
 When creating a new training pipeline, the first step is to create an instance of a `zenml.pipelines.TrainingPipeline`. While creating this instance, you can give it a name and use that name to reference the pipeline later.
 
 ```text
