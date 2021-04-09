@@ -1,62 +1,120 @@
 # Modifying the split
 
-In order to control the process which decides how to split your dataset, ZenML provides the `BaseSplit` interface. that you can subclass in a standard object-oriented manner to define your own custom split logic.
+In order to control the process of splitting a dataset, **ZenML** utilizes the **`BaseSplit`** interface. In the definition of this interface, there is a single abstract method called `partition_fn` and any split step in a ZenML training pipeline needs to implement this method:
 
 ```python
 from zenml.steps.split import BaseSplit
 
-class MyCustomSplit(BaseSplit):
+class AnySplitStep(BaseSplit):
 
-# your custom split logic follows
+    def partition_fn(element, n, **kwargs) -> int:
+        # the split logic goes here
 ```
 
-There are two main abstract methods that you have to implement to be able to use your custom split with ZenML’s own split component, `partition_fn` and `get_split_names`. The former returns your custom partition function along with its keyword arguments for use in ZenML’s split component. To be eligible in use in a Split Step, the partition function needs to adhere to the following design contract:
+#### partition\_fn
 
-1. The signature is of the following type:
+The `partition_fn` has the following signature:
 
-```text
-def my_partition(element, n, **kwargs) -> int,
+```python
+def my_partition(element, n, **kwargs) -> int:
 ```
 
-where n is the number of splits.
-
-1. The partition\_fn only returns signed integers i less than n, i.e. 0 ≤ i ≤ n - 1.
-
-Then, the class method `partition_fn` returns the tuple `(my_partition, kwargs)` consisting of your custom partition function and its keyword arguments.
-
-The second method `get_split_names` needs to return a list of data split names used in your ZenML pipeline. These can be different depending on your target workload.
-
-### A quick example[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/steps/split/custom-split.html#a-quick-example)
+### A quick example: the built-in `RandomSplit` step
 
 Now that the theoretical flow is in place, we can quickly give an example by building a partition function that splits data into `train` and `eval` sets based on whether an integer feature in the data is odd or even.
 
-```text
+```python
+import bisect
+from typing import Text, List, Dict, Any
+
+import numpy as np
+
 from zenml.steps.split import BaseSplit
-from zenml.steps.split.utils import get_categorical_value
 
-def OddEvenPartitionFn(element, num_partitions, int_feature):
 
-    # get integer value of int_feature from the element
-    int_value = get_categorical_value(element, int_feature)
-    
-    return int_value % 2
+def lint_split_map(split_map: Dict[Text, float]):
+    """Small utility to lint the split_map"""
+    if len(split_map) <= 1:
+        raise AssertionError('Please specify more than 1 split name in the '
+                             'split_map!')
 
-class OddEvenSplit(BaseSplit):
-    def __init__(self, 
-                 int_feature: Text,
-                 statistics=None,
-                 schema=None):
-                 
-        self.int_feature = int_feature
+    if not all(isinstance(v, (int, float)) for v in split_map.values()):
+        raise AssertionError("Only int or float values are allowed when "
+                             "specifying a random split!")
+
+
+def RandomSplitPartitionFn(element: Any,
+                           num_partitions: int,
+                           split_map: Dict[Text, float]) -> int:
+    """
+    Function for a random split of the data; to be used in a beam.Partition.
+    This function implements a simple random split algorithm by drawing
+    integers from a categorical distribution defined by the values in
+    split_map.
+    Args:
+        element: Data point, in format tf.train.Example.
+        num_partitions: Number of splits, unused here.
+        split_map: Dict mapping {split_name: ratio of data in split}.
+    Returns:
+        An integer n, where 0 ≤ n ≤ num_partitions - 1.
+    """
+
+    # calculates probability mass of each split
+    probability_mass = np.cumsum(list(split_map.values()))
+    max_value = probability_mass[-1]
+
+    return bisect.bisect(probability_mass, np.random.uniform(0, max_value))
+
+
+class RandomSplit(BaseSplit):
+    """
+    Random split. Use this to randomly split data based on a cumulative
+    distribution function defined by a split_map dict.
+    """
+
+    def __init__(
+            self,
+            split_map: Dict[Text, float],
+            statistics=None,
+            schema=None,
+    ):
+        """
+        Random split constructor.
+        Randomly split the data based on a cumulative distribution function
+        defined by split_map.
+        Example usage:
+        # Split data randomly, but evenly into train, eval and test
+        >>> split = RandomSplit(
+        ... split_map = {"train": 0.334,
+        ...              "eval": 0.333,
+        ...              "test": 0.333})
+        Here, each data split gets assigned about one third of the probability
+        mass. The split is carried out by sampling from the categorical
+        distribution defined by the values p_i in the split map, i.e.
+        P(index = i) = p_i, i = 1,...,n ;
+        where n is the number of splits defined in the split map. Hence, the
+        values in the split map must sum up to 1. For more information, see
+        https://en.wikipedia.org/wiki/Categorical_distribution.
+        Args:
+            statistics: Parsed statistics from a preceding StatisticsGen.
+            schema: Parsed schema from a preceding SchemaGen.
+            split_map: A dict { split_name: percentage of data in split }.
+        """
+
+        lint_split_map(split_map)
+        self.split_map = split_map
+
         super().__init__(statistics=statistics,
                          schema=schema,
-                         int_feature=int_feature)
-        
+                         split_map=split_map)
+
     def partition_fn(self):
-        return OddEvenPartitionFn, {"int_feature": self.int_feature}
-    
-    def get_split_names(self):
-        return ["train", "eval"]
+        return RandomSplitPartitionFn, {
+            'split_map': self.split_map
+        }
+
+    def get_split_names(self) -> List[Text]:
+        return list(self.split_map.keys())
 ```
 
 Note that we could **not** have done the same logic with a categorical split, since the split above does not assume any knowledge about which integers are present beforehand. For a categorical split to work as built into ZenML, prior knowledge about the categorical domain of the feature has to be present.

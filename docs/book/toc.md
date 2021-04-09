@@ -7,7 +7,7 @@
 ## Starter Guide
 
 * [Creating your ZenML repository](starter-guide/repository.md)
-* [Designing your first training pipeline](starter-guide/quickstart.md)
+* [Designing your first pipeline](starter-guide/quickstart.md)
 * [Registering a new datasource](starter-guide/datasource.md)
 * [Modifying the split](starter-guide/split.md)
 * [Adding your preprocessing logic](starter-guide/transform.md)

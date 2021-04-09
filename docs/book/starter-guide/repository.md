@@ -75,29 +75,6 @@ The full list of commands can be found within the Repository class definition. U
 It is important to note that most of the methods listed above involve parsing the config YAML files in your Pipelines Directory. Therefore, if you change the `pipelines` directory or manipulate it, you may lose a lot of valuable information regarding how the repository developed over time.
 {% endhint %}
 
-## Integration with Git[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/repository/integration-with-git.html#integration-with-git)
-
-In addition to tracking pipelines and configurations, it is also important to keep track of any custom code which is used within your pipelines. When it comes to versioning of code, we are not looking to reinvent the wheel, and we're not trying to interfere too much with established workflows. This is one of the reasons why we aimed to implement a solid integration into Git.
-
-{% hint style="success" %}
-**In short:** ZenML **optionally** uses Git SHAs to resolve your version-pinned pipeline code.
-{% endhint %}
-
-When you want to use your own logic in a pipeline, you have the ability to specify a specific Git SHA in your configuration. ZenML will tie into your local Git history and will automatically try to resolve the SHA into usable code. Every pipeline configuration will persist the combination of the class used, and the related SHA in the pipeline config.
-
-{% hint style="info" %}
-The format used is: `class@git_sha`, where:
-
-* **class**: a fully-qualified python import path of a ZenML-compatible class,
-* **git\_sha** \(optional\): a 40-digit string representing the commit git SHA at which the class exists
-{% endhint %}
-
-You can, of course, run your code as-is and maintain version control via your own logic and your own automation. This is why the `git_sha` above is optional: If you run a pipeline where the `class` is not committed \(i.e. unstaged or staged but not committed\), then no `git_sha` is added to the config. In this case, each time the pipeline is run or loaded the `class` is loaded **as-is** from the `class` path, directly from the working tree's current state.
-
-{% hint style="warning" %}
-While it is faster to just keep running pipelines with un-pinned classes, each un-pinned class adds a technical debt to the ZenML repository. This is because there are no guarantees of reproducibility once a pipeline has a class that is un-pinned. We strongly advise always to commit all code before running pipelines.
-{% endhint %}
-
 ## What's next?
 
 * As we now have our ZenML repository set up, we can go ahead and start developing our first pipeline.
