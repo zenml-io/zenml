@@ -1,0 +1,38 @@
+zenml.steps.trainer package
+===========================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   zenml.steps.trainer.pytorch_trainers
+   zenml.steps.trainer.tensorflow_trainers
+
+Submodules
+----------
+
+zenml.steps.trainer.base\_trainer module
+----------------------------------------
+
+.. automodule:: zenml.steps.trainer.base_trainer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.steps.trainer.utils module
+--------------------------------
+
+.. automodule:: zenml.steps.trainer.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: zenml.steps.trainer
+   :members:
+   :undoc-members:
+   :show-inheritance:

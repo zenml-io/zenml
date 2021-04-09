@@ -1,0 +1,77 @@
+zenml.cli package
+=================
+
+Submodules
+----------
+
+zenml.cli.base module
+---------------------
+
+.. automodule:: zenml.cli.base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.cli.cli module
+--------------------
+
+.. automodule:: zenml.cli.cli
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.cli.config module
+-----------------------
+
+.. automodule:: zenml.cli.config
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.cli.datasource module
+---------------------------
+
+.. automodule:: zenml.cli.datasource
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.cli.pipeline module
+-------------------------
+
+.. automodule:: zenml.cli.pipeline
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.cli.step module
+---------------------
+
+.. automodule:: zenml.cli.step
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.cli.utils module
+----------------------
+
+.. automodule:: zenml.cli.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.cli.version module
+------------------------
+
+.. automodule:: zenml.cli.version
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: zenml.cli
+   :members:
+   :undoc-members:
+   :show-inheritance:

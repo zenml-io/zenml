@@ -146,3 +146,6 @@ docs/book/_build/
 
 # gitbook
 !.gitbook.yaml
+
+# all rst's
+*.rst
