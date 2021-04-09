@@ -2,39 +2,27 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.backends.orchestrator.kubeflow package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/e2cf3eb9599a3b31a4ee646048d90127dfdbb178/docs/sphinx_docs/_build/html/index.html)
+zenml.backends.orchestrator.kubeflow package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/0fca34f6616b273418e2980345bafb695e3c6d88/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/maiot-io/zenml/tree/e2cf3eb9599a3b31a4ee646048d90127dfdbb178/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/maiot-io/zenml/tree/0fca34f6616b273418e2980345bafb695e3c6d88/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/maiot-io/zenml/tree/e2cf3eb9599a3b31a4ee646048d90127dfdbb178/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/maiot-io/zenml/tree/0fca34f6616b273418e2980345bafb695e3c6d88/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.backends.orchestrator.kubeflow.md)
   * * [zenml.backends.orchestrator.kubeflow package](zenml.backends.orchestrator.kubeflow.md)
       * [Submodules](zenml.backends.orchestrator.kubeflow.md#submodules)
-      * [zenml.backends.orchestrator.kubeflow.orchestrator\_kubeflow\_backend module](zenml.backends.orchestrator.kubeflow.md#module-zenml.backends.orchestrator.kubeflow.orchestrator_kubeflow_backend)
-      * [Module contents](zenml.backends.orchestrator.kubeflow.md#module-zenml.backends.orchestrator.kubeflow)
-* [ « zenml.backend...](https://github.com/maiot-io/zenml/tree/e2cf3eb9599a3b31a4ee646048d90127dfdbb178/docs/sphinx_docs/_build/html/zenml.backends.orchestrator.gcp.html)
+      * [zenml.backends.orchestrator.kubeflow.orchestrator\_kubeflow\_backend module](zenml.backends.orchestrator.kubeflow.md#zenml-backends-orchestrator-kubeflow-orchestrator-kubeflow-backend-module)
+      * [Module contents](zenml.backends.orchestrator.kubeflow.md#module-contents)
+* [ « zenml.backend...](https://github.com/maiot-io/zenml/tree/0fca34f6616b273418e2980345bafb695e3c6d88/docs/sphinx_docs/_build/html/zenml.backends.orchestrator.gcp.html)
 * [ zenml.backend... »](zenml.backends.orchestrator.kubernetes.md)
-*  [Source](https://github.com/maiot-io/zenml/tree/e2cf3eb9599a3b31a4ee646048d90127dfdbb178/docs/sphinx_docs/_build/html/_sources/zenml.backends.orchestrator.kubeflow.rst.txt)
+*  [Source](https://github.com/maiot-io/zenml/tree/0fca34f6616b273418e2980345bafb695e3c6d88/docs/sphinx_docs/_build/html/_sources/zenml.backends.orchestrator.kubeflow.rst.txt)
 
 ## zenml.backends.orchestrator.kubeflow package[¶](zenml.backends.orchestrator.kubeflow.md#zenml-backends-orchestrator-kubeflow-package)
 
 ### Submodules[¶](zenml.backends.orchestrator.kubeflow.md#submodules)
 
-### zenml.backends.orchestrator.kubeflow.orchestrator\_kubeflow\_backend module[¶](zenml.backends.orchestrator.kubeflow.md#module-zenml.backends.orchestrator.kubeflow.orchestrator_kubeflow_backend)
+### zenml.backends.orchestrator.kubeflow.orchestrator\_kubeflow\_backend module[¶](zenml.backends.orchestrator.kubeflow.md#zenml-backends-orchestrator-kubeflow-orchestrator-kubeflow-backend-module)
 
-Definition of the Kubeflow Orchestrator Backend _class_ `zenml.backends.orchestrator.kubeflow.orchestrator_kubeflow_backend.OrchestratorKubeFlowBackend`\(_image: str = None_, _\*\*kwargs_\)[¶](zenml.backends.orchestrator.kubeflow.md#zenml.backends.orchestrator.kubeflow.orchestrator_kubeflow_backend.OrchestratorKubeFlowBackend)
-
-Bases: [`zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend`](https://github.com/maiot-io/zenml/tree/e2cf3eb9599a3b31a4ee646048d90127dfdbb178/docs/sphinx_docs/_build/html/zenml.backends.orchestrator.base.html#zenml.backends.orchestrator.base.orchestrator_base_backend.OrchestratorBaseBackend)
-
-Runs a ZenML pipeline on a Kubeflow cluster.
-
-This backend is not implemented yet. `run`\(_tfx\_pipeline: tfx.orchestration.pipeline.Pipeline_\)[¶](zenml.backends.orchestrator.kubeflow.md#zenml.backends.orchestrator.kubeflow.orchestrator_kubeflow_backend.OrchestratorKubeFlowBackend.run)
-
-This run function essentially calls an underlying TFX orchestrator run. However it is meant as a higher level abstraction with some opinionated decisions taken.Parameters
-
-**config** – a ZenML config dict
-
-### Module contents[¶](zenml.backends.orchestrator.kubeflow.md#module-zenml.backends.orchestrator.kubeflow)
+### Module contents[¶](zenml.backends.orchestrator.kubeflow.md#module-contents)
 
  [Back to top](zenml.backends.orchestrator.kubeflow.md)
 
