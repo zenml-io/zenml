@@ -1,6 +1,8 @@
-# Installation
+---
+description: 'TL;DR: Do pip install zenml to install.'
+---
 
-TL;DR: Do `pip install zenml` to install.
+# Installation
 
 ## Welcome
 
@@ -20,10 +22,6 @@ When you're set with your environment, run:
 pip install zenml
 ```
 
-```text
-`ZenML` requires &gt;= Python 3.6 and &lt; Python 3.9.0
-```
-
 Alternatively, if you’re feeling brave, feel free to install the bleeding edge: **NOTE:** Do so on your own risk, no guarantees given!
 
 ```bash
@@ -32,7 +30,7 @@ pip install git+https://github.com/maiot-io/zenml.git@main --upgrade
 
 ## Integrations
 
-The ZenML base package does not come up with all integrations pre-installed. Read more [here](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/getting-started/benefits/integrations.md). To install an integration, use the pattern:
+The ZenML base package does not come up with all integrations pre-installed. Read more [here](advanced-guide/integrations.md). To install an integration, use the pattern:
 
 ```bash
 pip install zenml[INTEGRATION]
@@ -56,7 +54,7 @@ zenml version
 
 ### Python
 
-```text
+```python
 import zenml
 print(zenml.utils.version.__version__)
 ```

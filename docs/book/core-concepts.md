@@ -1,19 +1,43 @@
+---
+description: A good place to start before diving further into the docs.
+---
+
 # Core Concepts
 
-A good place to start before diving further into the docs.
+![ZenML Architectural Overview](.gitbook/assets/architecture-overview-zenml.png)
+
+### Important considerations
+
+[Artifact]() and [Metadata stores]() can be configured per repository as well as per pipeline. However, only pipelines with the same Artifact and Metadata store are comparable, and therefore should not change to maintain the benefits of caching and consistency across pipeline runs.
+
+On a high level, when data is read from a datasource the results are persisted in your artifact store. An orchestration integration reads the data from the artifact store and begins preprocessing - either itself, or alternatively on a dedicated processing backend like [Google Dataflow](https://cloud.google.com/dataflow). Every pipeline step reads it's predecessors result artifacts from the artifact store and writes it's own result artifacts to the artifact store. Once preprocessing is done, the orchestration begins the training of your model - again either itself or on a dedicated training backend. The trained model will be persisted in the artifact store, and optionally passed on to a serving backend.
+
+A few rules apply:
+
+* Every orchestration backend \(local, [Google Cloud VMs](), etc\) can run all pipeline steps, including training, of pipelines. 
+* Orchestration backends have a selection of compatible processing backends.
+* Pipelines can be configured to utilize more powerful processing \(e.g. distributed\) and training \(e.g. Google AI Platform\) backends. 
+
+A quick example for large data sets makes this clearer. By default, your experiments will run locally. Pipelines on large datasets would be severely bottlenecked, so you can configure Google Dataflow as a processing backend for distributed computation, and Google AI Platform as a training backend.
+
+### System design
+
+The design choices in ZenML follow the understanding that production-ready model training pipelines need to be immutable, repeatable, discoverable, descriptive, and efficient. ZenML takes care of the orchestration of your pipelines, from sourcing data all the way to continuous training - no matter if its running somewhere locally, in an on-premise data center, or in the Cloud.
+
+In different words, ZenML runs your **ML** code while taking care of the "**Op**eration**s**" for you. It takes care of:
+
+* Interfacing between the individual processing steps \(splitting, transform, training\). 
+* Tracking of intermediate results and metadata/ 
+* Caching your processing artifacts.
+* Parallelization of computing tasks.
+* Ensuring immutability of your pipelines from data sourcing to model artifacts.
+* No matter where - Cloud, On-Premise, or locally.
+
+Since production scenarios often look complex, ZenML is built with integrations in mind. ZenML supports an ever-growing [range of integrations](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/getting-started/benefits/integrations.md) for processing, training, and serving, and you can always add custom integrations via our extensible interfaces.
 
 ## Key components
 
 ZenML consists of the following key components:
-
-* [Repository]()
-* [Datasources]() 
-* [Pipelines]()
-* [Steps](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/getting-started/steps/what-is-a-step.md)
-* [Backends]()
-* [Pipelines Directory]()
-* [Artifact store]()
-* [Metadata store]()
 
 ### Repository
 
@@ -84,46 +108,5 @@ The configuration of each datasource, pipeline, step, backend, and produced arti
 
 Read more about metadata stores [here]().
 
-## Architectural Overview
-
-The following is an architectural overview diagram that links the above components together:
-
-## \`\`\`{figure} ../assets/architecture.svg
-
-align: center alt: ZenML high level conceptual diagram. width: 600px
-
-## height: 800px
-
-ZenML high level conceptual diagram.
-
-\`\`\` The above diagram brings all the core concepts talked about in the above section in one place.
-
-### Important considerations
-
-[Artifact]() and [Metadata stores]() can be configured per repository as well as per pipeline. However, only pipelines with the same Artifact and Metadata store are comparable, and therefore should not change to maintain the benefits of caching and consistency across pipeline runs.
-
-On a high level, when data is read from a datasource the results are persisted in your artifact store. An orchestration integration reads the data from the artifact store and begins preprocessing - either itself, or alternatively on a dedicated processing backend like [Google Dataflow](https://cloud.google.com/dataflow). Every pipeline step reads it's predecessors result artifacts from the artifact store and writes it's own result artifacts to the artifact store. Once preprocessing is done, the orchestration begins the training of your model - again either itself or on a dedicated training backend. The trained model will be persisted in the artifact store, and optionally passed on to a serving backend.
-
-A few rules apply:
-
-* Every orchestration backend \(local, [Google Cloud VMs](), etc\) can run all pipeline steps, including training, of pipelines. 
-* Orchestration backends have a selection of compatible processing backends.
-* Pipelines can be configured to utilize more powerful processing \(e.g. distributed\) and training \(e.g. Google AI Platform\) backends. 
-
-A quick example for large data sets makes this clearer. By default, your experiments will run locally. Pipelines on large datasets would be severely bottlenecked, so you can configure Google Dataflow as a processing backend for distributed computation, and Google AI Platform as a training backend.
-
-### System design
-
-The design choices in ZenML follow the understanding that production-ready model training pipelines need to be immutable, repeatable, discoverable, descriptive, and efficient. ZenML takes care of the orchestration of your pipelines, from sourcing data all the way to continuous training - no matter if its running somewhere locally, in an on-premise data center, or in the Cloud.
-
-In different words, ZenML runs your **ML** code while taking care of the "**Op**eration**s**" for you. It takes care of:
-
-* Interfacing between the individual processing steps \(splitting, transform, training\). 
-* Tracking of intermediate results and metadata/ 
-* Caching your processing artifacts.
-* Parallelization of computing tasks.
-* Ensuring immutability of your pipelines from data sourcing to model artifacts.
-* No matter where - Cloud, On-Premise, or locally.
-
-Since production scenarios often look complex, ZenML is built with integrations in mind. ZenML supports an ever-growing [range of integrations](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/getting-started/benefits/integrations.md) for processing, training, and serving, and you can always add custom integrations via our extensible interfaces.
+### 
 

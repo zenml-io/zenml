@@ -1,3 +1,7 @@
+---
+description: Simple MLOps.
+---
+
 # Introduction
 
 {% hint style="warning" %}
@@ -8,8 +12,9 @@ During the migration, you might experience broken links, images and more. We apo
 
 **ZenML** is an extensible, open-source MLOps framework for using production-ready Machine Learning pipelines, in a simple way. At its core, ZenML will orchestrate your experiment pipelines from **sourcing data** to **splitting, preprocessing, training**, all the way to the **evaluation of results** and even **serving**.
 
-While there are other pipelining solutions for Machine Learning experiments, ZenML is focussed on two unique approaches:
+While there are other pipelining solutions for Machine Learning experiments, ZenML is focused on the following:
 
+* Simplicity.
 * [Reproducibility](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/benefits/ensuring-ml-reproducibility.md). 
 * [Integrations](https://github.com/maiot-io/zenml/tree/c2dd7d85740f8f992ad5ea7ac7cd89a8805c5e6a/docs/book/repository/integration-with-git.md).
 
@@ -44,8 +49,8 @@ If one of the above links are too hands-on, then a good place to go from this po
 
 * Get up and running with your first pipeline [with the Quickstart](starter-guide/quickstart.md).
 * Read more about [core concepts](core-concepts.md) to inform your decision about using ZenML.
-* Check out how to [convert your old ML code](getting-started/organizing-zenml.md) into ZenML pipelines, or start from scratch with our [tutorials](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/tutorials/creating-first-pipeline.ipynb)
-* If you are working as a team, see how to [collaborate using ZenML in a team setting](repository/team-collaboration-with-zenml.md).
+* Check out how to [convert your old ML code](https://github.com/maiot-io/zenml/tree/835d32fc4f6d33eb691f0e8311720240e7fa51d1/docs/book/getting-started/organizing-zenml.md) into ZenML pipelines, or start from scratch with our [tutorials](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/tutorials/creating-first-pipeline.ipynb)
+* If you are working as a team, see how to [collaborate using ZenML in a team setting](https://github.com/maiot-io/zenml/tree/835d32fc4f6d33eb691f0e8311720240e7fa51d1/docs/book/repository/team-collaboration-with-zenml.md).
 
 ## Get involved
 
