@@ -1,0 +1,61 @@
+zenml.metadata package
+======================
+
+Submodules
+----------
+
+zenml.metadata.metadata\_wrapper module
+---------------------------------------
+
+.. automodule:: zenml.metadata.metadata_wrapper
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.metadata.metadata\_wrapper\_factory module
+------------------------------------------------
+
+.. automodule:: zenml.metadata.metadata_wrapper_factory
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.metadata.metadata\_wrapper\_test module
+---------------------------------------------
+
+.. automodule:: zenml.metadata.metadata_wrapper_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.metadata.mock\_metadata\_wrapper module
+---------------------------------------------
+
+.. automodule:: zenml.metadata.mock_metadata_wrapper
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.metadata.mysql\_metadata\_wrapper module
+----------------------------------------------
+
+.. automodule:: zenml.metadata.mysql_metadata_wrapper
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.metadata.sqlite\_metadata\_wrapper module
+-----------------------------------------------
+
+.. automodule:: zenml.metadata.sqlite_metadata_wrapper
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: zenml.metadata
+   :members:
+   :undoc-members:
+   :show-inheritance:

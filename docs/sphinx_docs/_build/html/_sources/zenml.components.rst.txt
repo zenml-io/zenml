@@ -1,0 +1,27 @@
+zenml.components package
+========================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   zenml.components.bulk_inferrer
+   zenml.components.data_gen
+   zenml.components.evaluator
+   zenml.components.pusher
+   zenml.components.sequencer
+   zenml.components.split_gen
+   zenml.components.tokenizer
+   zenml.components.trainer
+   zenml.components.transform
+   zenml.components.transform_simple
+
+Module contents
+---------------
+
+.. automodule:: zenml.components
+   :members:
+   :undoc-members:
+   :show-inheritance:

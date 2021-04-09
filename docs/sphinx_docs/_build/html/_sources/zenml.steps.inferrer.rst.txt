@@ -1,0 +1,37 @@
+zenml.steps.inferrer package
+============================
+
+Submodules
+----------
+
+zenml.steps.inferrer.base\_inferrer\_step module
+------------------------------------------------
+
+.. automodule:: zenml.steps.inferrer.base_inferrer_step
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.steps.inferrer.inference\_file\_writer\_step module
+---------------------------------------------------------
+
+.. automodule:: zenml.steps.inferrer.inference_file_writer_step
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.steps.inferrer.tensorflow\_inferrer\_step module
+------------------------------------------------------
+
+.. automodule:: zenml.steps.inferrer.tensorflow_inferrer_step
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: zenml.steps.inferrer
+   :members:
+   :undoc-members:
+   :show-inheritance:

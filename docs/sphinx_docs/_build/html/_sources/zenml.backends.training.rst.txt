@@ -1,0 +1,29 @@
+zenml.backends.training package
+===============================
+
+Submodules
+----------
+
+zenml.backends.training.training\_base\_backend module
+------------------------------------------------------
+
+.. automodule:: zenml.backends.training.training_base_backend
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.backends.training.training\_gcaip\_backend module
+-------------------------------------------------------
+
+.. automodule:: zenml.backends.training.training_gcaip_backend
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: zenml.backends.training
+   :members:
+   :undoc-members:
+   :show-inheritance:

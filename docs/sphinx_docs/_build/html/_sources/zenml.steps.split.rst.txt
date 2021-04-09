@@ -1,0 +1,85 @@
+zenml.steps.split package
+=========================
+
+Submodules
+----------
+
+zenml.steps.split.base\_split\_step module
+------------------------------------------
+
+.. automodule:: zenml.steps.split.base_split_step
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.steps.split.categorical\_domain\_split\_step module
+---------------------------------------------------------
+
+.. automodule:: zenml.steps.split.categorical_domain_split_step
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.steps.split.categorical\_ratio\_split\_step module
+--------------------------------------------------------
+
+.. automodule:: zenml.steps.split.categorical_ratio_split_step
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.steps.split.constants module
+----------------------------------
+
+.. automodule:: zenml.steps.split.constants
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.steps.split.no\_split\_step module
+----------------------------------------
+
+.. automodule:: zenml.steps.split.no_split_step
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.steps.split.random\_split module
+--------------------------------------
+
+.. automodule:: zenml.steps.split.random_split
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.steps.split.split\_step\_test module
+------------------------------------------
+
+.. automodule:: zenml.steps.split.split_step_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.steps.split.utils module
+------------------------------
+
+.. automodule:: zenml.steps.split.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.steps.split.utils\_test module
+------------------------------------
+
+.. automodule:: zenml.steps.split.utils_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: zenml.steps.split
+   :members:
+   :undoc-members:
+   :show-inheritance:
