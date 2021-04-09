@@ -2,7 +2,7 @@
 
 ## FAQs
 
-Check out our [FAQ](faq-wip.md) for things commonly asked.
+Check out our [FAQ]() for things commonly asked.
 
 ## Slack community
 

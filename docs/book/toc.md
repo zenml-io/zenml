@@ -1,83 +1,33 @@
 # Table of contents
 
 * [Introduction](index.md)
+* [Installation](installation.md)
+* [Core Concepts](core-concepts.md)
 
-## Getting Started
+## Starter Guide
 
-* [Installation](getting-started/installation.md)
-* [Quickstart](getting-started/quickstart.md)
-* [Core Concepts](getting-started/core-concepts.md)
-* [Organizing ML Code with ZenML](getting-started/organizing-zenml.md)
-* [Creating custom logic](getting-started/creating-custom-logic.md)
+* [Creating your ZenML repository](starter-guide/repository.md)
+* [Writing your first training pipeline](starter-guide/quickstart.md)
+* [Registering a new datasource](starter-guide/datasource.md)
+* [Modifying the split](starter-guide/split.md)
+* [Adding your preprocessing logic](starter-guide/transform.md)
+* [Creating your trainer](starter-guide/trainer.md)
+* [Adding evaluation metrics](starter-guide/evaluator.md)
+* [Deploy your model](starter-guide/deployer.md)
+* [Post-training workflow](starter-guide/post-training.md)
+* [Scaling to the cloud](starter-guide/scaling-to-the-cloud.md)
 
-## Benefits
+## Advanced Guide
 
-* [Installation](benefits/installation.md)
-* [Quickstart](benefits/quickstart.md)
-* [Core Concepts](benefits/core-concepts.md)
-* [Organizing ML Code with ZenML](benefits/organizing-zenml.md)
-
-## Repository
-
-* [What is a ZenML Repository](repository/what-is-a-repository.md)
-* [The ZenML Repository Instance](repository/the-zenml-repository-instance.md)
-* [Integration with Git](repository/integration-with-git.md)
-* [Metadata Store](repository/metadata-store.md)
-* [Artifact Store](repository/artifact-store.md)
-* [Pipeline Directory](repository/pipeline-directory.md)
-* [Team Collaboration](repository/team-collaboration-with-zenml.md)
-
-## Datasources
-
-* [What is a datasource](datasources/what-is-a-datasource.md)
-* [Google Bigquery](datasources/google-bigquery.md)
-* [Images](datasources/images.md)
-* [CSV files](datasources/csv-files-locally.md)
-
-## Pipelines
-
-* [What is a pipeline?](pipelines/what-is-a-pipeline.md)
-* [Training](pipelines/training.md)
-* [Data \[WIP\]](pipelines/data.md)
-* [Batch Inference \[WIP\]](pipelines/batch-inference.md)
-* [Scheduling Jobs](pipelines/scheduling-jobs.md)
-
-## Steps
-
-* [Installation](steps/installation.md)
-* [Quickstart](steps/quickstart.md)
-* [Core Concepts](steps/core-concepts.md)
-* [Organizing ML Code with ZenML](steps/organizing-zenml.md)
-
-## Backends
-
-* [What is a backend?](backends/what-is-a-backend.md)
-* [Orchestrator Backends](backends/orchestrator-backends.md)
-* [Processing Backends](backends/processing-backends.md)
-* [Training Backends](backends/training-backends.md)
-* [Using Docker](backends/using-docker.md)
-
-## Tutorials
-
-* [Creating your first pipeline](tutorials/creating-first-pipeline.md)
-* [Running a pipeline on Google Cloud VM](tutorials/running-a-pipeline-on-a-google-cloud-vm.md)
-* [Running a pipeline on Kubernetes](tutorials/running-a-pipeline-on-kubernetes.md)
-* [Team collaboration with ZenML and Google Cloud](tutorials/team-collaboration-with-zenml-and-google-cloud.md)
-* [Style Transfer using a CycleGAN](tutorials/style-transfer-using-a-cyclegan.md)
-* [Classification with 59M samples](tutorials/building-a-classifier-on-33m-samples.md)
-
-## Misc
-
-* [Roadmap](misc/roadmap.md)
-* [Changelogs](misc/changelogs.md)
-* [Usage Analytics](misc/usage-analytics.md)
+* [Inspecting all pipelines in a repository](advanced-guide/inspecting-all-pipelines.md)
+* [Querying the metadata store](advanced-guide/querying-the-metadata-store.md)
+* [Fetching artifacts](advanced-guide/fetching-artifacts.md)
 
 ## Support
 
+* [Tutorials](support/tutorials.md)
+* [Roadmap](support/roadmap.md)
+* [Changelogs](support/release_notes.md)
+* [Usage Analytics](support/usage-analytics.md)
 * [Contact](support/contact.md)
-* [FAQ](support/faq-wip.md)
-
-## Test
-
-* [HTML test](test/zenml.steps.split.md)
 
