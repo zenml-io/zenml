@@ -44,8 +44,8 @@ If one of the above links are too hands-on, then a good place to go from this po
 
 * Get up and running with your first pipeline [with the Quickstart](starter-guide/quickstart.md).
 * Read more about [core concepts](core-concepts.md) to inform your decision about using ZenML.
-* Check out how to [convert your old ML code](https://github.com/maiot-io/zenml/tree/c2dd7d85740f8f992ad5ea7ac7cd89a8805c5e6a/docs/book/getting-started/organizing-zenml.md) into ZenML pipelines, or start from scratch with our [tutorials](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/tutorials/creating-first-pipeline.ipynb)
-* If you are working as a team, see how to [collaborate using ZenML in a team setting](https://github.com/maiot-io/zenml/tree/c2dd7d85740f8f992ad5ea7ac7cd89a8805c5e6a/docs/book/repository/team-collaboration-with-zenml.md).
+* Check out how to [convert your old ML code](getting-started/organizing-zenml.md) into ZenML pipelines, or start from scratch with our [tutorials](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/tutorials/creating-first-pipeline.ipynb)
+* If you are working as a team, see how to [collaborate using ZenML in a team setting](repository/team-collaboration-with-zenml.md).
 
 ## Get involved
 

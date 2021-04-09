@@ -1,0 +1,37 @@
+zenml.components.tokenizer package
+==================================
+
+Submodules
+----------
+
+zenml.components.tokenizer.component module
+-------------------------------------------
+
+.. automodule:: zenml.components.tokenizer.component
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.components.tokenizer.constants module
+-------------------------------------------
+
+.. automodule:: zenml.components.tokenizer.constants
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.components.tokenizer.executor module
+------------------------------------------
+
+.. automodule:: zenml.components.tokenizer.executor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: zenml.components.tokenizer
+   :members:
+   :undoc-members:
+   :show-inheritance:

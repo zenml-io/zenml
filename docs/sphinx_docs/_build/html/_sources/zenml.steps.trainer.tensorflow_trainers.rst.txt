@@ -1,0 +1,29 @@
+zenml.steps.trainer.tensorflow\_trainers package
+================================================
+
+Submodules
+----------
+
+zenml.steps.trainer.tensorflow\_trainers.tf\_base\_trainer module
+-----------------------------------------------------------------
+
+.. automodule:: zenml.steps.trainer.tensorflow_trainers.tf_base_trainer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.steps.trainer.tensorflow\_trainers.tf\_ff\_trainer module
+---------------------------------------------------------------
+
+.. automodule:: zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: zenml.steps.trainer.tensorflow_trainers
+   :members:
+   :undoc-members:
+   :show-inheritance:

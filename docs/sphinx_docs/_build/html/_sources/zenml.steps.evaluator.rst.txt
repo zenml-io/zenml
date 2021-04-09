@@ -1,0 +1,45 @@
+zenml.steps.evaluator package
+=============================
+
+Submodules
+----------
+
+zenml.steps.evaluator.agnostic\_evaluator module
+------------------------------------------------
+
+.. automodule:: zenml.steps.evaluator.agnostic_evaluator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.steps.evaluator.base\_evaluator module
+--------------------------------------------
+
+.. automodule:: zenml.steps.evaluator.base_evaluator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.steps.evaluator.tfma\_evaluator module
+--------------------------------------------
+
+.. automodule:: zenml.steps.evaluator.tfma_evaluator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.steps.evaluator.tfma\_module module
+-----------------------------------------
+
+.. automodule:: zenml.steps.evaluator.tfma_module
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: zenml.steps.evaluator
+   :members:
+   :undoc-members:
+   :show-inheritance:
