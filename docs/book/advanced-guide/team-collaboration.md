@@ -1,5 +1,5 @@
 ---
-description: Collaborate seamlessly
+description: Collaborate seamlessly.
 ---
 
 # Team Collaboration
@@ -15,12 +15,9 @@ Collaboration with ZenML means shared access to:
 
 Deploying the above in a shared setting makes all experiments within a ZenML repository reproducible and discoverable. This is regardless of which team member ran the corresponding pipelines, and regardless of the environment the experiments were run in.
 
-```text
-The Metadata and Artifact Stores respectively, while highly recommended, are not neccessary be shared to ensure collaboration. You could as well 
-share the Git Repository with a committed local pipeline directory and still collaborate using ZenML. However, losing the Artifact and Metadata 
-Store will invalidate all [caching](../benefits/reusing-artifacts.md), and all pipelines need them to be re-run on every team members local setup. This might 
-have uninteded consequences, so please be careful when setting this up in production.
-```
+{% hint style="info" %}
+The Metadata and Artifact Stores respectively, while highly recommended, are **not necessary** to share for collaboration. You could as well share the Git Repository with a committed local pipeline directory and still collaborate using ZenML. However, losing the Artifact and Metadata Store will invalidate all [caching](../benefits/reusing-artifacts.md), and all pipelines need them to be re-run on every team members local setup. This might have uninteded consequences, so please be careful when setting this up in production.
+{% endhint %}
 
 ## Example
 
@@ -64,8 +61,6 @@ In the above example, if there is a shared Metadata and Artifact Store, all step
 ## How to set it up
 
 For a concrete example on how to set up collaboration completely, check out our tutorial using [Google Cloud Platform](). Using any other cloud provider is also possible, as the only requirement is the Metadata Store and Artifact Store exist in a globally accessible place. Also, not using a cloud provider at all is also possible, but would entail losing the advantages of a shared metadata + artifact store \(see above note.\)
-
-
 
 ## Ensuring ML reproducibility with ZenML[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/benefits/ensuring-ml-reproducibility.html#ensuring-ml-reproducibility-with-zenml)
 
@@ -224,19 +219,11 @@ repository
         |   __init__.py
 ```
 
-![Copy to clipboard](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/_static/copy-button.svg)
-
-Some things to note:
-
 There can be many scripts of the type **pipeline\_run\_script.py**, and can potentially be placed in their own directory. These sorts of files are where the actual ZenML pipeline is constructed. When using ZenML in a CI/CD setting with automated runs, these files can be checked into source control as well.
 
-```text
-You can put pipeline construction files anywhere within a ZenML repo, and not just the root.
-ZenML figures out automatically from which context you are executing and always finds a reference to 
-the root of the repository!
-```
-
-![Copy to clipboard](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/_static/copy-button.svg)
+{% hint style="info" %}
+You can put pipeline construction files anywhere within a ZenML repo, and not just the root. ZenML figures out automatically from which context you are executing and always finds a reference to the root of the repository!
+{% endhint %}
 
 The **Dockerfile** is necessary in case [custom images](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/using-docker.html) are required for non-local pipeline runs. This too can be automated via a simple CI/CD scheme.
 

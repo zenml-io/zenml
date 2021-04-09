@@ -55,14 +55,13 @@ repository
         |   __init__.py
 ```
 
+Some things to note: There can be many scripts of the type **pipeline\_run\_script.py**, and can potentially be placed in their own directory. These sorts of files are where the actual ZenML pipeline is constructed. When using ZenML in a CI/CD setting with automated runs, these files can be checked into source control as well.  
 
-```
+{% hint style="info" %}
+You can put pipeline construction files anywhere within a ZenML repo, and not just the root. ZenML figures out automatically from which context you are executing and always finds a reference to the root of the repository!
+{% endhint %}
 
-Some things to note: There can be many scripts of the type **pipeline\_run\_script.py**, and can potentially be placed in their own directory. These sorts of files are where the actual ZenML pipeline is constructed. When using ZenML in a CI/CD setting with automated runs, these files can be checked into source control as well. `text You can put pipeline construction files anywhere within a ZenML repo, and not just the root. ZenML figures out automatically from which context you are executing and always finds a reference to the root of the repository!` The **Dockerfile** is necessary in case [custom images](../backends/using-docker.md) are required for non-local pipeline runs. This too can be automated via a simple CI/CD scheme. The **notebook directory** is for pre and post pipeline run analysis, to analyze what went right \(or wrong\) as the experiments develop. Whenever decisions are made and realized, the code developed here should be refactored into appropriate Step directories to be persisted and tracked by ZenML. Notice that each type of **Step** has its own root folder, which contains individual modules for different implementations of it. This allows for flexible [git pinning](integration-with-git.md) and easier development as this repository grows. Let us know your structuring via [Slack](https://github.com/maiot-io/zenml) so we can improve this recommendation!
-
-
-
-All components of ZenML are split into two categories: The `Standard` components, i.e., the code shipped with the package, and the `User-defined` components, the code written by users to inject their own custom logic into the framework.
+The **Dockerfile** is necessary in case [custom images](../backends/using-docker.md) are required for non-local pipeline runs. This too can be automated via a simple CI/CD scheme. The **notebook directory** is for pre and post pipeline run analysis, to analyze what went right \(or wrong\) as the experiments develop. Whenever decisions are made and realized, the code developed here should be refactored into appropriate Step directories to be persisted and tracked by ZenML. Notice that each type of **Step** has its own root folder, which contains individual modules for different implementations of it. This allows for flexible [git pinning](integration-with-git.md) and easier development as this repository grows. Let us know your structuring via [Slack](https://github.com/maiot-io/zenml) so we can improve this recommendation!
 
 ## Integration with Git
 
@@ -127,7 +126,7 @@ repository
 
 where the contents of `my_trainer_step.py` are:
 
-```text
+```python
 from zenml.steps.trainer import BaseTrainerStep
 
 
@@ -139,7 +138,7 @@ class MyAwesomeTrainer(BaseTrainerStep):
 
 If we commit everything and then run a pipeline like so:
 
-```text
+```python
 from zenml.pipelines import TrainingPipeline
 from trainers.my_awesome_trainer.my_trainer_step import MyAwesomeTrainer
 
@@ -160,7 +159,7 @@ training_pipeline.run()
 
 Then the corresponding pipeline YAML may look like:
 
-```text
+```yaml
 version: '1'
 
 datasource:
@@ -178,14 +177,14 @@ steps:
 
 Notice the `source` key is tagged with the full path to trainer class and the sha `e9448e0abbc6f03252578ca877bc80c94f137edd`. If we ever load this pipeline or step using e.g. `repo.get_pipeline_by_name()` then the following would happen:
 
-```text
-We change `e9448e0abbc6f03252578ca877bc80c94f137edd` to `e9448e0a` for readability purposes.
-```
-
 * All files within the directory `trainers/my_awesome_trainer/` would be checked to see if committed or not. Only if all files are committed properly would ZenML allow for loading the pipeline.
 * The directory `repository/trainers/my_awesome_trainer/` would be checked out to sha `e9448e0a`. This is achieved by executing `git checkout e9448e0a -- trainers/my_awesome_trainer/`
 * The module is loaded using the standard Python `importlib` library.
 * The git checkout is reverted.
+
+{% hint style="info" %}
+We change `e9448e0abbc6f03252578ca877bc80c94f137edd` to `e9448e0a` for readability purposes.
+{% endhint %}
 
 This way, all ZenML custom classes can be used in different environments, and reproducibility is ensured.
 
@@ -210,20 +209,6 @@ While each component has its own rules, there are some rules that are general wh
 
 * All custom classes must exist within its own `module` \(directory\) in a ZenML repo.
 * All components follow the same Git-pinning methodology outlined [here](../repository/integration-with-git.md)
-
-### Environment and custom dependencies
-
-ZenML comes pre-installed with some common ML libraries. These include:
-
-* `tfx` &gt;= 0.25.0
-* `tensorflow` &gt;= 2.3.0
-* `apache-beam` &gt;= 2.26.0
-* `plotly` &gt;= 4.0.0
-* `numpy` &gt;= 1.18.0
-
-The full list can be found [here](https://github.com/maiot-io/zenml/blob/main/setup.py).
-
-You can install any other dependencies alongisde of ZenML and use them in your code as long as they do not conflict with the dependencies listed above. E.g `torch`, `scikit-learn`, `pandas` etc are perfectly fine. However, using `tensoflow` &lt; 2.3.0 currently is not supported.
 
 
 

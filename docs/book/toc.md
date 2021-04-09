@@ -24,7 +24,7 @@
 * [Organizing your ZenML Repository](advanced-guide/fetching-artifacts.md)
 * [Team Collaboration](advanced-guide/team-collaboration.md)
 * [Backends](advanced-guide/backends.md)
-* [Integrations](advanced-guide/integrations.md)
+* [Environment, docker, dependencies](advanced-guide/integrations.md)
 
 ## Support
 
