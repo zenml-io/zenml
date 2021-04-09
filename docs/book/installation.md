@@ -81,7 +81,7 @@ For Fish, add this to ~/.config/fish/completions/foo-bar.fish:
 eval (env _ZENML_COMPLETE=source_fish zenml)
 ```
 
-## Tensorflow Model Analysis support
+## Tensorflow Model Analysis \(TFMA\) support
 
 In order to get the [Tensorflow Model Analysis](https://github.com/tensorflow/model-analysis) evaluation visualizations to work, you must also run:
 

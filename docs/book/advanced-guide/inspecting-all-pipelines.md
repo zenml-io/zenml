@@ -1,42 +1,8 @@
+---
+description: Pipelines are your experiments
+---
+
 # Inspecting all pipelines in a repository
-
-In order to access information about your ZenML repository in code, you need to access the ZenML [Repository instance](https://github.com/maiot-io/zenml/blob/main/zenml/core/repo/repo.py). This object is a Singleton and can be fetched any time from within your Python code simply by executing:
-
-```text
-from zenml.repo import Repository
-
-# We recommend to add the type hint for auto-completion in your IDE/Notebook
-repo: Repository = Repository.get_instance()
-```
-
-Now the `repo` object can be used to fetch all sorts of information regarding the repository. For example, one can do:
-
-```text
-# Get all datasources
-datasources = repo.get_datasources()
-
-# Get all pipelines
-pipelines = repo.get_pipelines()
-
-# List all registered steps in the 
-steps = repo.get_step_versions()
-
-# Get a step by its version
-step_object = get_step_by_version(step_type, version)
-
-# Compare all pipelines in the repository
-repo.compare_training_runs()
-```
-
-```text
-The full list of commands can be found within the Repository class definition
-```
-
-Using these commands, one can always look back at what actions have been performed in this repository.
-
-It is important to note that most of the methods listed above involve parsing the [config YAML files](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/pipelines/what-is-a-pipeline.html) in your [Pipelines Directory](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/repository/pipeline-directory.html). Therefore, by changing the pipelines directory or manipulating it, you may lose a lot of valuable information regarding how the repository developed over time.
-
-## What is a pipeline?[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/pipelines/what-is-a-pipeline.html?highlight=get_pipeline#what-is-a-pipeline)
 
 A pipeline defines a sequence of \(usually data\) processing steps. Pipelines consist of [Steps](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/pipelines/steps/what-is-a-step.md) and each step is an independent entity that gets input and creates output. The output can potentially feed into other steps as inputs, and that’s how the order of execution is decided.
 
@@ -44,40 +10,78 @@ Every pipeline step produces `Artifacts` that are stored in the [Artifact Store]
 
 Every pipeline has an environment in which it executes, the so called `Orchestration` environment. This is defined by the [Orchestrator Backend](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/orchestrator-backends.html). Read more in the [Backends docs](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/what-is-a-backend.html).
 
-### Types of pipelines[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/pipelines/what-is-a-pipeline.html?highlight=get_pipeline#types-of-pipelines)
+### Types of pipelines
 
-In ZenML, pipelines can be `Standard` and `Custom`. In case of using the Standard pipelines, the order of the Step execution need not be defined, as these are higher-level abstractions for standard ML tasks. E.g. A [TrainingPipeline](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/pipelines/pipelines/training-pipeline.md) is used to run a training experiment and deploy the resulting model.
+In ZenML, pipelines are higher-order abstractions for standard ML tasks. E.g. A [TrainingPipeline](../api-reference/zenml/zenml.pipelines.md#zenml-pipelines-package) is used to run a training experiment and deploy the resulting model. These pipelines can be used as base classes and extended to create specialized pipelines for your use-case. However, in many cases, the standard pipeline definitions can be used directly, and only the steps need to be manipulated. In general, you would only need to create your own Pipeline classes if you require a more flexible order of execution of the steps within the pipeline.
 
-Custom pipelines however are more involved and require a more involved definition.
-
-#### Standard Pipelines[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/pipelines/what-is-a-pipeline.html?highlight=get_pipeline#standard-pipelines)
-
-Currently, there are three standard types of pipelines that should be used for different use-cases for ML in production.
-
-* [TrainingPipeline](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/pipelines/pipelines/training-pipeline.md): To train a ML model and deploy it
-* [DataPipeline](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/pipelines/data.html): To create an immutable snapshot/version of a datasource.
-* [BatchInferencePipeline](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/pipelines/batch-inference.html): To run Batch Inference with new data on a trained ML model.
-
-#### Create a custom pipeline[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/pipelines/what-is-a-pipeline.html?highlight=get_pipeline#create-a-custom-pipeline)
-
-```text
-Before creating your own pipeline, please make sure to follow the [general rules](../getting-started/creating-custom-logic.md)
-for extending any first-class ZenML component.
-```
-
-![Copy to clipboard](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/_static/copy-button.svg)
-
-ZenML is designed in a way that the starting point to use it is to [create custom `Steps`](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/pipelines/steps/what-is-a-step.md) and use them in the Standard Pipelines defined above. However, there will always be use-cases which do no match these opinionated general Standard pipelines, therefore one can always create custom pipelines with arbitrary Steps.
-
-The mechanism to create a custom Pipeline will be published in more detail soon in this space. As a teaser, it will involve overriding the `BasePipeline` class. However, the details of this are currently being worked out and will be made available in future releases.
+The mechanism to create a custom Pipeline will be published in more detail soon in this space. As a teaser, it will involve overriding the `BasePipeline` class. However, the details of this are currently being worked out and will be made available in future releases. For those of you brave enough to see the source-code, it should be simply done.
 
 If you need this functionality earlier, then ping us on our [Slack](https://zenml.io/slack-invite) or [create an issue on GitHub](https://https//github.com/maiot-io/zenml) so that we know about it!
 
-### Declarative Config[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/pipelines/what-is-a-pipeline.html?highlight=get_pipeline#declarative-config)
+### Relation to Tensorflow Extended \(TFX\) pipelines
+
+A ZenML pipeline in the current version is a higher-level abstraction of an opinionated [TFX pipeline](https://www.tensorflow.org/tfx). [ZenML Steps](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/pipelines/steps/what-is-a-step.md) are in turn higher-level abstractions of TFX components.
+
+To be clear, currently ZenML is an easier way of defining and running TFX pipelines. However, unlike TFX, ZenML treats pipelines as first-class citizens. We will elaborate more on the difference in this space, but for now if you are coming from writing your own TFX pipelines, our [quickstart](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/steps/quickstart.html) illustrates the difference well.
+
+### Fetching pipelines
+
+All pipelines within a ZenML repository are tracked centrally. In order to access information about your ZenML repository in code, you need to access the ZenML [Repository instance](../api-reference/zenml/zenml.repo.md#zenml-repo-package). This object is a Singleton and can be fetched any time from within your Python code simply by executing:
+
+```python
+from zenml.repo import Repository
+
+# We recommend to add the type hint for auto-completion in your IDE/Notebook
+repo: Repository = Repository.get_instance()
+```
+
+Now the `repo` object can be used to fetch all pipelines:
+
+```python
+# Get all pipelines
+pipelines = repo.get_pipelines()  # returns a list of BasePipeline sub-classed objects
+```
+
+Depending on the type of the pipeline, you can then use its functions to inspect the pipeline, so for example to evaluate it or see its statistics.
+
+If you are looking for a particular pipeline, there are more refined functions:
+
+```python
+# Get all names of pipelines
+names = get_pipeline_names()
+
+# Get pipeline by name
+pipeline = get_pipeline_by_name(name='Experiment 1')
+
+# Get pipeline by type (Each pipeline has a PIPELINE_TYPE defined as a string)
+pipelines = get_pipelines_by_type(type_filter=['training'])
+
+# Get pipeline by datasource
+datasources = repo.get_datasources()
+pipelines = repo.get_pipelines_by_datasource(datasources[0])
+```
+
+Using these commands, one can always look back at what pipelines have been registered and run in this repository.
+
+It is important to note that most of the methods listed above involve parsing the [config YAML files](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/pipelines/what-is-a-pipeline.html) in your [Pipelines Directory](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/repository/pipeline-directory.html). Therefore, by changing the pipelines directory or manipulating it, you may lose a lot of valuable information regarding how the repository developed over time.
+
+### Pipeline Properties
+
+Each pipeline has an associated [metadata store](../core-concepts.md#metadata-store), [artifact store](../core-concepts.md#artifact-store) and `step_config`. The `step_config` is a dict that defines which [steps](../core-concepts.md#steps) are running in the pipeline.
+
+In order to see the status of a pipeline:
+
+```python
+pipeline.get_status()
+```
+
+This queries the associated `metadata_store`, and returns either `NotStarted`, `Suceeded` , `Running` or `Failed` depending on the status of the pipeline.
+
+Apart from the status, pipelines can have additional properties and helper functions that one can use to inspect it closely. For example, a `TrainingPipeline` has the `get_hyperparameters()` method to return the hyper-parameters used in the preprocesser and trainer steps.
 
 Regardless of type, a ZenML pipeline is represented by a declarative config written in YAML. A sample config looks like this:
 
-```text
+```yaml
 version: '1'
 artifact_store: /path/to/artifact/store
 backend:
@@ -178,8 +182,6 @@ pipeline:
       source: zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.FeedForwardTrainer@zenml_0.2.0
 ```
 
-![Copy to clipboard](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/_static/copy-button.svg)
-
 The config above can be split into 5 distinct keys:
 
 * `version`: The version of the YAML standard to maintain backwards compatibility.
@@ -192,13 +194,13 @@ The config above can be split into 5 distinct keys:
   * `datasource`: Details of the [datasource](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/datasources/what-is-a-datasource.html) used in the pipeline.
   * `steps:`: Details of each [step](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/pipelines/steps/what-is-a-step.md) used in the pipeline.
 
-### Immutability and Reusing Pipeline Logic[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/pipelines/what-is-a-pipeline.html?highlight=get_pipeline#immutability-and-reusing-pipeline-logic)
+### Manipulating a pipeline after it has been run
 
 After pipelines are run, they are marked as being `immutable`. This means that the internal [Steps](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/pipelines/steps/what-is-a-step.md) of these pipelines can no longer be changed. However, a common pattern in Machine Learning is to re-use logical components across the entire lifecycle. And that is after all, the whole purpose of creating steps in the first place.
 
 In order to re-use logic from another pipeline in ZenML, it is as simple as to execute:
 
-```text
+```python
 from zenml.repo.repo import Repository
 
 # Get a reference in code to the current repo
@@ -211,41 +213,9 @@ pipeline_b = pipeline_a.copy(new_name='Pipeline B')
 # Change steps, metadata store, artifact store, backends etc freely.
 ```
 
-![Copy to clipboard](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/_static/copy-button.svg)
-
 Ensuring that run pipelines are immutable is crucial to maintain reproducibility in the ZenML design. Using the `copy()` paradigm allows the freedom of re-using steps with ease, and keeps reproducibility intact.
 
-### Caching[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/pipelines/what-is-a-pipeline.html?highlight=get_pipeline#caching)
+### Caching
 
 The `copy()` paradigm also helps in _re-usability_ of code across pipelines. E.g. If now only the TrainerStep is changed in `pipeline_b` above, then the corresponding `pipeline_b` pipeline run will skip splitting, preprocessing and re-use all the artifacts already produced by `pipeline_a`. Read more about [caching here](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/pipelines/benefits/reusing-artifacts.md).
-
-### Repository functionalities[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/pipelines/what-is-a-pipeline.html?highlight=get_pipeline#repository-functionalities)
-
-You can get all your pipelines using the [Repository](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/repository/what-is-a-repository.html) class:
-
-```text
-from zenml.repo import Repository
-
-repo: Repository = Repository.get_instance()
-
-# Get all names of pipelines in repo
-pipeline_names = repo.get_pipeline_names()
-
-# Load previously run pipelines
-pipelines = repo.get_pipelines()
-
-# Get pipelines by datasource
-pipelines = repo.get_pipelines_by_datasource(ds)
-
-# Get pipelines by type
-train_pipelines = repo.get_pipelines_by_type(type_filter=['train'])
-```
-
-![Copy to clipboard](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/_static/copy-button.svg)
-
-### Relation to Tensorflow Extended \(TFX\) pipelines[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/pipelines/what-is-a-pipeline.html?highlight=get_pipeline#relation-to-tensorflow-extended-tfx-pipelines)
-
-A ZenML pipeline in the current version is a higher-level abstraction of an opinionated [TFX pipeline](https://www.tensorflow.org/tfx). [ZenML Steps](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/pipelines/steps/what-is-a-step.md) are in turn higher-level abstractions of TFX components.
-
-To be clear, currently ZenML is an easier way of defining and running TFX pipelines. However, unlike TFX, ZenML treats pipelines as first-class citizens. We will elaborate more on the difference in this space, but for now if you are coming from writing your own TFX pipelines, our [quickstart](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/steps/quickstart.html) illustrates the difference well.
 
