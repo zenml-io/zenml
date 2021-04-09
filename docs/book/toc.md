@@ -22,6 +22,8 @@
 * [Inspecting all pipelines in a repository](advanced-guide/inspecting-all-pipelines.md)
 * [Querying the metadata store](advanced-guide/querying-the-metadata-store.md)
 * [Fetching artifacts](advanced-guide/fetching-artifacts.md)
+* [Team Collaboration](advanced-guide/team-collaboration.md)
+* [Backends](advanced-guide/backends.md)
 
 ## Support
 
