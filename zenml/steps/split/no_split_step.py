@@ -15,11 +15,11 @@
 
 from typing import Text, List
 
-from zenml.steps.split import BaseSplit
+from zenml.steps.split import BaseSplitStep
 from zenml.steps.split import constants
 
 
-class NoSplit(BaseSplit):
+class NoSplit(BaseSplitStep):
     """
     No split function. Use this to pass your entire data forward completely
     unchanged.

@@ -16,7 +16,7 @@
 from typing import Text, Dict, List, Any, Union
 
 from zenml.steps.split import constants
-from zenml.steps.split import BaseSplit
+from zenml.steps.split import BaseSplitStep
 from zenml.steps.split.utils import get_categorical_value
 
 CategoricalValue = Union[Text, int]
@@ -29,7 +29,7 @@ def lint_split_map(split_map: Dict[Text, List[CategoricalValue]]):
                              'split_map!')
 
 
-class CategoricalDomainSplit(BaseSplit):
+class CategoricalDomainSplit(BaseSplitStep):
     """
     Categorical domain split. Use this to split data based on values in
     a single categorical column. A categorical column is defined here as a

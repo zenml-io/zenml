@@ -15,7 +15,7 @@
 
 from typing import Text, Dict, List, Any, Union
 
-from zenml.steps.split import BaseSplit
+from zenml.steps.split import BaseSplitStep
 from zenml.steps.split import constants
 from zenml.steps.split.utils import get_categorical_value
 from zenml.steps.split.utils import partition_cat_list
@@ -30,7 +30,7 @@ def lint_split_map(split_map: Dict[Text, float]):
                              'split_map!')
 
 
-class CategoricalRatioSplit(BaseSplit):
+class CategoricalRatioSplit(BaseSplitStep):
     """
     Categorical ratio split. Use this to split data based on a list of values
     of interest in a single categorical column. A categorical column is

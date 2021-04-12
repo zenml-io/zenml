@@ -18,7 +18,7 @@ from typing import Text, List, Dict, Any
 
 import numpy as np
 
-from zenml.steps.split import BaseSplit
+from zenml.steps.split import BaseSplitStep
 
 
 def lint_split_map(split_map: Dict[Text, float]):
@@ -32,7 +32,7 @@ def lint_split_map(split_map: Dict[Text, float]):
                              "specifying a random split!")
 
 
-class RandomSplit(BaseSplit):
+class RandomSplit(BaseSplitStep):
     """
     Random split. Use this to randomly split data based on a cumulative
     distribution function defined by a split_map dict.

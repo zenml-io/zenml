@@ -23,7 +23,7 @@ from zenml.steps import BaseStep
 from zenml.enums import StepTypes
 
 
-class BaseSplit(BaseStep):
+class BaseSplitStep(BaseStep):
     """
     Base split class. Each custom data split should derive from this.
     In order to define a custom split, override the base split's partition_fn

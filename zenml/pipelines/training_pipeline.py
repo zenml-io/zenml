@@ -38,7 +38,7 @@ from zenml.steps.evaluator import BaseEvaluatorStep
 from zenml.steps.preprocesser import BasePreprocesserStep
 from zenml.steps.preprocesser.base_preprocesser import build_split_mapping
 from zenml.steps.sequencer import BaseSequencerStep
-from zenml.steps.split import BaseSplit
+from zenml.steps.split import BaseSplitStep
 from zenml.steps.trainer import BaseTrainerStep
 from zenml.utils import path_utils
 from zenml.utils.post_training.post_training_utils import \
@@ -244,7 +244,7 @@ class TrainingPipeline(BasePipeline):
 
         return component_list
 
-    def add_split(self, split_step: BaseSplit):
+    def add_split(self, split_step: BaseSplitStep):
         self.steps_dict[keys.TrainingSteps.SPLIT] = split_step
 
     def add_sequencer(self, sequencer_step: BaseSequencerStep):

@@ -66,15 +66,17 @@ class BaseSplit(BaseStep):
 Any split step in a ZenML training pipeline needs to implement this method:
 
 ```python
-from zenml.steps.split import BaseSplit
+from zenml.steps.split import BaseSplitStep
 
-class AnySplitStep(BaseSplit):
+
+class AnySplitStep(BaseSplitStep):
 
     def partition_fn(self):
-        # the logic goes here
-    
+
+    # the logic goes here
+
     def get_split_names(self) -> List[Text]:
-        # the logic goes here
+# the logic goes here
 ```
 
 #### partition\_fn
@@ -95,7 +97,7 @@ from typing import Text, List, Dict, Any
 
 import numpy as np
 
-from zenml.steps.split import BaseSplit
+from zenml.steps.split import BaseSplitStep
 
 
 def lint_split_map(split_map: Dict[Text, float]):
@@ -132,7 +134,7 @@ def RandomSplitPartitionFn(element: Any,
     return bisect.bisect(probability_mass, np.random.uniform(0, max_value))
 
 
-class RandomSplit(BaseSplit):
+class RandomSplit(BaseSplitStep):
     """
     Random split. Use this to randomly split data based on a cumulative
     distribution function defined by a split_map dict.
