@@ -110,14 +110,10 @@ class Executor(BaseExecutor):
 
                 new_splits = (
                         p
-                        | 'ReadData.' + split >> beam.io.ReadFromTFRecord(
-                    file_pattern=input_uri)
+                        | 'ReadData.' + split >> beam.io.ReadFromTFRecord(file_pattern=input_uri)
                         | beam.Map(tf.train.Example.FromString)
-                        | 'Split' >> beam.Partition(
-                    split_step.partition_fn()[0],
-                    split_step.get_num_splits(),
-                    **split_step.partition_fn()[1])
-                )
+                        | 'Split' >> beam.Partition(split_step.partition_fn,
+                                                    split_step.get_num_splits()))
 
                 for split_name, new_split in zip(split_names,
                                                  list(new_splits)):

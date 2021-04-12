@@ -13,24 +13,10 @@
 #  permissions and limitations under the License.
 """Implementation of the identity split."""
 
-from typing import Text, List, Any
+from typing import Text, List
 
-from zenml.steps.split import constants
 from zenml.steps.split import BaseSplit
-
-
-def NoSplitPartitionFn(element: Any,
-                       num_partitions: int) -> int:
-    """
-    Function for no split on data; to be used in a beam.Partition.
-    Args:
-        element: Data point, given as a tf.train.Example.
-        num_partitions: Number of splits, unused here.
-
-    Returns:
-        An integer n, where 0 ≤ n ≤ num_partitions - 1.
-    """
-    return 0
+from zenml.steps.split import constants
 
 
 class NoSplit(BaseSplit):
@@ -56,8 +42,17 @@ class NoSplit(BaseSplit):
         """
         super().__init__(statistics=statistics, schema=schema)
 
-    def partition_fn(self):
-        return NoSplitPartitionFn, {}
+    def partition_fn(self, element, n):
+        """
+        Function for no split on data; to be used in a beam.Partition.
+        Args:
+            element: Data point, given as a tf.train.Example.
+            n: Number of splits, unused here.
+
+        Returns:
+            An integer n, where 0 ≤ n ≤ num_partitions - 1.
+        """
+        return 0
 
     def get_split_names(self) -> List[Text]:
         return [constants.NOSPLIT]
