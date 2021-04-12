@@ -1,437 +1,174 @@
 # Creating your trainer
 
+## Overview
+
+
+
 ```python
 class BaseTrainerStep(BaseStep):
-    """
-    Base step interface for all Trainer steps. All of your code concerning
-    model training should leverage subclasses of this class.
-    """
-
-    STEP_TYPE = StepTypes.trainer.name
-
-    def __init__(self,
-                 input_patterns: Dict[Text, Text] = None,
-                 output_patterns: Dict[Text, Text] = None,
-                 serving_model_dir: Text = None,
-                 transform_output: Text = None,
-                 split_mapping: Dict[Text, List[Text]] = None,
-                 **kwargs):
-        """
-        Constructor for the BaseTrainerStep. All subclasses used for custom
-        training of user machine learning models should implement the `run_fn`
-        `model_fn` and `input_fn` methods used for control flow, model training
-        and input data preparation, respectively.
-        Args:
-            serving_model_dir: Directory indicating where to save the trained
-             model.
-            transform_output: Output of a preceding transform component.
-            train_files: String, file pattern of the location of TFRecords for
-             model training. Intended for use in the input_fn.
-            eval_files: String, file pattern of the location of TFRecords for
-             model evaluation. Intended for use in the input_fn.
-            log_dir: Logs output directory.
-            schema: Schema file from a preceding SchemaGen.
-        """
-        # Inputs
-        self.input_patterns = input_patterns
-        self.schema = None
-        self.tf_transform_output = None
-
-        if transform_output is not None:
-            self.tf_transform_output = tft.TFTransformOutput(transform_output)
-            self.schema = self.tf_transform_output.transformed_feature_spec()
-
-        # Parameters
-        if split_mapping:
-            assert len(split_mapping[TRAIN_SPLITS]) > 0, \
-                'While defining your own mapping, you need to provide at least ' \
-                'one training split.'
-            assert len(split_mapping[EVAL_SPLITS]) > 0, \
-                'While defining your own mapping, you need to provide at least ' \
-                'one eval split.'
-
-            if TEST_SPLITS not in split_mapping:
-                split_mapping.update({TEST_SPLITS: []})
-            assert len(split_mapping) == 3, \
-                f'While providing a split_mapping please only use ' \
-                f'{TRAIN_SPLITS}, {EVAL_SPLITS} and {TEST_SPLITS} as keys.'
-
-            self.split_mapping = split_mapping
-        else:
-            self.split_mapping = {TRAIN_SPLITS: ['train'],
-                                  EVAL_SPLITS: ['eval'],
-                                  TEST_SPLITS: ['test']}
-
-        # Outputs
-        self.output_patterns = output_patterns
-        self.serving_model_dir = serving_model_dir
-        self.log_dir = None
-
-        if self.serving_model_dir is not None:
-            self.log_dir = os.path.join(
-                os.path.dirname(self.serving_model_dir), 'logs')
-
-        super(BaseTrainerStep, self).__init__(split_mapping=self.split_mapping,
-                                              **kwargs)
-
-    def input_fn(self,
-                 file_pattern: List[Text],
-                 tf_transform_output: tft.TFTransformOutput):
-        """
-        Method for loading data from TFRecords saved to a location on
-        disk. Override this method in subclasses to define your own custom
-        data preparation flow.
-        Args:
-            file_pattern: File pattern matching saved TFRecords on disk.
-            tf_transform_output: Output of the preceding Transform /
-             Preprocessing component.
-        Returns:
-            dataset: A tf.data.Dataset constructed from the input file
-             pattern and transform.
-        """
-        pass
 
     @staticmethod
-    def model_fn(train_dataset, eval_dataset):
-        """
-        Method defining the training flow of the model. Override this
-        in subclasses to define your own custom training flow.
-        Args:
-            train_dataset: tf.data.Dataset containing the training data.
-            eval_dataset: tf.data.Dataset containing the evaluation data.
-        Returns:
-            model: A trained machine learning model.
-        """
-        pass
+    def model_fn(train_dataset, 
+                 eval_dataset):
+        ...
 
     def run_fn(self):
-        """
-        Method defining the control flow of the training process inside
-        the TFX Trainer Component Executor. Override this method in subclasses
-        to define your own custom training flow.
-        """
-        pass
-
-    def test_fn(self, *args, **kwargs):
-        """
-        Optional method for defining a test flow of the model. The goal of
-        this method is to give the user an interface to provide a testing
-        function, where the results (if given in the right format with
-        features, labels and predictions) will be ultimately saved to
-        disk using an output artifact. Once defined, it allows the user to
-        utilize the model agnostic evaluator in their training pipeline.
-        """
-        pass
+        ...
 ```
 
-```text
+#### input\_fn
 
 
-from typing import List, Text
 
-import tensorflow as tf
+```python
+def input_fn(self,
+             file_pattern: List[Text],
+             tf_transform_output: tft.TFTransformOutput):
+```
 
-from zenml.steps.trainer import TFBaseTrainerStep
-from zenml.steps.trainer import utils
-from zenml.utils import naming_utils
+#### model\_fn
 
 
-class FeedForwardTrainer(TFBaseTrainerStep):
-    """
-    Basic Feedforward Neural Network trainer. This step serves as an example
-    of how to define your training logic to integrate well with TFX and
-    Tensorflow Serving.
-    """
 
-    def __init__(self,
-                 batch_size: int = 8,
-                 lr: float = 0.001,
-                 epochs: int = 1,
-                 dropout_chance: int = 0.2,
-                 loss: str = 'mse',
-                 metrics: List[str] = None,
-                 hidden_layers: List[int] = None,
-                 hidden_activation: str = 'relu',
-                 last_activation: str = 'sigmoid',
-                 output_units: int = 1,
-                 **kwargs):
+```python
+@staticmethod
+def model_fn(train_dataset, 
+             eval_dataset)
+```
+
+#### run\_fn
+
+
+
+```python
+  def run_fn(self)
+```
+
+### 
+
+## A quick example: the built-in `StandardPreprocesser` step
+
+
+
+{% hint style="info" %}
+The following is an overview of the complete step. You can find the full code right [here](https://github.com/maiot-io/zenml/blob/main/zenml/steps/split/base_split_step.py).
+{% endhint %}
+
+```python
+class BinaryClassifier(nn.Module):
+    def __init__(self):
+        ...
+
+    def forward(self, inputs):
+        ...
+
+
+def binary_acc(y_pred, y_test):
+    ...
+
+
+class TorchFeedForwardTrainer(TorchBaseTrainerStep):
+    def input_fn(self,
+                 file_patterns: List[Text]):
         """
-        Basic feedforward neural network constructor.
-        Args:
-            batch_size: Input data batch size.
-            lr: Learning rate of the optimizer.
-            epochs: Number of training epochs (whole passes through the data).
-            dropout_chance: Dropout chance, i.e. probability of a neuron not
-             propagating its weights into the prediction at a dropout layer.
-            loss: Name of the loss function to use.
-            metrics: List of metrics to log in training.
-            hidden_layers: List of sizes to use in consecutive hidden layers.
-             Length determines the number of hidden layers in the network.
-            hidden_activation: Name of the activation function to use in the
-             hidden layers.
-            last_activation: Name of the final activation function creating
-             the class probability distribution.
-            output_units: Number of output units, corresponding to the number
-             of classes.
-            **kwargs: Additional keyword arguments.
+        Function which creates the datasets for model training
         """
+        dataset = torch_utils.TFRecordTorchDataset(file_patterns,
+                                                   self.schema)
+        loader = torch.utils.data.DataLoader(dataset,
+                                             batch_size=self.batch_size,
+                                             drop_last=True)
+        return loader
 
-        self.batch_size = batch_size
-        self.lr = lr
-        self.epochs = epochs
-        self.dropout_chance = dropout_chance
-        self.loss = loss
-        self.metrics = metrics or []
-        self.hidden_layers = hidden_layers or [10]
-        self.hidden_activation = hidden_activation
-        self.last_activation = last_activation
-        self.output_units = output_units
-
-        super(FeedForwardTrainer, self).__init__(
-            batch_size=batch_size,
-            lr=lr,
-            epochs=epochs,
-            dropout_chance=dropout_chance,
-            loss=loss,
-            metrics=metrics,
-            hidden_layers=hidden_layers,
-            hidden_activation=hidden_activation,
-            last_activation=last_activation,
-            output_units=output_units,
-            **kwargs
-        )
-
-    def test_fn(self, model, dataset):
-        batch_list = []
-        for x, y in dataset:
-            # start with an empty batch
-            batch = {}
-
-            transformed_f = {f: x[f] for f in x if
-                             naming_utils.check_if_transformed_feature(f)}
-            raw_f = {f: x[f] for f in x if
-                     not naming_utils.check_if_transformed_feature(f)}
-
-            # add the raw features with the transformed features and labels
-            batch.update(transformed_f)
-            batch.update(y)
-            batch.update(raw_f)
-
-            # finally, add the output of the
-            p = model.predict(x)
-
-            if isinstance(p, tf.Tensor):
-                batch.update({'output': p})
-            elif isinstance(p, dict):
-                batch.update({naming_utils.output_name(k): p[k] for k in p})
-            elif isinstance(p, list):
-                batch.update(
-                    {'output_{}'.format(i): v for i, v in enumerate(p)})
-            else:
-                raise TypeError('Unknown output format!')
-
-            batch_list.append(batch)
-
-        combined_batch = utils.combine_batch_results(batch_list)
-
-        return combined_batch
+    def model_fn(self, train_dataset, eval_dataset):
+        """
+        Function which prepares the model instance
+        """
+        return BinaryClassifier()
 
     def run_fn(self):
+        """
+        Function which handles the model training
+        """
         train_split_patterns = [self.input_patterns[split] for split in
                                 self.split_mapping[utils.TRAIN_SPLITS]]
         train_dataset = self.input_fn(train_split_patterns)
 
         eval_split_patterns = [self.input_patterns[split] for split in
                                self.split_mapping[utils.EVAL_SPLITS]]
+                               
         eval_dataset = self.input_fn(eval_split_patterns)
 
-        model = self.model_fn(train_dataset=train_dataset,
-                              eval_dataset=eval_dataset)
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        model = self.model_fn(train_dataset, eval_dataset)
 
-        for split in self.split_mapping[utils.TEST_SPLITS]:
-            assert split in self.input_patterns, \
-                f'There are currently no inputs for the split "{split}" ' \
-                f'which is currently used in the {utils.TEST_SPLITS} of the ' \
-                f'split mapping.'
-            pattern = self.input_patterns[split]
-            test_dataset = self.input_fn([pattern])
-            test_results = self.test_fn(model, test_dataset)
-            utils.save_test_results(test_results, self.output_patterns[split])
+        model.to(device)
+        criterion = nn.BCEWithLogitsLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-        signatures = {
-            'serving_default':
-                self._get_serve_tf_examples_fn(
-                    model,
-                    self.tf_transform_output
-                ).get_concrete_function(tf.TensorSpec(shape=[None],
-                                                      dtype=tf.string,
-                                                      name='examples')),
-            'zen_eval':
-                self._get_zen_eval_tf_examples_fn(
-                    model,
-                    self.tf_transform_output
-                ).get_concrete_function(tf.TensorSpec(shape=[None],
-                                                      dtype=tf.string,
-                                                      name='examples'))}
+        writer = SummaryWriter(self.log_dir)
 
-        model.save(self.serving_model_dir,
-                   save_format='tf',
-                   signatures=signatures)
+        model.train()
 
-    def input_fn(self,
-                 file_pattern: List[Text]):
-        """
-        Feedforward input_fn for loading data from TFRecords saved to a
-        location on disk.
-        Args:
-            file_pattern: File pattern matching saved TFRecords on disk.
-        Returns:
-            dataset: tf.data.Dataset created out of the input files.
-        """
-        dataset = tf.data.experimental.make_batched_features_dataset(
-            file_pattern=file_pattern,
-            batch_size=self.batch_size,
-            features=self.schema,
-            reader=self._gzip_reader_fn,
-            num_epochs=1,
-            drop_final_batch=True)
+        total_count = 0
 
-        def split_columns(x):
-            inputs = {}
-            labels = {}
-            for e in x:
-                if not naming_utils.check_if_transformed_label(e):
-                    inputs[e] = x[e]
-                else:
-                    labels[e] = x[e]
-            return inputs, labels
+        for e in range(1, self.epochs + 1):
+            epoch_loss = 0
+            epoch_acc = 0
+            step_count = 0
+            for x, y, _ in train_dataset:
+                step_count += 1
+                total_count += 1
 
-        dataset = dataset.map(split_columns)
+                x_batch = torch.cat([v.to(device) for v in x.values()], dim=-1)
+                y_batch = torch.cat([v.to(device) for v in y.values()], dim=-1)
+                optimizer.zero_grad()
 
-        return dataset
+                y_pred = model(x_batch)
 
-    @staticmethod
-    def _get_serve_tf_examples_fn(model, tf_transform_output):
-        """
-        Returns a function that parses a serialized tf.Example for prediction.
-        Args:
-            model: Trained model, output of the model_fn.
-            tf_transform_output: Output of the preceding Transform /
-             Preprocessing component.
-        """
+                loss = criterion(y_pred, y_batch)
+                acc = binary_acc(y_pred, y_batch)
 
-        model.tft_layer = tf_transform_output.transform_features_layer()
+                loss.backward()
+                optimizer.step()
 
-        @tf.function
-        def serve_tf_examples_fn(serialized_tf_examples):
-            """Returns the output to be used in the serving signature."""
-            raw_feature_spec = tf_transform_output.raw_feature_spec()
-            parsed_features = tf.io.parse_example(serialized_tf_examples,
-                                                  raw_feature_spec)
+                epoch_loss += loss.item()
+                epoch_acc += acc.item()
 
-            transformed_features = model.tft_layer(parsed_features)
+                if e == 1 and step_count == 1:
+                    writer.add_graph(model, x_batch)
 
-            return model(transformed_features)
-
-        return serve_tf_examples_fn
-
-    @staticmethod
-    def _get_zen_eval_tf_examples_fn(model, tf_transform_output):
-        """
-        Returns a function that parses a serialized tf.Example for
-        evaluation.
-        Args:
-            model: Trained model, output of the model_fn.
-            tf_transform_output: Output of the preceding Transform /
-             Preprocessing component.
-        """
-
-        model.tft_layer = tf_transform_output.transform_features_layer()
-
-        @tf.function
-        def zen_eval_tf_examples_fn(serialized_tf_examples):
-            """Returns the output to be used in the ce_eval signature."""
-            xf_feature_spec = tf_transform_output.transformed_feature_spec()
-
-            transformed_features = tf.io.parse_example(serialized_tf_examples,
-                                                       xf_feature_spec)
-
-            for f in tf_transform_output.transformed_feature_spec():
-                if not naming_utils.transformed_feature_name(f):
-                    transformed_features.pop(f)
-
-            outputs = model(transformed_features)
-
-            if isinstance(outputs, dict):
-                return outputs
-            elif isinstance(outputs, list):
-                return {o.name.split("/")[1]: o for o in outputs}
-            elif isinstance(outputs, tf.Tensor):
-                return {outputs.name.split("/")[1]: outputs}
-
-        return zen_eval_tf_examples_fn
-
-    @staticmethod
-    def _gzip_reader_fn(filenames):
-        """
-        Small utility returning a record reader that can read gzipped files.
-        Args:
-            filenames: Names of the compressed TFRecord data files.
-        """
-        return tf.data.TFRecordDataset(filenames, compression_type='GZIP')
-
-    def model_fn(self,
-                 train_dataset: tf.data.Dataset,
-                 eval_dataset: tf.data.Dataset):
-        """
-        Function defining the training flow of the feedforward neural network
-        model.
-        Args:
-            train_dataset: tf.data.Dataset containing the training data.
-            eval_dataset: tf.data.Dataset containing the evaluation data.
-        Returns:
-            model: A trained feedforward neural network model.
-        """
-
-        features = list(train_dataset.element_spec[0].keys())
-        labels = list(train_dataset.element_spec[1].keys())
-
-        input_layers = [tf.keras.layers.Input(shape=(1,), name=k)
-                        for k in features if
-                        naming_utils.check_if_transformed_feature(k)]
-
-        d = tf.keras.layers.Concatenate()(input_layers)
-
-        for size in self.hidden_layers:
-            d = tf.keras.layers.Dense(size,
-                                      activation=self.hidden_activation)(d)
-            d = tf.keras.layers.Dropout(self.dropout_chance)(d)
-
-        output_layers = {l: tf.keras.layers.Dense(
-            self.output_units,
-            activation=self.last_activation,
-            name=l)(d) for l in labels}
-
-        model = tf.keras.Model(inputs=input_layers, outputs=output_layers)
-
-        model.compile(loss=self.loss,
-                      optimizer=tf.keras.optimizers.Adam(lr=self.lr),
-                      metrics=self.metrics)
-
-        model.summary()
-
-        tensorboard_callback = tf.keras.callbacks.TensorBoard(
-            log_dir=self.log_dir)
-
-        model.fit(train_dataset,
-                  epochs=self.epochs,
-                  validation_data=eval_dataset,
-                  callbacks=[tensorboard_callback])
-
-        return model
+                writer.add_scalar('training_loss', loss, total_count)
+                writer.add_scalar('training_accuracy', acc, total_count)
 ```
 
-```text
-how to use it in a pipeline
+We can now go ahead and use this step in our pipeline:
+
+```python
+from zenml.pipelines import TrainingPipeline
+from zenml.steps.split import RandomSplit
+
+training_pipeline = TrainingPipeline()
+
+...
+
+training_pipeline.add_trainer(TorchFeedForwardTrainer(
+    loss='binary_crossentropy',
+    last_activation='sigmoid',
+    output_units=1,
+    metrics=['accuracy'],
+    epochs=100))
+
+       
+...
 ```
 
+{% hint style="warning" %}
+**An important note here**: As you see from the code blocks that you see above, any input given to the constructor of a step will translate into an instance variable. So, when you want to use it you can use **`self`**, as we did with **`self.features`**.
+{% endhint %}
+
+
+
+## What's next?
+
+* 

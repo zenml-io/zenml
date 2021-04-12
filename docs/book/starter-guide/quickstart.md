@@ -21,7 +21,7 @@ Each **artifact** that is produced along the way is stored in an **artifact stor
 
 ## Overview
 
-In **ZenML**, pipelines are used for higher-order abstractions for standard ML tasks. For instance, the `TrainingPipeline` is used to run a training experiment and deploy the resulting model. It can also be used as a base class and be extended to create specialized pipelines for your use case. 
+In **ZenML**, pipelines are used for higher-order abstractions for standard ML tasks. For instance, the **`TrainingPipeline`** is used to run a training experiment and deploy the resulting model. It can also be used as a base class and be extended to create specialized pipelines for your use case. 
 
 In many cases, the standard pipeline definitions can be used directly, and only the steps need to be manipulated. In general, you would only need to create your own Pipeline classes if you require a more flexible order of execution of the steps within the pipeline.
 
@@ -52,7 +52,7 @@ For the following example, we will be using the _Pima Indians Diabetes Dataset_ 
 
 ### Datasource
 
-In order to be able to use this dataset \(which is currently in CSV format\) in your **ZenML** pipeline, we first need to create a `datasource`. **ZenML** has built-in support for various types of datasources and for this example, you can use the `CSVDatasource`. All you need to provide is a `name` for the datasource and the `path` to the CSV file.
+**ZenML** has built-in support for various types of datasources and for this example, you can use the `CSVDatasource`. All you need to provide is a `name` for the datasource and the `path` to the CSV file.
 
 ```python
 from zenml.datasources import CSVDatasource
@@ -67,12 +67,10 @@ Once you are through, you will have created a tracked and versioned datasource a
 training_pipeline.add_datasource(ds)
 ```
 
-### Split Step
-
-Now, on to the next step. For the sake of simplicity in this example, we will be using a completely random `70-30` split into a train and evaluation dataset:
+### 
 
 ```text
-from zenml.steps.split import RandomSplit
+
 
 training_pipeline.add_split(RandomSplit(split_map={'train': 0.7, 
                                                    'eval': 0.3}))
@@ -80,9 +78,7 @@ training_pipeline.add_split(RandomSplit(split_map={'train': 0.7,
 
 Keep in mind, in a more complicated example, it might be necessary to apply a different splitting strategy. For these cases, you can use the other built-in split configuration **ZenML** offers or even implement your own custom logic into the split step.
 
-### Preprocesser
-
-The next step is to configure the step **Transform**, the data preprocessing.
+### 
 
 For this example, we will use the built-in `StandardPreprocesser`. It handles the feature selection and has sane defaults of preprocessing behaviour for each data type, such as stardardization for numerical features or vocabularization for non-numerical features.
 
