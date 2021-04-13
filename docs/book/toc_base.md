@@ -25,7 +25,7 @@
 
 ## Support
 
-* [Tutorials](support/tutorials.md)
+* [Tutorials](../../examples/README.md)
 * [Roadmap](../../ROADMAP.md)
 * [Changelogs](../../RELEASE_NOTES.md)
 * [Usage Analytics](support/usage-analytics.md)
