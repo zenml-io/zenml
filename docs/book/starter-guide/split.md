@@ -6,7 +6,7 @@ In order to control the process of splitting a dataset, **ZenML** utilizes the s
 
 ```python
 class BaseSplit(BaseStep):
-
+    
     @abstractmethod
     def partition_fn(self):
         ...

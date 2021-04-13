@@ -1,6 +1,6 @@
 # Creating your ZenML repository
 
-Every ZenML project starts inside a ZenML repository. Think of it just like a normal Git repository, except that there are some added bonuses on top! In order to create a ZenML repository, create a git repo and do the following within this repository.
+Every ZenML project starts inside a **ZenML repository**. Think of it just like a normal Git repository, except that there are some added bonuses on top! In order to create a **ZenML repository**, create a git repo and do the following within this repository:
 
 ```text
 zenml init
@@ -12,7 +12,7 @@ The initialization will execute the following steps:
 * It will create an empty `pipelines` directory at the root as well, which is the path where all your pipeline configurations will be stored on **default**.
 * Adds a `.zenml_config` YAML configuration file inside the `.zenml` folder that tracks these defaults.
 
-If you want to change your Metadata Store, Artifact Store, or Pipelines Directory, please use the `zenml config` CLI group.
+If you want to change your **Metadata Store**, **Artifact Store**, or **Pipelines Directory**, please use the `zenml config` CLI group.
 
 ```bash
 # Display the current property
@@ -35,13 +35,13 @@ metadata:
 pipelines_dir: /path/to/zenml/repo/pipelines
 ```
 
-As you can see this file stores the default Artifact Store, Metadata Store and Pipelines Directory which each of your pipelines will use by default when they are run.
+As you can see this file stores the default **Artifact Store**, **Metadata Store** and **Pipelines Directory** which each of your pipelines will use by default when they are run.
 
 The global config on the other hand stores `global` information such as if a unique anonymous UUID for your zenml installation as well as metadata regarding usage of your ZenML package. It can be found in most systems in the `.config` directory at the path `zenml/info.json`.
 
 ## The ZenML Repository Instance[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/repository/the-zenml-repository-instance.html#the-zenml-repository-instance)
 
-In order to access information about your ZenML repository in code, you need to access the ZenML Repository instance. This object is a Singleton and can be fetched any time from within your Python code simply by executing:
+In order to access information about your **ZenML repository** in code, you need to access the **ZenML Repository** instance. This object is a singleton and can be fetched any time from within your Python code simply by executing:
 
 ```python
 from zenml.repo import Repository
@@ -77,7 +77,7 @@ It is important to note that most of the methods listed above involve parsing th
 
 ## What's next?
 
-* As we now have our ZenML repository set up, we can go ahead and start developing our first pipeline.
+* As we now have our **ZenML repository** set up, we can go ahead and start developing our first **pipeline**.
 * If you want to learn more about how the git integration works under the hood, you can go ahead and check here.
 * Moreover, if you would like to see our suggestions on how to organize your repository you can check here.
 
