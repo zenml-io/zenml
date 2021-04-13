@@ -1,9 +1,5 @@
 # Contact
 
-## FAQs
-
-Check out our [FAQ]() for things commonly asked.
-
 ## Slack community
 
 We have a slack community to get immediate support: [https://zenml.io/slack-invite](https://zenml.io/slack-invite).

@@ -23,7 +23,7 @@ Finally,  **ZenML** already natively separates configuration from code in its de
 
 ## BasePipeline
 
-All of the ideas above are used to construct the foundation of the `BasePipeline` in **ZenML**. As the name suggests, it is utilized as a base class to create, execute and track pipeline runs which represent a higher-order abstraction for standard ML tasks.
+All of the ideas above are brought together to construct the foundation of the `BasePipeline` in **ZenML**. As the name suggests, it is utilized as a base class to create, execute and track pipeline runs which represent a higher-order abstraction for standard ML tasks.
 
 In many cases, the standard pipeline definitions can be used directly, and only the steps need to be manipulated. In general, you would only need to create your own Pipeline classes if you require a more flexible order of execution of the steps within the pipeline. **\[WIP\]**
 
@@ -115,5 +115,4 @@ A ZenML pipeline in the current version is a higher-level abstraction of an opin
 
 ## What's next?
 
-
-
+* 

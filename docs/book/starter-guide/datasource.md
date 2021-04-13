@@ -17,7 +17,7 @@ class BaseDatasource:
 
 
 ```python
-def partition_fn(element, n) -> int:
+def read_from_source(element, n) -> int:
 ```
 
 ## A quick example: the built-in `CSVDataSource`
@@ -100,8 +100,6 @@ training_pipeline.add_datasource(ds)
 {% hint style="warning" %}
 **An important note here**: As you see from the code blocks that you see above, any input given to the constructor of a datasource will translate into an instance variable. So, when you want to use it you can use **`self`**, as we did with **`self.path`**.
 {% endhint %}
-
-
 
 ## What's next?
 

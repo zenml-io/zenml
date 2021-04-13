@@ -1,6 +1,6 @@
 # Creating your ZenML repository
 
-Every ZenML project starts inside a **ZenML repository**. Think of it just like a normal Git repository, except that there are some added bonuses on top! In order to create a **ZenML repository**, create a git repo and do the following within this repository:
+Every **ZenML** project starts inside a **ZenML repository**. Think of it just like a normal Git repository, except that there are some added bonuses on top! In order to create a **ZenML repository**, create a git repo and do the following within this repository:
 
 ```text
 zenml init
@@ -22,7 +22,7 @@ zenml config PROPERTY get
 zenml config PROPERTY set [OPTIONS] ARGUMENTS
 ```
 
-### Local vs Global Config[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/repository/what-is-a-repository.html#local-vs-global-config)
+## Local and Global Config[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/repository/what-is-a-repository.html#local-vs-global-config)
 
 Similar to other tools like Git, ZenML maintains both a per-repository configuration as well as a global configuration on your machine. As mentioned above, the local configuration is stored in a `.zenml/` directory at the root of your repository. This configuration is written in YAML and may look like this:
 
