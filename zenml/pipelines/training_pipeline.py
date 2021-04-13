@@ -235,7 +235,7 @@ class TrainingPipeline(BasePipeline):
                 self.steps_dict[keys.TrainingSteps.DEPLOYER]
             pusher_config = deployer._build_pusher_args()
             pusher_executor_spec = deployer._get_executor_spec()
-            pusher = Pusher(model_export=trainer.outputs.output,
+            pusher = Pusher(model_export=trainer.outputs.model,
                             custom_executor_spec=pusher_executor_spec,
                             **pusher_config).with_id(
                 GDPComponent.Deployer.name)
