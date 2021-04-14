@@ -30,20 +30,18 @@ Some examples of when a Docker image is required:
 * While specifying a GPU [training backend](https://docs.zenml.io/backends/training-backends.html) on the cloud.
 * Configuring a [distributed processing backend](https://docs.zenml.io/backends/processing-backends.html) like Google Cloud Dataflow.
 
-### Creating custom images[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/using-docker.html#creating-custom-images)
+### Creating custom images
 
 In cases where the dependencies specified in the base images are not enough, you can easily create a custom image based on the corresponding base image. The base images are hosted on a public Container Registry, namely `[eu.gcr.io/maiot-zenml](http://eu.gcr.io/maiot-zenml)`. The Dockerfiles of all base images can be found in the `zenml/docker` directory of the [source code](https://github.com/maiot-io/zenml).
 
 The easiest way to create your own, custom ZenML Docker Image, is by starting a new Dockerfile, using the ZenML Base Image as `FROM` :
 
-```text
+```python
 FROM eu.gcr.io/maiot-zenml/zenml:base-0.1.5  # The ZenML Base Image
 
 ADD . .  # adds your working directory to the resulting Docker Image
 RUN pip install -r requirements.txt  # install your custom requirements
 ```
-
-![Copy to clipboard](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/_static/copy-button.svg)
 
 More seasoned readers might notice, that there is no definition of an `ENTRYPOINT` anywhere. The ZenML Docker Images are deliberately designed without an `ENTRYPOINT` , as every backend can ship with a generic or specialised pipeline entrypoint. Routing is therefore handled via container invocation, not through defaults.
 
@@ -51,13 +49,13 @@ Running a `docker build . -f path/to/your/dockerfile -t your-container-registry/
 
 This is by no means a complete guide on building, pushing, and hosting Docker images. We strongly recommend you familiarize yourself with a Container registry of your choosing \(e.g. [Google Container Registry](https://cloud.google.com/container-registry/docs) or [Docker Hub](https://docs.docker.com/docker-hub/)\), and how the backend of your choosing can interact with the individual Registry options to ensure a pipeline’s backend can pull and run your newly built containers.
 
-### Using custom images[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/using-docker.html#using-custom-images)
+### Using custom images
 
 Once you’ve successfully built and pushed your new Docker Image to a registry you’re ready to use it in your ZenML pipelines. For this example I’ll be re-using our [Tutorial on running a pipeline on GCP](https://github.com/maiot-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/tutorials/running-a-pipeline-on-a-google-cloud-vm.md).
 
 Your new orchestration backend instantiation looks like this:
 
-```text
+```python
 # Let's define the image you'll want to use:
 custom_docker_image = 'your-container-registry/your-image-name:your-image-tag'
 
@@ -89,8 +87,6 @@ training_pipeline.run(
 )
 ```
 
-![Copy to clipboard](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/_static/copy-button.svg)
-
 For more information on individual backends and if they have support for Docker Images please check the corresponding documentation.
 
 ## Extensibility with integrations
@@ -103,7 +99,7 @@ This means that the goal of ZenML is to be able to work with any ML tool in the 
 
 ZenML uses the `extra_requires` field provided in Python [setuptools](https://setuptools.readthedocs.io/en/latest/setuptools.html) which allows for defining plugin-like dependencies for integrations. These integrations can then accessed via pip at installation time with the `[]` operators. E.g.
 
-```text
+```bash
 pip install zenml[pytorch]
 ```
 
@@ -111,7 +107,7 @@ Will unlock the `pytorch` integration for ZenML, allowing users to use the `PyTo
 
 To install all dependencies, use:
 
-```text
+```bash
 pip install zenml[all]
 ```
 
@@ -123,11 +119,11 @@ In order to see the full list of integrations available, see the [setup.py on Gi
 
 We would be happy to see [your contributions for more integrations](https://github.com/maiot-io/zenml/) if the ones we have currently support not fulfil your requirements. Also let us know via [slack](https://zenml.io/slack-invite) what integrations to add!
 
-### Types of integrations[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/benefits/integrations.html#types-of-integrations)
+### Types of integrations
 
 Integrations can be in the form of `backends` and `steps`. One group of integrations might bring multiple of these. E.g. The `gcp` integration brings orchestrator backends, dataflow processing backend and Google Cloud AI Platform training backend.
 
-#### Orchestration[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/benefits/integrations.html#orchestration)
+#### Orchestration
 
 When you configure an orchestration backend for your pipeline, the environment you execute actual `pipeline.run()` will launch all pipeline steps at the configured orchestration backend, not the local environment. ZenML will attempt to use credentials for the orchestration backend in question from the current environment. **NOTE:** If no further pipeline configuration if provided \(e.g. processing or training backends\), the orchestration backend will also run all pipeline steps.
 
@@ -143,7 +139,7 @@ A quick overview of the currently supported backends:
 
 Integrating custom orchestration backends is fairly straightforward. Check out our example implementation of [Google Cloud VMs](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/tutorials/running-a-pipeline-on-a-google-cloud-vm.html) to learn more about building your own integrations.
 
-#### \(Distributed\) Processing[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/benefits/integrations.html#distributed-processing)
+#### \(Distributed\) Processing
 
 Sometimes, pipeline steps just need more scalability than what your orchestration backend can offer. That’s when the natively distributable codebase of ZenML can shine - it’s straightforward to run pipeline steps on processing backends like Google Dataflow or Apache Spark.
 
@@ -160,7 +156,7 @@ We’re adding support for processing backends continuously:
 | AWS EMR | WIP |
 | Flink | planned: Q3/2021 |
 
-#### Training[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/benefits/integrations.html#training)
+#### Training
 
 Many ML use-cases and model architectures require GPUs/TPUs. ZenML offers integrations to Cloud-based ML training offers and provides a way to extend the training interface to allow for self-built training backends.
 
@@ -173,7 +169,7 @@ Some of these integrations rely on Docker containers or other methods of transmi
 | AWS Sagemaker | WIP |
 | Azure Machine Learning | planned: Q3/2021 |
 
-#### Serving[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/benefits/integrations.html#serving)
+#### Serving
 
 Every ZenML pipeline yields a servable model, ready to be used in your existing architecture - for example as additional input for your CI/CD pipelines. To accommodate other architectures, ZenML has support for a growing number of dedicated serving integrations, with clear linkage and lineage from data to deployment. These serving integrations come mostly in the form of `DeployerStep`’s to be used inside ZenML pipelines.
 
@@ -185,7 +181,7 @@ Every ZenML pipeline yields a servable model, ready to be used in your existing 
 | Seldon | planned: Q1/2021 |
 | Azure Machine Learning | planned: Q3/2021 |
 
-### Other libraries[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/benefits/integrations.html#other-libraries)
+### Other libraries
 
 If the integrations above do not fulfill your requirements and more dependencies are required, then there is always the option to simply install the dependencies alongside ZenML in your repository, and then create [custom steps](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/steps/what-is-a-step.html) for your logic.
 

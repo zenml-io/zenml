@@ -6,25 +6,13 @@ description: Separate environment from code.
 
 ZenML backends define `how` and `where` ZenML pipelines are run. They are broadly split into three categories:
 
-* [orchestrator](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/orchestrator-backends.html): Orchestrator backends manage the running of each step of the pipeline
-* [processing](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/processing-backends.html): Processing backends defines the environment in which each step executes its workload
-* [training](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/training-backends.html): Training backends are special and meant only for [Training Pipelines.](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/backends/pipelines/training-pipeline.md) They define the environment in which the training happens
+* **orchestrator**: Orchestrator backends manage the running of each step of the pipeline
+* **processing**: Processing backends defines the environment in which each step executes its workload
+* **training**: Training backends are special and meant only for Training Pipelines. They define the environment in which the training happens
 
-By separating backends from the actual pipeline logic, ZenML achieves a [Terraform](https://www.terraform.io/)-like scalability, [extensibility](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/backends/benefits/integrations.md) and reproducibility for all its pipelines. This is achieved whilst also maintaining comparability and consistent evaluation for all pipelines.
+By separating backends from the actual pipeline logic, ZenML achieves a [Terraform](https://www.terraform.io/)-like scalability, **extensibility** and **reproducibility** for all its pipelines. This is achieved whilst also maintaining comparability and consistent evaluation for all pipelines.
 
-Backends too are split into `standard` and `custom` categories. The standard ones can be found at: `zenml.core.backends.*` .
-
-### How to use a backend?
-
-A backend is associated directly with a [pipeline](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/pipelines/what-is-a-pipeline.html) and can be specified in different ways using the `backends` argument:
-
-* When constructing a pipeline.
-* When executing a `pipeline.run()`.
-* When executing a `pipeline.build()`.
-
-The API to create custom backends is still under active development. Please see this space for updates.
-
-### What next?[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/what-is-a-backend.html#what-next)
+You can then:
 
 * Set up different [orchestration](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/orchestrator-backends.html) strategies for your pipelines. Execute pipelines on your local
 
@@ -33,82 +21,77 @@ The API to create custom backends is still under active development. Please see 
 * Leverage powerful distributed processing by using built-in [processing](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/processing-backends.html) backends.
 * Train on GPUs in the cloud with various [training](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/training-backends.html).
 
+## How to use a backend?
+
+A backend is associated directly with a [pipeline](../api-reference/zenml/zenml.pipelines.md) and can be specified in different ways using the `backend` argument. The goal of ZenML is to get to a point where a data scientist can simply query the backends available for their ZenML repo by doing:
+
+```python
+repo.get_backends() # fetches all connected backends
+```
+
+The creation or connection of backends will be elaborated in future ZenML releases. For now, these docs represent `pre-made` backends that are by default included in the ZenML package.
+
 ## Orchestrator Backends
 
 The orchestrator backend is especially important, as it defines **where** the actual pipeline job runs. Think of it as the `root` of any pipeline job, that controls how and where each individual step within a pipeline is executed. Therefore, the combination of orchestrator and other backends can be used to great effect to scale jobs in production.
 
 The _**orchestrator**_ environment can be the same environment as the _**processing**_ environment, but not neccessarily. E.g. by default a `pipeline.run()` call would result in a local orchestrator and processing backend configuration, meaning the orchestration would be local along with the actual steps. However, if lets say, a dataflow processing backend is chosen, then chosen steps would be executed not in the local enviornment, but on the cloud in Google Dataflow.
 
-### Standard Orchestrators
+### Overview
 
-Please refer to the docstrings within the source code for precise details.
+The pattern to add a backend to a step is always the same:
 
-#### Local orchestrator
+```text
+backend = ...  # define the backend you want to use
+pipeline.run(backend=backend)
+```
 
-This is the default orchestrator for ZenML pipelines. It runs pipelines sequentially as a Python process in it’s local environment. You can use this orchestrator for quick experimentation and work on smaller datasets in your local environment.
+### Example
 
-#### GCP Orchestrator
+ZenML pipelines can be orchestrated on a native Kubernetes cluster.
 
-The GCPOrchestrator can be found at [`OrchestratorGCPBackend`](https://docs.zenml.io/reference/core/backends/orchestrator/gcp/index.html). It spins up a VM on your GCP projects, zips up your local code to the instance, and executes the ZenML pipeline with a Docker Image of your choice.
+**Prequisites:**
 
-Best of all, the Orchestrator is capable of launching [preemtible VMs](https://cloud.google.com/compute/docs/instances/preemptible), saving a big chunk of cost along the way.
+* This example assumes you have [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) installed and ready to use. Additionally, it assumes there is a `.kube/config`
 
-#### Kubernetes
+**Usage:**
 
-The KubernetesOrchestrator can be found at [`OrchestratorGCPBackend`](https://docs.zenml.io/reference/core/backends/orchestrator/kubernetes/index.html). It launches a Job on your Kubernetes cluster, zips up your local code to the Pod, and executes the ZenML pipeline with a Docker Image of your choice.
+```python
+# Define the orchestrator backend
+orchestrator_backend = OrchestratorKubernetesBackend(
+    kubernetes_config_path=K8S_CONFIG_PATH,
+    image_pull_policy="Always")
 
-**NOTE:** This Orchestrator requires you to ensure a successful connection between your Kubernetes Cluster and your Metadata Store.
+# Run the pipeline on a Kubernetes Cluster
+training_pipeline.run(
+    backend=orchestrator_backend,
+    metadata_store=metadata_store,
+    artifact_store=artifact_store,
+)
+```
 
-A more extensive guide on creating pipelines with Kubernetes can be found in the [Kubernetes Tutorial](https://github.com/maiot-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/tutorials/running-a-pipeline-on-kubernetes.md).
+Full example [here](https://github.com/maiot-io/zenml/tree/main/examples/gcp_kubernetes_orchestrated).
 
-#### AWS Orchestrator[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/orchestrator-backends.html#aws-orchestrator)
-
-Stay tuned - we’re almost there.
-
-#### Azure Orchestrator[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/orchestrator-backends.html#azure-orchestrator)
-
-Stay tuned - we’re almost there.
-
-#### Kubeflow[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/orchestrator-backends.html#kubeflow)
-
-Coming soon!
-
-### Creating a custom orchestrator[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/orchestrator-backends.html#creating-a-custom-orchestrator)
-
-The API to create custom orchestrators is still under active development. Please see this space for updates.
-
-If you would like to see this functionality earlier, please let us know via our [Slack Channel](https://zenml.io/slack-invite/) or [create an issue on GitHub](https://https//github.com/maiot-io/zenml).
-
-
-
-## Processing Backends[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/processing-backends.html#processing-backends)
+## Processing Backends
 
 Some pipelines just need more - processing power, parallelism, permissions, you name it.
 
 A common scenario on large datasets is distributed processing, e.g. via Apache Beam, Google Dataflow, Apache Spark, or other frameworks. In line with our integration-driven design philosophy, ZenML makes it easy to to distribute certain `Steps` in a pipeline \(e.g. in cases where large datasets are involved\). All `Steps` within a pipeline take as input a `ProcessingBackend`.
 
-### Overview[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/processing-backends.html#overview)
+### Overview
 
-The pattern to add a backend to a step is always the same:
+The pattern to add a processing backend to a step is always the same:
 
-```text
+```python
 backend = ...  # define the backend you want to use
 pipeline.add_step(
     Step(...).with_backend(backend)
 )
 ```
 
-![Copy to clipboard](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/_static/copy-button.svg)
+### Example
 
-### Supported Processing Backends[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/processing-backends.html#supported-processing-backends)
-
-ZenML is built on Apache Beam. You can simple use the `ProcessingBaseBackend`, or extend ZenML with your own, custom backend.+
-
-For convenience, ZenML supports a steadily growing number of processing backends out of the box:
-
-#### Google Dataflow[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/processing-backends.html#google-dataflow)
-
-ZenML natively supports [Google Cloud Dataflow](https://cloud.google.com/dataflow) out of the box \(as it’s built on Apache Beam\).
+ZenML uses Apache Beam extensively. You can simple use the `ProcessingBaseBackend`, or extend ZenML with your own backend. ZenML natively supports [Google Cloud Dataflow](https://cloud.google.com/dataflow) out of the box \(as it’s built on Apache Beam\).
 
 **Prequisites:**
 
@@ -137,15 +120,15 @@ training_pipeline.add_preprocesser(
 )
 ```
 
-## Training Backends[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/training-backends.html#training-backends)
+Full example [here](https://github.com/maiot-io/zenml/tree/main/examples/gcp_kubernetes_orchestrated).
+
+## Training Backends
 
 ZenML has built-in support for dedicated training backends. These are backends specifically built to provide an edge for training models, e.g. through the availability of GPUs/TPUs, or other performance optimizations.
 
-To use them, simply define your `TrainerStep` along with a `TrainingBackend` for different use-cases.
+To use them, simply define your `TrainerStep` along with a `TrainingBackend` for different use-cases.E
 
-### Supported Training Backends[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/training-backends.html#supported-training-backends)
-
-#### Google Cloud AI platform[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/training-backends.html#google-cloud-ai-platform)
+### Example
 
 Google offers a dedicated service for training models with access to GPUs and TPUs called [Google Cloud AI Platform](https://cloud.google.com/ai-platform/docs). ZenML has built-in support to run `TrainingSteps` on Google Cloud AI Platform.
 
@@ -176,11 +159,7 @@ training_pipeline.add_trainer(
   TFFeedForwardTrainer(...).with_backend(training_backend))
 ```
 
-#### AWS Sagemaker[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/training-backends.html#aws-sagemaker)
-
-Support for AWS Sagemaker is coming soon. Stay tuned to our releases, or let us know on [Slack](https://zenml.io/slack-invite/) if you have an urgent use-case for AWS Sagemaker!
+Full example [here](https://github.com/maiot-io/zenml/tree/main/examples/gcp_kubernetes_orchestrated).
 
 If you would like to see any of this functionality earlier, or if you’re missing a specific backend, please let us know via our [Slack Channel](https://zenml.io/slack-invite/) or [create an issue on GitHub](https://https//github.com/maiot-io/zenml).
-
-### 
 

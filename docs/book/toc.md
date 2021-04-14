@@ -23,8 +23,8 @@
 * [The metadata and artifact stores](advanced-guide/querying-the-metadata-store.md)
 * [ZenML Repository Guidelines](advanced-guide/fetching-artifacts.md)
 * [Team Collaboration](advanced-guide/team-collaboration.md)
-* [Backends](advanced-guide/backends.md)
 * [Environment, docker, dependencies](advanced-guide/integrations.md)
+* [Backends](advanced-guide/backends.md)
 
 ## Support
 
