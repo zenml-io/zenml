@@ -14,7 +14,7 @@ zenml.steps.trainer.tensorflow\_trainers package — ZenML documentation [ZenML]
       * [zenml.steps.trainer.tensorflow\_trainers.tf\_ff\_trainer module](zenml.steps.trainer.tensorflow_trainers.md#zenml-steps-trainer-tensorflow-trainers-tf-ff-trainer-module)
       * [Module contents](zenml.steps.trainer.tensorflow_trainers.md#module-contents)
 * [ « zenml.steps.t...](zenml.steps.trainer.pytorch_trainers.md)
-* [ zenml.utils package »](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.utils)
+* [ zenml.utils package »](https://github.com/maiot-io/zenml/tree/08e4bcc20d74ef2c87cb55a700f900327aeccc46/docs/book/api-reference/zenml/zenml.utils)
 * [Source](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/_sources/zenml.steps.trainer.tensorflow_trainers.rst.txt)
 
 ## zenml.steps.trainer.tensorflow\_trainers package[¶](zenml.steps.trainer.tensorflow_trainers.md#zenml-steps-trainer-tensorflow-trainers-package)

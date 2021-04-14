@@ -15,7 +15,7 @@ zenml.steps.inferrer package — ZenML documentation [ZenML](https://github.com/
       * [zenml.steps.inferrer.tensorflow\_inferrer\_step module](zenml.steps.inferrer.md#zenml-steps-inferrer-tensorflow-inferrer-step-module)
       * [Module contents](zenml.steps.inferrer.md#module-contents)
 * [ « zenml.steps.e...](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.steps.evaluator.html)
-* [ zenml.steps.p... »](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.preprocesser)
+* [ zenml.steps.p... »](https://github.com/maiot-io/zenml/tree/08e4bcc20d74ef2c87cb55a700f900327aeccc46/docs/book/api-reference/zenml/zenml.steps/zenml.steps.preprocesser)
 * [Source](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/_sources/zenml.steps.inferrer.rst.txt)
 
 ## zenml.steps.inferrer package[¶](zenml.steps.inferrer.md#zenml-steps-inferrer-package)
