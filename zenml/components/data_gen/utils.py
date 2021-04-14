@@ -91,6 +91,12 @@ class DtypeInferrer(beam.CombineFn, ABC):
             return DataType.UNKNOWN
         else:
             if float(value).is_integer():
+                # There is still a case that it won't be an integer, if its
+                # 0.0, 1.0, 2.0. So we try and convert explicitly here
+                try:
+                    int(value)
+                except ValueError:
+                    return DataType.FLOAT
                 return DataType.INT
             else:
                 return DataType.FLOAT

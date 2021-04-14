@@ -18,7 +18,7 @@ from typing import Text, List, Dict, Any
 
 import numpy as np
 
-from zenml.steps.split import BaseSplit
+from zenml.steps.split import BaseSplitStep
 
 
 def lint_split_map(split_map: Dict[Text, float]):
@@ -32,32 +32,7 @@ def lint_split_map(split_map: Dict[Text, float]):
                              "specifying a random split!")
 
 
-def RandomSplitPartitionFn(element: Any,
-                           num_partitions: int,
-                           split_map: Dict[Text, float]) -> int:
-    """
-    Function for a random split of the data; to be used in a beam.Partition.
-    This function implements a simple random split algorithm by drawing
-    integers from a categorical distribution defined by the values in
-    split_map.
-
-    Args:
-        element: Data point, in format tf.train.Example.
-        num_partitions: Number of splits, unused here.
-        split_map: Dict mapping {split_name: ratio of data in split}.
-
-    Returns:
-        An integer n, where 0 ≤ n ≤ num_partitions - 1.
-    """
-
-    # calculates probability mass of each split
-    probability_mass = np.cumsum(list(split_map.values()))
-    max_value = probability_mass[-1]
-
-    return bisect.bisect(probability_mass, np.random.uniform(0, max_value))
-
-
-class RandomSplit(BaseSplit):
+class RandomSplit(BaseSplitStep):
     """
     Random split. Use this to randomly split data based on a cumulative
     distribution function defined by a split_map dict.
@@ -108,10 +83,28 @@ class RandomSplit(BaseSplit):
                          schema=schema,
                          split_map=split_map)
 
-    def partition_fn(self):
-        return RandomSplitPartitionFn, {
-            'split_map': self.split_map
-        }
+    def partition_fn(self,
+                     element: Any,
+                     num_partitions: int) -> int:
+        """
+        Function for a random split of the data; to be used in a beam.Partition.
+        This function implements a simple random split algorithm by drawing
+        integers from a categorical distribution defined by the values in
+        split_map.
+
+        Args:
+            element: Data point, in format tf.train.Example.
+            num_partitions: Number of splits, unused here.
+
+        Returns:
+            An integer n, where 0 ≤ n ≤ num_partitions - 1.
+        """
+
+        # calculates probability mass of each split
+        probability_mass = np.cumsum(list(self.split_map.values()))
+        max_value = probability_mass[-1]
+
+        return bisect.bisect(probability_mass, np.random.uniform(0, max_value))
 
     def get_split_names(self) -> List[Text]:
         return list(self.split_map.keys())

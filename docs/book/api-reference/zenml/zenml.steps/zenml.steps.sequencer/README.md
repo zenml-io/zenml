@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.steps.sequencer package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/835d32fc4f6d33eb691f0e8311720240e7fa51d1/docs/sphinx_docs/_build/html/index.html)
+zenml.steps.sequencer package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/maiot-io/zenml/tree/835d32fc4f6d33eb691f0e8311720240e7fa51d1/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/maiot-io/zenml/tree/835d32fc4f6d33eb691f0e8311720240e7fa51d1/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](./)
   * * [zenml.steps.sequencer package](./)
       * [Subpackages](./#subpackages)
@@ -15,7 +15,7 @@ zenml.steps.sequencer package — ZenML documentation  [ZenML](https://github.co
       * [Module contents](./#module-contents)
 * [ « zenml.steps.p...](../zenml.steps.preprocesser/zenml.steps.preprocesser.standard_preprocesser/zenml.steps.preprocesser.standard_preprocesser.methods.md)
 * [ zenml.steps.s... »](zenml.steps.sequencer.standard_sequencer/)
-*  [Source](https://github.com/maiot-io/zenml/tree/835d32fc4f6d33eb691f0e8311720240e7fa51d1/docs/sphinx_docs/_build/html/_sources/zenml.steps.sequencer.rst.txt)
+*  [Source](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/_sources/zenml.steps.sequencer.rst.txt)
 
 ## zenml.steps.sequencer package[¶](./#zenml-steps-sequencer-package)
 

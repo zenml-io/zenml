@@ -1,8 +1,6 @@
 ## Examples
 
-This `example` folder is dedicated to provide our users with some practical examples.
-
-Here you can find a list with brief descriptions for each example:
+Here you can find a list of practical examples on how you can use ZenML with brief descriptions for each example:
 
 - **aws_orchestrated**: Runs pipeline on an EC2 instance on `Amazon Web Services` as the orchestration backend.
 - **cortex**: Tutorial on how to integrate with [Cortex](https://cortex.dev) to deploy your models.

@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.steps.split package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/835d32fc4f6d33eb691f0e8311720240e7fa51d1/docs/sphinx_docs/_build/html/index.html)
+zenml.steps.split package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/maiot-io/zenml/tree/835d32fc4f6d33eb691f0e8311720240e7fa51d1/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/maiot-io/zenml/tree/835d32fc4f6d33eb691f0e8311720240e7fa51d1/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.steps.split.md)
   * * [zenml.steps.split package](zenml.steps.split.md)
       * [Submodules](zenml.steps.split.md#submodules)
@@ -22,7 +22,7 @@ zenml.steps.split package — ZenML documentation  [ZenML](https://github.com/ma
       * [Module contents](zenml.steps.split.md#module-contents)
 * [ « zenml.steps.s...](zenml.steps.sequencer/zenml.steps.sequencer.standard_sequencer/zenml.steps.sequencer.standard_sequencer.methods.md)
 * [ zenml.steps.t... »](zenml.steps.tokenizer.md)
-*  [Source](https://github.com/maiot-io/zenml/tree/835d32fc4f6d33eb691f0e8311720240e7fa51d1/docs/sphinx_docs/_build/html/_sources/zenml.steps.split.rst.txt)
+*  [Source](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/_sources/zenml.steps.split.rst.txt)
 
 ## zenml.steps.split package[¶](zenml.steps.split.md#zenml-steps-split-package)
 

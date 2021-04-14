@@ -26,7 +26,7 @@ from zenml.backends.training import TrainingBaseBackend
 from zenml.components import DataGen, SplitGen, Tokenizer
 from zenml.pipelines import BasePipeline
 from zenml.standards import standard_keys as keys
-from zenml.steps.split import BaseSplit
+from zenml.steps.split import BaseSplitStep
 from zenml.steps.tokenizer import BaseTokenizer
 from zenml.steps.trainer import BaseTrainerStep
 from zenml import constants
@@ -178,7 +178,7 @@ class NLPPipeline(BasePipeline):
     def add_tokenizer(self, tokenizer_step: BaseTokenizer):
         self.steps_dict[keys.NLPSteps.TOKENIZER] = tokenizer_step
 
-    def add_split(self, split_step: BaseSplit):
+    def add_split(self, split_step: BaseSplitStep):
         self.steps_dict[keys.NLPSteps.SPLIT] = split_step
 
     def add_trainer(self, trainer_step: BaseTrainerStep):

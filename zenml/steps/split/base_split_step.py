@@ -23,7 +23,7 @@ from zenml.steps import BaseStep
 from zenml.enums import StepTypes
 
 
-class BaseSplit(BaseStep):
+class BaseSplitStep(BaseStep):
     """
     Base split class. Each custom data split should derive from this.
     In order to define a custom split, override the base split's partition_fn
@@ -48,27 +48,24 @@ class BaseSplit(BaseStep):
         self.schema = schema
 
     @abstractmethod
-    def partition_fn(self):
+    def partition_fn(self, element, n):
         """
-        Returns the partition function associated with the current split type,
-        along with keyword arguments used in the signature of the partition
-        function.
+        The partition function
 
-        To be eligible in use in a Split Step, the partition_fn has to adhere
+        To be eligible to use in a Split Step, the partition_fn has to adhere
         to the following design contract:
 
-        1. The signature is of the following type:
+        The signature is of the following type:
 
-            >>> def partition_fn(element, n, **kwargs) -> int,
+            >>> def partition_fn(element, n) -> int,
 
-            where n is the number of splits;
-        2. The partition_fn only returns signed integers i less than n, i.e. ::
-
-                0 ≤ i ≤ n - 1.
+            where n is the number of splits and element is a data point,
+            given as a tf.train.Example.
 
         Returns:
-            A tuple (partition_fn, kwargs) of the partition function and its
-             additional keyword arguments (see above).
+             signed integers i less than n, 0 ≤ i ≤ n - 1, indicating the
+             split
+
         """
         pass
 

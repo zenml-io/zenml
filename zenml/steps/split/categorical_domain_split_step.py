@@ -16,7 +16,7 @@
 from typing import Text, Dict, List, Any, Union
 
 from zenml.steps.split import constants
-from zenml.steps.split import BaseSplit
+from zenml.steps.split import BaseSplitStep
 from zenml.steps.split.utils import get_categorical_value
 
 CategoricalValue = Union[Text, int]
@@ -29,47 +29,7 @@ def lint_split_map(split_map: Dict[Text, List[CategoricalValue]]):
                              'split_map!')
 
 
-def CategoricalPartitionFn(element: Any,
-                           num_partitions: int,
-                           categorical_column: Text,
-                           split_map: Dict[Text, List[CategoricalValue]],
-                           unknown_category_policy: Text) -> int:
-    """
-    Function for a categorical split on data to be used in a beam.Partition.
-    Args:
-        element: Data point, given as a tf.train.Example.
-        num_partitions: Number of splits, unused here.
-        categorical_column: Name of the categorical column in the data on which
-         to perform the split.
-        split_map: Dict {split_name: [category_list]} mapping the categorical
-         values in categorical_column to their respective splits.
-        unknown_category_policy: Text, identifier on how to handle categorical
-         values not present in the split_map.
-
-    Returns:
-        An integer n, where 0 ≤ n ≤ num_partitions - 1.
-
-    """
-    category_value = get_categorical_value(element, cat_col=categorical_column)
-
-    # The following code produces a dict: { split_name: unique_integer }
-    enumerated_splits = {name: i for i, name in enumerate(split_map.keys())}
-
-    if unknown_category_policy not in enumerated_splits:
-        enumerated_splits.update({unknown_category_policy: num_partitions - 1})
-
-    for split_name, category_value_list in split_map.items():
-        # if the value is in the list, then just return
-        if category_value in category_value_list:
-            # return the index of that split
-            return enumerated_splits[split_name]
-
-    # This is the default behavior for category_values that dont belong to
-    #  any split in the split_map.
-    return enumerated_splits[unknown_category_policy]
-
-
-class CategoricalDomainSplit(BaseSplit):
+class CategoricalDomainSplit(BaseSplitStep):
     """
     Categorical domain split. Use this to split data based on values in
     a single categorical column. A categorical column is defined here as a
@@ -148,12 +108,39 @@ class CategoricalDomainSplit(BaseSplit):
                          split_map=split_map,
                          unknown_category_policy=unknown_category_policy)
 
-    def partition_fn(self):
-        return CategoricalPartitionFn, {
-            'split_map': self.split_map,
-            'categorical_column': self.categorical_column,
-            'unknown_category_policy': self.unknown_category_policy
-        }
+    def partition_fn(self,
+                     element: Any,
+                     num_partitions: int) -> int:
+
+        """
+        Function for a categorical split on data to be used in a beam.Partition.
+        Args:
+            element: Data point, given as a tf.train.Example.
+            num_partitions: Number of splits, unused here.
+
+        Returns:
+            An integer n, where 0 ≤ n ≤ num_partitions - 1.
+
+        """
+
+        category_value = get_categorical_value(element,
+                                               cat_col=self.categorical_column)
+
+        # The following code produces a dict: { split_name: unique_integer }
+        enumerated_splits = {name: i for i, name in enumerate(self.split_map.keys())}
+
+        if self.unknown_category_policy not in enumerated_splits:
+            enumerated_splits.update({self.unknown_category_policy: num_partitions - 1})
+
+        for split_name, category_value_list in self.split_map.items():
+            # if the value is in the list, then just return
+            if category_value in category_value_list:
+                # return the index of that split
+                return enumerated_splits[split_name]
+
+        # This is the default behavior for category_values that dont belong to
+        #  any split in the split_map.
+        return enumerated_splits[self.unknown_category_policy]
 
     def get_split_names(self) -> List[Text]:
         split_names = list(self.split_map.keys())

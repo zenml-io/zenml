@@ -13,112 +13,106 @@ kernelspec:
   name: python3
 ---
 
-# Writing your first training pipeline
+# Designing your first pipeline
 
-Get up and running in \(almost\) 3 steps. Let’s get you started with a simple pipeline. Please make sure to also check out the [advanced concepts.](https://github.com/maiot-io/zenml/tree/c2dd7d85740f8f992ad5ea7ac7cd89a8805c5e6a/docs/book/steps/core-concepts.md) This quickstart uses some built-ins and a very simple model.
+In **ZenML**, a **pipeline** refers to a sequence of **steps** which represent independent entities that gets a certain set of inputs and creates the corresponding outputs as **artifacts**. These output **artifacts** can potentially be fed into other **steps** as inputs, and that’s how the order of execution is decided.
 
-```text
-If you are here just to see the code, you can find it on [GitHub](https://github.com/maiot-io/zenml#quickstart).
+Each **artifact** that is produced along the way is stored in an **artifact store** and the corresponding execution is tracked by a **metadata store** associated with the **pipeline**. These artifacts can be fetched directly or via helper methods. For instance in a training pipeline,`view_statistics()` and `view_schema()` can be used as helper methods to easily view the artifacts from interim steps in a **pipeline**.
+
+Finally,  **ZenML** already natively separates configuration from code in its design. That means that every **step** in a **pipeline** has its parameters tracked and stored in the **declarative config file** in the selected **pipelines directory**. Therefore, pulling a pipeline and running it in another environment not only ensures that the code will be the same, but also the configuration.
+
+## BasePipeline
+
+All of the ideas above are brought together to construct the foundation of the `BasePipeline` in **ZenML**. As the name suggests, it is utilized as a base class to create, execute and track pipeline runs which represent a higher-order abstraction for standard ML tasks.
+
+In many cases, the standard pipeline definitions can be used directly, and only the steps need to be manipulated. In general, you would only need to create your own Pipeline classes if you require a more flexible order of execution of the steps within the pipeline. **\[WIP\]**
+
+{% hint style="info" %}
+The mechanism to create a custom **pipeline** will be published in more detail soon in this space.  However, the details of this are currently being worked out and will be made available in future releases. 
+{% endhint %}
+
+## TrainingPipeline
+
+The **`TrainingPipeline`** is a specialized pipeline built on top of the `BasePipeline` and it is used to run a training experiment and deploy the resulting model. It covers a fixed set of steps representing the processes, which can be found in most of the machine learning workflow:
+
+\[STEP VISUALIZATION\]
+
+* **Split**: responsible for splitting your dataset into smaller datasets such as train, eval, etc.
+* **Sequence \(Optional\)**: responsible for extracting sequences from time-series data
+* **Transform**: responsible for the preprocessing of your data
+* **Train**: responsible for the model creation and training process
+* **Evaluate**: responsible for the evaluation of your results
+* **Deploy**: responsible for the model deployment
+
+In code, 
+
+Additionally, there is a set of helper functions 
+
+
+
+```python
+class TrainingPipeline(BasePipeline):
+    # Step functions
+    def add_split(self, split_step: BaseSplit):
+        ...
+
+    def add_sequencer(self, sequencer_step: BaseSequencerStep):
+        ...
+
+    def add_preprocesser(self, preprocessor_step: BasePreprocesserStep):
+        ...
+
+    def add_trainer(self, trainer_step: BaseTrainerStep):
+        ...
+
+    def add_evaluator(self, evaluator_step: BaseEvaluatorStep):
+        ...
+
+    def add_deployment(self, deployment_step: BaseDeployerStep):
+        ...
+    
+    # Helper functions
+    def view_statistics(self, magic: bool = False, port: int = 0):
+        ...
+
+    def view_schema(self):
+        ...
+        
+    def evaluate(self, magic: bool = False, port: int = 0):
+        ...
+
+    def download_model(self, out_path: Text = None, overwrite: bool = False):
+        ...
+
+    def view_anomalies(self, split_name='eval'):
+        ...
 ```
 
-## **For visual learners**
+### Executing your pipeline
 
-If you don't feel like reading right now, please watch this video for a visual explanation of the quickstart:
+Now that everything is set, go ahead and run the pipeline, thus your steps.
 
-### **Step 0: Installation**
-
-ZenML is available for easy installation into your environment via PyPI:
-
-```text
-%%bash
-pip install zenml
-```
-
-Alternatively, if you’re feeling brave, feel free to install the bleeding edge: **NOTE:** Do so on your own risk, no guarantees given!
-
-```text
-%%bash
-pip install git+https://github.com/maiot-io/zenml.git@main --upgrade
-```
-
-### Step 1: Initialize a ZenML repo from within a git repo
-
-```text
-zenml init
-```
-
-### **Step 2: Assemble, run and evaluate your pipeline locally**
-
-```text
-from zenml.datasources import CSVDatasource
+```python
 from zenml.pipelines import TrainingPipeline
-from zenml.steps.evaluator import TFMAEvaluator
-from zenml.steps.split import RandomSplit
-from zenml.steps.preprocesser import StandardPreprocesser
-from zenml.steps.trainer import TFFeedForwardTrainer
 
-training_pipeline = TrainingPipeline(name='Quickstart')
+training_pipeline = TrainingPipeline(name='MyFirstPipeline')
 
-# Add a datasource. This will automatically track and version it.
-ds = CSVDatasource(name='Pima Indians Diabetes Dataset', 
-                   path='gs://zenml_quickstart/diabetes.csv')
 training_pipeline.add_datasource(ds)
 
-# Add a random 70/30 train-eval split
-training_pipeline.add_split(RandomSplit(split_map={'train': 0.7, 'eval': 0.3}))
+training_pipeline.add_split(...)
+training_pipeline.add_preprocesser(...)
+training_pipeline.add_trainer(...)
+training_pipeline.add_evaluator(...)
 
-# StandardPreprocesser() has sane defaults for normal preprocessing methods
-training_pipeline.add_preprocesser(
-    StandardPreprocesser(
-        features=['times_pregnant', 'pgc', 'dbp', 'tst', 'insulin', 'bmi',
-                  'pedigree', 'age'],
-        labels=['has_diabetes'],
-        overwrite={'has_diabetes': {
-            'transform': [{'method': 'no_transform', 'parameters': {}}]}}
-    ))
-
-# Add a trainer
-training_pipeline.add_trainer(TFFeedForwardTrainer(
-    loss='binary_crossentropy',
-    last_activation='sigmoid',
-    output_units=1,
-    metrics=['accuracy'],
-    epochs=20))
-
-
-# Add an evaluator
-training_pipeline.add_evaluator(
-    TFMAEvaluator(slices=[['has_diabetes']],
-                  metrics={'has_diabetes': ['binary_crossentropy',
-                                            'binary_accuracy']}))
-
-# Run the pipeline locally
 training_pipeline.run()
 ```
 
-### **Step 3: Leverage powerful integrations**
 
-```text
-# See schema of data
-training_pipeline.view_schema()
 
-# See statistics of train and eval
-training_pipeline.view_statistics()
+{% hint style="warning" %}
+A ZenML pipeline in the current version is a higher-level abstraction of an opinionated TFX pipeline. ZenML Steps are in turn higher-level abstractions of TFX components. To be clear, currently ZenML is an easier way of defining and running TFX pipelines. However, unlike TFX, ZenML treats pipelines as first-class citizens. We will elaborate more on the difference in this space, but for now if you are coming from writing your own TFX pipelines, our quickstart illustrates the difference well.
+{% endhint %}
 
-# Creates a notebook for evaluation
-training_pipeline.evaluate()
-```
+## What's next?
 
-Of course, each of these steps can be [extended quite easily](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/getting-started/steps/what-is-a-step.md) to accommodate more complex scenarios and use-cases. There is a steadily-growing number of integrations available, for example, [Google Dataflow for distributed preprocessing](https://github.com/maiot-io/zenml/tree/c2dd7d85740f8f992ad5ea7ac7cd89a8805c5e6a/docs/book/backends/what-is-a-backend.md) or Google Cloud AI Platform as a \[training\(../backends/training-backends.md\) backend\].
-
-## What to do next?
-
-* Read about [core concepts](https://github.com/maiot-io/zenml/tree/c2dd7d85740f8f992ad5ea7ac7cd89a8805c5e6a/docs/book/steps/core-concepts.md) of ZenML.
-* [Convert your legacy code-base](https://github.com/maiot-io/zenml/tree/c2dd7d85740f8f992ad5ea7ac7cd89a8805c5e6a/docs/book/steps/organizing-zenml.md) to ZenML pipelines.
-* Understand deeper what makes a [ZenML Repository](https://github.com/maiot-io/zenml/tree/c2dd7d85740f8f992ad5ea7ac7cd89a8805c5e6a/docs/book/repository/what-is-a-repository.md).
-* See what ZenML has to offer with standard powerful abstractions like [Pipelines](https://github.com/maiot-io/zenml/tree/c2dd7d85740f8f992ad5ea7ac7cd89a8805c5e6a/docs/book/pipelines/what-is-a-pipeline.md),
-
-  [Steps](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/getting-started/steps/what-is-a-step.md), [Datasources](https://github.com/maiot-io/zenml/tree/c2dd7d85740f8f992ad5ea7ac7cd89a8805c5e6a/docs/book/datasources/what-is-a-datasource.md) and [Backends](https://github.com/maiot-io/zenml/tree/c2dd7d85740f8f992ad5ea7ac7cd89a8805c5e6a/docs/book/backends/what-is-a-backend.md).
-
-  If the standard ones don't fit your needs, you can also [create custom logic](https://github.com/maiot-io/zenml/tree/835d32fc4f6d33eb691f0e8311720240e7fa51d1/docs/book/getting-started/creating-custom-logic.md) with ZenML.
-
+* 

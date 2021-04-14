@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.steps.inferrer package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/835d32fc4f6d33eb691f0e8311720240e7fa51d1/docs/sphinx_docs/_build/html/index.html)
+zenml.steps.inferrer package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/maiot-io/zenml/tree/835d32fc4f6d33eb691f0e8311720240e7fa51d1/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/maiot-io/zenml/tree/835d32fc4f6d33eb691f0e8311720240e7fa51d1/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.steps.inferrer.md)
   * * [zenml.steps.inferrer package](zenml.steps.inferrer.md)
       * [Submodules](zenml.steps.inferrer.md#submodules)
@@ -14,9 +14,9 @@ zenml.steps.inferrer package — ZenML documentation  [ZenML](https://github.com
       * [zenml.steps.inferrer.inference\_file\_writer\_step module](zenml.steps.inferrer.md#zenml-steps-inferrer-inference-file-writer-step-module)
       * [zenml.steps.inferrer.tensorflow\_inferrer\_step module](zenml.steps.inferrer.md#zenml-steps-inferrer-tensorflow-inferrer-step-module)
       * [Module contents](zenml.steps.inferrer.md#module-contents)
-* [ « zenml.steps.e...](https://github.com/maiot-io/zenml/tree/835d32fc4f6d33eb691f0e8311720240e7fa51d1/docs/sphinx_docs/_build/html/zenml.steps.evaluator.html)
+* [ « zenml.steps.e...](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.steps.evaluator.html)
 * [ zenml.steps.p... »](zenml.steps.preprocesser/)
-*  [Source](https://github.com/maiot-io/zenml/tree/835d32fc4f6d33eb691f0e8311720240e7fa51d1/docs/sphinx_docs/_build/html/_sources/zenml.steps.inferrer.rst.txt)
+*  [Source](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/_sources/zenml.steps.inferrer.rst.txt)
 
 ## zenml.steps.inferrer package[¶](zenml.steps.inferrer.md#zenml-steps-inferrer-package)
 
