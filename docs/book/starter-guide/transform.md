@@ -2,7 +2,7 @@
 
 ## Overview
 
-For data processing, **ZenML** usess the **`BasePreprocesserStep`** interface. Within the context of this interface, there is a single abstract method called `preprocessing_fn`. 
+For data processing, **ZenML** usess the **`BasePreprocesserStep`** interface. Within the context of this interface, there is a single abstract method called `preprocessing_fn`.
 
 ```python
 class BasePreprocesserStep(BaseStep):
@@ -12,17 +12,13 @@ class BasePreprocesserStep(BaseStep):
         ...
 ```
 
-#### preprocessing\_fn
-
-
+### preprocessing\_fn
 
 ```python
 def partition_fn(element, n) -> int:
 ```
 
 ## A quick example: the built-in `StandardPreprocesser` step
-
-
 
 {% hint style="info" %}
 The following is an overview of the complete step. You can find the full code right [here](https://github.com/maiot-io/zenml/blob/main/zenml/steps/split/base_split_step.py).
@@ -82,15 +78,13 @@ training_pipeline.add_preprocesser(
         overwrite={'has_diabetes': {'transform': [{
                         'method': 'no_transform', 
                         'parameters': {}}]}}))
-       
+
 ...
 ```
 
 {% hint style="warning" %}
 **An important note here**: As you see from the code blocks that you see above, any input given to the constructor of a step will translate into an instance variable. So, when you want to use it you can use **`self`**, as we did with **`self.features`**.
 {% endhint %}
-
-
 
 ## What's next?
 

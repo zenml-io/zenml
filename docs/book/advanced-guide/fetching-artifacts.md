@@ -1,10 +1,31 @@
-# Organizing your ZenML Repository
+---
+description: 'Structure your steps, pipelines, backends and more.'
+---
 
-### Recommended Repository Structure
+# ZenML Repository Guidelines
 
-The only requirement for the structure of any ZenML repository is that it should be a Git enabled repository. However, we recommend structuring a ZenML repo as follows. Not everything here is required, it is simply an organization that maximizes the effectiveness of ZenML.
+The only requirement for the structure of any ZenML repository is that it should be a **Git enabled repository**. ZenML works on some assumptions of the underlying git repository that it is built on top of.
 
-```text
+## Components
+
+ZenML has the following core components:
+
+* [Steps](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/getting-started/steps/what-is-a-step.md)
+* [Datasources](../datasources/what-is-a-datasource.md)
+* [Pipelines](../pipelines/what-is-a-pipeline.md)
+* [Backends](../backends/what-is-a-backend.md)
+
+Each component has its own intricacies and its own rules of precisely how to extend them. However, there are some rules that are general when writing ZenML code:
+
+* All components have `Base` classes, e.g., `BaseDatasource`, `BasePipeline`, `BaseStep` etc that need to be inherited from.
+* All custom classes must exist within its own `module` \(directory\) in a ZenML repo.
+* All components follow the same Git-pinning methodology outlined [below](fetching-artifacts.md#integration-with-git).
+
+## Recommended Repository Structure
+
+. We recommend structuring a ZenML repo as follows. Not everything here is required, it is simply an organization that maximizes the effectiveness of ZenML.
+
+```yaml
 repository
 │   requirements.txt
 │   pipeline_run_script.py
@@ -65,20 +86,14 @@ The **Dockerfile** is necessary in case [custom images](../backends/using-docker
 
 ## Integration with Git
 
-### Versioning custom code
+ZenML does not reinvent the wheel, or interfere too much with established workflows. When it comes to versioning of code, this means a solid integration into Git.
 
-We are not looking to reinvent the wheel, and we're not trying to interfere too much with established workflows. When it comes to versioning of code, that means a solid integration into Git.
+Concretely, ZenML **optionally** uses Git SHAs to resolve your version-pinned pipeline code.
 
-In short: ZenML **optionally** uses Git SHAs to resolve your version-pinned pipeline code.
+At pipeline run time, ZenML ties into your local Git history and automatically resolves the SHA into usable code. Every pipeline configuration will persist the combination of the class used, and the related SHA in the [pipeline config](https://github.com/maiot-io/zenml/blob/1b4e7d68c6d1c9c92e04d7b52ebb1cc63a20fde5/docs/book/pipelines/what-is-a-pipeline.md). The format used is: `class@git_sha`, where:
 
-When you [add custom code](https://github.com/maiot-io/zenml/blob/1b4e7d68c6d1c9c92e04d7b52ebb1cc63a20fde5/docs/book/getting-started/creating-custom-logic.md) to ZenML, you have the ability to specify a specific Git SHA for your code. ZenML ties into your local Git history and will automatically try to resolve the SHA into usable code. Every pipeline configuration will persist the combination of the class used, and the related SHA in the [pipeline config](https://github.com/maiot-io/zenml/blob/1b4e7d68c6d1c9c92e04d7b52ebb1cc63a20fde5/docs/book/pipelines/what-is-a-pipeline.md).
-
-```text
-The format used is: `class@git_sha`, where:
-
-* **class**: a fully-qualified python import path of a ZenML-compatible class, e.g. `my_module.my_class.MyClassName`
-* **git_sha** (optional): a 40-digit string representing the commit git sha at which the class exists
-```
+* **class**: a fully-qualified python import path of a ZenML-compatible class, e.g. `my_module.my_class.MyClassName`  __
+* _**git\_sha**_ **\(optional\)**: a 40-digit string representing the commit git sha at which the class exists
 
 You can, of course, run your code as-is and maintain version control via your own logic and your own automation. This is why the `git_sha` above is optional: If you run a pipeline where the `class` is not committed \(i.e. unstaged or staged but not committed\), then no `git_sha` is added to the config. In this case, each time the pipeline is run or loaded the `class` is loaded **as is** from the `class` path, directly from the working tree's current state.
 
@@ -93,7 +108,7 @@ Since ZenML comes with a lot of batteries included, and as ZenML is undergoing r
 
 Specifying the version of a built-in method will be persisted in the pipeline config as `step.path@zenml_0.1.0`. E.g. `zenml.steps.data.bq_data_step.BQDataStep@zenml_0.1.4`
 
-### Under the hood
+### What happens under-the-hood?
 
 When running a version-pinned piece of code, ZenML loads all SHA-pinned classes from your git history into memory. This is done via an - immediately reversed - in-memory checkout of the specified SHA.
 
@@ -107,9 +122,9 @@ It is important to understand that when a pipeline is run, all custom classes us
 
 We recommend that users [follow our recommendation](https://github.com/maiot-io/zenml/blob/1b4e7d68c6d1c9c92e04d7b52ebb1cc63a20fde5/docs/book/getting-started/organizing-zenml.md)to structure their ZenML repositories, to avoid any potential Git-related issues.
 
-#### A concrete example
+### Example of how ZenML + Git function together
 
-Let's say we created a custom TrainerStep like and placed it in our ZenML repository here:
+Let's say we created a TrainerStep and placed it in our ZenML repository here:
 
 ```text
 repository
@@ -162,12 +177,6 @@ Then the corresponding pipeline YAML may look like:
 ```yaml
 version: '1'
 
-datasource:
-  ...
-
-environment:
-  ...
-
 steps:
   training:
     args: {}
@@ -187,28 +196,4 @@ We change `e9448e0abbc6f03252578ca877bc80c94f137edd` to `e9448e0a` for readabili
 {% endhint %}
 
 This way, all ZenML custom classes can be used in different environments, and reproducibility is ensured.
-
-### Types of ZenML components
-
-Custom logic can be added to ZenML by extending the following standard components:
-
-* [Steps](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/getting-started/steps/what-is-a-step.md)
-* [Datasources](../datasources/what-is-a-datasource.md)
-* [Pipelines](../pipelines/what-is-a-pipeline.md)
-* [Backends](../backends/what-is-a-backend.md)
-
-Each component has its own section in the docs and its own rules of precisely how to add your own. The above links will guide you through these rules.
-
-### Guidelines
-
-While each component has its own rules, there are some rules that are general when adding your own custom logic:
-
-* All components have `Base` classes, e.g., `BaseDatasource`, `BasePipeline`, `BaseStep` etc that need to be inherited from
-
-  in order create your own custom logic.
-
-* All custom classes must exist within its own `module` \(directory\) in a ZenML repo.
-* All components follow the same Git-pinning methodology outlined [here](../repository/integration-with-git.md)
-
-
 

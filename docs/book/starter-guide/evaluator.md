@@ -2,8 +2,6 @@
 
 ## Overview
 
-
-
 ```python
 class BaseTrainerStep(BaseStep):
 
@@ -16,9 +14,7 @@ class BaseTrainerStep(BaseStep):
         ...
 ```
 
-#### input\_fn
-
-
+### input\_fn
 
 ```python
 def input_fn(self,
@@ -26,9 +22,7 @@ def input_fn(self,
              tf_transform_output: tft.TFTransformOutput):
 ```
 
-#### model\_fn
-
-
+### model\_fn
 
 ```python
 @staticmethod
@@ -36,19 +30,13 @@ def model_fn(train_dataset,
              eval_dataset)
 ```
 
-#### run\_fn
-
-
+### run\_fn
 
 ```python
   def run_fn(self)
 ```
 
-### 
-
 ## A quick example: the built-in `StandardPreprocesser` step
-
-
 
 {% hint style="info" %}
 The following is an overview of the complete step. You can find the full code right [here](https://github.com/maiot-io/zenml/blob/main/zenml/steps/split/base_split_step.py).
@@ -96,7 +84,7 @@ class TorchFeedForwardTrainer(TorchBaseTrainerStep):
 
         eval_split_patterns = [self.input_patterns[split] for split in
                                self.split_mapping[utils.EVAL_SPLITS]]
-                               
+
         eval_dataset = self.input_fn(eval_split_patterns)
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -159,15 +147,13 @@ training_pipeline.add_trainer(TorchFeedForwardTrainer(
     metrics=['accuracy'],
     epochs=100))
 
-       
+
 ...
 ```
 
 {% hint style="warning" %}
 **An important note here**: As you see from the code blocks that you see above, any input given to the constructor of a step will translate into an instance variable. So, when you want to use it you can use **`self`**, as we did with **`self.features`**.
 {% endhint %}
-
-
 
 ## What's next?
 

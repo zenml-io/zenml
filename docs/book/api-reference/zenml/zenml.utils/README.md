@@ -2,12 +2,12 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.utils package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
+zenml.utils package — ZenML documentation [ZenML](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
+* [Site](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
   * Contents:
     * [zenml](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/modules.html)
-*  [Page](./)
+* [Page](./)
   * * [zenml.utils package](./)
       * [Subpackages](./#subpackages)
       * [Submodules](./#submodules)
@@ -23,7 +23,7 @@ zenml.utils package — ZenML documentation  [ZenML](https://github.com/maiot-io
       * [Module contents](./#module-contents)
 * [ « zenml.steps.t...](../zenml.steps/zenml.steps.trainer/zenml.steps.trainer.tensorflow_trainers.md)
 * [ zenml.utils.p... »](zenml.utils.post_training.md)
-*  [Source](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/_sources/zenml.utils.rst.txt)
+* [Source](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/_sources/zenml.utils.rst.txt)
 
 ## zenml.utils package[¶](./#zenml-utils-package)
 
@@ -57,9 +57,8 @@ zenml.utils package — ZenML documentation  [ZenML](https://github.com/maiot-io
 
 ### Module contents[¶](./#module-contents)
 
- [Back to top](./)
+[Back to top](./)
 
- © Copyright 2021, maiot GmbH.  
- Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.  
-
+© Copyright 2021, maiot GmbH.  
+Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.
 

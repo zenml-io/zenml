@@ -19,7 +19,7 @@ In **ZenML**, a **pipeline** refers to a sequence of **steps** which represent i
 
 Each **artifact** that is produced along the way is stored in an **artifact store** and the corresponding execution is tracked by a **metadata store** associated with the **pipeline**. These artifacts can be fetched directly or via helper methods. For instance in a training pipeline,`view_statistics()` and `view_schema()` can be used as helper methods to easily view the artifacts from interim steps in a **pipeline**.
 
-Finally,  **ZenML** already natively separates configuration from code in its design. That means that every **step** in a **pipeline** has its parameters tracked and stored in the **declarative config file** in the selected **pipelines directory**. Therefore, pulling a pipeline and running it in another environment not only ensures that the code will be the same, but also the configuration.
+Finally, **ZenML** already natively separates configuration from code in its design. That means that every **step** in a **pipeline** has its parameters tracked and stored in the **declarative config file** in the selected **pipelines directory**. Therefore, pulling a pipeline and running it in another environment not only ensures that the code will be the same, but also the configuration.
 
 ## BasePipeline
 
@@ -28,7 +28,7 @@ All of the ideas above are brought together to construct the foundation of the `
 In many cases, the standard pipeline definitions can be used directly, and only the steps need to be manipulated. In general, you would only need to create your own Pipeline classes if you require a more flexible order of execution of the steps within the pipeline. **\[WIP\]**
 
 {% hint style="info" %}
-The mechanism to create a custom **pipeline** will be published in more detail soon in this space.  However, the details of this are currently being worked out and will be made available in future releases. 
+The mechanism to create a custom **pipeline** will be published in more detail soon in this space. However, the details of this are currently being worked out and will be made available in future releases.
 {% endhint %}
 
 ## TrainingPipeline
@@ -44,11 +44,9 @@ The **`TrainingPipeline`** is a specialized pipeline built on top of the `BasePi
 * **Evaluate**: responsible for the evaluation of your results
 * **Deploy**: responsible for the model deployment
 
-In code, 
+In code,
 
-Additionally, there is a set of helper functions 
-
-
+Additionally, there is a set of helper functions
 
 ```python
 class TrainingPipeline(BasePipeline):
@@ -70,14 +68,14 @@ class TrainingPipeline(BasePipeline):
 
     def add_deployment(self, deployment_step: BaseDeployerStep):
         ...
-    
+
     # Helper functions
     def view_statistics(self, magic: bool = False, port: int = 0):
         ...
 
     def view_schema(self):
         ...
-        
+
     def evaluate(self, magic: bool = False, port: int = 0):
         ...
 
@@ -106,8 +104,6 @@ training_pipeline.add_evaluator(...)
 
 training_pipeline.run()
 ```
-
-
 
 {% hint style="warning" %}
 A ZenML pipeline in the current version is a higher-level abstraction of an opinionated TFX pipeline. ZenML Steps are in turn higher-level abstractions of TFX components. To be clear, currently ZenML is an easier way of defining and running TFX pipelines. However, unlike TFX, ZenML treats pipelines as first-class citizens. We will elaborate more on the difference in this space, but for now if you are coming from writing your own TFX pipelines, our quickstart illustrates the difference well.

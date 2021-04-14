@@ -49,11 +49,11 @@ Again, the telemetry data is fully anonymized and just used to improve the produ
 
 ## 0.3.4
 
-This release is a big design change and refactor. It involves a significant change in the Configuration file structure, meaning this is a **breaking upgrade**. 
+This release is a big design change and refactor. It involves a significant change in the Configuration file structure, meaning this is a **breaking upgrade**.
 
 For those upgrading from an older version of ZenML, we ask to please delete their old `pipelines` dir and `.zenml` folders and start afresh with a `zenml init`.
 
-If only working locally, this is as simple as:
+If only working locally, this is as simple as:
 
 ```bash
 cd zenml_enabled_repo 
@@ -71,7 +71,10 @@ zenml init
 
 ### New Features
 
-* Introduced another higher-level pipeline: The [NLPPipeline](https://github.com/maiot-io/zenml/blob/main/zenml/pipelines/nlp_pipeline.py). This is a generic   NLP pipeline for a text-datasource based training task. A full example of how to use the NLPPipeline can be found [here](https://github.com/maiot-io/zenml/tree/main/examples/nlp).
+* Introduced another higher-level pipeline: The [NLPPipeline](https://github.com/maiot-io/zenml/blob/main/zenml/pipelines/nlp_pipeline.py). This is a generic 
+
+  NLP pipeline for a text-datasource based training task. A full example of how to use the NLPPipeline can be found [here](https://github.com/maiot-io/zenml/tree/main/examples/nlp).
+
 * Introduced a [BaseTokenizerStep](https://github.com/maiot-io/zenml/blob/main/zenml/steps/tokenizer/base_tokenizer.py) as a simple mechanism to define how to train and encode using any generic tokenizer \(again for NLP-based tasks\).
 
 ### Bug Fixes + Refactor

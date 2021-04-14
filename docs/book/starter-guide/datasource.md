@@ -2,8 +2,6 @@
 
 ## Overview: `BaseDatasource`
 
-
-
 ```python
 class BaseDatasource:
 
@@ -12,17 +10,13 @@ class BaseDatasource:
         ...
 ```
 
-#### read\_from\_source
-
-
+### read\_from\_source
 
 ```python
 def read_from_source(element, n) -> int:
 ```
 
 ## A quick example: the built-in `CSVDataSource`
-
-
 
 {% hint style="info" %}
 The following is an overview of the complete step. You can find the full code right [here](https://github.com/maiot-io/zenml/blob/main/zenml/steps/split/base_split_step.py).
@@ -91,7 +85,7 @@ training_pipeline = TrainingPipeline()
 
 ds = CSVDatasource(name='Pima Indians Diabetes',
                    path='gs://zenml_quickstart/diabetes.csv')
-                       
+
 training_pipeline.add_datasource(ds)
 
 ...

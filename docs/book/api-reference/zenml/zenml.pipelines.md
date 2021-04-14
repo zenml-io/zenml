@@ -2,12 +2,12 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.pipelines package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
+zenml.pipelines package — ZenML documentation [ZenML](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
+* [Site](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
   * Contents:
     * [zenml](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/modules.html)
-*  [Page](zenml.pipelines.md)
+* [Page](zenml.pipelines.md)
   * * [zenml.pipelines package](zenml.pipelines.md)
       * [Submodules](zenml.pipelines.md#submodules)
       * [zenml.pipelines.base\_pipeline module](zenml.pipelines.md#zenml-pipelines-base-pipeline-module)
@@ -22,7 +22,7 @@ zenml.pipelines package — ZenML documentation  [ZenML](https://github.com/maio
       * [Module contents](zenml.pipelines.md#module-contents)
 * [ « zenml.metadat...](zenml.metadata.md)
 * [ zenml.repo package »](zenml.repo.md)
-*  [Source](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/_sources/zenml.pipelines.rst.txt)
+* [Source](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/_sources/zenml.pipelines.rst.txt)
 
 ## zenml.pipelines package[¶](zenml.pipelines.md#zenml-pipelines-package)
 
@@ -48,9 +48,8 @@ zenml.pipelines package — ZenML documentation  [ZenML](https://github.com/maio
 
 ### Module contents[¶](zenml.pipelines.md#module-contents)
 
- [Back to top](zenml.pipelines.md)
+[Back to top](zenml.pipelines.md)
 
- © Copyright 2021, maiot GmbH.  
- Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.  
-
+© Copyright 2021, maiot GmbH.  
+Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.
 

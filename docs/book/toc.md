@@ -21,7 +21,7 @@
 
 * [Inspecting all pipelines in a repository](advanced-guide/inspecting-all-pipelines.md)
 * [The metadata and artifact stores](advanced-guide/querying-the-metadata-store.md)
-* [Organizing your ZenML Repository](advanced-guide/fetching-artifacts.md)
+* [ZenML Repository Guidelines](advanced-guide/fetching-artifacts.md)
 * [Team Collaboration](advanced-guide/team-collaboration.md)
 * [Backends](advanced-guide/backends.md)
 * [Environment, docker, dependencies](advanced-guide/integrations.md)

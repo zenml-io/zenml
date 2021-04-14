@@ -2,12 +2,12 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.steps package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
+zenml.steps package — ZenML documentation [ZenML](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
+* [Site](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
   * Contents:
     * [zenml](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/modules.html)
-*  [Page](./)
+* [Page](./)
   * * [zenml.steps package](./)
       * [Subpackages](./#subpackages)
       * [Submodules](./#submodules)
@@ -16,7 +16,7 @@ zenml.steps package — ZenML documentation  [ZenML](https://github.com/maiot-io
       * [Module contents](./#module-contents)
 * [ « zenml.standar...](../zenml.standards.md)
 * [ zenml.steps.d... »](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.steps.data.html)
-*  [Source](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/_sources/zenml.steps.rst.txt)
+* [Source](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/_sources/zenml.steps.rst.txt)
 
 ## zenml.steps package[¶](./#zenml-steps-package)
 
@@ -50,27 +50,27 @@ zenml.steps package — ZenML documentation  [ZenML](https://github.com/maiot-io
   * [zenml.steps.inferrer.inference\_file\_writer\_step module](zenml.steps.inferrer.md#zenml-steps-inferrer-inference-file-writer-step-module)
   * [zenml.steps.inferrer.tensorflow\_inferrer\_step module](zenml.steps.inferrer.md#zenml-steps-inferrer-tensorflow-inferrer-step-module)
   * [Module contents](zenml.steps.inferrer.md#module-contents)
-* [zenml.steps.preprocesser package](zenml.steps.preprocesser/)
-  * [Subpackages](zenml.steps.preprocesser/#subpackages)
-    * [zenml.steps.preprocesser.standard\_preprocesser package](zenml.steps.preprocesser/zenml.steps.preprocesser.standard_preprocesser/)
-      * [Subpackages](zenml.steps.preprocesser/zenml.steps.preprocesser.standard_preprocesser/#subpackages)
-      * [Submodules](zenml.steps.preprocesser/zenml.steps.preprocesser.standard_preprocesser/#submodules)
-      * [zenml.steps.preprocesser.standard\_preprocesser.standard\_preprocesser module](zenml.steps.preprocesser/zenml.steps.preprocesser.standard_preprocesser/#zenml-steps-preprocesser-standard-preprocesser-standard-preprocesser-module)
-      * [Module contents](zenml.steps.preprocesser/zenml.steps.preprocesser.standard_preprocesser/#module-contents)
-  * [Submodules](zenml.steps.preprocesser/#submodules)
-  * [zenml.steps.preprocesser.base\_preprocesser module](zenml.steps.preprocesser/#zenml-steps-preprocesser-base-preprocesser-module)
-  * [Module contents](zenml.steps.preprocesser/#module-contents)
-* [zenml.steps.sequencer package](zenml.steps.sequencer/)
-  * [Subpackages](zenml.steps.sequencer/#subpackages)
-    * [zenml.steps.sequencer.standard\_sequencer package](zenml.steps.sequencer/zenml.steps.sequencer.standard_sequencer/)
-      * [Subpackages](zenml.steps.sequencer/zenml.steps.sequencer.standard_sequencer/#subpackages)
-      * [Submodules](zenml.steps.sequencer/zenml.steps.sequencer.standard_sequencer/#submodules)
-      * [zenml.steps.sequencer.standard\_sequencer.standard\_sequencer module](zenml.steps.sequencer/zenml.steps.sequencer.standard_sequencer/#zenml-steps-sequencer-standard-sequencer-standard-sequencer-module)
-      * [zenml.steps.sequencer.standard\_sequencer.utils module](zenml.steps.sequencer/zenml.steps.sequencer.standard_sequencer/#zenml-steps-sequencer-standard-sequencer-utils-module)
-      * [Module contents](zenml.steps.sequencer/zenml.steps.sequencer.standard_sequencer/#module-contents)
-  * [Submodules](zenml.steps.sequencer/#submodules)
-  * [zenml.steps.sequencer.base\_sequencer module](zenml.steps.sequencer/#zenml-steps-sequencer-base-sequencer-module)
-  * [Module contents](zenml.steps.sequencer/#module-contents)
+* [zenml.steps.preprocesser package](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.preprocesser)
+  * [Subpackages](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.preprocesser#subpackages)
+    * [zenml.steps.preprocesser.standard\_preprocesser package](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.preprocesser/zenml.steps.preprocesser.standard_preprocesser)
+      * [Subpackages](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.preprocesser/zenml.steps.preprocesser.standard_preprocesser#subpackages)
+      * [Submodules](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.preprocesser/zenml.steps.preprocesser.standard_preprocesser#submodules)
+      * [zenml.steps.preprocesser.standard\_preprocesser.standard\_preprocesser module](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.preprocesser/zenml.steps.preprocesser.standard_preprocesser#zenml-steps-preprocesser-standard-preprocesser-standard-preprocesser-module)
+      * [Module contents](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.preprocesser/zenml.steps.preprocesser.standard_preprocesser#module-contents)
+  * [Submodules](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.preprocesser#submodules)
+  * [zenml.steps.preprocesser.base\_preprocesser module](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.preprocesser#zenml-steps-preprocesser-base-preprocesser-module)
+  * [Module contents](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.preprocesser#module-contents)
+* [zenml.steps.sequencer package](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.sequencer)
+  * [Subpackages](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.sequencer#subpackages)
+    * [zenml.steps.sequencer.standard\_sequencer package](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.sequencer/zenml.steps.sequencer.standard_sequencer)
+      * [Subpackages](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.sequencer/zenml.steps.sequencer.standard_sequencer#subpackages)
+      * [Submodules](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.sequencer/zenml.steps.sequencer.standard_sequencer#submodules)
+      * [zenml.steps.sequencer.standard\_sequencer.standard\_sequencer module](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.sequencer/zenml.steps.sequencer.standard_sequencer#zenml-steps-sequencer-standard-sequencer-standard-sequencer-module)
+      * [zenml.steps.sequencer.standard\_sequencer.utils module](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.sequencer/zenml.steps.sequencer.standard_sequencer#zenml-steps-sequencer-standard-sequencer-utils-module)
+      * [Module contents](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.sequencer/zenml.steps.sequencer.standard_sequencer#module-contents)
+  * [Submodules](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.sequencer#submodules)
+  * [zenml.steps.sequencer.base\_sequencer module](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.sequencer#zenml-steps-sequencer-base-sequencer-module)
+  * [Module contents](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.sequencer#module-contents)
 * [zenml.steps.split package](zenml.steps.split.md)
   * [Submodules](zenml.steps.split.md#submodules)
   * [zenml.steps.split.base\_split\_step module](zenml.steps.split.md#zenml-steps-split-base-split-step-module)
@@ -89,8 +89,8 @@ zenml.steps package — ZenML documentation  [ZenML](https://github.com/maiot-io
   * [zenml.steps.tokenizer.hf\_tokenizer module](zenml.steps.tokenizer.md#zenml-steps-tokenizer-hf-tokenizer-module)
   * [zenml.steps.tokenizer.utils module](zenml.steps.tokenizer.md#zenml-steps-tokenizer-utils-module)
   * [Module contents](zenml.steps.tokenizer.md#module-contents)
-* [zenml.steps.trainer package](zenml.steps.trainer/)
-  * [Subpackages](zenml.steps.trainer/#subpackages)
+* [zenml.steps.trainer package](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.trainer)
+  * [Subpackages](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.trainer#subpackages)
     * [zenml.steps.trainer.pytorch\_trainers package](zenml.steps.trainer/zenml.steps.trainer.pytorch_trainers.md)
       * [Submodules](zenml.steps.trainer/zenml.steps.trainer.pytorch_trainers.md#submodules)
       * [zenml.steps.trainer.pytorch\_trainers.torch\_base\_trainer module](zenml.steps.trainer/zenml.steps.trainer.pytorch_trainers.md#zenml-steps-trainer-pytorch-trainers-torch-base-trainer-module)
@@ -102,10 +102,10 @@ zenml.steps package — ZenML documentation  [ZenML](https://github.com/maiot-io
       * [zenml.steps.trainer.tensorflow\_trainers.tf\_base\_trainer module](zenml.steps.trainer/zenml.steps.trainer.tensorflow_trainers.md#zenml-steps-trainer-tensorflow-trainers-tf-base-trainer-module)
       * [zenml.steps.trainer.tensorflow\_trainers.tf\_ff\_trainer module](zenml.steps.trainer/zenml.steps.trainer.tensorflow_trainers.md#zenml-steps-trainer-tensorflow-trainers-tf-ff-trainer-module)
       * [Module contents](zenml.steps.trainer/zenml.steps.trainer.tensorflow_trainers.md#module-contents)
-  * [Submodules](zenml.steps.trainer/#submodules)
-  * [zenml.steps.trainer.base\_trainer module](zenml.steps.trainer/#zenml-steps-trainer-base-trainer-module)
-  * [zenml.steps.trainer.utils module](zenml.steps.trainer/#zenml-steps-trainer-utils-module)
-  * [Module contents](zenml.steps.trainer/#module-contents)
+  * [Submodules](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.trainer#submodules)
+  * [zenml.steps.trainer.base\_trainer module](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.trainer#zenml-steps-trainer-base-trainer-module)
+  * [zenml.steps.trainer.utils module](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.trainer#zenml-steps-trainer-utils-module)
+  * [Module contents](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/api-reference/zenml/zenml.steps/zenml.steps.trainer#module-contents)
 
 ### Submodules[¶](./#submodules)
 
@@ -115,9 +115,8 @@ zenml.steps package — ZenML documentation  [ZenML](https://github.com/maiot-io
 
 ### Module contents[¶](./#module-contents)
 
- [Back to top](./)
+[Back to top](./)
 
- © Copyright 2021, maiot GmbH.  
- Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.  
-
+© Copyright 2021, maiot GmbH.  
+Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.
 

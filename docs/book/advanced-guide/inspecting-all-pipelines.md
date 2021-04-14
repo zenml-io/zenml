@@ -4,7 +4,7 @@ description: Pipelines are your experiments
 
 # Inspecting all pipelines in a repository
 
-All pipelines within a ZenML repository are tracked centrally. In order to access information about your ZenML repository in code, you need to access the ZenML [Repository instance](../api-reference/zenml/zenml.repo.md#zenml-repo-package). This object is a Singleton and can be fetched any time from within your Python code simply by executing:
+All **pipelines** within a ZenML **repository** are tracked centrally. In order to access information about your ZenML repository in code, you need to access the ZenML [Repository instance](../api-reference/zenml/zenml.repo.md#zenml-repo-package). This object is a Singleton and can be fetched any time from within your Python code simply by executing:
 
 ```python
 from zenml.repo import Repository
@@ -164,17 +164,17 @@ The config above can be split into 5 distinct keys:
 
 * `version`: The version of the YAML standard to maintain backwards compatibility.
 * `artifact_store`: The path where the artifacts produced by the pipelines are stored.
-* `backend`: The orchestrator [backend](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/backends/what-is-a-backend.html) for the pipeline.
+* `backend`: The orchestrator [backend](backends.md) for the pipeline.
 * `metadata`: The metadata store config to store information of pipeline runs.
 * `pipeline`: A global key that contains information regarding the pipeline run itself:
   * `source`: Path to pipeline code source code.
   * `args`: Individual args of the pipeline like `name` etc.
-  * `datasource`: Details of the [datasource](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/datasources/what-is-a-datasource.html) used in the pipeline.
-  * `steps:`: Details of each [step](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/pipelines/steps/what-is-a-step.md) used in the pipeline.
+  * `datasource`: Details of the [datasource](../starter-guide/datasource.md) used in the pipeline.
+  * `steps:`: Details of each [step](../api-reference/zenml/zenml.steps/) used in the pipeline.
 
 ### Manipulating a pipeline after it has been run
 
-After pipelines are run, they are marked as being `immutable`. This means that the internal [Steps](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/pipelines/steps/what-is-a-step.md) of these pipelines can no longer be changed. However, a common pattern in Machine Learning is to re-use logical components across the entire lifecycle. And that is after all, the whole purpose of creating steps in the first place.
+After pipelines are run, they are marked as being `immutable`. This means that the internal [Steps](../api-reference/zenml/zenml.steps/) of these pipelines can no longer be changed. However, a common pattern in Machine Learning is to re-use logical components across the entire lifecycle. And that is after all, the whole purpose of creating steps in the first place.
 
 In order to re-use logic from another pipeline in ZenML, it is as simple as to execute:
 
