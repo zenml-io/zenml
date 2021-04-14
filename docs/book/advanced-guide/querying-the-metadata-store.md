@@ -10,6 +10,29 @@ Each **artifact** that is produced along the way is stored in an **artifact stor
 
 Finally, **ZenML** already natively separates configuration from code in its design. That means that every **step** in a **pipeline** has its parameters tracked and stored in the **declarative config file** in the selected **pipelines directory**. Therefore, pulling a pipeline and running it in another environment not only ensures that the code will be the same, but also the configuration.
 
+## Configuring default metadata and artifact stores
+
+By default, both will point to a sub folder of your local `.zenml` directory, which is created when you run `zenml init`. It’ll contain both the Metadata Store \(default: SQLite\) as well as the Artifact Store \(default: local folder in the zenml repo\).
+
+The Metadata Store can be simply configured to use any MySQL server \(=&gt;5.6\):
+
+```bash
+zenml config metadata set mysql \
+    --host="127.0.0.1" \ 
+    --port="3306" \
+    --username="USER" \
+    --password="PASSWD" \
+    --database="DATABASE"
+```
+
+The Artifact Store can be a local filesystem path or a bucket path \(current support for GCP and AWS\).
+
+```bash
+zenml config artifacts set "gs://your-bucket/sub/dir"
+```
+
+In Python, the `ArtifactStore` and `MetadataStore` classes can be used to override the default stores set above.
+
 ## How metadata is stored
 
 ZenML uses Google’s [ML Metadata](https://github.com/google/ml-metadata) under-the-hood to automatically track all metadata produced by ZenML pipelines. ML Metadata standardizes metadata tracking and makes it easy to keep track of iterative experimentation as it happens. This not only helps in post-training workflows to [compare results](../starter-guide/post-training.md) as experiments progress but also has the added advantage of leveraging **caching** of pipeline steps.
@@ -141,8 +164,6 @@ pipeline_b = pipeline_a.copy('Pipeline B')  # pipeline_a itself is immutable
 pipeline_b.add_trainer(...)  # change trainer step
 pipeline_b.run()
 ```
-
-![Copy to clipboard](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/_static/copy-button.svg)
 
 In the above example, if there is a shared Metadata and Artifact Store, all steps preceding the TrainerStep in the pipeline will be cached and re-used in Pipeline B. For large datasets, this will yield enormous benefits in terms of cost and time.
 

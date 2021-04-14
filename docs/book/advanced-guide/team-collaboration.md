@@ -8,10 +8,10 @@ ZenML's mission is centered on reproducible Machine Learning, with easy access t
 
 Collaboration with ZenML means shared access to:
 
-* [Git Repository]()
-* [Pipeline directory]()
-* [Metadata Store]()
-* [Artifact Store]()
+* Git Repository
+* Pipeline directory
+* Metadata Store
+* Artifact Store
 
 Deploying the above in a shared setting makes all experiments within a ZenML repository reproducible and discoverable. This is regardless of which team member ran the corresponding pipelines, and regardless of the environment the experiments were run in.
 
