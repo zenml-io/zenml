@@ -8,15 +8,15 @@ ZenML's mission is centered on reproducible Machine Learning, with easy access t
 
 Collaboration with ZenML means shared access to:
 
-* [Git Repository]()
-* [Pipeline directory]()
-* [Metadata Store]()
-* [Artifact Store]()
+* [Git Repository](team-collaboration.md)
+* [Pipeline directory](team-collaboration.md)
+* [Metadata Store](team-collaboration.md)
+* [Artifact Store](team-collaboration.md)
 
 Deploying the above in a shared setting makes all experiments within a ZenML repository reproducible and discoverable. This is regardless of which team member ran the corresponding pipelines, and regardless of the environment the experiments were run in.
 
 {% hint style="info" %}
-The Metadata and Artifact Stores respectively, while highly recommended, are **not necessary** to share for collaboration. You could as well share the Git Repository with a committed local pipeline directory and still collaborate using ZenML. However, losing the Artifact and Metadata Store will invalidate all [caching](../benefits/reusing-artifacts.md), and all pipelines need them to be re-run on every team members local setup. This might have uninteded consequences, so please be careful when setting this up in production.
+The Metadata and Artifact Stores respectively, while highly recommended, are **not necessary** to share for collaboration. You could as well share the Git Repository with a committed local pipeline directory and still collaborate using ZenML. However, losing the Artifact and Metadata Store will invalidate all [caching](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/benefits/reusing-artifacts.md), and all pipelines need them to be re-run on every team members local setup. This might have uninteded consequences, so please be careful when setting this up in production.
 {% endhint %}
 
 ## Example
@@ -60,7 +60,7 @@ In the above example, if there is a shared Metadata and Artifact Store, all step
 
 ## How to set it up
 
-For a concrete example on how to set up collaboration completely, check out our tutorial using [Google Cloud Platform](). Using any other cloud provider is also possible, as the only requirement is the Metadata Store and Artifact Store exist in a globally accessible place. Also, not using a cloud provider at all is also possible, but would entail losing the advantages of a shared metadata + artifact store \(see above note.\)
+For a concrete example on how to set up collaboration completely, check out our tutorial using [Google Cloud Platform](team-collaboration.md). Using any other cloud provider is also possible, as the only requirement is the Metadata Store and Artifact Store exist in a globally accessible place. Also, not using a cloud provider at all is also possible, but would entail losing the advantages of a shared metadata + artifact store \(see above note.\)
 
 ## Ensuring ML reproducibility with ZenML[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/benefits/ensuring-ml-reproducibility.html#ensuring-ml-reproducibility-with-zenml)
 
@@ -162,8 +162,6 @@ The aspects outlined above put together guarantee reproducible machine learning 
 
 In conclusion, whether you are a researcher tracking experiments, or in a production setting, ZenML makes reproducing your machine learning code much easier.
 
-
-
 ### Recommended Repository Structure[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/repository/what-is-a-repository.html?highlight=structure#recommended-repository-structure)
 
 The only requirement for the structure of any ZenML repository is that it should be a Git enabled repository. However, we recommend structuring a ZenML repo as follows. Not everything here is required, it is simply an organization that maximizes the effectiveness of ZenML.
@@ -231,6 +229,5 @@ The **notebook directory** is for pre and post pipeline run analysis, to analyze
 
 Notice that each type of **Step** has its own root folder, which contains individual modules for different implementations of it. This allows for flexible [git pinning](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/repository/integration-with-git.html) and easier development as this repository grows.
 
-Let us know your structuring via [Slack](https://github.com/maiot-io/zenml) so we can improve this recommendation!  
-
+Let us know your structuring via [Slack](https://github.com/maiot-io/zenml) so we can improve this recommendation!
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-For data processing, **ZenML** usess the **`BasePreprocesserStep`** interface. Within the context of this interface, there is a single abstract method called `preprocessing_fn`. 
+For data processing, **ZenML** uses the **`BasePreprocesserStep`** interface. Within the context of this interface, there is a single abstract method called `preprocessing_fn`.
 
 ```python
 class BasePreprocesserStep(BaseStep):
@@ -12,20 +12,20 @@ class BasePreprocesserStep(BaseStep):
         ...
 ```
 
-#### preprocessing\_fn
+### preprocessing\_fn
 
-
+The main purpose of the `preprocessing_fn` is to define a transformation function that will be applied to each datapoint. It takes a single input dictionary where the keys are the feature names and the values are the tensors and it outputs the transformed datapoint in the same format. The signature of the function is as follows:
 
 ```python
-def partition_fn(element, n) -> int:
+def preprocessing_fn(element):
 ```
 
 ## A quick example: the built-in `StandardPreprocesser` step
 
-
+We can follow up on the definition by using our built-in **`StandardProcesser`** as a practical example. This `PreprocesserStep` handles not just the feature and label selection but also a wide variety of standard feature-level preprocessing techniques from the field of Machine Learning.
 
 {% hint style="info" %}
-The following is an overview of the complete step. You can find the full code right [here](https://github.com/maiot-io/zenml/blob/main/zenml/steps/split/base_split_step.py).
+The following is an overview of the complete step. You can find the full code right [here](https://github.com/maiot-io/zenml/blob/main/zenml/steps/preprocesser/standard_preprocesser/standard_preprocesser.py).
 {% endhint %}
 
 ```python
@@ -82,15 +82,13 @@ training_pipeline.add_preprocesser(
         overwrite={'has_diabetes': {'transform': [{
                         'method': 'no_transform', 
                         'parameters': {}}]}}))
-       
+
 ...
 ```
 
 {% hint style="warning" %}
 **An important note here**: As you see from the code blocks that you see above, any input given to the constructor of a step will translate into an instance variable. So, when you want to use it you can use **`self`**, as we did with **`self.features`**.
 {% endhint %}
-
-
 
 ## What's next?
 

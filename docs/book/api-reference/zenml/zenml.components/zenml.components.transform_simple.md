@@ -2,12 +2,12 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.components.transform\_simple package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
+zenml.components.transform\_simple package — ZenML documentation [ZenML](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
+* [Site](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
   * Contents:
     * [zenml](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/modules.html)
-*  [Page](zenml.components.transform_simple.md)
+* [Page](zenml.components.transform_simple.md)
   * * [zenml.components.transform\_simple package](zenml.components.transform_simple.md)
       * [Submodules](zenml.components.transform_simple.md#submodules)
       * [zenml.components.transform\_simple.component module](zenml.components.transform_simple.md#zenml-components-transform-simple-component-module)
@@ -17,7 +17,7 @@ zenml.components.transform\_simple package — ZenML documentation  [ZenML](http
       * [Module contents](zenml.components.transform_simple.md#module-contents)
 * [ « zenml.compone...](zenml.components.transform.md)
 * [ zenml.datasou... »](../zenml.datasources.md)
-*  [Source](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/_sources/zenml.components.transform_simple.rst.txt)
+* [Source](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/_sources/zenml.components.transform_simple.rst.txt)
 
 ## zenml.components.transform\_simple package[¶](zenml.components.transform_simple.md#zenml-components-transform-simple-package)
 
@@ -33,9 +33,8 @@ zenml.components.transform\_simple package — ZenML documentation  [ZenML](http
 
 ### Module contents[¶](zenml.components.transform_simple.md#module-contents)
 
- [Back to top](zenml.components.transform_simple.md)
+[Back to top](zenml.components.transform_simple.md)
 
- © Copyright 2021, maiot GmbH.  
- Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.  
-
+© Copyright 2021, maiot GmbH.  
+Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.
 

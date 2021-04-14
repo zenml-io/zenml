@@ -2,18 +2,18 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.components package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
+zenml.components package — ZenML documentation [ZenML](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
+* [Site](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
   * Contents:
     * [zenml](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/modules.html)
-*  [Page](./)
+* [Page](./)
   * * [zenml.components package](./)
       * [Subpackages](./#subpackages)
       * [Module contents](./#module-contents)
 * [ « zenml.cli package](../zenml.cli.md)
 * [ zenml.compone... »](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.components.bulk_inferrer.html)
-*  [Source](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/_sources/zenml.components.rst.txt)
+* [Source](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/_sources/zenml.components.rst.txt)
 
 ## zenml.components package[¶](./#zenml-components-package)
 
@@ -84,9 +84,8 @@ zenml.components package — ZenML documentation  [ZenML](https://github.com/mai
 
 ### Module contents[¶](./#module-contents)
 
- [Back to top](./)
+[Back to top](./)
 
- © Copyright 2021, maiot GmbH.  
- Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.  
-
+© Copyright 2021, maiot GmbH.  
+Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.
 

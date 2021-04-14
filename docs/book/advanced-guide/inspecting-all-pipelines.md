@@ -43,7 +43,7 @@ Using these commands, one can always look back at what pipelines have been regis
 
 It is important to note that most of the methods listed above involve parsing the [config YAML files](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/pipelines/what-is-a-pipeline.html) in your [Pipelines Directory](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/repository/pipeline-directory.html). Therefore, by changing the pipelines directory or manipulating it, you may lose a lot of valuable information regarding how the repository developed over time.
 
-### Pipeline Properties
+## Pipeline Properties
 
 Each pipeline has an associated [metadata store](../core-concepts.md#metadata-store), [artifact store](../core-concepts.md#artifact-store) and `step_config`. The `step_config` is a dict that defines which [steps](../core-concepts.md#steps) are running in the pipeline.
 
@@ -172,7 +172,7 @@ The config above can be split into 5 distinct keys:
   * `datasource`: Details of the [datasource](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/datasources/what-is-a-datasource.html) used in the pipeline.
   * `steps:`: Details of each [step](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/pipelines/steps/what-is-a-step.md) used in the pipeline.
 
-### Manipulating a pipeline after it has been run
+## Manipulating a pipeline after it has been run
 
 After pipelines are run, they are marked as being `immutable`. This means that the internal [Steps](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/pipelines/steps/what-is-a-step.md) of these pipelines can no longer be changed. However, a common pattern in Machine Learning is to re-use logical components across the entire lifecycle. And that is after all, the whole purpose of creating steps in the first place.
 
@@ -193,7 +193,7 @@ pipeline_b = pipeline_a.copy(new_name='Pipeline B')
 
 Ensuring that run pipelines are immutable is crucial to maintain reproducibility in the ZenML design. Using the `copy()` paradigm allows the freedom of re-using steps with ease, and keeps reproducibility intact.
 
-### Caching
+## Caching
 
 The `copy()` paradigm also helps in _re-usability_ of code across pipelines. E.g. If now only the TrainerStep is changed in `pipeline_b` above, then the corresponding `pipeline_b` pipeline run will skip splitting, preprocessing and re-use all the artifacts already produced by `pipeline_a`. Read more about [caching here](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/pipelines/benefits/reusing-artifacts.md).
 

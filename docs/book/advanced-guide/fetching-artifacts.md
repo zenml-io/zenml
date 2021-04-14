@@ -55,13 +55,13 @@ repository
         |   __init__.py
 ```
 
-Some things to note: There can be many scripts of the type **pipeline\_run\_script.py**, and can potentially be placed in their own directory. These sorts of files are where the actual ZenML pipeline is constructed. When using ZenML in a CI/CD setting with automated runs, these files can be checked into source control as well.  
+Some things to note: There can be many scripts of the type **pipeline\_run\_script.py**, and can potentially be placed in their own directory. These sorts of files are where the actual ZenML pipeline is constructed. When using ZenML in a CI/CD setting with automated runs, these files can be checked into source control as well.
 
 {% hint style="info" %}
 You can put pipeline construction files anywhere within a ZenML repo, and not just the root. ZenML figures out automatically from which context you are executing and always finds a reference to the root of the repository!
 {% endhint %}
 
-The **Dockerfile** is necessary in case [custom images](../backends/using-docker.md) are required for non-local pipeline runs. This too can be automated via a simple CI/CD scheme. The **notebook directory** is for pre and post pipeline run analysis, to analyze what went right \(or wrong\) as the experiments develop. Whenever decisions are made and realized, the code developed here should be refactored into appropriate Step directories to be persisted and tracked by ZenML. Notice that each type of **Step** has its own root folder, which contains individual modules for different implementations of it. This allows for flexible [git pinning](integration-with-git.md) and easier development as this repository grows. Let us know your structuring via [Slack](https://github.com/maiot-io/zenml) so we can improve this recommendation!
+The **Dockerfile** is necessary in case [custom images](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/backends/using-docker.md) are required for non-local pipeline runs. This too can be automated via a simple CI/CD scheme. The **notebook directory** is for pre and post pipeline run analysis, to analyze what went right \(or wrong\) as the experiments develop. Whenever decisions are made and realized, the code developed here should be refactored into appropriate Step directories to be persisted and tracked by ZenML. Notice that each type of **Step** has its own root folder, which contains individual modules for different implementations of it. This allows for flexible [git pinning](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/advanced-guide/integration-with-git.md) and easier development as this repository grows. Let us know your structuring via [Slack](https://github.com/maiot-io/zenml) so we can improve this recommendation!
 
 ## Integration with Git
 
@@ -193,9 +193,9 @@ This way, all ZenML custom classes can be used in different environments, and re
 Custom logic can be added to ZenML by extending the following standard components:
 
 * [Steps](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/getting-started/steps/what-is-a-step.md)
-* [Datasources](../datasources/what-is-a-datasource.md)
-* [Pipelines](../pipelines/what-is-a-pipeline.md)
-* [Backends](../backends/what-is-a-backend.md)
+* [Datasources](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/datasources/what-is-a-datasource.md)
+* [Pipelines](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/pipelines/what-is-a-pipeline.md)
+* [Backends](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/backends/what-is-a-backend.md)
 
 Each component has its own section in the docs and its own rules of precisely how to add your own. The above links will guide you through these rules.
 
@@ -208,7 +208,5 @@ While each component has its own rules, there are some rules that are general wh
   in order create your own custom logic.
 
 * All custom classes must exist within its own `module` \(directory\) in a ZenML repo.
-* All components follow the same Git-pinning methodology outlined [here](../repository/integration-with-git.md)
-
-
+* All components follow the same Git-pinning methodology outlined [here](https://github.com/maiot-io/zenml/tree/9364033c28407daa92b5af7bd7a9d27cf3255a5a/docs/book/repository/integration-with-git.md)
 

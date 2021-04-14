@@ -2,12 +2,12 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.steps.preprocesser.standard\_preprocesser.methods package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
+zenml.steps.preprocesser.standard\_preprocesser.methods package — ZenML documentation [ZenML](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
+* [Site](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
   * Contents:
     * [zenml](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/modules.html)
-*  [Page](zenml.steps.preprocesser.standard_preprocesser.methods.md)
+* [Page](zenml.steps.preprocesser.standard_preprocesser.methods.md)
   * * [zenml.steps.preprocesser.standard\_preprocesser.methods package](zenml.steps.preprocesser.standard_preprocesser.methods.md)
       * [Submodules](zenml.steps.preprocesser.standard_preprocesser.methods.md#submodules)
       * [zenml.steps.preprocesser.standard\_preprocesser.methods.methods\_nonseq\_filling module](zenml.steps.preprocesser.standard_preprocesser.methods.md#zenml-steps-preprocesser-standard-preprocesser-methods-methods-nonseq-filling-module)
@@ -15,8 +15,8 @@ zenml.steps.preprocesser.standard\_preprocesser.methods package — ZenML docume
       * [zenml.steps.preprocesser.standard\_preprocesser.methods.standard\_methods module](zenml.steps.preprocesser.standard_preprocesser.methods.md#zenml-steps-preprocesser-standard-preprocesser-methods-standard-methods-module)
       * [Module contents](zenml.steps.preprocesser.standard_preprocesser.methods.md#module-contents)
 * [ « zenml.steps.p...](./)
-* [ zenml.steps.s... »](../../zenml.steps.sequencer/)
-*  [Source](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/_sources/zenml.steps.preprocesser.standard_preprocesser.methods.rst.txt)
+* [ zenml.steps.s... »](https://github.com/maiot-io/zenml/tree/08e4bcc20d74ef2c87cb55a700f900327aeccc46/docs/book/api-reference/zenml/zenml.steps/zenml.steps.sequencer)
+* [Source](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/_sources/zenml.steps.preprocesser.standard_preprocesser.methods.rst.txt)
 
 ## zenml.steps.preprocesser.standard\_preprocesser.methods package[¶](zenml.steps.preprocesser.standard_preprocesser.methods.md#zenml-steps-preprocesser-standard-preprocesser-methods-package)
 
@@ -30,9 +30,8 @@ zenml.steps.preprocesser.standard\_preprocesser.methods package — ZenML docume
 
 ### Module contents[¶](zenml.steps.preprocesser.standard_preprocesser.methods.md#module-contents)
 
- [Back to top](zenml.steps.preprocesser.standard_preprocesser.methods.md)
+[Back to top](zenml.steps.preprocesser.standard_preprocesser.methods.md)
 
- © Copyright 2021, maiot GmbH.  
- Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.  
-
+© Copyright 2021, maiot GmbH.  
+Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.
 
