@@ -44,6 +44,7 @@ The `run.py` script utilizes certain environment variables for configuration.
 Here is an easy way to set it up:
 
 ```bash
+export GCP_BUCKET="gs://mybucketname"
 export GCP_PROJECT='project_id'
 export MODEL_NAME='model_name'
 export GOOGLE_APPLICATION_CREDENTIALS=/path/to/credentials.json  # optional for permissions to launch dataflow jobs

@@ -3,7 +3,7 @@ import os
 from zenml.datasources import CSVDatasource
 from zenml.exceptions import AlreadyExistsException
 from zenml.pipelines import TrainingPipeline
-from zenml.repo import Repository
+from zenml.repo import Repository, ArtifactStore
 from zenml.steps.deployer import GCAIPDeployer
 from zenml.steps.evaluator import TFMAEvaluator
 from zenml.steps.preprocesser import StandardPreprocesser
@@ -12,9 +12,11 @@ from zenml.steps.trainer import TFFeedForwardTrainer
 from zenml.utils.naming_utils import transformed_label_name
 
 GCP_PROJECT = os.getenv('GCP_PROJECT')
+GCP_BUCKET = os.getenv('GCP_BUCKET')
 MODEL_NAME = os.getenv('MODEL_NAME')
 
 assert GCP_PROJECT
+assert GCP_BUCKET
 assert MODEL_NAME
 
 # Deploy a tensorflow model on GCAIP. Note that no other trainer type
@@ -67,8 +69,12 @@ training_pipeline.add_deployment(
     )
 )
 
+# Define the artifact store
+artifact_store = ArtifactStore(
+    os.path.join(GCP_BUCKET, 'gcp_gcaip_deployment/artifact_store'))
+
 # Run the pipeline
-training_pipeline.run()
+training_pipeline.run(artifact_store=artifact_store)
 
 # Another way to do is is to create a DeploymentPipeline.
 # Uncomment to create the model via this pipeline
@@ -81,4 +87,4 @@ training_pipeline.run()
 #         project_id=GCP_PROJECT
 #     )
 # )
-# deploy_pipeline.run()
+# deploy_pipeline.run(artifact_store=artifact_store)

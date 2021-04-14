@@ -149,3 +149,6 @@ docs/book/_build/
 
 # all rst's
 *.rst
+
+# regression data
+!examples/regression/data/boston_data.csv
