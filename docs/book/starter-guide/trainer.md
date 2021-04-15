@@ -53,10 +53,11 @@ Storing the test results within the context of a TrainerStep will be especially 
 
 ### run\_fn
 
-**\[TODO\]**
+The run\_fn is the only abstract method and it is where everything related to the training comes together. Within the context of this method,
 
 ```python
-  def run_fn(self)
+@abstractmethod 
+def run_fn(self)
 ```
 
 {% hint style="info" %}
@@ -84,7 +85,7 @@ class TorchFeedForwardTrainer(BaseTrainerStep):
     def input_fn(self,
                  file_patterns: List[Text]):
         """
-        Function which creates the datasets for model training
+        Method which creates the datasets for model training
         """
         dataset = torch_utils.TFRecordTorchDataset(file_patterns,
                                                    self.schema)
@@ -95,9 +96,45 @@ class TorchFeedForwardTrainer(BaseTrainerStep):
 
     def model_fn(self, train_dataset, eval_dataset):
         """
-        Function which prepares the model instance
+        Method which prepares the model instance
         """
         return BinaryClassifier()
+        
+    def test_fn(self, model, dataset):
+        """
+        Method which computes and stores the test results
+        """
+        model.eval()
+
+        batch_list = []
+        for x, y, raw in dataset:
+            # start with an empty batch
+            batch = {}
+
+            # add the raw features with the transformed features and labels
+            batch.update(x)
+            batch.update(y)
+            batch.update(raw)
+
+            # finally, add the output of the model
+            x_batch = torch.cat([v for v in x.values()], dim=-1)
+            p = model(x_batch)
+
+            if isinstance(p, torch.Tensor):
+                batch.update({'output': p})
+            elif isinstance(p, dict):
+                batch.update(p)
+            elif isinstance(p, list):
+                batch.update(
+                    {'output_{}'.format(i): v for i, v in enumerate(p)})
+            else:
+                raise TypeError('Unknown output format!')
+
+            batch_list.append(batch)
+
+        combined_batch = utils.combine_batch_results(batch_list)
+
+        return combined_batch
 
     def run_fn(self):
         """

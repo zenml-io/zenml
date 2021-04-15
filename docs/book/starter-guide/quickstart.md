@@ -42,9 +42,7 @@ The **`TrainingPipeline`** is a specialized pipeline built on top of the **`Base
 * **Evaluate**: responsible for the evaluation of your results
 * **Deploy**: responsible for the model deployment
 
-**\[TODO: IMPLEMENTATION ASPECTS\]**
-
-Additionally, it also features a set of helper functions, which makes it easier to interact with the output artifacts once the execution of the instance is completed. For instance, after the pipeline is executed, you can use `view_statistics` to take a deeper look into the statistics of your dataset/splits or you can use `download_model` to retrieve the trained model to a specified location.
+Implementation-wise, it covers the required methods to add the aforementioned **steps** to the **pipeline**. Additionally, it also features a set of helper functions, which makes it easier to interact with the output artifacts once the execution of the instance is completed. For instance, after the **pipeline** is executed, you can use `view_statistics` to take a deeper look into the statistics of your dataset/splits or you can use `download_model` to retrieve the trained model to a specified location.
 
 {% hint style="info" %}
 The following is an overview of the complete implementation. You can find the full code right [here](https://github.com/maiot-io/zenml/blob/main/zenml/pipelines/base_pipeline.py).
