@@ -2,7 +2,7 @@
 
 ## Overview
 
-For data processing, **ZenML** uses the **`BasePreprocesserStep`** interface. Within the context of this interface, there is a single abstract method called `preprocessing_fn`.
+For data processing, **ZenML** uses the **`BasePreprocesserStep`** interface. Within the context of this interface, there is a **single abstract method** called `preprocessing_fn`.
 
 ```python
 class BasePreprocesserStep(BaseStep):

@@ -73,7 +73,7 @@ class CSVDataStep(BaseDataStep):
         return read_files_from_disk(self.path)
 ```
 
-We can now go ahead and use this step in our pipeline:
+
 
 ```python
 from zenml.pipelines import TrainingPipeline

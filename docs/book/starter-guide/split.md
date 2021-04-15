@@ -2,7 +2,7 @@
 
 ## Overview
 
-In order to control the process of splitting a dataset, **ZenML** utilizes the so-called **`BaseSplit`** interface. In the definition of this interface, there are two main abstract methods called `partition_fn` and `get_split_names`.
+In order to control the process of splitting a dataset, **ZenML** utilizes the so-called **`BaseSplit`** interface. In the definition of this interface, there are **two main abstract methods** called `partition_fn` and `get_split_names`.
 
 ```python
 class BaseSplit(BaseStep):
