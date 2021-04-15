@@ -2,6 +2,8 @@
 
 ## Overview
 
+**\[TODO\]**
+
 ```python
 class BaseTrainerStep(BaseStep):
 
@@ -16,6 +18,8 @@ class BaseTrainerStep(BaseStep):
 
 ### input\_fn
 
+**\[TODO\]**
+
 ```python
 def input_fn(self,
              file_pattern: List[Text],
@@ -23,6 +27,8 @@ def input_fn(self,
 ```
 
 ### model\_fn
+
+**\[TODO\]**
 
 ```python
 @staticmethod
@@ -32,11 +38,15 @@ def model_fn(train_dataset,
 
 ### run\_fn
 
+**\[TODO\]**
+
 ```python
   def run_fn(self)
 ```
 
 ## A quick example: the built-in `StandardPreprocesser` step
+
+**\[TODO\]**
 
 {% hint style="info" %}
 The following is an overview of the complete step. You can find the full code right [here](https://github.com/maiot-io/zenml/blob/main/zenml/steps/split/base_split_step.py).
@@ -44,18 +54,14 @@ The following is an overview of the complete step. You can find the full code ri
 
 ```python
 class BinaryClassifier(nn.Module):
-    def __init__(self):
-        ...
-
-    def forward(self, inputs):
-        ...
+    ...
 
 
 def binary_acc(y_pred, y_test):
     ...
 
 
-class TorchFeedForwardTrainer(TorchBaseTrainerStep):
+class TorchFeedForwardTrainer(BaseTrainerStep):
     def input_fn(self,
                  file_patterns: List[Text]):
         """
@@ -78,56 +84,36 @@ class TorchFeedForwardTrainer(TorchBaseTrainerStep):
         """
         Function which handles the model training
         """
-        train_split_patterns = [self.input_patterns[split] for split in
-                                self.split_mapping[utils.TRAIN_SPLITS]]
+        ....
+        # Prepare the datasets
         train_dataset = self.input_fn(train_split_patterns)
-
-        eval_split_patterns = [self.input_patterns[split] for split in
-                               self.split_mapping[utils.EVAL_SPLITS]]
-
         eval_dataset = self.input_fn(eval_split_patterns)
 
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        # Prepare the model
         model = self.model_fn(train_dataset, eval_dataset)
-
-        model.to(device)
+        
+        # Execute the training
         criterion = nn.BCEWithLogitsLoss()
-        optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-        writer = SummaryWriter(self.log_dir)
-
+        optimizer = optim.Adam(model.parameters(), lr=self.lr)
+        
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        model.to(device)
         model.train()
 
-        total_count = 0
-
         for e in range(1, self.epochs + 1):
-            epoch_loss = 0
-            epoch_acc = 0
-            step_count = 0
             for x, y, _ in train_dataset:
-                step_count += 1
-                total_count += 1
-
                 x_batch = torch.cat([v.to(device) for v in x.values()], dim=-1)
                 y_batch = torch.cat([v.to(device) for v in y.values()], dim=-1)
+                
                 optimizer.zero_grad()
 
                 y_pred = model(x_batch)
-
                 loss = criterion(y_pred, y_batch)
                 acc = binary_acc(y_pred, y_batch)
 
                 loss.backward()
-                optimizer.step()
-
-                epoch_loss += loss.item()
-                epoch_acc += acc.item()
-
-                if e == 1 and step_count == 1:
-                    writer.add_graph(model, x_batch)
-
-                writer.add_scalar('training_loss', loss, total_count)
-                writer.add_scalar('training_accuracy', acc, total_count)
+                optimizer.step()                
+                ...
 ```
 
 We can now go ahead and use this step in our pipeline:
@@ -146,7 +132,6 @@ training_pipeline.add_trainer(TorchFeedForwardTrainer(
     output_units=1,
     metrics=['accuracy'],
     epochs=100))
-
 
 ...
 ```
