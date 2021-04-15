@@ -170,11 +170,11 @@ The config above can be split into 5 distinct keys:
   * `source`: Path to pipeline code source code.
   * `args`: Individual args of the pipeline like `name` etc.
   * `datasource`: Details of the [datasource](../starter-guide/datasource.md) used in the pipeline.
-  * `steps:`: Details of each [step](../api-reference/zenml/zenml.steps/) used in the pipeline.
+  * `steps:`: Details of each [step](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/api-reference/zenml/zenml.steps) used in the pipeline.
 
 ## Manipulating a pipeline after it has been run
 
-After pipelines are run, they are marked as being `immutable`. This means that the internal [Steps](../api-reference/zenml/zenml.steps/) of these pipelines can no longer be changed. However, a common pattern in Machine Learning is to re-use logical components across the entire lifecycle. And that is after all, the whole purpose of creating steps in the first place.
+After pipelines are run, they are marked as being `immutable`. This means that the internal [Steps](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/api-reference/zenml/zenml.steps) of these pipelines can no longer be changed. However, a common pattern in Machine Learning is to re-use logical components across the entire lifecycle. And that is after all, the whole purpose of creating steps in the first place.
 
 In order to re-use logic from another pipeline in ZenML, it is as simple as to execute:
 

@@ -25,17 +25,15 @@ Finally, **ZenML** already natively separates configuration from code in its des
 
 All of the ideas above are brought together to construct the foundation of the `BasePipeline` in **ZenML**. As the name suggests, it is utilized as a base class to create, execute and track pipeline runs which represent a higher-order abstraction for standard ML tasks.
 
-In many cases, the standard pipeline definitions can be used directly, and only the steps need to be manipulated. In general, you would only need to create your own Pipeline classes if you require a more flexible order of execution of the steps within the pipeline. **\[WIP\]**
-
-{% hint style="info" %}
-The mechanism to create a custom **pipeline** will be published in more detail soon in this space. However, the details of this are currently being worked out and will be made available in future releases.
+{% hint style="warning" %}
+As of **0.3.6**, for end-to-end ML workflows, we are using the **`TrainingPipeline`** which is a specialized version of the **`BasePipeline`** with a **fixed set of configurable steps**. The mechanism to create a completely customized **pipeline** with a user-defined set of configurable steps will be published in more detail soon in this space. The details of this are currently being worked out and will be made available in future releases.
 {% endhint %}
 
 ## TrainingPipeline
 
-The **`TrainingPipeline`** is a specialized pipeline built on top of the `BasePipeline` and it is used to run a training experiment and deploy the resulting model. It covers a fixed set of steps representing the processes, which can be found in most of the machine learning workflow:
+The **`TrainingPipeline`** is a specialized pipeline built on top of the **`BasePipeline`** and it is used to run a training experiment and deploy the resulting model. It covers a fixed set of steps representing the processes, which can be found in most of the machine learning workflows:
 
-\[STEP VISUALIZATION\]
+**\[TODO: STEP VISUALIZATION\]**
 
 * **Split**: responsible for splitting your dataset into smaller datasets such as train, eval, etc.
 * **Sequence \(Optional\)**: responsible for extracting sequences from time-series data
@@ -44,9 +42,13 @@ The **`TrainingPipeline`** is a specialized pipeline built on top of the `BasePi
 * **Evaluate**: responsible for the evaluation of your results
 * **Deploy**: responsible for the model deployment
 
-In code,
+**\[TODO: IMPLEMENTATION ASPECTS\]**
 
-Additionally, there is a set of helper functions
+Additionally, it also features a set of helper functions, which makes it easier to interact with the output artifacts once the execution of the instance is completed. For instance, after the pipeline is executed, you can use `view_statistics` to take a deeper look into the statistics of your dataset/splits or you can use `download_model` to retrieve the trained model to a specified location.
+
+{% hint style="info" %}
+The following is an overview of the complete implementation. You can find the full code right [here](https://github.com/maiot-io/zenml/blob/main/zenml/pipelines/base_pipeline.py).
+{% endhint %}
 
 ```python
 class TrainingPipeline(BasePipeline):
@@ -86,9 +88,16 @@ class TrainingPipeline(BasePipeline):
         ...
 ```
 
-### Executing your pipeline
+### Building and executing your pipeline
 
-Now that everything is set, go ahead and run the pipeline, thus your steps.
+The code snippet below shows how quickly you can wrap up a `TrainingPipeline` and get it up and running. All you have to do is: 
+
+1. Create an instance of a `TrainingPipeline`
+2. Add a datasource to your instance
+3. Add the desired steps along with their configuration
+4. Simply run it
+
+Most importantly, even when executing a simple example such as this, you maintain all the advantages that **ZenML** brings to the table such as reproducibility, scalability and collaboration to their full extent.  
 
 ```python
 from zenml.pipelines import TrainingPipeline
@@ -105,10 +114,12 @@ training_pipeline.add_evaluator(...)
 training_pipeline.run()
 ```
 
-{% hint style="warning" %}
-A ZenML pipeline in the current version is a higher-level abstraction of an opinionated TFX pipeline. ZenML Steps are in turn higher-level abstractions of TFX components. To be clear, currently ZenML is an easier way of defining and running TFX pipelines. However, unlike TFX, ZenML treats pipelines as first-class citizens. We will elaborate more on the difference in this space, but for now if you are coming from writing your own TFX pipelines, our quickstart illustrates the difference well.
+{% hint style="info" %}
+A **ZenML pipeline** in the current version is a higher-level abstraction of an opinionated TFX pipeline. **ZenML steps** are in turn higher-level abstractions of TFX components. Our goal is to make it easier for the users of **ZenML** to define and run TFX pipelines. Moreover, ZenML treats pipelines as first-class citizens. We will elaborate more on the difference in this space, but for now, if you are coming from writing your own TFX pipelines, our [quickstart example](https://github.com/maiot-io/zenml/tree/main/examples/quickstart) illustrates the difference well.
 {% endhint %}
 
 ## What's next?
 
-* 
+* If you would like to learn more about how to interact with pipelines in a ZenML repository, you can go [here](../advanced-guide/inspecting-all-pipelines.md).
+* If you want to learn more about how to create the aforementioned datasource and steps, you can follow up on the documentation right [here](datasource.md).
+

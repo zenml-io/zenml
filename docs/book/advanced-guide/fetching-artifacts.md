@@ -11,9 +11,9 @@ The only requirement for the structure of any ZenML repository is that it should
 ZenML has the following core components:
 
 * [Steps](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/getting-started/steps/what-is-a-step.md)
-* [Datasources](../datasources/what-is-a-datasource.md)
-* [Pipelines](../pipelines/what-is-a-pipeline.md)
-* [Backends](../backends/what-is-a-backend.md)
+* [Datasources](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/datasources/what-is-a-datasource.md)
+* [Pipelines](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/pipelines/what-is-a-pipeline.md)
+* [Backends](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/backends/what-is-a-backend.md)
 
 Each component has its own intricacies and its own rules of precisely how to extend them. However, there are some rules that are general when writing ZenML code:
 
@@ -76,13 +76,13 @@ repository
         |   __init__.py
 ```
 
-Some things to note: There can be many scripts of the type **pipeline\_run\_script.py**, and can potentially be placed in their own directory. These sorts of files are where the actual ZenML pipeline is constructed. When using ZenML in a CI/CD setting with automated runs, these files can be checked into source control as well.  
+Some things to note: There can be many scripts of the type **pipeline\_run\_script.py**, and can potentially be placed in their own directory. These sorts of files are where the actual ZenML pipeline is constructed. When using ZenML in a CI/CD setting with automated runs, these files can be checked into source control as well.
 
 {% hint style="info" %}
 You can put pipeline construction files anywhere within a ZenML repo, and not just the root. ZenML figures out automatically from which context you are executing and always finds a reference to the root of the repository!
 {% endhint %}
 
-The **Dockerfile** is necessary in case [custom images](../backends/using-docker.md) are required for non-local pipeline runs. This too can be automated via a simple CI/CD scheme. The **notebook directory** is for pre and post pipeline run analysis, to analyze what went right \(or wrong\) as the experiments develop. Whenever decisions are made and realized, the code developed here should be refactored into appropriate Step directories to be persisted and tracked by ZenML. Notice that each type of **Step** has its own root folder, which contains individual modules for different implementations of it. This allows for flexible [git pinning](integration-with-git.md) and easier development as this repository grows. Let us know your structuring via [Slack](https://github.com/maiot-io/zenml) so we can improve this recommendation!
+The **Dockerfile** is necessary in case [custom images](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/backends/using-docker.md) are required for non-local pipeline runs. This too can be automated via a simple CI/CD scheme. The **notebook directory** is for pre and post pipeline run analysis, to analyze what went right \(or wrong\) as the experiments develop. Whenever decisions are made and realized, the code developed here should be refactored into appropriate Step directories to be persisted and tracked by ZenML. Notice that each type of **Step** has its own root folder, which contains individual modules for different implementations of it. This allows for flexible [git pinning](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/advanced-guide/integration-with-git.md) and easier development as this repository grows. Let us know your structuring via [Slack](https://github.com/maiot-io/zenml) so we can improve this recommendation!
 
 ## Integration with Git
 
@@ -92,7 +92,7 @@ Concretely, ZenML **optionally** uses Git SHAs to resolve your version-pinned pi
 
 At pipeline run time, ZenML ties into your local Git history and automatically resolves the SHA into usable code. Every pipeline configuration will persist the combination of the class used, and the related SHA in the [pipeline config](https://github.com/maiot-io/zenml/blob/1b4e7d68c6d1c9c92e04d7b52ebb1cc63a20fde5/docs/book/pipelines/what-is-a-pipeline.md). The format used is: `class@git_sha`, where:
 
-* **class**: a fully-qualified python import path of a ZenML-compatible class, e.g. `my_module.my_class.MyClassName`  __
+* **class**: a fully-qualified python import path of a ZenML-compatible class, e.g. `my_module.my_class.MyClassName`  \_\_
 * _**git\_sha**_ **\(optional\)**: a 40-digit string representing the commit git sha at which the class exists
 
 You can, of course, run your code as-is and maintain version control via your own logic and your own automation. This is why the `git_sha` above is optional: If you run a pipeline where the `class` is not committed \(i.e. unstaged or staged but not committed\), then no `git_sha` is added to the config. In this case, each time the pipeline is run or loaded the `class` is loaded **as is** from the `class` path, directly from the working tree's current state.

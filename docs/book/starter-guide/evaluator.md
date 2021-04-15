@@ -2,39 +2,11 @@
 
 ## Overview
 
-```python
-class BaseTrainerStep(BaseStep):
 
-    @staticmethod
-    def model_fn(train_dataset, 
-                 eval_dataset):
-        ...
 
-    def run_fn(self):
-        ...
-```
+{% hint style="danger" %}
 
-### input\_fn
-
-```python
-def input_fn(self,
-             file_pattern: List[Text],
-             tf_transform_output: tft.TFTransformOutput):
-```
-
-### model\_fn
-
-```python
-@staticmethod
-def model_fn(train_dataset, 
-             eval_dataset)
-```
-
-### run\_fn
-
-```python
-  def run_fn(self)
-```
+{% endhint %}
 
 ## A quick example: the built-in `StandardPreprocesser` step
 

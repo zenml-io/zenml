@@ -20,7 +20,7 @@ You can install any other dependencies alongisde of ZenML and use them in your c
 
 ### Extensibility with integrations
 
-The Machine Learning landscape is evolving at a rapid pace. ZenML decouples the experiment workflow from the tooling by providing integrations to solutions for specific aspects of your ML pipelines. It is designed with extensibility in mind. This means that the goal of ZenML is to be able to work with any ML tool in the eco-system seamlessly. 
+The Machine Learning landscape is evolving at a rapid pace. ZenML decouples the experiment workflow from the tooling by providing integrations to solutions for specific aspects of your ML pipelines. It is designed with extensibility in mind. This means that the goal of ZenML is to be able to work with any ML tool in the eco-system seamlessly.
 
 ZenML uses the `extra_requires` field provided in Python [setuptools](https://setuptools.readthedocs.io/en/latest/setuptools.html) which allows for defining plugin-like dependencies for integrations. These integrations can then accessed via pip at installation time with the `[]` operators. E.g.
 
@@ -108,7 +108,7 @@ Every ZenML pipeline yields a servable model, ready to be used in your existing 
 
 ### Other libraries
 
-If the integrations above do not fulfill your requirements and more dependencies are required, then there is always the option to simply install the dependencies alongside ZenML in your repository. If going down this route, one must ensure that the added dependencies do not clash with any [dependency bundled with ZenML](https://github.com/maiot-io/zenml/blob/main/setup.py). 
+If the integrations above do not fulfill your requirements and more dependencies are required, then there is always the option to simply install the dependencies alongside ZenML in your repository. If going down this route, one must ensure that the added dependencies do not clash with any [dependency bundled with ZenML](https://github.com/maiot-io/zenml/blob/main/setup.py).
 
 ## Using Docker
 

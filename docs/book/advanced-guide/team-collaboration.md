@@ -16,7 +16,7 @@ Collaboration with ZenML means shared access to:
 Deploying the above in a shared setting makes all experiments within a ZenML repository reproducible and discoverable. This is regardless of which team member ran the corresponding pipelines, and regardless of the environment the experiments were run in.
 
 {% hint style="info" %}
-The Metadata and Artifact Stores respectively, while highly recommended, are **not necessary** to share for collaboration. You could as well share the Git Repository with a committed local pipeline directory and still collaborate using ZenML. However, losing the Artifact and Metadata Store will invalidate all [caching](../benefits/reusing-artifacts.md), and all pipelines need them to be re-run on every team members local setup. This might have uninteded consequences, so please be careful when setting this up in production.
+The Metadata and Artifact Stores respectively, while highly recommended, are **not necessary** to share for collaboration. You could as well share the Git Repository with a committed local pipeline directory and still collaborate using ZenML. However, losing the Artifact and Metadata Store will invalidate all [caching](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/benefits/reusing-artifacts.md), and all pipelines need them to be re-run on every team members local setup. This might have uninteded consequences, so please be careful when setting this up in production.
 {% endhint %}
 
 ## Example
