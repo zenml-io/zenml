@@ -265,7 +265,6 @@ class BasePipeline:
         self.datasource = datasource
         if commit_id is None:
             self.datasource_commit_id = datasource.get_latest_commit()
-        self.steps_dict[keys.TrainingSteps.DATA] = datasource.get_data_step()
 
     def create_pipeline_name_from_name(self):
         """Creates a unique pipeline name from user-provided name."""

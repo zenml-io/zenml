@@ -162,8 +162,8 @@ class BaseDatasource:
         from zenml.pipelines.data_pipeline import DataPipeline
         data_pipeline_paths = [x for x in
                                repo.get_pipeline_f_paths_by_datasource_id(_id)]
-        data_pipeline_names = [Path(x).name for x in data_pipeline_paths if
-                               Path(x).name.startswith(
+        data_pipeline_names = [Path(x).stem for x in data_pipeline_paths if
+                               Path(x).stem.startswith(
                                    DataPipeline.PIPELINE_TYPE)]
 
         # Another ugly hack to recompile the commit times
@@ -196,32 +196,38 @@ class BaseDatasource:
             keys.DatasourceKeys.ID: self._id,
         }
 
-    @abstractmethod
-    def get_data_step(self):
-        pass
-
     def get_latest_commit(self):
         a = [k for k, v in
              sorted(self.commits.items(), key=lambda item: item[1])]
         if a:
             return a[-1]
-        return {}
 
     def get_first_commit(self):
         a = [k for k, v in
              sorted(self.commits.items(), key=lambda item: item[1])]
         if a:
             return a[0]
-        return {}
+
+    def get_data_pipeline_from_commit(self, commit_id: Text):
+        from zenml.pipelines.data_pipeline import DataPipeline
+
+        if commit_id not in self.commits:
+            raise AssertionError(
+                f'There is no such commit_id as {commit_id} in the '
+                f'datasource {self.name}')
+
+        repo: Repository = Repository.get_instance()
+        name = DataPipeline.get_name_from_pipeline_name(
+            DataPipeline.PIPELINE_TYPE + '_' + self.commits[
+                commit_id] + '_' + commit_id)
+        return repo.get_pipeline_by_name(name)
 
     def _get_one_pipeline(self):
         """Gets representative pipeline from all pipelines associated."""
-        pipelines = \
-            Repository.get_instance().get_pipelines_by_datasource(self)
-
-        if len(pipelines) == 0:
-            raise EmptyDatasourceException
-        return pipelines[0]
+        if self.commits:
+            return self.get_data_pipeline_from_commit(
+                list(self.commits.keys())[0])
+        raise EmptyDatasourceException
 
     def _get_data_file_paths(self, pipeline):
         """
