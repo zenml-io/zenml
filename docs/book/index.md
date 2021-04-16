@@ -5,7 +5,7 @@ description: Simple MLOps.
 # Introduction
 
 {% hint style="warning" %}
-**IMPORTANT NOTICE**: As of **April 8th, 2021**, we are migrating and reworking our docs for a better developer experience. We expect the migration to be complete by **April 15th.**
+**IMPORTANT NOTICE**: As of **April 8th, 2021**, we are migrating and reworking our docs for a better developer experience. We expect the migration to be complete by **April 16th.**
 
 During the migration, you might experience broken links, images and more. We apologize for the inconvenience. Please bear with us as we make the docs a better developer experience for you. Thank you!
 {% endhint %}
