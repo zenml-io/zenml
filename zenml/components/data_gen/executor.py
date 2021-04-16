@@ -22,8 +22,8 @@ from tfx.types import artifact_utils
 
 from zenml.components.data_gen import utils
 from zenml.components.data_gen.constants import DATA_SPLIT_NAME
+from zenml.datasources.base_datasource import BaseDatasource
 from zenml.standards.standard_keys import StepKeys
-from zenml.steps.data import BaseDataStep
 from zenml.utils import source_utils
 
 
@@ -63,9 +63,11 @@ class DataExecutor(base_executor.BaseExecutor):
         """
         source = exec_properties[StepKeys.SOURCE]
         args = exec_properties[StepKeys.ARGS]
+        name = exec_properties[StepKeys.NAME]
 
         c = source_utils.load_source_path_class(source)
-        data_step: BaseDataStep = c(**args)
+        # TODO [LOW]: Passing _id makes it load
+        datasource: BaseDatasource = c(name=name, _id='_id', **args)
 
         # Get output split path
         examples_artifact = artifact_utils.get_single_instance(
@@ -76,8 +78,6 @@ class DataExecutor(base_executor.BaseExecutor):
         output_split_path = artifact_utils.get_split_uri(
             [examples_artifact], DATA_SPLIT_NAME)
 
-        with self._make_beam_pipeline() as p:
-            (p
-             | data_step.read_from_source()
-             # | data_step.convert_to_dict()
-             | WriteToTFRecord(data_step.schema, output_split_path))
+        datasource.write(
+            output_path=output_split_path,
+            make_beam_pipeline=self._make_beam_pipeline)

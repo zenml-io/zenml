@@ -15,20 +15,23 @@
 
 import os
 from abc import abstractmethod
-from typing import Text, Dict
+from pathlib import Path
+from typing import Text, Dict, Optional, Callable
 from uuid import uuid4
 
 import tensorflow as tf
 
 from zenml.enums import GDPComponent
-from zenml.exceptions import AlreadyExistsException, \
-    EmptyDatasourceException
+from zenml.exceptions import AlreadyExistsException
+from zenml.exceptions import EmptyDatasourceException
 from zenml.logger import get_logger
-from zenml.repo import Repository
+from zenml.metadata import ZenMLMetadataStore
+from zenml.repo import Repository, ArtifactStore
 from zenml.standards import standard_keys as keys
 from zenml.utils import path_utils
 from zenml.utils import source_utils
-from zenml.utils.analytics_utils import track, CREATE_DATASOURCE
+from zenml.utils.analytics_utils import CREATE_DATASOURCE
+from zenml.utils.analytics_utils import track
 from zenml.utils.post_training.post_training_utils import \
     view_schema, get_feature_spec_from_schema, \
     convert_raw_dataset_to_pandas, view_statistics
@@ -46,10 +49,15 @@ class BaseDatasource:
             self,
             name: Text,
             _id: Text = None,
+            backend=None,
+            metadata_store: Optional[ZenMLMetadataStore] = None,
+            artifact_store: Optional[ArtifactStore] = None,
+            commits: Optional[Dict] = None,
             *args,
             **kwargs):
         """
-        Construct the datasource
+        Construct the datasource.
+
         Args:
             name (str): name of datasource
             schema (dict): schema of datasource
@@ -70,15 +78,62 @@ class BaseDatasource:
             track(event=CREATE_DATASOURCE)
             logger.info(f'Datasource {name} created.')
 
+        # Metadata store
+        if metadata_store:
+            self.metadata_store: ZenMLMetadataStore = metadata_store
+        else:
+            # use default
+            self.metadata_store: ZenMLMetadataStore = \
+                Repository.get_instance().get_default_metadata_store()
+
+        # Default to local
+        if backend is None:
+            from zenml.backends.orchestrator import OrchestratorBaseBackend
+            self.backend = OrchestratorBaseBackend()
+        else:
+            self.backend = backend
+
+        # Artifact store
+        if artifact_store:
+            self.artifact_store = artifact_store
+        else:
+            # use default
+            self.artifact_store = \
+                Repository.get_instance().get_default_artifact_store()
+
+        if commits is None:
+            self.commits = {}
+        else:
+            self.commits = commits
+
         self.name = name
         self._immutable = False
         self._source = source_utils.resolve_class(self.__class__)
+        self._source_args = kwargs
 
     def __str__(self):
         return to_pretty_string(self.to_config())
 
     def __repr__(self):
         return to_pretty_string(self.to_config(), style=PrintStyles.PPRINT)
+
+    @abstractmethod
+    def write(self, output_path: Text, make_beam_pipeline: Callable = None):
+        pass
+
+    def commit(self):
+        from zenml.pipelines.data_pipeline import DataPipeline
+        data_pipeline = DataPipeline(
+            enable_cache=False,
+            backend=self.backend,
+            metadata_store=self.metadata_store,
+            artifact_store=self.artifact_store,
+            datasource=self
+        )
+        data_pipeline.run()
+        commit_id = data_pipeline.pipeline_name.split('_')[2]
+        self.commits[commit_id] = data_pipeline.pipeline_name.split('_')[1]
+        return commit_id
 
     @classmethod
     def from_config(cls, config: Dict):
@@ -89,20 +144,46 @@ class BaseDatasource:
         Args:
             config: a DataStep config in dict-form (probably loaded from YAML).
         """
-        if keys.DataSteps.DATA not in config[keys.PipelineKeys.STEPS]:
-            return None  # can be empty
-
         # this is the data step config block
-        step_config = config[keys.PipelineKeys.STEPS][keys.DataSteps.DATA]
         source = config[keys.PipelineKeys.DATASOURCE][
             keys.DatasourceKeys.SOURCE]
         datasource_class = source_utils.load_source_path_class(source)
         datasource_name = config[keys.PipelineKeys.DATASOURCE][
             keys.DatasourceKeys.NAME]
         _id = config[keys.PipelineKeys.DATASOURCE][keys.DatasourceKeys.ID]
+        args = config[keys.PipelineKeys.DATASOURCE][keys.DatasourceKeys.ARGS]
+
+        # resolve commits
+        repo: Repository = Repository.get_instance()
+        # TODO [HIGH]: Ugly hack to get around circular dependencies. We
+        #  need to find which data pipelines are associated with this
+        #  pipeline so we first find all associated pipelines and then
+        #  filter by the 'data' type.
+        from zenml.pipelines.data_pipeline import DataPipeline
+        data_pipeline_paths = [x for x in
+                               repo.get_pipeline_f_paths_by_datasource_id(_id)]
+        data_pipeline_names = [Path(x).name for x in data_pipeline_paths if
+                               Path(x).name.startswith(
+                                   DataPipeline.PIPELINE_TYPE)]
+
+        # Another ugly hack to recompile the commit times
+        commits = {x.split('_')[2]: x.split('_')[1] for x in
+                   data_pipeline_names}
+
+        # Resolve the stores and backend. All pipelines will have the same.
+        artifact_store, metadata_store, backend = None, None, None
+        if data_pipeline_names:
+            artifact_store = repo.get_artifact_store_from_file_path(
+                data_pipeline_paths[0])
+            metadata_store = repo.get_metadata_store_from_file_path(
+                data_pipeline_paths[0])
+            backend = repo.get_orchestrator_backend_from_file_path(
+                data_pipeline_paths[0])
+
         obj = datasource_class(
-            name=datasource_name, _id=_id,
-            **step_config[keys.StepKeys.ARGS])
+            name=datasource_name, _id=_id, commits=commits, backend=backend,
+            metadata_store=metadata_store, artifact_store=artifact_store,
+            **args)
         obj._immutable = True
         return obj
 
@@ -111,12 +192,27 @@ class BaseDatasource:
         return {
             keys.DatasourceKeys.NAME: self.name,
             keys.DatasourceKeys.SOURCE: self._source,
-            keys.DatasourceKeys.ID: self._id
+            keys.DatasourceKeys.ARGS: self._source_args,
+            keys.DatasourceKeys.ID: self._id,
         }
 
     @abstractmethod
     def get_data_step(self):
         pass
+
+    def get_latest_commit(self):
+        a = [k for k, v in
+             sorted(self.commits.items(), key=lambda item: item[1])]
+        if a:
+            return a[-1]
+        return {}
+
+    def get_first_commit(self):
+        a = [k for k, v in
+             sorted(self.commits.items(), key=lambda item: item[1])]
+        if a:
+            return a[0]
+        return {}
 
     def _get_one_pipeline(self):
         """Gets representative pipeline from all pipelines associated."""

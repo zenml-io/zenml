@@ -85,6 +85,7 @@ class DatasourceKeys(ConfigKeys):
     ID = 'id'
     NAME = 'name'
     SOURCE = 'source'
+    ARGS = 'args'
 
 
 class BackendKeys(ConfigKeys):
