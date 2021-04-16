@@ -80,6 +80,13 @@ class TrainingPipeline(BasePipeline):
         ############
         # RAW DATA #
         ############
+        # if there are no commits, then lets make one
+        if self.datasource.is_empty:
+            logger.info(
+                f'Datasource {self.datasource.name} has no commits. Creating '
+                f'the first one..')
+            self.datasource_commit_id = self.datasource.commit()
+
         data_pipeline = self.datasource.get_data_pipeline_from_commit(
             self.datasource_commit_id)
 
@@ -87,10 +94,6 @@ class TrainingPipeline(BasePipeline):
             instance_name=GDPComponent.DataGen.name,
             source_uri=data_pipeline.get_artifacts_uri_by_component(
                 GDPComponent.DataGen.name)[0],
-            reimport=True,
-            properties={
-                'split_names': '["examples"]',
-            },
             artifact_type=standard_artifacts.Examples)
 
         schema_data = ImporterNode(

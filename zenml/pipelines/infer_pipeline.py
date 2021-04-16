@@ -23,8 +23,10 @@ from tfx.components.statistics_gen.component import StatisticsGen
 from tfx.types import standard_artifacts
 
 from zenml.backends.orchestrator import OrchestratorBaseBackend
-from zenml.components import DataGen, BulkInferrer
+from zenml.components import BulkInferrer
 from zenml.datasources import BaseDatasource
+from zenml.enums import GDPComponent
+from zenml.logger import get_logger
 from zenml.metadata import ZenMLMetadataStore
 from zenml.pipelines import BasePipeline
 from zenml.repo import ArtifactStore
@@ -33,11 +35,12 @@ from zenml.standards.standard_keys import StepKeys
 from zenml.steps import BaseStep
 from zenml.steps.inferrer import BaseInferrer
 from zenml.utils import path_utils
-from zenml.enums import GDPComponent
 from zenml.utils.post_training.post_training_utils import \
     convert_raw_dataset_to_pandas
 from zenml.utils.post_training.post_training_utils import \
     view_statistics, view_schema, get_feature_spec_from_schema
+
+logger = get_logger(__name__)
 
 
 class BatchInferencePipeline(BasePipeline):
@@ -110,14 +113,21 @@ class BatchInferencePipeline(BasePipeline):
         """
         component_list = []
 
-        data_config = \
-            config[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.STEPS][
-                keys.InferSteps.DATA]
-        data = DataGen(
-            name=self.datasource.name,
-            source=data_config[StepKeys.SOURCE],
-            source_args=data_config[StepKeys.ARGS]).with_id(
-            GDPComponent.DataGen.name)
+        # if there are no commits, then lets make one
+        if self.datasource.is_empty:
+            logger.info(
+                f'Datasource {self.datasource.name} has no commits. Creating '
+                f'the first one..')
+            self.datasource_commit_id = self.datasource.commit()
+
+        data_pipeline = self.datasource.get_data_pipeline_from_commit(
+            self.datasource_commit_id)
+
+        data = ImporterNode(
+            instance_name=GDPComponent.DataGen.name,
+            source_uri=data_pipeline.get_artifacts_uri_by_component(
+                GDPComponent.DataGen.name)[0],
+            artifact_type=standard_artifacts.Examples)
         component_list.extend([data])
 
         # Handle timeseries
@@ -150,7 +160,7 @@ class BatchInferencePipeline(BasePipeline):
             source=infer_cfg[StepKeys.SOURCE],
             source_args=infer_cfg[StepKeys.ARGS],
             model=model_result,
-            examples=data.outputs.examples,
+            examples=data.outputs.result,
             instance_name=GDPComponent.Inferrer.name)
 
         statistics = StatisticsGen(

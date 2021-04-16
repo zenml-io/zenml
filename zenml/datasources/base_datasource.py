@@ -117,6 +117,12 @@ class BaseDatasource:
     def __repr__(self):
         return to_pretty_string(self.to_config(), style=PrintStyles.PPRINT)
 
+    @property
+    def is_empty(self):
+        if self.commits:
+            return False
+        return True
+
     @abstractmethod
     def write(self, output_path: Text, make_beam_pipeline: Callable = None):
         pass

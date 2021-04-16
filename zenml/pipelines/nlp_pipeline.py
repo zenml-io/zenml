@@ -14,23 +14,31 @@
 """ZenML NLP Pipeline Prototype."""
 
 import os
-from typing import Dict, Text, Any, List, Optional, Union
+from typing import Dict, Text, Any, List
+from typing import Optional, Union
 
 import tensorflow as tf
+from tfx.components.common_nodes.importer_node import ImporterNode
 from tfx.components.schema_gen.component import SchemaGen
 from tfx.components.statistics_gen.component import StatisticsGen
 from tfx.components.trainer.component import Trainer
 from tfx.proto import trainer_pb2
+from tfx.types import standard_artifacts
 
+from zenml import constants
 from zenml.backends.training import TrainingBaseBackend
-from zenml.components import DataGen, SplitGen, Tokenizer
+from zenml.components import SplitGen, Trainer
+from zenml.components import Tokenizer
+from zenml.enums import GDPComponent
+from zenml.enums import PipelineStatusTypes
+from zenml.logger import get_logger
 from zenml.pipelines import BasePipeline
 from zenml.standards import standard_keys as keys
 from zenml.steps.split import BaseSplitStep
 from zenml.steps.tokenizer import BaseTokenizer
 from zenml.steps.trainer import BaseTrainerStep
-from zenml import constants
-from zenml.enums import GDPComponent, PipelineStatusTypes
+
+logger = get_logger(__name__)
 
 
 class NLPPipeline(BasePipeline):
@@ -89,12 +97,22 @@ class NLPPipeline(BasePipeline):
         ############
         # RAW DATA #
         ############
-        data_config = steps[keys.NLPSteps.DATA]
-        data = DataGen(
-            name=self.datasource.name,
-            source=data_config[keys.StepKeys.SOURCE],
-            source_args=data_config[keys.StepKeys.ARGS]
-        ).with_id(GDPComponent.DataGen.name)
+        # if there are no commits, then lets make one
+        if self.datasource.is_empty:
+            logger.info(
+                f'Datasource {self.datasource.name} has no commits. Creating '
+                f'the first one..')
+            self.datasource_commit_id = self.datasource.commit()
+
+        data_pipeline = self.datasource.get_data_pipeline_from_commit(
+            self.datasource_commit_id)
+
+        data = ImporterNode(
+            instance_name=GDPComponent.DataGen.name,
+            source_uri=data_pipeline.get_artifacts_uri_by_component(
+                GDPComponent.DataGen.name)[0],
+            artifact_type=standard_artifacts.Examples)
+        component_list.extend([data])
 
         #############
         # TOKENIZER #
@@ -103,7 +121,7 @@ class NLPPipeline(BasePipeline):
         tokenizer = Tokenizer(
             source=tokenizer_config[keys.StepKeys.SOURCE],
             source_args=tokenizer_config[keys.StepKeys.ARGS],
-            examples=data.outputs.examples,
+            examples=data.outputs.result,
         ).with_id(GDPComponent.Tokenizer.name)
 
         component_list.extend([tokenizer])
