@@ -44,7 +44,7 @@ def model_fn(self, *args, **kwargs)
 The last helper method when designing a `BaseTrainerStep` is the `test_fn`. The goal here is to separate the computation of the test results once the training is completed.  In the implementation of the built-in `TrainerStep`s, this method is using the trained model to compute the model output on the test splits and stores the results as an artifact. 
 
 {% hint style="warning" %}
-Storing the test results within the context of a TrainerStep will be especially crucial in terms of post-training evaluation, because,it will allow us to utilize a model agnostic evaluator step in the next step.
+Storing the test results within the context of a TrainerStep will be especially crucial in terms of post-training evaluation, because, it will allow us to utilize a model agnostic evaluator step in the next step.
 {% endhint %}
 
 ```python

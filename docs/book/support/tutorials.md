@@ -7,10 +7,10 @@ Here you can find a list of practical examples on how you can use **ZenML** with
 * [**batch\_inference**](https://github.com/maiot-io/zenml/tree/main/examples/batch_inference): Run an offline batch inference job.
 * [**cortex**](https://github.com/maiot-io/zenml/tree/main/examples/cortex): Tutorial on how to integrate with [Cortex](https://cortex.dev/) to deploy your models.
 * [**gan**](https://github.com/maiot-io/zenml/tree/main/examples/gan): Tutorial on how to create and train a GAN model with a custom `TrainerStep` and `PreprocessorStep`.
-* [**gcp\_dataflow\_processing**](https://github.com/maiot-io/zenml/tree/main/examples/gcp_dataflow_processing): Showcases distributed preprocessing wth [Dataflow](https://cloud.google.com/dataflow) as the processing backend.
+* [**gcp\_dataflow\_processing**](https://github.com/maiot-io/zenml/tree/main/examples/gcp_dataflow_processing): Showcases distributed preprocessing with [Dataflow](https://cloud.google.com/dataflow) as the processing backend.
 * [**gcp\_gcaip\_deployment**](https://github.com/maiot-io/zenml/tree/main/examples/gcp_gcaip_deployment): Deploying a classifier with [Google Cloud AI Platform](https://cloud.google.com/ai-platform).
 * [**gcp\_gcaip\_training**](https://github.com/maiot-io/zenml/tree/main/examples/gcp_gcaip_training): Training a classifier with [Google Cloud AI Platform](https://cloud.google.com/ai-platform).
-* [**gcp\_gpu\_orchestrated**](https://github.com/maiot-io/zenml/tree/main/examples/gcp_gpu_orchestrated): Training a classifier on an \(optionally preemtible\) cuda-enabled Google Cloud Platform virtual machine.
+* [**gcp\_gpu\_orchestrated**](https://github.com/maiot-io/zenml/tree/main/examples/gcp_gpu_orchestrated): Training a classifier on an \(optionally preemptible\) cuda-enabled Google Cloud Platform virtual machine.
 * [**gcp\_kubernetes\_orchestrated**](https://github.com/maiot-io/zenml/tree/main/examples/gcp_kubernetes_orchestrated): Launches a Kubernetes job on a Kubernetes cluster.
 * [**gcp\_orchestrated**](https://github.com/maiot-io/zenml/tree/main/examples/gcp_orchestrated): Runs pipeline on an \(optionally preemptible\) virtual machine on `Google Cloud Platform` as the orchestration backend.
 * [**nlp**](https://github.com/maiot-io/zenml/tree/main/examples/nlp): Uses the awesome [HuggingFace](https://huggingface.co/) library to create an NLP Training pipeline.
