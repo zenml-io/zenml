@@ -51,6 +51,7 @@ class BasePipeline:
                  metadata_store: Optional[ZenMLMetadataStore] = None,
                  artifact_store: Optional[ArtifactStore] = None,
                  datasource: Optional[BaseDatasource] = None,
+                 datasource_commit_id: Optional[Text] = None,
                  pipeline_name: Optional[Text] = None,
                  *args, **kwargs):
         """
@@ -69,6 +70,8 @@ class BasePipeline:
              the default metadata store is used.
             artifact_store: Configured artifact store. If None,
              the default artifact store is used.
+            datasource: The datasource to use.
+            datasource_commit_id: The datasource commit id to use.
         """
         # Generate a name if not given
         if name is None:
@@ -121,8 +124,13 @@ class BasePipeline:
         # Datasource
         if datasource:
             self.datasource = datasource
+            self.datasource_commit_id = datasource.get_latest_commit()
         else:
             self.datasource = None
+            self.datasource_commit_id = None
+
+        if datasource_commit_id:
+            self.datasource_commit_id = datasource_commit_id
 
         self._source = source_utils.resolve_class(self.__class__)
         self._kwargs = {
@@ -211,6 +219,9 @@ class BasePipeline:
         datasource = BaseDatasource.from_config(
             config[keys.GlobalKeys.PIPELINE])
 
+        # datasource commit
+        datasource_commit_id = p_config[keys.PipelineKeys.DATASOURCE_COMMIT_ID]
+
         class_ = source_utils.load_source_path_class(pipeline_source)
 
         obj = class_(
@@ -219,6 +230,7 @@ class BasePipeline:
             artifact_store=artifact_store,
             metadata_store=metadata_store,
             datasource=datasource,
+            datasource_commit_id=datasource_commit_id,
             pipeline_name=pipeline_name,
             name=cls.get_name_from_pipeline_name(pipeline_name),
             **kwargs
@@ -240,14 +252,19 @@ class BasePipeline:
                     f'Step {step_name} needs to be an object that is a '
                     f'sub-class of: {BaseStep}')
 
-    def add_datasource(self, datasource: BaseDatasource):
+    def add_datasource(self, datasource: BaseDatasource,
+                       commit_id: Text = None):
         """
         Add datasource to pipeline.
 
         Args:
-            datasource: class of type BaseDatasource
+            datasource: class of type BaseDatasource.
+            commit_id: optionally the commit of the datasource to use. If
+            left None, then latest commit is used.
         """
         self.datasource = datasource
+        if commit_id is None:
+            self.datasource_commit_id = datasource.get_latest_commit()
         self.steps_dict[keys.TrainingSteps.DATA] = datasource.get_data_step()
 
     def create_pipeline_name_from_name(self):
@@ -271,6 +288,7 @@ class BasePipeline:
             keys.PipelineKeys.SOURCE: self._source,
             keys.PipelineKeys.DATASOURCE: self.datasource.to_config() if
             self.datasource is not None else {},
+            keys.PipelineKeys.DATASOURCE_COMMIT_ID: self.datasource_commit_id,
         })
         return steps_config
 

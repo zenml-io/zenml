@@ -72,6 +72,7 @@ class PipelineKeys(ConfigKeys):
     SOURCE = 'source'
     STEPS = 'steps'
     DATASOURCE = 'datasource'
+    DATASOURCE_COMMIT_ID = 'datasource_commit_id'
     ENABLE_CACHE = 'enable_cache'
 
 
