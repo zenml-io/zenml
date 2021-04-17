@@ -124,7 +124,7 @@ class BaseDatasource:
         return True
 
     @abstractmethod
-    def write(self, output_path: Text, make_beam_pipeline: Callable = None):
+    def process(self, output_path: Text, make_beam_pipeline: Callable = None):
         pass
 
     def commit(self):

@@ -58,7 +58,7 @@ class CSVDatasource(BaseDatasource):
         self.schema = schema
         super().__init__(name, path=path, schema=schema, **kwargs)
 
-    def write(self, output_path: Text, make_beam_pipeline: Callable = None):
+    def process(self, output_path: Text, make_beam_pipeline: Callable = None):
         wildcard_qualifier = "*"
         file_pattern = os.path.join(self.path, wildcard_qualifier)
 
