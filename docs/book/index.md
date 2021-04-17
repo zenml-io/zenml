@@ -14,7 +14,7 @@ While there are other pipelining solutions for Machine Learning experiments, Zen
 
 ## Why do I need ZenML?
 
-**ZenML** solves the problem of getting Machine Learning in models. You should use **ZenML** if you struggle with:
+**ZenML** solves the problem of getting Machine Learning in models to production. You should use **ZenML** if you struggle with:
 
 * **Reproducing** training results in production.
 * Managing ML **metadata**, including data, code, and model versioning.
@@ -24,6 +24,8 @@ While there are other pipelining solutions for Machine Learning experiments, Zen
 * **Scaling ML** training/inference to large datasets.
 * Retaining code **quality** alongside development velocity.
 * Keeping up with the ML **tooling landscape** in a coherent manner.
+
+![How writing ML in ZenML code keeps your code production ready from the start](.gitbook/assets/zenml-deck-q2-21-3-.png)
 
 ## What do I do next?
 
