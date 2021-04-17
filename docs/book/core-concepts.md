@@ -8,7 +8,7 @@ description: A good place to start before diving further into the docs.
 
 ### Important considerations
 
-[Artifact](core-concepts.md) and [Metadata stores](core-concepts.md) can be configured per repository as well as per pipeline. However, only pipelines with the same Artifact and Metadata store are comparable, and therefore should not change to maintain the benefits of caching and consistency across pipeline runs.
+[Artifact](core-concepts.md#artifact-store) and [Metadata stores](core-concepts.md#metadata-store) can be configured per repository as well as per pipeline. However, only pipelines with the same Artifact and Metadata store are comparable, and therefore should not change to maintain the benefits of caching and consistency across pipeline runs.
 
 On a high level, when data is read from a datasource the results are persisted in your artifact store. An orchestration integration reads the data from the artifact store and begins preprocessing - either itself, or alternatively on a dedicated processing backend like [Google Dataflow](https://cloud.google.com/dataflow). Every pipeline step reads it's predecessors result artifacts from the artifact store and writes it's own result artifacts to the artifact store. Once preprocessing is done, the orchestration begins the training of your model - again either itself or on a dedicated training backend. The trained model will be persisted in the artifact store, and optionally passed on to a serving backend.
 
