@@ -53,6 +53,6 @@ class DataExecutor(base_executor.BaseExecutor):
         output_split_path = artifact_utils.get_split_uri(
             [examples_artifact], DATA_SPLIT_NAME)
 
-        datasource.write(
+        datasource.process(
             output_path=output_split_path,
             make_beam_pipeline=self._make_beam_pipeline)

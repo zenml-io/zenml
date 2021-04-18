@@ -19,6 +19,7 @@ from typing import Text, Dict
 from apache_beam.io.gcp import bigquery as beam_bigquery
 
 from zenml.datasources import BaseDatasource
+from zenml.utils.beam_utils import WriteToTFRecord
 
 
 class BigQueryDatasource(BaseDatasource):
@@ -76,6 +77,18 @@ class BigQueryDatasource(BaseDatasource):
         # If dest project not given, we use the same as query project
         self.dest_project = dest_project if dest_project else query_project
 
+        super().__init__(
+            name,
+            query_project=self.query_project,
+            query_dataset=self.query_dataset,
+            query_table=self.query_table,
+            gcs_location=self.gcs_location,
+            query_limit=self.query_limit,
+            dest_project=self.dest_project,
+            schema=self.schema,
+            **kwargs
+        )
+
     def process(self, output_path: Text, make_beam_pipeline: Callable = None):
         query = f'SELECT * FROM `{self.query_project}.{self.query_dataset}.' \
                 f'{self.query_table}`'
@@ -89,4 +102,6 @@ class BigQueryDatasource(BaseDatasource):
                         project=self.dest_project,
                         gcs_location=self.gcs_location,
                         query=query,
-                        use_standard_sql=True))
+                        use_standard_sql=True)
+             | WriteToTFRecord(self.schema, output_path)
+             )
