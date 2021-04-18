@@ -13,10 +13,12 @@
 #  permissions and limitations under the License.
 """BigQuery Datasource definition"""
 
-from typing import Text, Optional, Dict
+from typing import Optional, Callable
+from typing import Text, Dict
+
+from apache_beam.io.gcp import bigquery as beam_bigquery
 
 from zenml.datasources import BaseDatasource
-from zenml.steps.data import BQDataStep
 
 
 class BigQueryDatasource(BaseDatasource):
@@ -74,13 +76,17 @@ class BigQueryDatasource(BaseDatasource):
         # If dest project not given, we use the same as query project
         self.dest_project = dest_project if dest_project else query_project
 
-    def get_data_step(self):
-        return BQDataStep(
-            query_project=self.query_project,
-            query_dataset=self.query_dataset,
-            query_table=self.query_table,
-            gcs_location=self.gcs_location,
-            dest_project=self.dest_project,
-            query_limit=self.query_limit,
-            schema=self.schema
-        )
+    def process(self, output_path: Text, make_beam_pipeline: Callable = None):
+        query = f'SELECT * FROM `{self.query_project}.{self.query_dataset}.' \
+                f'{self.query_table}`'
+
+        if self.query_limit is not None:
+            query += f'\nLIMIT {self.query_limit}'
+
+        with make_beam_pipeline() as p:
+            (p
+             | 'ReadFromBigQuery' >> beam_bigquery.ReadFromBigQuery(
+                        project=self.dest_project,
+                        gcs_location=self.gcs_location,
+                        query=query,
+                        use_standard_sql=True))
