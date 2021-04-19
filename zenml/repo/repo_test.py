@@ -40,8 +40,7 @@ def test_repo_double_init():
 def test_get_datasources(repo):
     ds_list = repo.get_datasources()
 
-    # TODO [LOW]: Automatically increment this as more tests added
-    assert len(ds_list) == 5
+    assert "my_csv_datasource" in [x.name for x in ds_list]
 
 
 def test_get_datasource_by_name(repo):
@@ -54,13 +53,12 @@ def test_get_datasource_by_name(repo):
 
 def test_get_datasource_names(repo):
     # TODO [LOW]: Automatically expand when new datasource tests are added!
-    test_ds_names = ["my_csv_datasource", "bq_datasource_public",
-                     "bq_datasource_private", "image_ds_local", "image_ds_gcp",
+    test_ds_names = ["my_csv_datasource", "image_ds_local", "image_ds_gcp",
                      "json_ds"]
 
     ds_names = repo.get_datasource_names()
 
-    assert sorted(test_ds_names) == sorted(ds_names)
+    assert set(test_ds_names) <= set(ds_names)
 
 
 def test_get_pipeline_file_paths(repo, monkeypatch):
@@ -84,7 +82,7 @@ def test_get_pipeline_names(repo):
 
     found_p_names = sorted(repo.get_pipeline_names())
 
-    assert set(real_p_names) >= set(found_p_names)
+    assert set(real_p_names) <= set(found_p_names)
 
 
 def test_get_pipelines(repo):
@@ -101,27 +99,23 @@ def test_get_pipelines_by_datasource(repo):
     # asserted in an earlier test
     ds = repo.get_datasource_by_name("my_csv_datasource")
 
-    p_names = repo.get_pipeline_names()
-
     ds2 = BaseDatasource(name="ds_12254757")
 
     pipelines = repo.get_pipelines_by_datasource(ds)
 
     pipelines_2 = repo.get_pipelines_by_datasource(ds2)
 
-    assert len(pipelines) == len(p_names)
+    assert len(pipelines) > 0
 
     assert not pipelines_2
 
 
 def test_get_pipelines_by_type(repo):
-    p_names = repo.get_pipeline_names()
-
     pipelines = repo.get_pipelines_by_type(type_filter=["training"])
 
     pipelines_2 = repo.get_pipelines_by_type(type_filter=["base"])
 
-    assert len(pipelines) == len(p_names)
+    assert len(pipelines) == 5
 
     assert not pipelines_2
 
@@ -157,7 +151,7 @@ def test_get_step_versions(repo):
 
     current_version = "zenml_" + str(__version__)
 
-    assert sorted(steps_used) == sorted(step_versions.keys())
+    assert set(steps_used) >= set(step_versions.keys())
     assert all(current_version in s for s in step_versions.values())
 
 

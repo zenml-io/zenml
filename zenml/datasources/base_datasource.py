@@ -150,6 +150,10 @@ class BaseDatasource:
         Args:
             config: a DataStep config in dict-form (probably loaded from YAML).
         """
+        if keys.DatasourceKeys.SOURCE not in config[
+            keys.PipelineKeys.DATASOURCE]:
+            return None  # can be empty
+
         # this is the data step config block
         source = config[keys.PipelineKeys.DATASOURCE][
             keys.DatasourceKeys.SOURCE]
