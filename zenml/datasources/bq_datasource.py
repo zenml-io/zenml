@@ -59,6 +59,7 @@ class BigQueryDatasource(BaseDatasource):
             gcs_location: google cloud storage (bucket) location to store temp.
             dest_project: name of destination project. If None is specified,
             then dest_project is set to the same as query_project.
+            schema (str): optional schema for data to conform to.
         """
         super().__init__(name, **kwargs)
 
