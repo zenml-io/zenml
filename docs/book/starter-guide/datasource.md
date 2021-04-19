@@ -1,79 +1,93 @@
+---
+description: Easily connect datasources.
+---
+
 # Registering a new datasource
 
 ## Overview: `BaseDatasource`
+
+**ZenML**  automatically tracks \(metadata store\) and versions \(artifact store\) all data that flows through its pipelines. The  **`BaseDatasource`** interface defines how to create a datasource. In the definition of this interface, there is only one method called `process`.
 
 ```python
 class BaseDatasource:
 
     @abstractmethod
-    def read_from_source(self):
+    def process(self):
         ...
 ```
 
-### read\_from\_source
+### process
+
+The goal of the `process` is to read from the source of the data and write to the `output_path` the data in the form of [TFRecords](https://www.tensorflow.org/tutorials/load_data/tfrecord), which is an efficient, standardized format to store ML data that ZenML utilizes internally. These TFRecords in turn are read downstream in **Pipelines.** A **schema** and **statistics** are also automatically generated for each datasource run.
 
 ```python
-def read_from_source(element, n) -> int:
+def process(output_path, make_beam_pipeline):
 ```
 
 ## A quick example: the built-in `CSVDataSource`
 
 {% hint style="info" %}
-The following is an overview of the complete step. You can find the full code right [here](https://github.com/maiot-io/zenml/blob/main/zenml/steps/split/base_split_step.py).
+The following is an overview of the complete step. You can find the full code right [here](https://github.com/maiot-io/zenml/blob/main/zenml/datasources/csv_datasource.py).
 {% endhint %}
 
 ```python
-@beam.ptransform_fn
-@beam.typehints.with_input_types(beam.Pipeline)
-@beam.typehints.with_output_types(beam.typehints.Dict[Text, Any])
-def read_files_from_disk(pipeline: beam.Pipeline,
-                         base_path: Text) -> beam.pvalue.PCollection:
+class CSVDatasource(BaseDatasource):
 
-    wildcard_qualifier = "*"
-    file_pattern = os.path.join(base_path, wildcard_qualifier)
+    def __init__(
+            self,
+            name: Text,
+            path: Text,
+            schema: Dict = None,
+            **kwargs):
+        self.path = path
+        self.schema = schema
+        super().__init__(name, path=path, schema=schema, **kwargs)
 
-    if path_utils.is_dir(base_path):
-        csv_files = path_utils.list_dir(base_path)
-        if not csv_files:
-            raise RuntimeError(
-                'Split pattern {} does not match any files.'.format(
-                    file_pattern))
-    else:
-        if path_utils.file_exists(base_path):
-            csv_files = [base_path]
+    def process(self, output_path: Text, make_beam_pipeline: Callable = None):
+        wildcard_qualifier = "*"
+        file_pattern = os.path.join(self.path, wildcard_qualifier)
+
+        if path_utils.is_dir(self.path):
+            csv_files = path_utils.list_dir(self.path)
+            if not csv_files:
+                raise RuntimeError(
+                    'Split pattern {} does not match any files.'.format(
+                        file_pattern))
         else:
-            raise RuntimeError(f'{base_path} does not exist.')
+            if path_utils.file_exists(self.path):
+                csv_files = [self.path]
+            else:
+                raise RuntimeError(f'{self.path} does not exist.')
 
-    # weed out bad file exts with this logic
-    allowed_file_exts = [".csv", ".txt"]  # ".dat"
-    csv_files = [uri for uri in csv_files if os.path.splitext(uri)[1]
-                 in allowed_file_exts]
+        # weed out bad file exts with this logic
+        allowed_file_exts = [".csv", ".txt"]  # ".dat"
+        csv_files = [uri for uri in csv_files if os.path.splitext(uri)[1]
+                     in allowed_file_exts]
 
-    logger.info(f'Matched {len(csv_files)}: {csv_files}')
+        logger.info(f'Matched {len(csv_files)}: {csv_files}')
 
-    # Always use header from file
-    logger.info(f'Using header from file: {csv_files[0]}.')
-    column_names = path_utils.load_csv_header(csv_files[0])
-    logger.info(f'Header: {column_names}.')
+        # Always use header from file
+        logger.info(f'Using header from file: {csv_files[0]}.')
+        column_names = path_utils.load_csv_header(csv_files[0])
+        logger.info(f'Header: {column_names}.')
 
-    parsed_csv_lines = (
-            pipeline
-            | 'ReadFromText' >> beam.io.ReadFromText(file_pattern=base_path,
-                                                     skip_header_lines=1)
+        with make_beam_pipeline() as p:
+            p | 'ReadFromText' >> beam.io.ReadFromText(
+                file_pattern=self.path,
+                skip_header_lines=1) \
             | 'ParseCSVLine' >> beam.ParDo(csv_decoder.ParseCSVLine(
-        delimiter=','))
+                delimiter=',')) \
             | 'ExtractParsedCSVLines' >> beam.Map(
-        lambda x: dict(zip(column_names, x[0]))))
+                lambda x: dict(zip(column_names, x[0]))) \
+            | WriteToTFRecord(self.schema, output_path)
 
-    return parsed_csv_lines
-
-
-class CSVDataStep(BaseDataStep):
-    def read_from_source(self):
-        return read_files_from_disk(self.path)
 ```
 
+{% hint style="warning" %}
+**An important note here**: As you see from the code blocks that you see above, any input given to the constructor of a datasource will translate into an instance variable. So, when you want to use it you can use **`self`**, as we did with **`self.path`**.
+{% endhint %}
 
+And here is how you would use it:
 
 ```python
 from zenml.pipelines import TrainingPipeline
@@ -86,15 +100,14 @@ training_pipeline = TrainingPipeline()
 ds = CSVDatasource(name='Pima Indians Diabetes',
                    path='gs://zenml_quickstart/diabetes.csv')
 
+# to create a version
+ds.commit()
+
+# if ds.commit() not called, it is later called internally.
 training_pipeline.add_datasource(ds)
 
 ...
 ```
 
-{% hint style="warning" %}
-**An important note here**: As you see from the code blocks that you see above, any input given to the constructor of a datasource will translate into an instance variable. So, when you want to use it you can use **`self`**, as we did with **`self.path`**.
-{% endhint %}
+Each time the user calls `ds.commit()` a new version \(snapshot\) of the data is created via a data pipeline defined through the `process` method.
 
-## What's next?
-
-* 
