@@ -62,6 +62,11 @@ def add_label_and_metadata(image_dict: Dict[Text, Any],
          information.
     """
     filename = image_dict[FILE_NAME]
+    file_ext = image_dict[FILE_EXT]
+
+    # if file extension is in name, now remove it
+    if filename.endswith(file_ext):
+        filename = filename[0:-len(file_ext)]
 
     label_data = label_dict[BINARY_DATA]
     label, metadata = get_matching_label(label_data, filename)
