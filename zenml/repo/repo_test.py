@@ -140,14 +140,11 @@ def test_get_step_versions(repo):
     step_versions = repo.get_step_versions()
 
     # TODO: Make this less hardcoded
-    steps_used = ["zenml.steps.data.csv_data_step.CSVDataStep",
-                  "zenml.steps.preprocesser.standard_preprocesser."
-                  "standard_preprocesser.StandardPreprocesser",
-                  "zenml.steps.split.categorical_domain_split_step."
-                  "CategoricalDomainSplit",
-                  'zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.'
-                  'FeedForwardTrainer'
-                  ]
+    steps_used = [
+        "zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.StandardPreprocesser",
+        "zenml.steps.split.categorical_domain_split_step.CategoricalDomainSplit",
+        "zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.FeedForwardTrainer"
+    ]
 
     current_version = "zenml_" + str(__version__)
 
@@ -157,14 +154,11 @@ def test_get_step_versions(repo):
 
 def test_get_step_by_version(repo):
     # TODO: Make this less hardcoded
-    steps_used = ["zenml.steps.data.csv_data_step.CSVDataStep",
-                  "zenml.steps.preprocesser.standard_preprocesser."
-                  "standard_preprocesser.StandardPreprocesser",
-                  "zenml.steps.split.categorical_domain_split_step."
-                  "CategoricalDomainSplit",
-                  'zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.'
-                  'FeedForwardTrainer'
-                  ]
+    steps_used = [
+        "zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.StandardPreprocesser",
+        "zenml.steps.split.categorical_domain_split_step.CategoricalDomainSplit",
+        "zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.FeedForwardTrainer"
+    ]
 
     random_step = random.choice(steps_used)
 
@@ -178,13 +172,11 @@ def test_get_step_by_version(repo):
 
 def test_get_step_versions_by_type(repo):
     # TODO: Make this less hardcoded
-    steps_used = ["zenml.steps.data.csv_data_step.CSVDataStep",
-                  "zenml.steps.preprocesser.standard_preprocesser."
-                  "standard_preprocesser.StandardPreprocesser",
-                  "zenml.steps.split.categorical_domain_split_step."
-                  "CategoricalDomainSplit",
-                  'zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.'
-                  ]
+    steps_used = [
+        "zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.StandardPreprocesser",
+        "zenml.steps.split.categorical_domain_split_step.CategoricalDomainSplit",
+        "zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.FeedForwardTrainer"
+    ]
 
     random_step = random.choice(steps_used)
 
