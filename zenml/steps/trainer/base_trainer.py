@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+from abc import abstractmethod
 from typing import Dict, List, Text
 
 import tensorflow_transform as tft
@@ -96,18 +97,11 @@ class BaseTrainerStep(BaseStep):
         super(BaseTrainerStep, self).__init__(split_mapping=self.split_mapping,
                                               **kwargs)
 
-    def input_fn(self,
-                 file_pattern: List[Text],
-                 tf_transform_output: tft.TFTransformOutput):
+    def input_fn(self):
         """
         Method for loading data from TFRecords saved to a location on
         disk. Override this method in subclasses to define your own custom
         data preparation flow.
-
-        Args:
-            file_pattern: File pattern matching saved TFRecords on disk.
-            tf_transform_output: Output of the preceding Transform /
-             Preprocessing component.
 
         Returns:
             dataset: A tf.data.Dataset constructed from the input file
@@ -115,30 +109,17 @@ class BaseTrainerStep(BaseStep):
         """
         pass
 
-    @staticmethod
-    def model_fn(train_dataset, eval_dataset):
+    def model_fn(self, *args, **kwargs):
         """
         Method defining the training flow of the model. Override this
         in subclasses to define your own custom training flow.
-
-        Args:
-            train_dataset: tf.data.Dataset containing the training data.
-            eval_dataset: tf.data.Dataset containing the evaluation data.
 
         Returns:
             model: A trained machine learning model.
         """
         pass
 
-    def run_fn(self):
-        """
-        Method defining the control flow of the training process inside
-        the TFX Trainer Component Executor. Override this method in subclasses
-        to define your own custom training flow.
-        """
-        pass
-
-    def test_fn(self, *args, **kwargs):
+    def test_fn(self):
         """
         Optional method for defining a test flow of the model. The goal of
         this method is to give the user an interface to provide a testing
@@ -146,5 +127,14 @@ class BaseTrainerStep(BaseStep):
         features, labels and predictions) will be ultimately saved to
         disk using an output artifact. Once defined, it allows the user to
         utilize the model agnostic evaluator in their training pipeline.
+        """
+        pass
+
+    @abstractmethod
+    def run_fn(self):
+        """
+        Method defining the control flow of the training process inside
+        the TFX Trainer Component Executor. Override this method in subclasses
+        to define your own custom training flow.
         """
         pass
