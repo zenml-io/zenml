@@ -51,13 +51,3 @@ class JSONDatasource(BaseDatasource):
              | beam.Create(json_obj)
              | WriteToTFRecord(self.schema, output_path)
              )
-
-import time
-import json
-
-
-ds = JSONDatasource('lol_' + str(time.time()), '../../tests/test_data/simple.json')
-ds.commit()
-df = ds.sample_data()
-print(df.head())
-print(df.shape)

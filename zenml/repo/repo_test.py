@@ -40,8 +40,8 @@ def test_repo_double_init():
 def test_get_datasources(repo):
     ds_list = repo.get_datasources()
 
-    # TODO: Expand this for more test pipeline types!
-    assert len(ds_list) == 1
+    # TODO [LOW]: Automatically increment this as more tests added
+    assert len(ds_list) == 5
 
 
 def test_get_datasource_by_name(repo):
@@ -53,8 +53,10 @@ def test_get_datasource_by_name(repo):
 
 
 def test_get_datasource_names(repo):
-    # TODO: Expand to more test datasources!
-    test_ds_names = ["my_csv_datasource"]
+    # TODO [LOW]: Automatically expand when new datasource tests are added!
+    test_ds_names = ["my_csv_datasource", "bq_datasource_public",
+                     "bq_datasource_private", "image_ds_local", "image_ds_gcp",
+                     "json_ds"]
 
     ds_names = repo.get_datasource_names()
 
@@ -82,7 +84,7 @@ def test_get_pipeline_names(repo):
 
     found_p_names = sorted(repo.get_pipeline_names())
 
-    assert real_p_names == found_p_names
+    assert set(real_p_names) >= set(found_p_names)
 
 
 def test_get_pipelines(repo):

@@ -18,15 +18,16 @@ from pathlib import Path
 import zenml
 from zenml.datasources.json_datasource import JSONDatasource
 
-# Nicholas a way to get to the root
 ZENML_ROOT = str(Path(zenml.__path__[0]).parent)
 TEST_ROOT = os.path.join(ZENML_ROOT, "tests")
 
 
 def test_json_commit(repo):
+    data = Path(__file__).resolve() \
+               .parent.parent.parent / 'tests' / 'test_data' / 'simple.json'
     ds = JSONDatasource(
         name='json_ds',
-        path='../../tests/test_data/simple.json'
+        path=str(data.resolve())
     )
 
     assert not ds.commits

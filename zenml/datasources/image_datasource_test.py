@@ -24,9 +24,11 @@ TEST_ROOT = os.path.join(ZENML_ROOT, "tests")
 
 
 def test_image_local_commit(repo):
+    data = Path(__file__).resolve() \
+               .parent.parent.parent / 'tests' / 'test_data' / 'images'
     ds = ImageDatasource(
-        name='image_ds',
-        base_path='../../tests/test_data/images',
+        name='image_ds_local',
+        base_path=str(data.resolve()),
     )
     assert not ds.commits
 
@@ -38,7 +40,7 @@ def test_image_local_commit(repo):
 
 def test_image_gcp_commit(repo):
     ds = ImageDatasource(
-        name='image_ds',
+        name='image_ds_gcp',
         base_path='gs://zenml_quickstart/cycle_gan_mini',
     )
     assert not ds.commits

@@ -25,7 +25,7 @@ TEST_ROOT = os.path.join(ZENML_ROOT, "tests")
 
 def test_bq_public_commit(repo):
     ds = BigQueryDatasource(
-        name='bq_datasource',
+        name='bq_datasource_public',
         query_project='bigquery-public-data',
         query_dataset='samples',
         query_table='shakespeare',
@@ -43,7 +43,7 @@ def test_bq_public_commit(repo):
 
 def test_bq_private_commit(repo):
     ds = BigQueryDatasource(
-        name='bq_datasource',
+        name='bq_datasource_private',
         query_project='maiot-zenml',
         query_dataset='zenml_tests',
         query_table='shakespeare',
