@@ -45,7 +45,7 @@ A repository is the foundation of all ZenML activity. Every action that can be e
 
 ### Datasources
 
-Datasources are the heart of any machine learning process, and thats why they are first-class citizens in ZenML. While every pipeline takes one as input, a datasource can also be created independently of a pipeline. The important part to note is that a datasource is only really registered in the ZenML repository when it is run at least once as part of a pipeline. At that moment, an immutable snaphot of the data is created, versioned and tracked in the artifact and metadata store respectively.
+Datasources are the heart of any machine learning process, and thats why they are first-class citizens in ZenML. While every pipeline takes one as input, a datasource can also be created independently of a pipeline. The important part to note is that a datasource is only really registered in the ZenML repository when it is run at least once as part of a pipeline. At that moment, an immutable snapshot of the data is created, versioned and tracked in the artifact and metadata store respectively.
 
 ### Pipelines
 
