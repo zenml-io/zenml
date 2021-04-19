@@ -184,7 +184,6 @@ def test_get_step_versions_by_type(repo):
                   "zenml.steps.split.categorical_domain_split_step."
                   "CategoricalDomainSplit",
                   'zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.'
-                  'FeedForwardTrainer'
                   ]
 
     random_step = random.choice(steps_used)

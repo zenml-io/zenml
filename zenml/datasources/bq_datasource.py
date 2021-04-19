@@ -61,8 +61,6 @@ class BigQueryDatasource(BaseDatasource):
             then dest_project is set to the same as query_project.
             schema (str): optional schema for data to conform to.
         """
-        super().__init__(name, **kwargs)
-
         # Check whether gcs_location is a valid one
         if not gcs_location.startswith('gs://'):
             Exception(f'{gcs_location} is not a valid GCS path. It must start '

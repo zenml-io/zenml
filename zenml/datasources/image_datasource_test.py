@@ -107,7 +107,8 @@ def test_add_label_and_metadata():
     filename = "1f22663e72.jpg"
     label_data = {BINARY_DATA: json.dumps(json_data)}
 
-    example_img = {FILE_NAME: filename, BINARY_DATA: b"12345"}
+    example_img = {FILE_NAME: filename, BINARY_DATA: b"12345",
+                   FILE_EXT: '.jpg'}
 
     updated_img = add_label_and_metadata(image_dict=example_img,
                                          label_dict=label_data)

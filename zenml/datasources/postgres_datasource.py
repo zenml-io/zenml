@@ -56,7 +56,6 @@ class PostgresDatasource(BaseDatasource):
             query_limit: Max number of rows to fetch.
             schema: Dict specifying schema.
         """
-        super().__init__(name, **kwargs)
         self.username = username
         self.password = password
         self.database = database
