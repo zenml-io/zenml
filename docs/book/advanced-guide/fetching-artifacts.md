@@ -4,26 +4,26 @@ description: 'Structure your steps, pipelines, backends and more.'
 
 # ZenML repository guidelines
 
-The only requirement for the structure of any ZenML repository is that it should be a **Git enabled repository**. ZenML works on some assumptions of the underlying git repository that it is built on top of.
+The only requirement for the structure of any **ZenML** repository is that it should be a **Git enabled repository**. **ZenML** works on some assumptions of the underlying git repository that it is built on top of.
 
 ## Components
 
-ZenML has the following core components:
+**ZenML** has the following core components:
 
 * [Steps](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/getting-started/steps/what-is-a-step.md)
 * [Datasources](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/datasources/what-is-a-datasource.md)
 * [Pipelines](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/pipelines/what-is-a-pipeline.md)
 * [Backends](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/backends/what-is-a-backend.md)
 
-Each component has its own intricacies and its own rules of precisely how to extend them. However, there are some rules that are general when writing ZenML code:
+Each component has its own intricacies and its own rules of precisely how to extend them. However, there are some rules that are general when writing **ZenML** code:
 
 * All components have `Base` classes, e.g., `BaseDatasource`, `BasePipeline`, `BaseStep` etc that need to be inherited from.
-* All custom classes must exist within its own `module` \(directory\) in a ZenML repo.
+* All custom classes must exist within their own `module` \(directory\) in a **ZenML** repo.
 * All components follow the same Git-pinning methodology outlined [below](fetching-artifacts.md#integration-with-git).
 
 ## Recommended Repository Structure
 
-. We recommend structuring a ZenML repo as follows. Not everything here is required, it is simply an organization that maximizes the effectiveness of ZenML.
+We recommend structuring a **ZenML** repo as follows. Not everything here is required, it is simply an organization that maximizes the effectiveness of **ZenML**.
 
 ```yaml
 repository
@@ -76,17 +76,17 @@ repository
         |   __init__.py
 ```
 
-Some things to note: There can be many scripts of the type **pipeline\_run\_script.py**, and can potentially be placed in their own directory. These sorts of files are where the actual ZenML pipeline is constructed. When using ZenML in a CI/CD setting with automated runs, these files can be checked into source control as well.
+Some things to note: There can be many scripts of the type **pipeline\_run\_script.py**, and can potentially be placed in their own directory. These sorts of files are where the actual **ZenML** pipeline is constructed. When using **ZenML** in a CI/CD setting with automated runs, these files can be checked into source control as well.
 
 {% hint style="info" %}
-You can put pipeline construction files anywhere within a ZenML repo, and not just the root. ZenML figures out automatically from which context you are executing and always finds a reference to the root of the repository!
+You can put pipeline construction files anywhere within a ZenML repo, and not just the root. **ZenML** figures out automatically from which context you are executing and always finds a reference to the root of the repository!
 {% endhint %}
 
-The **Dockerfile** is necessary in case [custom images](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/backends/using-docker.md) are required for non-local pipeline runs. This too can be automated via a simple CI/CD scheme. The **notebook directory** is for pre and post pipeline run analysis, to analyze what went right \(or wrong\) as the experiments develop. Whenever decisions are made and realized, the code developed here should be refactored into appropriate Step directories to be persisted and tracked by ZenML. Notice that each type of **Step** has its own root folder, which contains individual modules for different implementations of it. This allows for flexible [git pinning](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/advanced-guide/integration-with-git.md) and easier development as this repository grows. Let us know your structuring via [Slack](https://github.com/maiot-io/zenml) so we can improve this recommendation!
+The **Dockerfile** is necessary in case [custom images](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/backends/using-docker.md) are required for non-local pipeline runs. This too can be automated via a simple CI/CD scheme. The **notebook directory** is for pre and post pipeline run analysis, to analyze what went right \(or wrong\) as the experiments develop. Whenever decisions are made and realized, the code developed here should be refactored into appropriate Step directories to be persisted and tracked by **ZenML**. Notice that each type of **Step** has its own root folder, which contains individual modules for different implementations of it. This allows for flexible [git pinning](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/advanced-guide/integration-with-git.md) and easier development as this repository grows. Let us know your structuring via [Slack](https://github.com/maiot-io/zenml) so we can improve this recommendation!
 
 ## Integration with Git
 
-ZenML does not reinvent the wheel, or interfere too much with established workflows. When it comes to versioning of code, this means a solid integration into Git.
+**ZenML** does not reinvent the wheel or interfere too much with established workflows. When it comes to versioning of code, this means a solid integration into Git.
 
 Concretely, ZenML **optionally** uses Git SHAs to resolve your version-pinned pipeline code.
 
@@ -97,34 +97,33 @@ At pipeline run time, ZenML ties into your local Git history and automatically r
 
 You can, of course, run your code as-is and maintain version control via your own logic and your own automation. This is why the `git_sha` above is optional: If you run a pipeline where the `class` is not committed \(i.e. unstaged or staged but not committed\), then no `git_sha` is added to the config. In this case, each time the pipeline is run or loaded the `class` is loaded **as is** from the `class` path, directly from the working tree's current state.
 
-```text
-While it is faster to just keep running pipelines with un-pinned classes, each un-pinned class adds a technical debt to the ZenML repository. This is because there are no 
-guarantees of reproducibility once a pipeline has a class that is un-pinned. We strongly advise to always commit all code before running pipelines.
-```
+{% hint style="warning" %}
+While it is faster to just keep running pipelines with un-pinned classes, each un-pinned class adds a technical debt to the **ZenML** repository. This is because there are no guarantees of reproducibility once a pipeline has a class that is un-pinned. We strongly advise always to commit all code before running pipelines.
+{% endhint %}
 
 #### Versioning built-in methods
 
-Since ZenML comes with a lot of batteries included, and as ZenML is undergoing rapid development, we're providing a way to version built-in methods, too.
+Since **ZenML** comes with a lot of batteries included, and as **ZenML** is undergoing rapid development, we're providing a way to version built-in methods, too.
 
 Specifying the version of a built-in method will be persisted in the pipeline config as `step.path@zenml_0.1.0`. E.g. `zenml.steps.data.bq_data_step.BQDataStep@zenml_0.1.4`
 
 ### What happens under-the-hood?
 
-When running a version-pinned piece of code, ZenML loads all SHA-pinned classes from your git history into memory. This is done via an - immediately reversed - in-memory checkout of the specified SHA.
+When running a version-pinned piece of code, **ZenML** loads all sha-pinned classes from your git history into memory. This is done via an - immediately reversed - in-memory checkout of the specified sha.
 
 #### Safe-guards with in-memory loading
 
-In order to ensure this is not a destructive operation, ZenML does not allow the in-memory checkout if any of the files in the module folder where the `class` resides is un-committed. E.g. Attempting to load `my_module.step.MyStepClass@sha1` will fail if the `my_module.step` has any uncommitted files.
+In order to ensure this is not a destructive operation, **ZenML** does not allow the in-memory checkout if any of the files in the module folder where the `class` resides is un-committed. E.g. Attempting to load `my_module.step.MyStepClass@sha1` will fail if the `my_module.step` has any uncommitted files.
 
 #### Organizing code
 
-It is important to understand that when a pipeline is run, all custom classes used, whether they be `Steps`, `Datasources`, or `Backends` under-go a so-called `git-resolution` process. This means that wherever there is a custom class referenced in a Pipeline, all files within the module are checked to see if they are committed or not. If they are committed, then the class is successfully pinned with the relevant sha. If they are not, then a warning is thrown but the class is not pinned in the corresponding config. Therefore, it is important to consider not only the file where custom logic resides, but the entire module. This is also the reason that `upwards` relative imports are not permitted within these class files.
+It is important to understand that when a pipeline is run, all custom classes used, whether they be `Steps`, `Datasources`, or `Backends` under-go a so-called `git-resolution` process. This means that wherever there is a custom class referenced in a Pipeline, all files within the module are checked to see if they are committed or not. If they are committed, then the class is successfully pinned with the relevant sha. If they are not, then a warning is thrown but the class is not pinned in the corresponding config. Therefore, it is important to consider not only the file where custom logic resides but the entire module. This is also the reason that `upwards` relative imports are not permitted within these class files.
 
-We recommend that users [follow our recommendation](https://github.com/maiot-io/zenml/blob/1b4e7d68c6d1c9c92e04d7b52ebb1cc63a20fde5/docs/book/getting-started/organizing-zenml.md)to structure their ZenML repositories, to avoid any potential Git-related issues.
+We recommend that users [follow our recommendations](https://github.com/maiot-io/zenml/blob/1b4e7d68c6d1c9c92e04d7b52ebb1cc63a20fde5/docs/book/getting-started/organizing-zenml.md) on how to structure their **ZenML** repositories, to avoid any potential Git-related issues.
 
 ### Example of how ZenML + Git function together
 
-Let's say we created a TrainerStep and placed it in our ZenML repository here:
+Let's say we created a TrainerStep and placed it in our **ZenML** repository here:
 
 ```text
 repository
@@ -195,5 +194,5 @@ Notice the `source` key is tagged with the full path to trainer class and the sh
 We change `e9448e0abbc6f03252578ca877bc80c94f137edd` to `e9448e0a` for readability purposes.
 {% endhint %}
 
-This way, all ZenML custom classes can be used in different environments, and reproducibility is ensured.
+This way, all **ZenML** custom classes can be used in different environments, and reproducibility is ensured.
 
