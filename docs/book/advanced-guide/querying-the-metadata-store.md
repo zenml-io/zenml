@@ -159,5 +159,5 @@ pipeline_b.add_trainer(...)  # change trainer step
 pipeline_b.run()
 ```
 
-In the above example, if there is a shared Metadata and Artifact Store, all steps preceding the TrainerStep in the pipeline will be cached and reused in Pipeline B. For large datasets, this will yield enormous benefits in terms of cost and time.
+In the above example, if there is a shared Metadata and Artifact Store, all steps preceding the `TrainerStep` in the pipeline will be cached and reused in Pipeline B. For large datasets, this will yield enormous benefits in terms of cost and time.
 
