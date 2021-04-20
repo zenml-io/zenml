@@ -29,7 +29,7 @@ While there are other pipelining solutions for Machine Learning experiments, **Z
 
 ## What do I do next?
 
-If one of the above links are too hands-on, then a good place to go from this point is:
+A good place to go from this point is to:
 
 * Read more about [core concepts](core-concepts.md) to inform your decision about using **ZenML**
 * Get up and running with your first pipeline [w](starter-guide/quickstart.md)ith our [starter guide](starter-guide/repository.md)

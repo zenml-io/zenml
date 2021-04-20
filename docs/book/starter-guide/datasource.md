@@ -6,7 +6,7 @@ description: Easily connect datasources.
 
 ## Overview: `BaseDatasource`
 
-**ZenML**  automatically tracks \(metadata store\) and versions \(artifact store\) all data that flows through its pipelines. The  **`BaseDatasource`** interface defines how to create a datasource. In the definition of this interface, there is only one method called `process`.
+**ZenML** automatically tracks \(**metadata store**\) and versions \(**artifact store**\) all data that flows through its pipelines. The  `BaseDatasource` interface defines how to create a datasource. In the definition of this interface, there is only one method called `process`.
 
 ```python
 class BaseDatasource:
@@ -18,7 +18,7 @@ class BaseDatasource:
 
 ### process
 
-The goal of the `process` is to read from the source of the data and write to the `output_path` the data in the form of [TFRecords](https://www.tensorflow.org/tutorials/load_data/tfrecord), which is an efficient, standardized format to store ML data that ZenML utilizes internally. These TFRecords in turn are read downstream in **Pipelines.** A **schema** and **statistics** are also automatically generated for each datasource run.
+The goal of the `process` is to read from the source of the data and write to the `output_path` the data in the form of [TFRecords](https://www.tensorflow.org/tutorials/load_data/tfrecord), which is an efficient, standardized format to store ML data that **ZenML** utilizes internally. These TFRecords in turn are read downstream in **pipelines.** A schema and statistics are also automatically generated for each datasource run.
 
 ```python
 def process(output_path, make_beam_pipeline):
@@ -109,5 +109,5 @@ training_pipeline.add_datasource(ds)
 ...
 ```
 
-Each time the user calls `ds.commit()` a new version \(snapshot\) of the data is created via a data pipeline defined through the `process` method.
+Each time the user calls `ds.commit()` a new version \(snapshot\) of the data is created via a **data pipeline** defined through the `process` method.
 

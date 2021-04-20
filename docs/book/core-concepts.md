@@ -10,15 +10,15 @@ description: A good place to start before diving further into the docs.
 
 ## Repository
 
-A **repository** is the foundation of all **ZenML** activity. Every action that can be executed within **ZenML** has to necessarily take place within a **ZenML repository**. **ZenML repositories** are inextricably [tied to git](core-concepts.md).
+A **repository** is the foundation of all **ZenML** activity. Every action that can be executed within **ZenML** has to necessarily take place within a **ZenML repository**. **ZenML repositories** are inextricably tied to git.
 
 ## Datasources
 
-**Datasources** are the heart of any machine learning process and that's why they are first-class citizens in **ZenML**. While every **pipeline** takes one as input, a **datasource** can also be created independently of a **pipeline**. The important part to note is that a **datasource** is only really registered in the **ZenML repository** when it is run at least once as part of a **pipeline**. At that moment, an immutable snapshot of the data is created, versioned, and tracked in the **artifact and metadata store** respectively.
+**Datasources** are the heart of any machine learning process and that's why they are first-class citizens in **ZenML**. While every **pipeline** takes one as input, a **datasource** can also be created independently of a **pipeline**. At that moment, an immutable snapshot of the data is created, versioned, and tracked in the **artifact store** and **metadata store** respectively.
 
 ## Pipelines
 
-An **ZenML pipeline** is a sequence of tasks that execute in a specific order and yield artifacts. The artifacts are stored within the **artifact store** and indexed via the **metadata store** \(see below\). Each individual task within a pipeline is known as a **Step**. The standard **pipelines** \(like `TrainingPipeline`\) within **ZenML** are designed to have easy interfaces to add pre-decided **steps**, with the order also pre-decided. Other sorts of **pipelines** can be created as well from scratch.
+An **ZenML pipeline** is a sequence of tasks that execute in a specific order and yield artifacts. The artifacts are stored within the **artifact store** and indexed via the **metadata store** \(see below\). Each individual task within a pipeline is known as a **step**. The standard **pipelines** \(like `TrainingPipeline`\) within **ZenML** are designed to have easy interfaces to add pre-decided **steps**, with the order also pre-decided. Other sorts of **pipelines** can be created as well from scratch.
 
 The moment it is `run`, a **pipeline** is converted to an immutable, declarative YAML configuration file, stored in the **pipelines directory** \(see below\). These YAML files may be persisted within the git repository as well or kept separate.
 
@@ -44,7 +44,7 @@ Each layer defines its own special interface that is essentially placeholder fun
 
 ## Backends
 
-If **datasources** represent the data you use, and **pipelines+steps** define the code you use, **backends** define the configuration and environment with which everything comes together. **Backends** give the freedom to separate infrastructure from code, which is so crucial in production environments. They define where and how the code runs.
+If **datasources** represent the data you use, and **pipelines/steps** define the code you use, **backends** define the configuration and environment with which everything comes together. **Backends** give the freedom to separate infrastructure from code, which is so crucial in production environments. They define where and how the code runs.
 
 **Backends** are defined either per **pipeline** \(here they are called `OrchestratorBackends`\), or per **step** \(i.e. `ProcessingBackends`, `TrainingBackends`\).
 
@@ -64,21 +64,21 @@ The configuration of each **datasource**, **pipeline**, **step**, **backend**, a
 
 ## Important considerations
 
-[**Artifact stores**](core-concepts.md#artifact-store) ****and ****[**metadata stores**](core-concepts.md#metadata-store) can be configured per **repository** as well as per **pipeline**. However, only **pipelines** with the same **artifact store** and **metadata store** are comparable, and therefore should not change to maintain the benefits of caching and consistency across **pipeline** runs.
+**Artifact stores** and **metadata stores** can be configured per **repository** as well as per **pipeline**. However, only **pipelines** with the same **artifact store** and **metadata store** are comparable, and therefore should not change to maintain the benefits of caching and consistency across **pipeline** runs.
 
-On a high level, when data is read from a **datasource** the results are persisted in your **artifact store**. An orchestration integration reads the data from the **artifact store** and begins preprocessing - either itself or alternatively on a dedicated processing **backend** like [Google Dataflow](https://cloud.google.com/dataflow). Every **pipeline step** reads its predecessor's result artifacts from the **artifact store** and writes its own result artifacts to the **artifact store**. Once preprocessing is done, the orchestration begins the training of your model - again either itself or on a dedicated training **backend**. The trained model will be persisted in the **artifact store**, and optionally passed on to a serving **backend**.
+On a high level, when data is read from a **datasource** the results are persisted in your **artifact store**. An orchestration integration reads the data from the **artifact store** and begins preprocessing - either itself or alternatively on a dedicated processing **backend** like [Google Dataflow](https://cloud.google.com/dataflow). Every **pipeline step** reads its predecessor's result artifacts from the **artifact store** and writes its own result artifacts to the **artifact store**. Once preprocessing is done, the orchestration begins the training of your model - again either itself or on a dedicated **training backend**. The trained model will be persisted in the **artifact store**, and optionally passed on to a **serving backend**.
 
 A few rules apply:
 
-* Every orchestration backend \(local, [Google Cloud VMs](core-concepts.md), etc\) can run all pipeline steps, including training, of pipelines. 
-* Orchestration backends have a selection of compatible processing backends.
-* Pipelines can be configured to utilize more powerful processing \(e.g. distributed\) and training \(e.g. Google AI Platform\) backends. 
+* Every **orchestration backend** \(local, [Google Cloud VMs](core-concepts.md), etc\) can run all **pipeline steps**, including training. 
+* **Orchestration backends** have a selection of compatible **processing backends**.
+* **Pipelines** can be configured to utilize more powerful **processing** \(e.g. distributed\) and **training** \(e.g. Google AI Platform\) **backends**. 
 
-A quick example for large data sets makes this clearer. By default, your experiments will run locally. Pipelines on large datasets would be severely bottlenecked, so you can configure Google Dataflow as a processing backend for distributed computation, and Google AI Platform as a training backend.
+A quick example for large data sets makes this clearer. By default, your experiments will run locally. Pipelines on large datasets would be severely bottlenecked, so you can configure [Google Dataflow](https://cloud.google.com/dataflow) as a **processing backend** for distributed computation, and [Google AI Platform](https://cloud.google.com/ai-platform) as a **training backend**.
 
 ### System design
 
-The design choices in **ZenML** follow the understanding that production-ready model training pipelines need to be immutable, repeatable, discoverable, descriptive, and efficient. **ZenML** takes care of the orchestration of your pipelines, from sourcing data all the way to continuous training - no matter if it's running somewhere locally, in an on-premise data center, or in the Cloud.
+The design choices in **ZenML** follow the understanding that production-ready model training **pipelines** need to be immutable, repeatable, discoverable, descriptive, and efficient. **ZenML** takes care of the orchestration of your **pipelines**, from sourcing data all the way to continuous training - no matter if it's running somewhere locally, in an on-premise data center, or in the Cloud.
 
 In different words, **ZenML** runs your **ML** code while taking care of the "**Op**eration**s**" for you. It takes care of:
 

@@ -78,6 +78,5 @@ It is important to note that most of the methods listed above involve parsing th
 ## What's next?
 
 * As we now have our **ZenML repository** set up, we can go ahead and start developing our first **pipeline**.
-* If you want to learn more about how the git integration works under the hood, you can go ahead and check here.
-* Moreover, if you would like to see our suggestions on how to organize your **repository** you can check here.
+* If you want to learn more about how the git integration works under the hood or see our suggestions on how to organize your **repository,** you can check [here](../advanced-guide/fetching-artifacts.md).
 
