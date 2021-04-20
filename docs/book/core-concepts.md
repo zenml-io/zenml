@@ -2,7 +2,7 @@
 description: A good place to start before diving further into the docs.
 ---
 
-# Core Concepts
+# Core concepts
 
 **ZenML** consists of the following key components:
 

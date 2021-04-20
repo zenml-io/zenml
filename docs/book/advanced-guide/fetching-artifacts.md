@@ -2,7 +2,7 @@
 description: 'Structure your steps, pipelines, backends and more.'
 ---
 
-# ZenML Repository Guidelines
+# ZenML repository guidelines
 
 The only requirement for the structure of any ZenML repository is that it should be a **Git enabled repository**. ZenML works on some assumptions of the underlying git repository that it is built on top of.
 

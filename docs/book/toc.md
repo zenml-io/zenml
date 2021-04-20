@@ -2,7 +2,7 @@
 
 * [Introduction](index.md)
 * [Installation](installation.md)
-* [Core Concepts](core-concepts.md)
+* [Core concepts](core-concepts.md)
 
 ## Starter Guide
 
@@ -18,19 +18,19 @@
 
 ## Advanced Guide
 
-* [Inspecting all pipelines in a repository](advanced-guide/inspecting-all-pipelines.md)
-* [The metadata and artifact stores](advanced-guide/querying-the-metadata-store.md)
-* [ZenML Repository Guidelines](advanced-guide/fetching-artifacts.md)
-* [Team Collaboration](advanced-guide/team-collaboration.md)
-* [Managing the environment](advanced-guide/integrations.md)
 * [Backends](advanced-guide/backends.md)
+* [Pipelines in a repository](advanced-guide/inspecting-all-pipelines.md)
+* [The metadata and artifact stores](advanced-guide/querying-the-metadata-store.md)
+* [ZenML repository guidelines](advanced-guide/fetching-artifacts.md)
+* [Team collaboration](advanced-guide/team-collaboration.md)
+* [Managing the environment](advanced-guide/integrations.md)
 
 ## Support
 
 * [Tutorials](support/tutorials.md)
 * [Roadmap](support/roadmap.md)
 * [Changelogs](support/release_notes.md)
-* [Usage Analytics](support/usage-analytics.md)
+* [Usage analytics](support/usage-analytics.md)
 * [Contact](support/contact.md)
 
 ## API Reference

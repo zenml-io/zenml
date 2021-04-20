@@ -2,7 +2,7 @@
 description: Pipelines are your experiments
 ---
 
-# Inspecting all pipelines in a repository
+# Pipelines in a repository
 
 All **pipelines** within a ZenML **repository** are tracked centrally. In order to access information about your ZenML repository in code, you need to access the ZenML [Repository instance](../api-reference/zenml/zenml.repo.md#zenml-repo-package). This object is a Singleton and can be fetched any time from within your Python code simply by executing:
 
