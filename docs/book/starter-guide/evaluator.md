@@ -16,8 +16,7 @@ As you can see from the code snippet above, if you want to work with the `TFMAEv
 
 ```python
 from zenml.pipelines import TrainingPipeline
-from zenml.steps.evaluator import AgnosticEvaluator
-
+from zenml.steps.evaluator import TFMAEvaluator
 
 training_pipeline = TrainingPipeline()
  

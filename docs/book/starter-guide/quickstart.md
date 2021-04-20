@@ -113,11 +113,11 @@ training_pipeline.run()
 ```
 
 {% hint style="info" %}
-A **ZenML pipeline** in the current version is a higher-level abstraction of an opinionated TFX pipeline. **ZenML steps** are in turn higher-level abstractions of TFX components. Our goal is to make it easier for the users of **ZenML** to define and run TFX pipelines. Moreover, ZenML treats pipelines as first-class citizens. We will elaborate more on the difference in this space, but for now, if you are coming from writing your own TFX pipelines, our [quickstart example](https://github.com/maiot-io/zenml/tree/main/examples/quickstart) illustrates the difference well.
+A **ZenML pipeline** in the current version is a higher-level abstraction of an opinionated TFX pipeline. **ZenML steps** are in turn higher-level abstractions of TFX components. Our goal is to make it easier for the users of **ZenML** to define and run TFX pipelines. Moreover, **ZenML** treats pipelines as first-class citizens. We will elaborate more on the difference in this space, but for now, if you are coming from writing your own TFX pipelines, our [quickstart example](https://github.com/maiot-io/zenml/tree/main/examples/quickstart) illustrates the difference well.
 {% endhint %}
 
 ## What's next?
 
-* If you would like to learn more about how to interact with pipelines in a ZenML repository, you can go [here](../advanced-guide/inspecting-all-pipelines.md).
-* If you want to learn more about how to create the aforementioned datasource and steps, you can follow up on the documentation right [here](datasource.md).
+* If you would like to learn more about how to interact with **pipelines** in a **ZenML repository**, you can go [here](../advanced-guide/inspecting-all-pipelines.md).
+* If you want to learn more about how to create the aforementioned **datasource** and steps, you can follow up on the documentation right [here](datasource.md).
 
