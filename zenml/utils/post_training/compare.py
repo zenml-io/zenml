@@ -172,6 +172,8 @@ class Application(param.Parameterized):
                 cmax=max(
                     final_col)),
                 dimensions=new_dims))
+
+
         else:
             fig = px.scatter(pd.DataFrame(),
                              marginal_y='rug',
