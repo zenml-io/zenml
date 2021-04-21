@@ -23,14 +23,14 @@ ZENML_ROOT = str(Path(zenml.__path__[0]).parent)
 TEST_ROOT = os.path.join(ZENML_ROOT, "tests")
 
 
-def test_tfrecords_commit(repo):
-    ds = TFRecordsDatasource(
-        name='tfrecords_ds',
-        path='/home/hamza/workspace/maiot/github_temp/zenml/.zenml/data/iris',
-    )
-    assert not ds.commits
-
-    _id = ds.commit()
-
-    # check that this commit made
-    assert _id == ds.get_latest_commit()
+# def test_tfrecords_commit(repo):
+#     ds = TFRecordsDatasource(
+#         name='tfrecords_ds',
+#         path='/home/hamza/workspace/maiot/github_temp/zenml/.zenml/data/iris',
+#     )
+#     assert not ds.commits
+#
+#     _id = ds.commit()
+#
+#     # check that this commit made
+#     assert _id == ds.get_latest_commit()
