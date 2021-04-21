@@ -31,16 +31,20 @@ class Application(param.Parameterized):
     slicing_metric_selector = param.ObjectSelector(default='', objects=[''])
     performance_metric_selector = param.ObjectSelector(objects=[])
 
-    def __init__(self, **params):
+    def __init__(self, datasource, **params):
         super(Application, self).__init__(**params)
 
         # lists
         result_list = []
         hparam_list = []
         repo: Repository = Repository.get_instance()
+        datasource = datasource
 
         # get all pipelines in this workspace
-        all_pipelines: List[TrainingPipeline] = repo.get_pipelines_by_type([
+        if datasource:
+            all_pipelines: List[TrainingPipeline] = repo.get_pipelines_by_datasource([datasource])
+        else:
+            all_pipelines: List[TrainingPipeline] = repo.get_pipelines_by_type([
             TrainingPipeline.PIPELINE_TYPE])
 
         # get a dataframe of all results + all hyperparameter combinations
@@ -177,8 +181,8 @@ class Application(param.Parameterized):
         return fig
 
 
-def generate_interface():
-    app = Application()
+def generate_interface(datasource=None):
+    app = Application(datasource=datasource)
     handlers = pn.Param(app.param)
 
     # Analysis Page

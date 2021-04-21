@@ -336,7 +336,7 @@ def evaluate_single_pipeline(
             os.system(f'jupyter notebook {final_out_path} --port {port}')
 
 
-def launch_compare_tool(port: int = 0):
+def launch_compare_tool(port: int = 0, datasource=None):
     """Launches `compare` tool for comparing multiple training pipelines."""
     # assumes compare.py in the same folder
     template = \
