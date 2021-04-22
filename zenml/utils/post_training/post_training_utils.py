@@ -21,6 +21,7 @@ from typing import Text
 import click
 import nbformat as nbf
 import pandas as pd
+import panel
 import panel as pn
 import tensorflow as tf
 import tensorflow_data_validation as tfdv
@@ -29,8 +30,7 @@ from tensorflow_metadata.proto.v0 import statistics_pb2
 from tensorflow_transform.tf_metadata import schema_utils
 from tfx.utils import io_utils
 
-from zenml.constants import APP_NAME, EVALUATION_NOTEBOOK, \
-    COMPARISON_NOTEBOOK
+from zenml.constants import APP_NAME, EVALUATION_NOTEBOOK
 from zenml.enums import GDPComponent
 from zenml.logger import get_logger
 from zenml.utils.path_utils import read_file_contents
@@ -336,36 +336,13 @@ def evaluate_single_pipeline(
             os.system(f'jupyter notebook {final_out_path} --port {port}')
 
 
-def launch_compare_tool(port: int = 0):
-    """Launches `compare` tool for comparing multiple training pipelines."""
-    # assumes compare.py in the same folder
-    template = \
-        os.path.join(os.path.abspath(os.path.dirname(__file__)), 'compare.py')
-    compare_cell = read_file_contents(template)
+def launch_compare_tool(port: int = 0, datasource=None):
+    """Launches `compare` tool for comparing multiple training pipelines.
 
-    # generate notebook
-    nb = nbf.v4.new_notebook()
-    nb['cells'] = [
-        nbf.v4.new_code_cell(compare_cell),
-    ]
-
-    # TODO: [LOW] Check if we can centralize this along with the one used in
-    #  evaluate_single_pipeline()
-    config_folder = click.get_app_dir(APP_NAME)
-    if not (os.path.exists(config_folder) and os.path.isdir(
-            config_folder)):
-        os.makedirs(config_folder)
-
-    final_out_path = os.path.join(config_folder, COMPARISON_NOTEBOOK)
-    s = nbf.writes(nb)
-    if isinstance(s, bytes):
-        s = s.decode('utf8')
-
-    with open(final_out_path, 'w') as f:
-        f.write(s)
-
-    # serve notebook
-    if port == 0:
-        os.system('panel serve "{}" --show'.format(final_out_path))
-    else:
-        os.system(f'panel serve "{final_out_path}" --port {port} --show')
+    Args:
+        port: Port to launch application on.
+        datasource (BaseDatasource): object of type BaseDatasource, to 
+        filter only pipelines using that particular datasource.
+    """
+    from zenml.utils.post_training.compare import generate_interface
+    panel.serve(generate_interface(datasource), port=port)
