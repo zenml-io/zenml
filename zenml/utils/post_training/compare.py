@@ -7,9 +7,10 @@ import plotly.express as px
 import plotly.graph_objects as go
 import tensorflow_model_analysis as tfma
 
+from zenml.datasources import BaseDatasource
+from zenml.enums import PipelineStatusTypes, GDPComponent
 from zenml.pipelines import TrainingPipeline
 from zenml.repo import Repository
-from zenml.enums import PipelineStatusTypes, GDPComponent
 
 pn.extension('plotly')
 
@@ -31,23 +32,26 @@ class Application(param.Parameterized):
     slicing_metric_selector = param.ObjectSelector(default='', objects=[''])
     performance_metric_selector = param.ObjectSelector(objects=[])
 
-    def __init__(self, datasource, **params):
+    def __init__(self, datasource: BaseDatasource = None, **params):
         super(Application, self).__init__(**params)
 
         # lists
         result_list = []
         hparam_list = []
         repo: Repository = Repository.get_instance()
-        datasource = datasource
+        self.datasource = datasource
 
         # get all pipelines in this workspace
         if datasource:
-            # filter pipeline by datasource
-            all_pipelines: List[TrainingPipeline] = repo.get_pipelines_by_datasource([datasource])
-            all_pipelines = [p for p in all_pipelines if p.PIPELINE_TYPE == TrainingPipeline.PIPELINE_TYPE]
+            # filter pipeline by datasource, and then the training ones
+            all_pipelines: List[TrainingPipeline] = \
+                repo.get_pipelines_by_datasource(datasource)
+            all_pipelines = [p for p in all_pipelines if
+                             p.PIPELINE_TYPE == TrainingPipeline.PIPELINE_TYPE]
         else:
-            all_pipelines: List[TrainingPipeline] = repo.get_pipelines_by_type([
-            TrainingPipeline.PIPELINE_TYPE])
+            all_pipelines: List[TrainingPipeline] = repo.get_pipelines_by_type(
+                [
+                    TrainingPipeline.PIPELINE_TYPE])
 
         # get a dataframe of all results + all hyperparameter combinations
         for p in all_pipelines:
@@ -183,7 +187,7 @@ class Application(param.Parameterized):
         return fig
 
 
-def generate_interface(datasource=None):
+def generate_interface(datasource: BaseDatasource = None):
     app = Application(datasource=datasource)
     handlers = pn.Param(app.param)
 
@@ -201,7 +205,3 @@ def generate_interface(datasource=None):
         ('Analysis Page', analysis_page),
     )
     return interface
-
-
-platform = generate_interface()
-platform.servable()
