@@ -34,7 +34,6 @@ from zenml.constants import APP_NAME, EVALUATION_NOTEBOOK
 from zenml.enums import GDPComponent
 from zenml.logger import get_logger
 from zenml.utils.path_utils import read_file_contents
-from zenml.utils.post_training.compare import generate_interface
 
 logger = get_logger(__name__)
 
@@ -345,4 +344,5 @@ def launch_compare_tool(port: int = 0, datasource=None):
         datasource (BaseDatasource): object of type BaseDatasource, to 
         filter only pipelines using that particular datasource.
     """
+    from zenml.utils.post_training.compare import generate_interface
     panel.serve(generate_interface(datasource), port=port)
