@@ -31,7 +31,6 @@ from tensorflow_transform.tf_metadata import schema_utils
 from tfx.utils import io_utils
 
 from zenml.constants import APP_NAME, EVALUATION_NOTEBOOK
-from zenml.datasources import BaseDatasource
 from zenml.enums import GDPComponent
 from zenml.logger import get_logger
 from zenml.utils.path_utils import read_file_contents
@@ -338,6 +337,12 @@ def evaluate_single_pipeline(
             os.system(f'jupyter notebook {final_out_path} --port {port}')
 
 
-def launch_compare_tool(port: int = 0, datasource: BaseDatasource = None):
-    """Launches `compare` tool for comparing multiple training pipelines."""
+def launch_compare_tool(port: int = 0, datasource=None):
+    """Launches `compare` tool for comparing multiple training pipelines.
+
+    Args:
+        port: Port to launch application on.
+        datasource (BaseDatasource): object of type BaseDatasource, to 
+        filter only pipelines using that particular datasource.
+    """
     panel.serve(generate_interface(datasource), port=port)
