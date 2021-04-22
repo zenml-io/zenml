@@ -24,7 +24,6 @@ from zenml.repo import ArtifactStore, GitWrapper, GlobalConfig, ZenMLConfig
 from zenml.repo.constants import ZENML_DIR_NAME
 from zenml.standards import standard_keys as keys
 from zenml.utils import path_utils, yaml_utils
-from zenml.datasources import BaseDatasource
 from zenml.utils.analytics_utils import track, CREATE_REPO, GET_PIPELINES, \
     GET_DATASOURCES, GET_STEPS_VERSIONS, \
     REGISTER_PIPELINE, GET_STEP_VERSION
@@ -377,7 +376,7 @@ class Repository:
         pipelines_dir = self.zenml_config.get_pipelines_dir()
         return yaml_utils.read_yaml(os.path.join(pipelines_dir, file_name))
 
-    def compare_training_runs(self, port: int = 0, datasource: BaseDatasource = None):
+    def compare_training_runs(self, port: int = 0, datasource=None):
         """Launch the compare app for all training pipelines in repo"""
         from zenml.utils.post_training.post_training_utils import \
             launch_compare_tool
