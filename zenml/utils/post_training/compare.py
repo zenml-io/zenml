@@ -7,7 +7,6 @@ import plotly.express as px
 import plotly.graph_objects as go
 import tensorflow_model_analysis as tfma
 
-from zenml.datasources import BaseDatasource
 from zenml.enums import PipelineStatusTypes, GDPComponent
 from zenml.pipelines import TrainingPipeline
 from zenml.repo import Repository
@@ -32,7 +31,7 @@ class Application(param.Parameterized):
     slicing_metric_selector = param.ObjectSelector(default='', objects=[''])
     performance_metric_selector = param.ObjectSelector(objects=[])
 
-    def __init__(self, datasource: BaseDatasource = None, **params):
+    def __init__(self, datasource=None, **params):
         super(Application, self).__init__(**params)
 
         # lists
@@ -187,7 +186,7 @@ class Application(param.Parameterized):
         return fig
 
 
-def generate_interface(datasource: BaseDatasource = None):
+def generate_interface(datasource=None):
     app = Application(datasource=datasource)
     handlers = pn.Param(app.param)
 
