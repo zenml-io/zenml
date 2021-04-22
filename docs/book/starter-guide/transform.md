@@ -2,7 +2,7 @@
 
 ## Overview
 
-For data processing, **ZenML** uses the **`BasePreprocesserStep`** interface. Within the context of this interface, there is a **single abstract method** called `preprocessing_fn`.
+For data processing, **ZenML** uses the `BasePreprocesserStep` interface. Within the context of this interface, there is a **single abstract method** called `preprocessing_fn`.
 
 ```python
 class BasePreprocesserStep(BaseStep):
@@ -22,7 +22,7 @@ def preprocessing_fn(self, element):
 
 ## A quick example: the built-in `StandardPreprocesser` step
 
-We can follow up on the definition by using a simplified version of our built-in **`StandardProcesser`** as a practical example. This `PreprocesserStep` handles not just the feature and label selection but also a wide variety of standard feature-level preprocessing techniques from the field of machine learning. If the behavior is not overwritten, it will apply a sane default filling and preprocessing technique based on the data type of the feature.
+We can follow up on the definition by using a simplified version of our built-in `StandardProcesser` as a practical example. This `PreprocesserStep` handles not just the feature and label selection but also a wide variety of standard feature-level preprocessing techniques from the field of machine learning. If the behavior is not overwritten, it will apply a sane default filling and preprocessing technique based on the data type of the feature.
 
 {% hint style="info" %}
 The following is a simplified version of the complete step. You can find the full code right [here](https://github.com/maiot-io/zenml/blob/main/zenml/steps/preprocesser/standard_preprocesser/standard_preprocesser.py).
@@ -30,7 +30,9 @@ The following is a simplified version of the complete step. You can find the ful
 
 ```python
 class StandardPreprocesser(BasePreprocesserStep):
-
+    
+    ... 
+    
     def preprocessing_fn(self, inputs: Dict):
         """
         Standard preprocessing function
@@ -86,10 +88,10 @@ training_pipeline.add_preprocesser(
 **An important note here**: As you see from the code blocks that you see above, any input given to the constructor of a step will translate into an instance variable. So, when you want to use it you can use **`self`**, as we did with **`self.features`**.
 {% endhint %}
 
-By implementing this abstract method, we now have a complete preprocesser step ready to be used in our pipeline. If you have a task at hand which requires a more complicated logic to preprocess your data, you can follow the same paradigm and write your own `preprocessing_fn`.
+By implementing this abstract method, we now have a complete **preprocesser step** ready to be used in our **pipeline**. If you have a task at hand which requires a more complicated logic to preprocess your data, you can follow the same paradigm and write your own `preprocessing_fn`.
 
 ## What's next?
 
-* Here is a closer look at how the instance variables work in any step and what they represent. \[WIP\]
+* Here is a closer look at how the instance variables work in any **step** and what they represent. \[WIP\]
 * The next potential **step** within a `TrainingPipeline` is the `Trainer` [**step**](trainer.md).
 

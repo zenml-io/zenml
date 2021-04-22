@@ -4,9 +4,9 @@ description: Simple MLOps.
 
 # Introduction
 
-**ZenML** is an extensible, open-source MLOps framework for using production-ready Machine Learning pipelines, in a simple way. At its core, ZenML will orchestrate your experiment pipelines from **sourcing data** to **splitting, preprocessing, training**, all the way to the **evaluation of results** and even **serving**.
+**ZenML** is an extensible, open-source MLOps framework for using production-ready Machine Learning pipelines, in a simple way. At its core, **ZenML** will orchestrate your experiment pipelines from **sourcing data** to **splitting, preprocessing, training**, all the way to the **evaluation of results** and even **serving**.
 
-While there are other pipelining solutions for Machine Learning experiments, ZenML is focused on the following:
+While there are other pipelining solutions for Machine Learning experiments, **ZenML** is focused on the following:
 
 * Simplicity.
 * Reproducibility. 
@@ -29,11 +29,11 @@ While there are other pipelining solutions for Machine Learning experiments, Zen
 
 ## What do I do next?
 
-If one of the above links are too hands-on, then a good place to go from this point is:
+A good place to go from this point is to:
 
-* Get up and running with your first pipeline [w](starter-guide/quickstart.md)ith our [starter guide](starter-guide/repository.md).
-* Read more about [core concepts](core-concepts.md) to inform your decision about using **ZenML**.
-* If you are familiar with the basics, jump right into the [advanced guide](advanced-guide/inspecting-all-pipelines.md) section.
+* Read more about [core concepts](core-concepts.md) to inform your decision about using **ZenML**
+* Get up and running with your first pipeline [w](starter-guide/quickstart.md)ith our [starter guide](starter-guide/repository.md)
+* If you are familiar with the basics, jump right into the [advanced guide](advanced-guide/inspecting-all-pipelines.md) section
 
 ## Get involved
 

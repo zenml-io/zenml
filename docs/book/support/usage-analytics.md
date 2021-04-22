@@ -1,4 +1,4 @@
-# Usage Analytics
+# Usage analytics
 
 In order to help us better understand how the community uses **ZenML**, the pip package reports _anonymized_ usage statistics. You can always opt-out by using the CLI command:
 

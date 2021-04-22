@@ -33,7 +33,7 @@ def input_fn(self, *args, **kwargs)
 
 ### model\_fn
 
-The next helper method in line is the `model_fn`. Similar to the `input_fn`, the aim of this method is to separate the model preparation from the training. The built-in `TrainerStep`s utilize this method to create an instance of the model architecture and return the instance.
+The next helper method in line is the `model_fn`. Similar to the `input_fn`, the aim of this method is to separate the model preparation from the training. The built-in `TrainerStep`s utilize this method to create an instance of the model architecture and return it.
 
 ```python
 def model_fn(self, *args, **kwargs)
@@ -44,7 +44,7 @@ def model_fn(self, *args, **kwargs)
 The last helper method when designing a `BaseTrainerStep` is the `test_fn`. The goal here is to separate the computation of the test results once the training is completed.  In the implementation of the built-in `TrainerStep`s, this method is using the trained model to compute the model output on the test splits and stores the results as an artifact. 
 
 {% hint style="warning" %}
-Storing the test results within the context of a TrainerStep will be especially crucial in terms of post-training evaluation, because, it will allow us to utilize a model agnostic evaluator step in the next step.
+Storing the test results within the context of a TrainerStep will be especially crucial in terms of post-training evaluation, because, it will allow us to utilize a model agnostic evaluator in the next step.
 {% endhint %}
 
 ```python
@@ -53,23 +53,17 @@ Storing the test results within the context of a TrainerStep will be especially 
 
 ### run\_fn
 
-The run\_fn is the only abstract method and it is where everything related to the training comes together. Within the context of this method,
+The `run_fn` is the only abstract method and it is where everything related to the training comes together. Within the context of this method, the required datasets will be created, training will be conducted and the evaluation and tests will follow.
 
 ```python
 @abstractmethod 
 def run_fn(self)
 ```
 
-{% hint style="info" %}
-**\[TODO: Reasoning behind the 1 abstract 3 helpers\]**
-{% endhint %}
-
 ## A quick example: the built-in `TorchFeedForwardTrainer` step
 
-**\[TODO\]**
-
 {% hint style="info" %}
-The following is an overview of the complete step. You can find the full code right [here](https://github.com/maiot-io/zenml/blob/main/zenml/steps/trainer/pytorch_trainers/torch_ff_trainer.py,).
+The following is an overview of the complete **step**. You can find the full code right [here](https://github.com/maiot-io/zenml/blob/main/zenml/steps/trainer/pytorch_trainers/torch_ff_trainer.py,).
 {% endhint %}
 
 ```python
@@ -172,7 +166,7 @@ class TorchFeedForwardTrainer(BaseTrainerStep):
                 ...
 ```
 
-We can now go ahead and use this step in our pipeline:
+We can now go ahead and use this **step** in our **pipeline**:
 
 ```python
 from zenml.pipelines import TrainingPipeline
@@ -198,4 +192,6 @@ training_pipeline.add_trainer(TorchFeedForwardTrainer(
 
 ## What's next?
 
-* 
+* You can learn more about how the instance variables work in any **step** here. \[WIP\]
+* The next **step** within the `TrainingPipeline` is the [`Evaluator` **step**](evaluator.md).
+
