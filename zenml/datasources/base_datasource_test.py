@@ -103,7 +103,7 @@ def test_get_datapoints(repo):
     csv_df = pd.read_csv(os.path.join(TEST_ROOT,
                                       "test_data", "my_dataframe.csv"))
 
-    assert ds.get_datapoints() == len(csv_df.index)
+    assert ds.n_datapoints == len(csv_df.index)
 
 
 def test_sample_data(repo):
