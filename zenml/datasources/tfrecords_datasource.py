@@ -30,7 +30,26 @@ class TFRecordsDatasource(BaseDatasource):
             schema: Dict = None,
             **kwargs):
         """
-        Initialize TFRecords datasource.
+        Initialize TFRecords datasource. Data in the TFRecords should be stored
+        in TFExamples that represent a list of dicts, where each dict
+        represents one datapoint (including label, if required).
+
+        E.g. The data can look like:
+            [{
+                'age': 20,
+                'bmi': 33.3,
+                'dbp': 72,
+                'has_diabetes': 1,
+                'insulin': 0,
+                'pedigree': 0.627,
+                'pgc': 168,
+                'times_pregnant': 1,
+                'tst': 35
+            }]
+
+        If TFRecords are stored in a different format, please override the
+        `process` function of this class and write custom logic to convert
+        to a format that looks like the above.
 
         Args:
             name: Name of datasource.

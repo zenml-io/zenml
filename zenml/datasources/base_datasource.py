@@ -123,6 +123,14 @@ class BaseDatasource:
             return False
         return True
 
+    @property
+    def n_datapoints(self):
+        """Gets total number of datapoints in datasource"""
+        pipeline = self._get_one_pipeline()
+        data_files = self._get_data_file_paths(pipeline)
+        return sum(1 for _ in tf.data.TFRecordDataset(data_files,
+                                                      compression_type='GZIP'))
+
     @abstractmethod
     def process(self, output_path: Text, make_beam_pipeline: Callable = None):
         pass
@@ -270,13 +278,6 @@ class BaseDatasource:
 
         dataset = tf.data.TFRecordDataset(data_files, compression_type='GZIP')
         return convert_raw_dataset_to_pandas(dataset, spec, sample_size)
-
-    def get_datapoints(self):
-        """Gets total number of datapoints in datasource"""
-        pipeline = self._get_one_pipeline()
-        data_files = self._get_data_file_paths(pipeline)
-        return sum(1 for _ in tf.data.TFRecordDataset(data_files,
-                                                      compression_type='GZIP'))
 
     def view_schema(self):
         """View schema of data flowing in pipeline."""
