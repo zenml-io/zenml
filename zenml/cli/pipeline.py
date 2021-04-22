@@ -23,7 +23,6 @@ from zenml.cli.utils import error, pretty_print, pass_repo
 from zenml.pipelines import TrainingPipeline
 from zenml.repo import Repository
 from zenml.utils.yaml_utils import read_yaml
-from zenml.datasources import BaseDatasource
 
 
 @cli.group()
@@ -34,10 +33,10 @@ def pipeline():
 
 @pipeline.command('compare')
 @pass_repo
-def compare_training_runs(repo: Repository, datasource: BaseDatasource = None):
+def compare_training_runs(repo: Repository):
     """Compares pipelines in repo"""
     click.echo('Comparing training pipelines in repo: Starting app..')
-    repo.compare_training_runs(datasource)
+    repo.compare_training_runs()
 
 
 @pipeline.command('list')
