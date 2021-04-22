@@ -152,7 +152,7 @@ class ZenMLMetadataStore:
         pipeline_executions = self.get_pipeline_executions(pipeline)
         for e in pipeline_executions:
             # TODO: [LOW] Create a more refined way to find components.
-            if component_name in e.properties['component_id'].string_value:
+            if component_name == e.properties['component_id'].string_value:
                 return e
 
     def get_pipeline_context(self, pipeline):

@@ -1,0 +1,11 @@
+[
+  {"age": 18, "date": "2018-01-01", "gpa": 1.0, "name": "nicholas"},
+  {"age": 23, "date": "2018-02-01", "gpa": 1.0, "name": "hamza"},
+  {"age": 18, "date": "2018-01-02", "gpa": 1.0, "name": "baris"},
+  {"age": 15, "date": "2021-01-01", "gpa": 1.0, "name": "adam"},
+  {"age": 13, "date": "2014-01-01", "gpa": 1.0, "name": "d1"},
+  {"age": 18, "date": "2008-01-01", "gpa": 1.0, "name": "ds3"},
+  {"age": 3, "date": "2018-02-01", "gpa": 1.0, "name": "nicholaasd"},
+  {"age": 18, "date": "2018-01-01", "gpa": 1.0, "name": "teatea"},
+  {"age": 58, "date": "2018-03-01", "gpa": 1.0, "name": "adssada"}
+]

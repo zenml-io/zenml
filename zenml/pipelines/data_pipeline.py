@@ -19,10 +19,8 @@ from tfx.components.schema_gen.component import SchemaGen
 from tfx.components.statistics_gen.component import StatisticsGen
 
 from zenml.components import DataGen
-from zenml.pipelines import BasePipeline
-from zenml.standards import standard_keys as keys
-from zenml.standards.standard_keys import StepKeys
 from zenml.enums import GDPComponent
+from zenml.pipelines import BasePipeline
 from zenml.utils.post_training.post_training_utils import \
     view_statistics, view_schema
 
@@ -51,13 +49,10 @@ class DataPipeline(BasePipeline):
         Returns:
             A list of TFX components making up the data pipeline.
         """
-        data_config = \
-        config[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.STEPS][
-            keys.DataSteps.DATA]
         data = DataGen(
             name=self.datasource.name,
-            source=data_config[StepKeys.SOURCE],
-            source_args=data_config[StepKeys.ARGS]).with_id(
+            source=self.datasource._source,
+            source_args=self.datasource._source_args).with_id(
             GDPComponent.DataGen.name
         )
         statistics_data = StatisticsGen(
@@ -90,9 +85,4 @@ class DataPipeline(BasePipeline):
         view_schema(uri)
 
     def steps_completed(self) -> bool:
-        mandatory_steps = [keys.DataSteps.DATA]
-        for step_name in mandatory_steps:
-            if step_name not in self.steps_dict.keys():
-                raise AssertionError(
-                    f'Mandatory step {step_name} not added.')
         return True

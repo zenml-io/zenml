@@ -13,16 +13,14 @@
 #  permissions and limitations under the License.
 """JSON Datasource definition"""
 
+from pathlib import Path
 from typing import Text, Callable, Dict
-import json
-import apache_beam as beam
 
 from zenml.datasources import BaseDatasource
-from zenml.utils.beam_utils import WriteToTFRecord
 from zenml.utils import path_utils
 
 
-class JSONDatasource(BaseDatasource):
+class TFRecordsDatasource(BaseDatasource):
     """ZenML JSON datasource definition."""
 
     def __init__(
@@ -32,11 +30,30 @@ class JSONDatasource(BaseDatasource):
             schema: Dict = None,
             **kwargs):
         """
-        Initialize JSON datasource.
+        Initialize TFRecords datasource. Data in the TFRecords should be stored
+        in TFExamples that represent a list of dicts, where each dict
+        represents one datapoint (including label, if required).
+
+        E.g. The data can look like:
+            [{
+                'age': 20,
+                'bmi': 33.3,
+                'dbp': 72,
+                'has_diabetes': 1,
+                'insulin': 0,
+                'pedigree': 0.627,
+                'pgc': 168,
+                'times_pregnant': 1,
+                'tst': 35
+            }]
+
+        If TFRecords are stored in a different format, please override the
+        `process` function of this class and write custom logic to convert
+        to a format that looks like the above.
 
         Args:
             name: Name of datasource.
-            path: path to json file, has to be structured as a list of dicts.
+            path: path to directory of TFRecords files.
             schema (str): optional schema for data to conform to.
         """
         self.path = path
@@ -44,10 +61,5 @@ class JSONDatasource(BaseDatasource):
         super().__init__(name, path=path, schema=schema, **kwargs)
 
     def process(self, output_path: Text, make_beam_pipeline: Callable = None):
-        contents = path_utils.read_file_contents(self.path)
-        json_obj = json.loads(contents)
-        with make_beam_pipeline() as p:
-            (p
-             | beam.Create(json_obj)
-             | WriteToTFRecord(self.schema, output_path)
-             )
+        p = Path(self.path).resolve()
+        path_utils.copy_dir(str(p), output_path)

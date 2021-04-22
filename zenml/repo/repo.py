@@ -148,6 +148,38 @@ class Repository:
         self._check_if_initialized()
         return self.git_wrapper
 
+    # TODO [MEDIUM]: Potentially move these three to relevant Base classes.
+    def get_artifact_store_from_file_path(self, file_path: Text):
+        """
+        Gets artifact store from a pipeline config file path.
+        Args:
+            file_path (Text): Path to pipeline YAML file.
+        """
+        config = yaml_utils.read_yaml(file_path)
+        return ArtifactStore(config[keys.GlobalKeys.ARTIFACT_STORE])
+
+    def get_metadata_store_from_file_path(self, file_path: Text):
+        """
+        Gets metadata store from a pipeline config file path.
+        Args:
+            file_path (Text): Path to pipeline YAML file.
+        """
+        config = yaml_utils.read_yaml(file_path)
+        return ZenMLMetadataStore.from_config(
+            config[keys.GlobalKeys.METADATA_STORE])
+
+    def get_orchestrator_backend_from_file_path(self, file_path: Text):
+        """
+        Gets orchestrator backend from a pipeline config file path.
+        Args:
+            file_path (Text): Path to pipeline YAML file.
+        """
+        from zenml.backends.orchestrator.base.orchestrator_base_backend \
+            import OrchestratorBaseBackend
+        config = yaml_utils.read_yaml(file_path)
+        return OrchestratorBaseBackend.from_config(
+            config[keys.GlobalKeys.BACKEND])
+
     @track(event=GET_STEP_VERSION)
     def get_step_by_version(self, step_type: Union[Type, Text], version: Text):
         """
@@ -335,6 +367,23 @@ class Repository:
                     keys.DatasourceKeys.ID] == datasource._id:
                     pipelines.append(BasePipeline.from_config(c))
         return pipelines
+
+    def get_pipeline_f_paths_by_datasource_id(self, datasource_id: Text):
+        """
+        Gets list of file path associated with a datasource id.
+
+        Args:
+            datasource_id (Text): id of datasource.
+        """
+        paths = []
+        for file_path in self.get_pipeline_file_paths():
+            c = yaml_utils.read_yaml(file_path)
+            if keys.DatasourceKeys.ID in c[keys.GlobalKeys.PIPELINE][
+                keys.PipelineKeys.DATASOURCE]:
+                if c[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.DATASOURCE][
+                    keys.DatasourceKeys.ID] == datasource_id:
+                    paths.append(file_path)
+        return paths
 
     @track(event=GET_PIPELINES)
     def get_pipelines(self) -> List:

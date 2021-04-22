@@ -19,14 +19,16 @@ from pathlib import Path
 from typing import Dict, Text, Any, List
 
 import tensorflow as tf
+from tfx.components.common_nodes.importer_node import ImporterNode
 from tfx.components.pusher.component import Pusher
 from tfx.components.schema_gen.component import SchemaGen
 from tfx.components.statistics_gen.component import StatisticsGen
 from tfx.components.transform.component import Transform
+from tfx.types import standard_artifacts
 
 from zenml import constants
 from zenml.backends.training import TrainingBaseBackend
-from zenml.components import DataGen, Sequencer, SplitGen, Trainer, Evaluator
+from zenml.components import Sequencer, SplitGen, Trainer, Evaluator
 from zenml.enums import GDPComponent
 from zenml.exceptions import DoesNotExistException, \
     PipelineNotSucceededException
@@ -78,26 +80,37 @@ class TrainingPipeline(BasePipeline):
         ############
         # RAW DATA #
         ############
-        data_config = steps[keys.TrainingSteps.DATA]
-        data = DataGen(
-            name=self.datasource.name,
-            source=data_config[keys.StepKeys.SOURCE],
-            source_args=data_config[keys.StepKeys.ARGS]
-        ).with_id(GDPComponent.DataGen.name)
+        # if there are no commits, then lets make one
+        if self.datasource.is_empty:
+            logger.info(
+                f'Datasource {self.datasource.name} has no commits. Creating '
+                f'the first one..')
+            self.datasource_commit_id = self.datasource.commit()
 
-        statistics_data = StatisticsGen(
-            examples=data.outputs.examples
-        ).with_id(GDPComponent.DataStatistics.name)
+        data_pipeline = self.datasource.get_data_pipeline_from_commit(
+            self.datasource_commit_id)
 
-        schema_data = SchemaGen(
-            statistics=statistics_data.outputs.output,
-        ).with_id(GDPComponent.DataSchema.name)
+        data = ImporterNode(
+            instance_name=GDPComponent.DataGen.name,
+            source_uri=data_pipeline.get_artifacts_uri_by_component(
+                GDPComponent.DataGen.name)[0],
+            artifact_type=standard_artifacts.Examples)
 
-        component_list.extend([data,
-                               statistics_data,
-                               schema_data])
+        schema_data = ImporterNode(
+            instance_name=GDPComponent.DataSchema.name,
+            source_uri=data_pipeline.get_artifacts_uri_by_component(
+                GDPComponent.DataSchema.name)[0],
+            artifact_type=standard_artifacts.Schema)
 
-        datapoints = data.outputs.examples
+        statistics_data = ImporterNode(
+            instance_name=GDPComponent.DataStatistics.name,
+            source_uri=data_pipeline.get_artifacts_uri_by_component(
+                GDPComponent.DataStatistics.name)[0],
+            artifact_type=standard_artifacts.ExampleStatistics)
+
+        component_list.extend([data, schema_data, statistics_data])
+
+        datapoints = data.outputs.result
 
         #############
         # SPLITTING #
@@ -108,8 +121,8 @@ class TrainingPipeline(BasePipeline):
             input_examples=datapoints,
             source=split_config[keys.StepKeys.SOURCE],
             source_args=split_config[keys.StepKeys.ARGS],
-            schema=schema_data.outputs.schema,
-            statistics=statistics_data.outputs.output,
+            schema=schema_data.outputs.result,
+            statistics=statistics_data.outputs.result,
         ).with_id(GDPComponent.SplitGen.name)
 
         datapoints = splits.outputs.examples
@@ -208,13 +221,16 @@ class TrainingPipeline(BasePipeline):
             # TODO [MEDIUM]: This check should ideally not happen here,
             #  integrate it into the component
             eval_source = evaluator_config['source'].split('@')[0]
-            if eval_source == 'zenml.steps.evaluator.agnostic_evaluator.AgnosticEvaluator':
+            if eval_source == \
+                    'zenml.steps.evaluator.agnostic_evaluator' \
+                    '.AgnosticEvaluator':
                 evaluator = Evaluator(
                     source=evaluator_config[keys.StepKeys.SOURCE],
                     source_args=evaluator_config[keys.StepKeys.ARGS],
                     examples=trainer.outputs.test_results,
                 ).with_id(GDPComponent.Evaluator.name)
-            elif eval_source == 'zenml.steps.evaluator.tfma_evaluator.TFMAEvaluator':
+            elif eval_source == \
+                    'zenml.steps.evaluator.tfma_evaluator.TFMAEvaluator':
                 evaluator = Evaluator(
                     source=evaluator_config[keys.StepKeys.SOURCE],
                     source_args=evaluator_config[keys.StepKeys.ARGS],
@@ -346,8 +362,7 @@ class TrainingPipeline(BasePipeline):
     def steps_completed(self) -> bool:
         mandatory_steps = [keys.TrainingSteps.SPLIT,
                            keys.TrainingSteps.PREPROCESSER,
-                           keys.TrainingSteps.TRAINER,
-                           keys.TrainingSteps.DATA]
+                           keys.TrainingSteps.TRAINER]
         for step_name in mandatory_steps:
             if step_name not in self.steps_dict.keys():
                 raise AssertionError(f'Mandatory step {step_name} not added.')

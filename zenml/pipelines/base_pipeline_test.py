@@ -19,14 +19,14 @@ from pathlib import Path
 import pytest
 
 import zenml
+from zenml import exceptions
 from zenml.backends.orchestrator import OrchestratorBaseBackend
 from zenml.datasources import BaseDatasource, ImageDatasource
-from zenml.pipelines import BasePipeline
+from zenml.enums import PipelineStatusTypes, GDPComponent
+from zenml.pipelines import BasePipeline, TrainingPipeline
 from zenml.standards import standard_keys as keys
 from zenml.steps import BaseStep
 from zenml.utils import path_utils
-from zenml import exceptions
-from zenml.enums import PipelineStatusTypes, GDPComponent
 
 # Nicholas a way to get to the root
 ZENML_ROOT = str(Path(zenml.__path__[0]).parent)
@@ -88,7 +88,7 @@ def test_add_datasource():
 
     assert isinstance(p.datasource, BaseDatasource)
 
-    assert not p.steps_dict[keys.TrainingSteps.DATA]
+    # assert not p.steps_dict[keys.TrainingSteps.DATA]
 
 
 def test_pipeline_copy(repo):
@@ -143,9 +143,9 @@ def test_get_steps_config():
 def test_get_artifacts_uri_by_component(repo):
     test_component_name = GDPComponent.SplitGen.name
 
-    p_names = sorted(repo.get_pipeline_names())
+    ps = repo.get_pipelines_by_type([TrainingPipeline.PIPELINE_TYPE])
 
-    p: BasePipeline = repo.get_pipeline_by_name(p_names[0])
+    p: BasePipeline = ps[0]
 
     uri_list = p.get_artifacts_uri_by_component(test_component_name)
 

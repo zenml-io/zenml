@@ -14,39 +14,14 @@
 
 from typing import Dict, Text, Any, List
 
-import apache_beam as beam
 from tfx import types
-from tfx.components.example_gen.base_example_gen_executor import _WriteSplit
 from tfx.dsl.components.base import base_executor
 from tfx.types import artifact_utils
 
-from zenml.components.data_gen import utils
 from zenml.components.data_gen.constants import DATA_SPLIT_NAME
+from zenml.datasources.base_datasource import BaseDatasource
 from zenml.standards.standard_keys import StepKeys
-from zenml.steps.data import BaseDataStep
 from zenml.utils import source_utils
-
-
-@beam.ptransform_fn
-@beam.typehints.with_input_types(beam.typehints.Dict[Text, Any])
-@beam.typehints.with_output_types(beam.pvalue.PDone)
-def WriteToTFRecord(datapoints: Dict[Text, Any],
-                    schema: Dict[Text, Any],
-                    output_split_path: Text) -> beam.pvalue.PDone:
-    """Infers schema and writes to TFRecord"""
-    # Obtain the schema
-    if schema:
-        schema_dict = {k: utils.SCHEMA_MAPPING[v] for k, v in schema.items()}
-    else:
-        schema = (datapoints
-                  | 'Schema' >> beam.CombineGlobally(utils.DtypeInferrer()))
-        schema_dict = beam.pvalue.AsSingleton(schema)
-
-    return (datapoints
-            | 'ToTFExample' >> beam.Map(utils.append_tf_example, schema_dict)
-            | 'WriteToTFRecord' >> _WriteSplit(
-                output_split_path=output_split_path
-            ))
 
 
 class DataExecutor(base_executor.BaseExecutor):
@@ -63,9 +38,11 @@ class DataExecutor(base_executor.BaseExecutor):
         """
         source = exec_properties[StepKeys.SOURCE]
         args = exec_properties[StepKeys.ARGS]
+        name = exec_properties[StepKeys.NAME]
 
         c = source_utils.load_source_path_class(source)
-        data_step: BaseDataStep = c(**args)
+        # TODO [LOW]: Passing _id makes it load
+        datasource: BaseDatasource = c(name=name, _id='_id', **args)
 
         # Get output split path
         examples_artifact = artifact_utils.get_single_instance(
@@ -76,8 +53,6 @@ class DataExecutor(base_executor.BaseExecutor):
         output_split_path = artifact_utils.get_split_uri(
             [examples_artifact], DATA_SPLIT_NAME)
 
-        with self._make_beam_pipeline() as p:
-            (p
-             | data_step.read_from_source()
-             # | data_step.convert_to_dict()
-             | WriteToTFRecord(data_step.schema, output_split_path))
+        datasource.process(
+            output_path=output_split_path,
+            make_beam_pipeline=self._make_beam_pipeline)
