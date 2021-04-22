@@ -42,7 +42,9 @@ class Application(param.Parameterized):
 
         # get all pipelines in this workspace
         if datasource:
+            # filter pipeline by datasource
             all_pipelines: List[TrainingPipeline] = repo.get_pipelines_by_datasource([datasource])
+            all_pipelines = [p for p in all_pipelines if p.PIPELINE_TYPE == TrainingPipeline.PIPELINE_TYPE]
         else:
             all_pipelines: List[TrainingPipeline] = repo.get_pipelines_by_type([
             TrainingPipeline.PIPELINE_TYPE])
@@ -172,8 +174,6 @@ class Application(param.Parameterized):
                 cmax=max(
                     final_col)),
                 dimensions=new_dims))
-
-
         else:
             fig = px.scatter(pd.DataFrame(),
                              marginal_y='rug',

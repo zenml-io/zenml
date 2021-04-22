@@ -34,6 +34,7 @@ from zenml.constants import APP_NAME, EVALUATION_NOTEBOOK, \
 from zenml.enums import GDPComponent
 from zenml.logger import get_logger
 from zenml.utils.path_utils import read_file_contents
+from zenml.datasources import BaseDatasource
 
 logger = get_logger(__name__)
 
@@ -336,7 +337,7 @@ def evaluate_single_pipeline(
             os.system(f'jupyter notebook {final_out_path} --port {port}')
 
 
-def launch_compare_tool(port: int = 0, datasource=None):
+def launch_compare_tool(port: int = 0, datasource: BaseDatasource = None):
     """Launches `compare` tool for comparing multiple training pipelines."""
     # assumes compare.py in the same folder
     template = \
