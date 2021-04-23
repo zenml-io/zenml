@@ -24,8 +24,8 @@ TEST_ROOT = os.path.join(ZENML_ROOT, "tests")
 
 def test_tfds_commit(repo):
     ds = TFDSDatasource(
-        name='tfds_ds',
-        tfds_dataset_name='iris'
+        name='tfds_ds_2',
+        tfds_dataset_name='mnist'
     )
 
     assert not ds.commits
