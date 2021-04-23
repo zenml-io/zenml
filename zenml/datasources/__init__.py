@@ -20,10 +20,11 @@ from zenml.datasources.json_datasource import JSONDatasource
 from zenml.datasources.numpy_datasource import NumpyDatasource
 from zenml.datasources.pandas_datasource import PandasDatasource
 from zenml.datasources.tfds_datasource import TFDSDatasource
+from zenml.datasources.tfrecords_datasource import TFRecordsDatasource
 
+from zenml.logger import get_logger
 from zenml.utils.requirement_utils import check_integration, \
     POSTGRES_INTEGRATION
-from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -35,4 +36,3 @@ except ModuleNotFoundError as e:
                  f"PostgresDatasource was not imported. "
                  f"More information:")
     logger.debug(e)
-
