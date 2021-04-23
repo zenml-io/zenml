@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """File utilities"""
 
+import fnmatch
 import os
 import tarfile
 from pathlib import Path
@@ -23,6 +24,12 @@ from tfx.utils.io_utils import _REMOTE_FS_PREFIX, load_csv_column_names
 
 
 # TODO: [TFX] [LOW] Unnecessary dependency here
+
+
+def walk(dir_path):
+    """Walks down the dir_path"""
+    return file_io.walk_v2(dir_path)
+
 
 def is_root(path: Text):
     """
@@ -42,6 +49,21 @@ def is_dir(dir_path: Text):
         dir_path (str): Local path in filesystem.
     """
     return file_io.is_directory_v2(dir_path)
+
+
+def find_files(dir_path, pattern):
+    """
+    Find files in a directory that match pattern.
+
+    Args:
+        dir_path: Path to directory.
+        pattern: pattern like *.png.
+    """
+    for root, dirs, files in walk(dir_path):
+        for basename in files:
+            if fnmatch.fnmatch(basename, pattern):
+                filename = os.path.join(root, basename)
+                yield filename
 
 
 def is_remote(path: Text):

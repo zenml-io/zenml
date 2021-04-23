@@ -149,6 +149,13 @@ class BaseDatasource:
         self.commits[commit_id] = data_pipeline.pipeline_name.split('_')[1]
         return commit_id
 
+    def _assert_commit_id(self, commit_id: Text):
+        """Asserts commit_id is in self.commits"""
+        if commit_id not in self.commits:
+            raise AssertionError(
+                f'There is no such commit_id as {commit_id} in the '
+                f'datasource {self.name}')
+
     @classmethod
     def from_config(cls, config: Dict):
         """
@@ -229,11 +236,7 @@ class BaseDatasource:
     def get_data_pipeline_from_commit(self, commit_id: Text):
         from zenml.pipelines.data_pipeline import DataPipeline
 
-        if commit_id not in self.commits:
-            raise AssertionError(
-                f'There is no such commit_id as {commit_id} in the '
-                f'datasource {self.name}')
-
+        self._assert_commit_id(commit_id)
         repo: Repository = Repository.get_instance()
         name = DataPipeline.get_name_from_pipeline_name(
             DataPipeline.PIPELINE_TYPE + '_' + self.commits[
@@ -279,21 +282,36 @@ class BaseDatasource:
         dataset = tf.data.TFRecordDataset(data_files, compression_type='GZIP')
         return convert_raw_dataset_to_pandas(dataset, spec, sample_size)
 
-    def view_schema(self):
-        """View schema of data flowing in pipeline."""
-        pipeline = self._get_one_pipeline()
+    def view_schema(self, commit_id: Text = None):
+        """
+        View schema of data flowing in pipeline.
+
+        Args:
+            commit_id: used to specify which commit's schema to use, if None
+            uses latest
+        """
+        if commit_id is None:
+            commit_id = self.get_latest_commit()
+        self._assert_commit_id(commit_id)
+
+        pipeline = self.get_data_pipeline_from_commit(commit_id)
         uri = pipeline.get_artifacts_uri_by_component(
             GDPComponent.DataSchema.name)[0]
         view_schema(uri)
 
-    def view_statistics(self, port):
+    def view_statistics(self, commit_id: Text = None, port: int = None):
         """
         View statistics of data flowing in pipeline.
 
         Args:
             port (int): Port at which to launch the statistics facet.
+            commit_id: used to specify which commit's schema to use, if None
+            uses latest
         """
-        pipeline = self._get_one_pipeline()
+        if commit_id is None:
+            commit_id = self.get_latest_commit()
+        self._assert_commit_id(commit_id)
+        pipeline = self.get_data_pipeline_from_commit(commit_id)
         uri = pipeline.get_artifacts_uri_by_component(
             GDPComponent.DataStatistics.name)[0]
         view_statistics(uri, port=port)
