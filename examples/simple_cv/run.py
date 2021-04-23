@@ -34,9 +34,8 @@ training_pipeline.add_preprocesser(
 training_pipeline.add_trainer(ImageTensorflowTrainer(
     loss='binary_crossentropy',
     last_activation='sigmoid',
-    output_units=1,
     metrics=['accuracy'],
-    epochs=20))
+    epochs=5))
 
 # Add an evaluator
 training_pipeline.add_evaluator(

@@ -62,11 +62,13 @@ class ImagePreprocessor(BasePreprocesserStep):
                 result = tf.cast(result, dtype=tf.float32)
                 outputs[naming_utils.transformed_feature_name(k)] = result
             if k in self.labels:
+                m = tft.max(v)
+                result = _impute(v, m)
+                # always retain raw data
+                outputs[k] = result
+
                 result = tf.cast(v, dtype=tf.float32)
-                m = tft.max(result)
-                result = _impute(result, m)
                 outputs[naming_utils.transformed_label_name(k)] = result
 
-            # always retain raw data
-            outputs[k] = v
+
         return outputs

@@ -145,21 +145,7 @@ class FeedForwardTrainer(TFBaseTrainerStep):
             test_results = self.test_fn(model, test_dataset)
             utils.save_test_results(test_results, self.output_patterns[split])
 
-        signatures = {
-            'serving_default':
-                self._get_serve_tf_examples_fn(
-                    model,
-                    self.tf_transform_output
-                ).get_concrete_function(tf.TensorSpec(shape=[None],
-                                                      dtype=tf.string,
-                                                      name='examples')),
-            'zen_eval':
-                self._get_zen_eval_tf_examples_fn(
-                    model,
-                    self.tf_transform_output
-                ).get_concrete_function(tf.TensorSpec(shape=[None],
-                                                      dtype=tf.string,
-                                                      name='examples'))}
+        signatures = self.get_signatures(model)
 
         model.save(self.serving_model_dir,
                    save_format='tf',
@@ -198,6 +184,23 @@ class FeedForwardTrainer(TFBaseTrainerStep):
         dataset = dataset.map(split_columns)
 
         return dataset
+
+    def get_signatures(self, model):
+        return {
+            'serving_default':
+                self._get_serve_tf_examples_fn(
+                    model,
+                    self.tf_transform_output
+                ).get_concrete_function(tf.TensorSpec(shape=[None],
+                                                      dtype=tf.string,
+                                                      name='examples')),
+            'zen_eval':
+                self._get_zen_eval_tf_examples_fn(
+                    model,
+                    self.tf_transform_output
+                ).get_concrete_function(tf.TensorSpec(shape=[None],
+                                                      dtype=tf.string,
+                                                      name='examples'))}
 
     @staticmethod
     def _get_serve_tf_examples_fn(model, tf_transform_output):
