@@ -13,11 +13,13 @@
 #  permissions and limitations under the License.
 """TFDS Datasource definition"""
 
+import os
 from typing import Text, Callable
 
 import tensorflow_datasets as tfds
 
 from zenml.datasources import BaseDatasource
+from zenml.utils import path_utils
 
 
 class TFDSDatasource(BaseDatasource):
@@ -64,3 +66,8 @@ class TFDSDatasource(BaseDatasource):
             as_supervised=self.as_supervised,
             with_info=self.with_info,
         )
+        data_dir = os.path.join(output_path, self.tfds_dataset_name)
+
+        for filename in path_utils.find_files(data_dir, '*.tfrecord*'):
+            path_utils.copy(filename, os.path.join(output_path,
+                                                   os.path.basename(filename)))

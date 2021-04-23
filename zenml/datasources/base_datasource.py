@@ -296,9 +296,10 @@ class BaseDatasource:
             commit_id: used to specify which commit's schema to use, if None
             uses latest
         """
-        self._assert_commit_id(commit_id)
         if commit_id is None:
             commit_id = self.get_latest_commit()
+        self._assert_commit_id(commit_id)
+
         pipeline = self.get_data_pipeline_from_commit(commit_id)
         uri = pipeline.get_artifacts_uri_by_component(
             GDPComponent.DataSchema.name)[0]
@@ -313,9 +314,9 @@ class BaseDatasource:
             commit_id: used to specify which commit's schema to use, if None
             uses latest
         """
-        self._assert_commit_id(commit_id)
         if commit_id is None:
             commit_id = self.get_latest_commit()
+        self._assert_commit_id(commit_id)
         pipeline = self.get_data_pipeline_from_commit(commit_id)
         uri = pipeline.get_artifacts_uri_by_component(
             GDPComponent.DataStatistics.name)[0]
