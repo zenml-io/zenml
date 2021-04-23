@@ -149,12 +149,6 @@ class BaseDatasource:
         self.commits[commit_id] = data_pipeline.pipeline_name.split('_')[1]
         return commit_id
 
-    def _get_schema(self):
-        return None
-
-    def _get_statistics(self):
-        pass
-
     def _assert_commit_id(self, commit_id: Text):
         """Asserts commit_id is in self.commits"""
         if commit_id not in self.commits:
