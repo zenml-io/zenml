@@ -2,7 +2,7 @@
 
 ## 0.3.6
 
-0.3.6 is a more inwards-facing release as part of a bigger effort to create a more flexible ZenML. As a first step, ZenML now supports arbitrary splits for all components natively, freeing us from the `train/eval` split paradigm. Here is an overview of changes:
+0.3.6 is a more inwards-facing release as part of a bigger effort to create a more flexible **ZenML**. As a first step, **ZenML** now supports arbitrary splits for all components natively, freeing us from the `train/eval` split paradigm. Here is an overview of changes:
 
 ### New Features
 
@@ -12,9 +12,9 @@
 
 ### Bug Fixes + Refactor
 
-A big thanks to our new super supporter @zyfzjsc988 for most of the feedback that led to bug fixes and enhancements for this release:
+A big thanks to our new super supporter _@zyfzjsc988_ for most of the feedback that led to bug fixes and enhancements for this release:
 
-* \#63: Now one can specify which ports ZenML opens its add-on applications.
+* \#63: Now one can specify which ports **ZenML** opens its add-on applications.
 * \#64: Now there is a way to list integrations with the following code:
 
   ```text
@@ -44,14 +44,14 @@ Again, the telemetry data is fully anonymized and just used to improve the produ
 
 ### Bug Fixes + Refactor
 
-* Refactored how ZenML treats relative imports for custom steps.
+* Refactored how **ZenML** treats relative imports for custom steps.
 * Updated the [Scikit Example](https://github.com/maiot-io/zenml/tree/main/examples/scikit), [PyTorch Lightning Example](https://github.com/maiot-io/zenml/tree/main/examples/pytorch_lightning), [GAN Example](https://github.com/maiot-io/zenml/tree/main/examples/gan) accordingly. Now they should work according to their README's.
 
 ## 0.3.4
 
 This release is a big design change and refactor. It involves a significant change in the Configuration file structure, meaning this is a **breaking upgrade**.
 
-For those upgrading from an older version of ZenML, we ask to please delete their old `pipelines` dir and `.zenml` folders and start afresh with a `zenml init`.
+For those upgrading from an older version of **ZenML**, we ask to please delete their old `pipelines` dir and `.zenml` folders and start afresh with a `zenml init`.
 
 If only working locally, this is as simple as:
 
@@ -91,7 +91,7 @@ A user can simply do:
 from zenml.pipelines import TrainingPipeline
 ```
 
-The caveat is of course that this might involve a re-write of older ZenML code imports.
+The caveat is of course that this might involve a re-write of older **ZenML** code imports.
 
 Note: Future releases are also expected to be breaking. Until announced, please expect that upgrading ZenML versions may cause older-ZenML generated pipelines to behave unexpectedly.
 

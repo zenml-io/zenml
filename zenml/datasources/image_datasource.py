@@ -63,12 +63,6 @@ def add_label_and_metadata(image_dict: Dict[Text, Any],
     """
     filename = image_dict[FILE_NAME]
 
-    # file_ext = image_dict[FILE_EXT]
-    # # if file extension is in name, now remove it
-    # f = filename
-    # if f.endswith(file_ext):
-    #     f = filename[0:-len(file_ext)]
-
     label_data = label_dict[BINARY_DATA]
     label, metadata = get_matching_label(label_data, filename)
 
@@ -99,6 +93,10 @@ def get_matching_label(label_data: Text, img_filename: Text):
     # This can potentially go bad if the JSON is too big
     data_dict = json.loads(label_data)
 
+    if img_filename not in data_dict:
+        raise AssertionError(
+            f'You need to provide a label for {img_filename} in your '
+            f'labels.json!')
     img_data = data_dict[img_filename]
 
     if "label" not in img_data:

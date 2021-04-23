@@ -2,9 +2,9 @@
 description: Pipelines are your experiments
 ---
 
-# Inspecting all pipelines in a repository
+# Pipelines in a repository
 
-All **pipelines** within a ZenML **repository** are tracked centrally. In order to access information about your ZenML repository in code, you need to access the ZenML [Repository instance](../api-reference/zenml/zenml.repo.md#zenml-repo-package). This object is a Singleton and can be fetched any time from within your Python code simply by executing:
+All **pipelines** within a ZenML **repository** are tracked centrally. In order to access information about your **ZenML repository** in code, you need to access the **ZenML** [Repository instance](../api-reference/zenml/zenml.repo.md#zenml-repo-package). This object is a Singleton and can be fetched any time from within your Python code simply by executing:
 
 ```python
 from zenml.repo import Repository
@@ -45,7 +45,7 @@ It is important to note that most of the methods listed above involve parsing th
 
 ## Pipeline Properties
 
-Each pipeline has an associated [metadata store](../core-concepts.md#metadata-store), [artifact store](../core-concepts.md#artifact-store) and `step_config`. The `step_config` is a dict that defines which [steps](../core-concepts.md#steps) are running in the pipeline.
+Each pipeline has an associated [metadata store](../core-concepts.md#metadata-store), [artifact store](../core-concepts.md#artifact-store) and `step_config`. The `step_config` is a dictionary that defines which [steps](../core-concepts.md#steps) are running in the pipeline.
 
 In order to see the status of a pipeline:
 
@@ -57,7 +57,7 @@ This queries the associated `metadata_store`, and returns either `NotStarted`, `
 
 Apart from the status, pipelines can have additional properties and helper functions that one can use to inspect it closely. For example, a `TrainingPipeline` has the `get_hyperparameters()` method to return the hyper-parameters used in the preprocesser and trainer steps.
 
-Regardless of type, a ZenML pipeline is represented by a declarative config written in YAML. A sample config looks like this:
+Regardless of type, a **ZenML** pipeline is represented by a declarative config written in YAML. A sample config looks like this:
 
 ```yaml
 version: '1'
@@ -162,7 +162,7 @@ pipeline:
 
 The config above can be split into 5 distinct keys:
 
-* `version`: The version of the YAML standard to maintain backwards compatibility.
+* `version`: The version of the YAML standard to maintain backward compatibility.
 * `artifact_store`: The path where the artifacts produced by the pipelines are stored.
 * `backend`: The orchestrator [backend](backends.md) for the pipeline.
 * `metadata`: The metadata store config to store information of pipeline runs.
@@ -174,7 +174,7 @@ The config above can be split into 5 distinct keys:
 
 ## Manipulating a pipeline after it has been run
 
-After pipelines are run, they are marked as being `immutable`. This means that the internal [Steps](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/api-reference/zenml/zenml.steps) of these pipelines can no longer be changed. However, a common pattern in Machine Learning is to re-use logical components across the entire lifecycle. And that is after all, the whole purpose of creating steps in the first place.
+After pipelines are run, they are marked as being `immutable`. This means that the internal [Steps](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/api-reference/zenml/zenml.steps) of these pipelines can no longer be changed. However, a common pattern in Machine Learning is to re-use logical components across the entire lifecycle. And that is, after all, the whole purpose of creating steps in the first place.
 
 In order to re-use logic from another pipeline in ZenML, it is as simple as to execute:
 
@@ -191,9 +191,9 @@ pipeline_b = pipeline_a.copy(new_name='Pipeline B')
 # Change steps, metadata store, artifact store, backends etc freely.
 ```
 
-Ensuring that run pipelines are immutable is crucial to maintain reproducibility in the ZenML design. Using the `copy()` paradigm allows the freedom of re-using steps with ease, and keeps reproducibility intact.
+Ensuring that run pipelines are immutable is crucial to maintain reproducibility in the ZenML design. Using the `copy()` paradigm allows the freedom of re-using steps with ease and keeps reproducibility intact.
 
 ## Caching
 
-The `copy()` paradigm also helps in _re-usability_ of code across pipelines. E.g. If now only the TrainerStep is changed in `pipeline_b` above, then the corresponding `pipeline_b` pipeline run will skip splitting, preprocessing and re-use all the artifacts already produced by `pipeline_a`. Read more about [caching here](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/pipelines/benefits/reusing-artifacts.md).
+The `copy()` paradigm also helps in the _**reusability**_ ****of code across pipelines. E.g. If now only the `TrainerStep` is changed in `pipeline_b` above, then the corresponding `pipeline_b` pipeline run will skip splitting, preprocessing, and re-use all the artifacts already produced by `pipeline_a`.
 

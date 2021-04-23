@@ -32,7 +32,11 @@
 <b>GitHub star</b> to show your love
 </div>
 
+
+
 ## Why?
+_**Ichi Wa Zen, Zen Wa Ichi.**_
+
 ZenML is built for ML practitioners who are ramping up their ML workflows towards production. We built ZenML because we could not find an easy framework that translates the patterns observed in the research phase with Jupyter notebooks into a production-ready ML environment. Here is what's hard to replicate in production:
 
 * It's hard to **version** data, code, configuration, and models.

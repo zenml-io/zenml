@@ -79,7 +79,7 @@ def test_get_matching_label():
     json_data2 = {}
     label_data = json.dumps(json_data2)
 
-    with pytest.raises(KeyError):
+    with pytest.raises(AssertionError):
         _, _ = get_matching_label(label_data=label_data, img_filename=filename)
 
 

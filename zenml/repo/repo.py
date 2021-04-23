@@ -425,11 +425,11 @@ class Repository:
         pipelines_dir = self.zenml_config.get_pipelines_dir()
         return yaml_utils.read_yaml(os.path.join(pipelines_dir, file_name))
 
-    def compare_training_runs(self, port: int = 0):
+    def compare_training_runs(self, port: int = 0, datasource=None):
         """Launch the compare app for all training pipelines in repo"""
         from zenml.utils.post_training.post_training_utils import \
             launch_compare_tool
-        launch_compare_tool(port)
+        launch_compare_tool(port, datasource)
 
     def clean(self):
         """Deletes associated metadata store, pipelines dir and artifacts"""
