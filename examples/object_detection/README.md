@@ -1,5 +1,5 @@
 # Train a simple image-based classifier
-This example how to use a [Tensorflow Dataset](https://www.tensorflow.org/datasets) based Datasource `TFDSDatasource` to train an image classifier for the MNIST dataset.
+This example how to use a Tensorflow Dataset based Datasource `TFDSDatasource` to train an image classifier for the MNIST dataset.
 It uses Tensorflow to create the network.
 
 ### Pre-requisites

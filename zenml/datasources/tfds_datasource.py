@@ -31,30 +31,28 @@ class TFDSDatasource(BaseDatasource):
             tfds_dataset_name: Text,
             shuffle_files: bool = False,
             as_supervised: bool = False,
-            with_info: bool = False,
             **kwargs):
         """
-        ZenML TFDS wrapper.
+        ZenML [TFDS](https://www.tensorflow.org/datasets) wrapper.
 
         Args:
-            name:
-            tfds_dataset_name:
-            shuffle_files:
-            as_supervised:
-            with_info:
+            name: Name of the datasource.
+            tfds_dataset_name: Name of the TFDS dataset name, should
+            correspond to the `name` argument passed to the `tfds.load` method.
+            shuffle_files: Whether to shuffled files or not.
+            as_supervised: Corresponds to the `as_supervised` argument of
+            the `tfds.load` method.
             **kwargs:
         """
         self.name = name
         self.tfds_dataset_name = tfds_dataset_name
         self.shuffle_files = shuffle_files
         self.as_supervised = as_supervised
-        self.with_info = with_info
         super().__init__(
             name,
             tfds_dataset_name=tfds_dataset_name,
             shuffle_files=shuffle_files,
             as_supervised=as_supervised,
-            with_info=with_info,
             **kwargs)
 
     def process(self, output_path: Text, make_beam_pipeline: Callable = None):
@@ -64,7 +62,7 @@ class TFDSDatasource(BaseDatasource):
             data_dir=output_path,
             shuffle_files=self.shuffle_files,
             as_supervised=self.as_supervised,
-            with_info=self.with_info,
+            with_info=True,
         )
         data_dir = os.path.join(output_path, self.tfds_dataset_name)
 
