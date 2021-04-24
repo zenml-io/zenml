@@ -31,6 +31,9 @@ from zenml.steps.tokenizer import BaseTokenizer
 from zenml.steps.trainer import BaseTrainerStep
 from zenml import constants
 from zenml.enums import GDPComponent, PipelineStatusTypes
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class NLPPipeline(BasePipeline):
@@ -40,7 +43,7 @@ class NLPPipeline(BasePipeline):
         """Call operator for local inference method"""
 
         if not self.get_status() == PipelineStatusTypes.Succeeded.name:
-            print("Please run the pipeline first before running inference!")
+            logger.info("Please run the pipeline first before running inference!")
             return
 
         trainer_step = self.steps_dict[keys.NLPSteps.TRAINER]
@@ -68,7 +71,7 @@ class NLPPipeline(BasePipeline):
             for item in tf.math.sigmoid(prediction.logits).numpy()
         ]
 
-        print(formatted)
+        logger.info(formatted)
 
     def get_tfx_component_list(self, config: Dict[Text, Any]) -> List:
         """

@@ -1,7 +1,9 @@
 import re
-
 import subprocess
 import sys
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 ########
 # BASE #
@@ -115,6 +117,6 @@ def check_integration(integration):
 def list_integrations():
     """Prints integrations in an easy to read format."""
     for k, v in EXTRAS_REQUIRE.items():
-        print("*********")
-        print(f"The integration {k} has the following dependencies: {v}")
-        print(f'To install: pip install zenml[{k}]')
+        logger.info("*********")
+        logger.info(f"The integration {k} has the following dependencies: {v}")
+        logger.info(f'To install: pip install zenml[{k}]')
