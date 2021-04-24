@@ -13,9 +13,13 @@
 #  permissions and limitations under the License.
 """JSON Datasource definition"""
 
-from typing import Text
+from typing import Text, Callable, Dict
+import json
+import apache_beam as beam
 
 from zenml.datasources import BaseDatasource
+from zenml.utils.beam_utils import WriteToTFRecord
+from zenml.utils import path_utils
 
 
 class JSONDatasource(BaseDatasource):
@@ -24,13 +28,26 @@ class JSONDatasource(BaseDatasource):
     def __init__(
             self,
             name: Text,
-            json_obj,
+            path: Text,
+            schema: Dict = None,
             **kwargs):
         """
-        Initialize numpy datasource.
+        Initialize JSON datasource.
+
         Args:
-            name: name of datasource
-            json_obj: json obj
+            name: Name of datasource.
+            path: path to json file, has to be structured as a list of dicts.
+            schema (str): optional schema for data to conform to.
         """
-        super().__init__(name, **kwargs)
-        raise NotImplementedError('Its coming soon!')
+        self.path = path
+        self.schema = schema
+        super().__init__(name, path=path, schema=schema, **kwargs)
+
+    def process(self, output_path: Text, make_beam_pipeline: Callable = None):
+        contents = path_utils.read_file_contents(self.path)
+        json_obj = json.loads(contents)
+        with make_beam_pipeline() as p:
+            (p
+             | beam.Create(json_obj)
+             | WriteToTFRecord(self.schema, output_path)
+             )

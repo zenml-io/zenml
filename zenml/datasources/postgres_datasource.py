@@ -13,10 +13,13 @@
 #  permissions and limitations under the License.
 """Postgres Datasource definition"""
 
+from typing import Callable
 from typing import Text, Dict
 
+from beam_nuggets.io import relational_db
+
 from zenml.datasources import BaseDatasource
-from zenml.steps.data import PostgresDataStep
+from zenml.utils.beam_utils import WriteToTFRecord
 
 
 class PostgresDatasource(BaseDatasource):
@@ -53,7 +56,6 @@ class PostgresDatasource(BaseDatasource):
             query_limit: Max number of rows to fetch.
             schema: Dict specifying schema.
         """
-        super().__init__(name, **kwargs)
         self.username = username
         self.password = password
         self.database = database
@@ -63,8 +65,8 @@ class PostgresDatasource(BaseDatasource):
         self.query_limit = query_limit
         self.schema = schema
 
-    def get_data_step(self):
-        return PostgresDataStep(
+        super().__init__(
+            name,
             username=self.username,
             password=self.password,
             database=self.database,
@@ -73,4 +75,27 @@ class PostgresDatasource(BaseDatasource):
             port=self.port,
             query_limit=self.query_limit,
             schema=self.schema,
+            **kwargs
         )
+
+    def process(self, output_path: Text, make_beam_pipeline: Callable = None):
+        query = f'SELECT * FROM {self.table}'
+
+        if self.query_limit is not None:
+            query += f'\nLIMIT {self.query_limit}'
+
+        source_config = relational_db.SourceConfiguration(
+            drivername='postgresql+pg8000',
+            host=self.host,
+            port=self.port,
+            username=self.username,
+            password=self.password,
+            database=self.database,
+        )
+
+        with make_beam_pipeline() as p:
+            p | "Reading Postgres" >> relational_db.ReadFromDB(
+                source_config=source_config,
+                table_name=self.table,
+                query=query) \
+            | WriteToTFRecord(self.schema, output_path)

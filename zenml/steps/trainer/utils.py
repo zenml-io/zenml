@@ -3,7 +3,6 @@ import os
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-import torch
 
 from zenml.utils import path_utils
 
@@ -59,6 +58,8 @@ def to_serialized_examples(instance) -> tf.train.Example:
 
 
 def combine_batch_results(x):
+    import torch
+
     result = {}
     for batch in x:
         for feature, values in batch.items():

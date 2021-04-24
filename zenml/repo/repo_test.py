@@ -40,8 +40,7 @@ def test_repo_double_init():
 def test_get_datasources(repo):
     ds_list = repo.get_datasources()
 
-    # TODO: Expand this for more test pipeline types!
-    assert len(ds_list) == 1
+    assert "my_csv_datasource" in [x.name for x in ds_list]
 
 
 def test_get_datasource_by_name(repo):
@@ -53,12 +52,13 @@ def test_get_datasource_by_name(repo):
 
 
 def test_get_datasource_names(repo):
-    # TODO: Expand to more test datasources!
-    test_ds_names = ["my_csv_datasource"]
+    # TODO [LOW]: Automatically expand when new datasource tests are added!
+    test_ds_names = ["my_csv_datasource", "image_ds_local", "image_ds_gcp",
+                     "json_ds"]
 
     ds_names = repo.get_datasource_names()
 
-    assert sorted(test_ds_names) == sorted(ds_names)
+    assert set(test_ds_names) <= set(ds_names)
 
 
 def test_get_pipeline_file_paths(repo, monkeypatch):
@@ -82,7 +82,7 @@ def test_get_pipeline_names(repo):
 
     found_p_names = sorted(repo.get_pipeline_names())
 
-    assert real_p_names == found_p_names
+    assert set(real_p_names) <= set(found_p_names)
 
 
 def test_get_pipelines(repo):
@@ -99,27 +99,23 @@ def test_get_pipelines_by_datasource(repo):
     # asserted in an earlier test
     ds = repo.get_datasource_by_name("my_csv_datasource")
 
-    p_names = repo.get_pipeline_names()
-
     ds2 = BaseDatasource(name="ds_12254757")
 
     pipelines = repo.get_pipelines_by_datasource(ds)
 
     pipelines_2 = repo.get_pipelines_by_datasource(ds2)
 
-    assert len(pipelines) == len(p_names)
+    assert len(pipelines) > 0
 
     assert not pipelines_2
 
 
 def test_get_pipelines_by_type(repo):
-    p_names = repo.get_pipeline_names()
-
     pipelines = repo.get_pipelines_by_type(type_filter=["training"])
 
     pipelines_2 = repo.get_pipelines_by_type(type_filter=["base"])
 
-    assert len(pipelines) == len(p_names)
+    assert len(pipelines) == 5
 
     assert not pipelines_2
 
@@ -144,31 +140,25 @@ def test_get_step_versions(repo):
     step_versions = repo.get_step_versions()
 
     # TODO: Make this less hardcoded
-    steps_used = ["zenml.steps.data.csv_data_step.CSVDataStep",
-                  "zenml.steps.preprocesser.standard_preprocesser."
-                  "standard_preprocesser.StandardPreprocesser",
-                  "zenml.steps.split.categorical_domain_split_step."
-                  "CategoricalDomainSplit",
-                  'zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.'
-                  'FeedForwardTrainer'
-                  ]
+    steps_used = [
+        "zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.StandardPreprocesser",
+        "zenml.steps.split.categorical_domain_split_step.CategoricalDomainSplit",
+        "zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.FeedForwardTrainer"
+    ]
 
     current_version = "zenml_" + str(__version__)
 
-    assert sorted(steps_used) == sorted(step_versions.keys())
+    assert set(steps_used) >= set(step_versions.keys())
     assert all(current_version in s for s in step_versions.values())
 
 
 def test_get_step_by_version(repo):
     # TODO: Make this less hardcoded
-    steps_used = ["zenml.steps.data.csv_data_step.CSVDataStep",
-                  "zenml.steps.preprocesser.standard_preprocesser."
-                  "standard_preprocesser.StandardPreprocesser",
-                  "zenml.steps.split.categorical_domain_split_step."
-                  "CategoricalDomainSplit",
-                  'zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.'
-                  'FeedForwardTrainer'
-                  ]
+    steps_used = [
+        "zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.StandardPreprocesser",
+        "zenml.steps.split.categorical_domain_split_step.CategoricalDomainSplit",
+        "zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.FeedForwardTrainer"
+    ]
 
     random_step = random.choice(steps_used)
 
@@ -182,14 +172,11 @@ def test_get_step_by_version(repo):
 
 def test_get_step_versions_by_type(repo):
     # TODO: Make this less hardcoded
-    steps_used = ["zenml.steps.data.csv_data_step.CSVDataStep",
-                  "zenml.steps.preprocesser.standard_preprocesser."
-                  "standard_preprocesser.StandardPreprocesser",
-                  "zenml.steps.split.categorical_domain_split_step."
-                  "CategoricalDomainSplit",
-                  'zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.'
-                  'FeedForwardTrainer'
-                  ]
+    steps_used = [
+        "zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.StandardPreprocesser",
+        "zenml.steps.split.categorical_domain_split_step.CategoricalDomainSplit",
+        "zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.FeedForwardTrainer"
+    ]
 
     random_step = random.choice(steps_used)
 

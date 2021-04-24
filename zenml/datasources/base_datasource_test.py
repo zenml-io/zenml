@@ -12,17 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import pytest
 import os
-import zenml
 import random
+from pathlib import Path
+
 import pandas as pd
+import pytest
+
+import zenml
+from zenml import exceptions
 from zenml.datasources import BaseDatasource
 from zenml.pipelines import BasePipeline
 from zenml.standards import standard_keys as keys
 from zenml.utils import yaml_utils
-from zenml import exceptions
-from pathlib import Path
 
 # Nicholas a way to get to the root
 ZENML_ROOT = str(Path(zenml.__path__[0]).parent)
@@ -41,12 +43,6 @@ def test_datasource_create(repo):
     second_ds = BaseDatasource.from_config(cfg[keys.GlobalKeys.PIPELINE])
 
     assert second_ds._immutable
-
-
-def test_get_datastep():
-    first_ds = BaseDatasource(name="my_datasource")
-
-    assert not first_ds.get_data_step()
 
 
 def test_to_from_config(equal_datasources):
@@ -107,7 +103,7 @@ def test_get_datapoints(repo):
     csv_df = pd.read_csv(os.path.join(TEST_ROOT,
                                       "test_data", "my_dataframe.csv"))
 
-    assert ds.get_datapoints() == len(csv_df.index)
+    assert ds.n_datapoints == len(csv_df.index)
 
 
 def test_sample_data(repo):
@@ -121,6 +117,6 @@ def test_sample_data(repo):
     csv_df = pd.read_csv(os.path.join(TEST_ROOT,
                                       "test_data", "my_dataframe.csv"))
 
-# TODO: This fails for floating point values other than 2.5 in GPA.
-#   Pandas floating point comp might be too strict
+    # TODO: This fails for floating point values other than 2.5 in GPA.
+    #   Pandas floating point comp might be too strict
     assert sample_df.equals(csv_df)

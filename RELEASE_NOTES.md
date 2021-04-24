@@ -1,3 +1,43 @@
+# 0.3.7
+0.3.7 is a much-needed, long-awaited, big refactor of the Datasources paradigm of ZenML. There are also bug fixes, improvements, and more!
+
+For those upgrading from an older version of ZenML, we ask to please delete their old `pipelines` dir and `.zenml` folders and start afresh with a `zenml init`.
+
+If only working locally, this is as simple as:
+
+```
+cd zenml_enabled_repo
+rm -rf pipelines/
+rm -rf .zenml/
+```
+
+And then another ZenML init:
+
+```
+pip install --upgrade zenml
+cd zenml_enabled_repo
+zenml init
+```
+
+## New Features
+* The inner-workings of the `BaseDatasource` have been modified along with the concrete implementations. Now, there is no relation between a `DataStep` and a `Datasource`: A `Datasource` holds all the logic to version and track itself via the new `commit` paradigm.
+
+* Introduced a new interface for datasources, the `process` method which is responsible for ingesting data and writing to TFRecords to be consumed by later steps.
+
+* Datasource versions (snapshots) can be accessed directly via the `commits` paradigm: Every commit is a new version of data.
+
+* Added `JSONDatasource` and `TFRecordsDatasource`.
+
+## Bug Fixes + Refactor
+A big thanks to our new contributer @aak7912 for the help in this release with issue #71 and PR #75.
+
+* Added an example for [regression](https://github.com/maiot-io/zenml/tree/main/examples/regression).
+* `compare_training_runs()` now takes an optional `datasource` parameter to filter by datasource.
+* `Trainer` interface refined to focus on `run_fn` rather than other helper functions.
+* New docs released with a streamlined vision and coherent storyline: https://docs.zenml.io
+* Got rid of unnecessary Torch dependency with base ZenML version.
+
+
 # 0.3.6
 0.3.6 is a more inwards-facing release as part of a bigger effort to create a more flexible ZenML. As a first step, ZenML now supports arbitrary splits for all components natively, freeing us from the `train/eval` split paradigm. Here is an overview of changes:
 

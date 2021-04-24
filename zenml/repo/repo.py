@@ -148,6 +148,38 @@ class Repository:
         self._check_if_initialized()
         return self.git_wrapper
 
+    # TODO [MEDIUM]: Potentially move these three to relevant Base classes.
+    def get_artifact_store_from_file_path(self, file_path: Text):
+        """
+        Gets artifact store from a pipeline config file path.
+        Args:
+            file_path (Text): Path to pipeline YAML file.
+        """
+        config = yaml_utils.read_yaml(file_path)
+        return ArtifactStore(config[keys.GlobalKeys.ARTIFACT_STORE])
+
+    def get_metadata_store_from_file_path(self, file_path: Text):
+        """
+        Gets metadata store from a pipeline config file path.
+        Args:
+            file_path (Text): Path to pipeline YAML file.
+        """
+        config = yaml_utils.read_yaml(file_path)
+        return ZenMLMetadataStore.from_config(
+            config[keys.GlobalKeys.METADATA_STORE])
+
+    def get_orchestrator_backend_from_file_path(self, file_path: Text):
+        """
+        Gets orchestrator backend from a pipeline config file path.
+        Args:
+            file_path (Text): Path to pipeline YAML file.
+        """
+        from zenml.backends.orchestrator.base.orchestrator_base_backend \
+            import OrchestratorBaseBackend
+        config = yaml_utils.read_yaml(file_path)
+        return OrchestratorBaseBackend.from_config(
+            config[keys.GlobalKeys.BACKEND])
+
     @track(event=GET_STEP_VERSION)
     def get_step_by_version(self, step_type: Union[Type, Text], version: Text):
         """
@@ -336,6 +368,23 @@ class Repository:
                     pipelines.append(BasePipeline.from_config(c))
         return pipelines
 
+    def get_pipeline_f_paths_by_datasource_id(self, datasource_id: Text):
+        """
+        Gets list of file path associated with a datasource id.
+
+        Args:
+            datasource_id (Text): id of datasource.
+        """
+        paths = []
+        for file_path in self.get_pipeline_file_paths():
+            c = yaml_utils.read_yaml(file_path)
+            if keys.DatasourceKeys.ID in c[keys.GlobalKeys.PIPELINE][
+                keys.PipelineKeys.DATASOURCE]:
+                if c[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.DATASOURCE][
+                    keys.DatasourceKeys.ID] == datasource_id:
+                    paths.append(file_path)
+        return paths
+
     @track(event=GET_PIPELINES)
     def get_pipelines(self) -> List:
         """Gets list of all pipelines."""
@@ -376,11 +425,11 @@ class Repository:
         pipelines_dir = self.zenml_config.get_pipelines_dir()
         return yaml_utils.read_yaml(os.path.join(pipelines_dir, file_name))
 
-    def compare_training_runs(self, port: int = 0):
+    def compare_training_runs(self, port: int = 0, datasource=None):
         """Launch the compare app for all training pipelines in repo"""
         from zenml.utils.post_training.post_training_utils import \
             launch_compare_tool
-        launch_compare_tool(port)
+        launch_compare_tool(port, datasource)
 
     def clean(self):
         """Deletes associated metadata store, pipelines dir and artifacts"""

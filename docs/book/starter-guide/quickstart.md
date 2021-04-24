@@ -15,11 +15,11 @@ kernelspec:
 
 # Designing your first pipeline
 
-In **ZenML**, a **pipeline** refers to a sequence of **steps** which represent independent entities that gets a certain set of inputs and creates the corresponding outputs as **artifacts**. These output **artifacts** can potentially be fed into other **steps** as inputs, and that’s how the order of execution is decided.
+In **ZenML**, a **pipeline** refers to a sequence of **steps** which represent independent entities that gets a certain set of inputs and creates the corresponding outputs as artifacts. These output artifacts can potentially be fed into other **steps** as inputs, and that’s how the order of execution is decided.
 
-Each **artifact** that is produced along the way is stored in an **artifact store** and the corresponding execution is tracked by a **metadata store** associated with the **pipeline**. These artifacts can be fetched directly or via helper methods. For instance in a training pipeline,`view_statistics()` and `view_schema()` can be used as helper methods to easily view the artifacts from interim steps in a **pipeline**.
+Each artifact that is produced along the way is stored in an **artifact store** and the corresponding execution is tracked by a **metadata store** associated with the **pipeline**. These artifacts can be fetched directly or via helper methods. For instance in a **training pipeline**,`view_statistics()` and `view_schema()` can be used as helper methods to easily view the artifacts from interim **steps** in a **pipeline**.
 
-Finally, **ZenML** already natively separates configuration from code in its design. That means that every **step** in a **pipeline** has its parameters tracked and stored in the **declarative config file** in the selected **pipelines directory**. Therefore, pulling a pipeline and running it in another environment not only ensures that the code will be the same, but also the configuration.
+Finally, **ZenML** already natively separates configuration from code in its design. That means that every **step** in a **pipeline** has its parameters tracked and stored in the **declarative config file** in the selected **pipelines directory**. Therefore, pulling a **pipeline** and running it in another environment not only ensures that the code will be the same, but also the configuration.
 
 ## BasePipeline
 
@@ -31,9 +31,7 @@ As of **0.3.6**, for end-to-end ML workflows, we are using the **`TrainingPipeli
 
 ## TrainingPipeline
 
-The **`TrainingPipeline`** is a specialized pipeline built on top of the **`BasePipeline`** and it is used to run a training experiment and deploy the resulting model. It covers a fixed set of steps representing the processes, which can be found in most of the machine learning workflows:
-
-**\[TODO: STEP VISUALIZATION\]**
+The `TrainingPipeline` is a specialized pipeline built on top of the `BasePipeline` and it is used to run a training experiment and deploy the resulting model. It covers a fixed set of steps representing the processes, which can be found in most of the machine learning workflows:
 
 * **Split**: responsible for splitting your dataset into smaller datasets such as train, eval, etc.
 * **Sequence \(Optional\)**: responsible for extracting sequences from time-series data
@@ -92,10 +90,10 @@ The code snippet below shows how quickly you can wrap up a `TrainingPipeline` an
 
 1. Create an instance of a `TrainingPipeline`
 2. Add a datasource to your instance
-3. Add the desired steps along with their configuration
+3. Add the desired **steps** along with their configuration
 4. Simply run it
 
-Most importantly, even when executing a simple example such as this, you maintain all the advantages that **ZenML** brings to the table such as reproducibility, scalability and collaboration to their full extent.  
+Most importantly, even when executing a simple example such as this, you maintain all the advantages that **ZenML** brings to the table such as reproducibility, scalability, and collaboration to their full extent.  
 
 ```python
 from zenml.pipelines import TrainingPipeline

@@ -2,7 +2,7 @@
 
 ## Overview
 
-In order to control the process of splitting a dataset, **ZenML** utilizes the so-called **`BaseSplit`** interface. In the definition of this interface, there are **two main abstract methods** called `partition_fn` and `get_split_names`.
+In order to control the process of splitting a dataset, **ZenML** utilizes the so-called `BaseSplit` interface. In the definition of this interface, there are **two main abstract methods** called `partition_fn` and `get_split_names`.
 
 ```python
 class BaseSplit(BaseStep):
@@ -18,7 +18,7 @@ class BaseSplit(BaseStep):
 
 ### partition\_fn
 
-The goal of the `partition_fn` is to determine the right split selection for each incoming datapoint. It has two inputs, namely `element`, which denotes the incoming input in `tf.train.Example` format, and `n`, which denotes the number of potential splits, and it returns an integer indicating the selection of the split. The `partition_fn` has the following signature:
+The goal of the `partition_fn` is to determine the correct split selection for each incoming datapoint. It has two inputs, namely `element`, which denotes the incoming input in `tf.train.Example` format, and `n`, which denotes the number of potential splits, and it returns an integer indicating the selection of the split. The `partition_fn` has the following signature:
 
 ```python
 def partition_fn(element, n) -> int:
@@ -82,7 +82,6 @@ As easy as that, we have a complete split step in our pipeline. If you have a ta
 
 ## What's next?
 
-* You can find a more in-depth guide on how to create a custom split step here. \[WIP\]
 * Additionally, here is a closer look at how the instance variables work in any step and what they represent. \[WIP\]
 * The next step along the way is [data preprocessing](transform.md).
 

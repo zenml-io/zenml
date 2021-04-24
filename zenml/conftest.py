@@ -160,8 +160,8 @@ def equal_datasources(equal_steps):
         equal |= ds1.name == ds2.name
         equal |= ds1._id == ds2._id
         equal |= ds1._source == ds2._source
-        equal |= equal_steps(ds1.get_data_step(), ds2.get_data_step(),
-                             loaded=loaded)
+        equal |= ds1._source_args == ds2._source_args
+
         # TODO[LOW]: Add more checks for constructor kwargs, __dict__ etc.
         if loaded:
             equal |= ds1._immutable != ds2._immutable

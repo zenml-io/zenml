@@ -19,9 +19,9 @@
 ## Advanced Guide
 
 * [Backends](advanced-guide/backends.md)
-* [Pipelines in a repository](advanced-guide/inspecting-all-pipelines.md)
-* [The metadata and artifact stores](advanced-guide/querying-the-metadata-store.md)
 * [ZenML repository guidelines](advanced-guide/fetching-artifacts.md)
+* [The metadata and artifact stores](advanced-guide/querying-the-metadata-store.md)
+* [Pipelines in a repository](advanced-guide/inspecting-all-pipelines.md)
 * [Team collaboration](advanced-guide/team-collaboration.md)
 * [Managing the environment](advanced-guide/integrations.md)
 

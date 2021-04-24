@@ -2,10 +2,10 @@
 
 ## Overview
 
-In order to deploy a trained model, ZenML uses an interface called the `BaseDeployer`. 
+In order to deploy a trained model, **ZenML** uses an interface called the `BaseDeployer`. 
 
 {% hint style="danger" %}
-As of **0.3.6**, the mechanism to create custom deployers is not supported. We are working hard to bring you this feature and if you would like to learn more about our progress you can check our [roadmap](../support/roadmap.md).  Meanwhile, you can use our built-in **CortexDeployer** or **GCAIPDeployer**.
+As of **0.3.6**, the mechanism to create custom deployers through `BaseDeployer` is not supported. We are working hard to bring you this feature and if you would like to learn more about our progress you can check our [roadmap](../support/roadmap.md).  Meanwhile, you can use our built-in **CortexDeployer** or **GCAIPDeployer**.
 {% endhint %}
 
 ## Example: the built-in `CortexDeployer`

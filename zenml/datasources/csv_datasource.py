@@ -13,10 +13,18 @@
 #  permissions and limitations under the License.
 """CSv Datasource definition"""
 
-from typing import Text, Dict
+import os
+from typing import Callable, Text, Dict
 
-from zenml.datasources import BaseDatasource
-from zenml.steps.data import CSVDataStep
+import apache_beam as beam
+from tfx_bsl.coders import csv_decoder
+
+from zenml.datasources.base_datasource import BaseDatasource
+from zenml.logger import get_logger
+from zenml.utils import path_utils
+from zenml.utils.beam_utils import WriteToTFRecord
+
+logger = get_logger(__name__)
 
 
 class CSVDatasource(BaseDatasource):
@@ -46,9 +54,44 @@ class CSVDatasource(BaseDatasource):
             path (str): path to csv file.
             schema (str): optional schema for data to conform to.
         """
-        super().__init__(name, **kwargs)
         self.path = path
         self.schema = schema
+        super().__init__(name, path=path, schema=schema, **kwargs)
 
-    def get_data_step(self):
-        return CSVDataStep(self.path, self.schema)
+    def process(self, output_path: Text, make_beam_pipeline: Callable = None):
+        wildcard_qualifier = "*"
+        file_pattern = os.path.join(self.path, wildcard_qualifier)
+
+        if path_utils.is_dir(self.path):
+            csv_files = path_utils.list_dir(self.path)
+            if not csv_files:
+                raise RuntimeError(
+                    'Split pattern {} does not match any files.'.format(
+                        file_pattern))
+        else:
+            if path_utils.file_exists(self.path):
+                csv_files = [self.path]
+            else:
+                raise RuntimeError(f'{self.path} does not exist.')
+
+        # weed out bad file exts with this logic
+        allowed_file_exts = [".csv", ".txt"]  # ".dat"
+        csv_files = [uri for uri in csv_files if os.path.splitext(uri)[1]
+                     in allowed_file_exts]
+
+        logger.info(f'Matched {len(csv_files)}: {csv_files}')
+
+        # Always use header from file
+        logger.info(f'Using header from file: {csv_files[0]}.')
+        column_names = path_utils.load_csv_header(csv_files[0])
+        logger.info(f'Header: {column_names}.')
+
+        with make_beam_pipeline() as p:
+            p | 'ReadFromText' >> beam.io.ReadFromText(
+                file_pattern=self.path,
+                skip_header_lines=1) \
+            | 'ParseCSVLine' >> beam.ParDo(csv_decoder.ParseCSVLine(
+                delimiter=',')) \
+            | 'ExtractParsedCSVLines' >> beam.Map(
+                lambda x: dict(zip(column_names, x[0]))) \
+            | WriteToTFRecord(self.schema, output_path)

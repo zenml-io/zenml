@@ -6,7 +6,11 @@ description: 'TL;DR: Do `pip install zenml` to install.'
 
 ## Welcome
 
-Your first step is to install **ZenML**, which comes bundled as a good old `pip` package. Please note that we only support Python &gt;= 3.6, so please adjust your pip accordingly.
+Your first step is to install **ZenML**, which comes bundled as a good old `pip` package. 
+
+{% hint style="warning" %}
+Please note that we only support Python &gt;= 3.6, so please adjust your pip accordingly.
+{% endhint %}
 
 ## Virtual Environment
 
@@ -63,19 +67,19 @@ If you would like to learn more about the current release, please visit the [PyP
 
 ## Enabling auto-completion on the CLI
 
-For Bash, add this to ~/.bashrc:
+For Bash, add this to `~/.bashrc`:
 
 ```bash
 eval "$(_ZENML_COMPLETE=source_bash zenml)"
 ```
 
-For Zsh, add this to ~/.zshrc:
+For Zsh, add this to `~/.zshrc`:
 
 ```bash
 eval "$(_ZENML_COMPLETE=source_zsh zenml)"
 ```
 
-For Fish, add this to ~/.config/fish/completions/foo-bar.fish:
+For Fish, add this to `~/.config/fish/completions/foo-bar.fish`:
 
 ```bash
 eval (env _ZENML_COMPLETE=source_fish zenml)
@@ -91,7 +95,7 @@ jupyter nbextension enable --py tensorflow_model_analysis
 ```
 
 {% hint style="warning" %}
-If you encounter a \`File already exists in database error\` error after the first command, this is most likely due to a [known bug](https://stackoverflow.com/questions/59165505/file-already-exists-in-database-error-from-protobuf-when-deploying-google-datafl) with one of our dependencies, namely [PyArrow](https://pypi.org/project/pyarrow/). Unfortunately, this will cause some features to not work on your machine namely **pipeline evaluate and compare**.
+If you encounter a `File already exists in database` error after the first command, this is most likely due to a [known bug](https://stackoverflow.com/questions/59165505/file-already-exists-in-database-error-from-protobuf-when-deploying-google-datafl) with one of our dependencies, namely [PyArrow](https://pypi.org/project/pyarrow/). Unfortunately, this will cause some features to not work on your machine namely **evaluate** and **compare**.
 
 We are aware of this issue and are working hard to fix it. A future release of **ZenML** will fix this issue.
 {% endhint %}
