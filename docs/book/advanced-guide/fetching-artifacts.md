@@ -10,10 +10,10 @@ The only requirement for the structure of any **ZenML** repository is that it sh
 
 **ZenML** has the following core components:
 
-* [Steps](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/getting-started/steps/what-is-a-step.md)
-* [Datasources](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/datasources/what-is-a-datasource.md)
-* [Pipelines](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/pipelines/what-is-a-pipeline.md)
-* [Backends](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/backends/what-is-a-backend.md)
+* [Steps](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/core-concepts.md#steps)
+* [Datasources](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/core-concepts.md#datasources)
+* [Pipelines](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/core-concepts.md#pipelines)
+* [Backends](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/core-concepts.md#backends)
 
 Each component has its own intricacies and its own rules of precisely how to extend them. However, there are some rules that are general when writing **ZenML** code:
 
