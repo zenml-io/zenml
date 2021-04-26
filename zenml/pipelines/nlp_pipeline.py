@@ -37,9 +37,6 @@ from zenml.standards import standard_keys as keys
 from zenml.steps.split import BaseSplitStep
 from zenml.steps.tokenizer import BaseTokenizer
 from zenml.steps.trainer import BaseTrainerStep
-from zenml import constants
-from zenml.enums import GDPComponent, PipelineStatusTypes
-from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
