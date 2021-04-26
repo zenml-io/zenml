@@ -32,7 +32,7 @@ While there are other pipelining solutions for Machine Learning experiments, **Z
 A good place to go from this point is to:
 
 * Read more about [core concepts](core-concepts.md) to inform your decision about using **ZenML**
-* Get up and running with your first pipeline [w](starter-guide/quickstart.md)ith our [starter guide](starter-guide/repository.md)
+* Get up and running with your [first pipeline](starter-guide/quickstart.md) with our [starter guide](starter-guide/repository.md)
 * If you are familiar with the basics, jump right into the [advanced guide](advanced-guide/inspecting-all-pipelines.md) section
 
 ## Get involved

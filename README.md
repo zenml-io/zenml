@@ -50,7 +50,7 @@ ZenML is not here to replace the great tools that solve the individual problems 
 ## What is ZenML?
 **ZenML** is an extensible, open-source MLOps framework for creating production-ready Machine Learning pipelines - in a simple way. 
 
-A user of ZenML is asked to break down their ML development into individual [Steps](https://docs.zenml.io/steps/what-is-a-step.html), each representing an individual task in the ML development process. A sequence of  steps put together is a [Pipeline](https://docs.zenml.io/pipelines/what-is-a-pipeline.html). Each pipeline contains a [Datasource](https://docs.zenml.io/datasources/what-is-a-datasource.html), which represents a snapshot of a versioned dataset in time. Lastly, every pipeline (and indeed almost every step) can run in [Backends](https://docs.zenml.io/backends/what-is-a-backend.html), that specify how and where a step is executed.
+A user of ZenML is asked to break down their ML development into individual [Steps](https://docs.zenml.io/core-concepts#steps), each representing an individual task in the ML development process. A sequence of  steps put together is a [Pipeline](https://docs.zenml.io/core-concepts#pipelines). Each pipeline contains a [Datasource](https://docs.zenml.io/core-concepts#datasources), which represents a snapshot of a versioned dataset in time. Lastly, every pipeline (and indeed almost every step) can run in [Backends](https://docs.zenml.io/core-concepts#backends), that specify how and where a step is executed.
 
 By developing in pipelines, ML practitioners give themselves a platform to transition from research to production from the very beginning, and are also helped in the research phase by the powerful automations introduced by ZenML.
 
