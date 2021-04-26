@@ -20,6 +20,14 @@ zenml.utils.analytics\_utils module
    :undoc-members:
    :show-inheritance:
 
+zenml.utils.beam\_utils module
+------------------------------
+
+.. automodule:: zenml.utils.beam_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 zenml.utils.naming\_utils module
 --------------------------------
 

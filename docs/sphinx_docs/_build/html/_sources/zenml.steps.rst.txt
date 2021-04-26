@@ -7,7 +7,6 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   zenml.steps.data
    zenml.steps.deployer
    zenml.steps.evaluator
    zenml.steps.inferrer
