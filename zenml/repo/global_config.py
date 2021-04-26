@@ -15,12 +15,13 @@
 
 import os
 from uuid import uuid4
-
 import click
-
 from zenml import constants
 from zenml.utils import path_utils
 from zenml.utils import yaml_utils
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 # TODO: [MEDIUM] Optimize the reads and writes of this
@@ -106,10 +107,14 @@ class GlobalConfig(dict):
         try:
             tbu = yaml_utils.read_json(self.path)
         except Exception as e:
-            print(str(e))
+            logger.error("Unable to load YAML file due to error:\n" + str(e) + "\nUpdating it as empty value.")
             tbu = {}
         self.update(tbu)
 
     def save(self):
         """Save current config to YAML file"""
-        yaml_utils.write_json(self.path, self)
+        try:
+            yaml_utils.write_json(self.path, self)
+        except Exception as e:
+            logger.error('Unable to save as YAML File.')
+            raise e

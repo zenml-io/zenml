@@ -28,6 +28,9 @@ from zenml.pipelines import BasePipeline
 from zenml.repo import Repository, ZenMLConfig
 from zenml.steps import BaseStep
 from zenml.utils import path_utils
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 # Nicholas a way to get to the root
 ZENML_ROOT = str(Path(zenml.__path__[0]).parent)
@@ -51,7 +54,7 @@ def cleanup_metadata_store():
         try:
             os.remove(os.path.join(ZENML_ROOT, metadata_db_location))
         except Exception as e:
-            print(e)
+            logger.error(e)
 
     return wrapper
 
@@ -65,7 +68,7 @@ def cleanup_pipelines_dir():
             try:
                 os.remove(p_config)
             except Exception as e:
-                print(e)
+                logger.error(e)
 
     return wrapper
 
@@ -78,7 +81,7 @@ def cleanup_artifacts():
             local_store = os.path.join(ZENML_ROOT, local_store_path)
             shutil.rmtree(local_store, ignore_errors=False)
         except Exception as e:
-            print(e)
+            logger.error(e)
 
     return wrapper
 

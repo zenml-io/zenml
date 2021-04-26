@@ -17,8 +17,10 @@ import os
 import re
 import shutil
 from distutils.core import run_setup
-
 from tfx.utils import io_utils
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def prepare_sdist():
@@ -28,10 +30,10 @@ def prepare_sdist():
     dist_path = os.path.join(os.getcwd(), 'dist')
 
     if os.path.exists(dist_path) and os.path.isdir(dist_path):
-        print('Removing {}'.format(dist_path))
+        logger.info('Removing {}'.format(dist_path))
         shutil.rmtree(dist_path)
     else:
-        print('There is no dist folder.')
+        logger.warning('There is no dist folder.')
 
     # FOR THE BOPA
     run_setup('setup.py', script_args=['sdist'])
