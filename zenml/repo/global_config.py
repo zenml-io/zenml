@@ -107,7 +107,7 @@ class GlobalConfig(dict):
         try:
             tbu = yaml_utils.read_json(self.path)
         except Exception as e:
-            logger.error("Unable to load YAML file due to error: " + str(e) + ".Updating it as empty value.")
+            logger.error("Unable to load YAML file due to error:\n" + str(e) + "\nUpdating it as empty value.")
             tbu = {}
         self.update(tbu)
 
