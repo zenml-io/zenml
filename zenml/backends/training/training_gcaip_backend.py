@@ -17,17 +17,17 @@ import time
 from typing import Text
 
 from tfx.dsl.components.base import executor_spec
-from tfx.extensions.google_cloud_ai_platform.trainer import \
-    executor as ai_platform_trainer_executor
 from tfx.extensions.google_cloud_ai_platform.trainer.executor \
     import TRAINING_ARGS_KEY, JOB_ID_KEY
 
 from zenml.backends.training import TrainingBaseBackend
-from zenml.pipelines.utils import sanitize_name_for_ai_platform
-from zenml.utils import requirement_utils
+from zenml.components.trainer.gcaip_executor import \
+    ZenMLTrainerGCAIPExecutor
 from zenml.constants import ZENML_TRAINER_IMAGE_NAME
 from zenml.enums import GCPGPUTypes
 from zenml.logger import get_logger
+from zenml.pipelines.utils import sanitize_name_for_ai_platform
+from zenml.utils import requirement_utils
 
 requirement_utils.check_integration(requirement_utils.GCP_INTEGRATION)
 
@@ -100,8 +100,7 @@ class SingleGPUTrainingGCAIPBackend(TrainingBaseBackend):
         )
 
     def get_executor_spec(self):
-        return executor_spec.ExecutorClassSpec(
-            ai_platform_trainer_executor.GenericExecutor)
+        return executor_spec.ExecutorClassSpec(ZenMLTrainerGCAIPExecutor)
 
     def get_custom_config(self):
         train_args = {
