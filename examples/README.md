@@ -3,6 +3,10 @@
 Here you can find a list of practical examples on how you can use ZenML with brief descriptions for each example:
 
 - **aws_orchestrated**: Runs pipeline on an EC2 instance on `Amazon Web Services` as the orchestration backend.
+- **backends**: Showcases switching between various backends for different use-cases.
+- **batch_inference**: Runs a batch inference pipeline using the result of a training pipeline.
+- **bootstrapping**: Example on how to bootstrap different services on GCP for various backends using Terraform. 
+- **collaboration**: How to collaborate using ZenML across multiple devices and teams.
 - **cortex**: Tutorial on how to integrate with [Cortex](https://cortex.dev) to deploy your models.
 - **batch_inference**: Run a offline batch inference job.
 - **gan**: Tutorial on how to create and train a GAN model with a custom `TrainerStep` and `PreprocessorStep`.
@@ -16,7 +20,9 @@ Here you can find a list of practical examples on how you can use ZenML with bri
 - **pytorch**: Showcases PyTorch support.
 - **pytorch_lightning**: Showcases [PyTorch Lightning](https://www.pytorchlightning.ai/) support.
 - **quickstart**: The official quickstart tutorial.
+- **regression**: Showcases a regression use-case.
 - **scikit**: An example of using a [scikit-learn](https://scikit-learn.org/) trainer within ZenML.
+- **simple_cv**: Show-cases a simple CV example using Tensorflow Datasets and MNIST.
 
 Note: A lot of the examples are based on [Google Cloud Platform](https://cloud.google.com/). Extensions to other cloud providers like AWS and Azure will 
 be released over time, but the interactions will be very similar. In fact, adding support for these can a great first pull 
