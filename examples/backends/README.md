@@ -26,10 +26,14 @@ You also need to enable the following GCP services (and enable billing).
 * Google Cloud Dataflow
 * Google CloudSQL
 
+You also need to create a google service account that has permission to read/write to all of the above services and 
+specify that in your `GOOGLE_APPLICATION_CREDENTIALS` env variable (see below).
+
 ### Run the project
 Now we're ready. First fill in the env variables required. 
 
 ```bash
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/creds
 export GCP_BUCKET=""
 export GCP_PROJECT=""
 export GCP_REGION=""
