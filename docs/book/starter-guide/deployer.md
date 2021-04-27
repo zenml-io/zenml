@@ -10,7 +10,7 @@ As of **0.3.6**, the mechanism to create custom deployers through `BaseDeployer`
 
 ## Example: the built-in `CortexDeployer`
 
-The `CortexDeployer` is built to make it easier to deploy models on a Kubernetes cluster and for this purpose, it utilizes the [Cortex integration of **ZenML**](../advanced-guide/integrations.md).
+The `CortexDeployer` is built to make it easier to deploy models on a Kubernetes cluster and for this purpose, it utilizes the [Cortex integration of **ZenML**]().
 
 {% code title="zenml/examples/cortex/run.py" %}
 ```python
@@ -42,7 +42,7 @@ In order to get a better understanding of how the `CortexDeployer` works, you ca
 
 ## Example: the built-in `GCAIPDeployer`
 
-With **ZenML**, you can deploy a trained model on the Google Cloud AI Platform using the `GCAIPDeployer`. The usage of the `GCAIPDeployer` is limited to Tensorflow-based trainers and you need to install the [GCP integration of **ZenML**](../advanced-guide/integrations.md).
+With **ZenML**, you can deploy a trained model on the Google Cloud AI Platform using the `GCAIPDeployer`. The usage of the `GCAIPDeployer` is limited to Tensorflow-based trainers and you need to install the [GCP integration of **ZenML**]().
 
 {% code title="zenml/examples/gcp\_gcaip\_deployment/run.py" %}
 ```python

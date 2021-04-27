@@ -2,7 +2,7 @@
 description: A good place to start before diving further into the docs.
 ---
 
-# Core concepts
+# Core Concepts
 
 **ZenML** consists of the following key components:
 
@@ -48,7 +48,7 @@ If **datasources** represent the data you use, and **pipelines/steps** define th
 
 **Backends** are defined either per **pipeline** \(here they are called `OrchestratorBackends`\), or per **step** \(i.e. `ProcessingBackends`, `TrainingBackends`\).
 
-Read more about backends [here](advanced-guide/backends.md#how-to-use-a-backend).
+Read more about backends [here]().
 
 ## Pipelines Directory
 

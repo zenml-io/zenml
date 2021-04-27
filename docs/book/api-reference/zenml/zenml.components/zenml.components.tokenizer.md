@@ -2,12 +2,12 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.components.tokenizer package — ZenML documentation [ZenML](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
+zenml.components.tokenizer package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/index.html)
 
-* [Site](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/modules.html)
-* [Page](zenml.components.tokenizer.md)
+    * [zenml](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/modules.html)
+*  [Page](zenml.components.tokenizer.md)
   * * [zenml.components.tokenizer package](zenml.components.tokenizer.md)
       * [Submodules](zenml.components.tokenizer.md#submodules)
       * [zenml.components.tokenizer.component module](zenml.components.tokenizer.md#zenml-components-tokenizer-component-module)
@@ -16,7 +16,7 @@ zenml.components.tokenizer package — ZenML documentation [ZenML](https://githu
       * [Module contents](zenml.components.tokenizer.md#module-contents)
 * [ « zenml.compone...](zenml.components.split_gen.md)
 * [ zenml.compone... »](zenml.components.trainer.md)
-* [Source](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/_sources/zenml.components.tokenizer.rst.txt)
+*  [Source](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/_sources/zenml.components.tokenizer.rst.txt)
 
 ## zenml.components.tokenizer package[¶](zenml.components.tokenizer.md#zenml-components-tokenizer-package)
 
@@ -30,8 +30,9 @@ zenml.components.tokenizer package — ZenML documentation [ZenML](https://githu
 
 ### Module contents[¶](zenml.components.tokenizer.md#module-contents)
 
-[Back to top](zenml.components.tokenizer.md)
+ [Back to top](zenml.components.tokenizer.md)
 
-© Copyright 2021, maiot GmbH.  
-Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.
+ © Copyright 2021, maiot GmbH.  
+ Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.  
+
 

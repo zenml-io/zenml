@@ -2,7 +2,7 @@
 description: Form a complete picture of your ML metadata and artifacts.
 ---
 
-# The metadata and artifact stores
+# Querying the metadata store
 
 ## Configuring default metadata and artifact stores
 

@@ -1,32 +1,32 @@
 # Roadmap
 
-The roadmap is an encapsulation of the features that we intend to build for **ZenML**. However, please note that we limited resources and therefore no means of guaranteeing that this roadmap will be followed precisely as described on this page. Rest assured we are working to follow this diligently - please keep us in check!
+The roadmap is an encapsulation of the features that we intend to build for ZenML. However, please note that we limited resources and therefore no means of guaranteeing that this roadmap will be followed precisely as described on this page. Rest assured we are working to follow this diligently - please keep us in check!
 
-We intend for this to be a reflection of the _current_ thinking of what we and our users think are the most critical features to be prioritized and added to **ZenML**. If you do not agree with the prioritization, or see a feature here that you expect, please contact us at [support@zenml.io](mailto:support@zenml.io), or join the chat on our [Slack](https://zenml.io/slack-invite/) server. You can also start a thread at the[ GitHub discussion board](https://github.com/maiot-io/zenml/discussions).
+We intend for this to be a reflection of the _current_ thinking of what we and our users think are the most critical features to be prioritized and added to ZenML. If you do not agree with the prioritization, or see a feature here that you expect, please contact us at [support@zenml.io](mailto:support@zenml.io), or join the chat on our [Slack](https://zenml.io/slack-invite/) server. You can also start a thread at the[ GitHub discussion board](https://github.com/maiot-io/zenml/discussions).
 
-## Feature Roadmap \(Updated March 18, 2021\)
+## Feature Roadmap \(Updated March 18 2021\)
 
 ### In Progress:
 
-* Refine API to make it simpler to create custom datasources.
+* Refine API to make it simpler to create custom datasources
   * Status: `WIP`
   * Target Date: Q1 2021
-* Refine API to separate configuration from execution
-  * Status: `WIP`
-  * Target Date: Q1 2021
-* Create a non Tensorflow Transform preprocesser step.
+* Refine API to seperate configuration from execution
   * Status: `WIP`
   * Target Date: Q1 2021
 * Create a non Tensorflow Transform preprocesser step.
   * Status: `WIP`
   * Target Date: Q1 2021
-* Extend BatchInference to work with non-Tensorflow libraries.
+* Create a non Tensorflow Transform preprocesser step.
+  * Status: `WIP`
+  * Target Date: Q1 2021
+* Extend BatchInference to work with non-Tensorflow libraries
   * Status: `WIP`
   * Target Date: Q1 2021
 * Extend BatchInference to write to any data sink.
   * Status: `WIP`
   * Target Date: Q1 2021
-* Create a data utility package to convert easily from TFRecords to other formats.
+* Create data utility package to convert easily from TFRecords to other formats.
   * Status: `WIP`
   * Target Date: Q1 2021
 

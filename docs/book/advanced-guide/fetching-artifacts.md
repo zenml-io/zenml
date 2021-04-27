@@ -2,7 +2,7 @@
 description: 'Structure your steps, pipelines, backends and more.'
 ---
 
-# ZenML repository guidelines
+# Fetching artifacts
 
 The only requirement for the structure of any **ZenML** repository is that it should be a **Git enabled repository**. **ZenML** works on some assumptions of the underlying git repository that it is built on top of.
 
@@ -10,10 +10,10 @@ The only requirement for the structure of any **ZenML** repository is that it sh
 
 **ZenML** has the following core components:
 
-* [Steps](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/core-concepts.md#steps)
-* [Datasources](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/core-concepts.md#datasources)
-* [Pipelines](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/core-concepts.md#pipelines)
-* [Backends](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/core-concepts.md#backends)
+* [Steps](../core-concepts.md#steps)
+* [Datasources](../core-concepts.md#datasources)
+* [Pipelines](../core-concepts.md#pipelines)
+* [Backends](../core-concepts.md#backends)
 
 Each component has its own intricacies and its own rules of precisely how to extend them. However, there are some rules that are general when writing **ZenML** code:
 

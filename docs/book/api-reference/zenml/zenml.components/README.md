@@ -2,43 +2,43 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.components package — ZenML documentation [ZenML](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
+zenml.components package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/index.html)
 
-* [Site](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/modules.html)
-* [Page](./)
+    * [zenml](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/modules.html)
+*  [Page](./)
   * * [zenml.components package](./)
       * [Subpackages](./#subpackages)
       * [Module contents](./#module-contents)
 * [ « zenml.cli package](../zenml.cli.md)
-* [ zenml.compone... »](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.components.bulk_inferrer.html)
-* [Source](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/_sources/zenml.components.rst.txt)
+* [ zenml.compone... »](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.components.bulk_inferrer.html)
+*  [Source](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/_sources/zenml.components.rst.txt)
 
 ## zenml.components package[¶](./#zenml-components-package)
 
 ### Subpackages[¶](./#subpackages)
 
-* [zenml.components.bulk\_inferrer package](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.components.bulk_inferrer.html)
-  * [Submodules](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.components.bulk_inferrer.html#submodules)
-  * [zenml.components.bulk\_inferrer.component module](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.components.bulk_inferrer.html#zenml-components-bulk-inferrer-component-module)
-  * [zenml.components.bulk\_inferrer.constants module](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.components.bulk_inferrer.html#zenml-components-bulk-inferrer-constants-module)
-  * [zenml.components.bulk\_inferrer.executor module](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.components.bulk_inferrer.html#zenml-components-bulk-inferrer-executor-module)
-  * [zenml.components.bulk\_inferrer.utils module](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.components.bulk_inferrer.html#zenml-components-bulk-inferrer-utils-module)
-  * [Module contents](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.components.bulk_inferrer.html#module-contents)
-* [zenml.components.data\_gen package](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.components.data_gen.html)
-  * [Submodules](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.components.data_gen.html#submodules)
-  * [zenml.components.data\_gen.component module](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.components.data_gen.html#zenml-components-data-gen-component-module)
-  * [zenml.components.data\_gen.constants module](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.components.data_gen.html#zenml-components-data-gen-constants-module)
-  * [zenml.components.data\_gen.executor module](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.components.data_gen.html#zenml-components-data-gen-executor-module)
-  * [zenml.components.data\_gen.utils module](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.components.data_gen.html#zenml-components-data-gen-utils-module)
-  * [Module contents](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.components.data_gen.html#module-contents)
-* [zenml.components.evaluator package](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.components.evaluator.html)
-  * [Submodules](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.components.evaluator.html#submodules)
-  * [zenml.components.evaluator.component module](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.components.evaluator.html#zenml-components-evaluator-component-module)
-  * [zenml.components.evaluator.constants module](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.components.evaluator.html#zenml-components-evaluator-constants-module)
-  * [zenml.components.evaluator.executor module](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.components.evaluator.html#zenml-components-evaluator-executor-module)
-  * [Module contents](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/zenml.components.evaluator.html#module-contents)
+* [zenml.components.bulk\_inferrer package](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.components.bulk_inferrer.html)
+  * [Submodules](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.components.bulk_inferrer.html#submodules)
+  * [zenml.components.bulk\_inferrer.component module](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.components.bulk_inferrer.html#zenml-components-bulk-inferrer-component-module)
+  * [zenml.components.bulk\_inferrer.constants module](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.components.bulk_inferrer.html#zenml-components-bulk-inferrer-constants-module)
+  * [zenml.components.bulk\_inferrer.executor module](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.components.bulk_inferrer.html#zenml-components-bulk-inferrer-executor-module)
+  * [zenml.components.bulk\_inferrer.utils module](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.components.bulk_inferrer.html#zenml-components-bulk-inferrer-utils-module)
+  * [Module contents](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.components.bulk_inferrer.html#module-contents)
+* [zenml.components.data\_gen package](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.components.data_gen.html)
+  * [Submodules](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.components.data_gen.html#submodules)
+  * [zenml.components.data\_gen.component module](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.components.data_gen.html#zenml-components-data-gen-component-module)
+  * [zenml.components.data\_gen.constants module](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.components.data_gen.html#zenml-components-data-gen-constants-module)
+  * [zenml.components.data\_gen.executor module](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.components.data_gen.html#zenml-components-data-gen-executor-module)
+  * [zenml.components.data\_gen.utils module](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.components.data_gen.html#zenml-components-data-gen-utils-module)
+  * [Module contents](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.components.data_gen.html#module-contents)
+* [zenml.components.evaluator package](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.components.evaluator.html)
+  * [Submodules](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.components.evaluator.html#submodules)
+  * [zenml.components.evaluator.component module](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.components.evaluator.html#zenml-components-evaluator-component-module)
+  * [zenml.components.evaluator.constants module](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.components.evaluator.html#zenml-components-evaluator-constants-module)
+  * [zenml.components.evaluator.executor module](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.components.evaluator.html#zenml-components-evaluator-executor-module)
+  * [Module contents](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.components.evaluator.html#module-contents)
 * [zenml.components.pusher package](zenml.components.pusher.md)
   * [Submodules](zenml.components.pusher.md#submodules)
   * [zenml.components.pusher.cortex\_executor module](zenml.components.pusher.md#zenml-components-pusher-cortex-executor-module)
@@ -84,8 +84,9 @@ zenml.components package — ZenML documentation [ZenML](https://github.com/maio
 
 ### Module contents[¶](./#module-contents)
 
-[Back to top](./)
+ [Back to top](./)
 
-© Copyright 2021, maiot GmbH.  
-Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.
+ © Copyright 2021, maiot GmbH.  
+ Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.  
+
 

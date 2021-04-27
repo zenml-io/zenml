@@ -2,12 +2,12 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.steps.split package — ZenML documentation [ZenML](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
+zenml.steps.split package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/index.html)
 
-* [Site](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/modules.html)
-* [Page](zenml.steps.split.md)
+    * [zenml](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/modules.html)
+*  [Page](zenml.steps.split.md)
   * * [zenml.steps.split package](zenml.steps.split.md)
       * [Submodules](zenml.steps.split.md#submodules)
       * [zenml.steps.split.base\_split\_step module](zenml.steps.split.md#zenml-steps-split-base-split-step-module)
@@ -22,7 +22,7 @@ zenml.steps.split package — ZenML documentation [ZenML](https://github.com/mai
       * [Module contents](zenml.steps.split.md#module-contents)
 * [ « zenml.steps.s...](zenml.steps.sequencer/zenml.steps.sequencer.standard_sequencer/zenml.steps.sequencer.standard_sequencer.methods.md)
 * [ zenml.steps.t... »](zenml.steps.tokenizer.md)
-* [Source](https://github.com/maiot-io/zenml/tree/6be0fdee8f24521c23cd6da945592183a59e7693/docs/sphinx_docs/_build/html/_sources/zenml.steps.split.rst.txt)
+*  [Source](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/_sources/zenml.steps.split.rst.txt)
 
 ## zenml.steps.split package[¶](zenml.steps.split.md#zenml-steps-split-package)
 
@@ -48,8 +48,9 @@ zenml.steps.split package — ZenML documentation [ZenML](https://github.com/mai
 
 ### Module contents[¶](zenml.steps.split.md#module-contents)
 
-[Back to top](zenml.steps.split.md)
+ [Back to top](zenml.steps.split.md)
 
-© Copyright 2021, maiot GmbH.  
-Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.
+ © Copyright 2021, maiot GmbH.  
+ Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.  
+
 

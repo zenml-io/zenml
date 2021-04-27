@@ -2,7 +2,7 @@
 description: Pipelines are your experiments
 ---
 
-# Pipelines in a repository
+# Inspecting all pipelines in a repository
 
 All **pipelines** within a ZenML **repository** are tracked centrally. In order to access information about your **ZenML repository** in code, you need to access the **ZenML** [Repository instance](../api-reference/zenml/zenml.repo.md#zenml-repo-package). This object is a Singleton and can be fetched any time from within your Python code simply by executing:
 
@@ -164,7 +164,7 @@ The config above can be split into 5 distinct keys:
 
 * `version`: The version of the YAML standard to maintain backward compatibility.
 * `artifact_store`: The path where the artifacts produced by the pipelines are stored.
-* `backend`: The orchestrator [backend](backends.md) for the pipeline.
+* `backend`: The orchestrator [backend]() for the pipeline.
 * `metadata`: The metadata store config to store information of pipeline runs.
 * `pipeline`: A global key that contains information regarding the pipeline run itself:
   * `source`: Path to pipeline code source code.

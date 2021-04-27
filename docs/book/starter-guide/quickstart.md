@@ -13,7 +13,7 @@ kernelspec:
   name: python3
 ---
 
-# Designing your first pipeline
+# Writing your first training pipeline
 
 In **ZenML**, a **pipeline** refers to a sequence of **steps** which represent independent entities that gets a certain set of inputs and creates the corresponding outputs as artifacts. These output artifacts can potentially be fed into other **steps** as inputs, and that’s how the order of execution is decided.
 
