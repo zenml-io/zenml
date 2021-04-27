@@ -152,3 +152,6 @@ docs/book/_build/
 
 # regression data
 !examples/regression/data/boston_data.csv
+
+# env variables
+*.env
