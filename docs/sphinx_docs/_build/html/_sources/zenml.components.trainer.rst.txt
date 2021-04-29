@@ -28,6 +28,14 @@ zenml.components.trainer.executor module
    :undoc-members:
    :show-inheritance:
 
+zenml.components.trainer.gcaip\_executor module
+-----------------------------------------------
+
+.. automodule:: zenml.components.trainer.gcaip_executor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 zenml.components.trainer.trainer\_module module
 -----------------------------------------------
 
