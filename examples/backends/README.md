@@ -65,5 +65,6 @@ rm -r pipelines
 You can also delete your GCP project to clean up all resources associated with the pipeline runs.
 
 ## Caveats
+This example is still WIP
 
 ## Next Steps

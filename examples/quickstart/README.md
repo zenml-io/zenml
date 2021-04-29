@@ -39,8 +39,5 @@ rm -r .zenml
 rm -r pipelines
 ```
 
-## Caveats
-The PyTorch Trainer does not yet work with the `Evaluator` or `Deployer` steps that follow it in a `TrainingPipeline`.
-
 ## Next Steps
-Try [creating your own custom pytorch trainer](https://docs.zenml.io/getting-started/creating-custom-logic.html)!
+Try some of the other examples including using [PyTorch](../pytorch), [custom Backends](../backends), or [distributed processing](../gcp_dataflow_processing)!
