@@ -14,7 +14,6 @@
 """Definition of the Spark Processing Backend"""
 
 import multiprocessing
-import socket
 from typing import Text, Optional, List
 
 from zenml.backends.processing import ProcessingBaseBackend
@@ -35,11 +34,12 @@ class ProcessingSparkBackend(ProcessingBaseBackend):
     """
 
     def __init__(self,
+                 spark_rest_url: Text,
                  environment_type: Text = 'LOOPBACK',
                  environment_cache_millis: int = 1000000,
                  spark_submit_uber_jar: bool = True):
 
-        self.runner = 'SparkRunner',
+        self.spark_rest_url = spark_rest_url
         self.environment_type = environment_type
         self.environment_cache_millis = environment_cache_millis
         self.spark_submit_uber_jar = spark_submit_uber_jar
@@ -50,13 +50,10 @@ class ProcessingSparkBackend(ProcessingBaseBackend):
             parallelism = 1
         self.sdk_worker_parallelism = parallelism
 
-        self.spark_rest_url = "http://%s:6066" % socket.gethostname()
-
-        super().__init__(
+        super(ProcessingSparkBackend, self).__init__(
             environment_type=environment_type,
             environment_cache_millis=environment_cache_millis,
             spark_submit_uber_jar=spark_submit_uber_jar,
-            sdk_worker_parallelism=parallelism,
             spark_rest_url=self.spark_rest_url)
 
     def get_beam_args(self,
