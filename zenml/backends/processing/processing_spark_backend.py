@@ -13,6 +13,10 @@
 #  permissions and limitations under the License.
 """Definition of the Spark Processing Backend"""
 
+import multiprocessing
+import socket
+from typing import Text, Optional, List
+
 from zenml.backends.processing import ProcessingBaseBackend
 
 
@@ -30,6 +34,41 @@ class ProcessingSparkBackend(ProcessingBaseBackend):
     This backend is not implemented yet.
     """
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        raise NotImplementedError('Its coming soon!')
+    def __init__(self,
+                 environment_type: Text = 'LOOPBACK',
+                 environment_cache_millis: int = 1000000,
+                 spark_submit_uber_jar: bool = True):
+
+        self.runner = 'SparkRunner',
+        self.environment_type = environment_type
+        self.environment_cache_millis = environment_cache_millis
+        self.spark_submit_uber_jar = spark_submit_uber_jar
+
+        try:
+            parallelism = multiprocessing.cpu_count()
+        except NotImplementedError:
+            parallelism = 1
+        self.sdk_worker_parallelism = parallelism
+
+        self.spark_rest_url = "http://%s:6066" % socket.gethostname()
+
+        super().__init__(
+            environment_type=environment_type,
+            environment_cache_millis=environment_cache_millis,
+            spark_submit_uber_jar=spark_submit_uber_jar,
+            sdk_worker_parallelism=parallelism,
+            spark_rest_url=self.spark_rest_url)
+
+    def get_beam_args(self,
+                      pipeline_name: Text = None,
+                      pipeline_root: Text = None) -> Optional[List[Text]]:
+
+        return [
+            '--runner=SparkRunner',
+            '--spark_rest_url=' + self.spark_rest_url,
+            '--environment_type=' + self.environment_type,
+            '--environment_cache_millis=' + str(self.environment_cache_millis),
+            '--sdk_worker_parallelism=' + str(self.sdk_worker_parallelism),
+            '--experiments=use_loopback_process_worker=True',
+            '--experiments=pre_optimize=all',
+            '--spark_submit_uber_jar']
