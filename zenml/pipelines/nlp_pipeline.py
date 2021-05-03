@@ -133,7 +133,7 @@ class NLPPipeline(BasePipeline):
         ).with_id(GDPComponent.DataStatistics.name)
 
         schema_data = SchemaGen(
-            statistics=statistics_data.outputs.output,
+            statistics=statistics_data.outputs.statistics,
             infer_feature_shape=True,
         ).with_id(GDPComponent.DataSchema.name)
 

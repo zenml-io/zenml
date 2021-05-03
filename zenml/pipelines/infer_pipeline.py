@@ -167,7 +167,7 @@ class BatchInferencePipeline(BasePipeline):
         ).with_id(GDPComponent.DataStatistics.name)
 
         schema = SchemaGen(
-            statistics=statistics.outputs.output,
+            statistics=statistics.outputs.statistics,
             infer_feature_shape=False,
         ).with_id(GDPComponent.DataSchema.name)
 

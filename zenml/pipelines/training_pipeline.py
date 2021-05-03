@@ -132,7 +132,7 @@ class TrainingPipeline(BasePipeline):
         ).with_id(GDPComponent.SplitStatistics.name)
 
         schema_split = SchemaGen(
-            statistics=statistics_split.outputs.output,
+            statistics=statistics_split.outputs.statistics,
             infer_feature_shape=False
         ).with_id(GDPComponent.SplitSchema.name)
 
@@ -160,7 +160,7 @@ class TrainingPipeline(BasePipeline):
             ).with_id(GDPComponent.SequencerStatistics.name)
 
             sequencer_schema = SchemaGen(
-                statistics=sequencer_statistics.outputs.output,
+                statistics=sequencer_statistics.outputs.statistics,
                 infer_feature_shape=True,
             ).with_id(GDPComponent.SequencerSchema.name)
 
