@@ -19,11 +19,11 @@ from pathlib import Path
 from typing import Dict, Text, Any, List
 
 import tensorflow as tf
-from tfx.components.common_nodes.importer_node import ImporterNode
 from tfx.components.pusher.component import Pusher
 from tfx.components.schema_gen.component import SchemaGen
 from tfx.components.statistics_gen.component import StatisticsGen
 from tfx.components.transform.component import Transform
+from tfx.dsl.components.common.importer import Importer
 from tfx.types import standard_artifacts
 
 from zenml import constants
@@ -90,19 +90,19 @@ class TrainingPipeline(BasePipeline):
         data_pipeline = self.datasource.get_data_pipeline_from_commit(
             self.datasource_commit_id)
 
-        data = ImporterNode(
+        data = Importer(
             instance_name=GDPComponent.DataGen.name,
             source_uri=data_pipeline.get_artifacts_uri_by_component(
                 GDPComponent.DataGen.name)[0],
             artifact_type=standard_artifacts.Examples)
 
-        schema_data = ImporterNode(
+        schema_data = Importer(
             instance_name=GDPComponent.DataSchema.name,
             source_uri=data_pipeline.get_artifacts_uri_by_component(
                 GDPComponent.DataSchema.name)[0],
             artifact_type=standard_artifacts.Schema)
 
-        statistics_data = ImporterNode(
+        statistics_data = Importer(
             instance_name=GDPComponent.DataStatistics.name,
             source_uri=data_pipeline.get_artifacts_uri_by_component(
                 GDPComponent.DataStatistics.name)[0],
@@ -133,6 +133,7 @@ class TrainingPipeline(BasePipeline):
 
         schema_split = SchemaGen(
             statistics=statistics_split.outputs.output,
+            infer_feature_shape=False
         ).with_id(GDPComponent.SplitSchema.name)
 
         schema = schema_split.outputs.schema

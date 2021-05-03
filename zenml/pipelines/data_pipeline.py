@@ -61,6 +61,7 @@ class DataPipeline(BasePipeline):
 
         schema_data = SchemaGen(
             statistics=statistics_data.outputs.output,
+            infer_feature_shape=False,
         ).with_id(GDPComponent.DataSchema.name)
 
         return [data, statistics_data, schema_data]

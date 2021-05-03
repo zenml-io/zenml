@@ -18,7 +18,7 @@ from typing import Dict, Text, Any, List
 from typing import Optional, Union
 
 import tensorflow as tf
-from tfx.components.common_nodes.importer_node import ImporterNode
+from tfx.dsl.components.common.importer import Importer
 from tfx.components.schema_gen.component import SchemaGen
 from tfx.components.statistics_gen.component import StatisticsGen
 from tfx.components.trainer.component import Trainer
@@ -107,7 +107,7 @@ class NLPPipeline(BasePipeline):
         data_pipeline = self.datasource.get_data_pipeline_from_commit(
             self.datasource_commit_id)
 
-        data = ImporterNode(
+        data = Importer(
             instance_name=GDPComponent.DataGen.name,
             source_uri=data_pipeline.get_artifacts_uri_by_component(
                 GDPComponent.DataGen.name)[0],
