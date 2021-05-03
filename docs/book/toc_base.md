@@ -22,11 +22,13 @@
 * [Inspecting all pipelines in a repository](advanced-guide/inspecting-all-pipelines.md)
 * [Querying the metadata store](advanced-guide/querying-the-metadata-store.md)
 * [Fetching artifacts](advanced-guide/fetching-artifacts.md)
+* [Team Collaboration](advanced-guide/team-collaboration.md)
+* [Backends](advanced-guide/backends.md)
 
 ## Support
 
 * [Tutorials](support/tutorials.md)
-* [Roadmap](../../ROADMAP.md)
-* [Changelogs](../../RELEASE_NOTES.md)
+* [Roadmap](support/roadmap.md)
+* [Changelogs](support/release_notes.md)
 * [Usage Analytics](support/usage-analytics.md)
 * [Contact](support/contact.md)
