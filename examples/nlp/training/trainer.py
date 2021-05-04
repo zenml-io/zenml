@@ -18,12 +18,11 @@ from typing import List, Text
 import tensorflow as tf
 from transformers import TFDistilBertForSequenceClassification
 
+from zenml.steps.trainer import TFBaseTrainerStep
 from zenml.steps.trainer import utils
-from zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
-    FeedForwardTrainer
 
 
-class UrduTrainer(FeedForwardTrainer):
+class UrduTrainer(TFBaseTrainerStep):
     def __init__(self,
                  model_name: Text,
                  batch_size: int = 64,
@@ -58,10 +57,8 @@ class UrduTrainer(FeedForwardTrainer):
         model = self.model_fn(train_dataset=train_dataset,
                               eval_dataset=eval_dataset)
 
-        signatures = self.get_signatures(model)
-
-        model.save_pretrained(self.serving_model_dir, signatures=signatures,
-                              saved_model=True)
+        # Saving without signatures means no eval or deployer possible yet
+        model.save_pretrained(self.serving_model_dir, saved_model=True)
 
     def model_fn(self,
                  train_dataset: tf.data.Dataset,
