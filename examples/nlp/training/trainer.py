@@ -13,27 +13,24 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import List, Text, Dict
+from typing import List, Text
 
 import tensorflow as tf
 from transformers import TFDistilBertForSequenceClassification
 
-from zenml.steps.trainer import TFBaseTrainerStep
-from zenml.utils.post_training.post_training_utils import \
-    get_feature_spec_from_schema
 from zenml.steps.trainer import utils
+from zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer import \
+    FeedForwardTrainer
 
 
-class UrduTrainer(TFBaseTrainerStep):
+class UrduTrainer(FeedForwardTrainer):
     def __init__(self,
                  model_name: Text,
                  batch_size: int = 64,
                  epochs: int = 25,
                  learning_rate: float = 1e-4,
-                 schema_file: Text = None,
                  **kwargs
                  ):
-
         super(UrduTrainer, self).__init__(model_name=model_name,
                                           batch_size=batch_size,
                                           epochs=epochs,
@@ -46,36 +43,29 @@ class UrduTrainer(TFBaseTrainerStep):
         self.learning_rate = learning_rate
         self.model_name = model_name
 
-        if schema_file:
-            self.schema_path = os.path.dirname(schema_file)
-        else:
-            self.schema_path = None
-        self.schema_file = schema_file
-
     def get_run_fn(self):
         return self.run_fn
 
     def run_fn(self):
-        feature_spec = get_feature_spec_from_schema(self.schema_path)
         train_split_patterns = [self.input_patterns[split] for split in
                                 self.split_mapping[utils.TRAIN_SPLITS]]
-        train_dataset = self.input_fn(train_split_patterns,
-                                      feature_spec)
+        train_dataset = self.input_fn(train_split_patterns)
 
         eval_split_patterns = [self.input_patterns[split] for split in
                                self.split_mapping[utils.EVAL_SPLITS]]
-        eval_dataset = self.input_fn(eval_split_patterns,
-                                     feature_spec)
+        eval_dataset = self.input_fn(eval_split_patterns)
 
         model = self.model_fn(train_dataset=train_dataset,
                               eval_dataset=eval_dataset)
 
-        model.save_pretrained(self.serving_model_dir, saved_model=True)
+        signatures = self.get_signatures(model)
+
+        model.save_pretrained(self.serving_model_dir, signatures=signatures,
+                              saved_model=True)
 
     def model_fn(self,
                  train_dataset: tf.data.Dataset,
                  eval_dataset: tf.data.Dataset):
-
         id2label = {0: "FAKE_NEWS", 1: "REAL_NEWS"}
 
         model = TFDistilBertForSequenceClassification.from_pretrained(
@@ -96,8 +86,7 @@ class UrduTrainer(TFBaseTrainerStep):
         return model
 
     def input_fn(self,
-                 file_pattern: List[Text],
-                 feature_spec: Dict):
+                 file_pattern: List[Text]):
         """
         Feedforward input_fn for loading data from TFRecords saved to a
         location on disk.
@@ -113,8 +102,8 @@ class UrduTrainer(TFBaseTrainerStep):
         # grab BERT features plus the label
         bert_features = ["input_ids", "attention_mask"] + ["label"]
 
-        feature_spec = {x: feature_spec[x]
-                        for x in feature_spec
+        feature_spec = {x: self.schema[x]
+                        for x in self.schema
                         if x in bert_features}
 
         dataset = tf.data.experimental.make_batched_features_dataset(

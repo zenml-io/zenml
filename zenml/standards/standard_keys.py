@@ -118,7 +118,6 @@ class TrainingSteps(ConfigKeys):
 
 
 class NLPSteps(ConfigKeys):
-    DATA = 'data'
     SPLIT = 'split'
     TRAINER = 'trainer'
     TOKENIZER = 'tokenizer'

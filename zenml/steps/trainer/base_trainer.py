@@ -14,9 +14,12 @@
 
 import os
 from abc import abstractmethod
-from typing import Dict, List, Text
+from typing import Dict, List
+from typing import Text
 
 import tensorflow_transform as tft
+from tensorflow_transform.tf_metadata import schema_utils
+from tfx.utils import io_utils
 
 from zenml.enums import StepTypes
 from zenml.steps import BaseStep
@@ -36,6 +39,7 @@ class BaseTrainerStep(BaseStep):
                  output_patterns: Dict[Text, Text] = None,
                  serving_model_dir: Text = None,
                  transform_output: Text = None,
+                 schema_path: Text = None,
                  split_mapping: Dict[Text, List[Text]] = None,
                  **kwargs):
         """
@@ -64,13 +68,20 @@ class BaseTrainerStep(BaseStep):
             self.tf_transform_output = tft.TFTransformOutput(transform_output)
             self.schema = self.tf_transform_output.transformed_feature_spec()
 
+        if schema_path is not None:
+            schema = io_utils.SchemaReader().read(schema_path)
+            self.schema = schema_utils.schema_as_feature_spec(
+                schema).feature_spec
+
         # Parameters
         if split_mapping:
             assert len(split_mapping[TRAIN_SPLITS]) > 0, \
-                'While defining your own mapping, you need to provide at least ' \
+                'While defining your own mapping, you need to provide at ' \
+                'least ' \
                 'one training split.'
             assert len(split_mapping[EVAL_SPLITS]) > 0, \
-                'While defining your own mapping, you need to provide at least ' \
+                'While defining your own mapping, you need to provide at ' \
+                'least ' \
                 'one eval split.'
 
             if TEST_SPLITS not in split_mapping:
