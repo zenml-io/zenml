@@ -19,4 +19,3 @@ from zenml.components.sequencer.component import Sequencer
 from zenml.components.split_gen.component import SplitGen
 from zenml.components.tokenizer.component import Tokenizer
 from zenml.components.trainer.component import Trainer
-from zenml.components.transform_simple.component import SimpleTransform

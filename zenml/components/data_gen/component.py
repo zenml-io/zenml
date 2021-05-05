@@ -15,7 +15,7 @@ class DataGenSpec(ComponentSpec):
     PARAMETERS = {
         StepKeys.NAME: ExecutionParameter(type=Text),
         StepKeys.SOURCE: ExecutionParameter(type=Text),
-        StepKeys.ARGS: ExecutionParameter(type=Dict[Text, Any]),
+        StepKeys.ARGS: ExecutionParameter(type=Text),
     }
     INPUTS = {}
     OUTPUTS = {

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+import json
 import os
 from typing import Any, Dict, List, Text
 
@@ -70,7 +70,7 @@ class TokenizerExecutor(base_executor.BaseExecutor):
            exec_properties: Dict[Text, Any]) -> None:
 
         source = exec_properties[StepKeys.SOURCE]
-        args = exec_properties[StepKeys.ARGS]
+        args = json.loads(exec_properties[StepKeys.ARGS])
 
         c = source_utils.load_source_path_class(source)
         tokenizer_step: BaseTokenizer = c(**args)

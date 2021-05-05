@@ -1,3 +1,4 @@
+import json
 from typing import Any, Dict, List, Text, Callable, Optional
 
 import apache_beam as beam
@@ -49,7 +50,7 @@ class Executor(base_executor.BaseExecutor):
 
         # Create the step with the schema attached if provided
         source = exec_properties[StepKeys.SOURCE]
-        args = exec_properties[StepKeys.ARGS]
+        args = json.loads(exec_properties[StepKeys.ARGS])
         c = source_utils.load_source_path_class(source)
         evaluator_step: BaseEvaluatorStep = c(**args)
 

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+import json
 import os
 from typing import Any, Dict, List, Text
 
@@ -27,11 +27,11 @@ from zenml.components.data_gen.constants import DATA_SPLIT_NAME
 from zenml.components.split_gen import constants
 from zenml.components.split_gen.utils import parse_schema, \
     parse_statistics
+from zenml.logger import get_logger
 from zenml.standards.standard_keys import StepKeys
 from zenml.steps.split import BaseSplitStep
 from zenml.steps.split.constants import SKIP
 from zenml.utils import source_utils
-from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -73,7 +73,7 @@ class Executor(BaseExecutor):
             statistics=input_dict[constants.STATISTICS])
 
         source = exec_properties[StepKeys.SOURCE]
-        args = exec_properties[StepKeys.ARGS]
+        args = json.loads(exec_properties[StepKeys.ARGS])
 
         # pass the schema and stats straight to the Step
         args[constants.SCHEMA] = schema
@@ -110,7 +110,8 @@ class Executor(BaseExecutor):
 
                 new_splits = (
                         p
-                        | 'ReadData.' + split >> beam.io.ReadFromTFRecord(file_pattern=input_uri)
+                        | 'ReadData.' + split >> beam.io.ReadFromTFRecord(
+                    file_pattern=input_uri)
                         | beam.Map(tf.train.Example.FromString)
                         | 'Split' >> beam.Partition(split_step.partition_fn,
                                                     split_step.get_num_splits()))

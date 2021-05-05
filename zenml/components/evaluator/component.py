@@ -16,7 +16,7 @@ from zenml.components.evaluator import executor
 
 class ZenMLEvaluatorSpec(ComponentSpec):
     PARAMETERS = {constants.SOURCE: ExecutionParameter(type=Text),
-                  constants.ARGS: ExecutionParameter(type=Dict[Text, Any])}
+                  constants.ARGS: ExecutionParameter(Text)}
 
     INPUTS = {constants.EXAMPLES: ChannelParameter(type=Examples),
               constants.MODEL: ChannelParameter(type=Model, optional=True),
