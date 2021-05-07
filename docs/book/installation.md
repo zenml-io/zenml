@@ -60,7 +60,7 @@ zenml version
 
 ```python
 import zenml
-print(zenml.utils.version.__version__)
+print(zenml.version.__version__)
 ```
 
 If you would like to learn more about the current release, please visit the [PyPi homepage.](https://pypi.org/project/zenml)
