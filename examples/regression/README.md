@@ -3,18 +3,14 @@ This example uses a `TrainingPipeline` to train a PyTorch-based regression model
 [Boston Housing dataset](https://www.cs.toronto.edu/~delve/data/boston/bostonDetail.html#:~:text=The%20Boston%20Housing%20Dataset,the%20area%20of%20Boston%20Mass.).
 
 ### Pre-requisites
-In order to run this example, you need to clone the zenml repo.
+In order to run this example, you need to install and initialize ZenML:
 
 ```bash
-git clone https://github.com/maiot-io/zenml.git
-```
-
-Before continuing, either [install the zenml pip package](https://docs.zenml.io/getting-started/installation.html) or install it [from the cloned repo](../../zenml/README.md). 
-
-```
-cd zenml
+pip install "zenml"
+git init
 zenml init
-cd examples/regression
+zenml examples pull pytorch
+cd zenml_examples/pytorch
 ```
 
 ### Run the project

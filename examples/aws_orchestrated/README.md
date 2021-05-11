@@ -1,6 +1,6 @@
-# Run pipelines on the cloud cheaply
+# Run pipelines on AWS cheaply
 You can easily run zenml pipelines on a cloud VM instance if local compute is not powerful enough. With this ability, it 
-is simple to run on cheap preemptible/spot instances to save costs.
+is simple to run on cheap spot instances to save costs.
 
 ## Adding an orchestration backend to a pipeline
 The pattern to add a backend to the pipeline is:
@@ -15,20 +15,14 @@ This example utilizes [Amazon Elastic Compute Cloud (EC2)](https://aws.amazon.co
  AWS, which then runs the specified pipeline.
 
 ### Pre-requisites
-In order to run this example, you need to clone the zenml repo.
+In order to run this example, you need to install and initialize ZenML
 
 ```bash
-git clone https://github.com/maiot-io/zenml.git
-```
-
-Before continuing, either [install the zenml pip package](https://docs.zenml.io/getting-started/installation.html) or 
-install it [from the cloned repo](../../zenml/README.md). In both cases, make sure to also install the 
-`aws` extension (e.g. with pip: `pip install zenml[aws]`)
-
-```
-cd zenml
+pip install "zenml[aws]"
+git init
 zenml init
-cd examples/aws_orchestrated
+zenml examples pull aws_orchestrated
+cd zenml_examples/aws_orchestrated
 ```
 
 Before running the example, there are a few steps that you need to complete in order to set up your cloud environment:

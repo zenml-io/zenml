@@ -3,18 +3,14 @@ This is the quickstart example that runs a `TrainingPipeline` to train a Scikit-
 [Pime Indian Diabetes dataset](https://www.kaggle.com/uciml/pima-indians-diabetes-database).
 
 ### Pre-requisites
-In order to run this example, you need to clone the zenml repo.
+In order to run this example, you need to install and initialize ZenML:
 
 ```bash
-git clone https://github.com/maiot-io/zenml.git
-```
-
-Before continuing, either [install the zenml pip package](https://docs.zenml.io/getting-started/installation.html) or install it [from the cloned repo](../../zenml/README.md). 
-
-```
-cd zenml
+pip install "zenml"
+git init
 zenml init
-cd examples/scikit
+zenml examples pull scikit
+cd zenml_examples/scikit
 ```
 
 ### Run the project

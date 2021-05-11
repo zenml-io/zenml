@@ -11,23 +11,16 @@ git clone https://github.com/maiot-io/zenml.git
 ```
 
 #### Note: Please skip below until pytorch_lightning is added as an extension
-Before continuing, either [install the zenml pip package](https://docs.zenml.io/getting-started/installation.html) or install it [from the cloned repo](../../zenml/README.md). 
-Also needed are the `pytorch-lightning` and `torch-vision` libraries:
+In order to run this example, you need to install and initialize ZenML:
 
 ```bash
-pip install zenml[pytorch]
+pip install "zenml[pytorch]"
 pip install pytorch-lightning==1.1.8
-```
-
-Then:
-```
-cd zenml
+git init
 zenml init
-cd examples/pytorch_lightning
+zenml examples pull gcp_gpu_orchestrated
+cd zenml_examples/gcp_gpu_orchestrated
 ```
-
-#### Short-term fix:
-
 
 ### Run the project
 Now we're ready. Execute:
@@ -35,7 +28,6 @@ Now we're ready. Execute:
 ```bash
 python run.py
 ```
-
 
 ### Clean up
 In order to clean up, in the root of your repo, delete the remaining zenml references.
@@ -47,7 +39,7 @@ rm -r pipelines
 ```
 
 ## Caveats
-The PyTorch Lightning Trainer does not yet work with the `Evaluator` or `Deployer` steps that follow it in a `TrainingPipeline`.
+There are currently certain limitations to this example and the code requires optimization. Contributions are welcome.
 
 ## Next Steps
 Try [creating your own custom pytorch_lightning trainer](https://docs.zenml.io/getting-started/creating-custom-logic.html)!

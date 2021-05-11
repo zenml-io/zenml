@@ -16,19 +16,16 @@ This example will utilize a `TrainingPipeline` with a `CortexDeployer` Step to d
 cluster end-point right after training.
 
 ### Pre-requisites
-Then you can clone the repo and initialize a zenml repo:
+In order to run this example, you need to install and initialize ZenML
+
 ```bash
-git clone https://github.com/maiot-io/zenml.git
-```
-
-Before continuing, either install the [zenml pip package](https://pypi.org/project/zenml/) or to install it [from the cloned repo](../../zenml/README.md). 
-In both cases, make sure to install the cortex extension (e.g. `pip install zenml[cortex]`)
-
-```
-cd zenml
+pip install "zenml[cortex]"
+git init
 zenml init
-cd examples/cortex
+zenml examples pull cortex
+cd zenml_examples/cortex
 ```
+
 
 And export the required configuration variables:
 ```bash

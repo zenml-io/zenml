@@ -3,21 +3,15 @@ This example how to use a [Tensorflow Dataset](https://www.tensorflow.org/datase
 It uses Tensorflow to create the network.
 
 ### Pre-requisites
-In order to run this example, you need to clone the zenml repo.
+In order to run this example, you need to install and initialize ZenML:
 
 ```bash
-git clone https://github.com/maiot-io/zenml.git
-```
-
-Before continuing, either [install the zenml pip package](https://docs.zenml.io/getting-started/installation.html) or install it [from the cloned repo](../../zenml/README.md). 
-In both cases, make sure to also install the pytorch extension (e.g. with pip: `pip install zenml`)
-
-```
-cd zenml
+pip install "zenml"
+git init
 zenml init
-cd examples/simple_cv
+zenml examples pull simple_cv
+cd zenml_examples/simple_cv
 ```
-
 
 ### Run the project
 Now we're ready. Execute:
