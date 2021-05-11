@@ -64,14 +64,15 @@ class BaseTrainerStep(BaseStep):
         self.schema = None
         self.tf_transform_output = None
 
-        if transform_output is not None:
-            self.tf_transform_output = tft.TFTransformOutput(transform_output)
-            self.schema = self.tf_transform_output.transformed_feature_spec()
-
         if schema_path is not None:
             schema = io_utils.SchemaReader().read(schema_path)
             self.schema = schema_utils.schema_as_feature_spec(
                 schema).feature_spec
+
+        # transform_output takes precendence over schema_path
+        if transform_output is not None:
+            self.tf_transform_output = tft.TFTransformOutput(transform_output)
+            self.schema = self.tf_transform_output.transformed_feature_spec()
 
         # Parameters
         if split_mapping:
