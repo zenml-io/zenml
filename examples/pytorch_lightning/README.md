@@ -16,7 +16,7 @@ Also needed are the `pytorch-lightning` and `torch-vision` libraries:
 
 ```bash
 pip install zenml[pytorch]
-pip instal pytorch-lightning==1.1.8
+pip install pytorch-lightning==1.1.8
 ```
 
 Then:
