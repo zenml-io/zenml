@@ -62,7 +62,6 @@ setup(
                  "*.tests.*",
                  "tests.*",
                  "tests",
-                 "examples",
                  "docs"]),
     version=version,
     install_requires=BASE_REQUIREMENTS,
