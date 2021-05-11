@@ -14,6 +14,7 @@
 """Base ZenML repository"""
 
 import os
+import git
 from pathlib import Path
 from typing import Text, List, Dict, Any, Optional, Union, Type
 
@@ -120,7 +121,7 @@ class Repository:
         """
         # check whether its a git repo by initializing GitWrapper
         git_wrapper = GitWrapper(repo_path)
-        # Do proper checks and add to .gitignore
+        # TODO [LOW] Do proper checks and add to .gitignore
         git_wrapper.add_gitignore([ZENML_DIR_NAME + '/'])
 
         # use the underlying ZenMLConfig class to create the config
