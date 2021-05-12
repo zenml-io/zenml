@@ -44,21 +44,21 @@ def get_example_readme(example_path):
 
 
 @cli.group(help="Access all ZenML examples.")
-def examples():
+def example():
     """Examples group"""
     pass
 
 
-@examples.command(help="List the available examples.")
+@example.command(help="List the available examples.")
 def list():
     click.echo('Listing examples: \n')
     for name in get_all_examples():
         click.echo(f'{name}')
     click.echo('\nTo pull the examples, type: ')
-    click.echo('zenml examples pull EXAMPLE_NAME')
+    click.echo('zenml example pull EXAMPLE_NAME')
 
 
-@examples.command(help='Find out more about an example.')
+@example.command(help='Find out more about an example.')
 @click.argument('example_name')
 def info(example_name):
     example_dir = os.path.join(get_examples_dir(), example_name)
@@ -66,7 +66,7 @@ def info(example_name):
     click.echo(readme_content)
 
 
-@examples.command(help="Pull examples straight " \
+@example.command(help="Pull examples straight " \
                        "into your current working directory.")
 @click.argument('example_name', required=False, default=None)
 def pull(example_name):

@@ -22,4 +22,4 @@ from .version import *
 from .pipeline import *
 from .datasource import *
 from .step import *
-from .examples import *
+from .example import *
