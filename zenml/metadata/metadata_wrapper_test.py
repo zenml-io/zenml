@@ -96,18 +96,6 @@ def test_get_artifacts_by_component(repo):
                                             component_name)
 
 
-def test_get_component_execution(repo):
-    mds1 = ZenMLMetadataStore()
-
-    random_pipeline = random.choice(repo.get_pipelines())
-
-    component_name = GDPComponent.SplitGen.name
-
-    with pytest.raises(expected_query_error):
-        _ = mds1.get_component_execution(random_pipeline,
-                                         component_name)
-
-
 def test_get_pipeline_context(repo):
     mds1 = ZenMLMetadataStore()
 

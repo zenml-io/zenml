@@ -30,7 +30,8 @@ logger = get_logger(__name__)
 
 class ZenMLMetadataStore:
     STORE_TYPE = None
-    RUN_TYPE_PROPERTY_NAME = 'run'
+    RUN_TYPE_NAME = 'pipeline_run'
+    NODE_TYPE_NAME = 'node'
 
     def __str__(self):
         return to_pretty_string(self.to_config())
@@ -136,34 +137,31 @@ class ZenMLMetadataStore:
             pipeline (BasePipeline): a ZenML pipeline object
             component_name:
         """
-        # First , you get the execution associated with the component
-        e = self.get_component_execution(pipeline, component_name)
+        # First get the context of the component and its artifacts
+        component_context = [c for c in self.store.get_contexts_by_type(
+            self.NODE_TYPE_NAME) if c.name.endswith(component_name)][0]
+        component_artifacts = self.store.get_artifacts_by_context(
+            component_context.id)
 
-        if e is None:
-            raise DoesNotExistException(
-                name=component_name,
-                reason=f'The pipeline {pipeline.name} does not have the '
-                       f'associated {component_name} Step.')
+        # Second, get the context of the particular pipeline and its artifacts
+        pipeline_context = self.store.get_context_by_type_and_name(
+            self.RUN_TYPE_NAME, pipeline.pipeline_name)
+        pipeline_artifacts = self.store.get_artifacts_by_context(
+            pipeline_context.id)
 
-        # Second, you will get artifacts
-        return self.get_artifacts_by_execution(e.id)
+        # Figure out the matching ids
+        return [a for a in component_artifacts
+                if a.id in [p.id for p in pipeline_artifacts]]
 
-    def get_component_execution(self, pipeline, component_name: Text):
-        pipeline_executions = self.get_pipeline_executions(pipeline)
-        for e in pipeline_executions:
-            # TODO: [LOW] Create a more refined way to find components.
-            if component_name == e.properties['component_id'].string_value:
-                return e
 
     def get_pipeline_context(self, pipeline):
         # We rebuild context for ml metadata here.
-        prefix = pipeline.artifact_store.unique_id
-        run_id = f'{prefix}.{pipeline.pipeline_name}'
-        logger.debug(f'Looking for run_id {run_id} in metadata store: '
-                     f'{self.to_config()}')
+        logger.debug(
+            f'Looking for run_id {pipeline.pipeline_name} in metadata store: '
+            f'{self.to_config()}')
         run_context = self.store.get_context_by_type_and_name(
-            type_name=self.RUN_TYPE_PROPERTY_NAME,
-            context_name=run_id
+            type_name=self.RUN_TYPE_NAME,
+            context_name=pipeline.pipeline_name
         )
         if run_context is None:
             raise DoesNotExistException(
