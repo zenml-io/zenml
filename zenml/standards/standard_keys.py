@@ -87,6 +87,9 @@ class DatasourceKeys(ConfigKeys):
     NAME = 'name'
     SOURCE = 'source'
     ARGS = 'args'
+    METADATA_STORE = 'metadata'
+    ARTIFACT_STORE = 'artifact_store'
+    BACKEND = 'backend'
 
 
 class BackendKeys(ConfigKeys):

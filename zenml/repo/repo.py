@@ -14,7 +14,6 @@
 """Base ZenML repository"""
 
 import os
-import git
 from pathlib import Path
 from typing import Text, List, Dict, Any, Optional, Union, Type
 
@@ -368,23 +367,6 @@ class Repository:
                     keys.DatasourceKeys.ID] == datasource._id:
                     pipelines.append(BasePipeline.from_config(c))
         return pipelines
-
-    def get_pipeline_f_paths_by_datasource_id(self, datasource_id: Text):
-        """
-        Gets list of file path associated with a datasource id.
-
-        Args:
-            datasource_id (Text): id of datasource.
-        """
-        paths = []
-        for file_path in self.get_pipeline_file_paths():
-            c = yaml_utils.read_yaml(file_path)
-            if keys.DatasourceKeys.ID in c[keys.GlobalKeys.PIPELINE][
-                keys.PipelineKeys.DATASOURCE]:
-                if c[keys.GlobalKeys.PIPELINE][keys.PipelineKeys.DATASOURCE][
-                    keys.DatasourceKeys.ID] == datasource_id:
-                    paths.append(file_path)
-        return paths
 
     @track(event=GET_PIPELINES)
     def get_pipelines(self) -> List:

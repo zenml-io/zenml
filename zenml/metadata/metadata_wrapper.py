@@ -18,11 +18,11 @@ from typing import Text, Dict
 
 from ml_metadata.metadata_store import metadata_store
 
-from zenml.standards.standard_keys import MLMetadataKeys
 from zenml.enums import MLMetadataTypes
 from zenml.enums import PipelineStatusTypes
 from zenml.exceptions import DoesNotExistException
 from zenml.logger import get_logger
+from zenml.standards.standard_keys import MLMetadataKeys
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
 
 logger = get_logger(__name__)
@@ -86,6 +86,37 @@ class ZenMLMetadataStore:
             MLMetadataKeys.TYPE: self.STORE_TYPE,
             MLMetadataKeys.ARGS: args_dict
         }
+
+    def get_data_pipeline_names_from_datasource_name(self,
+                                                     datasource_name: Text):
+        """
+        Gets all data pipeline names from the datasource name.
+
+        Args:
+            datasource_name: name of datasource.
+        """
+        from zenml.pipelines.data_pipeline import DataPipeline
+
+        run_contexts = self.store.get_contexts_by_type(
+            self.RUN_TYPE_PROPERTY_NAME)
+
+        # get the data pipelines only by doing an ugly hack. These data
+        # pipelines will always start with `data_` and have no component
+        # name at the end. this needs to change soon
+        run_contexts = [x for x in run_contexts if
+                        x.name.split('.')[1].startswith(
+                            DataPipeline.PIPELINE_TYPE) and len(
+                            x.name.split('.')) == 2]
+
+        # now filter to the datasource name through executions
+        pipelines_names = []
+        for c in run_contexts:
+            es = self.store.get_executions_by_context(c.id)
+            for e in es:
+                if 'name' in e.properties and e.properties[
+                    'name'].string_value == datasource_name:
+                    pipelines_names.append(c.name.split('.')[1])
+        return pipelines_names
 
     def get_pipeline_status(self, pipeline) -> Text:
         """

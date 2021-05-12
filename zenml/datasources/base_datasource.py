@@ -178,32 +178,32 @@ class BaseDatasource:
         _id = config[keys.PipelineKeys.DATASOURCE][keys.DatasourceKeys.ID]
         args = config[keys.PipelineKeys.DATASOURCE][keys.DatasourceKeys.ARGS]
 
+        # start with artifact store
+        artifact_store = ArtifactStore(config[keys.PipelineKeys.DATASOURCE][
+                                           keys.DatasourceKeys.ARTIFACT_STORE])
+
+        # metadata store
+        metadata_store: ZenMLMetadataStore = ZenMLMetadataStore.from_config(
+            config=config[keys.PipelineKeys.DATASOURCE][
+                keys.DatasourceKeys.METADATA_STORE]
+        )
+
+        # backend
+        from zenml.backends.orchestrator import OrchestratorBaseBackend
+        backend = OrchestratorBaseBackend.from_config(
+            config=config[keys.PipelineKeys.DATASOURCE][
+                keys.DatasourceKeys.BACKEND]
+        )
+
         # resolve commits
-        repo: Repository = Repository.get_instance()
-        # TODO [HIGH]: Ugly hack to get around circular dependencies. We
-        #  need to find which data pipelines are associated with this
-        #  pipeline so we first find all associated pipelines and then
-        #  filter by the 'data' type.
-        from zenml.pipelines.data_pipeline import DataPipeline
-        data_pipeline_paths = [x for x in
-                               repo.get_pipeline_f_paths_by_datasource_id(_id)]
-        data_pipeline_names = [Path(x).stem for x in data_pipeline_paths if
-                               Path(x).stem.startswith(
-                                   DataPipeline.PIPELINE_TYPE)]
-
-        # Another ugly hack to recompile the commit times
-        commits = {x.split('_')[2]: x.split('_')[1] for x in
-                   data_pipeline_names}
-
-        # Resolve the stores and backend. All pipelines will have the same.
-        artifact_store, metadata_store, backend = None, None, None
+        data_pipeline_names = \
+            metadata_store.get_data_pipeline_names_from_datasource_name(
+            datasource_name)
+        # ugly hack to recompile the commit times
+        commits = {}
         if data_pipeline_names:
-            artifact_store = repo.get_artifact_store_from_file_path(
-                data_pipeline_paths[0])
-            metadata_store = repo.get_metadata_store_from_file_path(
-                data_pipeline_paths[0])
-            backend = repo.get_orchestrator_backend_from_file_path(
-                data_pipeline_paths[0])
+            commits = {x.split('_')[2]: x.split('_')[1] for x in
+                       data_pipeline_names}
 
         obj = datasource_class(
             name=datasource_name, _id=_id, commits=commits, backend=backend,
@@ -219,6 +219,10 @@ class BaseDatasource:
             keys.DatasourceKeys.SOURCE: self._source,
             keys.DatasourceKeys.ARGS: self._source_args,
             keys.DatasourceKeys.ID: self._id,
+            keys.DatasourceKeys.METADATA_STORE:
+                self.metadata_store.to_config(),
+            keys.DatasourceKeys.ARTIFACT_STORE: self.artifact_store.path,
+            keys.DatasourceKeys.BACKEND: self.backend.to_config()
         }
 
     def get_latest_commit(self):
