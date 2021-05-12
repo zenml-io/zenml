@@ -299,7 +299,8 @@ class BaseDatasource:
             GDPComponent.DataSchema.name)[0]
         view_schema(uri)
 
-    def view_statistics(self, commit_id: Text = None, port: int = None):
+    def view_statistics(self, commit_id: Text = None, port: int = None,
+                        magic: bool = False):
         """
         View statistics of data flowing in pipeline.
 
@@ -307,6 +308,7 @@ class BaseDatasource:
             port (int): Port at which to launch the statistics facet.
             commit_id: used to specify which commit's schema to use, if None
             uses latest
+            magic (bool): Whether to display within a jupyter notebook or not
         """
         if commit_id is None:
             commit_id = self.get_latest_commit()
@@ -314,4 +316,4 @@ class BaseDatasource:
         pipeline = self.get_data_pipeline_from_commit(commit_id)
         uri = pipeline.get_artifacts_uri_by_component(
             GDPComponent.DataStatistics.name)[0]
-        view_statistics(uri, port=port)
+        view_statistics(uri, port=port, magic=magic)
