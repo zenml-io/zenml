@@ -7,10 +7,10 @@ In order to run this example, you need to install and initialize ZenML:
 
 ```bash
 pip install "zenml"
+zenml example pull simple_cv
+cd zenml_examples/simple_cv
 git init
 zenml init
-zenml examples pull simple_cv
-cd zenml_examples/simple_cv
 ```
 
 ### Run the project

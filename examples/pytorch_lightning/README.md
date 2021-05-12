@@ -16,10 +16,10 @@ In order to run this example, you need to install and initialize ZenML:
 ```bash
 pip install "zenml[pytorch]"
 pip install pytorch-lightning==1.1.8
+zenml example pull gcp_gpu_orchestrated
+cd zenml_examples/gcp_gpu_orchestrated
 git init
 zenml init
-zenml examples pull gcp_gpu_orchestrated
-cd zenml_examples/gcp_gpu_orchestrated
 ```
 
 ### Run the project

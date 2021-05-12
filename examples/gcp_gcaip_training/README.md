@@ -20,10 +20,10 @@ In order to run this example, you need to install and initialize ZenML
 
 ```bash
 pip install "zenml[gcp]"
+zenml example pull gcp_gcaip_training
+cd zenml_examples/gcp_gcaip_training
 git init
 zenml init
-zenml examples pull gcp_gcaip_training
-cd zenml_examples/gcp_gcaip_training
 ```
 
 Also do the following:

@@ -19,10 +19,10 @@ In order to run this example, you need to install and initialize ZenML:
 
 ```bash
 pip install "zenml[gcp]"
+zenml example pull gcp_gpu_orchestrated
+cd zenml_examples/gcp_gpu_orchestrated
 git init
 zenml init
-zenml examples pull gcp_gpu_orchestrated
-cd zenml_examples/gcp_gpu_orchestrated
 ```
 
 Also do the following:

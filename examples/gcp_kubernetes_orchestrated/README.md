@@ -19,10 +19,10 @@ In order to run this example, you need to install and initialize ZenML:
 
 ```bash
 pip install "zenml[gcp]"
+zenml example pull gcp_kubernetes_orchestrated
+cd zenml_examples/gcp_kubernetes_orchestrated
 git init
 zenml init
-zenml examples pull gcp_kubernetes_orchestrated
-cd zenml_examples/gcp_kubernetes_orchestrated
 ```
 
 Also do the following:

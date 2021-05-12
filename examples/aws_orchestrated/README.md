@@ -19,10 +19,10 @@ In order to run this example, you need to install and initialize ZenML
 
 ```bash
 pip install "zenml[aws]"
+zenml example pull aws_orchestrated
+cd zenml_examples/aws_orchestrated
 git init
 zenml init
-zenml examples pull aws_orchestrated
-cd zenml_examples/aws_orchestrated
 ```
 
 Before running the example, there are a few steps that you need to complete in order to set up your cloud environment:

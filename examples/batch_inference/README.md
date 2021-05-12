@@ -8,10 +8,10 @@ In order to run this example, you need to install and initialize ZenML
 
 ```bash
 pip install "zenml"
+zenml example pull batch_inference
+cd zenml_examples/batch_inference
 git init
 zenml init
-zenml examples pull batch_inference
-cd zenml_examples/batch_inference
 ```
 
 ### Run the project

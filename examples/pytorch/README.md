@@ -8,10 +8,10 @@ In order to run this example, you need to install and initialize ZenML:
 
 ```bash
 pip install "zenml[pytorch]"
+zenml example pull pytorch
+cd zenml_examples/pytorch
 git init
 zenml init
-zenml examples pull pytorch
-cd zenml_examples/pytorch
 ```
 
 ### Run the project

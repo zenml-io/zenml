@@ -7,10 +7,10 @@ In order to run this example, you need to install and initialize ZenML
 
 ```bash
 pip install "zenml[gcp]"
+zenml example pull backends
+cd zenml_examples/backends
 git init
 zenml init
-zenml examples pull backends
-cd zenml_examples/backends
 ```
 
 You also need to enable the following GCP services (and enable billing).

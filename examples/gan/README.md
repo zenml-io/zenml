@@ -44,10 +44,10 @@ In order to run this example, you need to install and initialize ZenML
 
 ```bash
 pip install "zenml[gcp]"
+zenml example pull gan
+cd zenml_examples/gan
 git init
 zenml init
-zenml examples pull gan
-cd zenml_examples/gan
 ```
 
 In addition, you will have to install `tensorflow_addons` by typing

@@ -20,10 +20,10 @@ In order to run this example, you need to install and initialize ZenML
 
 ```bash
 pip install "zenml[cortex]"
+zenml example pull cortex
+cd zenml_examples/cortex
 git init
 zenml init
-zenml examples pull cortex
-cd zenml_examples/cortex
 ```
 
 

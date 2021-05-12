@@ -7,10 +7,10 @@ In order to run this example, you need to install and initialize ZenML:
 
 ```bash
 pip install "zenml"
+zenml example pull scikit
+cd zenml_examples/scikit
 git init
 zenml init
-zenml examples pull scikit
-cd zenml_examples/scikit
 ```
 
 ### Run the project

@@ -11,10 +11,10 @@ In order to run this example, you need to install and initialize ZenML:
 
 ```bash
 pip install "zenml[huggingface]"
+zenml example pull nlp
+cd zenml_examples/nlp
 git init
 zenml init
-zenml examples pull nlp
-cd zenml_examples/nlp
 ```
 
 This also installs the `transformers` and `tokenizers` libraries. Then, you can easily start up your first NLP pipeline by

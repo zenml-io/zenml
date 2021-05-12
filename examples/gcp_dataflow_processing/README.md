@@ -21,10 +21,10 @@ In order to run this example, you need to install and initialize ZenML
 
 ```bash
 pip install "zenml[gcp]"
+zenml example pull gcp_dataflow_processing
+cd zenml_examples/gcp_dataflow_processing
 git init
 zenml init
-zenml examples pull gcp_dataflow_processing
-cd zenml_examples/gcp_dataflow_processing
 ```
 
 Also do the following:
