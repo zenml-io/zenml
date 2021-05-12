@@ -12,11 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from tfx.orchestration import data_types
+import os
+from typing import Union
+
+from absl import logging
+from tfx.dsl.compiler import compiler
+from tfx.dsl.compiler import constants
 from tfx.orchestration import metadata
-from tfx.orchestration import pipeline
-from tfx.orchestration.config import config_utils
+from tfx.orchestration import pipeline as pipeline_py
+from tfx.orchestration.local import runner_utils
 from tfx.orchestration.local.local_dag_runner import LocalDagRunner
+from tfx.orchestration.portable import launcher
+from tfx.orchestration.portable import runtime_parameter_utils
+from tfx.proto.orchestration import pipeline_pb2
+from tfx.utils import telemetry_utils
 
 from zenml.logger import get_logger
 
@@ -32,24 +41,58 @@ class ZenMLLocalDagRunner(LocalDagRunner):
     https://github.com/tensorflow/tfx/blob/master/tfx/orchestration/local/
     """
 
-    def run(self, tfx_pipeline: pipeline.Pipeline) -> None:
-        for component in tfx_pipeline.components:
-            (component_launcher_class, component_config) = (
-                config_utils.find_component_launch_info(self._config,
-                                                        component))
-            driver_args = data_types.DriverArgs(
-                enable_cache=tfx_pipeline.enable_cache)
-            metadata_connection = metadata.Metadata(
-                tfx_pipeline.metadata_connection_config)
-            component_launcher = component_launcher_class.create(
-                component=component,
-                pipeline_info=tfx_pipeline.pipeline_info,
-                driver_args=driver_args,
-                metadata_connection=metadata_connection,
-                beam_pipeline_args=tfx_pipeline.beam_pipeline_args,
-                additional_pipeline_args=tfx_pipeline
-                    .additional_pipeline_args,
-                component_config=component_config)
-            logger.info('Component %s is running.', component.id)
-            component_launcher.launch()
-            logger.info('Component %s is finished.', component.id)
+    def run(self, pipeline: Union[pipeline_pb2.Pipeline,
+                                  pipeline_py.Pipeline]) -> None:
+        """Runs given logical pipeline locally.
+
+        Args:
+          pipeline: Logical pipeline containing pipeline args and components.
+        """
+        # For CLI, while creating or updating pipeline, pipeline_args are extracted
+        # and hence we avoid executing the pipeline.
+        if 'TFX_JSON_EXPORT_PIPELINE_ARGS_PATH' in os.environ:
+            return
+        run_id = pipeline.pipeline_info.run_id
+
+        if isinstance(pipeline, pipeline_py.Pipeline):
+            c = compiler.Compiler()
+            pipeline = c.compile(pipeline)
+
+        # Substitute the runtime parameter to be a concrete run_id
+        runtime_parameter_utils.substitute_runtime_parameter(
+            pipeline, {
+                constants.PIPELINE_RUN_ID_PARAMETER_NAME: run_id
+            })
+
+        deployment_config = runner_utils.extract_local_deployment_config(
+            pipeline)
+        connection_config = deployment_config.metadata_connection_config
+
+        logging.info('Running pipeline:\n %s', pipeline)
+        logging.info('Using deployment config:\n %s', deployment_config)
+        logging.info('Using connection config:\n %s', connection_config)
+
+        with telemetry_utils.scoped_labels(
+                {telemetry_utils.LABEL_TFX_RUNNER: 'local'}):
+            # Run each component. Note that the pipeline.components list is in
+            # topological order.
+            # TODO(b/171319478): After IR-based execution is used, used multi-threaded
+            #   execution so that independent components can be run in parallel.
+            for node in pipeline.nodes:
+                pipeline_node = node.pipeline_node
+                node_id = pipeline_node.node_info.id
+                executor_spec = runner_utils.extract_executor_spec(
+                    deployment_config, node_id)
+                custom_driver_spec = runner_utils.extract_custom_driver_spec(
+                    deployment_config, node_id)
+
+                component_launcher = launcher.Launcher(
+                    pipeline_node=pipeline_node,
+                    mlmd_connection=metadata.Metadata(connection_config),
+                    pipeline_info=pipeline.pipeline_info,
+                    pipeline_runtime_spec=pipeline.runtime_spec,
+                    executor_spec=executor_spec,
+                    custom_driver_spec=custom_driver_spec)
+                logging.info('Component %s is running.', node_id)
+                component_launcher.launch()
+                logging.info('Component %s is finished.', node_id)
