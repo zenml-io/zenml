@@ -1,3 +1,40 @@
+# 0.3.7.1
+This release fixes some known bugs from previous releases and especially 0.3.7. Same procedure as always, please delete existing pipelines, metadata, and artifact stores.
+
+```
+cd zenml_enabled_repo
+rm -rf pipelines/
+rm -rf .zenml/
+```
+
+And then another ZenML init:
+
+```
+pip install --upgrade zenml
+cd zenml_enabled_repo
+zenml init
+```
+
+## New Features
+* Introduced new `zenml example` CLI sub-group: Easily pull examples via zenml to check it out.
+
+```bash
+zenml example pull # pulls all examples in `zenml_examples` directory
+zenml example pull EXAMPLE_NAME  # pulls specific example
+zenml example info EXAMPLE_NAME  # gives quick info regarding example
+```  
+Thanks Michael Xu for the suggestion!
+
+* Updated examples with new `zenml examples` paradigm for examples.
+
+## Bug Fixes + Refactor
+
+* ZenML now works on Windows -> Thank you @Franky007Bond for the heads up.
+* Updated numerous bugs in examples directory. Also updated README's.
+* Fixed remote orchestration logic -> Now remote orchestration works.
+* Changed datasource `to_config` to include reference to backend, metadata, and artifact store.
+
+
 # 0.3.7
 0.3.7 is a much-needed, long-awaited, big refactor of the Datasources paradigm of ZenML. There are also bug fixes, improvements, and more!
 

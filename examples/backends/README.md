@@ -52,7 +52,6 @@ jupyter notebook
 In order to clean up, in the root of your repo, delete the remaining zenml references.
 
 ```python
-cd ../..
 rm -r .zenml
 rm -r pipelines
 ```
