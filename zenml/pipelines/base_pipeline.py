@@ -422,13 +422,13 @@ class BasePipeline:
         self._validate_steps()
 
         # assert some datasource stuff
-        if self.datasource.metadata_store.to_config() != \
+        if self.datasource and self.datasource.metadata_store.to_config() != \
                 self.metadata_store.to_config():
             raise AssertionError(
                 'The metadata_store of the specified datasource is different '
                 'from this pipeline. Pipelines and their datasources need to '
                 'be in the same metadata_store.')
-        if self.datasource.artifact_store.path != \
+        if self.datasource and self.datasource.artifact_store.path != \
                 self.artifact_store.path:
             raise AssertionError(
                 'The artifact_store of the specified datasource is different '
