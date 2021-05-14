@@ -4,21 +4,15 @@ the pre-built PyTorch trainer steps.
 
 
 ### Pre-requisites
-In order to run this example, you need to clone the zenml repo.
+In order to run this example, you need to install and initialize ZenML:
 
 ```bash
-git clone https://github.com/maiot-io/zenml.git
-```
-
-Before continuing, either [install the zenml pip package](https://docs.zenml.io/getting-started/installation.html) or install it [from the cloned repo](../../zenml/README.md). 
-In both cases, make sure to also install the pytorch extension (e.g. with pip: `pip install zenml[pytorch]`)
-
-```
-cd zenml
+pip install "zenml[pytorch]"
+zenml example pull pytorch
+cd zenml_examples/pytorch
+git init
 zenml init
-cd examples/pytorch
 ```
-
 
 ### Run the project
 Now we're ready. Execute:
@@ -27,12 +21,10 @@ Now we're ready. Execute:
 python run.py
 ```
 
-
 ### Clean up
 In order to clean up, in the root of your repo, delete the remaining zenml references.
 
 ```python
-cd ../..
 rm -r .zenml
 rm -r pipelines
 ```

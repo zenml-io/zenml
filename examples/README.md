@@ -24,9 +24,20 @@ Here you can find a list of practical examples on how you can use ZenML with bri
 - **scikit**: An example of using a [scikit-learn](https://scikit-learn.org/) trainer within ZenML.
 - **simple_cv**: Show-cases a simple CV example using Tensorflow Datasets and MNIST.
 
-Note: A lot of the examples are based on [Google Cloud Platform](https://cloud.google.com/). Extensions to other cloud providers like AWS and Azure will 
-be released over time, but the interactions will be very similar. In fact, adding support for these can a great first pull 
-request if you would to be a contributor to ZenML!
+In order to quickly run any of these examples, use the ZenML CLI:
+
+```bash
+# install CLI
+pip install zenml
+
+# initialize CLI
+git init
+zenml init
+
+# pull example
+zenml examples pull EXAMPLE_NAME
+cd zenml_examples/EXAMPLE_NAME
+```
 
 Have any questions? Want more tutorials? Spot out-dated, frustrating tutorials? We got you covered!
 

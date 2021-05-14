@@ -48,7 +48,8 @@ class NLPPipeline(BasePipeline):
         """Call operator for local inference method"""
 
         if not self.get_status() == PipelineStatusTypes.Succeeded.name:
-            logger.info("Please run the pipeline first before running inference!")
+            logger.info(
+                "Please run the pipeline first before running inference!")
             return
 
         trainer_step = self.steps_dict[keys.NLPSteps.TRAINER]
@@ -172,8 +173,6 @@ class NLPPipeline(BasePipeline):
             examples=splits.outputs.examples,
             run_fn=constants.TRAINER_FN,
             schema=schema_data.outputs.schema,
-            train_args=trainer_pb2.TrainArgs(),
-            eval_args=trainer_pb2.EvalArgs(),
             **training_kwargs
         ).with_id(GDPComponent.Trainer.name)
 
@@ -182,11 +181,8 @@ class NLPPipeline(BasePipeline):
         return component_list
 
     def steps_completed(self) -> bool:
-        mandatory_steps = [keys.NLPSteps.DATA,
-                           keys.NLPSteps.TOKENIZER,
-                           keys.NLPSteps.SPLIT,
-                           keys.NLPSteps.TRAINER,
-                           ]
+        mandatory_steps = [keys.NLPSteps.TOKENIZER, keys.NLPSteps.SPLIT,
+                           keys.NLPSteps.TRAINER]
 
         for step_name in mandatory_steps:
             if step_name not in self.steps_dict.keys():

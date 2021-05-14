@@ -43,8 +43,8 @@ nlp_pipeline.add_split(RandomSplit(
 nlp_pipeline.add_trainer(
     UrduTrainer(
         model_name="distilbert-base-uncased",
-        epochs=3,
-        batch_size=64,
+        epochs=1,
+        batch_size=32,
         learning_rate=5e-3)
 )
 

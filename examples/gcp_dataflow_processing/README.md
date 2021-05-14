@@ -17,19 +17,14 @@ This example utilize [Google Cloud Dataflow](https://cloud.google.com/dataflow) 
 distribute certain Steps in the quickstart pipeline example. In order to run, follow these steps:
 
 ### Pre-requisites
-In order to run this example, you need to clone the zenml repo.
+In order to run this example, you need to install and initialize ZenML
 
 ```bash
-git clone https://github.com/maiot-io/zenml.git
-```
-
-Before continuing, either [install the zenml pip package](https://docs.zenml.io/getting-started/installation.html) or install it [from the cloned repo](../../zenml/README.md). 
-In both cases, make sure to also install the gcp extension (e.g. with pip: `pip install zenml[gcp]`)
-
-```
-cd zenml
+pip install "zenml[gcp]"
+zenml example pull gcp_dataflow_processing
+cd zenml_examples/gcp_dataflow_processing
+git init
 zenml init
-cd examples/gcp_dataflow_processing
 ```
 
 Also do the following:

@@ -4,18 +4,14 @@ This example first runs a `TrainingPipeline` to train a Tensorflow-based classif
 `BatchInferencePipeline` to run an offline-batch job to get prediction results.
 
 ### Pre-requisites
-In order to run this example, you need to clone the zenml repo.
+In order to run this example, you need to install and initialize ZenML
 
 ```bash
-git clone https://github.com/maiot-io/zenml.git
-```
-
-Before continuing, either [install the zenml pip package](https://docs.zenml.io/getting-started/installation.html) or install it [from the cloned repo](../../zenml/README.md). 
-
-```
-cd zenml
+pip install "zenml"
+zenml example pull batch_inference
+cd zenml_examples/batch_inference
+git init
 zenml init
-cd examples/batch_inference
 ```
 
 ### Run the project
@@ -30,7 +26,6 @@ python run.py
 In order to clean up, in the root of your repo, delete the remaining zenml references.
 
 ```python
-cd ../..
 rm -r .zenml
 rm -r pipelines
 ```
