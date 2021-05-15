@@ -66,7 +66,8 @@ class OrchestratorGCPBackend(OrchestratorBaseBackend):
                  image: Text = None,
                  source_disk_image: Text = None,
                  preemptible: bool = True,
-                 service_account: Text = None):
+                 service_account: Text = None,
+                 **kwargs):
         """
         Initialize a GCP VM to orchestrate a pipeline. Users have the option
         to run it with or without a GPU. In cases where a GPU is used,
@@ -186,6 +187,7 @@ class OrchestratorGCPBackend(OrchestratorBaseBackend):
             disk_size=disk_size,
             source_disk_image=source_disk_image,
             gpu_count=gpu_count,
+            **kwargs,
         )
 
     def launch_instance(self, config: Dict[Text, Any]):

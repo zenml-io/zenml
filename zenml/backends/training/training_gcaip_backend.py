@@ -56,7 +56,8 @@ class SingleGPUTrainingGCAIPBackend(TrainingBaseBackend):
             job_name: Text = f'train_{int(time.time())}',
             region: Text = 'europe-west1',
             python_version: Text = '3.7',
-            max_running_time: int = 7200):
+            max_running_time: int = 7200,
+            **kwargs):
         """
         An opinionated wrapper around a GCAIP training job.
 
@@ -97,6 +98,7 @@ class SingleGPUTrainingGCAIPBackend(TrainingBaseBackend):
             region=region,
             python_version=python_version,
             max_running_time=max_running_time,
+            **kwargs
         )
 
     def get_executor_spec(self):

@@ -46,7 +46,8 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
                  key_name: Text = None,
                  security_group: Text = None,
                  min_count: int = 1,
-                 max_count: int = 1):
+                 max_count: int = 1,
+                 **kwargs):
         """
         Base class for the orchestrator backend on AWS
 
@@ -99,6 +100,7 @@ class OrchestratorAWSBackend(OrchestratorBaseBackend):
             max_count=self.max_count,
             security_group=self.security_group,
             iam_role=self.iam_role,
+            **kwargs,
         )
 
     @staticmethod

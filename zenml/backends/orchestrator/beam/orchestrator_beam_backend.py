@@ -31,7 +31,8 @@ class OrchestratorBeamBackend(OrchestratorBaseBackend):
             num_workers: int = 4,
             max_num_workers: int = 10,
             disk_size_gb: int = 100,
-            autoscaling_algorithm: Text = 'THROUGHPUT_BASED'):
+            autoscaling_algorithm: Text = 'THROUGHPUT_BASED',
+            **kwargs):
         self.worker_machine_type = worker_machine_type
         self.num_workers = num_workers
         self.max_num_workers = max_num_workers
@@ -43,6 +44,7 @@ class OrchestratorBeamBackend(OrchestratorBaseBackend):
             max_num_workers=max_num_workers,
             disk_size_gb=disk_size_gb,
             autoscaling_algorithm=autoscaling_algorithm,
+            **kwargs
         )
         raise NotImplementedError('Its coming soon!')
 
