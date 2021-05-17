@@ -23,6 +23,7 @@ import tensorflow as tf
 from zenml.enums import GDPComponent
 from zenml.exceptions import AlreadyExistsException
 from zenml.exceptions import EmptyDatasourceException
+from zenml.exceptions import InitializationException
 from zenml.logger import get_logger
 from zenml.metadata import ZenMLMetadataStore
 from zenml.repo import Repository, ArtifactStore
@@ -82,8 +83,11 @@ class BaseDatasource:
             self.metadata_store: ZenMLMetadataStore = metadata_store
         else:
             # use default
-            self.metadata_store: ZenMLMetadataStore = \
-                Repository.get_instance().get_default_metadata_store()
+            try:
+                self.metadata_store: ZenMLMetadataStore = \
+                    Repository.get_instance().get_default_metadata_store()
+            except InitializationException:
+                self.metadata_store = None
 
         # Default to local
         if backend is None:
@@ -97,8 +101,11 @@ class BaseDatasource:
             self.artifact_store = artifact_store
         else:
             # use default
-            self.artifact_store = \
-                Repository.get_instance().get_default_artifact_store()
+            try:
+                self.artifact_store = \
+                    Repository.get_instance().get_default_artifact_store()
+            except InitializationException:
+                self.metadata_store = None
 
         if commits is None:
             self.commits = {}
