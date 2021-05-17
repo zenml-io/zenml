@@ -32,6 +32,8 @@ class BaseSequencerStep(BaseStep):
     STEP_TYPE = StepTypes.sequencer.name
 
     def __init__(self,
+                 keep_window_category: bool = False,
+                 keep_window_timestamp: bool = False,
                  statistics: DatasetFeatureStatisticsList = None,
                  schema: Schema = None,
                  **kwargs):
@@ -55,7 +57,12 @@ class BaseSequencerStep(BaseStep):
             schema: Parsed schema output of a preceding SchemaGen.
         """
 
-        super().__init__(**kwargs)
+        self.keep_window_category = keep_window_category
+        self.keep_window_timestamp = keep_window_timestamp
+
+        super().__init__(keep_window_category=keep_window_category,
+                         keep_window_timestamp=keep_window_timestamp,
+                         **kwargs)
 
         self.statistics = statistics
         self.schema = schema

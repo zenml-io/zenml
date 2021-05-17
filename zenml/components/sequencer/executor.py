@@ -16,7 +16,7 @@ import os
 from typing import Any, Dict, List, Text
 
 import apache_beam as beam
-from apache_beam.transforms.window import GlobalWindows
+from apache_beam.transforms.window import GlobalWindows, TimestampCombiner
 from tensorflow_data_validation.coders import tf_example_decoder
 from tfx import types
 from tfx.dsl.components.base.base_executor import BaseExecutor
@@ -28,14 +28,39 @@ from zenml.standards.standard_keys import StepKeys
 from zenml.steps.sequencer import BaseSequencerStep
 from zenml.utils import source_utils
 
+WINDOW_TIMESTAMP = 'window_timestamp'
+WINDOW_CATEGORY = 'window_category'
 
-class RemoveKey(beam.DoFn):
-    def process(self, element):
+
+class FinalizeSequence(beam.DoFn):
+    def process(self,
+                element,
+                window=beam.DoFn.WindowParam,
+                keep_window_timestamp=False,
+                keep_window_category=False):
         """
-        Remove the key from the output of the CombineFn and return the
-        resulting datapoints
+        Manage the category and timestamp of the output of the CombineFn
+        and return the resulting datapoints
         """
-        return element[1]
+        data = element[1][0]
+
+        if keep_window_category:
+            if WINDOW_CATEGORY in data.columns:
+                raise KeyError(
+                    f'If you set the parameter {keep_window_category} to True,'
+                    f'make sure that the key "{WINDOW_CATEGORY}" is not used'
+                    f'in your datapoint!')
+            data[WINDOW_CATEGORY] = element[0]
+
+        if keep_window_timestamp:
+            if WINDOW_TIMESTAMP in data.columns:
+                raise KeyError(
+                    f'If you set the parameter {keep_window_timestamp} to True,'
+                    f'make sure that the key "{WINDOW_TIMESTAMP}" is not used'
+                    f'in your datapoint!')
+            data[WINDOW_TIMESTAMP] = int(window.start)
+
+        return [data]
 
 
 class Executor(BaseExecutor):
@@ -109,7 +134,8 @@ class Executor(BaseExecutor):
                      | 'AddTimestamp_' + s >> beam.ParDo(
                                 sequence_step.get_timestamp_do_fn())
                      | 'Sessions_' + s >> beam.WindowInto(
-                                sequence_step.get_window()))
+                                sequence_step.get_window(),
+                                timestamp_combiner=TimestampCombiner.OUTPUT_AT_EOW))
 
                 # Combine and transform
                 p_data = \
@@ -120,8 +146,11 @@ class Executor(BaseExecutor):
                 # Write the results
                 _ = \
                     (p_data
+                     | 'FinalizeSequence_' + s >> beam.ParDo(
+                                FinalizeSequence(),
+                                sequence_step.keep_window_timestamp,
+                                sequence_step.keep_window_category)
                      | 'Global_' + s >> beam.WindowInto(GlobalWindows())
-                     | 'RemoveKey_' + s >> beam.ParDo(RemoveKey())
                      | 'ToExample_' + s >> beam.Map(utils.df_to_example)
                      | 'Serialize_' + s >> beam.Map(utils.serialize)
                      | 'Write_' + s >> beam.io.WriteToTFRecord(
