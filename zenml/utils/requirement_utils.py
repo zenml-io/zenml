@@ -5,21 +5,21 @@ import sys
 ########
 # BASE #
 ########
-BASE_REQUIREMENTS = ["absl-py==0.10.0",
+BASE_REQUIREMENTS = ["absl-py>=0.10.0",
                      "pip-check-reqs>=2.0.1,<3",
                      "click>=7.0,<8",
                      "setuptools>=38.4.0",
                      "nbformat>=5.0.4",
-                     "panel==0.8.3",
-                     "plotly==4.0.0",
-                     "tabulate==0.8.7",
-                     "numpy==1.18.0",
-                     "httplib2==0.17.0",
+                     "panel>=0.8.3",
+                     "plotly>=4.0.0",
+                     "tabulate>=0.8.7",
+                     "numpy>=1.18.0",
+                     "httplib2>=0.17.0",
                      "tfx==0.26.1",
                      "fire==0.3.1",
                      "gitpython==3.1.11",
                      "analytics-python==1.2.9",
-                     "distro==1.5.0",
+                     "distro>=1.5.0",
                      "tensorflow>=2.3.0,<2.4.0",
                      "tensorflow-serving-api==2.3.0"]
 
@@ -41,23 +41,23 @@ AZURE_REQUIREMENTS = []
 # EXTRAS: TOOLING #
 ###################
 PYTORCH_INTEGRATION = 'pytorch'
-PYTORCH_REQUIREMENTS = ['torch==1.7.0']
+PYTORCH_REQUIREMENTS = ['torch>=1.7.0']
 
 CORTEX_INTEGRATION = 'cortex'
-CORTEX_REQUIREMENTS = ['cortex==0.29.0']
+CORTEX_REQUIREMENTS = ['cortex>=0.29.0']
 
 ###############
 # DATASOURCES #
 ###############
 POSTGRES_INTEGRATION = 'postgres'
-POSTGRES_REQUIREMENTS = ['beam-nuggets==0.17.0', 'pg8000==1.16.5',
-                         'sqlalchemy==1.3.22']
+POSTGRES_REQUIREMENTS = ['beam-nuggets>=0.17.0', 'pg8000>=1.16.5',
+                         'sqlalchemy>=1.3.22']
 
 #######################
 # NLP via HuggingFace #
 #######################
 HUGGINGFACE_INTEGRATION = 'huggingface'
-HUGGINGFACE_REQUIREMENTS = ['transformers==4.3.3', 'tokenizers==0.10.1']
+HUGGINGFACE_REQUIREMENTS = ['transformers>=4.3.3', 'tokenizers>=0.10.1']
 
 ###############
 # EXTRAS: ALL #

@@ -109,11 +109,6 @@ class BaseDatasource:
         self._immutable = False
         self._source = source_utils.resolve_class(self.__class__)
         self._source_args = kwargs
-        # we also need to reinitialize these in DataGen
-        self._source_args['backend'] = backend
-        self._source_args['artifact_store'] = artifact_store
-        self._source_args['metadata_store'] = metadata_store
-        self._source_args['commits'] = commits
 
     def __str__(self):
         return to_pretty_string(self.to_config())
