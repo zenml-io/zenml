@@ -15,7 +15,6 @@
 
 import os
 from abc import abstractmethod
-from pathlib import Path
 from typing import Text, Dict, Optional, Callable
 from uuid import uuid4
 
@@ -110,6 +109,11 @@ class BaseDatasource:
         self._immutable = False
         self._source = source_utils.resolve_class(self.__class__)
         self._source_args = kwargs
+        # we also need to reinitialize these in DataGen
+        self._source_args['backend'] = backend
+        self._source_args['artifact_store'] = artifact_store
+        self._source_args['metadata_store'] = metadata_store
+        self._source_args['commits'] = commits
 
     def __str__(self):
         return to_pretty_string(self.to_config())
@@ -198,7 +202,7 @@ class BaseDatasource:
         # resolve commits
         data_pipeline_names = \
             metadata_store.get_data_pipeline_names_from_datasource_name(
-            datasource_name)
+                datasource_name)
         # ugly hack to recompile the commit times
         commits = {}
         if data_pipeline_names:
