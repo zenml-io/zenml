@@ -28,7 +28,7 @@ def parse_statistics(split_name: Text,
     stats_uri = io_utils.get_only_uri_in_dir(
         artifact_utils.get_split_uri(statistics, split_name))
 
-    stats = tfdv.load_statistics(stats_uri)
+    stats = tfdv.load_stats_binary(stats_uri)
 
     return stats
 
