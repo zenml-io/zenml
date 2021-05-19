@@ -31,7 +31,6 @@ class DataGen(BaseComponent):
                  name: Text,
                  source: Text,
                  source_args: Dict[Text, Any],
-                 instance_name: Optional[Text] = None,
                  examples: Optional[ChannelParameter] = None):
         """
         Interface for all DataGen components, the main component responsible
@@ -53,5 +52,4 @@ class DataGen(BaseComponent):
                                args=source_args,
                                examples=examples)
 
-        super(DataGen, self).__init__(spec=spec,
-                                      instance_name=instance_name)
+        super(DataGen, self).__init__(spec=spec)
