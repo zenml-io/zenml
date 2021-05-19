@@ -100,7 +100,7 @@ class Executor(BaseExecutor):
         for artifact in input_dict[constants.INPUT_EXAMPLES]:
             for split in artifact_utils.decode_split_names(
                     artifact.split_names):
-                uri = os.path.join(artifact.uri, split)
+                uri = os.path.join(artifact.uri, f'Split-{split}')
                 split_uris.append((split, uri))
 
         with self._make_beam_pipeline() as p:
