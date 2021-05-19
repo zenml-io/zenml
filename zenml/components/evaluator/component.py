@@ -42,7 +42,6 @@ class Evaluator(base_component.BaseComponent):
             examples: types.Channel = None,
             model: types.Channel = None,
             output: Optional[types.Channel] = None,
-            instance_name: Optional[Text] = None,
             schema: Optional[types.Channel] = None):
 
         # Create the output artifact if not provided
@@ -55,4 +54,4 @@ class Evaluator(base_component.BaseComponent):
                                   model=model,
                                   schema=schema,
                                   evaluation=evaluation)
-        super(Evaluator, self).__init__(spec=spec, instance_name=instance_name)
+        super(Evaluator, self).__init__(spec=spec)
