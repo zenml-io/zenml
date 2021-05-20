@@ -27,6 +27,14 @@ from zenml.utils.print_utils import to_pretty_string, PrintStyles
 
 logger = get_logger(__name__)
 
+STATE_MAPPING = {0: 'unknown',
+                 1: 'new',
+                 2: 'running',
+                 3: 'complete',
+                 4: 'failed',
+                 5: 'cached',
+                 6: 'cancelled'}
+
 
 class ZenMLMetadataStore:
     STORE_TYPE = None
@@ -124,12 +132,16 @@ class ZenMLMetadataStore:
 
         Returns: dict of type { component_name : component_status }
         """
+        result = {}
         pipeline_executions = self.get_pipeline_executions(pipeline)
-        return {
-            e.properties['component_id'].string_value: e.properties[
-                'state'].string_value for e in
-            pipeline_executions
-        }
+        for e in pipeline_executions:
+            contexts = self.store.get_contexts_by_execution(e.id)
+            node_contexts = [c for c in contexts if c.type_id == 3]
+            if node_contexts:
+                component_name = node_contexts[0].name.split('.')[-1]
+                result[component_name] = STATE_MAPPING[e.last_known_state]
+
+        return result
 
     def get_artifacts_by_component(self, pipeline, component_name: Text):
         """
@@ -152,7 +164,6 @@ class ZenMLMetadataStore:
         # Figure out the matching ids
         return [a for a in component_artifacts
                 if a.id in [p.id for p in pipeline_artifacts]]
-
 
     def get_pipeline_context(self, pipeline):
         # We rebuild context for ml metadata here.
