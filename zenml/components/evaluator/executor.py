@@ -161,7 +161,7 @@ class Executor(base_executor.BaseExecutor):
                                 )
                         examples_list.append(data)
                 # Resolve custom extractors
-                custom_extractors = try_get_fn(evaluator_step.CUSTOM_MODULE,
+                custom_extractors = try_get_fn(evaluator_step.CUSTOM_MODULE or '',
                                                'custom_extractors')
                 extractors = None
                 if custom_extractors:
@@ -171,7 +171,7 @@ class Executor(base_executor.BaseExecutor):
                         tensor_adapter_config=tensor_adapter_config)
 
                 # Resolve custom evaluators
-                custom_evaluators = try_get_fn(evaluator_step.CUSTOM_MODULE,
+                custom_evaluators = try_get_fn(evaluator_step.CUSTOM_MODULE or '',
                                                'custom_evaluators')
                 evaluators = None
                 if custom_evaluators:
