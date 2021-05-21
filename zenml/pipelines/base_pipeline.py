@@ -331,8 +331,13 @@ class BasePipeline:
 
         Args:
             component_name (str): name of component
-            resolve_locally (bool): If True, artifact is downloadeded locally.
+            resolve_locally (bool): If True, artifact is downloaded locally.
         """
+        # TODO[HIGH]: In case of multiple artifacts (from the selected
+        #  component) no other information rather then the uri is passed
+        #  forward. This creates a situation where you would need to make
+        #  really hard assumptions and hardcode the index of the uri within
+        #  the returned list
         status = self.metadata_store.get_pipeline_status(self)
         if status != PipelineStatusTypes.Succeeded.name:
             AssertionError('Cannot retrieve as pipeline is not succeeded.')

@@ -289,10 +289,14 @@ def evaluate_single_pipeline(
     evaluator_component_name = evaluator_component_name \
         if evaluator_component_name else GDPComponent.Evaluator.name
 
-    trainer_path = pipeline.get_artifacts_uri_by_component(
-        trainer_component_name)[0]
-    eval_path = pipeline.get_artifacts_uri_by_component(
-        evaluator_component_name)[0]
+    # TODO: hardcoded index / check base_pipeline.get_artifact_uri_by_component
+    trainer_uris = pipeline.get_artifacts_uri_by_component(
+        trainer_component_name)
+    trainer_path = [t for t in trainer_uris if '/model/' in t][0]
+
+    evaluator_uris = pipeline.get_artifacts_uri_by_component(
+        evaluator_component_name)
+    eval_path = [e for e in evaluator_uris if '/evaluation/' in e][0]
 
     # Patch to make it work locally
     with open(os.path.join(eval_path, 'eval_config.json'), 'r') as f:
