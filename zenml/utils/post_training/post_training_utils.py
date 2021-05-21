@@ -69,11 +69,8 @@ def get_statistics_dataset_dict(stats_uri: Text):
     """Get DatasetFeatureStatisticsList from stats URI"""
     result = {}
     for split in os.listdir(stats_uri):
-        stats_path = os.path.join(stats_uri, split, 'stats_tfrecord')
-        serialized_stats = next(
-            tf.compat.v1.io.tf_record_iterator(stats_path))
-        stats = statistics_pb2.DatasetFeatureStatisticsList()
-        stats.ParseFromString(serialized_stats)
+        stats_path = os.path.join(stats_uri, split, 'FeatureStats.pb')
+        stats = tfdv.load_stats_binary(stats_path)
         dataset_list = statistics_pb2.DatasetFeatureStatisticsList()
         for i, d in enumerate(stats.datasets):
             d.name = split
