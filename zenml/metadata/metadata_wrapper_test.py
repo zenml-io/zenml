@@ -105,10 +105,3 @@ def test_get_pipeline_context(repo):
         _ = mds1.get_pipeline_context(random_pipeline)
 
 
-def test_get_artifacts_by_execution():
-    mds1 = ZenMLMetadataStore()
-
-    # no execution possible
-    fake_id = "abcdefg"
-    with pytest.raises(ValueError):
-        _ = mds1.get_artifacts_by_execution(fake_id)

@@ -181,24 +181,3 @@ class ZenMLMetadataStore:
                        f'because it has not been run yet. Please run the '
                        f'pipeline before trying to fetch artifacts.')
         return run_context
-
-    def get_artifacts_by_execution(self, execution_id):
-        # First get all the events for this execution
-        """
-        Args:
-            execution_id:
-        """
-        events = self.store.get_events_by_execution_ids([execution_id])
-
-        artifact_ids = []
-        for e in events:
-            # MAJOR Assumptions: 4 means its output channel
-            if e.type == 4:
-                artifact_ids.append(e.artifact_id)
-                break
-
-        if not artifact_ids:
-            raise AssertionError("This execution has no output artifact.")
-
-        # Get artifacts
-        return self.store.get_artifacts_by_id(artifact_ids)
