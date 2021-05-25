@@ -383,15 +383,19 @@ class TrainingPipeline(BasePipeline):
 
         hparams = {}
         for e in executions:
-            component_id = e.properties['component_id'].string_value
-            if component_id == GDPComponent.Trainer.name:
-                custom_config = json.loads(
-                    e.properties['custom_config'].string_value)
-                fn = custom_config[keys.StepKeys.SOURCE]
-                params = custom_config[keys.StepKeys.ARGS]
+            e_cxts = self.metadata_store.store.get_contexts_by_execution(e.id)
+            e_node_cxt = [e for e in e_cxts if e.type_id == 3][0]
+            e_cmpt_name = e_node_cxt.name.split('.')[-1]
+
+            # TODO: only trainer hparams are handled at the moment
+            if e_cmpt_name == GDPComponent.Trainer.name:
+                args = json.loads(e.custom_properties['custom_config'].string_value)
+
+                fn = args[keys.StepKeys.SOURCE]
+                params = json.loads(args[keys.StepKeys.ARGS])
                 # filter out None values to not break compare tool
                 params = {k: v for k, v in params.items() if v is not None}
-                hparams[f'{component_id}_fn'] = fn
+                hparams[f'{e_cmpt_name}_source'] = fn
                 hparams.update(params)
         return hparams
 
