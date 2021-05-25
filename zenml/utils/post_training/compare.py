@@ -143,8 +143,10 @@ class Application(param.Parameterized):
                               (self.results['slice_name'] == '')]
 
             # merge
-            extra_df = pd.merge(self.hparam_info, df,
-                                on='pipeline_name', how='left')
+            extra_df = pd.merge(self.hparam_info,
+                                df,
+                                on='pipeline_name',
+                                how='right')
 
             dimensions = ['pipeline_name'] + self.hyperparameter_selector + \
                          [self.performance_metric_selector]
@@ -159,24 +161,19 @@ class Application(param.Parameterized):
                         x)).unique()))
                     mapping = {v: i for i, v in enumerate(u)}
                     new_dims.append({'label': d,
-                                     'tickvals': [mapping[x] for x
-                                                  in u],
+                                     'tickvals': [mapping[x] for x in u],
                                      'ticktext': u,
                                      'values': extra_df[d].apply(
                                          lambda x: str(x)).map(mapping)})
 
             final_col = pd.to_numeric(extra_df[
                                           self.performance_metric_selector])
-            fig = go.Figure(data=go.Parcoords(line=dict(
-                color=final_col,
-                colorscale=
-                'inferno',
-                showscale=True,
-                cmin=min(
-                    final_col),
-                cmax=max(
-                    final_col)),
-                dimensions=new_dims))
+            fig = go.Figure(data=go.Parcoords(line=dict(color=final_col,
+                                                        colorscale='inferno',
+                                                        showscale=True,
+                                                        cmin=min(final_col),
+                                                        cmax=max(final_col)),
+                                              dimensions=new_dims))
         else:
             fig = px.scatter(pd.DataFrame(),
                              marginal_y='rug',
