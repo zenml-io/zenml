@@ -191,8 +191,10 @@ def generate_interface(datasource=None):
     handlers = pn.Param(app.param)
 
     # Analysis Page
-    analysis_page = pn.GridSpec(height=850, width=1850, max_height
-    =850, max_width=1850)
+    analysis_page = pn.GridSpec(height=850,
+                                width=1850,
+                                max_height=850,
+                                max_width=1850)
     analysis_page[0:8, 0:2] = handlers[1]
     analysis_page[0:10, 8:10] = handlers[2]
     analysis_page[8:9, 0:2] = handlers[3]
