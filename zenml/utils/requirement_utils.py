@@ -14,10 +14,12 @@ BASE_REQUIREMENTS = ["absl-py>=0.10.0",
                      "plotly>=4.0.0",
                      "tabulate>=0.8.7",
                      "numpy>=1.19.2",
-                     "httplib2>=0.17.0",
+                     "httplib2==0.17.0",
                      "six==1.15.0",
                      "tfx==0.30.0",
+                     "tensorflow-metadata==0.30.0",
                      "tensorflow-datasets==4.3.0",
+                     "typing-extensions==3.7.4.2",
                      "fire==0.3.1",
                      "gitpython==3.1.11",
                      "analytics-python==1.2.9",
@@ -53,8 +55,8 @@ CORTEX_REQUIREMENTS = ['cortex>=0.29.0']
 # DATASOURCES #
 ###############
 POSTGRES_INTEGRATION = 'postgres'
-POSTGRES_REQUIREMENTS = ['beam-nuggets>=0.17.0',
-                         'pg8000>=1.16.5',
+POSTGRES_REQUIREMENTS = ['beam-nuggets==0.17.0',
+                         'pg8000==1.16.5',
                          'sqlalchemy>=1.3.22']
 
 
