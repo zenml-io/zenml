@@ -262,7 +262,7 @@ class BaseDatasource:
         # Take any pipeline and get the datagen
         data_uri = os.path.join(pipeline.get_artifacts_uri_by_component(
             GDPComponent.DataGen.name
-        )[0], 'examples')
+        )[0], 'Split-examples')
         data_files = path_utils.list_dir(data_uri)
         return data_files
 
