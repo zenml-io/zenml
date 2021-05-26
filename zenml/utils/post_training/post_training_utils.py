@@ -106,9 +106,9 @@ def view_statistics(artifact_uri, magic: bool = False, port: int = 0):
 def detect_anomalies(stats_uri: Text, schema_uri: Text, split_name: Text):
     schema = get_schema_proto(schema_uri)
     stats = get_statistics_dataset_dict(stats_uri)
-    if split_name not in stats:
+    if f'Split-{split_name}' not in stats:
         raise Exception(f'{split_name} split not present!')
-    anomalies = tfdv.validate_statistics(stats[split_name], schema)
+    anomalies = tfdv.validate_statistics(stats[f'Split-{split_name}'], schema)
     tfdv.display_anomalies(anomalies)
 
 
