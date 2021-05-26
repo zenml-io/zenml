@@ -36,6 +36,14 @@ zenml.cli.datasource module
    :undoc-members:
    :show-inheritance:
 
+zenml.cli.example module
+------------------------
+
+.. automodule:: zenml.cli.example
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 zenml.cli.pipeline module
 -------------------------
 

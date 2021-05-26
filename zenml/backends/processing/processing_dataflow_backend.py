@@ -47,7 +47,8 @@ class ProcessingDataFlowBackend(ProcessingBaseBackend):
             num_workers: int = 4,
             max_num_workers: int = 10,
             disk_size_gb: int = 50,
-            autoscaling_algorithm: Text = 'THROUGHPUT_BASED'):
+            autoscaling_algorithm: Text = 'THROUGHPUT_BASED',
+            **kwargs):
         """
         Adding this Backend will cause all 'Beam'-supported Steps in the
         pipeline to run on Google Dataflow.
@@ -92,6 +93,7 @@ class ProcessingDataFlowBackend(ProcessingBaseBackend):
             max_num_workers=max_num_workers,
             disk_size_gb=disk_size_gb,
             autoscaling_algorithm=autoscaling_algorithm,
+            **kwargs
         )
 
     def get_beam_args(self,

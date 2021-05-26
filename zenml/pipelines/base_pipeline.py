@@ -426,6 +426,20 @@ class BasePipeline:
         # Validate steps
         self._validate_steps()
 
+        # assert some datasource stuff
+        if self.datasource and self.datasource.metadata_store.to_config() != \
+                self.metadata_store.to_config():
+            raise AssertionError(
+                'The metadata_store of the specified datasource is different '
+                'from this pipeline. Pipelines and their datasources need to '
+                'be in the same metadata_store.')
+        if self.datasource and self.datasource.artifact_store.path != \
+                self.artifact_store.path:
+            raise AssertionError(
+                'The artifact_store of the specified datasource is different '
+                'from this pipeline. Pipelines and their datasources need to '
+                'be in the same artifact_store.')
+
         if self._immutable:
             # This means its an 'older' pipeline that has been loaded in via
             # YAML but does not exist in the metadata store, so we are safe

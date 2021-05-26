@@ -2,20 +2,15 @@
 One of the most powerful things in ZenML is the notion of backends. This is a showcase of different backends and how 
 to use them together in various use-cases.
 
-### Pre-requisites
-In order to run this example, you need to clone the zenml repo.
+## Pre-requisites
+In order to run this example, you need to install and initialize ZenML
 
 ```bash
-git clone https://github.com/maiot-io/zenml.git
-```
-
-Before continuing, either [install the zenml pip package](https://docs.zenml.io/getting-started/installation.html) or
-install it [from the cloned repo](../../zenml/README.md).
-
-```
-cd zenml
+pip install "zenml[gcp]"
+zenml example pull backends
+cd zenml_examples/backends
+git init
 zenml init
-cd examples/backends
 ```
 
 You also need to enable the following GCP services (and enable billing).
@@ -29,7 +24,7 @@ You also need to enable the following GCP services (and enable billing).
 You also need to create a google service account that has permission to read/write to all of the above services and 
 specify that in your `GOOGLE_APPLICATION_CREDENTIALS` env variable (see below).
 
-### Run the project
+## Run the project
 Now we're ready. First fill in the env variables required. 
 
 ```bash
@@ -57,7 +52,6 @@ jupyter notebook
 In order to clean up, in the root of your repo, delete the remaining zenml references.
 
 ```python
-cd ../..
 rm -r .zenml
 rm -r pipelines
 ```

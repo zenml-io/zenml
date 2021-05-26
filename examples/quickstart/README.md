@@ -3,18 +3,15 @@ This is the quickstart example that runs a `TrainingPipeline` to train a Tensorf
 [Pime Indian Diabetes dataset](https://www.kaggle.com/uciml/pima-indians-diabetes-database).
 
 ### Pre-requisites
-In order to run this example, you need to clone the zenml repo.
+In order to run this example, you need to install and initialize ZenML:
 
 ```bash
-git clone https://github.com/maiot-io/zenml.git
-```
-
-Before continuing, either [install the zenml pip package](https://docs.zenml.io/getting-started/installation.html) or install it [from the cloned repo](../../zenml/README.md). 
-
-```
-cd zenml
+pip install "zenml"
+pip install pytorch-lightning==1.1.8
+zenml example pull quickstart
+cd zenml_examples/quickstart
+git init
 zenml init
-cd examples/quickstart
 ```
 
 ### Run the project
@@ -34,7 +31,6 @@ jupyter notebook  # jupyter must be installed
 In order to clean up, in the root of your repo, delete the remaining zenml references.
 
 ```python
-cd ../..
 rm -r .zenml
 rm -r pipelines
 ```

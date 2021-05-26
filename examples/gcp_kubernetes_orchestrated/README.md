@@ -15,19 +15,14 @@ This example utilizes [Google Kubernetes Engine](https://cloud.google.com/kubern
 which then runs the pipeline specified.
 
 ### Pre-requisites
-In order to run this example, you need to clone the zenml repo.
+In order to run this example, you need to install and initialize ZenML:
 
 ```bash
-git clone https://github.com/maiot-io/zenml.git
-```
-
-Before continuing, either [install the zenml pip package](https://docs.zenml.io/getting-started/installation.html) or install it [from the cloned repo](../../zenml/README.md). 
-In both cases, make sure to also install the gcp extension (e.g. with pip: `pip install zenml[gcp]`)
-
-```
-cd zenml
+pip install "zenml[gcp]"
+zenml example pull gcp_kubernetes_orchestrated
+cd zenml_examples/gcp_kubernetes_orchestrated
+git init
 zenml init
-cd examples/kubernetes_orchestrated
 ```
 
 Also do the following:

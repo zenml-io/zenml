@@ -47,7 +47,10 @@ def init(repo_path: Text, pipelines_dir: Text = None,
         click.echo(f'ZenML repo initialized at {repo_path}')
     except git.InvalidGitRepositoryError:
         click.echo(f'{repo_path} is not a valid git repository! Please '
-                   f'initialize ZenML within a git repository.')
+                   f'initialize ZenML within a git repository using '
+                   f'`git init `')
+    except AssertionError as e:
+        click.echo(f'{e}')
 
 
 @cli.command('clean')

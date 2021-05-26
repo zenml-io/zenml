@@ -7,35 +7,23 @@ convenience utilities such as tokenizers, models and datasets for use in pipelin
 is to integrate these tools into a production ML setting with ZenML.
 
 ## Pre-requisites
-
-In order to run this example, you need to clone the zenml repo.
+In order to run this example, you need to install and initialize ZenML:
 
 ```bash
-git clone https://github.com/maiot-io/zenml.git
-```
-
-Before continuing, either [install the zenml pip package](https://docs.zenml.io/getting-started/installation.html) or
-install it [from the cloned repo](../../zenml/README.md).
-
-```
-cd zenml
+pip install "zenml[huggingface]"
+zenml example pull nlp
+cd zenml_examples/nlp
+git init
 zenml init
-cd examples/nlp
 ```
 
-Also, you have to install some HuggingFace libraries to be able to proceed. To do that, in your ZenML virtual
-environment run
-
-```
-pip install zenml[huggingface]
-```
-
-which installs the `transformers` and `tokenizers` libraries. Then, you can easily start up your first NLP pipeline by
+This also installs the `transformers` and `tokenizers` libraries. Then, you can easily start up your first NLP pipeline by
 navigating this example and executing the `run.py` script inside this folder.
 
-```
-zenml init
-cd zenml/examples/nlp
+### Run the project
+Now we're ready. Execute:
+
+```bash
 python run.py
 ```
 

@@ -40,19 +40,14 @@ tutorial on running the same workload with a deployment step on Google Cloud AI 
 styled images by sending prediction requests to the deployed model over a Google API client.
 
 ## Pre-requisites
-In order to run this example, you need to clone the zenml repo.
+In order to run this example, you need to install and initialize ZenML
 
 ```bash
-git clone https://github.com/maiot-io/zenml.git
-```
-
-Before continuing, either [install the zenml pip package](https://docs.zenml.io/getting-started/installation.html) or install it [from the cloned repo](../../zenml/README.md). 
-In both cases, make sure to also install the gcp extension (e.g. with pip: `pip install zenml[gcp]`)
-
-```
-cd zenml
+pip install "zenml[gcp]"
+zenml example pull gan
+cd zenml_examples/gan
+git init
 zenml init
-cd examples/gan
 ```
 
 In addition, you will have to install `tensorflow_addons` by typing

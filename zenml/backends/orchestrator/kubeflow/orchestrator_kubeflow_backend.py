@@ -29,7 +29,7 @@ class OrchestratorKubeFlowBackend(OrchestratorBaseBackend):
 
     def __init__(self, image: Text = None, **kwargs):
         self.image = image
-        super().__init__(**kwargs)
+        super().__init__(image=image, **kwargs)
         raise NotImplementedError('Its coming soon!')
 
     def run(self, tfx_pipeline: pipeline.Pipeline):

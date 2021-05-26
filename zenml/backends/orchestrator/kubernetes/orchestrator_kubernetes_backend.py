@@ -37,7 +37,7 @@ logger = get_logger(__name__)
 EXTRACTED_TAR_DIR_NAME = 'zenml_working'
 TAR_PATH_ARG = 'tar_path'
 STAGING_AREA = 'staging'
-DEFAULT_K8S_CONFIG = os.path.join(os.environ["HOME"], '.kube/config')
+DEFAULT_K8S_CONFIG = os.path.join(os.path.expanduser('~'), '.kube/config')
 
 
 class OrchestratorKubernetesBackend(OrchestratorBaseBackend):
@@ -71,7 +71,8 @@ class OrchestratorKubernetesBackend(OrchestratorBaseBackend):
                  extra_annotations: Dict[Text, Any] = None,
                  namespace: Text = None,
                  image_pull_policy: Text = ImagePullPolicy.IfNotPresent.name,
-                 kubernetes_config_path: Text = DEFAULT_K8S_CONFIG):
+                 kubernetes_config_path: Text = DEFAULT_K8S_CONFIG,
+                 **kwargs):
         self.image = image
         self.job_prefix = job_prefix
         self.extra_labels = extra_labels  # custom k8s labels
@@ -89,6 +90,7 @@ class OrchestratorKubernetesBackend(OrchestratorBaseBackend):
             namespace=namespace,
             image_pull_policy=image_pull_policy,
             kubernetes_config_path=kubernetes_config_path,
+            **kwargs,
         )
 
     def create_job_object(self, config):

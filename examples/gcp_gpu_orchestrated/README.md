@@ -15,19 +15,14 @@ This example utilizes [Google Compute Engine](https://cloud.google.com/compute) 
 which then runs the pipeline specified.
 
 ### Pre-requisites
-In order to run this example, you need to clone the zenml repo.
+In order to run this example, you need to install and initialize ZenML:
 
 ```bash
-git clone https://github.com/maiot-io/zenml.git
-```
-
-Before continuing, either [install the zenml pip package](https://docs.zenml.io/getting-started/installation.html) or install it [from the cloned repo](../../zenml/README.md). 
-In both cases, make sure to also install the gcp extension (e.g. with pip: `pip install zenml[gcp]`)
-
-```
-cd zenml
+pip install "zenml[gcp]"
+zenml example pull gcp_gpu_orchestrated
+cd zenml_examples/gcp_gpu_orchestrated
+git init
 zenml init
-cd examples/gcp_orchestrated
 ```
 
 Also do the following:
