@@ -184,7 +184,9 @@ def convert_data_to_numpy(dataset, sample_size):
 
         # usually v[0] has the data, but sometimes its an empty list
         def selector(v):
-            if len(v) == 0:
+            if not isinstance(v, list):
+                return v
+            elif len(v) == 0:
                 return None
             elif len(v) == 1:
                 return v[0]
