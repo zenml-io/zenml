@@ -183,7 +183,7 @@ def convert_data_to_numpy(dataset, sample_size):
             break
 
         # usually v[0] has the data, but sometimes its an empty list
-        new_row = {k: v[0] if len(v) != 0 else None for k, v in d.items()}
+        new_row = {k: v if len(v) != 0 else None for k, v in d.items()}
 
         # convert the bytes to strings for easier use
         new_row = {k: v if type(v) != bytes else v.decode()
