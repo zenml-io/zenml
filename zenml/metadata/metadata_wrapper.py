@@ -107,24 +107,22 @@ class ZenMLMetadataStore:
         from zenml.pipelines.data_pipeline import DataPipeline
 
         run_contexts = self.store.get_contexts_by_type(
-            self.RUN_TYPE_PROPERTY_NAME)
+            self.RUN_TYPE_NAME)
 
-        # get the data pipelines only by doing an ugly hack. These data
-        # pipelines will always start with `data_` and have no component
-        # name at the end. this needs to change soon
+        # TODO [LOW]:
+        #  get the data pipelines only by doing an ugly hack. These data
+        #  pipelines will always start with `data_`. This needs to change soon
         run_contexts = [x for x in run_contexts if
-                        x.name.split('.')[1].startswith(
-                            DataPipeline.PIPELINE_TYPE) and len(
-                            x.name.split('.')) == 2]
+                        x.name.startswith(DataPipeline.PIPELINE_TYPE)]
 
         # now filter to the datasource name through executions
         pipelines_names = []
         for c in run_contexts:
             es = self.store.get_executions_by_context(c.id)
             for e in es:
-                if 'name' in e.properties and e.properties[
+                if 'name' in e.custom_properties and e.custom_properties[
                     'name'].string_value == datasource_name:
-                    pipelines_names.append(c.name.split('.')[1])
+                    pipelines_names.append(c.name)
         return pipelines_names
 
     def get_pipeline_status(self, pipeline) -> Text:
