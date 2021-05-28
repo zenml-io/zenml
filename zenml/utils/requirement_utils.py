@@ -26,7 +26,8 @@ BASE_REQUIREMENTS = ["absl-py>=0.10.0",
                      "distro==1.5.0",
                      "tensorflow==2.4.1",
                      "grpcio == 1.32.0",
-                     "dill == 0.3.1.1"]
+                     "dill == 0.3.1.1",
+                     "google-cloud-bigquery==1.28.0"]
 
 #####################
 # EXTRAS: PROVIDERS #
