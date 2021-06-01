@@ -20,6 +20,7 @@ from typing import Text
 
 import click
 import nbformat as nbf
+import numpy as np
 import pandas as pd
 import panel
 import panel as pn
@@ -184,7 +185,7 @@ def convert_data_to_numpy(dataset, sample_size):
 
         # usually v[0] has the data, but sometimes its an empty list
         def selector(v):
-            if not isinstance(v, list):
+            if not isinstance(v, np.ndarray):
                 return v
             elif len(v) == 0:
                 return None
