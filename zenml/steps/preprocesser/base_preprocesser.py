@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import json
 from typing import Dict, Text, List
 
 from tfx.proto import transform_pb2
@@ -24,6 +25,7 @@ SPLIT_MAPPING = 'split_mapping'
 
 
 def build_split_mapping(args):
+    args = json.loads(args)
     if SPLIT_MAPPING in args and args[SPLIT_MAPPING]:
         splits_config = transform_pb2.SplitsConfig()
         assert TRAIN_SPLITS in args[SPLIT_MAPPING], \

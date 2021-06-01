@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+import json
 from typing import Dict, Text, Any, List
 
 from tfx import types
@@ -37,7 +37,7 @@ class DataExecutor(base_executor.BaseExecutor):
             exec_properties:
         """
         source = exec_properties[StepKeys.SOURCE]
-        args = exec_properties[StepKeys.ARGS]
+        args = json.loads(exec_properties[StepKeys.ARGS])
         name = exec_properties[StepKeys.NAME]
 
         c = source_utils.load_source_path_class(source)

@@ -20,6 +20,7 @@ from typing import Text
 
 import click
 import nbformat as nbf
+import numpy as np
 import pandas as pd
 import panel
 import panel as pn
@@ -69,11 +70,8 @@ def get_statistics_dataset_dict(stats_uri: Text):
     """Get DatasetFeatureStatisticsList from stats URI"""
     result = {}
     for split in os.listdir(stats_uri):
-        stats_path = os.path.join(stats_uri, split, 'stats_tfrecord')
-        serialized_stats = next(
-            tf.compat.v1.io.tf_record_iterator(stats_path))
-        stats = statistics_pb2.DatasetFeatureStatisticsList()
-        stats.ParseFromString(serialized_stats)
+        stats_path = os.path.join(stats_uri, split, 'FeatureStats.pb')
+        stats = tfdv.load_stats_binary(stats_path)
         dataset_list = statistics_pb2.DatasetFeatureStatisticsList()
         for i, d in enumerate(stats.datasets):
             d.name = split
@@ -109,9 +107,9 @@ def view_statistics(artifact_uri, magic: bool = False, port: int = 0):
 def detect_anomalies(stats_uri: Text, schema_uri: Text, split_name: Text):
     schema = get_schema_proto(schema_uri)
     stats = get_statistics_dataset_dict(stats_uri)
-    if split_name not in stats:
+    if f'Split-{split_name}' not in stats:
         raise Exception(f'{split_name} split not present!')
-    anomalies = tfdv.validate_statistics(stats[split_name], schema)
+    anomalies = tfdv.validate_statistics(stats[f'Split-{split_name}'], schema)
     tfdv.display_anomalies(anomalies)
 
 
@@ -186,7 +184,16 @@ def convert_data_to_numpy(dataset, sample_size):
             break
 
         # usually v[0] has the data, but sometimes its an empty list
-        new_row = {k: v[0] if len(v) != 0 else None for k, v in d.items()}
+        def selector(v):
+            if not isinstance(v, np.ndarray):
+                return v
+            elif len(v) == 0:
+                return None
+            elif len(v) == 1:
+                return v[0]
+            else:
+                return v
+        new_row = {k: selector(v) for k, v in d.items()}
 
         # convert the bytes to strings for easier use
         new_row = {k: v if type(v) != bytes else v.decode()
@@ -292,10 +299,14 @@ def evaluate_single_pipeline(
     evaluator_component_name = evaluator_component_name \
         if evaluator_component_name else GDPComponent.Evaluator.name
 
-    trainer_path = pipeline.get_artifacts_uri_by_component(
-        trainer_component_name)[0]
-    eval_path = pipeline.get_artifacts_uri_by_component(
-        evaluator_component_name)[0]
+    # TODO: hardcoded index / check base_pipeline.get_artifact_uri_by_component
+    trainer_uris = pipeline.get_artifacts_uri_by_component(
+        trainer_component_name)
+    trainer_path = [t for t in trainer_uris if '/model/' in t][0]
+
+    evaluator_uris = pipeline.get_artifacts_uri_by_component(
+        evaluator_component_name)
+    eval_path = [e for e in evaluator_uris if '/evaluation/' in e][0]
 
     # Patch to make it work locally
     with open(os.path.join(eval_path, 'eval_config.json'), 'r') as f:

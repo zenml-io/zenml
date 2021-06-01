@@ -17,7 +17,7 @@ from typing import List, Text, Dict
 
 import tensorflow_data_validation as tfdv
 from tfx import types
-from tfx.components.schema_gen.executor import _DEFAULT_FILE_NAME, SCHEMA_KEY
+from tfx.components.schema_gen.executor import _DEFAULT_FILE_NAME
 from tfx.types import artifact_utils
 from tfx.types.artifact import Artifact
 from tfx.utils import io_utils
@@ -28,13 +28,13 @@ def parse_statistics(split_name: Text,
     stats_uri = io_utils.get_only_uri_in_dir(
         artifact_utils.get_split_uri(statistics, split_name))
 
-    stats = tfdv.load_statistics(stats_uri)
+    stats = tfdv.load_stats_binary(stats_uri)
 
     return stats
 
 
 def parse_schema(input_dict: Dict[Text, List[types.Artifact]]):
-    schema = input_dict.get(SCHEMA_KEY, None)
+    schema = input_dict.get('schema', None)
     if not schema:
         return schema
     else:

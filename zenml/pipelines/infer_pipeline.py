@@ -17,7 +17,7 @@ from typing import Dict, Text, Any, List
 from typing import Optional
 
 import tensorflow as tf
-from tfx.components.common_nodes.importer_node import ImporterNode
+from tfx.dsl.components.common.importer import Importer
 from tfx.components.schema_gen.component import SchemaGen
 from tfx.components.statistics_gen.component import StatisticsGen
 from tfx.types import standard_artifacts
@@ -123,7 +123,7 @@ class BatchInferencePipeline(BasePipeline):
         data_pipeline = self.datasource.get_data_pipeline_from_commit(
             self.datasource_commit_id)
 
-        data = ImporterNode(
+        data = Importer(
             instance_name=GDPComponent.DataGen.name,
             source_uri=data_pipeline.get_artifacts_uri_by_component(
                 GDPComponent.DataGen.name)[0],
@@ -133,7 +133,7 @@ class BatchInferencePipeline(BasePipeline):
         # Handle timeseries
         # TODO: [LOW] Handle timeseries
         # if GlobalKeys. in train_config:
-        #     schema = ImporterNode(instance_name='Schema',
+        #     schema = Importer(instance_name='Schema',
         #                           source_uri=spec['schema_uri'],
         #                           artifact_type=standard_artifacts.Schema)
         #
@@ -146,10 +146,9 @@ class BatchInferencePipeline(BasePipeline):
         #     component_list.extend([schema, sequence_transform])
 
         # Load from model_uri
-        model = ImporterNode(
-            instance_name=GDPComponent.Trainer.name,
-            source_uri=self.model_uri,
-            artifact_type=standard_artifacts.Model)
+        model = Importer(instance_name=GDPComponent.Trainer.name,
+                         source_uri=self.model_uri,
+                         artifact_type=standard_artifacts.Model)
 
         model_result = model.outputs.result
 
@@ -168,7 +167,8 @@ class BatchInferencePipeline(BasePipeline):
         ).with_id(GDPComponent.DataStatistics.name)
 
         schema = SchemaGen(
-            statistics=statistics.outputs.output,
+            statistics=statistics.outputs.statistics,
+            infer_feature_shape=False,
         ).with_id(GDPComponent.DataSchema.name)
 
         component_list.extend([model, bulk_inferrer, statistics, schema])

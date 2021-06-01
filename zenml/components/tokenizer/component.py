@@ -29,7 +29,7 @@ from zenml.standards.standard_keys import StepKeys
 class TokenizerSpec(ComponentSpec):
     PARAMETERS = {
         StepKeys.SOURCE: ExecutionParameter(type=Text),
-        StepKeys.ARGS: ExecutionParameter(type=Dict[Text, Any]),
+        StepKeys.ARGS: ExecutionParameter(type=Text),
     }
     INPUTS = {
         EXAMPLES: ChannelParameter(type=standard_artifacts.Examples),

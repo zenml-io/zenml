@@ -29,7 +29,7 @@ from zenml.standards.standard_keys import StepKeys
 class BulkInferrerSpec(ComponentSpec):
     PARAMETERS = {
         StepKeys.SOURCE: ExecutionParameter(type=Text),
-        StepKeys.ARGS: ExecutionParameter(type=Dict[Text, Any]),
+        StepKeys.ARGS: ExecutionParameter(type=Text),
     }
     INPUTS = {
         MODEL: ChannelParameter(type=standard_artifacts.Model, optional=True),

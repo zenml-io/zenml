@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import json
 
 from zenml.standards.standard_keys import StepKeys
 from zenml.utils.source_utils import load_source_path_class
@@ -21,7 +22,7 @@ def run_fn(fn_args):
     custom_config = fn_args_dict.pop('custom_config')
 
     # Get the user defined args
-    args = custom_config.pop(StepKeys.ARGS)
+    args = json.loads(custom_config.pop(StepKeys.ARGS))
 
     # We update users args first, because fn_args might have overlaps
     args.update(fn_args_dict)

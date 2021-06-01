@@ -14,7 +14,7 @@
 """Base Step Interface definition"""
 import inspect
 from typing import Dict
-
+import json
 from zenml.backends import BaseBackend
 from zenml.enums import StepTypes
 from zenml.standards.standard_keys import StepKeys
@@ -69,7 +69,7 @@ class BaseStep:
         if StepKeys.SOURCE in config_block:
             source = config_block[StepKeys.SOURCE]
             class_ = load_source_path_class(source)
-            args = config_block[StepKeys.ARGS]
+            args = json.loads(config_block[StepKeys.ARGS])
             resolved_args = {}
 
             # resolve backend
@@ -114,7 +114,7 @@ class BaseStep:
 
         config = {
             StepKeys.SOURCE: self._source,
-            StepKeys.ARGS: kwargs,  # everything to be recorded
+            StepKeys.ARGS: json.dumps(kwargs),  # everything to be recorded
         }
 
         # only add backend if its set

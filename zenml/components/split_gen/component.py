@@ -30,7 +30,7 @@ class SplitGenComponentSpec(ComponentSpec):
     """SplitGen ExampleGen component spec."""
     PARAMETERS = {
         StepKeys.SOURCE: ExecutionParameter(type=Text),
-        StepKeys.ARGS: ExecutionParameter(type=Dict[Text, Any]),
+        StepKeys.ARGS: ExecutionParameter(type=Text),
     }
     INPUTS = {
         constants.INPUT_EXAMPLES: ChannelParameter(

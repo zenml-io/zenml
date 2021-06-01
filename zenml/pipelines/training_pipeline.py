@@ -19,11 +19,11 @@ from pathlib import Path
 from typing import Dict, Text, Any, List
 
 import tensorflow as tf
-from tfx.components.common_nodes.importer_node import ImporterNode
 from tfx.components.pusher.component import Pusher
 from tfx.components.schema_gen.component import SchemaGen
 from tfx.components.statistics_gen.component import StatisticsGen
 from tfx.components.transform.component import Transform
+from tfx.dsl.components.common.importer import Importer
 from tfx.types import standard_artifacts
 
 from zenml import constants
@@ -90,23 +90,23 @@ class TrainingPipeline(BasePipeline):
         data_pipeline = self.datasource.get_data_pipeline_from_commit(
             self.datasource_commit_id)
 
-        data = ImporterNode(
-            instance_name=GDPComponent.DataGen.name,
+        data = Importer(
             source_uri=data_pipeline.get_artifacts_uri_by_component(
                 GDPComponent.DataGen.name)[0],
-            artifact_type=standard_artifacts.Examples)
+            artifact_type=standard_artifacts.Examples).with_id(
+            GDPComponent.DataGen.name)
 
-        schema_data = ImporterNode(
-            instance_name=GDPComponent.DataSchema.name,
+        schema_data = Importer(
             source_uri=data_pipeline.get_artifacts_uri_by_component(
                 GDPComponent.DataSchema.name)[0],
-            artifact_type=standard_artifacts.Schema)
+            artifact_type=standard_artifacts.Schema).with_id(
+            GDPComponent.DataSchema.name)
 
-        statistics_data = ImporterNode(
-            instance_name=GDPComponent.DataStatistics.name,
+        statistics_data = Importer(
             source_uri=data_pipeline.get_artifacts_uri_by_component(
                 GDPComponent.DataStatistics.name)[0],
-            artifact_type=standard_artifacts.ExampleStatistics)
+            artifact_type=standard_artifacts.ExampleStatistics).with_id(
+            GDPComponent.DataStatistics.name)
 
         component_list.extend([data, schema_data, statistics_data])
 
@@ -132,7 +132,8 @@ class TrainingPipeline(BasePipeline):
         ).with_id(GDPComponent.SplitStatistics.name)
 
         schema_split = SchemaGen(
-            statistics=statistics_split.outputs.output,
+            statistics=statistics_split.outputs.statistics,
+            infer_feature_shape=False
         ).with_id(GDPComponent.SplitSchema.name)
 
         schema = schema_split.outputs.schema
@@ -159,7 +160,7 @@ class TrainingPipeline(BasePipeline):
             ).with_id(GDPComponent.SequencerStatistics.name)
 
             sequencer_schema = SchemaGen(
-                statistics=sequencer_statistics.outputs.output,
+                statistics=sequencer_statistics.outputs.statistics,
                 infer_feature_shape=True,
             ).with_id(GDPComponent.SequencerSchema.name)
 
@@ -382,15 +383,19 @@ class TrainingPipeline(BasePipeline):
 
         hparams = {}
         for e in executions:
-            component_id = e.properties['component_id'].string_value
-            if component_id == GDPComponent.Trainer.name:
-                custom_config = json.loads(
-                    e.properties['custom_config'].string_value)
-                fn = custom_config[keys.StepKeys.SOURCE]
-                params = custom_config[keys.StepKeys.ARGS]
+            e_cxts = self.metadata_store.store.get_contexts_by_execution(e.id)
+            e_node_cxt = [e for e in e_cxts if e.type_id == 3][0]
+            e_cmpt_name = e_node_cxt.name.split('.')[-1]
+
+            # TODO: only trainer hparams are handled at the moment
+            if e_cmpt_name == GDPComponent.Trainer.name:
+                args = json.loads(e.custom_properties['custom_config'].string_value)
+
+                fn = args[keys.StepKeys.SOURCE]
+                params = json.loads(args[keys.StepKeys.ARGS])
                 # filter out None values to not break compare tool
                 params = {k: v for k, v in params.items() if v is not None}
-                hparams[f'{component_id}_fn'] = fn
+                hparams[f'{e_cmpt_name}_source'] = fn
                 hparams.update(params)
         return hparams
 

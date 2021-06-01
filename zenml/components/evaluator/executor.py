@@ -1,3 +1,4 @@
+import json
 from typing import Any, Dict, List, Text, Callable, Optional
 
 import apache_beam as beam
@@ -49,7 +50,7 @@ class Executor(base_executor.BaseExecutor):
 
         # Create the step with the schema attached if provided
         source = exec_properties[StepKeys.SOURCE]
-        args = exec_properties[StepKeys.ARGS]
+        args = json.loads(exec_properties[StepKeys.ARGS])
         c = source_utils.load_source_path_class(source)
         evaluator_step: BaseEvaluatorStep = c(**args)
 
@@ -160,7 +161,7 @@ class Executor(base_executor.BaseExecutor):
                                 )
                         examples_list.append(data)
                 # Resolve custom extractors
-                custom_extractors = try_get_fn(evaluator_step.CUSTOM_MODULE,
+                custom_extractors = try_get_fn(evaluator_step.CUSTOM_MODULE or '',
                                                'custom_extractors')
                 extractors = None
                 if custom_extractors:
@@ -170,7 +171,7 @@ class Executor(base_executor.BaseExecutor):
                         tensor_adapter_config=tensor_adapter_config)
 
                 # Resolve custom evaluators
-                custom_evaluators = try_get_fn(evaluator_step.CUSTOM_MODULE,
+                custom_evaluators = try_get_fn(evaluator_step.CUSTOM_MODULE or '',
                                                'custom_evaluators')
                 evaluators = None
                 if custom_evaluators:

@@ -64,8 +64,7 @@ class Trainer(base_component.BaseComponent):
             custom_executor_spec: Optional[executor_spec.ExecutorSpec] = None,
             output: Optional[types.Channel] = None,
             model_run: Optional[types.Channel] = None,
-            test_results: Optional[types.Channel] = None,
-            instance_name: Optional[Text] = None):
+            test_results: Optional[types.Channel] = None):
 
         if bool(examples) == bool(transformed_examples):
             raise ValueError("Exactly one of 'example' or "
@@ -92,5 +91,4 @@ class Trainer(base_component.BaseComponent):
                                 test_results=test_results)
 
         super(Trainer, self).__init__(spec=spec,
-                                      custom_executor_spec=custom_executor_spec,
-                                      instance_name=instance_name)
+                                      custom_executor_spec=custom_executor_spec)

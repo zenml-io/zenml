@@ -12,24 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """ZenML bulk inferrer executor."""
-
+import json
 from typing import Any, Dict, List, Text
 from typing import Optional
 
 import apache_beam as beam
 from absl import logging
 from tfx import types
+from tfx.components.bulk_inferrer.executor import _RunInference
 from tfx.components.util import model_utils
 from tfx.dsl.components.base import base_executor
 from tfx.proto import bulk_inferrer_pb2
 from tfx.types import artifact_utils
 from tfx.utils import path_utils
 from tfx_bsl.public.proto import model_spec_pb2
-from tfx.components.bulk_inferrer.executor import _RunInference
 
-from zenml.components.bulk_inferrer.utils import convert_to_dict
 from zenml.components.bulk_inferrer.constants import MODEL, EXAMPLES, \
     MODEL_BLESSING, PREDICTIONS
+from zenml.components.bulk_inferrer.utils import convert_to_dict
 from zenml.standards.standard_keys import StepKeys
 from zenml.steps.inferrer import BaseInferrer
 from zenml.utils import source_utils
@@ -58,7 +58,7 @@ class BulkInferrerExecutor(base_executor.BaseExecutor):
         self._log_startup(input_dict, output_dict, exec_properties)
 
         source = exec_properties[StepKeys.SOURCE]
-        args = exec_properties[StepKeys.ARGS]
+        args = json.loads(exec_properties[StepKeys.ARGS])
         c = source_utils.load_source_path_class(source)
         inferrer_step: BaseInferrer = c(**args)
 
@@ -148,12 +148,12 @@ class BulkInferrerExecutor(base_executor.BaseExecutor):
                 logging.info('Path of output examples split `%s` is %s.',
                              split, output_examples_split_uri)
                 _ = (
-                    pipeline
-                    | 'RunInference[{}]'.format(split) >>
-                    _RunInference(example_uri, inference_endpoint)
-                    | 'ConvertToDict[{}]'.format(split) >>
-                    beam.Map(convert_to_dict, output_example_spec)
-                    | 'WriteOutput[{}]'.format(split) >>
-                    inferrer_step.write_inference_results())
+                        pipeline
+                        | 'RunInference[{}]'.format(split) >>
+                        _RunInference(example_uri, inference_endpoint)
+                        | 'ConvertToDict[{}]'.format(split) >>
+                        beam.Map(convert_to_dict, output_example_spec)
+                        | 'WriteOutput[{}]'.format(split) >>
+                        inferrer_step.write_inference_results())
 
             logging.info('Output examples written to %s.', output_examples.uri)

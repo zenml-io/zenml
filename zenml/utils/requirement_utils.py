@@ -8,27 +8,33 @@ import sys
 BASE_REQUIREMENTS = ["absl-py>=0.10.0",
                      "pip-check-reqs>=2.0.1,<3",
                      "click>=7.0,<8",
-                     "setuptools>=38.4.0",
+                     "setuptools==46.4.0",
                      "nbformat>=5.0.4",
                      "panel>=0.8.3",
                      "plotly>=4.0.0",
                      "tabulate>=0.8.7",
-                     "numpy>=1.18.0",
-                     "httplib2>=0.17.0",
-                     "tfx==0.26.1",
+                     "numpy>=1.19.2",
+                     "httplib2==0.17.0",
+                     "six==1.15.0",
+                     "tfx==0.30.0",
+                     "tensorflow-metadata==0.30.0",
+                     "tensorflow-datasets==4.3.0",
+                     "typing-extensions==3.7.4.2",
                      "fire==0.3.1",
                      "gitpython==3.1.11",
                      "analytics-python==1.2.9",
-                     "distro>=1.5.0",
-                     "tensorflow>=2.3.0,<2.4.0",
-                     "tensorflow-serving-api==2.3.0"]
+                     "distro==1.5.0",
+                     "tensorflow==2.4.1",
+                     "grpcio == 1.32.0",
+                     "dill == 0.3.1.1",
+                     "google-cloud-bigquery==1.28.0"]
 
 #####################
 # EXTRAS: PROVIDERS #
 #####################
 GCP_INTEGRATION = 'gcp'
-GCP_REQUIREMENTS = ["apache-beam[gcp]==2.27.0",
-                    "apache-beam==2.27.0",
+GCP_REQUIREMENTS = ["apache-beam[gcp]==2.28.0",
+                    "apache-beam==2.28.0",
                     "google-apitools==0.5.31"]
 
 AWS_INTEGRATION = 'aws'
@@ -50,14 +56,17 @@ CORTEX_REQUIREMENTS = ['cortex>=0.29.0']
 # DATASOURCES #
 ###############
 POSTGRES_INTEGRATION = 'postgres'
-POSTGRES_REQUIREMENTS = ['beam-nuggets>=0.17.0', 'pg8000>=1.16.5',
+POSTGRES_REQUIREMENTS = ['beam-nuggets==0.17.0',
+                         'pg8000==1.16.5',
                          'sqlalchemy>=1.3.22']
+
 
 #######################
 # NLP via HuggingFace #
 #######################
 HUGGINGFACE_INTEGRATION = 'huggingface'
-HUGGINGFACE_REQUIREMENTS = ['transformers>=4.3.3', 'tokenizers>=0.10.1']
+HUGGINGFACE_REQUIREMENTS = ['transformers>=4.3.3',
+                            'tokenizers>=0.10.1']
 
 ###############
 # EXTRAS: ALL #

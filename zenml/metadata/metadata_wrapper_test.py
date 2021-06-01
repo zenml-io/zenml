@@ -16,30 +16,25 @@ import random
 
 import pytest
 
-from zenml.metadata import ZenMLMetadataStore
-from zenml.standards.standard_keys import MLMetadataKeys
 from zenml.enums import GDPComponent
 from zenml.enums import PipelineStatusTypes
+from zenml.metadata import ZenMLMetadataStore
+from zenml.pipelines import TrainingPipeline
+from zenml.standards.standard_keys import MLMetadataKeys
 
 # we expect all queries to fail since the metadata store
 # cannot be instantiated
 expected_query_error = AssertionError
 
 
-def test_metadata_init():
-    mds1 = ZenMLMetadataStore()
-
-    with pytest.raises(ValueError):
-        _ = mds1.store
+def test_metadata_init(repo):
+    mds = repo.get_default_metadata_store()
+    _ = mds.store
 
 
-def test_to_config():
-    mds1 = ZenMLMetadataStore()
-
-    # disallow to/from_config for the base class by checking against
-    # factory keys
-    with pytest.raises(AssertionError):
-        mds1.to_config()
+def test_to_config(repo):
+    mds = repo.get_default_metadata_store()
+    mds.to_config()
 
 
 def test_from_config():
@@ -54,73 +49,45 @@ def test_from_config():
 def test_get_pipeline_status(repo):
     random_pipeline = random.choice(repo.get_pipelines())
 
-    mds1 = ZenMLMetadataStore()
+    mds = repo.get_default_metadata_store()
 
-    # TODO: This returns a NotStarted enum, which may be misleading as the
-    #  associated store does not even exist
-    # with pytest.raises(expected_query_error):
-    assert mds1.get_pipeline_status(random_pipeline) == \
-           PipelineStatusTypes.NotStarted.name
+    assert mds.get_pipeline_status(random_pipeline) == \
+           PipelineStatusTypes.Succeeded.name
 
 
 def test_get_pipeline_executions(repo):
-    mds1 = ZenMLMetadataStore()
+    mds = repo.get_default_metadata_store()
 
     random_pipeline = random.choice(repo.get_pipelines())
 
-    # if we query a different metadata store for the pipeline,
-    # there should be no executions, i.e. an empty list
-    with pytest.raises(expected_query_error):
-        _ = mds1.get_pipeline_executions(random_pipeline)
+    _ = mds.get_pipeline_executions(random_pipeline)
 
 
 def test_get_components_status(repo):
-    mds1 = ZenMLMetadataStore()
+    mds = repo.get_default_metadata_store()
 
     random_pipeline = random.choice(repo.get_pipelines())
 
-    with pytest.raises(expected_query_error):
-        _ = mds1.get_components_status(random_pipeline)
+    mds.get_components_status(random_pipeline)
 
 
 def test_get_artifacts_by_component(repo):
-    mds1 = ZenMLMetadataStore()
+    mds = repo.get_default_metadata_store()
 
-    random_pipeline = random.choice(repo.get_pipelines())
+    random_pipeline = repo.get_pipelines_by_type(
+        TrainingPipeline.PIPELINE_TYPE)[0]
 
     # pick a component guaranteed to be present
     component_name = GDPComponent.SplitGen.name
 
-    with pytest.raises(expected_query_error):
-        _ = mds1.get_artifacts_by_component(random_pipeline,
-                                            component_name)
+    artifacts = mds.get_artifacts_by_component(random_pipeline, component_name)
 
-
-def test_get_component_execution(repo):
-    mds1 = ZenMLMetadataStore()
-
-    random_pipeline = random.choice(repo.get_pipelines())
-
-    component_name = GDPComponent.SplitGen.name
-
-    with pytest.raises(expected_query_error):
-        _ = mds1.get_component_execution(random_pipeline,
-                                         component_name)
+    assert len(artifacts) >= 1
 
 
 def test_get_pipeline_context(repo):
-    mds1 = ZenMLMetadataStore()
+    mds = repo.get_default_metadata_store()
 
     random_pipeline = random.choice(repo.get_pipelines())
 
-    with pytest.raises(expected_query_error):
-        _ = mds1.get_pipeline_context(random_pipeline)
-
-
-def test_get_artifacts_by_execution():
-    mds1 = ZenMLMetadataStore()
-
-    # no execution possible
-    fake_id = "abcdefg"
-    with pytest.raises(ValueError):
-        _ = mds1.get_artifacts_by_execution(fake_id)
+    mds.get_pipeline_context(random_pipeline)

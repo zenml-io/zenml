@@ -11,14 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+import json
 import os
 from typing import Any, Dict, List, Text
 
 import apache_beam as beam
 from apache_beam.transforms.window import GlobalWindows, TimestampCombiner
-from tensorflow_data_validation.coders import tf_example_decoder
 from tfx import types
+from tfx.components.util import tfxio_utils
 from tfx.dsl.components.base.base_executor import BaseExecutor
 from tfx.types import artifact_utils
 from tfx.utils import io_utils
@@ -79,7 +79,7 @@ class Executor(BaseExecutor):
         """
 
         source = exec_properties[StepKeys.SOURCE]
-        args = exec_properties[StepKeys.ARGS]
+        args = json.loads(exec_properties[StepKeys.ARGS])
 
         c = source_utils.load_source_path_class(source)
 
@@ -106,12 +106,18 @@ class Executor(BaseExecutor):
         output_artifact.split_names = artifact_utils.encode_split_names(
             split_names)
 
-        with self._make_beam_pipeline() as p:
-            for s in split_names:
-                input_uri = io_utils.all_files_pattern(
-                    artifact_utils.get_split_uri(
-                        input_dict[constants.INPUT_EXAMPLES], s))
+        split_and_tfxio = []
+        tfxio_factory = tfxio_utils.get_tfxio_factory_from_artifact(
+            examples=[input_artifact],
+            telemetry_descriptors=['sequencer'])
+        for split in split_names:
+            uri = artifact_utils.get_split_uri([input_artifact], split)
+            split_and_tfxio.append(
+                (split, tfxio_factory(io_utils.all_files_pattern(uri))))
 
+        with self._make_beam_pipeline() as p:
+
+            for s, tfxio in split_and_tfxio:
                 output_uri = artifact_utils.get_split_uri(
                     output_dict[constants.OUTPUT_EXAMPLES],
                     s)
@@ -120,9 +126,7 @@ class Executor(BaseExecutor):
                 # Read and decode the data
                 data = \
                     (p
-                     | 'Read_' + s >> beam.io.ReadFromTFRecord(
-                                file_pattern=input_uri)
-                     | 'Decode_' + s >> tf_example_decoder.DecodeTFExample()
+                     | 'TFXIORead' + s >> tfxio.BeamSource()
                      | 'ToDataFrame_' + s >> beam.ParDo(
                                 utils.ConvertToDataframe()))
 

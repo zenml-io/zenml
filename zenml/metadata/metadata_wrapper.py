@@ -27,10 +27,19 @@ from zenml.utils.print_utils import to_pretty_string, PrintStyles
 
 logger = get_logger(__name__)
 
+STATE_MAPPING = {0: 'unknown',
+                 1: 'new',
+                 2: 'running',
+                 3: 'complete',
+                 4: 'failed',
+                 5: 'cached',
+                 6: 'cancelled'}
+
 
 class ZenMLMetadataStore:
     STORE_TYPE = None
-    RUN_TYPE_PROPERTY_NAME = 'run'
+    RUN_TYPE_NAME = 'pipeline_run'
+    NODE_TYPE_NAME = 'node'
 
     def __str__(self):
         return to_pretty_string(self.to_config())
@@ -98,24 +107,22 @@ class ZenMLMetadataStore:
         from zenml.pipelines.data_pipeline import DataPipeline
 
         run_contexts = self.store.get_contexts_by_type(
-            self.RUN_TYPE_PROPERTY_NAME)
+            self.RUN_TYPE_NAME)
 
-        # get the data pipelines only by doing an ugly hack. These data
-        # pipelines will always start with `data_` and have no component
-        # name at the end. this needs to change soon
+        # TODO [LOW]:
+        #  get the data pipelines only by doing an ugly hack. These data
+        #  pipelines will always start with `data_`. This needs to change soon
         run_contexts = [x for x in run_contexts if
-                        x.name.split('.')[1].startswith(
-                            DataPipeline.PIPELINE_TYPE) and len(
-                            x.name.split('.')) == 2]
+                        x.name.startswith(DataPipeline.PIPELINE_TYPE)]
 
         # now filter to the datasource name through executions
         pipelines_names = []
         for c in run_contexts:
             es = self.store.get_executions_by_context(c.id)
             for e in es:
-                if 'name' in e.properties and e.properties[
+                if 'name' in e.custom_properties and e.custom_properties[
                     'name'].string_value == datasource_name:
-                    pipelines_names.append(c.name.split('.')[1])
+                    pipelines_names.append(c.name)
         return pipelines_names
 
     def get_pipeline_status(self, pipeline) -> Text:
@@ -154,12 +161,16 @@ class ZenMLMetadataStore:
 
         Returns: dict of type { component_name : component_status }
         """
+        result = {}
         pipeline_executions = self.get_pipeline_executions(pipeline)
-        return {
-            e.properties['component_id'].string_value: e.properties[
-                'state'].string_value for e in
-            pipeline_executions
-        }
+        for e in pipeline_executions:
+            contexts = self.store.get_contexts_by_execution(e.id)
+            node_contexts = [c for c in contexts if c.type_id == 3]
+            if node_contexts:
+                component_name = node_contexts[0].name.split('.')[-1]
+                result[component_name] = STATE_MAPPING[e.last_known_state]
+
+        return result
 
     def get_artifacts_by_component(self, pipeline, component_name: Text):
         """
@@ -167,34 +178,30 @@ class ZenMLMetadataStore:
             pipeline (BasePipeline): a ZenML pipeline object
             component_name:
         """
-        # First , you get the execution associated with the component
-        e = self.get_component_execution(pipeline, component_name)
+        # First get the context of the component and its artifacts
+        component_context = [c for c in self.store.get_contexts_by_type(
+            self.NODE_TYPE_NAME) if c.name.endswith(component_name)][0]
+        component_artifacts = self.store.get_artifacts_by_context(
+            component_context.id)
 
-        if e is None:
-            raise DoesNotExistException(
-                name=component_name,
-                reason=f'The pipeline {pipeline.name} does not have the '
-                       f'associated {component_name} Step.')
+        # Second, get the context of the particular pipeline and its artifacts
+        pipeline_context = self.store.get_context_by_type_and_name(
+            self.RUN_TYPE_NAME, pipeline.pipeline_name)
+        pipeline_artifacts = self.store.get_artifacts_by_context(
+            pipeline_context.id)
 
-        # Second, you will get artifacts
-        return self.get_artifacts_by_execution(e.id)
-
-    def get_component_execution(self, pipeline, component_name: Text):
-        pipeline_executions = self.get_pipeline_executions(pipeline)
-        for e in pipeline_executions:
-            # TODO: [LOW] Create a more refined way to find components.
-            if component_name == e.properties['component_id'].string_value:
-                return e
+        # Figure out the matching ids
+        return [a for a in component_artifacts
+                if a.id in [p.id for p in pipeline_artifacts]]
 
     def get_pipeline_context(self, pipeline):
         # We rebuild context for ml metadata here.
-        prefix = pipeline.artifact_store.unique_id
-        run_id = f'{prefix}.{pipeline.pipeline_name}'
-        logger.debug(f'Looking for run_id {run_id} in metadata store: '
-                     f'{self.to_config()}')
+        logger.debug(
+            f'Looking for run_id {pipeline.pipeline_name} in metadata store: '
+            f'{self.to_config()}')
         run_context = self.store.get_context_by_type_and_name(
-            type_name=self.RUN_TYPE_PROPERTY_NAME,
-            context_name=run_id
+            type_name=self.RUN_TYPE_NAME,
+            context_name=pipeline.pipeline_name
         )
         if run_context is None:
             raise DoesNotExistException(
@@ -203,24 +210,3 @@ class ZenMLMetadataStore:
                        f'because it has not been run yet. Please run the '
                        f'pipeline before trying to fetch artifacts.')
         return run_context
-
-    def get_artifacts_by_execution(self, execution_id):
-        # First get all the events for this execution
-        """
-        Args:
-            execution_id:
-        """
-        events = self.store.get_events_by_execution_ids([execution_id])
-
-        artifact_ids = []
-        for e in events:
-            # MAJOR Assumptions: 4 means its output channel
-            if e.type == 4:
-                artifact_ids.append(e.artifact_id)
-                break
-
-        if not artifact_ids:
-            raise AssertionError("This execution has no output artifact.")
-
-        # Get artifacts
-        return self.store.get_artifacts_by_id(artifact_ids)

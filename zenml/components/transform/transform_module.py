@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import json
 
 from zenml.standards.standard_keys import StepKeys
 from zenml.utils.source_utils import load_source_path_class
@@ -18,5 +19,5 @@ from zenml.utils.source_utils import load_source_path_class
 
 def preprocessing_fn(inputs, custom_config):
     c = load_source_path_class(custom_config[StepKeys.SOURCE])
-    args = custom_config[StepKeys.ARGS]
+    args = json.loads(custom_config[StepKeys.ARGS])
     return c(**args).preprocessing_fn(inputs)

@@ -15,19 +15,19 @@
 from typing import Dict, Text, Any, List
 from typing import Optional
 
-from tfx.components.common_nodes.importer_node import ImporterNode
 from tfx.components.pusher.component import Pusher
+from tfx.dsl.components.common.importer import Importer
 from tfx.types import standard_artifacts
 
 from zenml.backends.orchestrator import OrchestratorBaseBackend
 from zenml.datasources import BaseDatasource
+from zenml.enums import GDPComponent
 from zenml.metadata import ZenMLMetadataStore
 from zenml.pipelines import BasePipeline
 from zenml.repo import ArtifactStore
 from zenml.standards import standard_keys as keys
 from zenml.steps import BaseStep
 from zenml.steps.deployer import BaseDeployerStep
-from zenml.enums import GDPComponent
 
 
 class DeploymentPipeline(BasePipeline):
@@ -100,7 +100,7 @@ class DeploymentPipeline(BasePipeline):
         component_list = []
 
         # Load from model_uri
-        model = ImporterNode(
+        model = Importer(
             instance_name=GDPComponent.Trainer.name,
             source_uri=self.model_uri,
             artifact_type=standard_artifacts.Model)

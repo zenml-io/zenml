@@ -36,7 +36,7 @@ from zenml.utils.post_training.post_training_utils import \
     view_schema, get_feature_spec_from_schema, \
     convert_raw_dataset_to_pandas, view_statistics
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
-
+import json
 logger = get_logger(__name__)
 
 
@@ -115,7 +115,7 @@ class BaseDatasource:
         self.name = name
         self._immutable = False
         self._source = source_utils.resolve_class(self.__class__)
-        self._source_args = kwargs
+        self._source_args = json.dumps(kwargs)
 
     def __str__(self):
         return to_pretty_string(self.to_config())
@@ -182,7 +182,7 @@ class BaseDatasource:
         datasource_name = config[keys.PipelineKeys.DATASOURCE][
             keys.DatasourceKeys.NAME]
         _id = config[keys.PipelineKeys.DATASOURCE][keys.DatasourceKeys.ID]
-        args = config[keys.PipelineKeys.DATASOURCE][keys.DatasourceKeys.ARGS]
+        args = json.loads(config[keys.PipelineKeys.DATASOURCE][keys.DatasourceKeys.ARGS])
 
         # start with artifact store
         artifact_store = ArtifactStore(config[keys.PipelineKeys.DATASOURCE][
@@ -272,7 +272,7 @@ class BaseDatasource:
         # Take any pipeline and get the datagen
         data_uri = os.path.join(pipeline.get_artifacts_uri_by_component(
             GDPComponent.DataGen.name
-        )[0], 'examples')
+        )[0], 'Split-examples')
         data_files = path_utils.list_dir(data_uri)
         return data_files
 
