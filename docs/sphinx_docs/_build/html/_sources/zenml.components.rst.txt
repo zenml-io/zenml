@@ -16,7 +16,6 @@ Subpackages
    zenml.components.tokenizer
    zenml.components.trainer
    zenml.components.transform
-   zenml.components.transform_simple
 
 Module contents
 ---------------
