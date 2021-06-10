@@ -31,7 +31,6 @@ def to_camel_case(s):
 class TFMAEvaluator(BaseEvaluatorStep):
     """
     TFMA Evaluator step designed for the TF models in ZenML
-
     It features a specific build_config method which uses the zenml_eval
     signature of the model and produces a flexible tfma.EvalConfig, which can
     work with a wide range of Tensorflow models and TFMA
@@ -42,12 +41,10 @@ class TFMAEvaluator(BaseEvaluatorStep):
     def __init__(self,
                  metrics: Dict[Text, List[Text]],
                  slices: List[List[Text]] = None,
-                 thresholds: Dict[Text, Dict] = None,
                  output_mapping: Dict[Text, Text] = None,
                  **kwargs):
         """
         Init for the TFMA evaluator
-
         :param metrics: a dictionary, which specifies a list metrics for each
         label
         :param slices: a list of lists, each element in the inner list include
@@ -55,19 +52,16 @@ class TFMAEvaluator(BaseEvaluatorStep):
         :param output_mapping: a mapping from label names to output names.
         This is especially useful, when it comes to multi-output models or
         models with unknown output names.
-        :param thresholds: dict of thresholds defined per metric
         :param splits: the list of splits to apply the evaluation on
         """
 
         super(TFMAEvaluator, self).__init__(slices=slices,
                                             metrics=metrics,
-                                            thresholds=thresholds,
                                             output_mapping=output_mapping,
                                             **kwargs)
 
         self.metrics = metrics
         self.slices = slices or list()
-        self.thresholds = thresholds or dict()
 
         if output_mapping is None:
             if len(self.metrics.keys()) == 1:
@@ -94,36 +88,15 @@ class TFMAEvaluator(BaseEvaluatorStep):
 
         # METRIC SPEC
         baseline = [tfma.MetricConfig(class_name='ExampleCount')]
-        for key in self.metrics:
-            if key in self.thresholds:
-                threshold_dict = self.thresholds[key]
-                if 'lower' in threshold_dict:
-                    bound = tfma.GenericValueThreshold(
-                        lower_bound={'value': threshold_dict['lower']})
-                elif 'upper' in threshold_dict:
-                    bound = tfma.GenericValueThreshold(
-                        upper_bound={'value': threshold_dict['upper']})
-                elif 'lower' in threshold_dict and 'upper' in threshold_dict:
-                    bound = tfma.GenericValueThreshold(
-                        upper_bound={'value': threshold_dict['upper']},
-                        lower_bound={'value': threshold_dict['lower']})
-                else:
-                    # There is no threshold defined
-                    metrics_config = tfma.MetricConfig(
-                        class_name=to_camel_case(key))
-                    baseline.append(metrics_config)
-                    break
+        metrics_specs = []
+        for i, key in enumerate(metric_labels):
+            metrics = baseline.copy()
+            metrics.extend([tfma.MetricConfig(class_name=to_camel_case(m))
+                            for m in self.metrics[key]])
 
-                threshold = tfma.MetricThreshold(value_threshold=bound)
-                metrics_config = tfma.MetricConfig(
-                    class_name=to_camel_case(key),
-                    thresholds={to_camel_case(key): threshold}
-                )
-                baseline.append(metrics_config)
-
-        metrics_specs = [
-            tfma.MetricsSpec(metrics=baseline)
-        ]
+            metrics_specs.append(tfma.MetricsSpec(
+                output_names=[key],
+                metrics=metrics))
 
         return tfma.EvalConfig(
             model_specs=model_specs,

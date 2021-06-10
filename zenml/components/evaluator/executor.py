@@ -20,6 +20,7 @@ from zenml.components.evaluator import constants
 from zenml.logger import get_logger
 from zenml.standards.standard_keys import StepKeys
 from zenml.steps.evaluator.base_evaluator import BaseEvaluatorStep
+from zenml.steps.evaluator.agnostic_evaluator import AgnosticEvaluator
 from zenml.steps.trainer.utils import TEST_SPLITS
 from zenml.utils import path_utils as zenml_path_utils
 from zenml.utils import source_utils
@@ -86,7 +87,7 @@ class Executor(base_executor.BaseExecutor):
             tfma.verify_eval_config(eval_config)
 
             # Resolve the model
-            if constants.MODEL in input_dict:
+            if not isinstance(evaluator_step, AgnosticEvaluator):
                 model_artifact = input_dict[constants.MODEL]
                 model_uri = artifact_utils.get_single_uri(model_artifact)
                 model_path = path_utils.serving_model_path(model_uri)
@@ -201,14 +202,14 @@ class Executor(base_executor.BaseExecutor):
                      tensor_adapter_config=tensor_adapter_config))
             logger.info('Evaluation complete. Results written to %s.',
                         output_uri)
-        #
-        # run_validation = bool(
-        #     tfma.metrics.metric_thresholds_from_metrics_specs(
-        #         eval_config.metrics_specs))
-        #
-        # if not run_validation:
-        #     logger.info('No threshold configured, will not validate model.')
-        #     return
+
+        run_validation = bool(
+            tfma.metrics.metric_thresholds_from_metrics_specs(
+                eval_config.metrics_specs))
+
+        if not run_validation:
+            logger.info('No threshold configured, will not validate model.')
+            return
 
         # Set up blessing artifact
         blessing = artifact_utils.get_single_instance(

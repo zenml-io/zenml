@@ -104,18 +104,21 @@ class AgnosticEvaluator(BaseEvaluatorStep):
                         lower_bound={'value': threshold_dict['lower']})
                 else:
                     # There is no threshold defined
-                    metrics_config = tfma.MetricConfig(
-                        class_name=to_camel_case(key))
-                    baseline.append(metrics_config)
-                    break
+                    raise AssertionError(
+                        f'Key {key} is in thresholds but does not define an '
+                        f'`upper` or `lower` (or both) key for it.')
 
                 threshold = tfma.MetricThreshold(value_threshold=bound)
                 metrics_config = tfma.MetricConfig(
                     class_name=to_camel_case(key),
-                    thresholds={to_camel_case(key): threshold}
+                    threshold=threshold
                 )
                 baseline.append(metrics_config)
-
+            else:
+                # There is no threshold defined
+                metrics_config = tfma.MetricConfig(
+                    class_name=to_camel_case(key))
+                baseline.append(metrics_config)
         metrics_specs = [
             tfma.MetricsSpec(metrics=baseline)
         ]
