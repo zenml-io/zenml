@@ -85,6 +85,12 @@ class TrainingPipeline(BasePipeline):
             logger.info(
                 f'Datasource {self.datasource.name} has no commits. Creating '
                 f'the first one..')
+            # Have to use the same metadata store and artifact store
+            logger.info(
+                'Setting metadata store and artifact store of datasource to '
+                'conform to the ones defined in this pipeline.')
+            self.datasource.metadata_store = self.metadata_store
+            self.datasource.artifact_store = self.artifact_store
             self.datasource_commit_id = self.datasource.commit()
 
         data_pipeline = self.datasource.get_data_pipeline_from_commit(
@@ -389,7 +395,8 @@ class TrainingPipeline(BasePipeline):
 
             # TODO: only trainer hparams are handled at the moment
             if e_cmpt_name == GDPComponent.Trainer.name:
-                args = json.loads(e.custom_properties['custom_config'].string_value)
+                args = json.loads(
+                    e.custom_properties['custom_config'].string_value)
 
                 fn = args[keys.StepKeys.SOURCE]
                 params = json.loads(args[keys.StepKeys.ARGS])

@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Base Class for all ZenML datasources"""
 
+import json
 import os
 from abc import abstractmethod
 from typing import Text, Dict, Optional, Callable
@@ -36,7 +37,7 @@ from zenml.utils.post_training.post_training_utils import \
     view_schema, get_feature_spec_from_schema, \
     convert_raw_dataset_to_pandas, view_statistics
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
-import json
+
 logger = get_logger(__name__)
 
 
@@ -182,7 +183,8 @@ class BaseDatasource:
         datasource_name = config[keys.PipelineKeys.DATASOURCE][
             keys.DatasourceKeys.NAME]
         _id = config[keys.PipelineKeys.DATASOURCE][keys.DatasourceKeys.ID]
-        args = json.loads(config[keys.PipelineKeys.DATASOURCE][keys.DatasourceKeys.ARGS])
+        args = json.loads(
+            config[keys.PipelineKeys.DATASOURCE][keys.DatasourceKeys.ARGS])
 
         # start with artifact store
         artifact_store = ArtifactStore(config[keys.PipelineKeys.DATASOURCE][
