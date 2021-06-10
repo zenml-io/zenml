@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import List, Text
+from typing import List, Text, Dict
 
 import tensorflow_model_analysis as tfma
 from google.protobuf.wrappers_pb2 import BoolValue
@@ -47,6 +47,7 @@ class AgnosticEvaluator(BaseEvaluatorStep):
                  prediction_key: Text,
                  slices: List[List[Text]] = None,
                  metrics: List[Text] = None,
+                 thresholds: Dict[Text, Dict] = None,
                  **kwargs):
         """
         Init for the AgnosticEvaluator
@@ -58,16 +59,19 @@ class AgnosticEvaluator(BaseEvaluatorStep):
         :param slices: a list of lists, each element in the inner list include
         a set of features which will be used for slicing on the results
         :param metrics: list of metrics to be computed
+        :param thresholds: dict of thresholds defined per metric
         :param splits: the list of splits to apply the evaluation on
         """
         super(AgnosticEvaluator, self).__init__(label_key=label_key,
                                                 prediction_key=prediction_key,
                                                 slices=slices,
+                                                thresholds=thresholds,
                                                 metrics=metrics,
                                                 **kwargs)
 
         self.slices = slices or list()
         self.metrics = metrics or list()
+        self.thresholds = thresholds or dict()
 
         self.prediction_key = prediction_key
         self.label_key = label_key
@@ -86,9 +90,35 @@ class AgnosticEvaluator(BaseEvaluatorStep):
         # METRIC SPEC
         baseline = [tfma.MetricConfig(class_name='ExampleCount')]
         for key in self.metrics:
-            baseline.append(tfma.MetricConfig(class_name=to_camel_case(key)))
+            if key in self.thresholds:
+                threshold_dict = self.thresholds[key]
+                if 'lower' in threshold_dict:
+                    bound = tfma.GenericValueThreshold(
+                        lower_bound={'value': threshold_dict['lower']})
+                elif 'upper' in threshold_dict:
+                    bound = tfma.GenericValueThreshold(
+                        upper_bound={'value': threshold_dict['upper']})
+                elif 'lower' in threshold_dict and 'upper' in threshold_dict:
+                    bound = tfma.GenericValueThreshold(
+                        upper_bound={'value': threshold_dict['upper']},
+                        lower_bound={'value': threshold_dict['lower']})
+                else:
+                    # There is no threshold defined
+                    metrics_config = tfma.MetricConfig(
+                        class_name=to_camel_case(key))
+                    baseline.append(metrics_config)
+                    break
 
-        metrics_specs = [tfma.MetricsSpec(metrics=baseline)]
+                threshold = tfma.MetricThreshold(value_threshold=bound)
+                metrics_config = tfma.MetricConfig(
+                    class_name=to_camel_case(key),
+                    thresholds={to_camel_case(key): threshold}
+                )
+                baseline.append(metrics_config)
+
+        metrics_specs = [
+            tfma.MetricsSpec(metrics=baseline)
+        ]
 
         return tfma.EvalConfig(
             model_specs=model_specs,
