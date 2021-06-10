@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base Class for all ZenML datasources"""
-
+import json
 import os
 from abc import abstractmethod
 from typing import Text, Dict, Optional, Callable
@@ -36,7 +36,7 @@ from zenml.utils.post_training.post_training_utils import \
     view_schema, get_feature_spec_from_schema, \
     convert_raw_dataset_to_pandas, view_statistics
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
-import json
+
 logger = get_logger(__name__)
 
 
@@ -182,7 +182,8 @@ class BaseDatasource:
         datasource_name = config[keys.PipelineKeys.DATASOURCE][
             keys.DatasourceKeys.NAME]
         _id = config[keys.PipelineKeys.DATASOURCE][keys.DatasourceKeys.ID]
-        args = json.loads(config[keys.PipelineKeys.DATASOURCE][keys.DatasourceKeys.ARGS])
+        args = json.loads(
+            config[keys.PipelineKeys.DATASOURCE][keys.DatasourceKeys.ARGS])
 
         # start with artifact store
         artifact_store = ArtifactStore(config[keys.PipelineKeys.DATASOURCE][
@@ -291,6 +292,55 @@ class BaseDatasource:
 
         dataset = tf.data.TFRecordDataset(data_files, compression_type='GZIP')
         return convert_raw_dataset_to_pandas(dataset, spec, sample_size)
+
+    # TODO [High]: Completely hacked code to get this to work
+    def get_artifact_uri_by_component_and_commit_id(
+            self, commit_id: Text, component_name: Text):
+        """
+        Gets the artifact URI by component and commit id.
+
+        Args:
+            commit_id:
+            component_name:
+        """
+        from zenml.pipelines.data_pipeline import DataPipeline
+
+        store = self.metadata_store.store
+        run_contexts = store.get_contexts_by_type(
+            ZenMLMetadataStore.RUN_TYPE_NAME)
+
+        run_contexts = [x for x in run_contexts if
+                        x.name.startswith(DataPipeline.PIPELINE_TYPE)]
+
+        # now filter to the datasource name through executions
+        commit_context = None
+        for c in run_contexts:
+            es = store.get_executions_by_context(c.id)
+            for e in es:
+                if 'name' in e.custom_properties and e.custom_properties[
+                    'name'].string_value == self.name:
+                    if commit_id in c.name:
+                        commit_context = c
+
+        if commit_context is None:
+            raise AssertionError(
+                f'Commit {commit_id} not found in metadata store for '
+                f'datasource: {self.name}')
+
+        # First get the context of the component and its artifacts
+        component_context = [c for c in store.get_contexts_by_type(
+            ZenMLMetadataStore.NODE_TYPE_NAME) if
+                             c.name.endswith(component_name)][0]
+        component_artifacts = store.get_artifacts_by_context(
+            component_context.id)
+
+        # Second, get the context of the particular pipeline and its artifacts
+        pipeline_artifacts = store.get_artifacts_by_context(
+            commit_context.id)
+
+        # Figure out the matching ids and get URIs
+        return [a.uri for a in component_artifacts
+                if a.id in [p.id for p in pipeline_artifacts]]
 
     def view_schema(self, commit_id: Text = None):
         """

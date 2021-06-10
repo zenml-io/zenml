@@ -15,11 +15,13 @@
 
 import os
 from uuid import uuid4
+
 import click
+
 from zenml import constants
+from zenml.logger import get_logger
 from zenml.utils import path_utils
 from zenml.utils import yaml_utils
-from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -107,7 +109,8 @@ class GlobalConfig(dict):
         try:
             tbu = yaml_utils.read_json(self.path)
         except Exception as e:
-            logger.error("Unable to load YAML file due to error:\n" + str(e) + "\nUpdating it as empty value.")
+            logger.error("Unable to load YAML file due to error:\n" + str(
+                e) + "\nUpdating it as empty value.")
             tbu = {}
         self.update(tbu)
 

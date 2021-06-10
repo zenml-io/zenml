@@ -103,17 +103,37 @@ class NLPPipeline(BasePipeline):
             logger.info(
                 f'Datasource {self.datasource.name} has no commits. Creating '
                 f'the first one..')
+            # Have to use the same metadata store and artifact store
+            logger.info(
+                'Setting metadata store and artifact store of datasource to '
+                'conform to the ones defined in this pipeline.')
+            self.datasource.metadata_store = self.metadata_store
+            self.datasource.artifact_store = self.artifact_store
             self.datasource_commit_id = self.datasource.commit()
 
-        data_pipeline = self.datasource.get_data_pipeline_from_commit(
-            self.datasource_commit_id)
-
         data = Importer(
-            instance_name=GDPComponent.DataGen.name,
-            source_uri=data_pipeline.get_artifacts_uri_by_component(
-                GDPComponent.DataGen.name)[0],
-            artifact_type=standard_artifacts.Examples)
-        component_list.extend([data])
+            source_uri=
+            self.datasource.get_artifact_uri_by_component_and_commit_id(
+                self.datasource_commit_id, GDPComponent.DataGen.name)[0],
+            artifact_type=standard_artifacts.Examples).with_id(
+            GDPComponent.DataGen.name)
+
+        schema_data = Importer(
+            source_uri=
+            self.datasource.get_artifact_uri_by_component_and_commit_id(
+                self.datasource_commit_id, GDPComponent.DataSchema.name)[0],
+            artifact_type=standard_artifacts.Schema).with_id(
+            GDPComponent.DataSchema.name)
+
+        statistics_data = Importer(
+            source_uri=
+            self.datasource.get_artifact_uri_by_component_and_commit_id(
+                self.datasource_commit_id, GDPComponent.DataStatistics.name)[
+                0],
+            artifact_type=standard_artifacts.ExampleStatistics).with_id(
+            GDPComponent.DataStatistics.name)
+
+        component_list.extend([data, schema_data, statistics_data])
 
         #############
         # TOKENIZER #
