@@ -17,9 +17,9 @@ from typing import Dict, Text, Any, List
 from typing import Optional
 
 import tensorflow as tf
-from tfx.dsl.components.common.importer import Importer
 from tfx.components.schema_gen.component import SchemaGen
 from tfx.components.statistics_gen.component import StatisticsGen
+from tfx.dsl.components.common.importer import Importer
 from tfx.types import standard_artifacts
 
 from zenml.backends.orchestrator import OrchestratorBaseBackend
@@ -118,16 +118,21 @@ class BatchInferencePipeline(BasePipeline):
             logger.info(
                 f'Datasource {self.datasource.name} has no commits. Creating '
                 f'the first one..')
+            # Have to use the same metadata store and artifact store
+            logger.info(
+                'Setting metadata store and artifact store of datasource to '
+                'conform to the ones defined in this pipeline.')
+            self.datasource.metadata_store = self.metadata_store
+            self.datasource.artifact_store = self.artifact_store
             self.datasource_commit_id = self.datasource.commit()
 
-        data_pipeline = self.datasource.get_data_pipeline_from_commit(
-            self.datasource_commit_id)
-
         data = Importer(
-            instance_name=GDPComponent.DataGen.name,
-            source_uri=data_pipeline.get_artifacts_uri_by_component(
-                GDPComponent.DataGen.name)[0],
-            artifact_type=standard_artifacts.Examples)
+            source_uri=
+            self.datasource.get_artifact_uri_by_component_and_commit_id(
+                self.datasource_commit_id, GDPComponent.DataGen.name)[0],
+            artifact_type=standard_artifacts.Examples).with_id(
+            GDPComponent.DataGen.name)
+
         component_list.extend([data])
 
         # Handle timeseries

@@ -93,24 +93,25 @@ class TrainingPipeline(BasePipeline):
             self.datasource.artifact_store = self.artifact_store
             self.datasource_commit_id = self.datasource.commit()
 
-        data_pipeline = self.datasource.get_data_pipeline_from_commit(
-            self.datasource_commit_id)
-
         data = Importer(
-            source_uri=data_pipeline.get_artifacts_uri_by_component(
-                GDPComponent.DataGen.name)[0],
+            source_uri=
+            self.datasource.get_artifact_uri_by_component_and_commit_id(
+                self.datasource_commit_id, GDPComponent.DataGen.name)[0],
             artifact_type=standard_artifacts.Examples).with_id(
             GDPComponent.DataGen.name)
 
         schema_data = Importer(
-            source_uri=data_pipeline.get_artifacts_uri_by_component(
-                GDPComponent.DataSchema.name)[0],
+            source_uri=
+            self.datasource.get_artifact_uri_by_component_and_commit_id(
+                self.datasource_commit_id, GDPComponent.DataSchema.name)[0],
             artifact_type=standard_artifacts.Schema).with_id(
             GDPComponent.DataSchema.name)
 
         statistics_data = Importer(
-            source_uri=data_pipeline.get_artifacts_uri_by_component(
-                GDPComponent.DataStatistics.name)[0],
+            source_uri=
+            self.datasource.get_artifact_uri_by_component_and_commit_id(
+                self.datasource_commit_id, GDPComponent.DataStatistics.name)[
+                0],
             artifact_type=standard_artifacts.ExampleStatistics).with_id(
             GDPComponent.DataStatistics.name)
 
