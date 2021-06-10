@@ -8,7 +8,7 @@ from tfx.types.component_spec import ChannelParameter
 from tfx.types.component_spec import ComponentSpec
 from tfx.types.component_spec import ExecutionParameter
 from tfx.types.standard_artifacts import Examples, Model, Schema, \
-    ModelEvaluation
+    ModelEvaluation, ModelBlessing
 
 from zenml.components.evaluator import constants
 from zenml.components.evaluator import executor
@@ -18,11 +18,18 @@ class ZenMLEvaluatorSpec(ComponentSpec):
     PARAMETERS = {constants.SOURCE: ExecutionParameter(type=Text),
                   constants.ARGS: ExecutionParameter(Text)}
 
-    INPUTS = {constants.EXAMPLES: ChannelParameter(type=Examples),
-              constants.MODEL: ChannelParameter(type=Model, optional=True),
-              constants.SCHEMA: ChannelParameter(type=Schema, optional=True)}
+    INPUTS = {
+        constants.EXAMPLES: ChannelParameter(type=Examples),
+        constants.MODEL: ChannelParameter(type=Model, optional=True),
+        constants.BASELINE_MODEL: ChannelParameter(type=Model, optional=True),
+        constants.SCHEMA: ChannelParameter(type=Schema, optional=True)
+    }
 
-    OUTPUTS = {constants.EVALUATION: ChannelParameter(type=ModelEvaluation)}
+    OUTPUTS = {
+        constants.EVALUATION: ChannelParameter(type=ModelEvaluation),
+        constants.BLESSING: ChannelParameter(type=ModelBlessing,
+                                             optional=True),
+    }
 
 
 class Evaluator(base_component.BaseComponent):
@@ -41,17 +48,21 @@ class Evaluator(base_component.BaseComponent):
             source_args: Dict[Text, Any],
             examples: types.Channel = None,
             model: types.Channel = None,
+            baseline_model: Optional[types.Channel] = None,
+            blessing: Optional[types.Channel] = None,
             output: Optional[types.Channel] = None,
             schema: Optional[types.Channel] = None):
-
         # Create the output artifact if not provided
         evaluation = output or types.Channel(type=ModelEvaluation)
+        blessing = blessing or types.Channel(type=ModelBlessing)
 
         # Create the spec
         spec = ZenMLEvaluatorSpec(source=source,
                                   args=source_args,
                                   examples=examples,
                                   model=model,
+                                  baseline_model=baseline_model,
+                                  blessing=blessing,
                                   schema=schema,
                                   evaluation=evaluation)
         super(Evaluator, self).__init__(spec=spec)

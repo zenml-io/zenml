@@ -58,7 +58,10 @@ class Application(param.Parameterized):
             # necessary to update the status of each run
             if p.get_status() == PipelineStatusTypes.Succeeded.name:
                 eval_path = p.get_artifacts_uri_by_component(
-                    GDPComponent.Evaluator.name)[0]
+                    GDPComponent.Evaluator.name)
+                # TODO [MEDIUM]: Need a better way to find how to find this
+                #  path
+                eval_path = [x for x in eval_path if '/evaluation/' in x][0]
 
                 evaluation = tfma.load_eval_result(eval_path)
                 for s, m in evaluation.slicing_metrics:

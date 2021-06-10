@@ -31,7 +31,6 @@ def to_camel_case(s):
 class TFMAEvaluator(BaseEvaluatorStep):
     """
     TFMA Evaluator step designed for the TF models in ZenML
-
     It features a specific build_config method which uses the zenml_eval
     signature of the model and produces a flexible tfma.EvalConfig, which can
     work with a wide range of Tensorflow models and TFMA
@@ -46,7 +45,6 @@ class TFMAEvaluator(BaseEvaluatorStep):
                  **kwargs):
         """
         Init for the TFMA evaluator
-
         :param metrics: a dictionary, which specifies a list metrics for each
         label
         :param slices: a list of lists, each element in the inner list include

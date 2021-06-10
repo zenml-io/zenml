@@ -1,4 +1,5 @@
 import json
+import os
 from typing import Any, Dict, List, Text, Callable, Optional
 
 import apache_beam as beam
@@ -6,6 +7,7 @@ import tensorflow_model_analysis as tfma
 from absl import logging
 from tensorflow_model_analysis import constants as tfma_constants
 from tfx import types
+from tfx.components.evaluator import constants as tfx_constants
 from tfx.components.util import tfxio_utils
 from tfx.dsl.components.base import base_executor
 from tfx.types import artifact_utils
@@ -17,6 +19,7 @@ from tfx_bsl.tfxio import tensor_adapter
 from zenml.components.evaluator import constants
 from zenml.logger import get_logger
 from zenml.standards.standard_keys import StepKeys
+from zenml.steps.evaluator.agnostic_evaluator import AgnosticEvaluator
 from zenml.steps.evaluator.base_evaluator import BaseEvaluatorStep
 from zenml.steps.trainer.utils import TEST_SPLITS
 from zenml.utils import path_utils as zenml_path_utils
@@ -84,13 +87,14 @@ class Executor(base_executor.BaseExecutor):
             tfma.verify_eval_config(eval_config)
 
             # Resolve the model
-            if constants.MODEL in input_dict:
+            if not isinstance(evaluator_step, AgnosticEvaluator):
                 model_artifact = input_dict[constants.MODEL]
                 model_uri = artifact_utils.get_single_uri(model_artifact)
                 model_path = path_utils.serving_model_path(model_uri)
 
                 model_fn = try_get_fn(evaluator_step.CUSTOM_MODULE,
-                                      'custom_eval_shared_model') or tfma.default_eval_shared_model
+                                      'custom_eval_shared_model') or \
+                           tfma.default_eval_shared_model
 
                 eval_shared_model = model_fn(
                     model_name='',  # TODO: Fix with model names
@@ -108,13 +112,15 @@ class Executor(base_executor.BaseExecutor):
                 examples_list = []
                 tensor_adapter_config = None
                 if tfma.is_batched_input(eval_shared_model, eval_config):
-                    tfxio_factory = tfxio_utils.get_tfxio_factory_from_artifact(
-                        examples=[
-                            artifact_utils.get_single_instance(
-                                examples_artifact)],
-                        telemetry_descriptors=_TELEMETRY_DESCRIPTORS,
-                        schema=schema,
-                        raw_record_column_name=tfma_constants.ARROW_INPUT_COLUMN)
+                    tfxio_factory = \
+                        tfxio_utils.get_tfxio_factory_from_artifact(
+                            examples=[
+                                artifact_utils.get_single_instance(
+                                    examples_artifact)],
+                            telemetry_descriptors=_TELEMETRY_DESCRIPTORS,
+                            schema=schema,
+                            raw_record_column_name=tfma_constants
+                                .ARROW_INPUT_COLUMN)
 
                     for split in splits:
                         split_uri = artifact_utils.get_split_uri(
@@ -143,12 +149,14 @@ class Executor(base_executor.BaseExecutor):
                         file_pattern = io_utils.all_files_pattern(split_uri)
                         tfxio = tfxio_factory(file_pattern)
                         data = (pipeline
-                                | 'ReadFromTFRecordToArrow[%s]' % split >> tfxio.BeamSource())
+                                | 'ReadFromTFRecordToArrow[%s]' % split >>
+                                tfxio.BeamSource())
                         examples_list.append(data)
                     if schema is not None:
-                        tensor_adapter_config = tensor_adapter.TensorAdapterConfig(
-                            arrow_schema=tfxio.ArrowSchema(),
-                            tensor_representations=tfxio.TensorRepresentations())
+                        tensor_adapter_config = \
+                            tensor_adapter.TensorAdapterConfig(
+                                arrow_schema=tfxio.ArrowSchema(),
+                                tensor_representations=tfxio.TensorRepresentations())
                 else:
                     for split in splits:
                         file_pattern = io_utils.all_files_pattern(
@@ -161,8 +169,9 @@ class Executor(base_executor.BaseExecutor):
                                 )
                         examples_list.append(data)
                 # Resolve custom extractors
-                custom_extractors = try_get_fn(evaluator_step.CUSTOM_MODULE or '',
-                                               'custom_extractors')
+                custom_extractors = try_get_fn(
+                    evaluator_step.CUSTOM_MODULE or '',
+                    'custom_extractors')
                 extractors = None
                 if custom_extractors:
                     extractors = custom_extractors(
@@ -171,8 +180,9 @@ class Executor(base_executor.BaseExecutor):
                         tensor_adapter_config=tensor_adapter_config)
 
                 # Resolve custom evaluators
-                custom_evaluators = try_get_fn(evaluator_step.CUSTOM_MODULE or '',
-                                               'custom_evaluators')
+                custom_evaluators = try_get_fn(
+                    evaluator_step.CUSTOM_MODULE or '',
+                    'custom_evaluators')
                 evaluators = None
                 if custom_evaluators:
                     evaluators = custom_evaluators(
@@ -182,12 +192,62 @@ class Executor(base_executor.BaseExecutor):
 
                 # Extract, evaluate and write
                 (examples_list | 'FlattenExamples' >> beam.Flatten()
-                 | 'ExtractEvaluateAndWriteResults' >> tfma.ExtractEvaluateAndWriteResults(
-                            eval_config=eval_config,
-                            eval_shared_model=eval_shared_model,
-                            output_path=output_uri,
-                            extractors=extractors,
-                            evaluators=evaluators,
-                            tensor_adapter_config=tensor_adapter_config))
-            logging.info('Evaluation complete. Results written to %s.',
-                         output_uri)
+                 | 'ExtractEvaluateAndWriteResults' >>
+                 tfma.ExtractEvaluateAndWriteResults(
+                     eval_config=eval_config,
+                     eval_shared_model=eval_shared_model,
+                     output_path=output_uri,
+                     extractors=extractors,
+                     evaluators=evaluators,
+                     tensor_adapter_config=tensor_adapter_config))
+            logger.info('Evaluation complete. Results written to %s.',
+                        output_uri)
+
+        run_validation = bool(
+            tfma.metrics.metric_thresholds_from_metrics_specs(
+                eval_config.metrics_specs))
+
+        if not run_validation:
+            logger.info('No threshold configured, will not validate model.')
+            return
+
+        # Set up blessing artifact
+        blessing = artifact_utils.get_single_instance(
+            output_dict[constants.BLESSING])
+        blessing.set_string_custom_property(
+            tfx_constants.ARTIFACT_PROPERTY_CURRENT_MODEL_URI_KEY,
+            artifact_utils.get_single_uri(input_dict[constants.MODEL]))
+        blessing.set_int_custom_property(
+            tfx_constants.ARTIFACT_PROPERTY_CURRENT_MODEL_ID_KEY,
+            input_dict[constants.MODEL][0].id)
+        if input_dict.get(constants.BASELINE_MODEL):
+            baseline_model = input_dict[constants.BASELINE_MODEL][0]
+            blessing.set_string_custom_property(
+                tfx_constants.ARTIFACT_PROPERTY_BASELINE_MODEL_URI_KEY,
+                baseline_model.uri)
+            blessing.set_int_custom_property(
+                tfx_constants.ARTIFACT_PROPERTY_BASELINE_MODEL_ID_KEY,
+                baseline_model.id)
+        if 'current_component_id' in exec_properties:
+            blessing.set_string_custom_property(
+                'component_id', exec_properties['current_component_id'])
+        # Check validation result and write BLESSED file accordingly.
+        logging.info('Checking validation results.')
+        validation_result = tfma.load_validation_result(output_uri)
+        if validation_result.validation_ok:
+            io_utils.write_string_file(
+                os.path.join(blessing.uri, tfx_constants.BLESSED_FILE_NAME),
+                '')
+            blessing.set_int_custom_property(
+                tfx_constants.ARTIFACT_PROPERTY_BLESSED_KEY,
+                tfx_constants.BLESSED_VALUE)
+        else:
+            io_utils.write_string_file(
+                os.path.join(blessing.uri,
+                             tfx_constants.NOT_BLESSED_FILE_NAME),
+                '')
+            blessing.set_int_custom_property(
+                tfx_constants.ARTIFACT_PROPERTY_BLESSED_KEY,
+                tfx_constants.NOT_BLESSED_VALUE)
+        logging.info('Blessing result %s written to %s.',
+                     validation_result.validation_ok, blessing.uri)

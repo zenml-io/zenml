@@ -236,6 +236,7 @@ class TrainingPipeline(BasePipeline):
                     source=evaluator_config[keys.StepKeys.SOURCE],
                     source_args=evaluator_config[keys.StepKeys.ARGS],
                     examples=trainer.outputs.test_results,
+                    model=trainer.outputs.model,
                 ).with_id(GDPComponent.Evaluator.name)
             elif eval_source == \
                     'zenml.steps.evaluator.tfma_evaluator.TFMAEvaluator':
