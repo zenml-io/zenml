@@ -19,8 +19,8 @@ from tfx_bsl.tfxio import tensor_adapter
 from zenml.components.evaluator import constants
 from zenml.logger import get_logger
 from zenml.standards.standard_keys import StepKeys
-from zenml.steps.evaluator.base_evaluator import BaseEvaluatorStep
 from zenml.steps.evaluator.agnostic_evaluator import AgnosticEvaluator
+from zenml.steps.evaluator.base_evaluator import BaseEvaluatorStep
 from zenml.steps.trainer.utils import TEST_SPLITS
 from zenml.utils import path_utils as zenml_path_utils
 from zenml.utils import source_utils

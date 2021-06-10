@@ -390,7 +390,8 @@ class TrainingPipeline(BasePipeline):
 
             # TODO: only trainer hparams are handled at the moment
             if e_cmpt_name == GDPComponent.Trainer.name:
-                args = json.loads(e.custom_properties['custom_config'].string_value)
+                args = json.loads(
+                    e.custom_properties['custom_config'].string_value)
 
                 fn = args[keys.StepKeys.SOURCE]
                 params = json.loads(args[keys.StepKeys.ARGS])
