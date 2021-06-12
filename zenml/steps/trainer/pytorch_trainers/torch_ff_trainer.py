@@ -113,7 +113,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
     def model_fn(self, train_dataset, eval_dataset):
         return BinaryClassifier()
 
-    def test_fn(self, model, dataset):
+    def test_fn(self, model, dataset, device):
         # Activate the evaluation mode
         model.eval()
 
@@ -128,7 +128,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
             batch.update(raw)
 
             # finally, add the output of the model
-            x_batch = torch.cat([v for v in x.values()], dim=-1)
+            x_batch = torch.cat([v.to(device) for v in x.values()], dim=-1)
             p = model(x_batch)
 
             if isinstance(p, torch.Tensor):
@@ -210,7 +210,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                 f'split mapping.'
             pattern = self.input_patterns[split]
             test_dataset = self.input_fn([pattern])
-            test_results = self.test_fn(model, test_dataset)
+            test_results = self.test_fn(model, test_dataset, device)
             utils.save_test_results(test_results, self.output_patterns[split])
 
         path_utils.create_dir_if_not_exists(self.serving_model_dir)
