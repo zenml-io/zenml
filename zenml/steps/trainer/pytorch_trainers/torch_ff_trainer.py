@@ -73,6 +73,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                  last_activation: str = 'sigmoid',
                  input_units: int = 8,
                  output_units: int = 1,
+                 device: torch.device = None,
                  **kwargs):
         self.batch_size = batch_size
         self.lr = lr
@@ -85,6 +86,17 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         self.last_activation = last_activation
         self.input_units = input_units
         self.output_units = output_units
+        
+        if isinstance(device, torch.device):
+            self.device = device
+        else:
+            if torch.cuda.is_available():
+                self.device = torch.device("cuda:0")
+                print(f"\n*****Using GPU: {torch.cuda.get_device_name(0)}*****\n")
+            else:
+                self.device = torch.device("cpu")
+                print(f"\n*****Using CPU*****\n")
+                
 
         super(FeedForwardTrainer, self).__init__(
             batch_size=self.batch_size,
@@ -113,7 +125,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
     def model_fn(self, train_dataset, eval_dataset):
         return BinaryClassifier()
 
-    def test_fn(self, model, dataset, device):
+    def test_fn(self, model, dataset):
         # Activate the evaluation mode
         model.eval()
 
@@ -128,7 +140,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
             batch.update(raw)
 
             # finally, add the output of the model
-            x_batch = torch.cat([v.to(device) for v in x.values()], dim=-1)
+            x_batch = torch.cat([v.to(self.device) for v in x.values()], dim=-1)
             p = model(x_batch)
 
             if isinstance(p, torch.Tensor):
@@ -156,10 +168,9 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                                self.split_mapping[utils.EVAL_SPLITS]]
         eval_dataset = self.input_fn(eval_split_patterns)
 
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model = self.model_fn(train_dataset, eval_dataset)
 
-        model.to(device)
+        model.to(self.device)
         criterion = nn.BCEWithLogitsLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.001)
 
@@ -177,8 +188,8 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                 step_count += 1
                 total_count += 1
 
-                x_batch = torch.cat([v.to(device) for v in x.values()], dim=-1)
-                y_batch = torch.cat([v.to(device) for v in y.values()], dim=-1)
+                x_batch = torch.cat([v.to(self.device) for v in x.values()], dim=-1)
+                y_batch = torch.cat([v.to(self.device) for v in y.values()], dim=-1)
                 optimizer.zero_grad()
 
                 y_pred = model(x_batch)
@@ -210,7 +221,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                 f'split mapping.'
             pattern = self.input_patterns[split]
             test_dataset = self.input_fn([pattern])
-            test_results = self.test_fn(model, test_dataset, device)
+            test_results = self.test_fn(model, test_dataset)
             utils.save_test_results(test_results, self.output_patterns[split])
 
         path_utils.create_dir_if_not_exists(self.serving_model_dir)
