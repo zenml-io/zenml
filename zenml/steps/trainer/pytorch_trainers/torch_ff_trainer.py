@@ -73,6 +73,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                  last_activation: str = 'sigmoid',
                  input_units: int = 8,
                  output_units: int = 1,
+                 device: str = None,
                  **kwargs):
         self.batch_size = batch_size
         self.lr = lr
@@ -85,6 +86,8 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
         self.last_activation = last_activation
         self.input_units = input_units
         self.output_units = output_units
+        self.device = torch_utils.assign_device(device)
+                
 
         super(FeedForwardTrainer, self).__init__(
             batch_size=self.batch_size,
@@ -98,6 +101,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
             last_activation=self.last_activation,
             input_units=self.input_units,
             output_units=self.output_units,
+            device = device,
             **kwargs)
 
     def input_fn(self,
@@ -128,7 +132,7 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
             batch.update(raw)
 
             # finally, add the output of the model
-            x_batch = torch.cat([v for v in x.values()], dim=-1)
+            x_batch = torch.cat([v.to(self.device) for v in x.values()], dim=-1)
             p = model(x_batch)
 
             if isinstance(p, torch.Tensor):
@@ -156,10 +160,9 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                                self.split_mapping[utils.EVAL_SPLITS]]
         eval_dataset = self.input_fn(eval_split_patterns)
 
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model = self.model_fn(train_dataset, eval_dataset)
 
-        model.to(device)
+        model.to(self.device)
         criterion = nn.BCEWithLogitsLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.001)
 
@@ -177,8 +180,8 @@ class FeedForwardTrainer(TorchBaseTrainerStep):
                 step_count += 1
                 total_count += 1
 
-                x_batch = torch.cat([v.to(device) for v in x.values()], dim=-1)
-                y_batch = torch.cat([v.to(device) for v in y.values()], dim=-1)
+                x_batch = torch.cat([v.to(self.device) for v in x.values()], dim=-1)
+                y_batch = torch.cat([v.to(self.device) for v in y.values()], dim=-1)
                 optimizer.zero_grad()
 
                 y_pred = model(x_batch)
