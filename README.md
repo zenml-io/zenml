@@ -33,6 +33,14 @@
 </div>
 
 
+## NOTICE July 1 2021
+First off, thank you everyone so much for the support ZenML has received since its release a few months ago. It has been 
+a crazy ride for the core development team. Now, we are taking the time to absorb all the feedback we have receieved 
+and are undergoing a **major rehaul of ZenML**. We will be releasing in the coming weeks a much slimmer, faster, and more production-ready 
+version of ZenML soon (hopefully in some weeks).
+
+If you are here as an existing user, or someone who is curious, please consider `watching` this repo: Updates will follow very soon. We promise! 
+In the meanwhile, feel free to read the rest of the README and get an idea where ZenML fits in the whole MLOps space.
 
 ## Why?
 _**Ichi Wa Zen, Zen Wa Ichi.**_
