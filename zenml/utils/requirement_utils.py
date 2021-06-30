@@ -5,29 +5,18 @@ import sys
 ########
 # BASE #
 ########
-BASE_REQUIREMENTS = ["absl-py>=0.10.0",
-                     "pip-check-reqs>=2.0.1,<3",
-                     "click>=7.0,<8",
-                     "setuptools==46.4.0",
-                     "nbformat>=5.0.4",
-                     "panel>=0.8.3",
-                     "plotly>=4.0.0",
-                     "tabulate>=0.8.7",
-                     "numpy>=1.19.2",
-                     "httplib2==0.17.0",
-                     "six==1.15.0",
-                     "tfx==0.30.0",
-                     "tensorflow-metadata==0.30.0",
-                     "tensorflow-datasets==4.3.0",
-                     "typing-extensions==3.7.4.2",
-                     "fire==0.3.1",
-                     "gitpython==3.1.11",
-                     "analytics-python==1.2.9",
+BASE_REQUIREMENTS = ["ml-pipelines-sdk==0.30.1",
+                     "pip-check-reqs==2.2.2",
+                     "click==8.0.1",
+                     "pyyaml==5.4.1",
+                     "python-dateutil==2.8.1",
+                     "gitpython==3.1.18",
+                     "analytics-python==1.3.1",
                      "distro==1.5.0",
-                     "tensorflow==2.4.1",
-                     "grpcio == 1.32.0",
-                     "dill == 0.3.1.1",
-                     "google-cloud-bigquery==1.28.0"]
+                     "nbformat==5.1.3",
+                     "panel==0.11.3",
+                     "pandas==1.1.5",
+                     "apache-beam==2.30.0"]
 
 #####################
 # EXTRAS: PROVIDERS #
@@ -59,7 +48,6 @@ POSTGRES_INTEGRATION = 'postgres'
 POSTGRES_REQUIREMENTS = ['beam-nuggets==0.17.0',
                          'pg8000==1.16.5',
                          'sqlalchemy>=1.3.22']
-
 
 #######################
 # NLP via HuggingFace #
