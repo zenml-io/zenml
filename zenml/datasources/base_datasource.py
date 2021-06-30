@@ -18,8 +18,6 @@ from abc import abstractmethod
 from typing import Text, Dict, Optional, Callable
 from uuid import uuid4
 
-import tensorflow as tf
-
 from zenml.enums import GDPComponent
 from zenml.exceptions import AlreadyExistsException
 from zenml.exceptions import EmptyDatasourceException
@@ -32,9 +30,9 @@ from zenml.utils import path_utils
 from zenml.utils import source_utils
 from zenml.utils.analytics_utils import CREATE_DATASOURCE
 from zenml.utils.analytics_utils import track
-from zenml.utils.post_training.post_training_utils import \
-    view_schema, get_feature_spec_from_schema, \
-    convert_raw_dataset_to_pandas, view_statistics
+# from zenml.utils.post_training.post_training_utils import \
+#     view_schema, get_feature_spec_from_schema, \
+#     convert_raw_dataset_to_pandas, view_statistics
 from zenml.utils.print_utils import to_pretty_string, PrintStyles
 
 logger = get_logger(__name__)
@@ -131,11 +129,12 @@ class BaseDatasource:
 
     @property
     def n_datapoints(self):
-        """Gets total number of datapoints in datasource"""
-        pipeline = self._get_one_pipeline()
-        data_files = self._get_data_file_paths(pipeline)
-        return sum(1 for _ in tf.data.TFRecordDataset(data_files,
-                                                      compression_type='GZIP'))
+        # """Gets total number of datapoints in datasource"""
+        # pipeline = self._get_one_pipeline()
+        # data_files = self._get_data_file_paths(pipeline)
+        # return sum(1 for _ in tf.data.TFRecordDataset(data_files,
+        #                                               compression_type='GZIP'))
+        raise NotImplementedError
 
     @abstractmethod
     def process(self, output_path: Text, make_beam_pipeline: Callable = None):
@@ -283,15 +282,16 @@ class BaseDatasource:
         Args:
             sample_size: # of rows to sample.
         """
-        pipeline = self._get_one_pipeline()
-        data_files = self._get_data_file_paths(pipeline)
-
-        schema_uri = pipeline.get_artifacts_uri_by_component(
-            GDPComponent.DataSchema.name)[0]
-        spec = get_feature_spec_from_schema(schema_uri)
-
-        dataset = tf.data.TFRecordDataset(data_files, compression_type='GZIP')
-        return convert_raw_dataset_to_pandas(dataset, spec, sample_size)
+        # pipeline = self._get_one_pipeline()
+        # data_files = self._get_data_file_paths(pipeline)
+        #
+        # schema_uri = pipeline.get_artifacts_uri_by_component(
+        #     GDPComponent.DataSchema.name)[0]
+        # spec = get_feature_spec_from_schema(schema_uri)
+        #
+        # dataset = tf.data.TFRecordDataset(data_files, compression_type='GZIP')
+        # return convert_raw_dataset_to_pandas(dataset, spec, sample_size)
+        raise NotImplementedError
 
     # TODO [High]: Completely hacked code to get this to work
     def get_artifact_uri_by_component_and_commit_id(
@@ -342,38 +342,38 @@ class BaseDatasource:
         return [a.uri for a in component_artifacts
                 if a.id in [p.id for p in pipeline_artifacts]]
 
-    def view_schema(self, commit_id: Text = None):
-        """
-        View schema of data flowing in pipeline.
-
-        Args:
-            commit_id: used to specify which commit's schema to use, if None
-            uses latest
-        """
-        if commit_id is None:
-            commit_id = self.get_latest_commit()
-        self._assert_commit_id(commit_id)
-
-        pipeline = self.get_data_pipeline_from_commit(commit_id)
-        uri = pipeline.get_artifacts_uri_by_component(
-            GDPComponent.DataSchema.name)[0]
-        view_schema(uri)
-
-    def view_statistics(self, commit_id: Text = None, port: int = None,
-                        magic: bool = False):
-        """
-        View statistics of data flowing in pipeline.
-
-        Args:
-            port (int): Port at which to launch the statistics facet.
-            commit_id: used to specify which commit's schema to use, if None
-            uses latest
-            magic (bool): Whether to display within a jupyter notebook or not
-        """
-        if commit_id is None:
-            commit_id = self.get_latest_commit()
-        self._assert_commit_id(commit_id)
-        pipeline = self.get_data_pipeline_from_commit(commit_id)
-        uri = pipeline.get_artifacts_uri_by_component(
-            GDPComponent.DataStatistics.name)[0]
-        view_statistics(uri, port=port, magic=magic)
+    # def view_schema(self, commit_id: Text = None):
+    #     """
+    #     View schema of data flowing in pipeline.
+    #
+    #     Args:
+    #         commit_id: used to specify which commit's schema to use, if None
+    #         uses latest
+    #     """
+    #     if commit_id is None:
+    #         commit_id = self.get_latest_commit()
+    #     self._assert_commit_id(commit_id)
+    #
+    #     pipeline = self.get_data_pipeline_from_commit(commit_id)
+    #     uri = pipeline.get_artifacts_uri_by_component(
+    #         GDPComponent.DataSchema.name)[0]
+    #     view_schema(uri)
+    #
+    # def view_statistics(self, commit_id: Text = None, port: int = None,
+    #                     magic: bool = False):
+    #     """
+    #     View statistics of data flowing in pipeline.
+    #
+    #     Args:
+    #         port (int): Port at which to launch the statistics facet.
+    #         commit_id: used to specify which commit's schema to use, if None
+    #         uses latest
+    #         magic (bool): Whether to display within a jupyter notebook or not
+    #     """
+    #     if commit_id is None:
+    #         commit_id = self.get_latest_commit()
+    #     self._assert_commit_id(commit_id)
+    #     pipeline = self.get_data_pipeline_from_commit(commit_id)
+    #     uri = pipeline.get_artifacts_uri_by_component(
+    #         GDPComponent.DataStatistics.name)[0]
+    #     view_statistics(uri, port=port, magic=magic)
