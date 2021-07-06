@@ -134,10 +134,8 @@ training_pipeline.add_evaluator(
 training_pipeline.run()
 ```
 
-While the above is great to get a quick flavor of ZenML, a more practical way to start is to follow our guide to convert your legacy codebase into ZenML code [here](https://docs.zenml.io/getting-started/organizing-zenml.html).
-
 ## Leverage powerful integrations
-Once code is organized into a ZenML pipeline, you can supercharge your ML development through powerful [integrations](https://docs.zenml.io/benefits/integrations.html). Some of the benefits you get are:
+Once code is organized into a ZenML pipeline, you can supercharge your ML development through powerful [integrations](https://docs.zenml.io/installation#integrations). Some of the benefits you get are:
 
 ### Work locally but switch seamlessly to the cloud
 
@@ -253,4 +251,4 @@ Any contribution made to this project will be licensed under the Apache License 
 
 ## Credit
 ZenML is built on the shoulders of giants: We leverage, and would like to give credit to, existing open-source libraries like [TFX](https://github.com/tensorflow/tfx/). The goal of our framework is neither to replace these libraries, nor to diminish their usage. ZenML is simply an opinionated, higher level interface with the focus being purely on easy-of-use and coherent intuitive design.
-You can read more about why we actually started building ZenML at our [blog](https://blog.maiot.io/why-zenml/).
+You can read more about why we actually started building ZenML at our [blog](https://blog.zenml.io/why-zenml/).
