@@ -1,11 +1,9 @@
 import time
 from abc import abstractmethod
-from typing import Optional, Text, List
+from typing import Optional, Text
 
-from playground.base_step import BaseStep
 from zenml.backends.orchestrator import OrchestratorBaseBackend
 from zenml.datasources import BaseDatasource
-
 from zenml.metadata import ZenMLMetadataStore
 from zenml.repo import Repository
 
@@ -43,7 +41,7 @@ class BasePipeline:
             self.datasource_commit_id = datasource_commit_id
 
     def run(self):
-        pass
+        _ = self.connect()
 
     @abstractmethod
     def connect(self):
