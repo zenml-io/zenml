@@ -1,3 +1,4 @@
+import inspect
 from abc import abstractmethod
 
 
@@ -5,13 +6,16 @@ class BaseStep:
     def __init__(self):
         pass
 
-    def __call__(self, *args, **kwargs):
-        pass
+    def __call__(self, **kwargs):
+        # infer the input artifacts
+        self.inputs = inspect.func(self.process)
+        # infer the output artifacts
+        self.outputs = self.outputs or self.output()
+        return self
 
     @abstractmethod
     def process(self):
         pass
-
 
 # class DistributedBaseStep:
 #     def __init__(self):

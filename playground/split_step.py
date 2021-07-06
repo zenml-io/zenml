@@ -1,8 +1,7 @@
-import inspect
 from typing import Text, Dict
 
-import tfx
 from playground.base_step import BaseStep
+
 
 def lint_split_map(split_map: Dict[Text, float]):
     """Small utility to lint the split_map"""
@@ -23,16 +22,9 @@ class SplitStep(BaseStep):
 
         super().__init__()
 
-    def __call__(self, *args, **kwargs):
-        # infer the input artifacts
-        self.inputs = inspect.func(self.process)
-        # infer the output artifacts
-        self.outputs = self.outputs or self.output()
-        return self
-
     def process(self,
-                input_artifact,
-                output_artifact):
+                input_data,
+                output_data, ):
         # read the data using the input artifact
 
         # split the data with custom logic and params
@@ -40,16 +32,6 @@ class SplitStep(BaseStep):
 
         # write the results using the output artifact
         pass
-
-    def to_component(self):
-        @component
-        def MyTrainerComponent(
-                input_artifact: tfx.dsl.components.InputArtifact[...],
-                output_artifact: tfx.dsl.components.OutputArtifact[...],
-                *params)
-            self.process()
-
-        return MyTrainerComponent
 
 # class DistributedSplitStep(DistributedBaseStep):
 #     """
