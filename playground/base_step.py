@@ -1,6 +1,8 @@
 import inspect
 from abc import abstractmethod
 
+from tfx.dsl.component.experimental.decorators import component
+
 from playground.artifacts import Input, Output
 
 
@@ -9,8 +11,20 @@ class BaseStep:
         self.__inputs = {}
         self.__outputs = {}
 
+    def __call__(self, **kwargs):
+        full_spec = inspect.getfullargspec(self.process)
+        # TODO: Make a dot dict
+        # TODO: check whether it is implemented as a static or class method
+        # TODO: implement a way to interpret the params
+        for arg, arg_type in full_spec.annotations.items():
+            if isinstance(arg_type, Input):
+                self.__inputs.update({arg: arg_type.type()})
+            if isinstance(arg_type, Output):
+                self.__outputs.update({arg: arg_type.type()})
+        return self
+
     @abstractmethod
-    def process(self):
+    def process(self, *args, **kwargs):
         pass
 
     @property
@@ -39,16 +53,12 @@ class BaseStep:
     def outputs(self):
         self.__outputs = dict()
 
-    def __call__(self, **kwargs):
-        fullspec = inspect.getfullargspec(self.process)
-        # TODO: check whether it is implemented as a static or class method
-        # TODO: implement a way to interpret the params
-        for arg, arg_type in fullspec.annotations.items():
-            if isinstance(arg_type, Input):
-                self.__inputs.update({arg: arg_type.type()})
-            if isinstance(arg_type, Output):
-                self.__outputs.update({arg: arg_type.type()})
-        return self
+    def to_component(self):
+        @component
+        def Component(**kwargs):
+            self.process(kwargs)
+
+        return Component(**self.inputs, **self.outputs)
 
     # class DistributedBaseStep:
     #     def __init__(self):
