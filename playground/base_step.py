@@ -4,24 +4,47 @@ from abc import abstractmethod
 from tfx.dsl.component.experimental.decorators import component
 
 from playground.artifacts import Input, Output
+from playground.exceptions import StepInterfaceError
+
+
+class StepDict(dict):
+    __getattr__ = dict.__getitem__
 
 
 class BaseStep:
     def __init__(self):
-        self.__inputs = {}
-        self.__outputs = {}
+        self.__inputs = StepDict()
+        self.__outputs = StepDict()
+        self.__params = StepDict()
 
     def __call__(self, **kwargs):
-        full_spec = inspect.getfullargspec(self.process)
-        # TODO: Make a dot dict
+        process_spec = inspect.getfullargspec(self.process)
+        instance_spec = inspect.getfullargspec(self.__init__)
+
         # TODO: check whether it is implemented as a static or class method
         # TODO: implement a way to interpret the params
-        for arg, arg_type in full_spec.annotations.items():
+
+        if instance_spec.varkw is not None:
+            raise StepInterfaceError(
+                "As ZenML aims to track all the configuration parameters "
+                "that you provide to your steps, please refrain from using "
+                "a non-descriptive parameter definition such as '*args'.")
+
+        if instance_spec.varkw is not None:
+            raise StepInterfaceError(
+                "As ZenML aims to track all the configuration parameters "
+                "that you provide to your steps, please refrain from using "
+                "a non-descriptive parameter definition such as '**kwargs'.")
+
+        for arg in instance_spec.args:
+            if arg == 'self':  # TODO: not covering all the cases
+                continue
+
+        for arg, arg_type in process_spec.annotations.items():
             if isinstance(arg_type, Input):
                 self.__inputs.update({arg: arg_type.type()})
             if isinstance(arg_type, Output):
                 self.__outputs.update({arg: arg_type.type()})
-        return self
 
     @abstractmethod
     def process(self, *args, **kwargs):
@@ -35,6 +58,10 @@ class BaseStep:
     def outputs(self):
         return self.__outputs
 
+    @property
+    def params(self):
+        return self.__params
+
     @inputs.setter
     def inputs(self, inputs):
         raise PermissionError('The attribute inputs is used internally by '
@@ -45,20 +72,25 @@ class BaseStep:
         raise PermissionError('The attribute outputs is used internally by '
                               'ZenML. Please avoid making changes to it.')
 
+    @params.setter
+    def params(self, params):
+        raise PermissionError('The attribute params is used internally by '
+                              'ZenML. Please avoid making changes to it.')
+
     @inputs.deleter
     def inputs(self):
-        self.__inputs = dict()
+        self.__inputs = StepDict()
 
     @outputs.deleter
     def outputs(self):
-        self.__outputs = dict()
+        self.__outputs = StepDict()
+
+    @params.deleter
+    def params(self):
+        self.__params = StepDict()
 
     def to_component(self):
-        @component
-        def Component(**kwargs):
-            self.process(kwargs)
-
-        return Component(**self.inputs, **self.outputs)
+        return component(self.process(**self.inputs, **self.outputs))
 
     # class DistributedBaseStep:
     #     def __init__(self):
