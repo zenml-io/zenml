@@ -1,6 +1,6 @@
 import pandas as pd
 from tfx.dsl.component.experimental.annotations import InputArtifact, \
-    OutputArtifact
+    OutputArtifact, Parameter
 
 from playground.base_artifact import BaseArtifact
 
@@ -12,6 +12,10 @@ class Input(InputArtifact):
 
 
 class Output(OutputArtifact):
+    pass
+
+
+class Param(Parameter):
     pass
 
 
