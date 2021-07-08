@@ -4,8 +4,6 @@ from typing import Optional, Text
 
 from zenml.backends.orchestrator import OrchestratorBaseBackend
 from zenml.datasources import BaseDatasource
-from zenml.metadata import ZenMLMetadataStore
-from zenml.repo import Repository
 
 
 class BasePipeline:
@@ -23,11 +21,9 @@ class BasePipeline:
             name = str(round(time.time() * 1000))
         self.name = name
 
-        # Stores TODO: Change the extraction
-        self.metadata_store: ZenMLMetadataStore = \
-            Repository.get_instance().get_default_metadata_store()
-        self.artifact_store = \
-            Repository.get_instance().get_default_artifact_store()
+        # Stores TODO: Shift the extraction to the client perhaps?
+        self.metadata_store = None
+        self.artifact_store = None
 
         # Datasource
         if datasource:
@@ -41,8 +37,11 @@ class BasePipeline:
             self.datasource_commit_id = datasource_commit_id
 
     def run(self):
-        _ = self.connect()
+        step_list = self.connect(self.datasource)
+        component_list = []
+        for step in step_list:
+            component_list.append(step.to_component())
 
     @abstractmethod
-    def connect(self):
+    def connect(self, *args, **kwargs):
         pass
