@@ -17,7 +17,10 @@ def lint_split_map(split_map: Dict[Text, float]):
 
 
 class SplitStep(BaseStep):
-    def __init__(self, split_map: Dict[Text, float]):
+    def __init__(self,
+                 split_map: Dict[Text, float],
+                 unknown_param,
+                 some_ratio: float = 0.3):
         lint_split_map(split_map)
         self.split_map = split_map
 
