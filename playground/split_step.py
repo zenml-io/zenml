@@ -1,7 +1,7 @@
 from typing import Text, Dict
 
 from playground.base_step import BaseStep
-from playground.artifacts import DataArtifact
+from playground.artifacts import DataArtifact, Input, Output
 
 
 def lint_split_map(split_map: Dict[Text, float]):
@@ -21,11 +21,12 @@ class SplitStep(BaseStep):
         lint_split_map(split_map)
         self.split_map = split_map
 
-        super().__init__()
+        super(SplitStep, self).__init__()
 
     def process(self,
-                input_data: DataArtifact,
-                output_data: DataArtifact):
+                param,
+                input_data: Input[DataArtifact],
+                output_data: Output[DataArtifact]):
         self.split_map = 'some logics'
 
 # class DistributedSplitStep(DistributedBaseStep):

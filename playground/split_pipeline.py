@@ -14,6 +14,7 @@ class SplitPipeline(BasePipeline):
 
     def connect(self, datasource):
         self.split_step(input_data=datasource)
-        # TODO: Make a dot dict
-        self.preprocesser_step(
-            input_data=self.split_step.outputs['output_data'])
+        self.preprocesser_step(input_data=
+                               self.split_step.outputs['output_data'])
+
+        return self.split_step, self.preprocesser_step
