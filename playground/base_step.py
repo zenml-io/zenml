@@ -42,9 +42,23 @@ class BaseStep:
 
         for arg, arg_type in process_spec.annotations.items():
             if isinstance(arg_type, Input):
-                self.__inputs.update({arg: arg_type.type()})
-            if isinstance(arg_type, Output):
-                self.__outputs.update({arg: arg_type.type()})
+                if arg in kwargs:
+                    self.__inputs.update({arg: kwargs[arg]})
+                else:
+                    self.__inputs.update({arg: arg_type.type()})
+            elif isinstance(arg_type, Output):
+                if arg in kwargs:
+                    raise StepInterfaceError(
+                        "While connecting steps to each other, please avoid "
+                        "using predefined output artifacts.")
+                else:
+                    self.__outputs.update({arg: arg_type.type()})
+            else:
+                raise StepInterfaceError(
+                    "While designing the 'process' function of your steps, "
+                    "you can only use Input[Artifact] or Output[Artifact] "
+                    "types as input. In order to define parameters, please "
+                    "use the __init__ function.")
 
     @abstractmethod
     def process(self, *args, **kwargs):
