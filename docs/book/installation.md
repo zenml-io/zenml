@@ -6,7 +6,7 @@ description: 'TL;DR: Do `pip install zenml` to install.'
 
 ## Welcome
 
-Your first step is to install **ZenML**, which comes bundled as a good old `pip` package. 
+Your first step is to install **ZenML**, which comes bundled as a good old `pip` package.
 
 {% hint style="warning" %}
 Please note that we only support Python &gt;= 3.6, so please adjust your pip accordingly.
@@ -34,7 +34,7 @@ pip install git+https://github.com/maiot-io/zenml.git@main --upgrade
 
 ## Integrations
 
-The **ZenML** base package does not come up with all integrations pre-installed. Read more [here](). In order to install an integration, use the pattern:
+The **ZenML** base package does not come up with all integrations pre-installed. Read more [here](installation.md). In order to install an integration, use the pattern:
 
 ```bash
 pip install zenml[INTEGRATION]

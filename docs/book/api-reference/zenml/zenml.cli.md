@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.cli package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/index.html)
+zenml.cli package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/3ff7b89f43808b7fadfdca6299998f2c689acfc4/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/maiot-io/zenml/tree/3ff7b89f43808b7fadfdca6299998f2c689acfc4/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/maiot-io/zenml/tree/3ff7b89f43808b7fadfdca6299998f2c689acfc4/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.cli.md)
   * * [zenml.cli package](zenml.cli.md)
       * [Submodules](zenml.cli.md#submodules)
@@ -14,6 +14,7 @@ zenml.cli package — ZenML documentation  [ZenML](https://github.com/maiot-io/z
       * [zenml.cli.cli module](zenml.cli.md#zenml-cli-cli-module)
       * [zenml.cli.config module](zenml.cli.md#zenml-cli-config-module)
       * [zenml.cli.datasource module](zenml.cli.md#zenml-cli-datasource-module)
+      * [zenml.cli.example module](zenml.cli.md#zenml-cli-example-module)
       * [zenml.cli.pipeline module](zenml.cli.md#zenml-cli-pipeline-module)
       * [zenml.cli.step module](zenml.cli.md#zenml-cli-step-module)
       * [zenml.cli.utils module](zenml.cli.md#zenml-cli-utils-module)
@@ -21,7 +22,7 @@ zenml.cli package — ZenML documentation  [ZenML](https://github.com/maiot-io/z
       * [Module contents](zenml.cli.md#module-contents)
 * [ « zenml.backend...](zenml.backends/zenml.backends.training.md)
 * [ zenml.compone... »](zenml.components/)
-*  [Source](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/_sources/zenml.cli.rst.txt)
+*  [Source](https://github.com/maiot-io/zenml/tree/3ff7b89f43808b7fadfdca6299998f2c689acfc4/docs/sphinx_docs/_build/html/_sources/zenml.cli.rst.txt)
 
 ## zenml.cli package[¶](zenml.cli.md#zenml-cli-package)
 
@@ -34,6 +35,8 @@ zenml.cli package — ZenML documentation  [ZenML](https://github.com/maiot-io/z
 ### zenml.cli.config module[¶](zenml.cli.md#zenml-cli-config-module)
 
 ### zenml.cli.datasource module[¶](zenml.cli.md#zenml-cli-datasource-module)
+
+### zenml.cli.example module[¶](zenml.cli.md#zenml-cli-example-module)
 
 ### zenml.cli.pipeline module[¶](zenml.cli.md#zenml-cli-pipeline-module)
 

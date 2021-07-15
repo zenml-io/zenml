@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.components.tokenizer package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/index.html)
+zenml.components.tokenizer package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/maiot-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/maiot-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.components.tokenizer.md)
   * * [zenml.components.tokenizer package](zenml.components.tokenizer.md)
       * [Submodules](zenml.components.tokenizer.md#submodules)
@@ -16,7 +16,7 @@ zenml.components.tokenizer package — ZenML documentation  [ZenML](https://gith
       * [Module contents](zenml.components.tokenizer.md#module-contents)
 * [ « zenml.compone...](zenml.components.split_gen.md)
 * [ zenml.compone... »](zenml.components.trainer.md)
-*  [Source](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/_sources/zenml.components.tokenizer.rst.txt)
+*  [Source](https://github.com/maiot-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/_sources/zenml.components.tokenizer.rst.txt)
 
 ## zenml.components.tokenizer package[¶](zenml.components.tokenizer.md#zenml-components-tokenizer-package)
 

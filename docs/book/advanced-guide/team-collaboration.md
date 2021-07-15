@@ -2,7 +2,7 @@
 description: Collaborate seamlessly.
 ---
 
-# Team collaboration
+# Team Collaboration
 
 **ZenML**'s mission is centered on reproducible Machine Learning, with easy access to integrations for your favorite technologies. A key aspect of this mission is the ability to easily collaborate with your team across machines and environments, without sacrifices.
 

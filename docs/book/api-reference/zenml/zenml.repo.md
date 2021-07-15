@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.repo package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/index.html)
+zenml.repo package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/maiot-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/maiot-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.repo.md)
   * * [zenml.repo package](zenml.repo.md)
       * [Submodules](zenml.repo.md#submodules)
@@ -21,7 +21,7 @@ zenml.repo package — ZenML documentation  [ZenML](https://github.com/maiot-io/
       * [Module contents](zenml.repo.md#module-contents)
 * [ « zenml.pipelin...](zenml.pipelines.md)
 * [ zenml.standar... »](zenml.standards.md)
-*  [Source](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/_sources/zenml.repo.rst.txt)
+*  [Source](https://github.com/maiot-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/_sources/zenml.repo.rst.txt)
 
 ## zenml.repo package[¶](zenml.repo.md#zenml-repo-package)
 

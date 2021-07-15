@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.datasources package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/index.html)
+zenml.datasources package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/3ff7b89f43808b7fadfdca6299998f2c689acfc4/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/maiot-io/zenml/tree/3ff7b89f43808b7fadfdca6299998f2c689acfc4/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/maiot-io/zenml/tree/3ff7b89f43808b7fadfdca6299998f2c689acfc4/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.datasources.md)
   * * [zenml.datasources package](zenml.datasources.md)
       * [Submodules](zenml.datasources.md#submodules)
@@ -28,9 +28,9 @@ zenml.datasources package — ZenML documentation  [ZenML](https://github.com/ma
       * [zenml.datasources.tfrecords\_datasource module](zenml.datasources.md#zenml-datasources-tfrecords-datasource-module)
       * [zenml.datasources.tfrecords\_datasource\_test module](zenml.datasources.md#zenml-datasources-tfrecords-datasource-test-module)
       * [Module contents](zenml.datasources.md#module-contents)
-* [ « zenml.compone...](zenml.components/zenml.components.transform_simple.md)
+* [ « zenml.compone...](zenml.components/zenml.components.transform.md)
 * [ zenml.metadat... »](zenml.metadata.md)
-*  [Source](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/_sources/zenml.datasources.rst.txt)
+*  [Source](https://github.com/maiot-io/zenml/tree/3ff7b89f43808b7fadfdca6299998f2c689acfc4/docs/sphinx_docs/_build/html/_sources/zenml.datasources.rst.txt)
 
 ## zenml.datasources package[¶](zenml.datasources.md#zenml-datasources-package)
 

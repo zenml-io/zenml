@@ -2,19 +2,19 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.components.transform package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/index.html)
+zenml.components.transform package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/3ff7b89f43808b7fadfdca6299998f2c689acfc4/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/maiot-io/zenml/tree/3ff7b89f43808b7fadfdca6299998f2c689acfc4/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/maiot-io/zenml/tree/3ff7b89f43808b7fadfdca6299998f2c689acfc4/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.components.transform.md)
   * * [zenml.components.transform package](zenml.components.transform.md)
       * [Submodules](zenml.components.transform.md#submodules)
       * [zenml.components.transform.transform\_module module](zenml.components.transform.md#zenml-components-transform-transform-module-module)
       * [Module contents](zenml.components.transform.md#module-contents)
 * [ « zenml.compone...](zenml.components.trainer.md)
-* [ zenml.compone... »](zenml.components.transform_simple.md)
-*  [Source](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/_sources/zenml.components.transform.rst.txt)
+* [ zenml.datasou... »](../zenml.datasources.md)
+*  [Source](https://github.com/maiot-io/zenml/tree/3ff7b89f43808b7fadfdca6299998f2c689acfc4/docs/sphinx_docs/_build/html/_sources/zenml.components.transform.rst.txt)
 
 ## zenml.components.transform package[¶](zenml.components.transform.md#zenml-components-transform-package)
 
