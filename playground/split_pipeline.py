@@ -7,7 +7,6 @@ class SplitPipeline(BasePipeline):
     def __init__(self,
                  split_map,
                  param):
-
         super(SplitPipeline, self).__init__()
 
         self.split_step = SplitStep(split_map=split_map, unknown_param='asd')
@@ -15,7 +14,6 @@ class SplitPipeline(BasePipeline):
 
     def connect(self, datasource):
         self.split_step(input_data=datasource)
-        self.preprocesser_step(input_data=
-                               self.split_step.outputs['output_data'])
+        self.preprocesser_step(input_data=self.split_step.outputs.output_data)
 
         return [self.split_step, self.preprocesser_step]

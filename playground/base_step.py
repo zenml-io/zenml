@@ -1,10 +1,9 @@
 import inspect
 from abc import abstractmethod
 
-from tfx.dsl.component.experimental.decorators import component
-
 from playground.artifacts import Input, Output
 from playground.exceptions import StepInterfaceError
+from playground.util import component
 
 
 class StepDict(dict):
@@ -21,9 +20,6 @@ class BaseStep:
         process_spec = inspect.getfullargspec(self.process)
         instance_spec = inspect.getfullargspec(self.__init__)
 
-        # TODO: check whether it is implemented as a static or class method
-        # TODO: implement a way to interpret the params
-
         if instance_spec.varkw is not None:
             raise StepInterfaceError(
                 "As ZenML aims to track all the configuration parameters "
@@ -36,10 +32,6 @@ class BaseStep:
                 "that you provide to your steps, please refrain from using "
                 "a non-descriptive parameter definition such as '**kwargs'.")
 
-        for arg in instance_spec.args:
-            if arg == 'self':  # TODO: not covering all the cases
-                continue
-
         for arg, arg_type in process_spec.annotations.items():
             if isinstance(arg_type, Input):
                 if arg in kwargs:
@@ -47,12 +39,7 @@ class BaseStep:
                 else:
                     self.__inputs.update({arg: arg_type.type()})
             elif isinstance(arg_type, Output):
-                if arg in kwargs:
-                    raise StepInterfaceError(
-                        "While connecting steps to each other, please avoid "
-                        "using predefined output artifacts.")
-                else:
-                    self.__outputs.update({arg: arg_type.type()})
+                self.__outputs.update({arg: arg_type.type()})
             else:
                 raise StepInterfaceError(
                     "While designing the 'process' function of your steps, "
@@ -103,37 +90,5 @@ class BaseStep:
     def params(self):
         self.__params = StepDict()
 
-    def to_component(self):
-        return component(self.process(**self.inputs, **self.outputs))
-
-    # class DistributedBaseStep:
-    #     def __init__(self):
-    #         pass
-    #
-    #     def __call__(self, **kwargs):
-    #         self.inputs = inspect.func(self.process)
-    #         self.outputs = self.outputs or self.output()
-    #         return self
-    #
-    #     def process(self):
-    #         with beam.pipeline() as p:
-    #             (p | ReadParDo | ProcessParDo | WriteParDo)
-    #
-    #     def ReadParDo(self):
-    #         with self._make_beam_pipeline():
-    #             return p | beam.io.ReadFromArrow(self.data.uri)
-    #
-    #     def ProcessParDo(self):
-    #         pass
-    #
-    #     def WriteParDo(self):
-    #         pass
-    #
-    #     def process(self,
-    #                 data: DataArtifact,
-    #                 schema: SchemaArtifact,
-    #                 statistics: StatisticsArtifact
-    #                 ) -> PandasDataFrameArtifact:
-    #         t = PandasDataFrameArtifact()
-    #
-    #         return t
+    def to_component_class(self):
+        return component(step=self)
