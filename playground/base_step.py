@@ -3,7 +3,7 @@ from abc import abstractmethod
 
 from playground.artifacts import Input, Output
 from playground.exceptions import StepInterfaceError
-from playground.util import component
+from playground.util import to_component
 
 
 class StepDict(dict):
@@ -12,11 +12,12 @@ class StepDict(dict):
 
 class BaseStep:
     def __init__(self):
+        self.__component = None
+
         self.__inputs = StepDict()
         self.__outputs = StepDict()
         self.__params = StepDict()
 
-    def __call__(self, **kwargs):
         process_spec = inspect.getfullargspec(self.process)
         instance_spec = inspect.getfullargspec(self.__init__)
 
@@ -34,18 +35,18 @@ class BaseStep:
 
         for arg, arg_type in process_spec.annotations.items():
             if isinstance(arg_type, Input):
-                if arg in kwargs:
-                    self.__inputs.update({arg: kwargs[arg]})
-                else:
-                    self.__inputs.update({arg: arg_type.type()})
+                self.__inputs.update({arg: arg_type.type})
             elif isinstance(arg_type, Output):
-                self.__outputs.update({arg: arg_type.type()})
+                self.__outputs.update({arg: arg_type.type})
             else:
                 raise StepInterfaceError(
                     "While designing the 'process' function of your steps, "
                     "you can only use Input[Artifact] or Output[Artifact] "
                     "types as input. In order to define parameters, please "
                     "use the __init__ function.")
+
+    def __call__(self, **kwargs):
+        self.__component = to_component(step=self)(**kwargs)
 
     @abstractmethod
     def process(self, *args, **kwargs):
@@ -63,6 +64,10 @@ class BaseStep:
     def params(self):
         return self.__params
 
+    @property
+    def component(self):
+        return self.__component
+
     @inputs.setter
     def inputs(self, inputs):
         raise PermissionError('The attribute inputs is used internally by '
@@ -78,6 +83,11 @@ class BaseStep:
         raise PermissionError('The attribute params is used internally by '
                               'ZenML. Please avoid making changes to it.')
 
+    @component.setter
+    def component(self, component):
+        raise PermissionError('The attribute component is used internally by '
+                              'ZenML. Please avoid making changes to it.')
+
     @inputs.deleter
     def inputs(self):
         self.__inputs = StepDict()
@@ -90,5 +100,6 @@ class BaseStep:
     def params(self):
         self.__params = StepDict()
 
-    def to_component_class(self):
-        return component(step=self)
+    @component.deleter
+    def component(self):
+        self.__component = None

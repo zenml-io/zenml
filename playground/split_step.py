@@ -27,7 +27,6 @@ class SplitStep(BaseStep):
         super(SplitStep, self).__init__()
 
     def process(self,
-                param,
                 input_data: Input[DataArtifact],
                 output_data: Output[DataArtifact]):
         self.split_map = 'some logics'

@@ -1,9 +1,10 @@
+from playground.artifacts import DataArtifact
 from playground.split_pipeline import SplitPipeline
 from zenml.metadata import SQLiteMetadataStore
 
 uri = '/home/baris/Maiot/zenml/local_test/new_zenml/db'
 store = SQLiteMetadataStore(uri)
-datasource = None
+datasource = DataArtifact()
 
 # Parameters
 param = 1
