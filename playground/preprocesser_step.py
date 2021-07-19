@@ -1,5 +1,5 @@
-from playground.base_step import BaseStep
 from playground.artifacts import DataArtifact, Input, Output
+from playground.base_step import BaseStep
 
 
 class PreprocesserStep(BaseStep):
@@ -11,5 +11,4 @@ class PreprocesserStep(BaseStep):
     def process(self,
                 input_data: Input[DataArtifact],
                 output_data: Output[DataArtifact]):
-
         self.param = 0.3
