@@ -12,8 +12,6 @@ class StepDict(dict):
 
 class BaseStep:
     def __init__(self):
-        self.__component = None
-
         self.__inputs = StepDict()
         self.__outputs = StepDict()
         self.__params = StepDict()
@@ -46,7 +44,7 @@ class BaseStep:
                     "use the __init__ function.")
 
     def __call__(self, **kwargs):
-        self.__component = to_component(step=self)(**kwargs)
+        return to_component(step=self)(**kwargs)
 
     @abstractmethod
     def process(self, *args, **kwargs):

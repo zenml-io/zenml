@@ -21,15 +21,13 @@ class BasePipeline:
         data = Importer(
             source_uri="/home/baris/Maiot/zenml/local_test/data/data.csv",
             artifact_type=DataArtifact).with_id("datasource")
-        component_list = [data]
-
-        step_list = self.connect(data.outputs.result)
-        component_list.extend([s.component for s in step_list])
+        step_list = [data]
+        step_list.extend(self.connect(data.outputs.result))
 
         created_pipeline = pipeline.Pipeline(
             pipeline_name='pipeline_name',
             pipeline_root='/home/baris/Maiot/zenml/local_test/new_zenml/',
-            components=component_list,
+            components=step_list,
             enable_cache=False,
             metadata_connection_config=metadata.sqlite_metadata_connection_config(
                 '/home/baris/Maiot/zenml/local_test/new_zenml/db'),
