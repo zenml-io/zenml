@@ -3,23 +3,22 @@ from abc import abstractmethod
 
 from playground.artifacts import Input, Output
 from playground.exceptions import StepInterfaceError
-from playground.util import to_component
-
-
-class StepDict(dict):
-    __getattr__ = dict.__getitem__
+from playground.utils import to_component
 
 
 class BaseStep:
     def __init__(self):
-        self.__inputs = StepDict()
-        self.__outputs = StepDict()
-        self.__params = StepDict()
+
+        self.__component = None
+
+        self.__input_spec = dict()
+        self.__output_spec = dict()
+        self.__param_spec = dict()
 
         process_spec = inspect.getfullargspec(self.process)
         instance_spec = inspect.getfullargspec(self.__init__)
 
-        if instance_spec.varkw is not None:
+        if instance_spec.varargs is not None:
             raise StepInterfaceError(
                 "As ZenML aims to track all the configuration parameters "
                 "that you provide to your steps, please refrain from using "
@@ -33,9 +32,9 @@ class BaseStep:
 
         for arg, arg_type in process_spec.annotations.items():
             if isinstance(arg_type, Input):
-                self.__inputs.update({arg: arg_type.type})
+                self.__input_spec.update({arg: arg_type.type})
             elif isinstance(arg_type, Output):
-                self.__outputs.update({arg: arg_type.type})
+                self.__output_spec.update({arg: arg_type.type})
             else:
                 raise StepInterfaceError(
                     "While designing the 'process' function of your steps, "
@@ -44,60 +43,26 @@ class BaseStep:
                     "use the __init__ function.")
 
     def __call__(self, **kwargs):
-        return to_component(step=self)(**kwargs)
+        self.__component = to_component(step=self)(**kwargs)
+
+    def __getattr__(self, item):
+        if item == "outputs":
+            return self.__component.outputs
+        else:
+            raise AttributeError
 
     @abstractmethod
     def process(self, *args, **kwargs):
         pass
 
-    @property
-    def inputs(self):
-        return self.__inputs
+    def get_input_spec(self):
+        return self.__input_spec
 
-    @property
-    def outputs(self):
-        return self.__outputs
+    def get_output_spec(self):
+        return self.__output_spec
 
-    @property
-    def params(self):
-        return self.__params
+    def get_param_spec(self):
+        return self.__param_spec
 
-    @property
-    def component(self):
+    def get_component(self):
         return self.__component
-
-    @inputs.setter
-    def inputs(self, inputs):
-        raise PermissionError('The attribute inputs is used internally by '
-                              'ZenML. Please avoid making changes to it.')
-
-    @outputs.setter
-    def outputs(self, outputs):
-        raise PermissionError('The attribute outputs is used internally by '
-                              'ZenML. Please avoid making changes to it.')
-
-    @params.setter
-    def params(self, params):
-        raise PermissionError('The attribute params is used internally by '
-                              'ZenML. Please avoid making changes to it.')
-
-    @component.setter
-    def component(self, component):
-        raise PermissionError('The attribute component is used internally by '
-                              'ZenML. Please avoid making changes to it.')
-
-    @inputs.deleter
-    def inputs(self):
-        self.__inputs = StepDict()
-
-    @outputs.deleter
-    def outputs(self):
-        self.__outputs = StepDict()
-
-    @params.deleter
-    def params(self):
-        self.__params = StepDict()
-
-    @component.deleter
-    def component(self):
-        self.__component = None
