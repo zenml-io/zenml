@@ -45,9 +45,6 @@ class _FunctionExecutor(BaseExecutor):
                                   'ValueArtifact channel (got %s '
                                   'instead).') % (name, self, artifact))
 
-        for name, artifact in exec_properties:
-            function_args[name] = exec_properties[name]
-
         self._FUNCTION(**function_args)
 
 
