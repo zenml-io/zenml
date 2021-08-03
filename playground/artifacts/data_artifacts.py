@@ -5,8 +5,8 @@ from playground.artifacts.base_artifact import BaseArtifact
 
 # Artifact types
 
-class DataArtifact(BaseArtifact):
-    TYPE_NAME = 'data_artifact'
+class CSVArtifact(BaseArtifact):
+    TYPE_NAME = 'csv_artifact'
 
     def read(self):
         return pd.read_csv(self.uri)
