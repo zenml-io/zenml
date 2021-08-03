@@ -45,3 +45,5 @@ class BasePipeline:
     @abstractmethod
     def connect(self, *args, **kwargs):
         pass
+
+
