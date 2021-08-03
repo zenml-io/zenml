@@ -1,6 +1,6 @@
 import pandas as pd
 
-from playground.base_artifact import BaseArtifact
+from playground.artifacts.base_artifact import BaseArtifact
 
 
 # Artifact types
