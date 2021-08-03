@@ -1,14 +1,28 @@
-from playground.artifacts import DataArtifact, Input, Output
-from playground.base_step import BaseStep
+# Option 1
+from playground.artifacts import CSVArtifact
+from playground.utils.annotations import Input, Output, Param
+from playground.steps.base_step import step
 
 
-class PreprocesserStep(BaseStep):
-    def __init__(self, param: float):
-        self.param = param
+@step
+def FunctionPreprocesserStep(input_data: Input[CSVArtifact],
+                             output_data: Output[CSVArtifact],
+                             param: Param[float]):
+    input_data.read()
+    param = None
+    output_data.write()
 
-        super(PreprocesserStep, self).__init__()
 
-    def process(self,
-                input_data: Input[DataArtifact],
-                output_data: Output[DataArtifact]):
-        self.param = 0.3
+# Option 2
+
+from playground.steps.base_step import BaseStep
+
+
+class ClassPreprocesserStep(BaseStep):
+    def connect(self,
+                input_data: Input[CSVArtifact],
+                output_data: Output[CSVArtifact],
+                param: Param[float]):
+        input_data.read()
+        param = None
+        output_data.write()
