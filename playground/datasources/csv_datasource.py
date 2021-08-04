@@ -1,5 +1,6 @@
+from playground.artifacts.data_artifacts import CSVArtifact
 from playground.datasources.base_datasource import BaseDatasource
 
 
 class CSVDatasource(BaseDatasource):
-    pass
+    DS_TYPE = CSVArtifact
