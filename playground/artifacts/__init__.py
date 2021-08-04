@@ -1,2 +1,0 @@
-from playground.artifacts.base_artifact import BaseArtifact
-from playground.artifacts.data_artifacts import CSVArtifact
