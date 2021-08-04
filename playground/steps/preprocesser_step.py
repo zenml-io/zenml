@@ -1,5 +1,5 @@
 # Option 1
-from playground.artifacts import CSVArtifact
+from playground.artifacts.data_artifacts import CSVArtifact
 from playground.utils.annotations import Input, Output, Param
 from playground.steps.base_step import step
 
@@ -19,7 +19,7 @@ from playground.steps.base_step import BaseStep
 
 
 class ClassPreprocesserStep(BaseStep):
-    def connect(self,
+    def process(self,
                 input_data: Input[CSVArtifact],
                 output_data: Output[CSVArtifact],
                 param: Param[float]):
