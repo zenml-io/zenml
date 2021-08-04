@@ -1,10 +1,10 @@
-# Option 1
-
 from playground.datasources.csv_datasource import CSVDatasource
 from playground.steps.preprocesser_step import FunctionPreprocesserStep
 from playground.steps.split_step import FunctionSplitStep
 from playground.utils.annotations import Step, Datasource
-from playground.utils.pipeline_utils import pipeline
+
+# Option 1
+from playground.pipelines.base_pipeline import pipeline
 
 
 @pipeline
