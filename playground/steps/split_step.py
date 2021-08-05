@@ -8,9 +8,9 @@ from playground.utils.annotations import Input, Output, Param
 def FunctionSplitStep(input_data: Input[CSVArtifact],
                       output_data: Output[CSVArtifact],
                       split_map: Param[float]):
-    input_data.read()
+    data = input_data.read()
     split_map = None
-    output_data.write()
+    output_data.write(data)
 
 
 # Option 2

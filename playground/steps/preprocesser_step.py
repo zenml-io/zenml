@@ -1,16 +1,16 @@
 # Option 1
 from playground.artifacts.data_artifacts import CSVArtifact
-from playground.utils.annotations import Input, Output, Param
 from playground.steps.base_step import step
+from playground.utils.annotations import Input, Output, Param
 
 
 @step
 def FunctionPreprocesserStep(input_data: Input[CSVArtifact],
                              output_data: Output[CSVArtifact],
                              param: Param[float]):
-    input_data.read()
+    data = input_data.read()
     param = None
-    output_data.write()
+    output_data.write(data)
 
 
 # Option 2
@@ -23,6 +23,6 @@ class ClassPreprocesserStep(BaseStep):
                 input_data: Input[CSVArtifact],
                 output_data: Output[CSVArtifact],
                 param: Param[float]):
-        input_data.read()
+        data = input_data.read()
         param = None
-        output_data.write()
+        output_data.write(data)
