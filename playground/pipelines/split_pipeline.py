@@ -25,5 +25,5 @@ class ClassSplitPipeline(BasePipeline):
                 datasource: Datasource[CSVDatasource],
                 split_step: Step[FunctionSplitStep],
                 preprocesser_step: Step[FunctionPreprocesserStep]):
-        split_step(input_data=datasource.outputs.result)
+        split_step(input_data=datasource)
         preprocesser_step(input_data=split_step.outputs.output_data)
