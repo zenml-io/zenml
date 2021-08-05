@@ -1,75 +1,63 @@
 import inspect
+import types
 from abc import abstractmethod
+from typing import Type
 
-from playground.artifacts import Input, Output
-from playground.exceptions import StepInterfaceError
-from playground.utils import to_component
+from playground.utils.exceptions import StepInterfaceError
+from playground.utils.step_utils import convert_to_component
 
 
 class BaseStep:
-    def __init__(self):
-        self.__id = None
+
+    def __init__(self, *args, **kwargs):
+        if args:
+            raise StepInterfaceError("")  # TODO: fill
+
         self.__component = None
+        self.__params = dict()
 
         self.__input_spec = dict()
         self.__output_spec = dict()
         self.__param_spec = dict()
 
-        instance_spec = inspect.getfullargspec(self.__init__)
         process_spec = inspect.getfullargspec(self.process)
-
-        if instance_spec.varargs is not None:
-            raise StepInterfaceError(
-                "As ZenML aims to track all the configuration parameters "
-                "that you provide to your steps, please refrain from using "
-                "a non-descriptive parameter definition such as '*args'.")
-
-        if instance_spec.varkw is not None:
-            raise StepInterfaceError(
-                "As ZenML aims to track all the configuration parameters "
-                "that you provide to your steps, please refrain from using "
-                "a non-descriptive parameter definition such as '**kwargs'.")
-
         process_args = process_spec.args
         process_args.pop(0)  # Remove the self
+        from playground.utils.annotations import Input, Output, Param
+
         for arg in process_args:
             arg_type = process_spec.annotations.get(arg, None)
             if isinstance(arg_type, Input):
                 self.__input_spec.update({arg: arg_type.type})
             elif isinstance(arg_type, Output):
                 self.__output_spec.update({arg: arg_type.type})
+            elif isinstance(arg_type, Param):
+                self.__param_spec.update({arg: arg_type.type})
             else:
-                raise StepInterfaceError(
-                    "While designing the 'process' function of your steps, "
-                    "you can only use Input[Artifact] or Output[Artifact] "
-                    "types as input. In order to define parameters, please "
-                    "use the __init__ function.")
+                raise StepInterfaceError("")  # TODO: fill
 
-        instance_args = instance_spec.args
-        instance_args.pop(0)  # Remove the self
-        for param in instance_args:
-            param_type = instance_spec.annotations.get(param, None)
-            if param_type in [int, float, str, bytes, bool]:
-                self.__param_spec.update({param: param_type})
-            else:
-                raise StepInterfaceError(
-                    "While designing the '__init__' function of your steps, "
-                    "please annotate the input parameters that you want to "
-                    "use. The supported parameters include, int, float, str")
+        for k, v in kwargs.items():
+            # TODO: implement handling defaults
+            assert k in self.__param_spec
+            try:
+                self.__params[k] = self.__param_spec[k](v)
+            except TypeError or ValueError:
+                raise StepInterfaceError("")
 
     def __call__(self, **artifacts):
-        params = {p: self.__getattribute__(p) for p in self.__param_spec}
-        self.__component = to_component(step=self)(**artifacts, **params)
+        # TODO: Check artifact types
+        self.__component = convert_to_component(step=self)(**artifacts,
+                                                           **self.__params)
+
+    @abstractmethod
+    def process(self, *args, **kwargs):
+        pass
 
     def __getattr__(self, item):
         if item == "outputs":
             return self.__component.outputs
         else:
             raise AttributeError
-
-    @abstractmethod
-    def process(self, *args, **kwargs):
-        pass
 
     def get_input_spec(self):
         return self.__input_spec
@@ -83,5 +71,10 @@ class BaseStep:
     def get_component(self):
         return self.__component
 
-    def get_id(self):
-        return self.__id
+
+def step(func: types.FunctionType) -> Type:
+    step_class = type(func.__name__,
+                      (BaseStep,),
+                      {})
+    step_class.process = func
+    return step_class
