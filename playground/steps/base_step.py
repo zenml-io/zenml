@@ -1,46 +1,68 @@
 import inspect
-import types
 from abc import abstractmethod
-from typing import Type
 
+from playground.artifacts.base_artifact import BaseArtifact
+from playground.utils.annotations import GenericType
 from playground.utils.exceptions import StepInterfaceError
 from playground.utils.step_utils import convert_to_component
 
+Input = type("Input",
+             (GenericType,),
+             {"VALID_TYPES": [BaseArtifact]})
 
-class BaseStep:
+Output = type("Output",
+              (GenericType,),
+              {"VALID_TYPES": [BaseArtifact]})
 
-    def __init__(self, *args, **kwargs):
-        if args:
-            raise StepInterfaceError("")  # TODO: fill
+Param = type("Param",
+             (GenericType,),
+             {"VALID_TYPES": [int, float, str, bytes]})
 
-        self.__component = None
-        self.__params = dict()
 
-        self.__input_spec = dict()
-        self.__output_spec = dict()
-        self.__param_spec = dict()
+class BaseStepMeta(type):
+    def __new__(mcs, name, bases, dct):
+        cls = super().__new__(mcs, name, bases, dct)
 
-        process_spec = inspect.getfullargspec(self.process)
+        input_spec, output_spec, param_spec = dict(), dict(), dict()
+        param_defaults = dict()  # TODO: handle defaults
+
+        process_spec = inspect.getfullargspec(cls.process)
         process_args = process_spec.args
-        process_args.pop(0)  # Remove the self
-        from playground.utils.annotations import Input, Output, Param
+
+        if process_args and process_args[0] == "self":
+            process_args.pop(0)
 
         for arg in process_args:
             arg_type = process_spec.annotations.get(arg, None)
             if isinstance(arg_type, Input):
-                self.__input_spec.update({arg: arg_type.type})
+                input_spec.update({arg: arg_type.type})
             elif isinstance(arg_type, Output):
-                self.__output_spec.update({arg: arg_type.type})
+                output_spec.update({arg: arg_type.type})
             elif isinstance(arg_type, Param):
-                self.__param_spec.update({arg: arg_type.type})
+                param_spec.update({arg: arg_type.type})
             else:
-                raise StepInterfaceError("")  # TODO: fill
+                raise StepInterfaceError("")  # TODO: fill message
+
+        cls.INPUT_SPEC = input_spec
+        cls.OUTPUT_SPEC = output_spec
+        cls.PARAM_SPEC = param_spec
+        cls.PARAM_DEFAULTS = param_defaults
+
+        return cls
+
+
+class BaseStep(metaclass=BaseStepMeta):
+    def __init__(self, *args, **kwargs):
+        self.__component = None
+        self.__params = dict()
+
+        if args:
+            raise StepInterfaceError("")  # TODO: fill
 
         for k, v in kwargs.items():
-            # TODO: implement handling defaults
-            assert k in self.__param_spec
+            assert k in self.PARAM_SPEC
             try:
-                self.__params[k] = self.__param_spec[k](v)
+                self.__params[k] = self.PARAM_SPEC[k](v)
             except TypeError or ValueError:
                 raise StepInterfaceError("")
 
@@ -49,32 +71,15 @@ class BaseStep:
         self.__component = convert_to_component(step=self)(**artifacts,
                                                            **self.__params)
 
-    @abstractmethod
-    def process(self, *args, **kwargs):
-        pass
-
     def __getattr__(self, item):
         if item == "outputs":
             return self.__component.outputs
         else:
-            raise AttributeError
+            raise AttributeError(f"{item}")
 
-    def get_input_spec(self):
-        return self.__input_spec
-
-    def get_output_spec(self):
-        return self.__output_spec
-
-    def get_param_spec(self):
-        return self.__param_spec
+    @abstractmethod
+    def process(self, *args, **kwargs):
+        pass
 
     def get_component(self):
         return self.__component
-
-
-def step(func: types.FunctionType) -> Type:
-    step_class = type(func.__name__,
-                      (BaseStep,),
-                      {})
-    step_class.process = func
-    return step_class
