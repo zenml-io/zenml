@@ -53,11 +53,11 @@ class _FunctionExecutor(BaseExecutor):
 
 def convert_to_component(step) -> Callable[..., Any]:
     spec_inputs, spec_outputs, spec_params = {}, {}, {}
-    for key, artifact_type in step.get_input_spec().items():
+    for key, artifact_type in step.INPUT_SPEC.items():
         spec_inputs[key] = component_spec.ChannelParameter(type=artifact_type)
-    for key, artifact_type in step.get_output_spec().items():
+    for key, artifact_type in step.OUTPUT_SPEC.items():
         spec_outputs[key] = component_spec.ChannelParameter(type=artifact_type)
-    for key, prim_type in step.get_param_spec().items():
+    for key, prim_type in step.PARAM_SPEC.items():
         spec_params[key] = component_spec.ExecutionParameter(type=prim_type)
 
     component_spec_class = type('%s_Spec' % step.__class__.__name__,
