@@ -23,8 +23,10 @@ class BaseStepMeta(type):
     def __new__(mcs, name, bases, dct):
         cls = super().__new__(mcs, name, bases, dct)
 
-        input_spec, output_spec, param_spec = dict(), dict(), dict()
-        param_defaults = dict()  # TODO: handle defaults
+        cls.INPUT_SPEC = dict()
+        cls.OUTPUT_SPEC = dict()
+        cls.PARAM_SPEC = dict()
+        cls.PARAM_DEFAULTS = dict()  # TODO: handle defaults
 
         process_spec = inspect.getfullargspec(cls.process)
         process_args = process_spec.args
@@ -35,18 +37,13 @@ class BaseStepMeta(type):
         for arg in process_args:
             arg_type = process_spec.annotations.get(arg, None)
             if isinstance(arg_type, Input):
-                input_spec.update({arg: arg_type.type})
+                cls.INPUT_SPEC.update({arg: arg_type.type})
             elif isinstance(arg_type, Output):
-                output_spec.update({arg: arg_type.type})
+                cls.OUTPUT_SPEC.update({arg: arg_type.type})
             elif isinstance(arg_type, Param):
-                param_spec.update({arg: arg_type.type})
+                cls.PARAM_SPEC.update({arg: arg_type.type})
             else:
                 raise StepInterfaceError("")  # TODO: fill message
-
-        cls.INPUT_SPEC = input_spec
-        cls.OUTPUT_SPEC = output_spec
-        cls.PARAM_SPEC = param_spec
-        cls.PARAM_DEFAULTS = param_defaults
 
         return cls
 
