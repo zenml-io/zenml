@@ -1,3 +1,4 @@
+import inspect
 from abc import abstractmethod
 
 from tfx.orchestration import metadata
@@ -18,9 +19,31 @@ Step = type("Step",
             {"VALID_TYPES": [BaseStep]})
 
 
-class BasePipeline:
-    STEP_SPEC = None
-    DATASOURCE_SPEC = None
+class BasePipelineMeta(type):
+    def __new__(mcs, name, bases, dct):
+        cls = super().__new__(mcs, name, bases, dct)
+
+        cls.DATASOURCE_SPEC = dict()
+        cls.STEP_SPEC = dict()
+
+        connect_spec = inspect.getfullargspec(cls.connect)
+        connect_args = connect_spec.args
+
+        if connect_args and connect_args[0] == "self":
+            connect_args.pop(0)
+
+        for arg in connect_args:
+            arg_type = connect_spec.annotations.get(arg, None)
+            if isinstance(arg_type, Datasource):
+                cls.DATASOURCE_SPEC.update({arg: arg_type.type})
+            elif isinstance(arg_type, Step):
+                cls.STEP_SPEC.update({arg: arg_type.type})
+            else:
+                raise PipelineInterfaceError("")  # TODO: fill message
+        return cls
+
+
+class BasePipeline(metaclass=BasePipelineMeta):
 
     def __init__(self, *args, **kwargs):
         self.__steps = dict()
