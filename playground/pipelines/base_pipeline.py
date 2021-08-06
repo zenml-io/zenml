@@ -1,56 +1,43 @@
-import inspect
-import types
 from abc import abstractmethod
-from typing import Type
 
 from tfx.orchestration import metadata
 from tfx.orchestration import pipeline as tfx_pipeline
 from tfx.orchestration.local.local_dag_runner import LocalDagRunner
 
-from playground.utils.annotations import Step, Datasource
+from playground.datasources.base_datasource import BaseDatasource
+from playground.steps.base_step import BaseStep
+from playground.utils.annotations import GenericType
 from playground.utils.exceptions import PipelineInterfaceError
 
+Datasource = type("Datasource",
+                  (GenericType,),
+                  {"VALID_TYPES": [BaseDatasource]})
 
-class DictWrapper(dict):
-    def __getattr__(self, name):
-        return self[name]
+Step = type("Step",
+            (GenericType,),
+            {"VALID_TYPES": [BaseStep]})
 
 
 class BasePipeline:
+    STEP_SPEC = None
+    DATASOURCE_SPEC = None
 
     def __init__(self, *args, **kwargs):
-        if args:
-            raise PipelineInterfaceError()  # TODO
-
-        self.__pipeline = None
         self.__steps = dict()
         self.__datasources = dict()
 
-        self.__step_spec = dict()
-        self.__datasource_spec = dict()
-
-        connect_spec = inspect.getfullargspec(self.connect)
-        connect_args = connect_spec.args
-        connect_args.pop(0)  # Remove the self
-        for arg in connect_args:
-            arg_type = connect_spec.annotations.get(arg, None)
-            if isinstance(arg_type, Step):
-                self.__step_spec.update({arg: arg_type.type})
-            elif isinstance(arg_type, Datasource):
-                self.__datasource_spec.update({arg: arg_type.type})
-            else:
-                raise PipelineInterfaceError("")  # TODO: fill
+        if args:
+            raise PipelineInterfaceError("")  # TODO: Fill
 
         for k, v in kwargs.items():
-            assert k in self.__step_spec or k in self.__datasource_spec
+            assert k in self.STEP_SPEC or k in self.DATASOURCE_SPEC
 
-            if k in self.__step_spec:
-                # TODO: assert issubclass(v, self.__step_spec[k])
-                self.__steps.update({k: v})
-            elif k in self.__datasource_spec:
+            if k in self.STEP_SPEC:
+                self.__steps.update({k: v})  # TODO: assert class
+            elif k in self.DATASOURCE_SPEC:
                 self.__datasources.update({k: v})
             else:
-                raise PipelineInterfaceError("")
+                raise PipelineInterfaceError("")  # TODO: Fill
 
     @abstractmethod
     def connect(self, *args, **kwargs):
@@ -81,11 +68,3 @@ class BasePipeline:
                 '--direct_num_workers=0'])
 
         LocalDagRunner().run(created_pipeline)
-
-
-def pipeline(func: types.FunctionType) -> Type:
-    pipeline_class = type(func.__name__,
-                          (BasePipeline,),
-                          {})
-    pipeline_class.connect = func
-    return pipeline_class
