@@ -1,4 +1,5 @@
 import os
+from abc import abstractmethod
 
 import pandas as pd
 
@@ -8,7 +9,22 @@ from playground.artifacts.base_artifact import BaseArtifact
 DEFAULT_FILENAME = "data.csv"
 
 
-class CSVArtifact(BaseArtifact):
+class BaseDataArtifact(BaseArtifact):
+    TYPE_NAME = "data_artifact"
+    PROPERTIES = {
+
+    }
+
+    @abstractmethod
+    def read(self):
+        pass
+
+    @abstractmethod
+    def write(self, df: pd.DataFrame):
+        pass
+
+
+class CSVArtifact(BaseDataArtifact):
     TYPE_NAME = 'csv_artifact'
 
     def read(self):
