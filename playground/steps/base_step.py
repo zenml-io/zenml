@@ -16,7 +16,7 @@ Output = type("Output",
 
 Param = type("Param",
              (GenericType,),
-             {"VALID_TYPES": [int, float, str, bytes]})
+             {"VALID_TYPES": [int, float, str, bytes, dict]})
 
 
 class BaseStepMeta(type):
