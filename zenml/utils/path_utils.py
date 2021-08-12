@@ -19,8 +19,7 @@ import tarfile
 from pathlib import Path
 from typing import Text, Callable
 
-from tensorflow.python.lib.io import file_io
-from tfx.utils.io_utils import _REMOTE_FS_PREFIX, load_csv_column_names
+from tfx.utils.io_utils import _REMOTE_FS_PREFIX, load_csv_column_names, fileio
 
 
 # TODO: [TFX] [LOW] Unnecessary dependency here
@@ -28,7 +27,7 @@ from tfx.utils.io_utils import _REMOTE_FS_PREFIX, load_csv_column_names
 
 def walk(dir_path):
     """Walks down the dir_path"""
-    return file_io.walk_v2(dir_path)
+    return fileio.walk(dir_path)
 
 
 def is_root(path: Text):
@@ -48,7 +47,7 @@ def is_dir(dir_path: Text):
     Args:
         dir_path (str): Local path in filesystem.
     """
-    return file_io.is_directory_v2(dir_path)
+    return fileio.isdir(dir_path)
 
 
 def find_files(dir_path, pattern):
@@ -96,7 +95,7 @@ def list_dir(dir_path: Text, only_file_names: bool = False):
         only_file_names (bool): Returns only file names if True.
     """
     return [os.path.join(dir_path, f) if not only_file_names else f
-            for f in file_io.list_directory_v2(dir_path)]
+            for f in fileio.listdir(dir_path)]
 
 
 def create_file_if_not_exists(file_path: Text, file_contents: Text):
@@ -107,8 +106,9 @@ def create_file_if_not_exists(file_path: Text, file_contents: Text):
         file_path (str): Local path in filesystem.
         file_contents (str): Contents of file.
     """
-    if not file_io.file_exists_v2(file_path):
-        file_io.write_string_to_file(file_path, file_contents)
+    # if not fileio.exists(file_path):
+    #     fileio.(file_path, file_contents)
+    raise NotImplementedError
 
 
 def append_file(file_path: Text, file_contents: Text):
@@ -119,8 +119,9 @@ def append_file(file_path: Text, file_contents: Text):
         file_path (str): Local path in filesystem.
         file_contents (str): Contents of file.
     """
-    with file_io.FileIO(file_path, mode='a') as f:
-        f.write(file_contents)
+    # with file_io.FileIO(file_path, mode='a') as f:
+    #     f.write(file_contents)
+    raise NotImplementedError
 
 
 def create_dir_if_not_exists(dir_path: Text):
@@ -130,8 +131,8 @@ def create_dir_if_not_exists(dir_path: Text):
     Args:
         dir_path (str): Local path in filesystem.
     """
-    if not file_io.is_directory_v2(dir_path):
-        file_io.create_dir_v2(dir_path)
+    if not fileio.isdir(dir_path):
+        fileio.mkdir(dir_path)
 
 
 def create_dir_recursive_if_not_exists(dir_path: Text):
@@ -141,8 +142,8 @@ def create_dir_recursive_if_not_exists(dir_path: Text):
     Args:
         dir_path (str): Local path in filesystem.
     """
-    if not file_io.is_directory_v2(dir_path):
-        file_io.recursive_create_dir_v2(dir_path)
+    if not fileio.isdir(dir_path):
+        fileio.mkdir(dir_path)  # TODO:  check if working recursively
 
 
 def resolve_relative_path(path: Text):
@@ -164,7 +165,7 @@ def file_exists(path: Text):
     Args:
         path (str): Local path in filesystem.
     """
-    return file_io.file_exists_v2(path)
+    return fileio.exists(path)
 
 
 def copy(source: Text, destination: Text, overwrite: bool = False):
@@ -176,7 +177,7 @@ def copy(source: Text, destination: Text, overwrite: bool = False):
         destination (str): Path to copy to.
         overwrite: boolean, if false, then throws an error before overwrite.
     """
-    return file_io.copy_v2(source, destination, overwrite)
+    return fileio.copy(source, destination, overwrite)
 
 
 def copy_dir(source_dir: Text, destination_dir: Text, overwrite: bool = False):
@@ -208,7 +209,7 @@ def move(source: Text, destination: Text, overwrite: bool = False):
         destination (str): Local path to copy to.
         overwrite: boolean, if false, then throws an error before overwrite.
     """
-    return file_io.rename_v2(source, destination, overwrite)
+    return fileio.rename(source, destination, overwrite)
 
 
 def rm_dir(dir_path: Text):
@@ -218,7 +219,7 @@ def rm_dir(dir_path: Text):
     Args:
         dir_path (str): Dir to delete.
     """
-    file_io.delete_recursively_v2(dir_path)
+    fileio.rmtree(dir_path)
 
 
 def rm_file(file_path: Text):
@@ -230,7 +231,7 @@ def rm_file(file_path: Text):
     """
     if not file_exists(file_path):
         raise Exception(f'{file_path} does not exist!')
-    return file_io.delete_file_v2(file_path)
+    return fileio.remove(file_path)
 
 
 def read_file_contents(file_path: Text):
@@ -240,9 +241,11 @@ def read_file_contents(file_path: Text):
     Args:
         file_path (str): Path to file.
     """
-    if not file_exists(file_path):
-        raise Exception(f'{file_path} does not exist!')
-    return file_io.read_file_to_string(file_path)
+    # if not file_exists(file_path):
+    #     raise Exception(f'{file_path} does not exist!')
+    # return file_io.read_file_to_string(file_path)
+    # tODO: Check for proper implementation
+    raise NotImplementedError
 
 
 def write_file_contents(file_path: Text, content: Text):
@@ -253,7 +256,9 @@ def write_file_contents(file_path: Text, content: Text):
         file_path (str): Path to file.
         content (str): Contents of file.
     """
-    return file_io.write_string_to_file(file_path, content)
+    # return file_io.write_string_to_file(file_path, content)
+    # TODO: Check for prpoer implementation
+    raise NotImplementedError
 
 
 def get_grandparent(dir_path: Text):
