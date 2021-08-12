@@ -45,3 +45,45 @@ repo:
 
 In order to start with the playground, we have our `run.py` script. Install the requirements specified in the [requirements.txt](requirements.txt) and 
 play around!
+
+## Steps
+Steps are now created as functions, with a simple annotation.
+
+```python
+@step
+def PreprocesserStep(input_data: Input[CSVArtifact],
+                     output_data: Output[CSVArtifact],
+                     param: Param[float]):
+    data = input_data.read()
+    param = None
+    output_data.write(data)
+```
+
+There will also be a distributed version of this annotation to easily write distributable steps.
+
+## Pipelines
+Pipelines are also created as functions, and will be in charge of connecting steps together:
+
+```python
+@SimplePipeline
+def SplitPipeline(datasource: Datasource[CSVDatasource],
+                  split_step: Step[SplitStep],
+                  preprocesser_step: Step[PreprocesserStep]):
+    split_step(input_data=datasource)
+    preprocesser_step(input_data=split_step.outputs.output_data)
+
+
+# Pipeline
+split_pipeline = SplitPipeline(
+    datasource=CSVDatasource("local_test/data/data.csv"),
+    split_step=SplitStep(split_map=0.6),
+    preprocesser_step=PreprocesserStep(param=1.0)
+)
+```
+
+## Artifacts
+Artifacts are objects that encapuslate the data flowing through steps. They have easy `read` and `write` functions to 
+persist on disk.
+
+## Datasources
+Datasources are almost like a specialized artifact but with different functions on top to explore different versions.
