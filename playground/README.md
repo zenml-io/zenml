@@ -14,7 +14,7 @@
 [![PyPI - ZenML Version](https://img.shields.io/pypi/v/zenml.svg?label=pip&logo=PyPI&logoColor=white)](https://pypi.org/project/zenml/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zenml)](https://pypi.org/project/zenml/)
 [![PyPI Status](https://pepy.tech/badge/zenml)](https://pepy.tech/project/zenml)
-![GitHub](https://img.shields.io/github/license/maiot-io/zenml)
+![GitHub](https://img.shields.io/github/license/zenml-io/zenml)
 </div>
 
 <div align="center"> Join our
