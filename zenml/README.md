@@ -1,25 +1,10 @@
-<h1>
-  <a href="https://maiot.io">
-    <img src=https://maiot.io/assets/images/maiot.png alt="maiot ZenML" width=55>
-  </a>
-  &nbsp;ZenML&nbsp;
-  <a href="https://docs.maiot.io"><img alt="release" src=https://img.shields.io/badge/-docs-26CB7C></a>
-  <a href="https://github.com/maiot-io/zenml/releases"><img alt="release" src=https://img.shields.io/github/v/tag/maiot-io/zenml?color=431d93></a>
-</h1>
-
-#### Automate ML with repeatable pipelines
-
-<!---
-    <img src=https://gblobscdn.gitbook.com/assets%2F-MCl0MaN3pJfPa2vq2Rb%2F-MJSVuyKMUm7L-4iDzD1%2F-MJSVynHi27dMZrQHXwE%2Farchitectural-overview.png alt="maiot ZenML">
--->
-
-Hello there! This is the repository for the  maiot ZenML. If you would like to see the published 
+Hello there! This is the repository for ZenML. If you would like to see the published 
 pip package can be found [here](https://pypi.org/project/zenml).
 
 ZenML is a platform that lets you create machine learning pipelines for production use-cases.
-Our [website](https://maiot.io) gives an overview of the features of ZenML and if you find 
-it interesting, you can sign up for an early access [here](https://maiot.io/#early-access). You can also learn 
-more about how to use ZenML [here](https://docs.maiot.io).
+Our [website](https://zenml.io) gives an overview of the features of ZenML and if you find 
+it interesting, you can sign up for an early access [here](https://zenml.io/#early-access). You can also learn 
+more about how to use ZenML [here](https://docs.zenml.io).
 
 ## How to install from pip
 
@@ -79,4 +64,4 @@ eval (env _zenml_COMPLETE=source_fish zenml)
 
 ## Authors
 
-* **maiot GmbH** - [Company Website](https://maiot.io) - [Product Website](https://zenml.io) - [ZenML Docs](https://docs.maiot.io)
+* **ZenML GmbH** - [Company Website](https://zenml.io) - [Product Website](https://zenml.io) - [ZenML Docs](https://docs.zenml.io)

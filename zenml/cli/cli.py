@@ -1,4 +1,4 @@
-#  Copyright (c) maiot GmbH 2020. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 # -*- coding: utf-8 -*-
 """
 .. currentmodule:: ce_cli.cli
-.. moduleauthor:: maiot GmbH <support@maiot.io>
+.. moduleauthor:: ZenML GmbH <support@zenml.io>
 """
 
 import click
@@ -28,7 +28,7 @@ from zenml.logger import set_root_verbosity
 @click.group()
 @pass_config
 def cli(info):
-    """maiot ZenML"""
+    """ZenML"""
     info.load()
     set_root_verbosity()
 
