@@ -68,7 +68,7 @@ zenml init
 ## Bug Fixes + Refactor
 A big thanks to our new contributer @aak7912 for the help in this release with issue #71 and PR #75.
 
-* Added an example for [regression](https://github.com/maiot-io/zenml/tree/main/examples/regression).
+* Added an example for [regression](https://github.com/zenml-io/zenml/tree/main/examples/regression).
 * `compare_training_runs()` now takes an optional `datasource` parameter to filter by datasource.
 * `Trainer` interface refined to focus on `run_fn` rather than other helper functions.
 * New docs released with a streamlined vision and coherent storyline: https://docs.zenml.io
@@ -125,7 +125,7 @@ Again, the telemetry data is fully anonymized and just used to improve the produ
 
 ```
 
-* Updated the [Scikit Example](https://github.com/maiot-io/zenml/tree/main/examples/scikit), [PyTorch Lightning Example](https://github.com/maiot-io/zenml/tree/main/examples/pytorch_lightning), [GAN Example](https://github.com/maiot-io/zenml/tree/main/examples/gan) accordingly. Now they should work according to their README's.
+* Updated the [Scikit Example](https://github.com/zenml-io/zenml/tree/main/examples/scikit), [PyTorch Lightning Example](https://github.com/zenml-io/zenml/tree/main/examples/pytorch_lightning), [GAN Example](https://github.com/zenml-io/zenml/tree/main/examples/gan) accordingly. Now they should work according to their README's.
 
 Big shout out to @SarahKing92 in issue #34 for raising the above issues!
 
@@ -151,9 +151,9 @@ zenml init
 ```
 
 ## New Features
-* Introduced another higher-level pipeline: The [NLPPipeline](https://github.com/maiot-io/zenml/blob/main/zenml/pipelines/nlp_pipeline.py). This is a generic 
-  NLP pipeline for a text-datasource based training task. Full example of how to use the NLPPipeline can be found [here](https://github.com/maiot-io/zenml/tree/main/examples/nlp)
-* Introduced a [BaseTokenizerStep](https://github.com/maiot-io/zenml/blob/main/zenml/steps/tokenizer/base_tokenizer.py) as a simple mechanism to define how to train and encode using any generic 
+* Introduced another higher-level pipeline: The [NLPPipeline](https://github.com/zenml-io/zenml/blob/main/zenml/pipelines/nlp_pipeline.py). This is a generic 
+  NLP pipeline for a text-datasource based training task. Full example of how to use the NLPPipeline can be found [here](https://github.com/zenml-io/zenml/tree/main/examples/nlp)
+* Introduced a [BaseTokenizerStep](https://github.com/zenml-io/zenml/blob/main/zenml/steps/tokenizer/base_tokenizer.py) as a simple mechanism to define how to train and encode using any generic 
 tokenizer (again for NLP-based tasks).
 
 ## Bug Fixes + Refactor

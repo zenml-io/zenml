@@ -5,7 +5,7 @@
 This file is used to create the package we'll publish to PyPI.
 
 .. currentmodule:: setup.py
-.. moduleauthor:: maiot GmbH <support@maiot.io>
+.. moduleauthor:: ZenML GmbH <support@zenml.io>
 """
 
 import importlib.util
@@ -72,8 +72,8 @@ setup(
     """,
     python_requires=">=3.6, <3.9.0",
     license='Apache License 2.0',  # noqa
-    author='maiot GmbH',
-    author_email='support@maiot.io',
+    author='ZenML GmbH',
+    author_email='support@zenml.io',
     url='https://zenml.io/',
     keywords=[
         "deep", "learning", "production", "machine", "pipeline", "mlops",

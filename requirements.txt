@@ -37,7 +37,7 @@ ghp-import==1.0.0
 jedi==0.17.2
 sphinx==3.3.1
 sphinx_bootstrap_theme==0.7.1
-git+https://github.com/maiot-io/sphinx-book-theme.git
+git+https://github.com/zenml-io/sphinx-book-theme.git
 sphinxext-opengraph==0.3.1
 
 
