@@ -1,7 +1,7 @@
 blank_issues_enabled: false
 contact_links:
   - name: GitHub Community Support
-    url: https://github.com/maiot-io/zenml/discussions
+    url: https://github.com/zenml-io/zenml/discussions
     about: Please ask and answer questions here.
   - name: Slack Channel
     url: https://zenml.io/slack-invite/
