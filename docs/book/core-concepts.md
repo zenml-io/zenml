@@ -89,5 +89,5 @@ In different words, **ZenML** runs your **ML** code while taking care of the "**
 * Ensuring the immutability of your pipelines from data sourcing to model artifacts.
 * No matter where - Cloud, On-Premise, or locally.
 
-Since production scenarios often look complex, **ZenML** is built with integrations in mind. **ZenML** supports an ever-growing [range of integrations](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/getting-started/benefits/integrations.md) for processing, training, and serving, and you can always add custom integrations via our extensible interfaces.
+Since production scenarios often look complex, **ZenML** is built with integrations in mind. **ZenML** supports an ever-growing [range of integrations](https://github.com/zenml-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/getting-started/benefits/integrations.md) for processing, training, and serving, and you can always add custom integrations via our extensible interfaces.
 

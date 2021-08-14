@@ -63,7 +63,7 @@ def run_fn(self)
 ## A quick example: the built-in `TorchFeedForwardTrainer` step
 
 {% hint style="info" %}
-The following is an overview of the complete **step**. You can find the full code right [here](https://github.com/maiot-io/zenml/blob/main/zenml/steps/trainer/pytorch_trainers/torch_ff_trainer.py,).
+The following is an overview of the complete **step**. You can find the full code right [here](https://github.com/zenml-io/zenml/blob/main/zenml/steps/trainer/pytorch_trainers/torch_ff_trainer.py,).
 {% endhint %}
 
 ```python

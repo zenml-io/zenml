@@ -19,8 +19,8 @@ sys.path.insert(0, os.path.abspath('../../zenml'))
 # -- Project information -----------------------------------------------------
 
 project = 'ZenML'
-copyright = '2021, maiot GmbH'
-author = 'maiot GmbH'
+copyright = '2021, ZenML GmbH'
+author = 'ZenML GmbH'
 
 
 # -- General configuration ---------------------------------------------------

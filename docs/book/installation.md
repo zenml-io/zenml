@@ -29,7 +29,7 @@ pip install zenml
 Alternatively, if you’re feeling brave, feel free to install the bleeding edge: **NOTE:** Do so at your own risk, no guarantees given!
 
 ```bash
-pip install git+https://github.com/maiot-io/zenml.git@main --upgrade
+pip install git+https://github.com/zenml-io/zenml.git@main --upgrade
 ```
 
 ## Integrations

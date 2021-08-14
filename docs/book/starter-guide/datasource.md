@@ -27,7 +27,7 @@ def process(output_path, make_beam_pipeline):
 ## A quick example: the built-in `CSVDataSource`
 
 {% hint style="info" %}
-The following is an overview of the complete step. You can find the full code right [here](https://github.com/maiot-io/zenml/blob/main/zenml/datasources/csv_datasource.py).
+The following is an overview of the complete step. You can find the full code right [here](https://github.com/zenml-io/zenml/blob/main/zenml/datasources/csv_datasource.py).
 {% endhint %}
 
 ```python

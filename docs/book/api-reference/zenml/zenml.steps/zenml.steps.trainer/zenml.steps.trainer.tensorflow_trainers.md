@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.steps.trainer.tensorflow\_trainers package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/index.html)
+zenml.steps.trainer.tensorflow\_trainers package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/maiot-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/zenml-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/maiot-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/zenml-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.steps.trainer.tensorflow_trainers.md)
   * * [zenml.steps.trainer.tensorflow\_trainers package](zenml.steps.trainer.tensorflow_trainers.md)
       * [Submodules](zenml.steps.trainer.tensorflow_trainers.md#submodules)
@@ -15,7 +15,7 @@ zenml.steps.trainer.tensorflow\_trainers package — ZenML documentation  [ZenML
       * [Module contents](zenml.steps.trainer.tensorflow_trainers.md#module-contents)
 * [ « zenml.steps.t...](zenml.steps.trainer.pytorch_trainers.md)
 * [ zenml.utils package »](../../zenml.utils/)
-*  [Source](https://github.com/maiot-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/_sources/zenml.steps.trainer.tensorflow_trainers.rst.txt)
+*  [Source](https://github.com/zenml-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/_sources/zenml.steps.trainer.tensorflow_trainers.rst.txt)
 
 ## zenml.steps.trainer.tensorflow\_trainers package[¶](zenml.steps.trainer.tensorflow_trainers.md#zenml-steps-trainer-tensorflow-trainers-package)
 
@@ -29,7 +29,7 @@ zenml.steps.trainer.tensorflow\_trainers package — ZenML documentation  [ZenML
 
  [Back to top](zenml.steps.trainer.tensorflow_trainers.md)
 
- © Copyright 2021, maiot GmbH.  
+ © Copyright 2021, ZenML GmbH.  
  Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.  
 
 

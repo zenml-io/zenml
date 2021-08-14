@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.cli package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/3ff7b89f43808b7fadfdca6299998f2c689acfc4/docs/sphinx_docs/_build/html/index.html)
+zenml.cli package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/3ff7b89f43808b7fadfdca6299998f2c689acfc4/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/maiot-io/zenml/tree/3ff7b89f43808b7fadfdca6299998f2c689acfc4/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/zenml-io/zenml/tree/3ff7b89f43808b7fadfdca6299998f2c689acfc4/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/maiot-io/zenml/tree/3ff7b89f43808b7fadfdca6299998f2c689acfc4/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/zenml-io/zenml/tree/3ff7b89f43808b7fadfdca6299998f2c689acfc4/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.cli.md)
   * * [zenml.cli package](zenml.cli.md)
       * [Submodules](zenml.cli.md#submodules)
@@ -22,7 +22,7 @@ zenml.cli package — ZenML documentation  [ZenML](https://github.com/maiot-io/z
       * [Module contents](zenml.cli.md#module-contents)
 * [ « zenml.backend...](zenml.backends/zenml.backends.training.md)
 * [ zenml.compone... »](zenml.components/)
-*  [Source](https://github.com/maiot-io/zenml/tree/3ff7b89f43808b7fadfdca6299998f2c689acfc4/docs/sphinx_docs/_build/html/_sources/zenml.cli.rst.txt)
+*  [Source](https://github.com/zenml-io/zenml/tree/3ff7b89f43808b7fadfdca6299998f2c689acfc4/docs/sphinx_docs/_build/html/_sources/zenml.cli.rst.txt)
 
 ## zenml.cli package[¶](zenml.cli.md#zenml-cli-package)
 
@@ -50,7 +50,7 @@ zenml.cli package — ZenML documentation  [ZenML](https://github.com/maiot-io/z
 
  [Back to top](zenml.cli.md)
 
- © Copyright 2021, maiot GmbH.  
+ © Copyright 2021, ZenML GmbH.  
  Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.  
 
 

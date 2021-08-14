@@ -82,7 +82,7 @@ Some things to note: There can be many scripts of the type **pipeline\_run\_scri
 You can put pipeline construction files anywhere within a ZenML repo, and not just the root. **ZenML** figures out automatically from which context you are executing and always finds a reference to the root of the repository!
 {% endhint %}
 
-The **Dockerfile** is necessary in case [custom images](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/backends/using-docker.md) are required for non-local pipeline runs. This too can be automated via a simple CI/CD scheme. The **notebook directory** is for pre and post pipeline run analysis, to analyze what went right \(or wrong\) as the experiments develop. Whenever decisions are made and realized, the code developed here should be refactored into appropriate Step directories to be persisted and tracked by **ZenML**. Notice that each type of **Step** has its own root folder, which contains individual modules for different implementations of it. This allows for flexible [git pinning](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/advanced-guide/integration-with-git.md) and easier development as this repository grows. Let us know your structuring via [Slack](https://github.com/maiot-io/zenml) so we can improve this recommendation!
+The **Dockerfile** is necessary in case [custom images](https://github.com/zenml-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/backends/using-docker.md) are required for non-local pipeline runs. This too can be automated via a simple CI/CD scheme. The **notebook directory** is for pre and post pipeline run analysis, to analyze what went right \(or wrong\) as the experiments develop. Whenever decisions are made and realized, the code developed here should be refactored into appropriate Step directories to be persisted and tracked by **ZenML**. Notice that each type of **Step** has its own root folder, which contains individual modules for different implementations of it. This allows for flexible [git pinning](https://github.com/zenml-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/advanced-guide/integration-with-git.md) and easier development as this repository grows. Let us know your structuring via [Slack](https://github.com/zenml-io/zenml) so we can improve this recommendation!
 
 ## Integration with Git
 
@@ -90,7 +90,7 @@ The **Dockerfile** is necessary in case [custom images](https://github.com/maiot
 
 Concretely, ZenML **optionally** uses Git SHAs to resolve your version-pinned pipeline code.
 
-At pipeline run time, ZenML ties into your local Git history and automatically resolves the SHA into usable code. Every pipeline configuration will persist the combination of the class used, and the related SHA in the [pipeline config](https://github.com/maiot-io/zenml/blob/1b4e7d68c6d1c9c92e04d7b52ebb1cc63a20fde5/docs/book/pipelines/what-is-a-pipeline.md). The format used is: `class@git_sha`, where:
+At pipeline run time, ZenML ties into your local Git history and automatically resolves the SHA into usable code. Every pipeline configuration will persist the combination of the class used, and the related SHA in the [pipeline config](https://github.com/zenml-io/zenml/blob/1b4e7d68c6d1c9c92e04d7b52ebb1cc63a20fde5/docs/book/pipelines/what-is-a-pipeline.md). The format used is: `class@git_sha`, where:
 
 * **class**: a fully-qualified python import path of a ZenML-compatible class, e.g. `my_module.my_class.MyClassName`  \_\_
 * _**git\_sha**_ **\(optional\)**: a 40-digit string representing the commit git sha at which the class exists
@@ -119,7 +119,7 @@ In order to ensure this is not a destructive operation, **ZenML** does not allow
 
 It is important to understand that when a pipeline is run, all custom classes used, whether they be `Steps`, `Datasources`, or `Backends` under-go a so-called `git-resolution` process. This means that wherever there is a custom class referenced in a Pipeline, all files within the module are checked to see if they are committed or not. If they are committed, then the class is successfully pinned with the relevant sha. If they are not, then a warning is thrown but the class is not pinned in the corresponding config. Therefore, it is important to consider not only the file where custom logic resides but the entire module. This is also the reason that `upwards` relative imports are not permitted within these class files.
 
-We recommend that users [follow our recommendations](https://github.com/maiot-io/zenml/blob/1b4e7d68c6d1c9c92e04d7b52ebb1cc63a20fde5/docs/book/getting-started/organizing-zenml.md) on how to structure their **ZenML** repositories, to avoid any potential Git-related issues.
+We recommend that users [follow our recommendations](https://github.com/zenml-io/zenml/blob/1b4e7d68c6d1c9c92e04d7b52ebb1cc63a20fde5/docs/book/getting-started/organizing-zenml.md) on how to structure their **ZenML** repositories, to avoid any potential Git-related issues.
 
 ### Example of how ZenML + Git function together
 

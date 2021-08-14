@@ -52,7 +52,7 @@ training_pipeline.add_evaluator(
 ```
 
 {% hint style="warning" %}
-In order to be able to work with the `AgnosticEvaluator`, you need to make sure that the required features for the computation of the metrics are stored in a specific output artifact as flat `TFRecords` in your `TrainerStep`. In our built-in `TrainerStep`s, we have achieved this with the help of the helper method `test_fn` that is a part of the `TrainerStep` interface. You can find a good example of this approach in our PyTorch [`FeedForwardTrainer`](https://github.com/maiot-io/zenml/blob/main/zenml/steps/trainer/pytorch_trainers/torch_ff_trainer.py).
+In order to be able to work with the `AgnosticEvaluator`, you need to make sure that the required features for the computation of the metrics are stored in a specific output artifact as flat `TFRecords` in your `TrainerStep`. In our built-in `TrainerStep`s, we have achieved this with the help of the helper method `test_fn` that is a part of the `TrainerStep` interface. You can find a good example of this approach in our PyTorch [`FeedForwardTrainer`](https://github.com/zenml-io/zenml/blob/main/zenml/steps/trainer/pytorch_trainers/torch_ff_trainer.py).
 {% endhint %}
 
 When it comes to configuring the `AgnosticEvaluator`, you need to provide a list of slicing metrics under `slices` and a list of performance metrics under `metrics`. Moreover, the key which holds the output of the model \(`prediction_key`\) and the key which holds the actual label \(`label_key`\) within the flat `TFRecords` need to be provided.
@@ -60,8 +60,8 @@ When it comes to configuring the `AgnosticEvaluator`, you need to provide a list
 ## What's next?
 
 * You can take a look at how we used: 
-  * the `TFMAEvaluator` in our [quickstart](https://github.com/maiot-io/zenml/tree/main/examples/quickstart)
-  * the `AgnosticEvaluator` in our [pytorch example](https://github.com/maiot-io/zenml/tree/main/examples/pytorch)
+  * the `TFMAEvaluator` in our [quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)
+  * the `AgnosticEvaluator` in our [pytorch example](https://github.com/zenml-io/zenml/tree/main/examples/pytorch)
 * If you want to learn more about how to use the outcome of this **step** and visualize the results, you can take a look [here](post-training.md).
 * If everything is clear, we can move on to the last step in our pipeline: [**the deployer step**](deployer.md)
 

@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.components.split\_gen package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/index.html)
+zenml.components.split\_gen package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/maiot-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/zenml-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/maiot-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/zenml-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.components.split_gen.md)
   * * [zenml.components.split\_gen package](zenml.components.split_gen.md)
       * [Submodules](zenml.components.split_gen.md#submodules)
@@ -17,7 +17,7 @@ zenml.components.split\_gen package — ZenML documentation  [ZenML](https://git
       * [Module contents](zenml.components.split_gen.md#module-contents)
 * [ « zenml.compone...](zenml.components.sequencer.md)
 * [ zenml.compone... »](zenml.components.tokenizer.md)
-*  [Source](https://github.com/maiot-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/_sources/zenml.components.split_gen.rst.txt)
+*  [Source](https://github.com/zenml-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/_sources/zenml.components.split_gen.rst.txt)
 
 ## zenml.components.split\_gen package[¶](zenml.components.split_gen.md#zenml-components-split-gen-package)
 
@@ -35,7 +35,7 @@ zenml.components.split\_gen package — ZenML documentation  [ZenML](https://git
 
  [Back to top](zenml.components.split_gen.md)
 
- © Copyright 2021, maiot GmbH.  
+ © Copyright 2021, ZenML GmbH.  
  Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.  
 
 

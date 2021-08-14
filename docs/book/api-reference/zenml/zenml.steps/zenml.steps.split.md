@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.steps.split package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/index.html)
+zenml.steps.split package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/maiot-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/zenml-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/maiot-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/zenml-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.steps.split.md)
   * * [zenml.steps.split package](zenml.steps.split.md)
       * [Submodules](zenml.steps.split.md#submodules)
@@ -22,7 +22,7 @@ zenml.steps.split package — ZenML documentation  [ZenML](https://github.com/ma
       * [Module contents](zenml.steps.split.md#module-contents)
 * [ « zenml.steps.s...](zenml.steps.sequencer/zenml.steps.sequencer.standard_sequencer/zenml.steps.sequencer.standard_sequencer.methods.md)
 * [ zenml.steps.t... »](zenml.steps.tokenizer.md)
-*  [Source](https://github.com/maiot-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/_sources/zenml.steps.split.rst.txt)
+*  [Source](https://github.com/zenml-io/zenml/tree/0a1978e479aead878d2bc01aeba00118c228e379/docs/sphinx_docs/_build/html/_sources/zenml.steps.split.rst.txt)
 
 ## zenml.steps.split package[¶](zenml.steps.split.md#zenml-steps-split-package)
 
@@ -50,7 +50,7 @@ zenml.steps.split package — ZenML documentation  [ZenML](https://github.com/ma
 
  [Back to top](zenml.steps.split.md)
 
- © Copyright 2021, maiot GmbH.  
+ © Copyright 2021, ZenML GmbH.  
  Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.  
 
 

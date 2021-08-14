@@ -26,9 +26,9 @@ pip install zenml[all]
 Using the [all] keyword will result in a significantly bigger package installation.
 ```
 
-In order to see the full list of integrations available, see the [setup.py on GitHub](https://github.com/maiot-io/zenml/blob/main/setup.py).
+In order to see the full list of integrations available, see the [setup.py on GitHub](https://github.com/zenml-io/zenml/blob/main/setup.py).
 
-We would be happy to see [your contributions for more integrations](https://github.com/maiot-io/zenml/) if the ones we have currently support 
+We would be happy to see [your contributions for more integrations](https://github.com/zenml-io/zenml/) if the ones we have currently support 
 not fulfil your requirements. Also let us know via [slack](https://zenml.io/slack-invite) what integrations to add!
 
 ## Types of integrations
@@ -98,5 +98,5 @@ These serving integrations come mostly in the form of `DeployerStep`'s to be use
 If the integrations above do not fulfill your requirements and more dependencies are required, then there is always the option to simply 
 install the dependencies alongside ZenML in your repository, and then create [custom steps](../steps/what-is-a-step.md) for your logic. 
 
-If going down this route, one must ensure that the added dependencies do not clash with any [dependency bundled with ZenML](https://github.com/maiot-io/zenml/blob/main/setup.py). 
+If going down this route, one must ensure that the added dependencies do not clash with any [dependency bundled with ZenML](https://github.com/zenml-io/zenml/blob/main/setup.py). 
 A good way to check is to [create a custom Docker image](../backends/using-docker.md) with the ZenML base image and then run a simple pipeline to make sure everything works.

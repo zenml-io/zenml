@@ -38,7 +38,7 @@ training_pipeline.add_deployment(
 ```
 {% endcode %}
 
-In order to get a better understanding of how the `CortexDeployer` works, you can check our full example right [here](https://github.com/maiot-io/zenml/blob/main/examples/cortex/run.py).
+In order to get a better understanding of how the `CortexDeployer` works, you can check our full example right [here](https://github.com/zenml-io/zenml/blob/main/examples/cortex/run.py).
 
 ## Example: the built-in `GCAIPDeployer`
 
@@ -64,5 +64,5 @@ training_pipeline.add_deployment(
 ```
 {% endcode %}
 
-If you would like to see how the `GCAIPDeployer` works in a full example, you can take a look at our tutorial right [here](https://github.com/maiot-io/zenml/tree/main/examples/gcp_gcaip_deployment).
+If you would like to see how the `GCAIPDeployer` works in a full example, you can take a look at our tutorial right [here](https://github.com/zenml-io/zenml/tree/main/examples/gcp_gcaip_deployment).
 

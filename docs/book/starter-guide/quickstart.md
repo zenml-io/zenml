@@ -43,7 +43,7 @@ The `TrainingPipeline` is a specialized pipeline built on top of the `BasePipeli
 Implementation-wise, it covers the required methods to add the aforementioned **steps** to the **pipeline**. Additionally, it also features a set of helper functions, which makes it easier to interact with the output artifacts once the execution of the instance is completed. For instance, after the **pipeline** is executed, you can use `view_statistics` to take a deeper look into the statistics of your dataset/splits or you can use `download_model` to retrieve the trained model to a specified location.
 
 {% hint style="info" %}
-The following is an overview of the complete implementation. You can find the full code right [here](https://github.com/maiot-io/zenml/blob/main/zenml/pipelines/base_pipeline.py).
+The following is an overview of the complete implementation. You can find the full code right [here](https://github.com/zenml-io/zenml/blob/main/zenml/pipelines/base_pipeline.py).
 {% endhint %}
 
 ```python
@@ -111,7 +111,7 @@ training_pipeline.run()
 ```
 
 {% hint style="info" %}
-A **ZenML pipeline** in the current version is a higher-level abstraction of an opinionated TFX pipeline. **ZenML steps** are in turn higher-level abstractions of TFX components. Our goal is to make it easier for the users of **ZenML** to define and run TFX pipelines. Moreover, **ZenML** treats pipelines as first-class citizens. We will elaborate more on the difference in this space, but for now, if you are coming from writing your own TFX pipelines, our [quickstart example](https://github.com/maiot-io/zenml/tree/main/examples/quickstart) illustrates the difference well.
+A **ZenML pipeline** in the current version is a higher-level abstraction of an opinionated TFX pipeline. **ZenML steps** are in turn higher-level abstractions of TFX components. Our goal is to make it easier for the users of **ZenML** to define and run TFX pipelines. Moreover, **ZenML** treats pipelines as first-class citizens. We will elaborate more on the difference in this space, but for now, if you are coming from writing your own TFX pipelines, our [quickstart example](https://github.com/zenml-io/zenml/tree/main/examples/quickstart) illustrates the difference well.
 {% endhint %}
 
 ## What's next?

@@ -25,7 +25,7 @@ def preprocessing_fn(self, element):
 We can follow up on the definition by using a simplified version of our built-in `StandardProcesser` as a practical example. This `PreprocesserStep` handles not just the feature and label selection but also a wide variety of standard feature-level preprocessing techniques from the field of machine learning. If the behavior is not overwritten, it will apply a sane default filling and preprocessing technique based on the data type of the feature.
 
 {% hint style="info" %}
-The following is a simplified version of the complete step. You can find the full code right [here](https://github.com/maiot-io/zenml/blob/main/zenml/steps/preprocesser/standard_preprocesser/standard_preprocesser.py).
+The following is a simplified version of the complete step. You can find the full code right [here](https://github.com/zenml-io/zenml/blob/main/zenml/steps/preprocesser/standard_preprocesser/standard_preprocesser.py).
 {% endhint %}
 
 ```python

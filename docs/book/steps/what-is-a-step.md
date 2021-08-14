@@ -65,7 +65,7 @@ for extending any first-class ZenML component.
 While there are many ready-to-use Standard Steps in the `zenml` package, it will be more often than not needed to create one's own 
 logic while actually using ZenML.
 
-All ZenML steps need to inherit from the `BaseStep` class found [here](https://github.com/maiot-io/zenml/blob/main/zenml/core/steps/base_step.py).
+All ZenML steps need to inherit from the `BaseStep` class found [here](https://github.com/zenml-io/zenml/blob/main/zenml/core/steps/base_step.py).
 
 ### Creating a completely custom step
 A completely custom step has only one core requirement: It must call the `super().__init__(**params)` where `params` is a dict of consisting of 
