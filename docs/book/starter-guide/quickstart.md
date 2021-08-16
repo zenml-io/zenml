@@ -86,14 +86,14 @@ class TrainingPipeline(BasePipeline):
 
 ### Building and executing your pipeline
 
-The code snippet below shows how quickly you can wrap up a `TrainingPipeline` and get it up and running. All you have to do is: 
+The code snippet below shows how quickly you can wrap up a `TrainingPipeline` and get it up and running. All you have to do is:
 
 1. Create an instance of a `TrainingPipeline`
 2. Add a datasource to your instance
 3. Add the desired **steps** along with their configuration
 4. Simply run it
 
-Most importantly, even when executing a simple example such as this, you maintain all the advantages that **ZenML** brings to the table such as reproducibility, scalability, and collaboration to their full extent.  
+Most importantly, even when executing a simple example such as this, you maintain all the advantages that **ZenML** brings to the table such as reproducibility, scalability, and collaboration to their full extent.
 
 ```python
 from zenml.pipelines import TrainingPipeline

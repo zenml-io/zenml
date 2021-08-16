@@ -2,15 +2,15 @@
 
 ## Overview
 
-In order to deploy a trained model, **ZenML** uses an interface called the `BaseDeployer`. 
+In order to deploy a trained model, **ZenML** uses an interface called the `BaseDeployer`.
 
 {% hint style="danger" %}
-As of **0.3.6**, the mechanism to create custom deployers through `BaseDeployer` is not supported. We are working hard to bring you this feature and if you would like to learn more about our progress you can check our [roadmap](../support/roadmap.md).  Meanwhile, you can use our built-in **CortexDeployer** or **GCAIPDeployer**.
+As of **0.3.6**, the mechanism to create custom deployers through `BaseDeployer` is not supported. We are working hard to bring you this feature and if you would like to learn more about our progress you can check our [roadmap](../support/roadmap.md). Meanwhile, you can use our built-in **CortexDeployer** or **GCAIPDeployer**.
 {% endhint %}
 
 ## Example: the built-in `CortexDeployer`
 
-The `CortexDeployer` is built to make it easier to deploy models on a Kubernetes cluster and for this purpose, it utilizes the [Cortex integration of **ZenML**]().
+The `CortexDeployer` is built to make it easier to deploy models on a Kubernetes cluster and for this purpose, it utilizes the [Cortex integration of **ZenML**](deployer.md).
 
 {% code title="zenml/examples/cortex/run.py" %}
 ```python
@@ -27,13 +27,13 @@ api_config = {
     "predictor": {
         "type": "tensorflow",
         "models": {"signature_key": "serving_default"}}}
-        
+
 training_pipeline.add_deployment(
     CortexDeployer(
         env=CORTEX_ENV,
         api_config=api_config,
         predictor=TensorFlowPredictor))
-        
+
 ...
 ```
 {% endcode %}
@@ -42,7 +42,7 @@ In order to get a better understanding of how the `CortexDeployer` works, you ca
 
 ## Example: the built-in `GCAIPDeployer`
 
-With **ZenML**, you can deploy a trained model on the Google Cloud AI Platform using the `GCAIPDeployer`. The usage of the `GCAIPDeployer` is limited to Tensorflow-based trainers and you need to install the [GCP integration of **ZenML**]().
+With **ZenML**, you can deploy a trained model on the Google Cloud AI Platform using the `GCAIPDeployer`. The usage of the `GCAIPDeployer` is limited to Tensorflow-based trainers and you need to install the [GCP integration of **ZenML**](deployer.md).
 
 {% code title="zenml/examples/gcp\_gcaip\_deployment/run.py" %}
 ```python

@@ -5,12 +5,12 @@
 In order to conduct a fair evaluation of your pipeline, it is critical to put your trained model to test on a separated portion of your data. In **ZenML**, achieving this evaluation is done by the `BaseEvaluator` interface.
 
 {% hint style="danger" %}
-As of **0.3.6**, the mechanism to create custom evaluators is not supported. We are working hard to bring you this feature and if you would like to learn more about our progress you can check our [roadmap](../support/roadmap.md).  Meanwhile, you can use our built-in **TFMAEvaluator** or **AgnosticEvaluator**.
+As of **0.3.6**, the mechanism to create custom evaluators is not supported. We are working hard to bring you this feature and if you would like to learn more about our progress you can check our [roadmap](../support/roadmap.md). Meanwhile, you can use our built-in **TFMAEvaluator** or **AgnosticEvaluator**.
 {% endhint %}
 
 ## Example: the built-in `TFMAEvaluator`
 
-The `TFMAEvaluator` is built with TensorFlow models in mind. In other words, you can work with the `TFMAEvaluator`,  when your `TrainerStep` inherits the structure of the `TFBaseTrainerStep`.
+The `TFMAEvaluator` is built with TensorFlow models in mind. In other words, you can work with the `TFMAEvaluator`, when your `TrainerStep` inherits the structure of the `TFBaseTrainerStep`.
 
 As you can see from the code snippet above, if you want to work with the `TFMAEvaluator` all you need to do is to create an instance of the class and configure it. The test results will be saved as an artifact with the selected `slices` and `metrics`.
 
@@ -19,15 +19,15 @@ from zenml.pipelines import TrainingPipeline
 from zenml.steps.evaluator import TFMAEvaluator
 
 training_pipeline = TrainingPipeline()
- 
+
 ...
 
 training_pipeline.add_evaluator(
     TFMAEvaluator(slices=[['slice_feature']],
                   metrics={'output': ['binary_crossentropy', 
                                       'binary_accuracy']}))
-   
-...                            
+
+...
 ```
 
 ## Example: the built-in `AgnosticEvaluator`
@@ -39,9 +39,9 @@ from zenml.pipelines import TrainingPipeline
 from zenml.steps.evaluator import AgnosticEvaluator
 
 training_pipeline = TrainingPipeline()
- 
+
 ...
- 
+
 training_pipeline.add_evaluator(
     AgnosticEvaluator(slices=[['slice_feature']],
                       metrics=['mean_squared_error']

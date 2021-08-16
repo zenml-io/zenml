@@ -48,7 +48,7 @@ If **datasources** represent the data you use, and **pipelines/steps** define th
 
 **Backends** are defined either per **pipeline** \(here they are called `OrchestratorBackends`\), or per **step** \(i.e. `ProcessingBackends`, `TrainingBackends`\).
 
-Read more about backends [here]().
+Read more about backends [here](core-concepts.md).
 
 ## Pipelines Directory
 

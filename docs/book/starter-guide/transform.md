@@ -30,9 +30,9 @@ The following is a simplified version of the complete step. You can find the ful
 
 ```python
 class StandardPreprocesser(BasePreprocesserStep):
-    
+
     ... 
-    
+
     def preprocessing_fn(self, inputs: Dict):
         """
         Standard preprocessing function
@@ -52,13 +52,13 @@ class StandardPreprocesser(BasePreprocesserStep):
                 # Apply preprocessing to the feature
                 result = self.apply_transform(key, value, self.t_dict[key])
                 result = tf.cast(result, dtype=tf.float32)
-                
+
                 # Feature and label selection
                 if key in self.features:
                     output[naming_utils.transformed_feature_name(key)] = result
                 if key in self.labels:
                     output[naming_utils.transformed_label_name(key)] = result
-            
+
             output[key] = value
         return output
 ```

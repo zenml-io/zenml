@@ -9,7 +9,7 @@ description: 'TL;DR: Do `pip install zenml` to install.'
 Your first step is to install **ZenML**, which comes bundled as a good old `pip` package.
 
 {% hint style="warning" %}
-Please note that we only support Python &gt;= 3.6, so please adjust your pip accordingly.
+Please note that we only support Python &gt;= 3.6 &lt;3.9, so please adjust your pip accordingly.
 {% endhint %}
 
 ## Virtual Environment

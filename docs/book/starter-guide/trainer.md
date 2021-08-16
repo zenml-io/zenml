@@ -2,24 +2,24 @@
 
 ## Overview
 
-In **ZenML**, the model training is achieved through an interface called the `BaseTrainerStep`. This specific step interface features **one main abstract method** \(run\_fn\) and **three helper methods** \(input\_fn, model\_fn, test\_fn\) ****that handle different processes within the model training workflow.
+In **ZenML**, the model training is achieved through an interface called the `BaseTrainerStep`. This specific step interface features **one main abstract method** \(run\_fn\) and **three helper methods** \(input\_fn, model\_fn, test\_fn\) _\*\*_that handle different processes within the model training workflow.
 
 {% code title="\# Overview of the BaseTrainerStep" %}
 ```python
 class BaseTrainerStep(BaseStep):
-    
+
     def input_fn(self, *args, **kwargs):
         ...
-        
+
     def model_fn(self, *args, **kwargs):
         ...
 
     def test_fn(self, *args, **kwargs):
         ...
-    
+
     @abstractmethod    
     def run_fn(self):
-        ...    
+        ...
 ```
 {% endcode %}
 
@@ -41,7 +41,7 @@ def model_fn(self, *args, **kwargs)
 
 ### test\_fn
 
-The last helper method when designing a `BaseTrainerStep` is the `test_fn`. The goal here is to separate the computation of the test results once the training is completed.  In the implementation of the built-in `TrainerStep`s, this method is using the trained model to compute the model output on the test splits and stores the results as an artifact. 
+The last helper method when designing a `BaseTrainerStep` is the `test_fn`. The goal here is to separate the computation of the test results once the training is completed. In the implementation of the built-in `TrainerStep`s, this method is using the trained model to compute the model output on the test splits and stores the results as an artifact.
 
 {% hint style="warning" %}
 Storing the test results within the context of a TrainerStep will be especially crucial in terms of post-training evaluation, because, it will allow us to utilize a model agnostic evaluator in the next step.
@@ -93,7 +93,7 @@ class TorchFeedForwardTrainer(BaseTrainerStep):
         Method which prepares the model instance
         """
         return BinaryClassifier()
-        
+
     def test_fn(self, model, dataset):
         """
         Method which computes and stores the test results
@@ -141,11 +141,11 @@ class TorchFeedForwardTrainer(BaseTrainerStep):
 
         # Prepare the model
         model = self.model_fn(train_dataset, eval_dataset)
-        
+
         # Execute the training
         criterion = nn.BCEWithLogitsLoss()
         optimizer = optim.Adam(model.parameters(), lr=self.lr)
-        
+
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model.to(device)
         model.train()
@@ -154,7 +154,7 @@ class TorchFeedForwardTrainer(BaseTrainerStep):
             for x, y, _ in train_dataset:
                 x_batch = torch.cat([v.to(device) for v in x.values()], dim=-1)
                 y_batch = torch.cat([v.to(device) for v in y.values()], dim=-1)
-                
+
                 optimizer.zero_grad()
 
                 y_pred = model(x_batch)

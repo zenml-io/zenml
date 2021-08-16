@@ -4,7 +4,7 @@ description: Pipelines are your experiments
 
 # Inspecting all pipelines in a repository
 
-All **pipelines** within a ZenML **repository** are tracked centrally. In order to access information about your **ZenML repository** in code, you need to access the **ZenML** [Repository instance](../api-reference/zenml/zenml.repo.md#zenml-repo-package). This object is a Singleton and can be fetched any time from within your Python code simply by executing:
+All **pipelines** within a ZenML **repository** are tracked centrally. In order to access information about your **ZenML repository** in code, you need to access the **ZenML** [Repository instance](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/book/api-reference/zenml/zenml.repo.md#zenml-repo-package). This object is a Singleton and can be fetched any time from within your Python code simply by executing:
 
 ```python
 from zenml.repo import Repository
@@ -164,7 +164,7 @@ The config above can be split into 5 distinct keys:
 
 * `version`: The version of the YAML standard to maintain backward compatibility.
 * `artifact_store`: The path where the artifacts produced by the pipelines are stored.
-* `backend`: The orchestrator [backend]() for the pipeline.
+* `backend`: The orchestrator [backend](inspecting-all-pipelines.md) for the pipeline.
 * `metadata`: The metadata store config to store information of pipeline runs.
 * `pipeline`: A global key that contains information regarding the pipeline run itself:
   * `source`: Path to pipeline code source code.
@@ -195,5 +195,5 @@ Ensuring that run pipelines are immutable is crucial to maintain reproducibility
 
 ## Caching
 
-The `copy()` paradigm also helps in the _**reusability**_ ****of code across pipelines. E.g. If now only the `TrainerStep` is changed in `pipeline_b` above, then the corresponding `pipeline_b` pipeline run will skip splitting, preprocessing, and re-use all the artifacts already produced by `pipeline_a`.
+The `copy()` paradigm also helps in the _**reusability**_ _\*\*_of code across pipelines. E.g. If now only the `TrainerStep` is changed in `pipeline_b` above, then the corresponding `pipeline_b` pipeline run will skip splitting, preprocessing, and re-use all the artifacts already produced by `pipeline_a`.
 

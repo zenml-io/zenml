@@ -6,7 +6,7 @@ description: Easily connect datasources.
 
 ## Overview: `BaseDatasource`
 
-**ZenML** automatically tracks \(**metadata store**\) and versions \(**artifact store**\) all data that flows through its pipelines. The  `BaseDatasource` interface defines how to create a datasource. In the definition of this interface, there is only one method called `process`.
+**ZenML** automatically tracks \(**metadata store**\) and versions \(**artifact store**\) all data that flows through its pipelines. The `BaseDatasource` interface defines how to create a datasource. In the definition of this interface, there is only one method called `process`.
 
 ```python
 class BaseDatasource:
@@ -80,7 +80,6 @@ class CSVDatasource(BaseDatasource):
             | 'ExtractParsedCSVLines' >> beam.Map(
                 lambda x: dict(zip(column_names, x[0]))) \
             | WriteToTFRecord(self.schema, output_path)
-
 ```
 
 {% hint style="warning" %}
