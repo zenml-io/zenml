@@ -4,3 +4,7 @@ class StepInterfaceError(Exception):
 
 class PipelineInterfaceError(Exception):
     pass
+
+
+class DatasourceInterfaceError(Exception):
+    pass
