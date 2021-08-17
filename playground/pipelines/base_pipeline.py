@@ -53,8 +53,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
             raise PipelineInterfaceError("")  # TODO: Fill
 
         for k, v in kwargs.items():
-            assert k in self.STEP_SPEC or k in self.DATASOURCE_SPEC
-
             if k in self.STEP_SPEC:
                 self.__steps.update({k: v})  # TODO: assert class
             elif k in self.DATASOURCE_SPEC:
