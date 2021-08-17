@@ -1,9 +1,17 @@
 from playground.artifacts.data_artifacts import CSVArtifact
-from playground.datasources.csv_datasource import CSVDatasource
+from playground.datasources.simple_datasource import SimpleDatasource
 from playground.pipelines.base_pipeline import Step, Datasource
 from playground.pipelines.simple_pipeline import SimplePipeline
 from playground.steps.base_step import Input, Output, Param
 from playground.steps.simple_step import SimpleStep
+
+
+@SimpleDatasource
+def CSVDatasource(output_data: CSVArtifact[CSVArtifact],
+                  path: Param[str]):
+    import pandas as pd
+    data = pd.read_csv(path)
+    output_data.write(data)
 
 
 @SimpleStep
@@ -34,7 +42,7 @@ def SplitPipeline(datasource: Datasource[CSVDatasource],
 
 # Pipeline
 split_pipeline = SplitPipeline(
-    datasource=CSVDatasource("local_test/data/data.csv"),
+    datasource=CSVDatasource(path="local_test/data/data.csv"),
     split_step=SplitStep(split_map=0.6),
     preprocesser_step=PreprocesserStep(param=1.0)
 )
