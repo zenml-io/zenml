@@ -19,6 +19,10 @@ from typing import Type
 
 from six import with_metaclass
 
+from playground.artifacts.base_artifact import BaseArtifact
+from playground.datasources.base_datasource import BaseDatasource
+from playground.steps.base_step import BaseStep
+
 
 class GenericMeta(type):
     def __getitem__(cls: Type["GenericType"],
@@ -53,3 +57,24 @@ class GenericType(with_metaclass(GenericMeta, object)):
             raise ValueError(f"Generic type `{class_name}[T]` expects the "
                              f"single parameter T to be one of "
                              f"{cls.VALID_TYPES}.")
+
+
+Input = type("Input",
+             (GenericType,),
+             {"VALID_TYPES": [BaseArtifact]})
+
+Output = type("Output",
+              (GenericType,),
+              {"VALID_TYPES": [BaseArtifact]})
+
+Param = type("Param",
+             (GenericType,),
+             {"VALID_TYPES": [int, float, str, bytes, dict]})
+
+Datasource = type("Datasource",
+                  (GenericType,),
+                  {"VALID_TYPES": [BaseDatasource]})
+
+Step = type("Step",
+            (GenericType,),
+            {"VALID_TYPES": [BaseStep]})
