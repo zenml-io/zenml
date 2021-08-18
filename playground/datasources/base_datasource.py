@@ -5,7 +5,7 @@ from tfx.orchestration import metadata
 from tfx.orchestration import pipeline as tfx_pipeline
 from tfx.orchestration.local.local_dag_runner import LocalDagRunner
 
-from playground.utils.annotations import Output, Param
+from playground.annotations.artifact_annotations import Output, Param
 from playground.utils.exceptions import DatasourceInterfaceError
 from playground.utils.step_utils import generate_component
 

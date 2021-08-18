@@ -1,8 +1,7 @@
+from playground.annotations import Input, Output, Param, Datasource, Step
 from playground.artifacts.data_artifacts import CSVArtifact
 from playground.datasources.simple_datasource import SimpleDatasource
-from playground.pipelines.base_pipeline import Step, Datasource
 from playground.pipelines.simple_pipeline import SimplePipeline
-from playground.steps.base_step import Input, Output, Param
 from playground.steps.simple_step import SimpleStep
 
 

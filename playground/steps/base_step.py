@@ -1,7 +1,7 @@
 import inspect
 from abc import abstractmethod
 
-from playground.utils.annotations import Input, Output, Param
+from playground.annotations.artifact_annotations import Input, Output, Param
 from playground.utils.exceptions import StepInterfaceError
 from playground.utils.step_utils import generate_component
 
