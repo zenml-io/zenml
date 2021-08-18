@@ -7,7 +7,7 @@ from playground.steps.simple_step import SimpleStep
 
 
 @SimpleDatasource
-def CSVDatasource(output_data: CSVArtifact[CSVArtifact],
+def CSVDatasource(output_data: Output[CSVArtifact],
                   path: Param[str]):
     import pandas as pd
     data = pd.read_csv(path)
