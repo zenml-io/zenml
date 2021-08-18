@@ -1,16 +1,13 @@
-from abc import abstractmethod
 import inspect
-from playground.artifacts.base_artifact import BaseArtifact
-from playground.utils.annotations import GenericType
+from abc import abstractmethod
+
+from tfx.orchestration import metadata
+from tfx.orchestration import pipeline as tfx_pipeline
+from tfx.orchestration.local.local_dag_runner import LocalDagRunner
+
+from playground.utils.annotations import Output, Param
 from playground.utils.exceptions import DatasourceInterfaceError
-
-Output = type("Output",
-              (GenericType,),
-              {"VALID_TYPES": [BaseArtifact]})
-
-Param = type("Param",
-             (GenericType,),
-             {"VALID_TYPES": [int, float, str, bytes, dict]})
+from playground.utils.step_utils import generate_component
 
 
 class BaseDatasourceMeta(type):
@@ -21,7 +18,7 @@ class BaseDatasourceMeta(type):
         cls.PARAM_SPEC = dict()
         cls.PARAM_DEFAULTS = dict()  # TODO: handle defaults
 
-        ingest_spec = inspect.getfullargspec(cls.process)
+        ingest_spec = inspect.getfullargspec(cls.ingest)
         ingest_args = ingest_spec.args
 
         if ingest_args and ingest_args[0] == "self":
@@ -42,21 +39,42 @@ class BaseDatasourceMeta(type):
 class BaseDatasource(metaclass=BaseDatasourceMeta):
 
     def __init__(self, *args, **kwargs):
+        self.__component = None
         self.__params = dict()
-        self.__datasources = dict()
 
         if args:
             raise DatasourceInterfaceError("")  # TODO: Fill
 
         for k, v in kwargs.items():
-            if k in self.PARAM_SPEC:
-                self.__params.update({k: v})
-            else:
-                raise DatasourceInterfaceError("")  # TODO: Fill
+            assert k in self.PARAM_SPEC
+            try:
+                self.__params[k] = self.PARAM_SPEC[k](v)
+            except TypeError or ValueError:
+                raise DatasourceInterfaceError("")
 
     @abstractmethod
     def ingest(self, *args, **kwargs):
         pass
 
-    def run(self):
-        pass
+    def commit(self):
+        created_pipeline = tfx_pipeline.Pipeline(
+            pipeline_name='pipeline_name',
+            pipeline_root='/home/baris/Maiot/zenml/local_test/new_zenml/',
+            components=[self.get_component()],
+            enable_cache=False,
+            metadata_connection_config=metadata.sqlite_metadata_connection_config(
+                '/home/baris/Maiot/zenml/local_test/new_zenml/db'),
+            beam_pipeline_args=[
+                '--direct_running_mode=multi_processing',
+                '--direct_num_workers=0'])
+
+        LocalDagRunner().run(created_pipeline)
+
+    def get_component(self):
+        return generate_component(
+            name=self.__class__.__name__,
+            module=self.__class__.__module__,
+            func=staticmethod(self.ingest),
+            input_spec={},
+            output_spec=self.OUTPUT_SPEC,
+            param_spec=self.PARAM_SPEC)(**self.__params)

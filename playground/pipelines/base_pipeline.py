@@ -5,18 +5,8 @@ from tfx.orchestration import metadata
 from tfx.orchestration import pipeline as tfx_pipeline
 from tfx.orchestration.local.local_dag_runner import LocalDagRunner
 
-from playground.datasources.base_datasource import BaseDatasource
-from playground.steps.base_step import BaseStep
-from playground.utils.annotations import GenericType
+from playground.utils.annotations import Datasource, Step
 from playground.utils.exceptions import PipelineInterfaceError
-
-Datasource = type("Datasource",
-                  (GenericType,),
-                  {"VALID_TYPES": [BaseDatasource]})
-
-Step = type("Step",
-            (GenericType,),
-            {"VALID_TYPES": [BaseStep]})
 
 
 class BasePipelineMeta(type):

@@ -1,22 +1,9 @@
 import inspect
 from abc import abstractmethod
 
-from playground.artifacts.base_artifact import BaseArtifact
-from playground.utils.annotations import GenericType
+from playground.utils.annotations import Input, Output, Param
 from playground.utils.exceptions import StepInterfaceError
-from playground.utils.step_utils import convert_to_component
-
-Input = type("Input",
-             (GenericType,),
-             {"VALID_TYPES": [BaseArtifact]})
-
-Output = type("Output",
-              (GenericType,),
-              {"VALID_TYPES": [BaseArtifact]})
-
-Param = type("Param",
-             (GenericType,),
-             {"VALID_TYPES": [int, float, str, bytes, dict]})
+from playground.utils.step_utils import generate_component
 
 
 class BaseStepMeta(type):
@@ -65,8 +52,13 @@ class BaseStep(metaclass=BaseStepMeta):
 
     def __call__(self, **artifacts):
         # TODO: Check artifact types
-        self.__component = convert_to_component(step=self)(**artifacts,
-                                                           **self.__params)
+        self.__component = generate_component(
+            name=self.__class__.__name__,
+            module=self.__class__.__module__,
+            func=staticmethod(self.process),
+            input_spec=self.INPUT_SPEC,
+            output_spec=self.OUTPUT_SPEC,
+            param_spec=self.PARAM_SPEC)(**artifacts, **self.__params)
 
     def __getattr__(self, item):
         if item == "outputs":
