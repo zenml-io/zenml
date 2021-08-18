@@ -83,6 +83,40 @@ def _split_inputs_labels(x):
 
     return inputs, labels, raw
 
+def _choose_default_device():
+    if torch.cuda.is_available():
+        dev = torch.device("cuda:0")
+        print(f"""\n*****Using GPU: {
+            torch.cuda.get_device_name(0)}*****\n""")
+    else:
+        dev = torch.device("cpu")
+        print(f"\n*****Using CPU*****\n")
+    return dev
+
+def assign_device(device:str):          
+
+    if isinstance(device,str):
+        device = device.lower()
+        try:
+            # flexibility to use desired gpu device e.g. device = cuda:1
+            # throws RuntimeError if device is invalid
+            tor_device = torch.device(device)
+            tmp = torch.tensor([42])
+            tmp = tmp.to(tor_device).cpu()
+            del tmp
+            print(f"""\n*****Using Provided Device: {device if 'cpu' 
+                in device else torch.cuda.get_device_name(int(device[5:]) 
+                if len(device)>4 else 0)}*****\n""")
+        except RuntimeError:
+            print("\nFailed to use provided device.",
+                "Choosing default available device.")
+            tor_device = _choose_default_device()
+    else:
+        print("\nChoosing default available device.")
+        tor_device = _choose_default_device()
+
+    return tor_device
+
 
 def create_tf_dataset(file_pattern,
                       spec,

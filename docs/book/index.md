@@ -37,7 +37,7 @@ A good place to go from this point is to:
 
 ## Get involved
 
-If you're just not ready to use **ZenML** for whatever reason, but still would like to stay updated, then the best way is to [star the GitHub repository](https://github.com/maiot-io/zenml)! You can then keep up with the latest going-on's of **ZenML**, and it would help us tremendously to get more people using it.
+If you're just not ready to use **ZenML** for whatever reason, but still would like to stay updated, then the best way is to [star the GitHub repository](https://github.com/zenml-io/zenml)! You can then keep up with the latest going-on's of **ZenML**, and it would help us tremendously to get more people using it.
 
-Contributions are also welcome! Please read out [contributing guide](https://github.com/maiot-io/zenml/blob/main/CONTRIBUTING.md) to get started.
+Contributions are also welcome! Please read out [contributing guide](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md) to get started.
 

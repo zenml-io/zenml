@@ -1,4 +1,4 @@
-#  Copyright (c) maiot GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ TEST_ROOT = os.path.join(ZENML_ROOT, "tests")
 #         query_dataset='samples',
 #         query_table='shakespeare',
 #         gcs_location='gs://zenml_tests/bq_datasource_test',
-#         dest_project='maiot-zenml',
 #         query_limit=100,
 #     )
 #     assert not ds.commits
@@ -46,7 +45,6 @@ TEST_ROOT = os.path.join(ZENML_ROOT, "tests")
 # def test_bq_private_commit(repo):
 #     ds = BigQueryDatasource(
 #         name='bq_datasource_private',
-#         query_project='maiot-zenml',
 #         query_dataset='zenml_tests',
 #         query_table='shakespeare',
 #         gcs_location='gs://zenml_tests/bq_datasource_test',

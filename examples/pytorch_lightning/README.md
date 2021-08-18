@@ -7,7 +7,7 @@ the pre-built PyTorch Lightning trainer steps.
 In order to run this example, you need to clone the zenml repo.
 
 ```bash
-git clone https://github.com/maiot-io/zenml.git
+git clone https://github.com/zenml-io/zenml.git
 ```
 
 #### Note: Please skip below until pytorch_lightning is added as an extension

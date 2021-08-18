@@ -33,7 +33,7 @@ The mechanism to create a custom Deployer will be published in more detail soon 
 However, the details of this are currently being worked out and will be made available in future releases.
 
 If you need this functionality earlier, then ping us on our [Slack](https://zenml.io/slack-invite) or 
-[create an issue on GitHub](https://https://github.com/maiot-io/zenml) so that we know about it!
+[create an issue on GitHub](https://https://github.com/zenml-io/zenml) so that we know about it!
 
 ## Downloading a trained model
 The model will be present in the `TrainerStep` artifacts directory.

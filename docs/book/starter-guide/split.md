@@ -37,7 +37,7 @@ def get_split_names(self) -> List[Text]:
 Now that the theoretical flow is in place, we can quickly give an example by using one of our built-in split-steps `RandomSplit` that splits data into smaller sets in a random manner.
 
 {% hint style="info" %}
-The following is an overview of the complete step. You can find the full code right [here](https://github.com/maiot-io/zenml/blob/main/zenml/steps/split/base_split_step.py).
+The following is an overview of the complete step. You can find the full code right [here](https://github.com/zenml-io/zenml/blob/main/zenml/steps/split/base_split_step.py).
 {% endhint %}
 
 ```python

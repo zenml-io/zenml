@@ -2,7 +2,7 @@
 description: Collaborate seamlessly.
 ---
 
-# Team collaboration
+# Team Collaboration
 
 **ZenML**'s mission is centered on reproducible Machine Learning, with easy access to integrations for your favorite technologies. A key aspect of this mission is the ability to easily collaborate with your team across machines and environments, without sacrifices.
 
@@ -16,7 +16,7 @@ Collaboration with **ZenML** means shared access to:
 Deploying the above in a shared setting makes all experiments within a **ZenML** repository reproducible and discoverable. This is regardless of which team member ran the corresponding pipelines, and regardless of the environment the experiments were run in.
 
 {% hint style="info" %}
-The Metadata and Artifact Stores respectively, while highly recommended, are **not necessary** to share for collaboration. You could as well share the Git Repository with a committed local pipeline directory and still collaborate using **ZenML**. However, losing the Artifact and Metadata Store will invalidate all [caching](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/benefits/reusing-artifacts.md), and all pipelines need them to be re-run on every team member's local setup. This might have unintended consequences, so please be careful when setting this up in production.
+The Metadata and Artifact Stores respectively, while highly recommended, are **not necessary** to share for collaboration. You could as well share the Git Repository with a committed local pipeline directory and still collaborate using **ZenML**. However, losing the Artifact and Metadata Store will invalidate all [caching](https://github.com/zenml-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/benefits/reusing-artifacts.md), and all pipelines need them to be re-run on every team member's local setup. This might have unintended consequences, so please be careful when setting this up in production.
 {% endhint %}
 
 ## Example
@@ -54,9 +54,9 @@ pipeline_b.add_trainer(...)  # change trainer step
 pipeline_b.run()
 ```
 
-In the above example, if there is a shared Metadata and Artifact Store, all steps preceding the TrainerStep in the pipeline will be [cached](https://github.com/maiot-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/repository/benefits/reusing-artifacts.md) and reused in Pipeline B. This way the entire team is benefiting from each other's work implicitly and can see each other's results and progress as it evolves.
+In the above example, if there is a shared Metadata and Artifact Store, all steps preceding the TrainerStep in the pipeline will be [cached](https://github.com/zenml-io/zenml/tree/9c7429befb9a99f21f92d13deee005306bd06d66/docs/book/repository/benefits/reusing-artifacts.md) and reused in Pipeline B. This way the entire team is benefiting from each other's work implicitly and can see each other's results and progress as it evolves.
 
-For a concrete example of how to set up collaboration completely, check out our tutorial using [Google Cloud Platform](https://github.com/maiot-io/zenml/tree/main/examples/collaboration). Using any other cloud provider is also possible, as the only requirement is the Metadata Store and Artifact Store exist in a globally accessible place. Also, not using a cloud provider at all is also possible, but would entail losing the advantages of a shared metadata + artifact store \(see above note.\)
+For a concrete example of how to set up collaboration completely, check out our tutorial using [Google Cloud Platform](https://github.com/zenml-io/zenml/tree/main/examples/collaboration). Using any other cloud provider is also possible, as the only requirement is the Metadata Store and Artifact Store exist in a globally accessible place. Also, not using a cloud provider at all is also possible, but would entail losing the advantages of a shared metadata + artifact store \(see above note.\)
 
 ## Ensuring ML reproducibility with ZenML
 
@@ -71,7 +71,7 @@ Having the ability to reproduce results in a machine learning system is critical
 In the research of the POC phase of development, reproducing experiments ensures that critical information is not lost due to human error. In production, this is even more critical: ML models tend to go through a lifecycle of being destroyed, forged anew, and re-created as development evolves from rudimentary notebook snippets to a testable, production codebase. Therefore, we better make sure that every time a model is \(re-\) trained, the results are what we expect them to be.
 
 {% hint style="info" %}
-To understand why reproducibility is so important in more detail, check out this [blog post](https://blog.maiot.io/is-your-ml-reproducible/).
+To understand why reproducibility is so important in more detail, check out this [blog post](https://blog.zenml.io/is-your-ml-reproducible/).
 {% endhint %}
 
 ### How ZenML guarantees reproducibility

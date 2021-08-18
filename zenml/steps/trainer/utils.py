@@ -64,7 +64,7 @@ def combine_batch_results(x):
     for batch in x:
         for feature, values in batch.items():
             if isinstance(values, torch.Tensor):
-                temp = torch.squeeze(values).detach().numpy()
+                temp = torch.squeeze(values).detach().cpu().numpy()
                 values = np.reshape(temp, values.size())
             elif isinstance(values, tf.Tensor):
                 values = values.numpy()

@@ -6,13 +6,13 @@
 #######################################################################################
 # Book settings
 title                       : ZenML Docs  # The title of the book. Will be placed in the left navbar.
-author                      : maiot GmbH  # The author of the book
+author                      : ZenML GmbH  # The author of the book
 copyright                   : "2021"  # Copyright year to be placed in the footer
 logo                        : logo.png  # A path to the book logo
 launch_buttons:
   colab_url: "https://colab.research.google.com"
 repository:
-  url: https://github.com/maiot-io/zenml
+  url: https://github.com/zenml-io/zenml
   path_to_book: docs/book
   branch: main
 execute:

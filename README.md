@@ -14,7 +14,7 @@
 [![PyPI - ZenML Version](https://img.shields.io/pypi/v/zenml.svg?label=pip&logo=PyPI&logoColor=white)](https://pypi.org/project/zenml/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zenml)](https://pypi.org/project/zenml/)
 [![PyPI Status](https://pepy.tech/badge/zenml)](https://pepy.tech/project/zenml)
-![GitHub](https://img.shields.io/github/license/maiot-io/zenml)
+![GitHub](https://img.shields.io/github/license/zenml-io/zenml)
 </div>
 
 <div align="center"> Join our
@@ -32,6 +32,16 @@
 <b>GitHub star</b> to show your love
 </div>
 
+
+## NOTICE August 12 2021
+First off, thank you everyone so much for the support ZenML has received since its release a few months ago. It has been 
+a crazy ride for the core development team. Now, we are taking the time to absorb all the feedback we have receieved 
+and are undergoing a **major rehaul of ZenML**. We will be releasing in the coming weeks a much slimmer, faster, and more production-ready 
+version of ZenML soon!
+
+If you are here as an existing user, or someone who is curious in what we are up to with the redesign, head over to the [playground](playground) directory!
+
+In the meanwhile, feel free to read the rest of the README and get an idea where ZenML fits in the whole MLOps space.
 
 
 ## Why?
@@ -67,7 +77,7 @@ pip install zenml
 Alternatively, if you’re feeling brave, feel free to install the bleeding edge:
 **NOTE:** Do so on your own risk, no guarantees given!
 ```bash
-pip install git+https://github.com/maiot-io/zenml.git@main --upgrade
+pip install git+https://github.com/zenml-io/zenml.git@main --upgrade
 ```
 
 #### Step 1: Initialize a ZenML repo from within a git repo
@@ -126,10 +136,8 @@ training_pipeline.add_evaluator(
 training_pipeline.run()
 ```
 
-While the above is great to get a quick flavor of ZenML, a more practical way to start is to follow our guide to convert your legacy codebase into ZenML code [here](https://docs.zenml.io/getting-started/organizing-zenml.html).
-
 ## Leverage powerful integrations
-Once code is organized into a ZenML pipeline, you can supercharge your ML development through powerful [integrations](https://docs.zenml.io/benefits/integrations.html). Some of the benefits you get are:
+Once code is organized into a ZenML pipeline, you can supercharge your ML development through powerful [integrations](https://docs.zenml.io/installation#integrations). Some of the benefits you get are:
 
 ### Work locally but switch seamlessly to the cloud
 
@@ -230,7 +238,7 @@ and contribute to the ZenML community, so that everyone can benefit.
 Our community is the backbone of making ZenML a success! We are currently actively maintaining two main channels for community discussions:
 
 * Our Slack Channel: Chat with us [here](https://zenml.io/slack-invite/).
-* The GitHub Community: Create your first thread [here](https://github.com/maiot-io/zenml/discussions).
+* The GitHub Community: Create your first thread [here](https://github.com/zenml-io/zenml/discussions).
 
 From March 23, 2021 onwards, we are hosting a weekly community hour with the entire ZenML fam. Come talk to us about ZenML (or whatever else tickles your fancy)! Community hour 
 happens at **Wednesday at 5PM GMT+2**. Register in advance [here](https://calendly.com/zenml/community-hour) to join.
@@ -245,4 +253,4 @@ Any contribution made to this project will be licensed under the Apache License 
 
 ## Credit
 ZenML is built on the shoulders of giants: We leverage, and would like to give credit to, existing open-source libraries like [TFX](https://github.com/tensorflow/tfx/). The goal of our framework is neither to replace these libraries, nor to diminish their usage. ZenML is simply an opinionated, higher level interface with the focus being purely on easy-of-use and coherent intuitive design.
-You can read more about why we actually started building ZenML at our [blog](https://blog.maiot.io/why-zenml/).
+You can read more about why we actually started building ZenML at our [blog](https://blog.zenml.io/why-zenml/).

@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.steps package — ZenML documentation  [ZenML](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/index.html)
+zenml.steps package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](./)
   * * [zenml.steps package](./)
       * [Subpackages](./#subpackages)
@@ -15,26 +15,26 @@ zenml.steps package — ZenML documentation  [ZenML](https://github.com/maiot-io
       * [zenml.steps.base\_step\_test module](./#zenml-steps-base-step-test-module)
       * [Module contents](./#module-contents)
 * [ « zenml.standar...](../zenml.standards.md)
-* [ zenml.steps.d... »](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.steps.deployer.html)
-*  [Source](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/_sources/zenml.steps.rst.txt)
+* [ zenml.steps.d... »](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/zenml.steps.deployer.html)
+*  [Source](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/_sources/zenml.steps.rst.txt)
 
 ## zenml.steps package[¶](./#zenml-steps-package)
 
 ### Subpackages[¶](./#subpackages)
 
-* [zenml.steps.deployer package](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.steps.deployer.html)
-  * [Submodules](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.steps.deployer.html#submodules)
-  * [zenml.steps.deployer.base\_deployer module](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.steps.deployer.html#zenml-steps-deployer-base-deployer-module)
-  * [zenml.steps.deployer.cortex\_deployer module](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.steps.deployer.html#zenml-steps-deployer-cortex-deployer-module)
-  * [zenml.steps.deployer.gcaip\_deployer module](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.steps.deployer.html#zenml-steps-deployer-gcaip-deployer-module)
-  * [Module contents](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.steps.deployer.html#module-contents)
-* [zenml.steps.evaluator package](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.steps.evaluator.html)
-  * [Submodules](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.steps.evaluator.html#submodules)
-  * [zenml.steps.evaluator.agnostic\_evaluator module](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.steps.evaluator.html#zenml-steps-evaluator-agnostic-evaluator-module)
-  * [zenml.steps.evaluator.base\_evaluator module](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.steps.evaluator.html#zenml-steps-evaluator-base-evaluator-module)
-  * [zenml.steps.evaluator.tfma\_evaluator module](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.steps.evaluator.html#zenml-steps-evaluator-tfma-evaluator-module)
-  * [zenml.steps.evaluator.tfma\_module module](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.steps.evaluator.html#zenml-steps-evaluator-tfma-module-module)
-  * [Module contents](https://github.com/maiot-io/zenml/tree/d1fcfa3a8f41754dc05d773d2c196cf9d9b74f35/docs/sphinx_docs/_build/html/zenml.steps.evaluator.html#module-contents)
+* [zenml.steps.deployer package](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/zenml.steps.deployer.html)
+  * [Submodules](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/zenml.steps.deployer.html#submodules)
+  * [zenml.steps.deployer.base\_deployer module](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/zenml.steps.deployer.html#zenml-steps-deployer-base-deployer-module)
+  * [zenml.steps.deployer.cortex\_deployer module](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/zenml.steps.deployer.html#zenml-steps-deployer-cortex-deployer-module)
+  * [zenml.steps.deployer.gcaip\_deployer module](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/zenml.steps.deployer.html#zenml-steps-deployer-gcaip-deployer-module)
+  * [Module contents](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/zenml.steps.deployer.html#module-contents)
+* [zenml.steps.evaluator package](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/zenml.steps.evaluator.html)
+  * [Submodules](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/zenml.steps.evaluator.html#submodules)
+  * [zenml.steps.evaluator.agnostic\_evaluator module](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/zenml.steps.evaluator.html#zenml-steps-evaluator-agnostic-evaluator-module)
+  * [zenml.steps.evaluator.base\_evaluator module](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/zenml.steps.evaluator.html#zenml-steps-evaluator-base-evaluator-module)
+  * [zenml.steps.evaluator.tfma\_evaluator module](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/zenml.steps.evaluator.html#zenml-steps-evaluator-tfma-evaluator-module)
+  * [zenml.steps.evaluator.tfma\_module module](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/zenml.steps.evaluator.html#zenml-steps-evaluator-tfma-module-module)
+  * [Module contents](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/zenml.steps.evaluator.html#module-contents)
 * [zenml.steps.inferrer package](zenml.steps.inferrer.md)
   * [Submodules](zenml.steps.inferrer.md#submodules)
   * [zenml.steps.inferrer.base\_inferrer\_step module](zenml.steps.inferrer.md#zenml-steps-inferrer-base-inferrer-step-module)
@@ -108,7 +108,7 @@ zenml.steps package — ZenML documentation  [ZenML](https://github.com/maiot-io
 
  [Back to top](./)
 
- © Copyright 2021, maiot GmbH.  
+ © Copyright 2021, ZenML GmbH.  
  Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.  
 
 

@@ -25,14 +25,14 @@ def preprocessing_fn(self, element):
 We can follow up on the definition by using a simplified version of our built-in `StandardProcesser` as a practical example. This `PreprocesserStep` handles not just the feature and label selection but also a wide variety of standard feature-level preprocessing techniques from the field of machine learning. If the behavior is not overwritten, it will apply a sane default filling and preprocessing technique based on the data type of the feature.
 
 {% hint style="info" %}
-The following is a simplified version of the complete step. You can find the full code right [here](https://github.com/maiot-io/zenml/blob/main/zenml/steps/preprocesser/standard_preprocesser/standard_preprocesser.py).
+The following is a simplified version of the complete step. You can find the full code right [here](https://github.com/zenml-io/zenml/blob/main/zenml/steps/preprocesser/standard_preprocesser/standard_preprocesser.py).
 {% endhint %}
 
 ```python
 class StandardPreprocesser(BasePreprocesserStep):
-    
+
     ... 
-    
+
     def preprocessing_fn(self, inputs: Dict):
         """
         Standard preprocessing function
@@ -52,13 +52,13 @@ class StandardPreprocesser(BasePreprocesserStep):
                 # Apply preprocessing to the feature
                 result = self.apply_transform(key, value, self.t_dict[key])
                 result = tf.cast(result, dtype=tf.float32)
-                
+
                 # Feature and label selection
                 if key in self.features:
                     output[naming_utils.transformed_feature_name(key)] = result
                 if key in self.labels:
                     output[naming_utils.transformed_label_name(key)] = result
-            
+
             output[key] = value
         return output
 ```

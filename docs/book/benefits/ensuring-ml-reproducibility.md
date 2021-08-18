@@ -15,7 +15,7 @@ from rudimentary notebook snippets to a testable, production codebase. Therefore
 time a model is (re-) trained, the results are what we expect them to be.
 
 ```{hint}
-To understand why reproducibility is so important in more detail, check out this [blog post](https://blog.maiot.io/is-your-ml-reproducible/).
+To understand why reproducibility is so important in more detail, check out this [blog post](https://blog.zenml.io/is-your-ml-reproducible/).
 ```
 
 ## How ZenML guarantees reproducibility

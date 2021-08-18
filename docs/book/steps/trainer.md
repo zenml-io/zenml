@@ -37,5 +37,5 @@ Coming soon.
 ### Other libraries
 Coming soon.
 
-If you need the above functionalities earlier, then ping us on our [Slack](https://zenml.io/slack-invite) or [create an issue on GitHub](https://https://github.com/maiot-io/zenml) 
+If you need the above functionalities earlier, then ping us on our [Slack](https://zenml.io/slack-invite) or [create an issue on GitHub](https://https://github.com/zenml-io/zenml) 
 so that we know about it!

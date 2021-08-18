@@ -14,7 +14,7 @@ description: 'Environment, docker, dependencies'
 * `plotly` &gt;= 4.0.0
 * `numpy` &gt;= 1.18.0
 
-The full list can be found [here](https://github.com/maiot-io/zenml/blob/main/setup.py).
+The full list can be found [here](https://github.com/zenml-io/zenml/blob/main/setup.py).
 
 You can install any other dependencies alongside **ZenML** and use them in your code as long as they do not conflict with the dependencies listed above. E.g `torch`, `scikit-learn`, `pandas` etc are perfectly fine. However, using `tensoflow` &lt; 2.3.0 currently is not supported.
 
@@ -40,9 +40,9 @@ pip install zenml[all]
 Using the \[all\] keyword will result in a significantly bigger package installation.
 {% endhint %}
 
-In order to see the full list of integrations available, see the [setup.py on GitHub](https://github.com/maiot-io/zenml/blob/main/setup.py).
+In order to see the full list of integrations available, see the [setup.py on GitHub](https://github.com/zenml-io/zenml/blob/main/setup.py).
 
-We would be happy to see [your contributions for more integrations](https://github.com/maiot-io/zenml/) if the ones we have currently support not fulfill your requirements. Also, let us know via [slack](https://zenml.io/slack-invite) what integrations to add!
+We would be happy to see [your contributions for more integrations](https://github.com/zenml-io/zenml/) if the ones we have currently support not fulfill your requirements. Also, let us know via [slack](https://zenml.io/slack-invite) what integrations to add!
 
 ### Types of integrations
 
@@ -108,7 +108,7 @@ Every **ZenML** pipeline yields a servable model, ready to be used in your exist
 
 ### Other libraries
 
-If the integrations above do not fulfill your requirements and more dependencies are required, then there is always the option to simply install the dependencies alongside **ZenML** in your repository. If going down this route, one must ensure that the added dependencies do not clash with any [dependency bundled with **ZenML**](https://github.com/maiot-io/zenml/blob/main/setup.py)**.**
+If the integrations above do not fulfill your requirements and more dependencies are required, then there is always the option to simply install the dependencies alongside **ZenML** in your repository. If going down this route, one must ensure that the added dependencies do not clash with any [dependency bundled with **ZenML**](https://github.com/zenml-io/zenml/blob/main/setup.py)**.**
 
 ## Using Docker
 
@@ -128,7 +128,7 @@ Some examples of when a Docker image is required:
 
 ### Creating custom images
 
-In cases where the dependencies specified in the base images are not enough, you can easily create a custom image based on the corresponding base image. The base images are hosted on a public Container Registry, namely `[eu.gcr.io/maiot-zenml](http://eu.gcr.io/maiot-zenml)`. The Dockerfiles of all base images can be found in the `zenml/docker` directory of the [source code](https://github.com/maiot-io/zenml).
+In cases where the dependencies specified in the base images are not enough, you can easily create a custom image based on the corresponding base image. The base images are hosted on a public Container Registry, namely `[eu.gcr.io/maiot-zenml](http://eu.gcr.io/maiot-zenml)`. The Dockerfiles of all base images can be found in the `zenml/docker` directory of the [source code](https://github.com/zenml-io/zenml).
 
 The easiest way to create your own, custom **ZenML** Docker Image, is by starting a new Dockerfile, using the **ZenML** Base Image as `FROM` :
 
@@ -155,7 +155,7 @@ This is by no means a complete guide on building, pushing and hosting Docker ima
 
 ### Using custom images
 
-Once you’ve successfully built and pushed your new Docker Image to a registry you’re ready to use it in your **ZenML** pipelines. For this example, I’ll be re-using our [Tutorial on running a pipeline on GCP](https://github.com/maiot-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/tutorials/running-a-pipeline-on-a-google-cloud-vm.md).
+Once you’ve successfully built and pushed your new Docker Image to a registry you’re ready to use it in your **ZenML** pipelines. For this example, I’ll be re-using our [Tutorial on running a pipeline on GCP](https://github.com/zenml-io/zenml/tree/fc868ee5e5589ef0c09e30be9c2eab4897bfb140/tutorials/running-a-pipeline-on-a-google-cloud-vm.md).
 
 Your new orchestration backend instantiation looks like this:
 

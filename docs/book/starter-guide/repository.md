@@ -63,7 +63,7 @@ pipelines = repo.get_pipelines()
 steps = repo.get_step_versions()
 
 # Get a step by its version
-step_object = get_step_by_version(step_type, version)
+step_object = repo.get_step_by_version(step_type, version)
 
 # Compare all pipelines in the repository
 repo.compare_training_runs()

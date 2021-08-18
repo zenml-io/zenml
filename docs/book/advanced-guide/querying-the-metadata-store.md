@@ -73,7 +73,7 @@ Under-the-hood, these parameters are also captured as [ExecutionParameters](http
 
 The `args` key represents all the parameters captured and persisted.
 
-For most use-cases, **ZenML** exposes native interfaces to fetch these parameters after a pipeline has been run successfully. E.g. the `repo.compare_training_runs()` method compares all pipelines in a [Repository](../api-reference/zenml/zenml.repo.md) and extensively uses the ML Metadata store to spin up a visualization of comparison of training pipeline results.
+For most use-cases, **ZenML** exposes native interfaces to fetch these parameters after a pipeline has been run successfully. E.g. the `repo.compare_training_runs()` method compares all pipelines in a [Repository](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/book/api-reference/zenml/zenml.repo.md) and extensively uses the ML Metadata store to spin up a visualization of comparison of training pipeline results.
 
 However, if users would like direct access to the store, they can easily use the ML Metadata Python library to quickly access their parameters. In order to understand more about how Execution Parameters and ML Metadata work please refer to the [TFX docs](https://www.tensorflow.org/tfx/guide/mlmd).
 
@@ -105,7 +105,7 @@ def __init__(self,
 For now, only **primitive types** are supported for tracking. You cannot track any arbitrary python object. Please ensure that only primitive types \(int, string, float, etc.\) are used in your Step constructors.
 {% endhint %}
 
-As long as the above pattern is followed, any primitive type can be tracked centrally with **ZenML**. As a note, while all steps are base classes of `BaseStep` , for specific step types, other base classes are available. For example, if creating a preprocessing step, inherit from the `BasePreprocesserStep` step and if trainer step the `BaseTrainerStep` or even further one level down to the `TFBaseTrainerStep` and `TorchBaseTrainerStep`. To see all the step interfaces check out the [steps module of **ZenML**](https://github.com/maiot-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/api-reference/zenml/zenml.steps#zenml-steps-package)**.**
+As long as the above pattern is followed, any primitive type can be tracked centrally with **ZenML**. As a note, while all steps are base classes of `BaseStep` , for specific step types, other base classes are available. For example, if creating a preprocessing step, inherit from the `BasePreprocesserStep` step and if trainer step the `BaseTrainerStep` or even further one level down to the `TFBaseTrainerStep` and `TorchBaseTrainerStep`. To see all the step interfaces check out the [steps module of **ZenML**](https://github.com/zenml-io/zenml/tree/beef951a0f0f146c6f8e16e4ad759262acbcdfdd/docs/book/api-reference/zenml/zenml.steps#zenml-steps-package)**.**
 
 ## Reusing Artifacts with Caching
 

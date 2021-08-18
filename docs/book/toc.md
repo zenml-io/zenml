@@ -50,7 +50,6 @@
     * [Tokenizer](../sphinx_docs/_build/html/zenml.components.tokenizer.html)
     * [Trainer](../sphinx_docs/_build/html/zenml.components.trainer.html)
     * [Transform](../sphinx_docs/_build/html/zenml.components.transform.html)
-    * [Transform simple](../sphinx_docs/_build/html/zenml.components.transform_simple.html)
   * [Datasources](../sphinx_docs/_build/html/zenml.datasources.html)
   * [Metadata](../sphinx_docs/_build/html/zenml.metadata.html)
   * [Pipelines](../sphinx_docs/_build/html/zenml.pipelines.html)

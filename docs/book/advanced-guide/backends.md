@@ -20,7 +20,7 @@ You can then:
 
 ## How to use a backend?
 
-A backend is associated directly with a [pipeline](../api-reference/zenml/zenml.pipelines.md) and can be specified in different ways using the `backend` argument. The goal of **ZenML** is to get to a point where a data scientist can simply query the backends available for their **ZenML** repo by doing:
+A backend is associated directly with a [pipeline](https://github.com/zenml-io/zenml/tree/67ef12d8769888d486cf9a5633c78ef4d3f42e7d/docs/book/api-reference/zenml/zenml.pipelines.md) and can be specified in different ways using the `backend` argument. The goal of **ZenML** is to get to a point where a data scientist can simply query the backends available for their **ZenML** repo by doing:
 
 ```python
 repo.get_backends() # fetches all connected backends
@@ -67,7 +67,7 @@ training_pipeline.run(
 )
 ```
 
-Full example [here](https://github.com/maiot-io/zenml/tree/main/examples/gcp_kubernetes_orchestrated).
+Full example [here](https://github.com/zenml-io/zenml/tree/main/examples/gcp_kubernetes_orchestrated).
 
 ## Processing Backends
 
@@ -117,7 +117,7 @@ training_pipeline.add_preprocesser(
 )
 ```
 
-Full example [here](https://github.com/maiot-io/zenml/tree/main/examples/gcp_kubernetes_orchestrated).
+Full example [here](https://github.com/zenml-io/zenml/tree/main/examples/gcp_kubernetes_orchestrated).
 
 ## Training Backends
 
@@ -156,7 +156,7 @@ training_pipeline.add_trainer(
   TFFeedForwardTrainer(...).with_backend(training_backend))
 ```
 
-Full example [here](https://github.com/maiot-io/zenml/tree/main/examples/gcp_kubernetes_orchestrated).
+Full example [here](https://github.com/zenml-io/zenml/tree/main/examples/gcp_kubernetes_orchestrated).
 
-If you would like to see any of this functionality earlier, or if you’re missing a specific backend, please let us know via our [Slack Channel](https://zenml.io/slack-invite/) or [create an issue on GitHub](https://https//github.com/maiot-io/zenml).
+If you would like to see any of this functionality earlier, or if you’re missing a specific backend, please let us know via our [Slack Channel](https://zenml.io/slack-invite/) or [create an issue on GitHub](https://https//github.com/zenml-io/zenml).
 

@@ -6,7 +6,7 @@ We are hosting a weekly community hour with the entire **ZenML** family. Come ta
 
 ## GitHub
 
-If you have any questions in mind, you can join our GitHub community right [here](https://github.com/maiot-io/zenml/discussions).
+If you have any questions in mind, you can join our GitHub community right [here](https://github.com/zenml-io/zenml/discussions).
 
 ## Slack
 
