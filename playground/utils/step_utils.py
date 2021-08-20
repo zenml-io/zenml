@@ -51,39 +51,33 @@ class _FunctionExecutor(BaseExecutor):
         self._FUNCTION(**function_args)
 
 
-def generate_component(name,
-                       func,
-                       module,
-                       input_spec,
-                       output_spec,
-                       param_spec
-                       ) -> Callable[..., Any]:
+def generate_component(step) -> Callable[..., Any]:
     spec_inputs, spec_outputs, spec_params = {}, {}, {}
-    for key, artifact_type in input_spec.items():
+    for key, artifact_type in step.INPUT_SPEC.items():
         spec_inputs[key] = component_spec.ChannelParameter(type=artifact_type)
-    for key, artifact_type in output_spec.items():
+    for key, artifact_type in step.OUTPUT_SPEC.items():
         spec_outputs[key] = component_spec.ChannelParameter(type=artifact_type)
-    for key, prim_type in param_spec.items():
+    for key, prim_type in step.PARAM_SPEC.items():
         spec_params[key] = component_spec.ExecutionParameter(type=prim_type)
 
-    component_spec_class = type('%s_Spec' % name,
+    component_spec_class = type('%s_Spec' % step.__class__.__name__,
                                 (tfx_types.ComponentSpec,),
                                 {'INPUTS': spec_inputs,
                                  'OUTPUTS': spec_outputs,
                                  'PARAMETERS': spec_params})
 
-    executor_class = type('%s_Executor' % name,
+    executor_class = type('%s_Executor' % step.__class__.__name__,
                           (_FunctionExecutor,),
-                          {'_FUNCTION': staticmethod(func),
-                           '__module__': module})
+                          {'_FUNCTION': staticmethod(step.get_executable()),
+                           '__module__': step.__module__})
 
-    module = sys.modules[module]
-    setattr(module, '%s_Executor' % name, executor_class)
+    module = sys.modules[step.__module__]
+    setattr(module, '%s_Executor' % step.__class__.__name__, executor_class)
 
     executor_spec_instance = ExecutorClassSpec(executor_class=executor_class)
 
-    return type(name,
+    return type(step.__class__.__name__,
                 (_SimpleComponent,),
                 {'SPEC_CLASS': component_spec_class,
                  'EXECUTOR_SPEC': executor_spec_instance,
-                 '__module__': module})
+                 '__module__': step.__module__})
