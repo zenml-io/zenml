@@ -35,13 +35,13 @@ def PreprocesserStep(input_data: Input[CSVArtifact],
 def SplitPipeline(datasource: Datasource[CSVDatasource],
                   split_step: Step[SplitStep],
                   preprocesser_step: Step[PreprocesserStep]):
-    split_step(input_data=datasource)
+    split_step(input_data=datasource.outputs.output_data)
     preprocesser_step(input_data=split_step.outputs.output_data)
 
 
 # Pipeline
 split_pipeline = SplitPipeline(
-    datasource=CSVDatasource(path="local_test/data/data.csv"),
+    datasource=CSVDatasource(path="/home/baris/Maiot/zenml/local_test/data/data.csv"),
     split_step=SplitStep(split_map=0.6),
     preprocesser_step=PreprocesserStep(param=1.0)
 )
