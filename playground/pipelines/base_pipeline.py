@@ -56,16 +56,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
         pass
 
     def run(self):
-        from tfx.dsl.components.common.importer import Importer
-        from playground.artifacts.data_artifacts import CSVArtifact
+        self.connect(**self.__datasources, **self.__steps)
 
-        data = Importer(
-            source_uri="/home/baris/Maiot/zenml/local_test/data",
-            artifact_type=CSVArtifact).with_id("datasource")
-
-        self.connect(datasource=data.outputs.result, **self.__steps)
-
-        step_list = [data] + \
+        step_list = [d.get_component() for d in self.__datasources.values()] + \
                     [s.get_component() for s in self.__steps.values()]
 
         created_pipeline = tfx_pipeline.Pipeline(

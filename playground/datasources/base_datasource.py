@@ -14,11 +14,12 @@ class BaseDatasourceMeta(type):
     def __new__(mcs, name, bases, dct):
         cls = super().__new__(mcs, name, bases, dct)
 
+        cls.INPUT_SPEC = dict()
         cls.OUTPUT_SPEC = dict()
         cls.PARAM_SPEC = dict()
         cls.PARAM_DEFAULTS = dict()  # TODO: handle defaults
 
-        ingest_spec = inspect.getfullargspec(cls.ingest)
+        ingest_spec = inspect.getfullargspec(cls.get_executable())
         ingest_args = ingest_spec.args
 
         if ingest_args and ingest_args[0] == "self":
@@ -39,18 +40,24 @@ class BaseDatasourceMeta(type):
 class BaseDatasource(metaclass=BaseDatasourceMeta):
 
     def __init__(self, *args, **kwargs):
-        self.__component = None
-        self.__params = dict()
-
         if args:
             raise DatasourceInterfaceError("")  # TODO: Fill
 
+        self.__params = dict()
         for k, v in kwargs.items():
             assert k in self.PARAM_SPEC
             try:
                 self.__params[k] = self.PARAM_SPEC[k](v)
             except TypeError or ValueError:
                 raise DatasourceInterfaceError("")
+
+        self.__component = generate_component(step=self)(**self.__params)
+
+    def __getattr__(self, item):
+        if item == "outputs":
+            return self.__component.outputs # TODO: Here is the problem
+        else:
+            raise AttributeError(f"{item}")
 
     @abstractmethod
     def ingest(self, *args, **kwargs):
@@ -71,10 +78,10 @@ class BaseDatasource(metaclass=BaseDatasourceMeta):
         LocalDagRunner().run(created_pipeline)
 
     def get_component(self):
-        return generate_component(
-            name=self.__class__.__name__,
-            module=self.__class__.__module__,
-            func=staticmethod(self.ingest),
-            input_spec={},
-            output_spec=self.OUTPUT_SPEC,
-            param_spec=self.PARAM_SPEC)(**self.__params)
+        return self.__component
+
+    @classmethod
+    def get_executable(cls):
+        return cls.ingest
+
+

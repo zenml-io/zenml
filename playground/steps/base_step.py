@@ -15,7 +15,7 @@ class BaseStepMeta(type):
         cls.PARAM_SPEC = dict()
         cls.PARAM_DEFAULTS = dict()  # TODO: handle defaults
 
-        process_spec = inspect.getfullargspec(cls.process)
+        process_spec = inspect.getfullargspec(cls.get_executable())
         process_args = process_spec.args
 
         if process_args and process_args[0] == "self":
@@ -52,13 +52,8 @@ class BaseStep(metaclass=BaseStepMeta):
 
     def __call__(self, **artifacts):
         # TODO: Check artifact types
-        self.__component = generate_component(
-            name=self.__class__.__name__,
-            module=self.__class__.__module__,
-            func=staticmethod(self.process),
-            input_spec=self.INPUT_SPEC,
-            output_spec=self.OUTPUT_SPEC,
-            param_spec=self.PARAM_SPEC)(**artifacts, **self.__params)
+        self.__component = generate_component(self)(**artifacts,
+                                                    **self.__params)
 
     def __getattr__(self, item):
         if item == "outputs":
@@ -72,3 +67,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
     def get_component(self):
         return self.__component
+
+    @classmethod
+    def get_executable(cls):
+        return cls.process
