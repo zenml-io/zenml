@@ -32,6 +32,10 @@
 <b>GitHub star</b> to show your love
 </div>
 
+## NOTICE August 23 2021
+[We are hiring!](https://www.notion.so/zenml/Work-at-ZenML-dfdb796b738a4e52b202db6e799a665c) If you would like to be  
+part of the ZenML journey alongside the already [awesome and growing team](https://zenml.io/team), then make sure to [check out our careers page](https://www.notion.so/zenml/Work-at-ZenML-dfdb796b738a4e52b202db6e799a665c)
+and apply directly!
 
 ## NOTICE August 12 2021
 First off, thank you everyone so much for the support ZenML has received since its release a few months ago. It has been 
