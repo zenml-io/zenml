@@ -1,4 +1,4 @@
-ml-pipelines-sdk==0.30.1
+ml-pipelines-sdk==1.2.0
 pip-check-reqs==2.2.2
 click==8.0.1
 pyyaml==5.4.1
@@ -9,4 +9,4 @@ distro==1.5.0
 nbformat==5.1.3
 panel==0.11.3
 pandas==1.1.5
-apache-beam==2.30.0
+google-auth==1.25.0
