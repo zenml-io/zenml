@@ -5,7 +5,6 @@ from tfx.orchestration import metadata
 from tfx.orchestration import pipeline as tfx_pipeline
 from tfx.orchestration.local.local_dag_runner import LocalDagRunner
 
-from playground.annotations.datasource_annotations import Datasource
 from playground.annotations.step_annotations import Step
 from playground.utils.exceptions import PipelineInterfaceError
 
@@ -14,7 +13,6 @@ class BasePipelineMeta(type):
     def __new__(mcs, name, bases, dct):
         cls = super().__new__(mcs, name, bases, dct)
 
-        cls.DATASOURCE_SPEC = dict()
         cls.STEP_SPEC = dict()
 
         connect_spec = inspect.getfullargspec(cls.connect)
@@ -25,9 +23,7 @@ class BasePipelineMeta(type):
 
         for arg in connect_args:
             arg_type = connect_spec.annotations.get(arg, None)
-            if isinstance(arg_type, Datasource):
-                cls.DATASOURCE_SPEC.update({arg: arg_type.type})
-            elif isinstance(arg_type, Step):
+            if isinstance(arg_type, Step):
                 cls.STEP_SPEC.update({arg: arg_type.type})
             else:
                 raise PipelineInterfaceError("")  # TODO: fill message
@@ -38,7 +34,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
     def __init__(self, *args, **kwargs):
         self.__steps = dict()
-        self.__datasources = dict()
 
         if args:
             raise PipelineInterfaceError("")  # TODO: Fill
@@ -46,8 +41,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
         for k, v in kwargs.items():
             if k in self.STEP_SPEC:
                 self.__steps.update({k: v})  # TODO: assert class
-            elif k in self.DATASOURCE_SPEC:
-                self.__datasources.update({k: v})
             else:
                 raise PipelineInterfaceError("")  # TODO: Fill
 
@@ -56,10 +49,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
         pass
 
     def run(self):
-        self.connect(**self.__datasources, **self.__steps)
+        self.connect(**self.__steps)
 
-        step_list = [d.get_component() for d in self.__datasources.values()] + \
-                    [s.get_component() for s in self.__steps.values()]
+        step_list = [s.get_component() for s in self.__steps.values()]
 
         created_pipeline = tfx_pipeline.Pipeline(
             pipeline_name='pipeline_name',
