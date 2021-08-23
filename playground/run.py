@@ -1,16 +1,7 @@
-from playground.annotations import Input, Output, Param, Datasource, Step
+from playground.annotations import Input, Output, Param, Step
 from playground.artifacts.data_artifacts import CSVArtifact
-from playground.datasources.simple_datasource import SimpleDatasource
 from playground.pipelines.simple_pipeline import SimplePipeline
 from playground.steps.simple_step import SimpleStep
-
-
-@SimpleDatasource
-def CSVDatasource(output_data: Output[CSVArtifact],
-                  path: Param[str]):
-    import pandas as pd
-    data = pd.read_csv(path)
-    output_data.write(data)
 
 
 @SimpleStep
@@ -32,16 +23,14 @@ def PreprocesserStep(input_data: Input[CSVArtifact],
 
 
 @SimplePipeline
-def SplitPipeline(datasource: Datasource[CSVDatasource],
-                  split_step: Step[SplitStep],
+def SplitPipeline(split_step: Step[SplitStep],
                   preprocesser_step: Step[PreprocesserStep]):
-    split_step(input_data=datasource.outputs.output_data)
+    split_step()
     preprocesser_step(input_data=split_step.outputs.output_data)
 
 
 # Pipeline
 split_pipeline = SplitPipeline(
-    datasource=CSVDatasource(path="/home/baris/Maiot/zenml/local_test/data/data.csv"),
     split_step=SplitStep(split_map=0.6),
     preprocesser_step=PreprocesserStep(param=1.0)
 )
