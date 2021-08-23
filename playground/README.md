@@ -50,7 +50,7 @@ play around!
 Steps are now created as functions, with a simple annotation.
 
 ```python
-@step
+@SimpleStep
 def PreprocesserStep(input_data: Input[CSVArtifact],
                      output_data: Output[CSVArtifact],
                      param: Param[float]):
@@ -66,8 +66,7 @@ Pipelines are also created as functions, and will be in charge of connecting ste
 
 ```python
 @SimplePipeline
-def SplitPipeline(datasource: Datasource[CSVDatasource],
-                  split_step: Step[SplitStep],
+def SplitPipeline(split_step: Step[SplitStep],
                   preprocesser_step: Step[PreprocesserStep]):
     split_step(input_data=datasource)
     preprocesser_step(input_data=split_step.outputs.output_data)
@@ -84,6 +83,3 @@ split_pipeline = SplitPipeline(
 ## Artifacts
 Artifacts are objects that encapuslate the data flowing through steps. They have easy `read` and `write` functions to 
 persist on disk.
-
-## Datasources
-Datasources are almost like a specialized artifact but with different functions on top to explore different versions.
