@@ -155,3 +155,9 @@ docs/book/_build/
 
 # env variables
 *.env
+
+# poetry
+*poetry.lock*
+
+# pre-commit
+!*.pre-commit-config.yaml
