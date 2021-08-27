@@ -32,6 +32,11 @@
 <b>GitHub star</b> to show your love
 </div>
 
+## NOTICE August 23 2021
+[We are hiring!](https://www.notion.so/zenml/Work-at-ZenML-dfdb796b738a4e52b202db6e799a665c) 
+If you would like to be part of the ZenML journey alongside the already 
+[awesome and growing team](https://zenml.io/team), then make sure to 
+[check out our careers page](https://www.notion.so/zenml/Work-at-ZenML-dfdb796b738a4e52b202db6e799a665c) and apply directly!
 
 ## NOTICE August 12 2021
 First off, thank you everyone so much for the support ZenML has received since its release a few months ago. It has been 
@@ -239,9 +244,6 @@ Our community is the backbone of making ZenML a success! We are currently active
 
 * Our Slack Channel: Chat with us [here](https://zenml.io/slack-invite/).
 * The GitHub Community: Create your first thread [here](https://github.com/zenml-io/zenml/discussions).
-
-From March 23, 2021 onwards, we are hosting a weekly community hour with the entire ZenML fam. Come talk to us about ZenML (or whatever else tickles your fancy)! Community hour 
-happens at **Wednesday at 5PM GMT+2**. Register in advance [here](https://calendly.com/zenml/community-hour) to join.
 
 ## Contributing
 We would love to receive your contributions! Check our [Contributing Guide](CONTRIBUTING.md) for more details on how to contribute best.
