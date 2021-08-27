@@ -161,3 +161,6 @@ docs/book/_build/
 
 # pre-commit
 !*.pre-commit-config.yaml
+
+# scratchpad
+scratchpad/
