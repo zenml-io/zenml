@@ -67,3 +67,4 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
 
         LocalDagRunner().run(created_pipeline)
+

@@ -8,7 +8,6 @@ homepage = "https://zenml.io"
 documentation = "https://docs.zenml.io"
 repository = "https://github.com/zenml-io/zenml"
 license = "Apache 2.0"
-exclude = ["sqlmodel/sql/expression.py.jinja2"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Framework :: MLOps",
