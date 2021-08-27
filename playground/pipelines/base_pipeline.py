@@ -6,6 +6,7 @@ from tfx.orchestration import pipeline as tfx_pipeline
 from tfx.orchestration.local.local_dag_runner import LocalDagRunner
 
 from playground.annotations.step_annotations import Step
+from playground.annotations.artifact_annotations import External
 from playground.utils.exceptions import PipelineInterfaceError
 
 
@@ -14,6 +15,7 @@ class BasePipelineMeta(type):
         cls = super().__new__(mcs, name, bases, dct)
 
         cls.STEP_SPEC = dict()
+        cls.EXTERNAL_ARTIFACT_SPEC = dict()
 
         connect_spec = inspect.getfullargspec(cls.connect)
         connect_args = connect_spec.args
@@ -25,6 +27,8 @@ class BasePipelineMeta(type):
             arg_type = connect_spec.annotations.get(arg, None)
             if isinstance(arg_type, Step):
                 cls.STEP_SPEC.update({arg: arg_type.type})
+            elif isinstance(arg_type, External):
+                cls.EXTERNAL_ARTIFACT_SPEC.update({arg: arg_type.type})
             else:
                 raise PipelineInterfaceError("")  # TODO: fill message
         return cls
@@ -34,6 +38,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
     def __init__(self, *args, **kwargs):
         self.__steps = dict()
+        self.__external_artifacts = dict()
 
         if args:
             raise PipelineInterfaceError("")  # TODO: Fill
@@ -41,6 +46,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         for k, v in kwargs.items():
             if k in self.STEP_SPEC:
                 self.__steps.update({k: v})  # TODO: assert class
+            elif k in self.EXTERNAL_ARTIFACT_SPEC:
+                self.__external_artifacts.update({k: v})  # TODO: assert class
             else:
                 raise PipelineInterfaceError("")  # TODO: Fill
 
@@ -49,7 +56,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         pass
 
     def run(self):
-        self.connect(**self.__steps)
+        self.connect(**self.__external_artifacts, **self.__steps)
 
         step_list = [s.get_component() for s in self.__steps.values()]
 
