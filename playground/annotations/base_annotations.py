@@ -21,35 +21,38 @@ from six import with_metaclass
 
 
 class GenericMeta(type):
-    def __getitem__(cls: Type["GenericType"],
-                    params):
+    def __getitem__(cls: Type["GenericType"], params):
         return cls._generic_getitem(params)
 
 
 class GenericType(with_metaclass(GenericMeta, object)):
     """A main generic class which will be used as the base for annotations"""
+
     VALID_TYPES = None
 
-    def __init__(self,
-                 object_type,
-                 _init_via_getitem=False):
+    def __init__(self, object_type, _init_via_getitem=False):
 
         if not _init_via_getitem:
             class_name = self.__class__.__name__
-            raise ValueError(f"{class_name} should be instantiated via %s[T], "
-                             f"where T is one of {self.VALID_TYPES}")
+            raise ValueError(
+                f"{class_name} should be instantiated via %s[T], "
+                f"where T is one of {self.VALID_TYPES}"
+            )
         self.type = object_type
 
     def __repr__(self):
-        return '%s[%s]' % (self.__class__.__name__, self.type)
+        return "%s[%s]" % (self.__class__.__name__, self.type)
 
     @classmethod
     def _generic_getitem(cls, params):
-        if inspect.isclass(params) and \
-                any(issubclass(params, t) for t in cls.VALID_TYPES):
+        if inspect.isclass(params) and any(
+            issubclass(params, t) for t in cls.VALID_TYPES
+        ):
             return cls(params, _init_via_getitem=True)
         else:
             class_name = cls.__name__
-            raise ValueError(f"Generic type `{class_name}[T]` expects the "
-                             f"single parameter T to be one of "
-                             f"{cls.VALID_TYPES}.")
+            raise ValueError(
+                f"Generic type `{class_name}[T]` expects the "
+                f"single parameter T to be one of "
+                f"{cls.VALID_TYPES}."
+            )

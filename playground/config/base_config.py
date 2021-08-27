@@ -14,8 +14,8 @@
 """YAML Config parser inspired by Paul Munday <paul@paulmunday.net>
 implementation at https://github.com/GreenBuildingRegistry/yaml-config"""
 import os
-from typing import Text
 from copy import deepcopy
+from typing import Text
 
 from zenml.utils import yaml_utils
 
@@ -24,7 +24,7 @@ BASE_PATH = os.getcwd()
 
 def _suffix(name, suffix=None):
     """Append suffix (default _)."""
-    suffix = suffix if suffix else '_'
+    suffix = suffix if suffix else "_"
     return "{}{}".format(name, suffix)
 
 
@@ -34,25 +34,26 @@ class BaseConfig:
     This is a superclass, with base utility methods to read and write from
     user-editable YAML config files.
     """
-    default_file = 'config.yaml'
-    default_config_root = os.path.join(BASE_PATH, 'config')
 
-    def __init__(self,
-                 config_file: Text = None,
-                 config_dir: Text = None,
-                 section: Text = None,
-                 env_prefix: Text = 'ZENML_'):
+    default_file = "config.yaml"
+    default_config_root = os.path.join(BASE_PATH, "config")
+
+    def __init__(
+        self,
+        config_file: Text = None,
+        config_dir: Text = None,
+        section: Text = None,
+        env_prefix: Text = "ZENML_",
+    ):
         if not env_prefix:
-            raise Exception('env_prefix can not be null.')
+            raise Exception("env_prefix can not be null.")
         self.env_prefix = env_prefix
-        self.config_path = self.env_prefix + '_PATH'
-        self.config_prefix = self.env_prefix + '_PREFIX'
-        self.config_root_path = self.env_prefix + '_ROOT'
+        self.config_path = self.env_prefix + "_PATH"
+        self.config_prefix = self.env_prefix + "_PREFIX"
+        self.config_root_path = self.env_prefix + "_ROOT"
         self.config = {}  # Main dict to hold all values
         self.prefix = None  # prefix
-        self.basepath = os.getenv(
-            self.config_path, default=self.default_config_root
-        )
+        self.basepath = os.getenv(self.config_path, default=self.default_config_root)
         self.config_root = os.getenv(
             self.config_root_path, default=self.default_config_root
         )
@@ -70,20 +71,18 @@ class BaseConfig:
             # no config file (use environment variables)
             pass
         if self.config:
-            self.prefix = self.config.get('config_prefix', None)
+            self.prefix = self.config.get("config_prefix", None)
         if not self.prefix:
             if os.getenv(self.config_prefix):
                 self.prefix = os.getenv(self.config_prefix)
             else:
                 for path in [
                     os.path.join(self.basepath, self.default_file),
-                    os.path.join(self.config_root, self.default_file)
+                    os.path.join(self.config_root, self.default_file),
                 ]:
                     if os.path.exists(path):
                         config = yaml_utils.read_yaml(conf)
-                        prefix = config.get(
-                            self.config_prefix.lower(), None
-                        )
+                        prefix = config.get(self.config_prefix.lower(), None)
                         if prefix:
                             self.prefix = prefix
                             break
@@ -102,23 +101,21 @@ class BaseConfig:
         # between a default set to None and no default sets
         if not section and self.section:
             section = self.section
-        default = kwargs.get('default', None)
+        default = kwargs.get("default", None)
         env_var = "{}{}{}".format(
-            _suffix(self.prefix) if self.prefix else '',
-            _suffix(alphasnake(section)) if section else '',
-            alphasnake(str(var))
+            _suffix(self.prefix) if self.prefix else "",
+            _suffix(alphasnake(section)) if section else "",
+            alphasnake(str(var)),
         ).upper()
         config = self.config.get(section, {}) if section else self.config
         result = config.get(var, default)
         result = os.getenv(env_var, default=result)
         # no default keyword supplied (and no result)
         #  use is None to allow empty lists etc
-        if result is None and 'default' not in kwargs:
+        if result is None and "default" not in kwargs:
             msg = "Could not find '{}'".format(var)
             if section:
-                msg = "{} in section '{}'.".format(
-                    msg, section
-                )
+                msg = "{} in section '{}'.".format(msg, section)
             msg = "{} Checked environment variable: {}".format(msg, env_var)
             if self.config_file:
                 msg = "{} and file: {}".format(msg, self.config_file)
@@ -147,7 +144,7 @@ class BaseConfig:
         return config.values()
 
     def __copy__(self):
-        raise NotImplementedError('Shallow copying is forbidden')
+        raise NotImplementedError("Shallow copying is forbidden")
 
     def copy(self):
         """Raise error"""
@@ -183,7 +180,7 @@ class BaseConfig:
         """
         # pylint: disable=no-self-use
         config_file = None
-        config_dir_env_var = self.env_prefix + '_DIR'
+        config_dir_env_var = self.env_prefix + "_DIR"
         if not filename:
             # Check env vars for config
             filename = os.getenv(self.env_prefix, default=self.default_file)
@@ -194,7 +191,7 @@ class BaseConfig:
             # Cannot contain path
             filename = os.path.basename(filename)
             if not config_dir:
-                config_dir = os.getenv(config_dir_env_var, default='')
+                config_dir = os.getenv(config_dir_env_var, default="")
             for path in [self.basepath, self.config_root]:
                 filepath = os.path.join(path, config_dir, filename)
                 if os.path.exists(filepath):

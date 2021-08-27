@@ -1,0 +1,73 @@
+[tool.poetry]
+name = "zenml"
+version = "0"
+description="ZenML: Write production-ready ML code."
+authors = ["ZenML GmbH <info@zenml.io>"]
+readme = "README.md"
+homepage = "https://zenml.io"
+documentation = "https://docs.zenml.io"
+repository = "https://github.com/zenml-io/zenml"
+license = "Apache 2.0"
+exclude = ["sqlmodel/sql/expression.py.jinja2"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: MLOps",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Topic :: Deep Learning",
+    "Topic :: Software Engineering",
+    "Topic :: MLOps",
+    "Typing :: Typed",
+]
+
+[tool.poetry.dependencies]
+python = ">=3.6.2,<3.9"
+ml-pipelines-sdk = "0.30.1"
+panel = "0.11.3"
+pandas = "1.1.5"
+apache-beam = "2.30.0"
+pyyaml = "5.4.1"
+python-dateutil = "2.8.1"
+gitpython = "3.1.18"
+click = "8.0.1"
+pydantic = "^1.8.2"
+black = "^21.7b0"
+
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.4"
+flake8 = "^3.9.2"
+black = {version = "^21.5-beta.1", python = "^3.7"}
+coverage = {extras = ["toml"], version = "^5.5"}
+isort = "^5.9.3"
+pre-commit = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry-version-plugin]
+source = "init"
+
+[tool.coverage.run]
+parallel = true
+source = [
+    "docs_src",
+    "tests",
+    "sqlmodel"
+]
+
+[tool.coverage.report]
+
+
+[tool.isort]
+profile = "black"
+known_third_party = []
+skip_glob = []

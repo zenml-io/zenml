@@ -52,8 +52,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
     def __call__(self, **artifacts):
         # TODO: Check artifact types
-        self.__component = generate_component(self)(**artifacts,
-                                                    **self.__params)
+        self.__component = generate_component(self)(**artifacts, **self.__params)
 
     def __getattr__(self, item):
         if item == "outputs":
