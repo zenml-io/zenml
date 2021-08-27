@@ -1,5 +1,5 @@
 from playground.annotations.base_annotations import GenericType
-from playground.artifacts.base_artifact import BaseArtifact
+from playground.artifacts.base import BaseArtifact
 
 Input = type("Input",
              (GenericType,),
