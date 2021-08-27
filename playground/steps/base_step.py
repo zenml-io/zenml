@@ -1,7 +1,7 @@
 import inspect
 from abc import abstractmethod
 
-from playground.annotations.artifact_annotations import Input, Output, Param
+from playground.annotations import Input, Output, Param
 from playground.utils.exceptions import StepInterfaceError
 from playground.utils.step_utils import generate_component
 
@@ -37,6 +37,7 @@ class BaseStepMeta(type):
 
 class BaseStep(metaclass=BaseStepMeta):
     def __init__(self, *args, **kwargs):
+        self.__backend = None
         self.__component = None
         self.__params = dict()
 
@@ -71,3 +72,8 @@ class BaseStep(metaclass=BaseStepMeta):
     @classmethod
     def get_executable(cls):
         return cls.process
+
+    def with_backend(self, backend):
+        # TODO: temporary implementation
+        self.__backend = backend
+        return self
