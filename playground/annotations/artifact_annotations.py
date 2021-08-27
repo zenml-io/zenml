@@ -9,6 +9,6 @@ Output = type("Output",
               (GenericType,),
               {"VALID_TYPES": [BaseArtifact]})
 
-Param = type("Param",
-             (GenericType,),
-             {"VALID_TYPES": [int, float, str, bytes, dict]})
+External = type("Input",
+                (GenericType,),
+                {"VALID_TYPES": [BaseArtifact]})
