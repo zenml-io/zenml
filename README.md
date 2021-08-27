@@ -22,11 +22,6 @@
     <img width="25" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
 <b>Slack Community</b> </a> and become part of the ZenML family
 </div>
-<div align="center"> Have questions? Join our weekly
-<a href="#community">
-    <img width="25" src="https://upload.wikimedia.org/wikipedia/commons/f/f8/01_Icon-Community%402x.png" alt="Slack"/>
-<b>community hour</b> </a> and talk to us directly
-</div>
 <div align="center"> Give us a 
     <img width="25" src="https://cdn.iconscout.com/icon/free/png-256/github-153-675523.png" alt="Slack"/>
 <b>GitHub star</b> to show your love
@@ -243,7 +238,6 @@ and contribute to the ZenML community, so that everyone can benefit.
 Our community is the backbone of making ZenML a success! We are currently actively maintaining two main channels for community discussions:
 
 * Our Slack Channel: Chat with us [here](https://zenml.io/slack-invite/).
-* The GitHub Community: Create your first thread [here](https://github.com/zenml-io/zenml/discussions).
 
 ## Contributing
 We would love to receive your contributions! Check our [Contributing Guide](CONTRIBUTING.md) for more details on how to contribute best.
