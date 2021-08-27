@@ -1,8 +1,5 @@
 from playground.annotations import Input, Output, Param, Step
-from playground.artifacts.data_artifacts.csv_data_artifact import (
-    BeamCSVArtifact,
-    PandasCSVArtifact,
-)
+from playground.artifacts import CSVArtifact
 from playground.pipelines.simple_pipeline import SimplePipeline
 from playground.steps.simple_step import SimpleStep
 
@@ -11,8 +8,8 @@ from playground.steps.simple_step import SimpleStep
 
 @SimpleStep
 def SplitStep(
-    input_data: Input[PandasCSVArtifact],
-    output_data: Output[PandasCSVArtifact],
+    input_data: Input[CSVArtifact],
+    output_data: Output[CSVArtifact],
     split_map: Param[float],
 ):
     data = input_data.read()
@@ -22,8 +19,8 @@ def SplitStep(
 
 @SimpleStep
 def PreprocesserStep(
-    input_data: Input[PandasCSVArtifact],
-    output_data: Output[PandasCSVArtifact],
+    input_data: Input[CSVArtifact],
+    output_data: Output[CSVArtifact],
     param: Param[float],
 ):
     data = input_data.read()
@@ -41,21 +38,24 @@ def SplitPipeline(
 
 # Pipeline
 split_pipeline = SplitPipeline(
-    split_step=SplitStep(split_map=0.6), preprocesser_step=PreprocesserStep(param=1.0)
+    split_step=SplitStep(split_map=0.6),
+    preprocesser_step=PreprocesserStep(param=1.0),
 )
+
 
 # split_pipeline.run()
 
 # A distributed Pipeline, which runs on Beam
-import apache_beam as beam
 
 
 @SimpleStep
 def DistSplitStep(
-    input_data: Input[BeamCSVArtifact],
-    output_data: Output[BeamCSVArtifact],
+    input_data: Input[CSVArtifact],
+    output_data: Output[CSVArtifact],
     split_map: Param[float],
 ):
+    import apache_beam as beam
+
     with beam.Pipeline() as p:
         result = (
             p
@@ -67,10 +67,12 @@ def DistSplitStep(
 
 @SimpleStep
 def DistPreprocesserStep(
-    input_data: Input[BeamCSVArtifact],
-    output_data: Output[BeamCSVArtifact],
+    input_data: Input[CSVArtifact],
+    output_data: Output[CSVArtifact],
     param: Param[float],
 ):
+    import apache_beam as beam
+
     with beam.Pipeline() as p:
         result = (
             p
@@ -82,15 +84,22 @@ def DistPreprocesserStep(
 
 @SimplePipeline
 def DistSplitPipeline(
-    split_step: Step[SplitStep], preprocesser_step: Step[PreprocesserStep]
+    input_artifact: Input[CSVArtifact],
+    split_step: Step[SplitStep],
+    preprocesser_step: Step[PreprocesserStep],
 ):
-    split_step()
+    split_step(input_data=input_artifact)
     preprocesser_step(input_data=split_step.outputs.output_data)
 
 
 # Pipeline
 dist_split_pipeline = DistSplitPipeline(
     # TODO: implement the with backend
-    split_step=SplitStep(split_map=0.6).with_backend(),
-    preprocesser_step=PreprocesserStep(param=1.0).with_backend(),
+    input_artifact=CSVArtifact(),
+    split_step=SplitStep(split_map=0.6).with_backend({"some_params"}),
+    preprocesser_step=PreprocesserStep(param=1.0).with_backend(
+        {"some_params"}
+    ),
 )
+
+dist_split_pipeline.run()
