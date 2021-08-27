@@ -32,7 +32,7 @@ If you find an Issue that addresses the problem you're having, please add your o
 
 ### Pull Requests
 
-PRs to our libraries are always welcome and can be a quick way to get your fix or improvement slated for the next release. In general, PRs should:
+PRs to ZenML are always welcome and can be a quick way to get your fix or improvement slated for the next release. In general, PRs should:
 
 - Only fix/add the functionality in question **OR** address wide-spread whitespace/style issues, not both.
 - Add unit or integration tests for fixed or changed functionality (if a test suite already exists).
@@ -51,6 +51,18 @@ In general, we follow the ["fork-and-pull" Git workflow](https://github.com/susa
 5. Following any formatting and testing guidelines specific to this repo
 6. Push changes to your fork
 7. Open a PR in our repository and follow the PR template so that we can efficiently review the changes.
+
+### Reporting a Vulnerability
+
+If you think you found a vulnerability, and even if you are not sure about it, please report it right away by sending an email to: info@zenml.com. Please try to be as explicit as possible, describing all the steps and example code to reproduce the security issue.
+
+We will review it thoroughly and get back to you.
+
+### Public Discussions
+
+Please restrain from publicly discussing a potential security vulnerability!
+
+It's better to discuss privately and try to find a solution first, to limit the potential impact as much as possible.
 
 ## Getting Help
 
