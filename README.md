@@ -245,9 +245,6 @@ Our community is the backbone of making ZenML a success! We are currently active
 * Our Slack Channel: Chat with us [here](https://zenml.io/slack-invite/).
 * The GitHub Community: Create your first thread [here](https://github.com/zenml-io/zenml/discussions).
 
-From March 23, 2021 onwards, we are hosting a weekly community hour with the entire ZenML fam. Come talk to us about ZenML (or whatever else tickles your fancy)! Community hour 
-happens at **Wednesday at 5PM GMT+2**. Register in advance [here](https://calendly.com/zenml/community-hour) to join.
-
 ## Contributing
 We would love to receive your contributions! Check our [Contributing Guide](CONTRIBUTING.md) for more details on how to contribute best.
 
