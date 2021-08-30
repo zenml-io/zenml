@@ -1,8 +1,4 @@
 repos:
-  - repo: https://github.com/ambv/black
-    rev: 20.8b1
-    hooks:
-      - id: black
   - repo: https://github.com/pycqa/flake8
     rev: 3.9.2
     hooks:
@@ -16,13 +12,17 @@ repos:
     rev: 5.9.3
     hooks:
       - id: isort
-  - repo: https://github.com/econchick/interrogate
-    rev: 1.4.0
+  - repo: https://github.com/ambv/black
+    rev: 20.8b1
     hooks:
-      - id: interrogate
-        args: [ -vv, -i, --fail-under=80 ]
+      - id: black
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v0.910
     hooks:
       - id: mypy
         args: [ --no-strict-optional, --ignore-missing-imports ]
+  - repo: https://github.com/econchick/interrogate
+    rev: 1.4.0
+    hooks:
+      - id: interrogate
+        args: [ -vv, -i, --fail-under=80 ]
