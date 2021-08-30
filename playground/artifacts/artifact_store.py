@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,38 +13,26 @@
 #  permissions and limitations under the License.
 """Definition of an Artifact Store"""
 
-import hashlib
 import os
 from typing import Text
+from uuid import UUID, uuid4
 
+from pydantic import BaseModel, Field
 from zenml.repo import GlobalConfig
 from zenml.utils import path_utils
-from zenml.enums import ArtifactStoreTypes
-from zenml.utils.print_utils import to_pretty_string, PrintStyles
+
+from playground.enums import ArtifactStoreTypes
 
 
-class ArtifactStore:
-    """Base class for all ZenML datasources.
+class BaseArtifactStore(BaseModel):
+    """Base class for all ZenML Artifacts.
 
-    Every ZenML datasource should override this class.
+    Every ZenML Artifact Store should override this class
     """
 
-    def __init__(self, path: Text):
-        self.path = path
-
-        if path_utils.is_gcs_path(path):
-            self.store_type = ArtifactStoreTypes.gcs.name
-        else:
-            self.store_type = ArtifactStoreTypes.local.name
-
-        # unique_id based on path should be globally consistent
-        self.unique_id = hashlib.md5(self.path.encode()).hexdigest()
-
-    def __str__(self):
-        return to_pretty_string(self.path)
-
-    def __repr__(self):
-        return to_pretty_string(self.path, style=PrintStyles.PPRINT)
+    path: str
+    uuid: UUID = Field(default_factory=uuid4)
+    store_type: ArtifactStoreTypes = ArtifactStoreTypes.local
 
     @staticmethod
     def get_component_name_from_uri(artifact_uri: Text):
@@ -73,9 +61,9 @@ class ArtifactStore:
             # Create a unique path in local machine
             path = os.path.join(
                 GlobalConfig.get_config_dir(),
-                self.unique_id,
-                ArtifactStore.get_component_name_from_uri(artifact_uri),
-                path_utils.get_parent(artifact_uri)  # unique ID from MLMD
+                str(self.uuid),
+                BaseArtifactStore.get_component_name_from_uri(artifact_uri),
+                path_utils.get_parent(artifact_uri),  # unique ID from MLMD
             )
 
         # Create if not exists and download
@@ -83,3 +71,15 @@ class ArtifactStore:
         path_utils.copy_dir(artifact_uri, path, overwrite=True)
 
         return path
+
+
+class LocalArtifactStore(BaseArtifactStore):
+    """Artifact Store for local artifacts."""
+
+    store_type: ArtifactStoreTypes = ArtifactStoreTypes.local
+
+
+class GCPArtifactStore(BaseArtifactStore):
+    """Artifact Store for Google Cloud Storage based artifacts."""
+
+    store_type: ArtifactStoreTypes = ArtifactStoreTypes.gcp
