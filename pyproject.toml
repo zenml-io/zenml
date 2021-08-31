@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0"
+version = "0.3.9rc2"
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
 readme = "README.md"
@@ -71,6 +71,12 @@ deps = pytest
 commands =
     pytest
 """
+
+[tool.pytest.ini_options]
+#filterwarnings = [
+#    ignore::DeprecationWarning,
+#    ignore::UserWarning
+#]
 
 [tool.coverage.run]
 parallel = true
