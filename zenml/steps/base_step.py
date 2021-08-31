@@ -7,6 +7,8 @@ from zenml.utils.step_utils import generate_component
 
 
 class BaseStepMeta(type):
+    """ """
+
     def __new__(mcs, name, bases, dct):
         cls = super().__new__(mcs, name, bases, dct)
 
@@ -36,6 +38,8 @@ class BaseStepMeta(type):
 
 
 class BaseStep(metaclass=BaseStepMeta):
+    """ """
+
     def __init__(self, *args, **kwargs):
         self.__backend = None
         self.__component = None
@@ -65,16 +69,34 @@ class BaseStep(metaclass=BaseStepMeta):
 
     @abstractmethod
     def process(self, *args, **kwargs):
-        pass
+        """
+
+        Args:
+          *args:
+          **kwargs:
+
+        Returns:
+
+        """
 
     def get_component(self):
+        """ """
         return self.__component
 
     @classmethod
     def get_executable(cls):
+        """ """
         return cls.process
 
     def with_backend(self, backend):
+        """
+
+        Args:
+          backend:
+
+        Returns:
+
+        """
         # TODO: temporary implementation
         self.__backend = backend
         return self

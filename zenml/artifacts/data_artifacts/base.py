@@ -6,5 +6,7 @@ SPLIT_NAMES_PROPERTY = Property(type=PropertyType.STRING)
 
 
 class BaseDataArtifact(BaseArtifact):
+    """ """
+
     TYPE_NAME = "data_artifact"
     PROPERTIES = {"split_names": SPLIT_NAMES_PROPERTY}

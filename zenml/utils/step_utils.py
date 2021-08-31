@@ -21,6 +21,8 @@ from tfx.types import component_spec
 
 
 class _FunctionExecutor(BaseExecutor):
+    """ """
+
     _FUNCTION = staticmethod(lambda: None)
 
     def Do(
@@ -29,6 +31,18 @@ class _FunctionExecutor(BaseExecutor):
         output_dict: Dict[Text, List[tfx_types.Artifact]],
         exec_properties: Dict[Text, Any],
     ) -> None:
+        """
+
+        Args:
+          input_dict: Dict[Text:
+          List[tfx_types.Artifact]]:
+          output_dict: Dict[Text:
+          exec_properties: Dict[Text:
+          Any]:
+
+        Returns:
+
+        """
         function_args = {}
         for name, artifact in input_dict.items():
             if len(artifact) == 1:
@@ -62,6 +76,14 @@ class _FunctionExecutor(BaseExecutor):
 
 
 def generate_component(step) -> Callable[..., Any]:
+    """
+
+    Args:
+      step:
+
+    Returns:
+
+    """
     spec_inputs, spec_outputs, spec_params = {}, {}, {}
     for key, artifact_type in step.INPUT_SPEC.items():
         spec_inputs[key] = component_spec.ChannelParameter(type=artifact_type)

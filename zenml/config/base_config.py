@@ -23,7 +23,15 @@ BASE_PATH = os.getcwd()
 
 
 def _suffix(name, suffix=None):
-    """Append suffix (default _)."""
+    """Append suffix (default _).
+
+    Args:
+      name:
+      suffix:  (Default value = None)
+
+    Returns:
+
+    """
     suffix = suffix if suffix else "_"
     return "{}{}".format(name, suffix)
 
@@ -33,6 +41,11 @@ class BaseConfig:
 
     This is a superclass, with base utility methods to read and write from
     user-editable YAML config files.
+
+    Args:
+
+    Returns:
+
     """
 
     default_file = "config.yaml"
@@ -96,8 +109,15 @@ class BaseConfig:
         otherwise var from config file.
         If both are null and no default is set a ConfigError will be raised,
         otherwise default will be returned.
-        :param var: key to look up
-        :param default: default value, must be supplied as keyword
+
+        Args:
+          var: key to look up
+          default: default value, must be supplied as keyword
+          section: Text:  (Default value = None)
+          **kwargs:
+
+        Returns:
+
         """
         # default is not a specified keyword argument so we can distinguish
         # between a default set to None and no default sets
@@ -125,21 +145,42 @@ class BaseConfig:
         return result
 
     def keys(self, section=None):
-        """Provide dict like keys method"""
+        """Provide dict like keys method
+
+        Args:
+          section:  (Default value = None)
+
+        Returns:
+
+        """
         if not section and self.section:
             section = self.section
         config = self.config.get(section, {}) if section else self.config
         return config.keys()
 
     def items(self, section=None):
-        """Provide dict like items method"""
+        """Provide dict like items method
+
+        Args:
+          section:  (Default value = None)
+
+        Returns:
+
+        """
         if not section and self.section:
             section = self.section
         config = self.config.get(section, {}) if section else self.config
         return config.items()
 
     def values(self, section=None):
-        """Provide dict like values method"""
+        """Provide dict like values method
+
+        Args:
+          section:  (Default value = None)
+
+        Returns:
+
+        """
         if not section and self.section:
             section = self.section
         config = self.config.get(section, {}) if section else self.config
@@ -149,7 +190,7 @@ class BaseConfig:
         raise NotImplementedError("Shallow copying is forbidden")
 
     def copy(self):
-        """Raise error"""
+        """ """
         self.__copy__()
 
     def __deepcopy__(self, memo):
@@ -160,10 +201,11 @@ class BaseConfig:
         return deepcopy(config, memo)
 
     def _get_filepath(self, filename=None, config_dir=None):
-        """
-        Get config file.
-            :param filename: name of config file (not path)
-            :param config_dir: dir name prepended to file name.
+        """Get config file.
+
+        Args:
+          filename: name of config file (not path) (Default value = None)
+          config_dir: dir name prepended to file name.
         Note: we use e.g. GBR_CONFIG_DIR here, this is the default
         value in GBR but it is actually self.env_prefix + '_DIR' etc.
         If config_dir is not supplied it will be set to the value of the
@@ -173,12 +215,15 @@ class BaseConfig:
         exists, if so that is returned as the config file otherwise filename
         will be set to GBR_CONFIG, if it exists, otherwise 'config.yaml'.
         If a filename is supplied or GBR_CONFIG is not an existing file:
-            If the environment variable GBR_CONFIG_PATH exists the path
-            GBR_CONFIG_PATH/config_dir/filename is checked.
-            If it doesn't exist config/CONFIG_DIR/filename  is checked
-                (relative to the root of the (GBR) repo)
-            finally GBR_CONFIG_DEFAULT/CONFIG_DIR/filename is tried
+        If the environment variable GBR_CONFIG_PATH exists the path
+        GBR_CONFIG_PATH/config_dir/filename is checked.
+        If it doesn't exist config/CONFIG_DIR/filename  is checked
+        (relative to the root of the (GBR) repo)
+        finally GBR_CONFIG_DEFAULT/CONFIG_DIR/filename is tried
         If no file is found None will be returned.
+
+        Returns:
+
         """
         # pylint: disable=no-self-use
         config_file = None

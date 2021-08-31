@@ -42,6 +42,7 @@ LOG_FILE = f"{APP_NAME}_logs.log"
 
 
 def resolve_logging_level():
+    """ """
     if ZENML_LOGGING_VERBOSITY > 0:
         level = (
             LOGGING_LEVELS[ZENML_LOGGING_VERBOSITY]
@@ -54,6 +55,7 @@ def resolve_logging_level():
 
 
 def set_root_verbosity():
+    """ """
     level = resolve_logging_level()
     if level > logging.NOTSET:
         logging.basicConfig(level=level)
@@ -67,18 +69,28 @@ def set_root_verbosity():
 
 
 def get_console_handler():
+    """ """
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(FORMATTER)
     return console_handler
 
 
 def get_file_handler():
+    """ """
     file_handler = TimedRotatingFileHandler(LOG_FILE, when="midnight")
     file_handler.setFormatter(FORMATTER)
     return file_handler
 
 
 def get_logger(logger_name):
+    """
+
+    Args:
+      logger_name:
+
+    Returns:
+
+    """
     logger = logging.getLogger(logger_name)
     logger.setLevel(resolve_logging_level())
     logger.addHandler(get_console_handler())
@@ -92,6 +104,7 @@ def get_logger(logger_name):
 
 
 def init_logging():
+    """ """
     logging.basicConfig(format=FORMATTING_STRING)
     set_root_verbosity()
 

@@ -28,6 +28,11 @@ class BaseArtifactStore(BaseModel):
     """Base class for all ZenML Artifacts.
 
     Every ZenML Artifact Store should override this class
+
+    Args:
+
+    Returns:
+
     """
 
     path: str
@@ -36,22 +41,29 @@ class BaseArtifactStore(BaseModel):
 
     @staticmethod
     def get_component_name_from_uri(artifact_uri: Text):
-        """
-        Gets component name from artifact URI.
+        """Gets component name from artifact URI.
 
         Args:
-            artifact_uri (str): URI to artifact.
+          artifact_uri(str): URI to artifact.
+          artifact_uri: Text:
+
+        Returns:
+
         """
         return path_utils.get_grandparent(artifact_uri)
 
     def resolve_uri_locally(self, artifact_uri: Text, path: Text = None):
-        """
-        Takes a URI that points within the artifact store, downloads the
+        """Takes a URI that points within the artifact store, downloads the
         URI locally, then returns local URI.
 
         Args:
-            artifact_uri: uri to artifact.
-            path: optional path to download to. If None, is inferred.
+          artifact_uri: uri to artifact.
+          path: optional path to download to. If None, is inferred.
+          artifact_uri: Text:
+          path: Text:  (Default value = None)
+
+        Returns:
+
         """
         if not path_utils.is_remote(artifact_uri):
             # Its already local

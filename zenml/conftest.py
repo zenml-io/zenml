@@ -41,12 +41,16 @@ pipeline_root = os.path.join(TEST_ROOT, "pipelines")
 
 @pytest.fixture
 def repo():
+    """ """
     return Repository.get_instance()
 
 
 @pytest.fixture
 def cleanup_metadata_store():
+    """ """
+
     def wrapper():
+        """ """
         # Remove metadata db after a test to avoid test failures by duplicated
         # data sources
         metadata_db_location = os.path.join(
@@ -62,7 +66,10 @@ def cleanup_metadata_store():
 
 @pytest.fixture
 def cleanup_pipelines_dir():
+    """ """
+
     def wrapper():
+        """ """
         repo: Repository = Repository.get_instance()
         pipelines_dir = repo.zenml_config.get_pipelines_dir()
         for p_config in path_utils.list_dir(pipelines_dir):
@@ -76,7 +83,10 @@ def cleanup_pipelines_dir():
 
 @pytest.fixture
 def cleanup_artifacts():
+    """ """
+
     def wrapper():
+        """ """
         local_store_path = os.path.join(".zenml", "local_store")
         try:
             local_store = os.path.join(ZENML_ROOT, local_store_path)
@@ -89,13 +99,32 @@ def cleanup_artifacts():
 
 @pytest.fixture
 def cleanup(cleanup_metadata_store, cleanup_artifacts):
+    """
+
+    Args:
+      cleanup_metadata_store:
+      cleanup_artifacts:
+
+    Returns:
+
+    """
     cleanup_metadata_store()
     cleanup_artifacts()
 
 
 @pytest.fixture
 def delete_config():
+    """ """
+
     def wrapper(filename):
+        """
+
+        Args:
+          filename:
+
+        Returns:
+
+        """
         cfg = os.path.join(pipeline_root, filename)
         path_utils.rm_file(cfg)
 
@@ -104,7 +133,19 @@ def delete_config():
 
 @pytest.fixture
 def equal_backends():
+    """ """
+
     def wrapper(bck1: BaseBackend, bck2: BaseBackend, loaded=True):
+        """
+
+        Args:
+          bck1: BaseBackend:
+          bck2: BaseBackend:
+          loaded:  (Default value = True)
+
+        Returns:
+
+        """
         # There can be a "None" backend in a pipeline
         if bck1 is None and bck2 is None:
             return True
@@ -126,7 +167,26 @@ def equal_backends():
 
 @pytest.fixture
 def equal_steps(equal_backends):
+    """
+
+    Args:
+      equal_backends:
+
+    Returns:
+
+    """
+
     def wrapper(step1: BaseStep, step2: BaseStep, loaded=True):
+        """
+
+        Args:
+          step1: BaseStep:
+          step2: BaseStep:
+          loaded:  (Default value = True)
+
+        Returns:
+
+        """
         # There can be a "None" step e.g. in get_data_step()
         # in a BaseDatasource
         if step1 is None and step2 is None:
@@ -150,7 +210,26 @@ def equal_steps(equal_backends):
 
 @pytest.fixture
 def equal_datasources(equal_steps):
+    """
+
+    Args:
+      equal_steps:
+
+    Returns:
+
+    """
+
     def wrapper(ds1: BaseDatasource, ds2: BaseDatasource, loaded=True):
+        """
+
+        Args:
+          ds1: BaseDatasource:
+          ds2: BaseDatasource:
+          loaded:  (Default value = True)
+
+        Returns:
+
+        """
         # There can be a "None" datasource in a pipeline
         if ds1 is None and ds2 is None:
             return True
@@ -176,7 +255,28 @@ def equal_datasources(equal_steps):
 
 @pytest.fixture
 def equal_pipelines(equal_backends, equal_steps, equal_datasources):
+    """
+
+    Args:
+      equal_backends:
+      equal_steps:
+      equal_datasources:
+
+    Returns:
+
+    """
+
     def wrapper(p1: BasePipeline, p2: BasePipeline, loaded=True):
+        """
+
+        Args:
+          p1: BasePipeline:
+          p2: BasePipeline:
+          loaded:  (Default value = True)
+
+        Returns:
+
+        """
         # There can be a "None" datasource in a pipeline
         if p1 is None and p2 is None:
             return True
@@ -209,7 +309,18 @@ def equal_pipelines(equal_backends, equal_steps, equal_datasources):
 
 @pytest.fixture
 def equal_md_stores():
+    """ """
+
     def wrapper(md1: ZenMLMetadataStore, md2: ZenMLMetadataStore):
+        """
+
+        Args:
+          md1: ZenMLMetadataStore:
+          md2: ZenMLMetadataStore:
+
+        Returns:
+
+        """
         # There can be a "None" datasource in a pipeline
         if md1 is None and md2 is None:
             return True
@@ -226,7 +337,26 @@ def equal_md_stores():
 
 @pytest.fixture
 def equal_zenml_configs(equal_md_stores):
+    """
+
+    Args:
+      equal_md_stores:
+
+    Returns:
+
+    """
+
     def wrapper(cfg1: ZenMLConfig, cfg2: ZenMLConfig, loaded=True):
+        """
+
+        Args:
+          cfg1: ZenMLConfig:
+          cfg2: ZenMLConfig:
+          loaded:  (Default value = True)
+
+        Returns:
+
+        """
         # There can be a "None" datasource in a pipeline
         if cfg1 is None and cfg2 is None:
             return True

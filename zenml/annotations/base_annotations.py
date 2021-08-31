@@ -21,6 +21,8 @@ from six import with_metaclass
 
 
 class GenericMeta(type):
+    """ """
+
     def __getitem__(cls: Type["GenericType"], params):
         return cls._generic_getitem(params)
 
@@ -45,6 +47,14 @@ class GenericType(with_metaclass(GenericMeta, object)):
 
     @classmethod
     def _generic_getitem(cls, params):
+        """
+
+        Args:
+          params:
+
+        Returns:
+
+        """
         if inspect.isclass(params) and any(
             issubclass(params, t) for t in cls.VALID_TYPES
         ):

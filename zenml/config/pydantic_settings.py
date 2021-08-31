@@ -37,6 +37,8 @@ class Settings(BaseSettings):
     more_settings: SubModel = SubModel()
 
     class Config:
+        """ """
+
         env_prefix = "my_prefix_"  # defaults to no prefix, i.e. ""
         fields = {
             "auth_key": {

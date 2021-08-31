@@ -11,6 +11,8 @@ from zenml.utils.exceptions import PipelineInterfaceError
 
 
 class BasePipelineMeta(type):
+    """ """
+
     def __new__(mcs, name, bases, dct):
         cls = super().__new__(mcs, name, bases, dct)
 
@@ -35,6 +37,8 @@ class BasePipelineMeta(type):
 
 
 class BasePipeline(metaclass=BasePipelineMeta):
+    """ """
+
     def __init__(self, *args, **kwargs):
         self.__steps = dict()
         self.__external_artifacts = dict()
@@ -52,9 +56,18 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
     @abstractmethod
     def connect(self, *args, **kwargs):
-        pass
+        """
+
+        Args:
+          *args:
+          **kwargs:
+
+        Returns:
+
+        """
 
     def run(self):
+        """ """
         self.connect(**self.__external_artifacts, **self.__steps)
 
         step_list = [s.get_component() for s in self.__steps.values()]

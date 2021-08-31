@@ -21,6 +21,8 @@ from zenml.metadata import ZenMLMetadataStore
 
 
 class MySQLMetadataStore(ZenMLMetadataStore):
+    """ """
+
     STORE_TYPE = MLMetadataTypes.mysql.name
 
     def __init__(
@@ -40,6 +42,7 @@ class MySQLMetadataStore(ZenMLMetadataStore):
         super().__init__()
 
     def get_tfx_metadata_config(self):
+        """ """
         return metadata.mysql_metadata_connection_config(
             host=self.host,
             port=self.port,

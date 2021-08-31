@@ -6,13 +6,31 @@ DEFAULT_FILENAME = "data.txt"
 
 
 def parse_line(x):
+    """
+
+    Args:
+      x:
+
+    Returns:
+
+    """
     return x
 
 
 class TextArtifact(BaseDataArtifact):
+    """ """
+
     TYPE_NAME = "text_artifact"
 
     def read_with_beam(self, pipeline):
+        """
+
+        Args:
+          pipeline:
+
+        Returns:
+
+        """
 
         import apache_beam as beam
         from tfx.dsl.io import fileio
@@ -39,15 +57,32 @@ class TextArtifact(BaseDataArtifact):
         )
 
     def write_with_beam(self, pipeline):
+        """
+
+        Args:
+          pipeline:
+
+        Returns:
+
+        """
         import apache_beam as beam
 
         out_path = os.path.join(self.uri, DEFAULT_FILENAME)
         return pipeline | beam.io.WriteToText(out_path)
 
     def read_with_pandas(self):
+        """ """
         import pandas as pd
 
         return pd.read_csv(os.path.join(self.uri, DEFAULT_FILENAME))
 
     def write_with_pandas(self, df):
+        """
+
+        Args:
+          df:
+
+        Returns:
+
+        """
         df.to_csv(os.path.join(self.uri, DEFAULT_FILENAME))

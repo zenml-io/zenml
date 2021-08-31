@@ -22,6 +22,8 @@ from zenml.utils import path_utils
 
 
 class SQLiteMetadataStore(ZenMLMetadataStore):
+    """ """
+
     STORE_TYPE = MLMetadataTypes.sqlite.name
 
     def __init__(self, uri: Text):
@@ -37,4 +39,5 @@ class SQLiteMetadataStore(ZenMLMetadataStore):
         super().__init__()
 
     def get_tfx_metadata_config(self):
+        """ """
         return metadata.sqlite_metadata_connection_config(self.uri)

@@ -25,18 +25,41 @@ class MetadataWrapperFactory:
 
     All metadata_wrappers (including custom metadata_wrappers) are to be
     registered here.
+
+    Args:
+
+    Returns:
+
     """
 
     def __init__(self):
         self.metadata_wrappers = {}
 
     def get_metadata_wrappers(self):
+        """ """
         return self.metadata_wrappers
 
     def get_single_metadata_wrapper(self, key):
+        """
+
+        Args:
+          key:
+
+        Returns:
+
+        """
         return self.metadata_wrappers[key]
 
     def register_metadata_wrapper(self, key, metadata_wrapper_):
+        """
+
+        Args:
+          key:
+          metadata_wrapper_:
+
+        Returns:
+
+        """
         self.metadata_wrappers[key] = metadata_wrapper_
 
 

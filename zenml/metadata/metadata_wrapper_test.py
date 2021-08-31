@@ -27,16 +27,33 @@ expected_query_error = AssertionError
 
 
 def test_metadata_init(repo):
+    """
+
+    Args:
+      repo:
+
+    Returns:
+
+    """
     mds = repo.get_default_metadata_store()
     _ = mds.store
 
 
 def test_to_config(repo):
+    """
+
+    Args:
+      repo:
+
+    Returns:
+
+    """
     mds = repo.get_default_metadata_store()
     mds.to_config()
 
 
 def test_from_config():
+    """ """
     config = {MLMetadataKeys.TYPE: None, MLMetadataKeys.ARGS: {}}
 
     # throws because base MDStore is not in the factory
@@ -45,6 +62,14 @@ def test_from_config():
 
 
 def test_get_pipeline_status(repo):
+    """
+
+    Args:
+      repo:
+
+    Returns:
+
+    """
     random_pipeline = random.choice(repo.get_pipelines())
 
     mds = repo.get_default_metadata_store()
@@ -56,6 +81,14 @@ def test_get_pipeline_status(repo):
 
 
 def test_get_pipeline_executions(repo):
+    """
+
+    Args:
+      repo:
+
+    Returns:
+
+    """
     mds = repo.get_default_metadata_store()
 
     random_pipeline = random.choice(repo.get_pipelines())
@@ -64,6 +97,14 @@ def test_get_pipeline_executions(repo):
 
 
 def test_get_components_status(repo):
+    """
+
+    Args:
+      repo:
+
+    Returns:
+
+    """
     mds = repo.get_default_metadata_store()
 
     random_pipeline = random.choice(repo.get_pipelines())
@@ -72,6 +113,14 @@ def test_get_components_status(repo):
 
 
 def test_get_artifacts_by_component(repo):
+    """
+
+    Args:
+      repo:
+
+    Returns:
+
+    """
     mds = repo.get_default_metadata_store()
 
     random_pipeline = repo.get_pipelines_by_type(
@@ -87,6 +136,14 @@ def test_get_artifacts_by_component(repo):
 
 
 def test_get_pipeline_context(repo):
+    """
+
+    Args:
+      repo:
+
+    Returns:
+
+    """
     mds = repo.get_default_metadata_store()
 
     random_pipeline = random.choice(repo.get_pipelines())

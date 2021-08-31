@@ -23,6 +23,23 @@ def TrainingPipeline(
     evaluator: Step[EvaluatorStep],
     deployer: Step[DeployerStep],
 ):
+    """
+
+    Args:
+      datasource: Datasource[BaseDatasource]:
+      split: Step[SplitStep]:
+      raw_statistics: Step[StatisticsStep]:
+      raw_schema: Step[SchemaStep]:
+      preprocesser: Step[PreprocesserStep]:
+      xf_statistics: Step[StatisticsStep]:
+      xf_schema: Step[SchemaStep]:
+      trainer: Step[TrainerStep]:
+      evaluator: Step[EvaluatorStep]:
+      deployer: Step[DeployerStep]:
+
+    Returns:
+
+    """
     # Handle the raw data
     split(input_data=datasource)
     raw_statistics(input_data=split.outputs.data)

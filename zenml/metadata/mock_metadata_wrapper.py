@@ -19,6 +19,8 @@ from zenml.metadata import ZenMLMetadataStore
 
 
 class MockMetadataStore(ZenMLMetadataStore):
+    """ """
+
     STORE_TYPE = MLMetadataTypes.mock.name
 
     def __init__(self):
@@ -26,6 +28,7 @@ class MockMetadataStore(ZenMLMetadataStore):
         super().__init__()
 
     def get_tfx_metadata_config(self):
+        """ """
         config = metadata_store_pb2.ConnectionConfig()
         config.fake_database.SetInParent()  # Sets an empty fake
         return config
