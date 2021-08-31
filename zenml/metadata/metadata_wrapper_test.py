@@ -38,8 +38,7 @@ def test_to_config(repo):
 
 
 def test_from_config():
-    config = {MLMetadataKeys.TYPE: None,
-              MLMetadataKeys.ARGS: {}}
+    config = {MLMetadataKeys.TYPE: None, MLMetadataKeys.ARGS: {}}
 
     # throws because base MDStore is not in the factory
     with pytest.raises(AssertionError):
@@ -51,8 +50,10 @@ def test_get_pipeline_status(repo):
 
     mds = repo.get_default_metadata_store()
 
-    assert mds.get_pipeline_status(random_pipeline) == \
-           PipelineStatusTypes.Succeeded.name
+    assert (
+        mds.get_pipeline_status(random_pipeline)
+        == PipelineStatusTypes.Succeeded.name
+    )
 
 
 def test_get_pipeline_executions(repo):
@@ -75,7 +76,8 @@ def test_get_artifacts_by_component(repo):
     mds = repo.get_default_metadata_store()
 
     random_pipeline = repo.get_pipelines_by_type(
-        TrainingPipeline.PIPELINE_TYPE)[0]
+        TrainingPipeline.PIPELINE_TYPE
+    )[0]
 
     # pick a component guaranteed to be present
     component_name = GDPComponent.SplitGen.name

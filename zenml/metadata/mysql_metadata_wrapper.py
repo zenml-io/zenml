@@ -23,8 +23,14 @@ from zenml.enums import MLMetadataTypes
 class MySQLMetadataStore(ZenMLMetadataStore):
     STORE_TYPE = MLMetadataTypes.mysql.name
 
-    def __init__(self, host: Text, port: int, database: Text, username: Text,
-                 password: Text):
+    def __init__(
+        self,
+        host: Text,
+        port: int,
+        database: Text,
+        username: Text,
+        password: Text,
+    ):
         """Constructor for MySQL MetadataStore for ZenML"""
         self.host = host
         self.port = int(port)  # even if its a string, it should be casted
@@ -39,4 +45,5 @@ class MySQLMetadataStore(ZenMLMetadataStore):
             port=self.port,
             database=self.database,
             username=self.username,
-            password=self.password)
+            password=self.password,
+        )

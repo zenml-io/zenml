@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,11 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from enum import Enum
-
-
-class ArtifactStoreTypes(str, Enum):
-    """All supported Artifact Store types."""
-
-    local = "local"
-    gcp = "gcp"
+from zenml.pipelines.base_pipeline import BasePipeline
+from zenml.pipelines.training_pipeline import TrainingPipeline
+from zenml.pipelines.data_pipeline import DataPipeline
+from zenml.pipelines.nlp_pipeline import NLPPipeline
+from zenml.pipelines.infer_pipeline import BatchInferencePipeline
+from zenml.pipelines.deploy_pipeline import DeploymentPipeline

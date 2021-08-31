@@ -1,129 +1,80 @@
-#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
-#
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at:
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-#  or implied. See the License for the specific language governing
-#  permissions and limitations under the License.
-"""Base Step Interface definition"""
 import inspect
-from typing import Dict
-import json
-from zenml.backends import BaseBackend
-from zenml.enums import StepTypes
-from zenml.standards.standard_keys import StepKeys
-from zenml.utils.print_utils import to_pretty_string, PrintStyles
-from zenml.utils.source_utils import resolve_class, \
-    load_source_path_class, is_valid_source
+from abc import abstractmethod
+
+from zenml.annotations import Input, Output, Param
+from zenml.utils.exceptions import StepInterfaceError
+from zenml.utils.step_utils import generate_component
 
 
-class BaseStep:
-    """
-    Base class for all ZenML steps.
+class BaseStepMeta(type):
+    def __new__(mcs, name, bases, dct):
+        cls = super().__new__(mcs, name, bases, dct)
 
-    These are 'windows' into the base components for simpler overrides.
-    """
-    STEP_TYPE = StepTypes.base.name
+        cls.INPUT_SPEC = dict()
+        cls.OUTPUT_SPEC = dict()
+        cls.PARAM_SPEC = dict()
+        cls.PARAM_DEFAULTS = dict()  # TODO: handle defaults
 
-    def __init__(self, backend: BaseBackend = None, **kwargs):
-        """
-        Base data step constructor.
+        process_spec = inspect.getfullargspec(cls.get_executable())
+        process_args = process_spec.args
 
-        Args:
-            **kwargs: Keyword arguments used in the construction of a step
-            from a configuration file.
-        """
-        self._kwargs = kwargs
-        self._immutable = False
-        self.backend = backend
-        self._source = resolve_class(self.__class__)
+        if process_args and process_args[0] == "self":
+            process_args.pop(0)
 
-    def __str__(self):
-        return to_pretty_string(self.to_config())
-
-    def __repr__(self):
-        return to_pretty_string(self.to_config(), style=PrintStyles.PPRINT)
-
-    @staticmethod
-    def from_config(config_block: Dict):
-        """
-        Takes config block that represents a Step and converts it back into
-        its Python equivalent. This functionality is similar for most steps,
-        and expected config_block may look like
-
-        {
-            'source': this.module.StepClass@sha  # where sha is optional
-            'args': {}  # to be passed to the constructor
-        }
-
-        Args:
-            config_block: config block representing source and args of step.
-        """
-        # resolve source path
-        if StepKeys.SOURCE in config_block:
-            source = config_block[StepKeys.SOURCE]
-            class_ = load_source_path_class(source)
-            args = json.loads(config_block[StepKeys.ARGS])
-            resolved_args = {}
-
-            # resolve backend
-            backend = None
-            if StepKeys.BACKEND in config_block:
-                backend_config = config_block[StepKeys.BACKEND]
-                backend = BaseBackend.from_config(backend_config)
-
-            # resolve args for special cases
-            for k, v in args.items():
-                if isinstance(v, str) and is_valid_source(v):
-                    resolved_args[k] = load_source_path_class(v)
-                else:
-                    resolved_args[k] = v
-
-            obj = class_(**resolved_args)
-
-            # If we load from config, its immutable
-            obj._immutable = True
-            obj.backend = backend
-            return obj
-        else:
-            raise AssertionError("Cannot create config_block without source "
-                                 "key.")
-
-    def to_config(self) -> Dict:
-        """
-        Converts from step back to config. This functionality for most steps
-        yields the following config block.
-
-        {
-            'source': this.file.path.BaseStep@sha  # where sha is optional
-            'args': {}  # whatever is used in the constructor for BaseStep
-        }
-        """
-        kwargs = {}
-        for key, kwarg in self._kwargs.items():
-            if inspect.isclass(kwarg):
-                kwargs[key] = resolve_class(kwarg)
+        for arg in process_args:
+            arg_type = process_spec.annotations.get(arg, None)
+            if isinstance(arg_type, Input):
+                cls.INPUT_SPEC.update({arg: arg_type.type})
+            elif isinstance(arg_type, Output):
+                cls.OUTPUT_SPEC.update({arg: arg_type.type})
+            elif isinstance(arg_type, Param):
+                cls.PARAM_SPEC.update({arg: arg_type.type})
             else:
-                kwargs[key] = kwarg
+                raise StepInterfaceError("")  # TODO: fill message
 
-        config = {
-            StepKeys.SOURCE: self._source,
-            StepKeys.ARGS: json.dumps(kwargs),  # everything to be recorded
-        }
+        return cls
 
-        # only add backend if its set
-        if self.backend is not None:
-            config.update({StepKeys.BACKEND: self.backend.to_config()})
 
-        return config
+class BaseStep(metaclass=BaseStepMeta):
+    def __init__(self, *args, **kwargs):
+        self.__backend = None
+        self.__component = None
+        self.__params = dict()
 
-    def with_backend(self, backend: BaseBackend):
-        """Builder for step backends."""
-        self.backend = backend
+        if args:
+            raise StepInterfaceError("")  # TODO: fill
+
+        for k, v in kwargs.items():
+            assert k in self.PARAM_SPEC
+            try:
+                self.__params[k] = self.PARAM_SPEC[k](v)
+            except TypeError or ValueError:
+                raise StepInterfaceError("")
+
+    def __call__(self, **artifacts):
+        # TODO: Check artifact types
+        self.__component = generate_component(self)(
+            **artifacts, **self.__params
+        )
+
+    def __getattr__(self, item):
+        if item == "outputs":
+            return self.__component.outputs
+        else:
+            raise AttributeError(f"{item}")
+
+    @abstractmethod
+    def process(self, *args, **kwargs):
+        pass
+
+    def get_component(self):
+        return self.__component
+
+    @classmethod
+    def get_executable(cls):
+        return cls.process
+
+    def with_backend(self, backend):
+        # TODO: temporary implementation
+        self.__backend = backend
         return self

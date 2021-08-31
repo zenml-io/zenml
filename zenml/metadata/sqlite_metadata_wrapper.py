@@ -27,8 +27,10 @@ class SQLiteMetadataStore(ZenMLMetadataStore):
     def __init__(self, uri: Text):
         """Constructor for MySQL MetadataStore for ZenML"""
         if path_utils.is_remote(uri):
-            raise Exception(f'URI {uri} is a non-local path. A sqlite store '
-                            f'can only be local paths')
+            raise Exception(
+                f"URI {uri} is a non-local path. A sqlite store "
+                f"can only be local paths"
+            )
 
         # Resolve URI if relative URI provided
         self.uri = path_utils.resolve_relative_path(uri)

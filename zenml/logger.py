@@ -19,11 +19,14 @@ from logging.handlers import TimedRotatingFileHandler
 
 from absl import logging as absl_logging
 
-from zenml.constants import ZENML_LOGGING_VERBOSITY, APP_NAME, \
-    ABSL_LOGGING_VERBOSITY
+from zenml.constants import (
+    ZENML_LOGGING_VERBOSITY,
+    APP_NAME,
+    ABSL_LOGGING_VERBOSITY,
+)
 
 # Mute tensorflow cuda warnings
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 LOGGING_LEVELS = {
     0: logging.NOTSET,
@@ -35,13 +38,16 @@ LOGGING_LEVELS = {
 
 FORMATTING_STRING = "%(asctime)s — %(name)s — %(levelname)s — %(message)s"
 FORMATTER = logging.Formatter(FORMATTING_STRING)
-LOG_FILE = f'{APP_NAME}_logs.log'
+LOG_FILE = f"{APP_NAME}_logs.log"
 
 
 def resolve_logging_level():
     if ZENML_LOGGING_VERBOSITY > 0:
-        level = LOGGING_LEVELS[ZENML_LOGGING_VERBOSITY] \
-            if ZENML_LOGGING_VERBOSITY in LOGGING_LEVELS else logging.DEBUG
+        level = (
+            LOGGING_LEVELS[ZENML_LOGGING_VERBOSITY]
+            if ZENML_LOGGING_VERBOSITY in LOGGING_LEVELS
+            else logging.DEBUG
+        )
     else:
         level = logging.NOTSET
     return level
@@ -51,12 +57,13 @@ def set_root_verbosity():
     level = resolve_logging_level()
     if level > logging.NOTSET:
         logging.basicConfig(level=level)
-        get_logger(__name__).debug(f'Logging set to level: '
-                                   f'{logging.getLevelName(level)}')
+        get_logger(__name__).debug(
+            f"Logging set to level: " f"{logging.getLevelName(level)}"
+        )
     else:
         logging.disable(sys.maxsize)
         logging.getLogger().disabled = True
-        get_logger(__name__).debug('Logging NOTSET')
+        get_logger(__name__).debug("Logging NOTSET")
 
 
 def get_console_handler():
@@ -66,7 +73,7 @@ def get_console_handler():
 
 
 def get_file_handler():
-    file_handler = TimedRotatingFileHandler(LOG_FILE, when='midnight')
+    file_handler = TimedRotatingFileHandler(LOG_FILE, when="midnight")
     file_handler.setFormatter(FORMATTER)
     return file_handler
 

@@ -49,8 +49,9 @@ def cleanup_metadata_store():
     def wrapper():
         # Remove metadata db after a test to avoid test failures by duplicated
         # data sources
-        metadata_db_location = os.path.join(".zenml", "local_store",
-                                            "metadata.db")
+        metadata_db_location = os.path.join(
+            ".zenml", "local_store", "metadata.db"
+        )
         try:
             os.remove(os.path.join(ZENML_ROOT, metadata_db_location))
         except Exception as e:
