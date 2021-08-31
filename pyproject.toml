@@ -7,7 +7,10 @@ readme = "README.md"
 homepage = "https://zenml.io"
 documentation = "https://docs.zenml.io"
 repository = "https://github.com/zenml-io/zenml"
-license = "Apache 2.0"
+license = 'Apache-2.0'
+keywords = [
+    "machine learning", "production", "pipeline", "mlops", "devops"
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Framework :: MLOps",
@@ -25,6 +28,16 @@ classifiers = [
     "Topic :: MLOps",
     "Typing :: Typed",
 ]
+exclude = [
+    "*.tests",
+    "*.tests.*",
+    "tests.*",
+    "tests",
+    "docs"
+]
+
+[tool.poetry.scripts]
+poetry = 'zenml.cli.cli:cli'
 
 [tool.poetry.dependencies]
 python = ">=3.6.2,<3.9"
