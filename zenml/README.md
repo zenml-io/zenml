@@ -1,10 +1,10 @@
 Hello there! This is the repository for ZenML. If you would like to see the published 
 pip package can be found [here](https://pypi.org/project/zenml).
 
-ZenML is a platform that lets you create machine learning pipelines for production use-cases.
+ZenML is an open-source framework to create production-grade MLOps pipelines. 
+
 Our [website](https://zenml.io) gives an overview of the features of ZenML and if you find 
-it interesting, you can sign up for an early access [here](https://zenml.io/#early-access). You can also learn 
-more about how to use ZenML [here](https://docs.zenml.io).
+it interesting,  you can learn more about how to use ZenML [here](https://docs.zenml.io).
 
 ## How to install from pip
 
@@ -27,6 +27,13 @@ pip install zenml[pytorch]
 Use the keyword `all` in the square brackets if you would like to install all integrations.
 
 ## How to install from source
+
+### With Poetry
+```bash
+poetry install
+```
+
+### Legacy Method
 On the other hand, if you like to install from the source directly, you can follow:
 ```bash
 make venv
