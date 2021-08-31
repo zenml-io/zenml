@@ -149,4 +149,3 @@ verbose = 0
 quiet = false
 whitelist-regex = []
 color = true
-badge-format = "svg"
