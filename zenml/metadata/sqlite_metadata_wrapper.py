@@ -16,9 +16,9 @@ from typing import Text
 
 from tfx.orchestration import metadata
 
+from zenml.enums import MLMetadataTypes
 from zenml.metadata import ZenMLMetadataStore
 from zenml.utils import path_utils
-from zenml.enums import MLMetadataTypes
 
 
 class SQLiteMetadataStore(ZenMLMetadataStore):

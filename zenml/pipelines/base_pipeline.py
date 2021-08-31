@@ -2,22 +2,12 @@ import inspect
 from abc import abstractmethod
 
 from tfx.orchestration import metadata
-from tfx.orchestration import (
-    pipeline as tfx_pipeline,
-)
-from tfx.orchestration.local.local_dag_runner import (
-    LocalDagRunner,
-)
+from tfx.orchestration import pipeline as tfx_pipeline
+from tfx.orchestration.local.local_dag_runner import LocalDagRunner
 
-from zenml.annotations.artifact_annotations import (
-    External,
-)
-from zenml.annotations.step_annotations import (
-    Step,
-)
-from zenml.utils.exceptions import (
-    PipelineInterfaceError,
-)
+from zenml.annotations.artifact_annotations import External
+from zenml.annotations.step_annotations import Step
+from zenml.utils.exceptions import PipelineInterfaceError
 
 
 class BasePipelineMeta(type):

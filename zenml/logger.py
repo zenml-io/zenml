@@ -20,9 +20,9 @@ from logging.handlers import TimedRotatingFileHandler
 from absl import logging as absl_logging
 
 from zenml.constants import (
-    ZENML_LOGGING_VERBOSITY,
-    APP_NAME,
     ABSL_LOGGING_VERBOSITY,
+    APP_NAME,
+    ZENML_LOGGING_VERBOSITY,
 )
 
 # Mute tensorflow cuda warnings

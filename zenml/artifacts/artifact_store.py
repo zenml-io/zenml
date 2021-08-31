@@ -18,10 +18,10 @@ from typing import Text
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
-from zenml.repo import GlobalConfig
-from zenml.utils import path_utils
 
 from zenml.enums import ArtifactStoreTypes
+from zenml.repo import GlobalConfig
+from zenml.utils import path_utils
 
 
 class BaseArtifactStore(BaseModel):

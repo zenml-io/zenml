@@ -1,5 +1,4 @@
-from tfx.types.artifact import Property
-from tfx.types.artifact import PropertyType
+from tfx.types.artifact import Property, PropertyType
 
 from zenml.artifacts.base import BaseArtifact
 

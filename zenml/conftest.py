@@ -23,12 +23,12 @@ import pytest
 import zenml
 from zenml.backends import BaseBackend
 from zenml.datasources import BaseDatasource
+from zenml.logger import get_logger
 from zenml.metadata import ZenMLMetadataStore
 from zenml.pipelines import BasePipeline
 from zenml.repo import Repository, ZenMLConfig
 from zenml.steps import BaseStep
 from zenml.utils import path_utils
-from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 

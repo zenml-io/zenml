@@ -14,16 +14,15 @@
 
 
 from abc import abstractmethod
-from typing import Text, Dict
+from typing import Dict, Text
 
 from ml_metadata.metadata_store import metadata_store
 
-from zenml.enums import MLMetadataTypes
-from zenml.enums import PipelineStatusTypes
+from zenml.enums import MLMetadataTypes, PipelineStatusTypes
 from zenml.exceptions import DoesNotExistException
 from zenml.logger import get_logger
 from zenml.standards.standard_keys import MLMetadataKeys
-from zenml.utils.print_utils import to_pretty_string, PrintStyles
+from zenml.utils.print_utils import PrintStyles, to_pretty_string
 
 logger = get_logger(__name__)
 

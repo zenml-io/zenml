@@ -20,8 +20,7 @@ from zenml.datasources import CSVDatasource
 from zenml.exceptions import AlreadyExistsException
 from zenml.logger import get_logger
 from zenml.pipelines import TrainingPipeline
-from zenml.repo import GlobalConfig
-from zenml.repo import Repository
+from zenml.repo import GlobalConfig, Repository
 from zenml.steps.preprocesser import StandardPreprocesser
 from zenml.steps.split import CategoricalDomainSplit
 from zenml.steps.trainer import TFFeedForwardTrainer
@@ -49,42 +48,57 @@ repo.zenml_config.set_pipelines_dir(pipeline_root)
 
 try:
     for i in range(1, 6):
-        training_pipeline = TrainingPipeline(name='csvtest{0}'.format(i))
+        training_pipeline = TrainingPipeline(name="csvtest{0}".format(i))
 
         try:
             # Add a datasource. This will automatically track and version it.
-            ds = CSVDatasource(name='my_csv_datasource',
-                               path=os.path.join(csv_root, "my_dataframe.csv"))
+            ds = CSVDatasource(
+                name="my_csv_datasource",
+                path=os.path.join(csv_root, "my_dataframe.csv"),
+            )
         except AlreadyExistsException:
             ds = repo.get_datasource_by_name("my_csv_datasource")
 
         training_pipeline.add_datasource(ds)
 
         # Add a split
-        training_pipeline.add_split(CategoricalDomainSplit(
-            categorical_column="name",
-            split_map={'train': ["arnold"],
-                       'eval': ["lülük"],
-                       'test': ["nicholas"]}))
+        training_pipeline.add_split(
+            CategoricalDomainSplit(
+                categorical_column="name",
+                split_map={
+                    "train": ["arnold"],
+                    "eval": ["lülük"],
+                    "test": ["nicholas"],
+                },
+            )
+        )
 
         # Add a preprocessing unit
         training_pipeline.add_preprocesser(
             StandardPreprocesser(
                 features=["name", "age"],
-                labels=['gpa'],
-                overwrite={'gpa': {
-                    'transform': [
-                        {'method': 'no_transform', 'parameters': {}}]}}
-            ))
+                labels=["gpa"],
+                overwrite={
+                    "gpa": {
+                        "transform": [
+                            {"method": "no_transform", "parameters": {}}
+                        ]
+                    }
+                },
+            )
+        )
 
         # Add a trainer
-        training_pipeline.add_trainer(TFFeedForwardTrainer(
-            batch_size=1,
-            loss='binary_crossentropy',
-            last_activation='sigmoid',
-            output_units=1,
-            metrics=['accuracy'],
-            epochs=i))
+        training_pipeline.add_trainer(
+            TFFeedForwardTrainer(
+                batch_size=1,
+                loss="binary_crossentropy",
+                last_activation="sigmoid",
+                output_units=1,
+                metrics=["accuracy"],
+                epochs=i,
+            )
+        )
 
         # Run the pipeline locally
         training_pipeline.run()
