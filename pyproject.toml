@@ -41,7 +41,7 @@ poetry = 'zenml.cli.cli:cli'
 
 [tool.poetry.dependencies]
 python = ">=3.6.2,<3.9"
-ml-pipelines-sdk = "0.30.1"
+ml-pipelines-sdk = "1.2.0"
 panel = "0.11.3"
 pandas = "1.1.5"
 apache-beam = "2.30.0"
