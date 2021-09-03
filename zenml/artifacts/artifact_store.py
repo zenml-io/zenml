@@ -19,8 +19,8 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
+from zenml.config.global_config import GlobalConfig
 from zenml.enums import ArtifactStoreTypes
-from zenml.repo import GlobalConfig
 from zenml.utils import path_utils
 
 
