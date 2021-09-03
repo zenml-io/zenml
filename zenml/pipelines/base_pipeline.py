@@ -9,6 +9,7 @@ from zenml.annotations.artifact_annotations import External
 from zenml.annotations.step_annotations import Step
 from zenml.utils.exceptions import PipelineInterfaceError
 
+
 class BasePipelineMeta(type):
     """ """
 
