@@ -1,6 +1,6 @@
 import inspect
 from abc import abstractmethod
-
+from tfx.dsl.components.common.importer import Importer
 from tfx.orchestration import metadata
 from tfx.orchestration import pipeline as tfx_pipeline
 from tfx.orchestration.local.local_dag_runner import LocalDagRunner
@@ -8,7 +8,6 @@ from tfx.orchestration.local.local_dag_runner import LocalDagRunner
 from zenml.annotations.artifact_annotations import External
 from zenml.annotations.step_annotations import Step
 from zenml.utils.exceptions import PipelineInterfaceError
-
 
 class BasePipelineMeta(type):
     """ """
@@ -68,17 +67,27 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
     def run(self):
         """ """
-        self.connect(**self.__external_artifacts, **self.__steps)
+        importers = {}
+        for name, artifact in self.__external_artifacts.items():
+            importers[name] = Importer(
+                source_uri=artifact.uri,
+                artifact_type=artifact.type).with_id(name)
 
-        step_list = [s.get_component() for s in self.__steps.values()]
+        import_artifacts = {n: i.outputs["result"]
+                            for n, i in importers.items()}
+
+        self.connect(**import_artifacts, **self.__steps)
+
+        step_list = list(importers.values()) + \
+                    [s.get_component() for s in self.__steps.values()]
 
         created_pipeline = tfx_pipeline.Pipeline(
             pipeline_name="pipeline_name",
-            pipeline_root="/home/baris/Maiot/zenml/local_test/new_zenml/",
+            pipeline_root="/home/baris/zenml/zenml/local_test/new_zenml/",
             components=step_list,
             enable_cache=False,
             metadata_connection_config=metadata.sqlite_metadata_connection_config(
-                "/home/baris/Maiot/zenml/local_test/new_zenml/db"
+                "/home/baris/zenml/zenml/local_test/new_zenml/db"
             ),
             beam_pipeline_args=[
                 "--direct_running_mode=multi_processing",
