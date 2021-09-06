@@ -41,13 +41,13 @@ pipeline_root = os.path.join(TEST_ROOT, "pipelines")
 
 @pytest.fixture
 def repo():
-    """ """
+    """Repo reference."""
     return Repository.get_instance()
 
 
 @pytest.fixture
 def cleanup_metadata_store():
-    """ """
+    """Clean up metadata store."""
 
     def wrapper():
         """ """
@@ -66,7 +66,7 @@ def cleanup_metadata_store():
 
 @pytest.fixture
 def cleanup_pipelines_dir():
-    """ """
+    """Clean up pipeline dir."""
 
     def wrapper():
         """ """
@@ -83,7 +83,7 @@ def cleanup_pipelines_dir():
 
 @pytest.fixture
 def cleanup_artifacts():
-    """ """
+    """Cleanup artifacts."""
 
     def wrapper():
         """ """
@@ -99,7 +99,7 @@ def cleanup_artifacts():
 
 @pytest.fixture
 def cleanup(cleanup_metadata_store, cleanup_artifacts):
-    """
+    """Cleanup.
 
     Args:
       cleanup_metadata_store:
@@ -114,7 +114,7 @@ def cleanup(cleanup_metadata_store, cleanup_artifacts):
 
 @pytest.fixture
 def delete_config():
-    """ """
+    """Delete the config."""
 
     def wrapper(filename):
         """
@@ -133,7 +133,7 @@ def delete_config():
 
 @pytest.fixture
 def equal_backends():
-    """ """
+    """Checks whether two backends are equal."""
 
     def wrapper(bck1: BaseBackend, bck2: BaseBackend, loaded=True):
         """
@@ -167,7 +167,7 @@ def equal_backends():
 
 @pytest.fixture
 def equal_steps(equal_backends):
-    """
+    """Check whether two steps are equal.
 
     Args:
       equal_backends:
@@ -210,7 +210,7 @@ def equal_steps(equal_backends):
 
 @pytest.fixture
 def equal_datasources(equal_steps):
-    """
+    """Check whether two datasources are equal.
 
     Args:
       equal_steps:
@@ -255,7 +255,7 @@ def equal_datasources(equal_steps):
 
 @pytest.fixture
 def equal_pipelines(equal_backends, equal_steps, equal_datasources):
-    """
+    """Checks whether two pipelines are equal.
 
     Args:
       equal_backends:
@@ -267,7 +267,7 @@ def equal_pipelines(equal_backends, equal_steps, equal_datasources):
     """
 
     def wrapper(p1: BasePipeline, p2: BasePipeline, loaded=True):
-        """
+        """Wrapper.
 
         Args:
           p1: BasePipeline:
@@ -309,7 +309,7 @@ def equal_pipelines(equal_backends, equal_steps, equal_datasources):
 
 @pytest.fixture
 def equal_md_stores():
-    """ """
+    """Define equal md stores."""
 
     def wrapper(md1: ZenMLMetadataStore, md2: ZenMLMetadataStore):
         """
@@ -328,7 +328,7 @@ def equal_md_stores():
             return False
         equal = False
         equal |= md1.__dict__ == md2.__dict__
-        equal |= md1.STORE_TYPE == md2.STORE_TYPE
+        equal |= md1.store_type == md2.store_type
 
         return equal
 
@@ -337,7 +337,7 @@ def equal_md_stores():
 
 @pytest.fixture
 def equal_zenml_configs(equal_md_stores):
-    """
+    """Check whether two zenml configs are equal.
 
     Args:
       equal_md_stores:

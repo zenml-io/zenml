@@ -20,3 +20,20 @@ class ArtifactStoreTypes(str, Enum):
 
     local = "local"
     gcp = "gcp"
+
+
+class PipelineStatusTypes(str, Enum):
+    """All supported Pipeline status types."""
+
+    NotStarted = "NotStarted"
+    Failed = "Failed"
+    Succeeded = "Succeeded"
+    Running = "Running"
+
+
+class MLMetadataTypes(str, Enum):
+    """All supported ML Metadata types."""
+
+    sqlite = "sqlite"
+    mysql = "mysql"
+    mock = "mock"

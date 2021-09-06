@@ -21,28 +21,17 @@ from zenml.metadata import ZenMLMetadataStore
 
 
 class MySQLMetadataStore(ZenMLMetadataStore):
-    """ """
+    """MySQL backend for ZenML metadata store."""
 
-    STORE_TYPE = MLMetadataTypes.mysql.name
-
-    def __init__(
-        self,
-        host: Text,
-        port: int,
-        database: Text,
-        username: Text,
-        password: Text,
-    ):
-        """Constructor for MySQL MetadataStore for ZenML"""
-        self.host = host
-        self.port = int(port)  # even if its a string, it should be casted
-        self.database = database
-        self.username = username
-        self.password = password
-        super().__init__()
+    store_type = MLMetadataTypes.mysql
+    host: Text
+    port: int
+    database: Text
+    username: Text
+    password: Text
 
     def get_tfx_metadata_config(self):
-        """ """
+        """Return tfx metadata config for mysql metadata store."""
         return metadata.mysql_metadata_connection_config(
             host=self.host,
             port=self.port,

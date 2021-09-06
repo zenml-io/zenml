@@ -19,16 +19,12 @@ from zenml.metadata import ZenMLMetadataStore
 
 
 class MockMetadataStore(ZenMLMetadataStore):
-    """ """
+    """Mock metadata store."""
 
-    STORE_TYPE = MLMetadataTypes.mock.name
-
-    def __init__(self):
-        """Constructor for Mock MetadataStore for ZenML."""
-        super().__init__()
+    store_type = MLMetadataTypes.mock
 
     def get_tfx_metadata_config(self):
-        """ """
+        """Return tfx metadata config for mock metadata store."""
         config = metadata_store_pb2.ConnectionConfig()
         config.fake_database.SetInParent()  # Sets an empty fake
         return config
