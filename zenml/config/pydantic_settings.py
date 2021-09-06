@@ -1,14 +1,7 @@
-from pydantic import BaseModel, BaseSettings
+from pydantic import BaseSettings
 
 from zenml.artifacts.artifact_store import BaseArtifactStore
 from zenml.metadata.metadata_wrapper import BaseMetadataStore
-
-
-class SubModel(BaseModel):
-    """Test"""
-
-    foo = "bar"
-    apple = 1
 
 
 class Settings(BaseSettings):
@@ -21,6 +14,3 @@ class Settings(BaseSettings):
         """Configuration of settings."""
 
         env_prefix = "zenml_"
-
-
-print(Settings().dict())
