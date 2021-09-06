@@ -17,11 +17,11 @@ from typing import Text
 from tfx.orchestration import metadata
 
 from zenml.enums import MLMetadataTypes
-from zenml.metadata import ZenMLMetadataStore
+from zenml.metadata import BaseMetadataStore
 from zenml.utils import path_utils
 
 
-class SQLiteMetadataStore(ZenMLMetadataStore):
+class SQLiteMetadataStore(BaseMetadataStore):
     """SQLite backend for ZenML metadata store."""
 
     store_type = MLMetadataTypes.sqlite

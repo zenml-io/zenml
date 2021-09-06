@@ -11,8 +11,3 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
-from zenml.metadata.metadata_wrapper import ZenMLMetadataStore
-from zenml.metadata.mock_metadata_wrapper import MockMetadataStore
-from zenml.metadata.mysql_metadata_wrapper import MySQLMetadataStore
-from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore

@@ -26,7 +26,7 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-class ZenMLMetadataStore(BaseModel):
+class BaseMetadataStore(BaseModel):
     """Metadata store base class to track metadata of zenml first class
     citizens."""
 

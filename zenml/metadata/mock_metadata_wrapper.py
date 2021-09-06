@@ -15,10 +15,10 @@
 from ml_metadata.proto import metadata_store_pb2
 
 from zenml.enums import MLMetadataTypes
-from zenml.metadata import ZenMLMetadataStore
+from zenml.metadata import BaseMetadataStore
 
 
-class MockMetadataStore(ZenMLMetadataStore):
+class MockMetadataStore(BaseMetadataStore):
     """Mock metadata store."""
 
     store_type = MLMetadataTypes.mock

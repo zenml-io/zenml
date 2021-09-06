@@ -17,10 +17,10 @@ from typing import Text
 from tfx.orchestration import metadata
 
 from zenml.enums import MLMetadataTypes
-from zenml.metadata import ZenMLMetadataStore
+from zenml.metadata import BaseMetadataStore
 
 
-class MySQLMetadataStore(ZenMLMetadataStore):
+class MySQLMetadataStore(BaseMetadataStore):
     """MySQL backend for ZenML metadata store."""
 
     store_type = MLMetadataTypes.mysql
