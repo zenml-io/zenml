@@ -24,21 +24,18 @@ class _FunctionExecutor(BaseExecutor):
     """ """
 
     _FUNCTION = staticmethod(lambda: None)
+    _WRITERS = list()
 
-    def Do(
-        self,
-        input_dict: Dict[Text, List[tfx_types.Artifact]],
-        output_dict: Dict[Text, List[tfx_types.Artifact]],
-        exec_properties: Dict[Text, Any],
-    ) -> None:
+    def Do(self,
+           input_dict: Dict[Text, List[tfx_types.Artifact]],
+           output_dict: Dict[Text, List[tfx_types.Artifact]],
+           exec_properties: Dict[Text, Any]) -> None:
         """
 
         Args:
-          input_dict: Dict[Text:
-          List[tfx_types.Artifact]]:
-          output_dict: Dict[Text:
-          exec_properties: Dict[Text:
-          Any]:
+          input_dict: Dict[Text, List[tfx_types.Artifact]]:
+          output_dict: Dict[Text, List[tfx_types.Artifact]]:
+          exec_properties: Dict[Text, Any]:
 
         Returns:
 
@@ -56,23 +53,18 @@ class _FunctionExecutor(BaseExecutor):
                     )
                     % (name, self, artifact)
                 )
-        for name, artifact in output_dict.items():
-            if len(artifact) == 1:
-                function_args[name] = artifact[0]
-            else:
-                raise ValueError(
-                    (
-                        "Expected output %r to %s to be a singleton "
-                        "ValueArtifact channel (got %s "
-                        "instead)."
-                    )
-                    % (name, self, artifact)
-                )
 
         for name, parameter in exec_properties.items():
             function_args[name] = parameter
 
-        self._FUNCTION(**function_args)
+        results = self._FUNCTION(**function_args)
+        i = 0
+        for k, v in output_dict.items():
+
+            func = v[0].get_writer(self._WRITERS[i])
+            func(v, results[i])
+            i += 1
+            # todo: using only indexing here is not reliable at all
 
 
 def generate_component(step) -> Callable[..., Any]:
@@ -107,6 +99,7 @@ def generate_component(step) -> Callable[..., Any]:
         (_FunctionExecutor,),
         {
             "_FUNCTION": staticmethod(step.get_executable()),
+            "_WRITERS": step.OUTPUT_TYPES,
             "__module__": step.__module__,
         },
     )
