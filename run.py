@@ -5,30 +5,24 @@ from zenml import steps
 from zenml.annotations import External, Input, Step, Param
 from zenml.artifacts import TextArtifact
 from zenml.distributed.beam import BeamOutput
-from zenml.steps import MultiOutput
-
-
-class SplitStepOutput(MultiOutput):
-    data: TextArtifact
-    param: float
 
 
 @steps.SimpleStep
 def DistSplitStep(input_data: Input[TextArtifact],
                   param: Param[float] = 3.0,
-                  ) -> SplitStepOutput:
+                  ) -> BeamOutput[TextArtifact]:
     import apache_beam as beam
 
     with beam.Pipeline() as pipeline:
         data = input_data.read_with_beam(pipeline)
         result = data | beam.Map(lambda x: x)
 
-    return SplitStepOutput(data=result, param=param)
+    return result
 
 
 @steps.SimpleStep
 def InMemPreprocesserStep(input_data: Input[TextArtifact]
-                          ) -> [pd.DataFrame]:
+                          ) -> pd.DataFrame:
     data = input_data.read_with_pandas()
     return data
 
@@ -43,7 +37,7 @@ def SplitPipeline(input_artifact: External[TextArtifact],
 
 # Pipeline
 test_artifact = TextArtifact()
-test_artifact.uri = "/home/baris/zenml/zenml/zenml/local_test/data/data.csv"
+test_artifact.uri = "/home/baris/zenml/zenml/zenml/local_test/data/taxi.csv"
 
 dist_split_pipeline = SplitPipeline(
     input_artifact=test_artifact,
