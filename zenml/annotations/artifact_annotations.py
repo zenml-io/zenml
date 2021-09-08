@@ -1,5 +1,5 @@
 from zenml.annotations.base_annotations import GenericType
-from zenml.artifacts.base import BaseArtifact
+from zenml.artifacts import BaseArtifact
 
 Input = type("Input", (GenericType,), {"VALID_TYPES": [BaseArtifact]})
 
