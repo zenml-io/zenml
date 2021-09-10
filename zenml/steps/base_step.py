@@ -99,13 +99,10 @@ class BaseStep(metaclass=BaseStepMeta):
                 raise StepInterfaceError("")
 
     def __call__(self, **artifacts):
-        # TODO: Check artifact types
         self.__component = generate_component(self)(**artifacts,
                                                     **self.__params)
-
-        return tuple(list(v.get())[0]
-                     for v in self.__component.outputs.values())[0]
-        # todo we need a better way of solving this
+        # todo: multiple outputs
+        return list(self.__component.outputs.values())[0]
 
     @abstractmethod
     def process(self, *args, **kwargs):
