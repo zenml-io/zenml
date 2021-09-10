@@ -9,7 +9,7 @@ class BaseArtifact(Artifact):
     TYPE_NAME = "BaseArtifact"
     PROPERTIES = {}
 
-    WRITERS = WriterFactory()
+    WRITER_FACTORY = WriterFactory()
 
     def get_writer(self, key):
-        return self.WRITERS.get_single_type(key)
+        return self.WRITER_FACTORY.get_single_type(key)
