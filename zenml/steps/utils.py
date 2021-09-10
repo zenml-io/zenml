@@ -58,12 +58,16 @@ class _FunctionExecutor(BaseExecutor):
             function_args[name] = parameter
 
         results = self._FUNCTION(**function_args)
-        i = 0
-        for k, v in output_dict.items():
-            func = v[0].get_writer(self._WRITERS[i])
-            func(v, results[i])
-            i += 1
-            # todo: using only indexing here is not reliable at all
+
+        if isinstance(type(results), list):
+            # TODO: the multi-output support will be added later
+            pass
+        else:
+            output_artifact = output_dict["output"][0]
+            output_writer_type = self._WRITERS["output"]
+
+            func = output_artifact.get_writer(output_writer_type)
+            func(output_artifact, results)
 
 
 def generate_component(step) -> Callable[..., Any]:
