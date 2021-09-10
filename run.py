@@ -3,8 +3,8 @@ import pandas as pd
 from zenml import pipelines
 from zenml import steps
 from zenml.annotations import External, Input, Step, Param
-from zenml.artifacts import TextArtifact
-from zenml.distributed.beam import BeamOutput
+from zenml.annotations.artifact_annotations import BeamOutput
+from zenml.artifacts.data_artifacts.text_artifact import TextArtifact
 
 
 @steps.SimpleStep
@@ -31,7 +31,7 @@ def InMemPreprocesserStep(input_data: Input[TextArtifact]
 def SplitPipeline(input_artifact: External[TextArtifact],
                   split_step: Step[DistSplitStep],
                   preprocesser_step: Step[InMemPreprocesserStep]):
-    split_data, param = split_step(input_data=input_artifact)
+    split_data = split_step(input_data=input_artifact)
     _ = preprocesser_step(input_data=split_data)
 
 
