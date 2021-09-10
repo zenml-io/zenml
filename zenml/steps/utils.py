@@ -60,7 +60,6 @@ class _FunctionExecutor(BaseExecutor):
         results = self._FUNCTION(**function_args)
         i = 0
         for k, v in output_dict.items():
-
             func = v[0].get_writer(self._WRITERS[i])
             func(v, results[i])
             i += 1
@@ -99,7 +98,7 @@ def generate_component(step) -> Callable[..., Any]:
         (_FunctionExecutor,),
         {
             "_FUNCTION": staticmethod(step.get_executable()),
-            "_WRITERS": step.OUTPUT_TYPES,
+            "_WRITERS": step.OUTPUT_WRITERS,
             "__module__": step.__module__,
         },
     )
