@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """File utilities"""
+# TODO: [TFX] [LOW] Unnecessary dependency here
 
 import fnmatch
 import os
@@ -21,7 +22,8 @@ from typing import Callable, Text
 
 from tfx.utils.io_utils import _REMOTE_FS_PREFIX, fileio, load_csv_column_names
 
-# TODO: [TFX] [LOW] Unnecessary dependency here
+CONFIG_DIR_NAME = ".zenml"
+CONFIG_NAME = "zenml_config.json"
 
 
 def walk(dir_path):
@@ -333,3 +335,38 @@ def extract_tarfile(source_tar: Text, output_dir: Text):
 
     with tarfile.open(source_tar, "r:gz") as tar:
         tar.extractall(output_dir)
+
+
+def is_zenml_dir(path: Text):
+    """
+    Check if dir is a zenml dir or not.
+
+    Args:
+        path (str): path to the root.
+
+    Returns:
+        True if path contains a zenml dir, False if not.
+    """
+    config_path = os.path.join(path, CONFIG_DIR_NAME, CONFIG_NAME)
+    if not file_exists(config_path):
+        return False
+    return True
+
+
+def get_zenml_dir(path: Text = os.getcwd()):
+    """
+    Recursive function to find the zenml config starting from path.
+
+    Args:
+        path (str): starting path
+    """
+    if is_zenml_dir(path):
+        return path
+
+    if is_root(path):
+        raise AssertionError(
+            "Looks like you used ZenML outside of a ZenML repo. "
+            "Please init a ZenML repo first before you using "
+            "the framework."
+        )
+    return get_zenml_dir(str(Path(path).parent))

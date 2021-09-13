@@ -6,9 +6,7 @@ from pydantic import BaseSettings
 
 from zenml.artifacts.artifact_store import BaseArtifactStore
 from zenml.metadata.metadata_wrapper import BaseMetadataStore
-
-CONFIG_DIR_NAME = ".zenml"
-CONFIG_NAME = "zenml_config.json"
+from zenml.utils.path_utils import CONFIG_NAME, get_zenml_dir
 
 
 def json_config_settings_source(settings: BaseSettings) -> Dict[str, Any]:
@@ -18,11 +16,12 @@ def json_config_settings_source(settings: BaseSettings) -> Dict[str, Any]:
 
     Here we happen to choose to use the `env_file_encoding` from Config
     when reading `config.json`
+
+    Args:
+        settings (BaseSettings): BaseSettings from pydantic.
     """
     encoding = settings.__config__.env_file_encoding
-    full_path = Path(
-        "/home/hamza/workspace/maiot/github_temp/zenml/zenml_config.json"
-    )
+    full_path = Path(get_zenml_dir()) / CONFIG_NAME
     if full_path.exists():
         return json.loads(full_path.read_text(encoding))
     return {}
