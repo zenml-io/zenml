@@ -1,6 +1,6 @@
 from tfx.types.artifact import Property, PropertyType
 
-from zenml.artifacts.base import BaseArtifact
+from zenml.artifacts.base_artifact import BaseArtifact
 
 SPLIT_NAMES_PROPERTY = Property(type=PropertyType.STRING)
 

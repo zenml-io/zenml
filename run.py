@@ -1,98 +1,48 @@
-from playground.annotations import External, Input, Output, Param, Step
-from playground.artifacts import CSVArtifact
-from playground.pipelines.simple_pipeline import SimplePipeline
-from playground.steps.simple_step import SimpleStep
+import pandas as pd
 
-# A basic Pipeline, which runs all steps locally
-#
-# @SimpleStep
-# def SplitStep(input_data: Input[CSVArtifact],
-#               output_data: Output[CSVArtifact],
-#               split_map: Param[float]):
-#     data = input_data.read()
-#     split_map = None
-#     output_data.write(data)
-#
-#
-# @SimpleStep
-# def PreprocesserStep(input_data: Input[CSVArtifact],
-#                      output_data: Output[CSVArtifact],
-#                      param: Param[float]):
-#     data = input_data.read()
-#     param = None
-#     output_data.write(data)
-#
-#
-# @SimplePipeline
-# def SplitPipeline(split_step: Step[SplitStep],
-#                   preprocesser_step: Step[PreprocesserStep]):
-#     split_step()
-#     preprocesser_step(input_data=split_step.outputs.output_data)
-#
-#
-# # Pipeline
-# split_pipeline = SplitPipeline(
-#     split_step=SplitStep(split_map=0.6),
-#     preprocesser_step=PreprocesserStep(param=1.0)
-# )
-#
-# split_pipeline.run()
-
-# A distributed Pipeline, which runs on Beam
+from zenml import pipelines
+from zenml import steps
+from zenml.annotations import External, Input, Step, Param
+from zenml.annotations.artifact_annotations import BeamOutput
+from zenml.artifacts.data_artifacts.text_artifact import TextArtifact
 
 
-@SimpleStep
-def DistSplitStep(
-    input_data: Input[CSVArtifact],
-    output_data: Output[CSVArtifact],
-    split_map: Param[float],
-):
+@steps.SimpleStep
+def DistSplitStep(input_data: Input[TextArtifact],
+                  param: Param[float] = 3.0,
+                  ) -> BeamOutput[TextArtifact]:
     import apache_beam as beam
 
-    with beam.Pipeline() as p:
-        result = (
-            p
-            | "ReadData" >> input_data.read()
-            | "Split" >> beam.Map(lambda x: x)
-            | "WriteData" >> output_data.write()
-        )
+    with beam.Pipeline() as pipeline:
+        data = input_data.read_with_beam(pipeline)
+        result = data | beam.Map(lambda x: x)
+
+    return result
 
 
-@SimpleStep
-def DistPreprocesserStep(
-    input_data: Input[CSVArtifact],
-    output_data: Output[CSVArtifact],
-    param: Param[float],
-):
-    import apache_beam as beam
-
-    with beam.Pipeline() as p:
-        result = (
-            p
-            | "ReadData" >> input_data.read()
-            | "Split" >> beam.Map(lambda x: x)
-            | "WriteData" >> output_data.write()
-        )
+@steps.SimpleStep
+def InMemPreprocesserStep(input_data: Input[TextArtifact]
+                          ) -> pd.DataFrame:
+    data = input_data.read_with_pandas()
+    return data
 
 
-@SimplePipeline
-def DistSplitPipeline(
-    input_artifact: External[CSVArtifact],
-    split_step: Step[DistSplitStep],
-    preprocesser_step: Step[DistPreprocesserStep],
-):
-    split_step(input_data=input_artifact)
-    preprocesser_step(input_data=split_step.outputs.output_data)
+@pipelines.SimplePipeline
+def SplitPipeline(input_artifact: External[TextArtifact],
+                  split_step: Step[DistSplitStep],
+                  preprocesser_step: Step[InMemPreprocesserStep]):
+    split_data = split_step(input_data=input_artifact)
+    _ = preprocesser_step(input_data=split_data)
 
 
 # Pipeline
-dist_split_pipeline = DistSplitPipeline(
-    # TODO: implement the with backend
-    input_artifact=CSVArtifact(),
-    split_step=DistSplitStep(split_map=0.6).with_backend({"some_params"}),
-    preprocesser_step=DistPreprocesserStep(param=1.0).with_backend(
-        {"some_params"}
-    ),
+test_artifact = TextArtifact()
+test_artifact.uri = "/home/baris/zenml/zenml/zenml/local_test/data/taxi.csv"
+
+dist_split_pipeline = SplitPipeline(
+    input_artifact=test_artifact,
+    split_step=DistSplitStep(param=0.1),
+    preprocesser_step=InMemPreprocesserStep()
 )
 
 dist_split_pipeline.run()
