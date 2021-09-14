@@ -37,27 +37,28 @@ class PipelineRunner(object):
 
     def run_pipeline(self, config_b64: str):
         # Load config from base64
+        # Becasue I let training container and job container share the same PVC ,
+        # so I delete some steps about GCP kubernetes.
         config = json.loads(base64.b64decode(config_b64))
-
-        # Remove tar_path arg from config
-        tar_path = config[keys.GlobalKeys.BACKEND][keys.BackendKeys.ARGS].pop(
-            TAR_PATH_ARG)
-
-        # Copy it over locally because it will be remote
-        path_utils.copy(tar_path, EXTRACTED_TAR_FILE_PATH)
-
-        # Extract it to EXTRACTED_TAR_DIR
-        path_utils.extract_tarfile(EXTRACTED_TAR_FILE_PATH, EXTRACTED_TAR_DIR)
-
-        # Append to sys to make user code discoverable
-        sys.path.append(EXTRACTED_TAR_DIR)
-
-        # Make sure the Repository is initialized at the right path
-        Repository.get_instance(EXTRACTED_TAR_DIR)
+        #
+        # # Remove tar_path arg from config
+        # tar_path = config[keys.GlobalKeys.BACKEND][keys.BackendKeys.ARGS].pop(
+        #     TAR_PATH_ARG)
+        #
+        # # Copy it over locally because it will be remote
+        # path_utils.copy(tar_path, EXTRACTED_TAR_FILE_PATH)
+        #
+        # # Extract it to EXTRACTED_TAR_DIR
+        # path_utils.extract_tarfile(EXTRACTED_TAR_FILE_PATH, EXTRACTED_TAR_DIR)
+        #
+        # # Append to sys to make user code discoverable
+        # sys.path.append(EXTRACTED_TAR_DIR)
+        #
+        # # Make sure the Repository is initialized at the right path
+        # Repository.get_instance(EXTRACTED_TAR_DIR)
 
         # Change orchestrator of pipeline to local
         OrchestratorBaseBackend().run(config)
-
 
 if __name__ == "__main__":
     # execute only if run as a script

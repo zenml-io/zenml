@@ -1,0 +1,19 @@
+apiVersion: v1
+clusters:
+- cluster:
+    insecure-skip-tls-verify: true
+    server: XXXX
+  name: XXXX
+contexts:
+- context:
+    cluster: XXXX
+    namespace: XXXX
+    user: XXXX
+  name: XXXX
+current-context: XXXX
+kind: Config
+preferences: {}
+users:
+- name: XXXX
+  user:
+    token: XXXX
