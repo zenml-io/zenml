@@ -164,3 +164,9 @@ docs/book/_build/
 
 # scratchpad
 scratchpad/
+
+# VS Code gunk
+.vscode/
+
+# pyenv local version file
+.python-version
