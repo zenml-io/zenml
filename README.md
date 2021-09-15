@@ -4,10 +4,11 @@
 
 
 <p align="center">
-  <a href="https://zenml.io">ZenML.io</a> •
-  <a href="https://docs.zenml.io">docs.ZenML.io</a> •
+  <a href="https://zenml.io">zenml.io</a> •
+  <a href="https://docs.zenml.io">docs.zenml.io</a> •
   <a href="#quickstart">Quickstart</a> •
   <a href="#community">Community</a> •
+  <a href="https://zenml.io/roadmap">Roadmap</a> •
   <a href="https://zenml.io/slack-invite/">Join Slack</a>
 </p>
 
@@ -28,10 +29,10 @@
 </div>
 
 ## NOTICE August 23 2021
-[We are hiring!](https://www.notion.so/zenml/Work-at-ZenML-dfdb796b738a4e52b202db6e799a665c) 
+[We are hiring!](https://zenml.io/careers) 
 If you would like to be part of the ZenML journey alongside the already 
 [awesome and growing team](https://zenml.io/team), then make sure to 
-[check out our careers page](https://www.notion.so/zenml/Work-at-ZenML-dfdb796b738a4e52b202db6e799a665c) and apply directly!
+[check out our careers page](https://zenml.io/careers) and apply directly!
 
 ## NOTICE August 12 2021
 First off, thank you everyone so much for the support ZenML has received since its release a few months ago. It has been 
@@ -233,6 +234,10 @@ training_pipeline.add_deployment(
 
 The best part is that ZenML is extensible easily, and can be molded to your use-case. You can create your own custom logic or create a PR 
 and contribute to the ZenML community, so that everyone can benefit.
+
+## Roadmap
+Missing a feature/integration? Our roadmap is public, and hosted on Notion. 
+Check it out [here](https://zenml.io/roadmap).
 
 ## Community
 Our community is the backbone of making ZenML a success! We are currently actively maintaining two main channels for community discussions:
