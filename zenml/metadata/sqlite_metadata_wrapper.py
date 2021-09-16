@@ -17,7 +17,7 @@ from typing import Text
 from tfx.orchestration import metadata
 
 from zenml.enums import MLMetadataTypes
-from zenml.metadata import BaseMetadataStore
+from zenml.metadata.metadata_wrapper import BaseMetadataStore
 from zenml.utils import path_utils
 
 
@@ -36,7 +36,7 @@ class SQLiteMetadataStore(BaseMetadataStore):
             )
 
         # Resolve URI if relative URI provided
-        self.uri = path_utils.resolve_relative_path(uri)
+        # self.uri = path_utils.resolve_relative_path(uri)
         super().__init__()
 
     def get_tfx_metadata_config(self):
