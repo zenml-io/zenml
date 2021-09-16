@@ -6,41 +6,46 @@ from zenml.annotations import External, Input, Step, Param
 from zenml.annotations.artifact_annotations import BeamOutput
 from zenml.artifacts.data_artifacts.text_artifact import TextArtifact
 
+from zenml.io import gcs_plugin
+
+
+# TODO: [MEDIUM] change the naming of the decorator
+# TODO: [MEDIUM] change the naming of the external to input
 
 @steps.SimpleStep
-def DistSplitStep(input_data: Input[TextArtifact],
+def DistSplitStep(text_artifact: Input[TextArtifact],
                   param: Param[float] = 3.0,
                   ) -> BeamOutput[TextArtifact]:
     import apache_beam as beam
 
-    with beam.Pipeline() as pipeline:
-        data = input_data.read_with_beam(pipeline)
-        result = data | beam.Map(lambda x: x)
+    pipeline = beam.Pipeline()
+    data = text_artifact.read_with_beam(pipeline)
+    result = data | beam.Map(lambda x: x)
 
-    return result
+    return (result, pipeline)
 
 
 @steps.SimpleStep
-def InMemPreprocesserStep(input_data: Input[TextArtifact]
+def InMemPreprocesserStep(text_artifact: Input[TextArtifact]
                           ) -> pd.DataFrame:
-    data = input_data.read_with_pandas()
+    data = text_artifact.read_with_pandas()
     return data
 
 
 @pipelines.SimplePipeline
-def SplitPipeline(input_artifact: External[TextArtifact],
+def SplitPipeline(text_artifact: External[TextArtifact],
                   split_step: Step[DistSplitStep],
                   preprocesser_step: Step[InMemPreprocesserStep]):
-    split_data = split_step(input_data=input_artifact)
-    _ = preprocesser_step(input_data=split_data)
+    split_artifact = split_step(text_artifact=text_artifact)
+    _ = preprocesser_step(text_artifact=split_artifact)
 
 
 # Pipeline
-test_artifact = TextArtifact()
-test_artifact.uri = "/home/baris/zenml/zenml/zenml/local_test/data/taxi.csv"
+example_text_artifact = TextArtifact()
+example_text_artifact.uri = "PLACEHOLDER"
 
 dist_split_pipeline = SplitPipeline(
-    input_artifact=test_artifact,
+    text_artifact=example_text_artifact,
     split_step=DistSplitStep(param=0.1),
     preprocesser_step=InMemPreprocesserStep()
 )

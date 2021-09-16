@@ -79,13 +79,4 @@ class BaseArtifactStore(BaseModel):
         return path
 
 
-class LocalArtifactStore(BaseArtifactStore):
-    """Artifact Store for local artifacts."""
 
-    store_type: ArtifactStoreTypes = ArtifactStoreTypes.local
-
-
-class GCPArtifactStore(BaseArtifactStore):
-    """Artifact Store for Google Cloud Storage based artifacts."""
-
-    store_type: ArtifactStoreTypes = ArtifactStoreTypes.gcp

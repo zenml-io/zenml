@@ -51,6 +51,7 @@ class BaseStepMeta(type):
         process_defaults = process_spec.defaults
         if process_defaults is not None:
             for i, default in enumerate(process_defaults):
+                # TODO: [HIGH] fix the implementation
                 process_args.reverse()
                 arg = process_args[i]
                 arg_type = process_spec.annotations.get(arg, None)
@@ -126,6 +127,7 @@ class BaseStep(metaclass=BaseStepMeta):
         return cls.process
 
 
+# TODO: [LOW] find a more elegant solution to the lookup tables
 def infer_artifact_type(obj):
     import pandas as pd
     if issubclass(obj, pd.DataFrame):

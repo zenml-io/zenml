@@ -23,11 +23,11 @@ from six import with_metaclass
 class GenericMeta(type):
     """ """
 
-    def __getitem__(cls: Type["GenericType"], params):
+    def __getitem__(cls: Type["BaseAnnotation"], params):
         return cls._generic_getitem(params)
 
 
-class GenericType(with_metaclass(GenericMeta, object)):
+class BaseAnnotation(with_metaclass(GenericMeta, object)):
     """A main generic class which will be used as the base for annotations"""
 
     VALID_TYPES = None

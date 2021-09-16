@@ -1,3 +1,3 @@
-from zenml.annotations.base_annotations import GenericType
+from zenml.annotations.base_annotations import BaseAnnotation
 
-Param = type("Param", (GenericType,), {"VALID_TYPES": [int, float, str, bool]})
+Param = type("Param", (BaseAnnotation,), {"VALID_TYPES": [int, float, str, bool]})

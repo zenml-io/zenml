@@ -56,15 +56,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
     @abstractmethod
     def connect(self, *args, **kwargs):
-        """
-
-        Args:
-          *args:
-          **kwargs:
-
-        Returns:
-
-        """
+        """ """
 
     def run(self):
         """ """
