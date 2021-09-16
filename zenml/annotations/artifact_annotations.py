@@ -1,13 +1,13 @@
-from zenml.annotations.base_annotations import GenericType
+from zenml.annotations.base_annotations import BaseAnnotation
 from zenml.artifacts.base_artifact import BaseArtifact
 
 # General Artifact Annotations
 
-Input = type("Input", (GenericType,), {"VALID_TYPES": [BaseArtifact]})
+Input = type("Input", (BaseAnnotation,), {"VALID_TYPES": [BaseArtifact]})
 
-Output = type("Output", (GenericType,), {"VALID_TYPES": [BaseArtifact]})
+Output = type("Output", (BaseAnnotation,), {"VALID_TYPES": [BaseArtifact]})
 
-External = type("Input", (GenericType,), {"VALID_TYPES": [BaseArtifact]})
+External = type("Input", (BaseAnnotation,), {"VALID_TYPES": [BaseArtifact]})
 
 # Specialized Artifact Annotations
 
