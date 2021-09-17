@@ -1,4 +1,4 @@
-#  Copyright (c) maiot GmbH 2020. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,237 +11,81 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""YAML Config parser inspired by Paul Munday <paul@paulmunday.net>
-implementation at https://github.com/GreenBuildingRegistry/yaml-config"""
+"""Global config for the ZenML installation."""
 import os
-from copy import deepcopy
-from typing import Text
+from abc import abstractmethod
+from typing import Any, Text
 
-from zenml.utils import yaml_utils
+from pydantic import BaseSettings
 
-BASE_PATH = os.getcwd()
+from zenml.config.utils import define_yaml_config_settings_source
+from zenml.logger import get_logger
+from zenml.utils import path_utils, yaml_utils
 
-
-def _suffix(name, suffix=None):
-    """Append suffix (default _).
-
-    Args:
-      name:
-      suffix:  (Default value = None)
-
-    Returns:
-
-    """
-    suffix = suffix if suffix else "_"
-    return "{}{}".format(name, suffix)
+logger = get_logger(__name__)
 
 
-class BaseConfig:
-    """ZenML config class to handle config operations.
+class BaseConfig(BaseSettings):
+    """Class definition for the global config.
 
-    This is a superclass, with base utility methods to read and write from
-    user-editable YAML config files.
-
-    Args:
-
-    Returns:
-
+    Defines global data such as unique user ID and whether they opted in
+    for analytics.
     """
 
-    default_file = "config.yaml"
-    default_config_root = os.path.join(BASE_PATH, "config")
+    def __init__(self, **data: Any):
+        """We persist the attributes in the config file."""
+        super().__init__(**data)
+        self._dump()
 
-    def __init__(
-        self,
-        config_file: Text = None,
-        config_dir: Text = None,
-        section: Text = None,
-        env_prefix: Text = "ZENML_",
-    ):
-        if not env_prefix:
-            raise Exception("env_prefix can not be null.")
-        self.env_prefix = env_prefix
-        self.config_path = self.env_prefix + "_PATH"
-        self.config_prefix = self.env_prefix + "_PREFIX"
-        self.config_root_path = self.env_prefix + "_ROOT"
-        self.config = {}  # Main dict to hold all values
-        self.prefix = None  # prefix
-        self.basepath = os.getenv(
-            self.config_path, default=self.default_config_root
-        )
-        self.config_root = os.getenv(
-            self.config_root_path, default=self.default_config_root
-        )
-        self.section = section
-        self.config_file = self._get_filepath(
-            filename=config_file, config_dir=config_dir
-        )
-        self.load()
+    def __setattr__(self, name, value):
+        """We hook into this to persist state as attributes are changed
 
-    def load(self):
-        """(Re)Load the config file."""
-        try:
-            self.config = yaml_utils.read_yaml(self.config_path)
-        except:
-            # no config file (use environment variables)
-            pass
-        if self.config:
-            self.prefix = self.config.get("config_prefix", None)
-        if not self.prefix:
-            if os.getenv(self.config_prefix):
-                self.prefix = os.getenv(self.config_prefix)
-            else:
-                for path in [
-                    os.path.join(self.basepath, self.default_file),
-                    os.path.join(self.config_root, self.default_file),
-                ]:
-                    if os.path.exists(path):
-                        config = yaml_utils.read_yaml(conf)
-                        prefix = config.get(self.config_prefix.lower(), None)
-                        if prefix:
-                            self.prefix = prefix
-                            break
-
-    def get(self, var, section: Text = None, **kwargs):
-        """Retrieve a config var.
-        Return environment variable if it exists
-        (ie [self.prefix + _] + [section + _] + var)
-        otherwise var from config file.
-        If both are null and no default is set a ConfigError will be raised,
-        otherwise default will be returned.
-
-        Args:
-          var: key to look up
-          default: default value, must be supplied as keyword
-          section: Text:  (Default value = None)
-          **kwargs:
-
-        Returns:
-
+        This basically means any variable changed through any object of
+         this class will result in a persistent, stateful change in the system.
         """
-        # default is not a specified keyword argument so we can distinguish
-        # between a default set to None and no default sets
-        if not section and self.section:
-            section = self.section
-        default = kwargs.get("default", None)
-        env_var = "{}{}{}".format(
-            _suffix(self.prefix) if self.prefix else "",
-            _suffix(alphasnake(section)) if section else "",
-            alphasnake(str(var)),
-        ).upper()
-        config = self.config.get(section, {}) if section else self.config
-        result = config.get(var, default)
-        result = os.getenv(env_var, default=result)
-        # no default keyword supplied (and no result)
-        #  use is None to allow empty lists etc
-        if result is None and "default" not in kwargs:
-            msg = "Could not find '{}'".format(var)
-            if section:
-                msg = "{} in section '{}'.".format(msg, section)
-            msg = "{} Checked environment variable: {}".format(msg, env_var)
-            if self.config_file:
-                msg = "{} and file: {}".format(msg, self.config_file)
-            raise ConfigError(msg)
-        return result
+        super().__setattr__(name, value)
+        self._dump()
 
-    def keys(self, section=None):
-        """Provide dict like keys method
+    @staticmethod
+    @abstractmethod
+    def get_config_dir() -> Text:
+        """Gets the global config dir for installed package."""
+        pass
 
-        Args:
-          section:  (Default value = None)
+    @staticmethod
+    @abstractmethod
+    def get_config_file_name() -> Text:
+        """Gets the global config dir for installed package."""
+        pass
 
-        Returns:
+    def _dump(self):
+        """Dumps all current values to yaml."""
+        config_path = self.get_config_path()
+        if not path_utils.file_exists(str(config_path)):
+            path_utils.create_file_if_not_exists(str(config_path))
+        yaml_utils.write_yaml(config_path, self.dict())
 
-        """
-        if not section and self.section:
-            section = self.section
-        config = self.config.get(section, {}) if section else self.config
-        return config.keys()
+    def get_config_path(self) -> Text:
+        """Returns the full path of the config file."""
+        return os.path.join(self.get_config_dir(), self.get_config_file_name())
 
-    def items(self, section=None):
-        """Provide dict like items method
+    class Config:
+        """Configuration of settings."""
 
-        Args:
-          section:  (Default value = None)
+        env_prefix = "zenml_"
 
-        Returns:
-
-        """
-        if not section and self.section:
-            section = self.section
-        config = self.config.get(section, {}) if section else self.config
-        return config.items()
-
-    def values(self, section=None):
-        """Provide dict like values method
-
-        Args:
-          section:  (Default value = None)
-
-        Returns:
-
-        """
-        if not section and self.section:
-            section = self.section
-        config = self.config.get(section, {}) if section else self.config
-        return config.values()
-
-    def __copy__(self):
-        raise NotImplementedError("Shallow copying is forbidden")
-
-    def copy(self):
-        """ """
-        self.__copy__()
-
-    def __deepcopy__(self, memo):
-        if self.section:
-            config = self.config.get(self.section, {})
-        else:
-            config = self.config
-        return deepcopy(config, memo)
-
-    def _get_filepath(self, filename=None, config_dir=None):
-        """Get config file.
-
-        Args:
-          filename: name of config file (not path) (Default value = None)
-          config_dir: dir name prepended to file name.
-        Note: we use e.g. GBR_CONFIG_DIR here, this is the default
-        value in GBR but it is actually self.env_prefix + '_DIR' etc.
-        If config_dir is not supplied it will be set to the value of the
-        environment variable GBR_CONFIG_DIR or None.
-        If filename is not supplied and the environment variable GBR_CONFIG
-        is set and contains a path, its value will be tested to see if a file
-        exists, if so that is returned as the config file otherwise filename
-        will be set to GBR_CONFIG, if it exists, otherwise 'config.yaml'.
-        If a filename is supplied or GBR_CONFIG is not an existing file:
-        If the environment variable GBR_CONFIG_PATH exists the path
-        GBR_CONFIG_PATH/config_dir/filename is checked.
-        If it doesn't exist config/CONFIG_DIR/filename  is checked
-        (relative to the root of the (GBR) repo)
-        finally GBR_CONFIG_DEFAULT/CONFIG_DIR/filename is tried
-        If no file is found None will be returned.
-
-        Returns:
-
-        """
-        # pylint: disable=no-self-use
-        config_file = None
-        config_dir_env_var = self.env_prefix + "_DIR"
-        if not filename:
-            # Check env vars for config
-            filename = os.getenv(self.env_prefix, default=self.default_file)
-            # contains path so try directly
-            if os.path.dirname(filename) and os.path.exists(filename):
-                config_file = filename
-        if not config_file:
-            # Cannot contain path
-            filename = os.path.basename(filename)
-            if not config_dir:
-                config_dir = os.getenv(config_dir_env_var, default="")
-            for path in [self.basepath, self.config_root]:
-                filepath = os.path.join(path, config_dir, filename)
-                if os.path.exists(filepath):
-                    config_file = filepath
-                    break
-        return config_file
+        @classmethod
+        def customise_sources(
+            cls,
+            init_settings,
+            env_settings,
+            file_secret_settings,
+        ):
+            return (
+                init_settings,
+                define_yaml_config_settings_source(
+                    BaseConfig.get_config_dir(),
+                    BaseConfig.get_config_file_name(),
+                ),
+                env_settings,
+            )

@@ -22,41 +22,49 @@ from zenml.utils import path_utils
 
 
 def write_yaml(file_path: Text, contents: Dict):
-    """
-    Write contents as YAML format to file_path.
+    """Write contents as YAML format to file_path.
 
     Args:
-        file_path (str): Path to YAML file.
-        contents (dict): Contents of YAML file as dict.
+        file_path: Path to YAML file.
+        contents: Contents of YAML file as dict.
+
+    Raises:
+        FileNotFoundError if directory does not exist.
     """
     if not path_utils.is_remote(file_path):
         dir_ = str(Path(file_path).parent)
         if not path_utils.is_dir(dir_):
-            # If it is a local path and it doesnt exist, raise Exception.
-            raise Exception(f"Directory {dir_} does not exist.")
+            raise FileNotFoundError(f"Directory {dir_} does not exist.")
     path_utils.write_file_contents(file_path, yaml.dump(contents))
 
 
-def read_yaml(file_path: Text):
-    """
-    Read YAML on file path and returns contents as dict.
+def read_yaml(file_path: Text) -> Dict:
+    """Read YAML on file path and returns contents as dict.
 
     Args:
-        file_path (str): Path to YAML file.
+        file_path(str): Path to YAML file.
+
+    Returns:
+        Contents of the file in a dict.
+
+    Raises:
+        FileNotFoundError if file does not exist.
     """
     if path_utils.file_exists(file_path):
         with open(file_path, "r") as f:
             return yaml.load(f.read(), Loader=yaml.FullLoader)
     else:
-        raise Exception(f"{file_path} does not exist.")
+        raise FileNotFoundError(f"{file_path} does not exist.")
 
 
 def is_yaml(file_path: Text):
-    """
-    Returns True if file_path is YAML, else False
+    """Returns True if file_path is YAML, else False
 
     Args:
-        file_path (str): Path to YAML file.
+        file_path: Path to YAML file.
+
+    Returns:
+        True if is yaml, else False.
     """
     if file_path.endswith("yaml") or file_path.endswith("yml"):
         return True
@@ -64,30 +72,34 @@ def is_yaml(file_path: Text):
 
 
 def write_json(file_path: Text, contents: Dict):
-    """
-    Write contents as JSON format to file_path.
+    """Write contents as JSON format to file_path.
 
     Args:
-        file_path (str): Path to JSON file.
-        contents (dict): Contents of JSON file as dict.
+        file_path: Path to JSON file.
+        contents: Contents of JSON file as dict.
+
+    Returns:
+        Contents of the file in a dict.
+
+    Raises:
+        FileNotFoundError if directory does not exist.
     """
     if not path_utils.is_remote(file_path):
         dir_ = str(Path(file_path).parent)
         if not path_utils.is_dir(dir_):
             # If it is a local path and it doesnt exist, raise Exception.
-            raise Exception(f"Directory {dir_} does not exist.")
+            raise FileNotFoundError(f"Directory {dir_} does not exist.")
     path_utils.write_file_contents(file_path, json.dumps(contents))
 
 
 def read_json(file_path: Text):
-    """
-    Read JSON on file path and returns contents as dict.
+    """Read JSON on file path and returns contents as dict.
 
     Args:
-        file_path (str): Path to JSON file.
+        file_path: Path to JSON file.
     """
     if path_utils.file_exists(file_path):
         with open(file_path, "r") as f:
             return json.loads(f.read())
     else:
-        raise Exception(f"{file_path} does not exist.")
+        raise FileNotFoundError(f"{file_path} does not exist.")

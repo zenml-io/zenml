@@ -13,117 +13,56 @@
 #  permissions and limitations under the License.
 """Global config for the ZenML installation."""
 
-import os
+from typing import Text
 from uuid import uuid4
 
 import click
 
 from zenml import constants
+from zenml.config.base_config import BaseConfig
+from zenml.config.constants import GLOBAL_CONFIG_NAME
+from zenml.config.utils import define_yaml_config_settings_source
 from zenml.logger import get_logger
-from zenml.utils import path_utils, yaml_utils
 
 logger = get_logger(__name__)
 
 
-# TODO: [MEDIUM] Optimize the reads and writes of this
+class GlobalConfig(BaseConfig):
+    """Class definition for the global config.
 
+    Defines global data such as unique user ID and whether they opted in
+    for analytics.
+    """
 
-class GlobalConfig(dict):
-    """Class definition for the global config."""
-
-    __instance__ = None
-
-    def __init__(self, *args, **kwargs):
-        """
-        This is a Singleton class.
-
-        Args:
-            *args:
-            **kwargs:
-        """
-        if GlobalConfig.__instance__ is None:
-            self.path = os.path.join(
-                GlobalConfig.get_config_dir(), "info.json"
-            )
-            # Create default global config if it does not exist.
-            path_utils.create_dir_recursive_if_not_exists(
-                GlobalConfig.get_config_dir()
-            )
-
-            if path_utils.file_exists(self.path):
-                # Load the config
-                self.load()
-            else:
-                # Set up a default config
-                # True by default but user is always asked
-                self["analytics_opt_in"] = True
-
-            # Create user ID will save the whole thing
-            self.user_id = self.create_user_id()
-
-            super(GlobalConfig, self).__init__(*args, **kwargs)
-            GlobalConfig.__instance__ = self
-        else:
-            raise Exception("You cannot create another GlobalConfig class!")
+    user_id: str = str(uuid4())
+    analytic_opt_in: bool = True
 
     @staticmethod
-    def get_instance():
-        """ Static method to fetch the current instance."""
-        if not GlobalConfig.__instance__:
-            GlobalConfig()
-        return GlobalConfig.__instance__
-
-    @staticmethod
-    def get_config_dir():
-        """Gets config dir."""
+    def get_config_dir() -> Text:
+        """Gets the global config dir for installed package."""
         return click.get_app_dir(constants.APP_NAME)
 
-    def create_user_id(self):
-        """Creates user_id if it does not exist."""
-        if "user_id" not in self:
-            self["user_id"] = str(uuid4())
-            self.save()
-        return self["user_id"]
+    @staticmethod
+    def get_config_file_name() -> Text:
+        """Gets the global config dir for installed package."""
+        return GLOBAL_CONFIG_NAME
 
-    def get_user_id(self):
-        """Gets user_id from config. If not present, creates a new one."""
-        if "user_id" in self:
-            return self["user_id"]
-        else:
-            return self.create_user_id()
+    class Config:
+        """Configuration of settings."""
 
-    def get_analytics_opt_in(self) -> bool:
-        """Gets user_id from config. If not present, creates a new one."""
-        if "analytics_opt_in" in self:
-            return self["analytics_opt_in"]
-        else:
-            # assume False if this variable not found
-            return False
+        env_prefix = "zenml_"
 
-    def set_analytics_opt_in(self, toggle: bool):
-        """Set opt-in flag for analytics"""
-        self.load()
-        self["analytics_opt_in"] = toggle
-        self.save()
-
-    def load(self):
-        """Load from YAML file."""
-        # TODO: [LOW] Look at locking mechanism to avoid race conditions.
-        try:
-            tbu = yaml_utils.read_json(self.path)
-        except Exception as e:
-            logger.error(
-                "Unable to load YAML file due to error:\n"
-                + str(e)
-                + "\nUpdating it as empty value."
+        @classmethod
+        def customise_sources(
+            cls,
+            init_settings,
+            env_settings,
+            file_secret_settings,
+        ):
+            return (
+                init_settings,
+                define_yaml_config_settings_source(
+                    GlobalConfig.get_config_dir(), GLOBAL_CONFIG_NAME
+                ),
+                env_settings,
             )
-            tbu = {}
-        self.update(tbu)
-
-    def save(self):
-        """Save current config to YAML file"""
-        try:
-            yaml_utils.write_json(self.path, self)
-        except Exception as e:
-            logger.error("Unable to save as YAML File.")
-            raise e
