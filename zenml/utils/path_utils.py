@@ -23,7 +23,7 @@ from typing import Any, Callable, Iterable, List, Text, Tuple
 from tfx.dsl.io.filesystem import PathType
 from tfx.utils.io_utils import _REMOTE_FS_PREFIX, fileio, load_csv_column_names
 
-from zenml.config.constants import LOCAL_CONFIG_NAME
+from zenml.config.constants import LOCAL_CONFIG_DIR_NAME, LOCAL_CONFIG_NAME
 from zenml.exceptions import InitializationException
 
 
@@ -391,6 +391,9 @@ def get_zenml_dir(path: Text = os.getcwd()) -> Text:
 
     Returns:
         The full path with the resolved zenml directory.
+
+    Raises:
+        InitializationException if directory not found until root of OS.
     """
     if is_zenml_dir(path):
         return path
@@ -402,3 +405,20 @@ def get_zenml_dir(path: Text = os.getcwd()) -> Text:
             "the framework."
         )
     return get_zenml_dir(str(Path(path).parent))
+
+
+def get_zenml_config_dir(path: Text = os.getcwd()) -> Text:
+    """Recursive function to find the zenml config starting from path.
+
+    Args:
+        path (Default value = os.getcwd()): Path to check.
+
+    Returns:
+        The full path with the resolved zenml directory.
+
+    Raises:
+        InitializationException if directory not found until root of OS.
+    """
+    return os.path.join(
+        get_zenml_dir(str(Path(path).parent)), LOCAL_CONFIG_DIR_NAME
+    )

@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -21,17 +21,14 @@
 
 import click
 
-from zenml.cli.utils import pass_config
 from zenml.logger import set_root_verbosity
 
 
 @click.group()
-@pass_config
 def cli(info):
     """ZenML"""
-    info.load()
     set_root_verbosity()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()

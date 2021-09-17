@@ -1,15 +1,15 @@
-from typing import Optional
+from typing import Optional, Text
+from uuid import uuid4
 
 from pydantic import BaseSettings
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
-from zenml.config.constants import LOCAL_CONFIG_NAME
 from zenml.config.utils import define_yaml_config_settings_source
 from zenml.metadata.metadata_wrapper import BaseMetadataStore
-from zenml.utils.path_utils import get_zenml_dir
+from zenml.utils.path_utils import get_zenml_config_dir
 
 
-class Provider(BaseSettings):
+class BaseProvider(BaseSettings):
     """Base provider for ZenML.
 
     A ZenML provider brings together an Metadata Store, an Artifact Store, and
@@ -33,7 +33,8 @@ class Provider(BaseSettings):
     * The default field values.
     """
 
-    provider_type: str = "base"
+    provider_type: Text = "base"
+    uuid: Text = str(uuid4())
     metadata_store: Optional[BaseMetadataStore]
     artifact_store: Optional[BaseArtifactStore]
     orchestrator: Optional[str]
@@ -54,7 +55,7 @@ class Provider(BaseSettings):
                 init_settings,
                 env_settings,
                 define_yaml_config_settings_source(
-                    get_zenml_dir(), LOCAL_CONFIG_NAME
+                    get_zenml_config_dir(), "test"
                 ),
                 file_secret_settings,
             )

@@ -49,14 +49,12 @@ class BaseConfig(BaseSettings):
     @staticmethod
     @abstractmethod
     def get_config_dir() -> Text:
-        """Gets the global config dir for installed package."""
-        pass
+        """Return the config dir."""
 
     @staticmethod
     @abstractmethod
     def get_config_file_name() -> Text:
-        """Gets the global config dir for installed package."""
-        pass
+        """Return the config file name."""
 
     def _dump(self):
         """Dumps all current values to yaml."""

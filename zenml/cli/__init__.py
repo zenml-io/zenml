@@ -14,12 +14,4 @@
 
 import os
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
-from .config import *
-from .base import *
-from .version import *
-from .pipeline import *
-from .datasource import *
-from .step import *
-from .example import *
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
