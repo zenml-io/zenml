@@ -35,7 +35,7 @@ class GlobalConfig(BaseConfig):
     """
 
     user_id: str = str(uuid4())
-    analytic_opt_in: bool = True
+    analytics_opt_in: bool = True
 
     @staticmethod
     def get_config_dir() -> Text:

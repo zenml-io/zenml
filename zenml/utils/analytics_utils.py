@@ -15,13 +15,13 @@
 
 import platform
 import sys
-from typing import Text
+from typing import Any, Callable, Dict, Text
 
 import analytics
 import distro
 import requests
-from zenml.config.global_config import GlobalConfig
 
+from zenml.config.global_config import GlobalConfig
 from zenml.constants import IS_DEBUG_ENV
 from zenml.logger import get_logger
 from zenml.version import __version__
@@ -64,16 +64,24 @@ INITIALIZE = "ZenML initialized"
 
 
 def get_segment_key() -> Text:
+    """Get key for authorizing to Segment backend.
+
+    Returns:
+        Segment key as a string.
+
+    Raises:
+        requests.exceptions.RequestException if request times out.
+    """
     if IS_DEBUG_ENV:
-        url = 'https://zenml.io/dev.analytics.json'
+        url = "https://zenml.io/dev.analytics.json"
     else:
-        url = 'https://zenml.io/analytics.json'
+        url = "https://zenml.io/analytics.json"
 
     headers = {"content-type": "application/json"}
 
     try:
         r = requests.get(url, headers=headers, timeout=5)
-        return r.json()['id']
+        return r.json()["id"]
     except requests.exceptions.RequestException:
         logger.debug("Failed to get segment write key", exc_info=True)
 
@@ -81,7 +89,12 @@ def get_segment_key() -> Text:
 analytics.write_key = get_segment_key()
 
 
-def get_system_info():
+def get_system_info() -> Dict:
+    """Returns system info as a dict.
+
+    Returns:
+        A dict of system information.
+    """
     system = platform.system()
 
     if system == "Windows":
@@ -110,37 +123,36 @@ def get_system_info():
     return {"os": "unknown"}
 
 
-def track_event(event, metadata=None):
+def track_event(event: Text, metadata: Dict = None):
     """
     Track segment event if user opted-in.
 
     Args:
-        event: name of event to track in segment.
-        metadata: dict of metadata
+        event: Name of event to track in segment.
+        metadata: Dict of metadata to track.
     """
     try:
-        config = GlobalConfig()
-        logger.debug(f"Analytics opt-in: {config.analytics_opt_in}.")
+        cfg = GlobalConfig()
+        logger.debug(f"Analytics opt-in: {cfg.analytics_opt_in}.")
 
-        if config.analytics_opt_in is False and event is not INITIALIZE:
+        if cfg.analytics_opt_in is False and event is not INITIALIZE:
             return
-
-        user_id = config.get_user_id()
 
         if metadata is None:
             metadata = {}
 
         # add basics
         metadata.update(get_system_info())
-        metadata.update({'version': __version__})
+        metadata.update({"version": __version__})
 
-        analytics.track(user_id, event, metadata)
+        analytics.track(cfg.user_id, event, metadata)
         logger.debug(
-            f'Analytics sent: User: {user_id}, Event: {event}, Metadata: '
-            f'{metadata}')
+            f"Analytics sent: User: {cfg.user_id}, Event: {event}, Metadata: "
+            f"{metadata}"
+        )
     except Exception as e:
         # We should never fail main thread
-        logger.debug(f'Analytics failed due to: {e}')
+        logger.debug(f"Analytics failed due to: {e}")
         return
 
 
@@ -149,8 +161,11 @@ def parametrized(dec):
     As a decorator is a function, it actually works as a regular decorator
     with arguments:"""
 
-    def layer(*args, **kwargs):
-        def repl(f):
+    def layer(*args: Any, **kwargs: Any):
+        """Internal layer"""
+
+        def repl(f: Any):
+            """Internal repl"""
             return dec(f, *args, **kwargs)
 
         return repl
@@ -159,7 +174,13 @@ def parametrized(dec):
 
 
 @parametrized
-def track(func, event=None):
+def track(func: Callable, event: Text = None) -> Callable:
+    """Decorator to track event.
+
+    Args:
+        func: Function that is decorated.
+        event: Event string to stamp with.
+    """
     if event is None:
         event = func.__name__  # default to name of function
 
