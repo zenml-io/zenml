@@ -1,33 +1,15 @@
-import json
-from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from pydantic import BaseSettings
 
-from zenml.artifacts.artifact_store import BaseArtifactStore
+from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+from zenml.config.constants import LOCAL_CONFIG_NAME
+from zenml.config.utils import define_yaml_config_settings_source
 from zenml.metadata.metadata_wrapper import BaseMetadataStore
-from zenml.utils.path_utils import CONFIG_NAME, get_zenml_dir
+from zenml.utils.path_utils import get_zenml_dir
 
 
-def json_config_settings_source(settings: BaseSettings) -> Dict[str, Any]:
-    """
-    A simple settings source that loads variables from a JSON file
-    at the project's root.
-
-    Here we happen to choose to use the `env_file_encoding` from Config
-    when reading `config.json`
-
-    Args:
-        settings (BaseSettings): BaseSettings from pydantic.
-    """
-    encoding = settings.__config__.env_file_encoding
-    full_path = Path(get_zenml_dir()) / CONFIG_NAME
-    if full_path.exists():
-        return json.loads(full_path.read_text(encoding))
-    return {}
-
-
-class BaseProvider(BaseSettings):
+class Provider(BaseSettings):
     """Base provider for ZenML.
 
     A ZenML provider brings together an Metadata Store, an Artifact Store, and
@@ -36,7 +18,7 @@ class BaseProvider(BaseSettings):
     class, which means that there are multiple ways to use it.
 
     * You can set it via env variables.
-    * You can set it through the zenml_config.json file.
+    * You can set it through the config yaml file.
     * You can set it in code by initializing an object of this class, and
     passing it to pipelines as a configuration.
 
@@ -44,9 +26,9 @@ class BaseProvider(BaseSettings):
     multiple ways, the selected value is determined as follows (in descending
     order of priority):
 
-    * Arguments passed to the Settings class initialiser.
+    * Arguments passed to the Settings class initializer.
     * Environment variables, e.g. zenml_var as described above.
-    * Variables loaded from a zenml_config.json file.
+    * Variables loaded from a config yaml file.
     * Variables loaded from the secrets directory (not implemented yet).
     * The default field values.
     """
@@ -71,6 +53,8 @@ class BaseProvider(BaseSettings):
             return (
                 init_settings,
                 env_settings,
-                json_config_settings_source,
+                define_yaml_config_settings_source(
+                    get_zenml_dir(), LOCAL_CONFIG_NAME
+                ),
                 file_secret_settings,
             )
