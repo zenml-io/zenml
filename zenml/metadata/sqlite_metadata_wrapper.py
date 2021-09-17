@@ -11,33 +11,39 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import os.path
+from typing import Any, Optional, Text
 
-from typing import Text
-
+from pydantic import Field
 from tfx.orchestration import metadata
 
 from zenml.enums import MLMetadataTypes
 from zenml.metadata.metadata_wrapper import BaseMetadataStore
 from zenml.utils import path_utils
+from zenml.utils.path_utils import get_zenml_config_dir
 
 
 class SQLiteMetadataStore(BaseMetadataStore):
     """SQLite backend for ZenML metadata store."""
 
-    store_type = MLMetadataTypes.sqlite
-    uri: str
+    store_type: Optional[Text] = Field(default=MLMetadataTypes.sqlite)
+    uri: Optional[Text] = Field(
+        default=os.path.join(get_zenml_config_dir(), "metadata.db")
+    )
 
-    def __init__(self, uri: Text):
+    def __init__(self, **data: Any):
         """Constructor for MySQL MetadataStore for ZenML."""
-        if path_utils.is_remote(uri):
+        super().__init__(**data)
+
+        # TODO [LOW]: Replace with proper custom validator.
+        if path_utils.is_remote(self.uri):
             raise Exception(
-                f"URI {uri} is a non-local path. A sqlite store "
+                f"URI {self.uri} is a non-local path. A sqlite store "
                 f"can only be local paths"
             )
 
         # Resolve URI if relative URI provided
         # self.uri = path_utils.resolve_relative_path(uri)
-        super().__init__()
 
     def get_tfx_metadata_config(self):
         """Return tfx metadata config for sqlite metadata store."""

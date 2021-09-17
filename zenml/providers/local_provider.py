@@ -9,6 +9,6 @@ class LocalProvider(BaseProvider):
     """Default local provider."""
 
     provider_type: str = "local"
-    metadata_store: Optional[SQLiteMetadataStore]
-    artifact_store: Optional[LocalArtifactStore]
+    metadata_store: Optional[SQLiteMetadataStore] = SQLiteMetadataStore()
+    artifact_store: Optional[LocalArtifactStore] = LocalArtifactStore()
     orchestrator: Optional[str] = "local"

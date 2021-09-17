@@ -14,7 +14,7 @@
 """Definition of an Artifact Store"""
 
 import os
-from typing import Text
+from typing import Optional, Text
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -30,7 +30,7 @@ class BaseArtifactStore(BaseModel):
     Every ZenML Artifact Store should override this class.
     """
 
-    path: str
+    path: Optional[str]
     uuid: UUID = Field(default_factory=uuid4)
     store_type: ArtifactStoreTypes = ArtifactStoreTypes.local
 
@@ -77,6 +77,3 @@ class BaseArtifactStore(BaseModel):
         path_utils.copy_dir(artifact_uri, path, overwrite=True)
 
         return path
-
-
-

@@ -23,7 +23,7 @@ from typing import Any, Callable, Iterable, List, Text, Tuple
 from tfx.dsl.io.filesystem import PathType
 from tfx.utils.io_utils import _REMOTE_FS_PREFIX, fileio, load_csv_column_names
 
-from zenml.config.constants import LOCAL_CONFIG_DIR_NAME, LOCAL_CONFIG_NAME
+from zenml.config.constants import LOCAL_CONFIG_DIR_NAME
 from zenml.exceptions import InitializationException
 
 
@@ -371,16 +371,15 @@ def is_zenml_dir(path: Text) -> bool:
     """Check if dir is a zenml dir or not.
 
     Args:
-        path(str): path to the root.
-        path: Text:
+        path: Path to the root.
 
     Returns:
         True if path contains a zenml dir, False if not.
     """
-    config_path = os.path.join(path, LOCAL_CONFIG_NAME)
-    if not file_exists(config_path):
-        return False
-    return True
+    config_dir_path = os.path.join(path, LOCAL_CONFIG_DIR_NAME)
+    if is_dir(config_dir_path):
+        return True
+    return False
 
 
 def get_zenml_dir(path: Text = os.getcwd()) -> Text:
