@@ -19,11 +19,7 @@ from logging.handlers import TimedRotatingFileHandler
 
 from absl import logging as absl_logging
 
-from zenml.constants import (
-    ABSL_LOGGING_VERBOSITY,
-    APP_NAME,
-    ZENML_LOGGING_VERBOSITY,
-)
+from zenml.constants import ABSL_LOGGING_VERBOSITY, APP_NAME, ZENML_LOGGING_VERBOSITY
 
 # Mute tensorflow cuda warnings
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -42,7 +38,7 @@ LOG_FILE = f"{APP_NAME}_logs.log"
 
 
 def resolve_logging_level():
-    """ """
+    """Resolve the logging level from the env variable."""
     if ZENML_LOGGING_VERBOSITY > 0:
         level = (
             LOGGING_LEVELS[ZENML_LOGGING_VERBOSITY]
@@ -55,7 +51,7 @@ def resolve_logging_level():
 
 
 def set_root_verbosity():
-    """ """
+    """Set the root verbosity."""
     level = resolve_logging_level()
     if level > logging.NOTSET:
         logging.basicConfig(level=level)
@@ -69,26 +65,27 @@ def set_root_verbosity():
 
 
 def get_console_handler():
-    """ """
+    """Get console handler for logging."""
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(FORMATTER)
     return console_handler
 
 
 def get_file_handler():
-    """ """
+    """Return a file handler for logging."""
     file_handler = TimedRotatingFileHandler(LOG_FILE, when="midnight")
     file_handler.setFormatter(FORMATTER)
     return file_handler
 
 
 def get_logger(logger_name):
-    """
+    """Main function to get logger name,.
 
     Args:
-      logger_name:
+      logger_name: Name of logger to initialize.
 
     Returns:
+        A logger object.
 
     """
     logger = logging.getLogger(logger_name)
@@ -104,7 +101,7 @@ def get_logger(logger_name):
 
 
 def init_logging():
-    """ """
+    """Initialize logging with default levels."""
     logging.basicConfig(format=FORMATTING_STRING)
     set_root_verbosity()
 

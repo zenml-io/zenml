@@ -18,9 +18,9 @@ from typing import Any, Text
 
 from pydantic import BaseSettings
 
-from zenml.config.utils import define_yaml_config_settings_source
+from zenml.config.utils import define_json_config_settings_source
 from zenml.logger import get_logger
-from zenml.utils import path_utils, yaml_utils
+from zenml.utils import path_utils
 
 logger = get_logger(__name__)
 
@@ -57,11 +57,13 @@ class BaseConfig(BaseSettings):
         """Return the config file name."""
 
     def _dump(self):
-        """Dumps all current values to yaml."""
+        """Dumps all current values to config."""
         config_path = self.get_config_path()
         if not path_utils.file_exists(str(config_path)):
             path_utils.create_file_if_not_exists(str(config_path))
-        yaml_utils.write_yaml(config_path, self.dict())
+        path_utils.write_file_contents(
+            config_path, self.json(indent=2, sort_keys=True)
+        )
 
     def get_config_path(self) -> Text:
         """Returns the full path of the config file."""
@@ -81,7 +83,7 @@ class BaseConfig(BaseSettings):
         ):
             return (
                 init_settings,
-                define_yaml_config_settings_source(
+                define_json_config_settings_source(
                     BaseConfig.get_config_dir(),
                     BaseConfig.get_config_file_name(),
                 ),

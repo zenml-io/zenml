@@ -110,6 +110,9 @@ exclude_lines = [
 profile = "black"
 known_third_party = []
 skip_glob = []
+multi_line_output = 3
+include_trailing_comma = true
+line_length = 88
 
 [tool.mypy]
 # --strict
