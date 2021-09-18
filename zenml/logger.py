@@ -16,6 +16,7 @@ import logging
 import os
 import sys
 from logging.handlers import TimedRotatingFileHandler
+from typing import Any
 
 from absl import logging as absl_logging
 
@@ -68,21 +69,21 @@ def set_root_verbosity():
         get_logger(__name__).debug("Logging NOTSET")
 
 
-def get_console_handler():
+def get_console_handler() -> Any:
     """Get console handler for logging."""
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(FORMATTER)
     return console_handler
 
 
-def get_file_handler():
+def get_file_handler() -> Any:
     """Return a file handler for logging."""
     file_handler = TimedRotatingFileHandler(LOG_FILE, when="midnight")
     file_handler.setFormatter(FORMATTER)
     return file_handler
 
 
-def get_logger(logger_name):
+def get_logger(logger_name) -> Any:
     """Main function to get logger name,.
 
     Args:
