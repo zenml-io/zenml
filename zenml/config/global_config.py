@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Global config for the ZenML installation."""
-
+import os
 from typing import Text
 from uuid import uuid4
 
@@ -23,6 +23,7 @@ from zenml.config.base_config import BaseConfig
 from zenml.config.constants import GLOBAL_CONFIG_NAME
 from zenml.config.utils import define_yaml_config_settings_source
 from zenml.logger import get_logger
+from zenml.version import __version__
 
 logger = get_logger(__name__)
 
@@ -61,8 +62,11 @@ class GlobalConfig(BaseConfig):
         ):
             return (
                 init_settings,
+                # using a version-pinned folder avoids conflicts when
+                #  upgrading zenml versions.
                 define_yaml_config_settings_source(
-                    GlobalConfig.get_config_dir(), GLOBAL_CONFIG_NAME
+                    os.path.join(__version__, GlobalConfig.get_config_dir()),
+                    GLOBAL_CONFIG_NAME,
                 ),
                 env_settings,
             )
