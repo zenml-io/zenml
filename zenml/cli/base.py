@@ -20,7 +20,8 @@ import git
 
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation
-from zenml.utils.analytics_utils import track, INITIALIZE
+from zenml.core.repo import Repository
+from zenml.utils.analytics_utils import INITIALIZE, track
 
 
 @cli.command("init")
@@ -76,13 +77,11 @@ def clean(yes: bool = False):
 
     """
     if not yes:
-        confirm = confirmation(
+        _ = confirmation(
             "This will completely delete all pipelines, their associated "
             "artifacts and metadata ever created in this ZenML repository. "
             "Are you sure you want to proceed?"
         )
-    else:
-        confirm = True
 
     click.echo("Not implemented for this version")
     # if confirm:
