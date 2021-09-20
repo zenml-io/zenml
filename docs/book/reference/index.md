@@ -1,3 +1,3 @@
 # Reference
 
-This is a programmatically generated documentation for the available ZenML modules.
+This is programmatically generated documentation for the available ZenML Python modules.
