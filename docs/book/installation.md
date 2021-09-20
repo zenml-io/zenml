@@ -1,5 +1,5 @@
 ---
-description: 'TL;DR: Do `pip install zenml` to install.'
+description: "TL;DR: Do `pip install zenml` to install."
 ---
 
 # Installation
@@ -31,6 +31,8 @@ Alternatively, if you’re feeling brave, feel free to install the bleeding edge
 ```bash
 pip install git+https://github.com/zenml-io/zenml.git@main --upgrade
 ```
+
+<!-- TODO: decide whether these need to stay -->
 
 ## Integrations
 
@@ -99,4 +101,3 @@ If you encounter a `File already exists in database` error after the first comma
 
 We are aware of this issue and are working hard to fix it. A future release of **ZenML** will fix this issue.
 {% endhint %}
-
