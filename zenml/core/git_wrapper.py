@@ -12,15 +12,26 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Wrapper class to handle Git integration"""
-
+import inspect
 import os
-from typing import List, Text
+from typing import List, Text, Type
 
 from git import BadName
 from git import Repo as GitRepo
+from tfx.utils.import_utils import import_class_by_path
 
+from zenml.constants import APP_NAME
 from zenml.logger import get_logger
-from zenml.utils import path_utils
+from zenml.utils import path_utils, source_utils
+from zenml.exceptions import GitException
+from zenml.utils.source_utils import (
+    get_module_source_from_file_path,
+    get_module_source_from_source,
+    get_relative_path_from_module_source,
+    is_standard_pin,
+    is_standard_source,
+    resolve_standard_source,
+)
 
 GIT_FOLDER_NAME = ".git"
 
@@ -104,9 +115,6 @@ class GitWrapper:
         Args:
             source (str): relative module path pointing to a Class.
         """
-        # import here to resolve circular dependency
-        from zenml.utils import source_utils
-
         # Get the module path
         module_path = source_utils.get_module_source_from_source(source)
 
@@ -143,26 +151,6 @@ class GitWrapper:
             if not self.check_file_committed(path):
                 return False
         return True
-
-    def resolve_class_source(self, source: Text) -> Text:
-        """
-        Takes source (e.g. this.module.ClassName), and appends relevant
-        sha to it if the files within `module` are all committed. If even one
-        file is not committed, then returns `source` unchanged.
-
-        Args:
-            source (str): relative module path pointing to a Class.
-        """
-        if not self.check_module_clean(source):
-            # Return the source path if not clean
-            logger.warning(
-                "Found uncommitted file. Pipelines run with this "
-                "configuration may not be reproducible. Please commit "
-                "all files in this module and then run the pipeline to "
-                "ensure reproducibility."
-            )
-            return source
-        return source + "@" + self.get_current_sha()
 
     def stash(self):
         """Wrapper for git stash"""
@@ -208,3 +196,133 @@ class GitWrapper:
         """
         git = self.git_repo.git
         git.reset("HEAD", directory)
+
+    def resolve_class_source(self, class_source: Text) -> Text:
+        """
+        Resolves class_source with an optional pin.
+        Takes source (e.g. this.module.ClassName), and appends relevant
+        sha to it if the files within `module` are all committed. If even one
+        file is not committed, then returns `source` unchanged.
+
+        Args:
+            class_source (str): class_source e.g. this.module.Class
+        """
+        if "@" in class_source:
+            # already pinned
+            return class_source
+
+        if is_standard_source(class_source):
+            # that means use standard version
+            return resolve_standard_source(class_source)
+
+        # otherwise use Git resolution
+        if not self.check_module_clean(class_source):
+            # Return the source path if not clean
+            logger.warning(
+                "Found uncommitted file. Pipelines run with this "
+                "configuration may not be reproducible. Please commit "
+                "all files in this module and then run the pipeline to "
+                "ensure reproducibility."
+            )
+            return class_source
+        return class_source + "@" + self.get_current_sha()
+
+    def is_valid_source(self, source: Text) -> bool:
+        """
+        Checks whether the source_path is valid or not.
+
+        Args:
+            source (str): class_source e.g. this.module.Class[@pin].
+        """
+        try:
+            self.load_source_path_class(source)
+        except GitException:
+            return False
+        return True
+
+    def load_source_path_class(self, source: Text) -> Type:
+        """
+        Loads a Python class from the source.
+
+        Args:
+            source: class_source e.g. this.module.Class[@sha]
+        """
+        source = source.split("@")[0]
+        pin = source.split("@")[-1]
+        is_standard = is_standard_pin(pin)
+
+        if "@" in source and not is_standard:
+            logger.debug(
+                "Pinned step found with git sha. "
+                "Loading class from git history."
+            )
+
+            module_source = get_module_source_from_source(source)
+            relative_module_path = get_relative_path_from_module_source(
+                module_source
+            )
+
+            logger.warning(
+                "Found source with a pinned sha. Will now checkout "
+                f"module: {module_source}"
+            )
+
+            # critical step
+            if not self.check_module_clean(source):
+                raise GitException(
+                    f"One of the files at {relative_module_path} "
+                    f"is not committed and we "
+                    f"are trying to load that directory from git "
+                    f"history due to a pinned step in the pipeline. "
+                    f"Please commit the file and then run the "
+                    f"pipeline."
+                )
+
+            # Check out the directory at that sha
+            self.checkout(sha_or_branch=pin, directory=relative_module_path)
+
+            # After this point, all exceptions will first undo the above
+            try:
+                class_ = import_class_by_path(source)
+                self.reset(relative_module_path)
+                self.checkout(directory=relative_module_path)
+            except Exception as e:
+                self.reset(relative_module_path)
+                self.checkout(directory=relative_module_path)
+                raise GitException(
+                    f"A git exception occured when checking out repository "
+                    f"from git history. Resetting repository to original "
+                    f"state. Original exception: {e}"
+                )
+
+        elif "@" in source and is_standard:
+            logger.debug(f"Default {APP_NAME} class used. Loading directly.")
+            # TODO: [LOW] Check if ZenML version is installed before loading.
+            class_ = import_class_by_path(source)
+        else:
+            logger.debug(
+                "Unpinned step found with no git sha. Attempting to "
+                "load class from current repository state."
+            )
+            class_ = import_class_by_path(source)
+
+        return class_
+
+    def resolve_class(self, class_: Type) -> Text:
+        """
+        Resolves
+        Args:
+            class_: A Python Class reference.
+
+        Returns: source_path e.g. this.module.Class[@pin].
+        """
+        initial_source = class_.__module__ + "." + class_.__name__
+        if is_standard_source(initial_source):
+            return resolve_standard_source(initial_source)
+
+        # Get the full module path relative to the repository
+        file_path = inspect.getfile(class_)
+        module_source = get_module_source_from_file_path(file_path)
+
+        class_source = module_source + "." + class_.__name__
+        return self.resolve_class_source(class_source)

@@ -72,3 +72,14 @@ class PipelineNotSucceededException(Exception):
         self, name="", message="{} is not yet completed successfully."
     ):
         super().__init__(message.format(name))
+
+
+class GitException(Exception):
+    """Raises exception when a problem occurs in git resolution."""
+
+    def __init__(
+        self,
+        message="There is a problem with git resolution. Please make sure "
+        "that all relevant files are committed.",
+    ):
+        super().__init__(message)

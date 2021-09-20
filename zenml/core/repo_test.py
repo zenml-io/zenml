@@ -20,9 +20,9 @@ from typing import Text
 import pytest
 
 import zenml
+from zenml.core import Repository
 from zenml.datasources import BaseDatasource
 from zenml.pipelines import BasePipeline
-from zenml.repo import Repository
 from zenml.utils import yaml_utils
 from zenml.version import __version__
 

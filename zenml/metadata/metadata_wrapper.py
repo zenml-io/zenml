@@ -43,44 +43,6 @@ class BaseMetadataStore(BaseModel):
     def get_tfx_metadata_config(self):
         """Return tfx metadata config."""
 
-    def get_data_pipeline_names_from_datasource_name(
-        self, datasource_name: Text
-    ):
-        """Gets all data pipeline names from the datasource name.
-
-        Args:
-          datasource_name: name of datasource.
-          datasource_name: Text:
-
-        Returns:
-
-        """
-        from zenml.pipelines.data_pipeline import DataPipeline
-
-        run_contexts = self.store.get_contexts_by_type(self.run_type_name)
-
-        # TODO [LOW]:
-        #  get the data pipelines only by doing an ugly hack. These data
-        #  pipelines will always start with `data_`. This needs to change soon
-        run_contexts = [
-            x
-            for x in run_contexts
-            if x.name.startswith(DataPipeline.PIPELINE_TYPE)
-        ]
-
-        # now filter to the datasource name through executions
-        pipelines_names = []
-        for c in run_contexts:
-            es = self.store.get_executions_by_context(c.id)
-            for e in es:
-                if (
-                    "name" in e.custom_properties
-                    and e.custom_properties["name"].string_value
-                    == datasource_name
-                ):
-                    pipelines_names.append(c.name)
-        return pipelines_names
-
     def get_pipeline_status(self, pipeline) -> Text:
         """Query metadata store to find status of pipeline.
 
