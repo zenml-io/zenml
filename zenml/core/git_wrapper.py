@@ -21,9 +21,9 @@ from git import Repo as GitRepo
 from tfx.utils.import_utils import import_class_by_path
 
 from zenml.constants import APP_NAME
+from zenml.exceptions import GitException
 from zenml.logger import get_logger
 from zenml.utils import path_utils, source_utils
-from zenml.exceptions import GitException
 from zenml.utils.source_utils import (
     get_module_source_from_file_path,
     get_module_source_from_source,
