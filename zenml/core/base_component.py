@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Global config for the ZenML installation."""
 import os
 from abc import abstractmethod
 from typing import Any, Text
@@ -26,10 +25,10 @@ logger = get_logger(__name__)
 
 
 class BaseConfig(BaseSettings):
-    """Class definition for the global config.
+    """Class definition for the base config.
 
-    Defines global data such as unique user ID and whether they opted in
-    for analytics.
+    The base config class defines the basic serialization / deserialization of
+    configs used in ZenML.
     """
 
     def __init__(self, **data: Any):
@@ -43,8 +42,25 @@ class BaseConfig(BaseSettings):
         This basically means any variable changed through any object of
          this class will result in a persistent, stateful change in the system.
         """
-        super().__setattr__(name, value)
+        super(BaseConfig, self).__setattr__(name, value)
         self._dump()
+
+    def __setstate__(self, state):
+        super(BaseConfig, self).__setstate__(state)
+        self._dump()
+
+    def __delattr__(self, item):
+        super(BaseConfig, self).__delattr__(item)
+        self._dump()
+
+    def _dump(self):
+        """Dumps all current values to config."""
+        config_path = self.get_config_path()
+        if not path_utils.file_exists(str(config_path)):
+            path_utils.create_file_if_not_exists(str(config_path))
+        path_utils.write_file_contents(
+            config_path, self.json(indent=2, sort_keys=True)
+        )
 
     @staticmethod
     @abstractmethod
@@ -55,15 +71,6 @@ class BaseConfig(BaseSettings):
     @abstractmethod
     def get_config_file_name() -> Text:
         """Return the config file name."""
-
-    def _dump(self):
-        """Dumps all current values to config."""
-        config_path = self.get_config_path()
-        if not path_utils.file_exists(str(config_path)):
-            path_utils.create_file_if_not_exists(str(config_path))
-        path_utils.write_file_contents(
-            config_path, self.json(indent=2, sort_keys=True)
-        )
 
     def get_config_path(self) -> Text:
         """Returns the full path of the config file."""

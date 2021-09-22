@@ -1,16 +1,14 @@
-from typing import Dict, Text
+from typing import Dict, Text, List, Optional
 
-from pydantic import Field
-
-from zenml.config.base_config import BaseConfig
+from zenml.core.base_component import BaseComponent
 from zenml.config.constants import LOCAL_CONFIG_NAME
-from zenml.config.utils import define_json_config_settings_source
+from zenml.core.utils import define_json_config_settings_source
 from zenml.exceptions import DoesNotExistException
 from zenml.logger import get_logger
 from zenml.providers.base_provider import BaseProvider
 from zenml.providers.constants import DEFAULT_PROVIDER_KEY
 from zenml.providers.local_provider import LocalProvider
-from zenml.utils.path_utils import get_zenml_config_dir
+from zenml.utils import path_utils
 
 logger = get_logger(__name__)
 
@@ -20,7 +18,7 @@ def generate_default_providers() -> Dict[Text, BaseProvider]:
     return {DEFAULT_PROVIDER_KEY: LocalProvider()}
 
 
-class ProviderManager(BaseConfig):
+class ProviderManager(BaseComponent):
     """Definition of ProviderManager to track all providers.
 
     All providers (including custom providers) are to be
@@ -46,25 +44,24 @@ class ProviderManager(BaseConfig):
     * The default field values.
     """
 
-    providers: Dict[Text, BaseProvider] = Field(
-        default_factory=generate_default_providers
-    )
-    active_provider: Text = DEFAULT_PROVIDER_KEY
+    provider_ids: Dict[Text, Text] = {}
+    active_provider: Optional[Text] = None
+    _providers: Dict[Text, BaseProvider] = {}
 
     @staticmethod
     def get_config_dir() -> Text:
         """Gets the config dir provider manager."""
-        return get_zenml_config_dir()
+        return path_utils.get_zenml_config_dir()
 
     @staticmethod
     def get_config_file_name() -> Text:
         """Gets the config name for provider manager."""
         return LOCAL_CONFIG_NAME
 
-    def get_providers(self) -> Dict:
+    def get_providers(self) -> List[BaseProvider]:
         """Return all registered providers."""
         logger.debug("Fetching providers..")
-        return self.providers
+        return self.providers.values()
 
     def get_single_provider(self, key: Text) -> BaseProvider:
         """Return a single providers based on key.
@@ -83,12 +80,33 @@ class ProviderManager(BaseConfig):
             )
         return self.providers[key]
 
-    def register_provider(self, key, provider_: BaseProvider):
-        """Register a provider with a key."""
+    def register_provider(self, key: Text, provider_: BaseProvider):
+        """Register a provider with a key.
+
+        Args:
+            key: Unique key of provider.
+        """
         logger.info(
             f"Registering provider with key {key}, details: {provider_.dict()}"
         )
+        # name
+        # resolve the type
+
         self.providers[key] = provider_
+
+    def delete_provider(self, key: Text):
+        """Delete a provider.
+
+        Args:
+            key: Unique key of provider.
+        """
+        _ = self.get_single_provider(key)  # check whether it exists
+        del self.providers[key]
+        logger.info(f"Deleted provider with key: {key}.")
+
+    def get_active_provider(self) -> BaseProvider:
+        """Test"""
+        return
 
     class Config:
         """Configuration of settings."""

@@ -14,12 +14,8 @@
 
 import random
 
-import pytest
-
-from zenml.enums import GDPComponent, PipelineStatusTypes
-from zenml.metadata import BaseMetadataStore
-from zenml.pipelines import TrainingPipeline
-from zenml.standards.standard_keys import MLMetadataKeys
+from zenml.enums import PipelineStatusTypes
+from zenml.pipelines.training_pipeline import TrainingPipeline
 
 # we expect all queries to fail since the metadata store
 # cannot be instantiated
@@ -50,15 +46,6 @@ def test_to_config(repo):
     """
     mds = repo.get_default_metadata_store()
     mds.to_config()
-
-
-def test_from_config():
-    """ """
-    config = {MLMetadataKeys.TYPE: None, MLMetadataKeys.ARGS: {}}
-
-    # throws because base MDStore is not in the factory
-    with pytest.raises(AssertionError):
-        _ = BaseMetadataStore.from_config(config)
 
 
 def test_get_pipeline_status(repo):

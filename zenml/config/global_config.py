@@ -12,61 +12,49 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Global config for the ZenML installation."""
-import os
-from typing import Text
-from uuid import uuid4
+from typing import Text, Any
+from uuid import UUID, uuid4
 
 import click
+from pydantic import Field
 
 from zenml import constants
-from zenml.config.base_config import BaseConfig
 from zenml.config.constants import GLOBAL_CONFIG_NAME
-from zenml.config.utils import define_yaml_config_settings_source
+from zenml.core.base_component import BaseComponent
 from zenml.logger import get_logger
-from zenml.version import __version__
+from zenml.utils import path_utils
 
 logger = get_logger(__name__)
 
 
-class GlobalConfig(BaseConfig):
+class GlobalConfig(BaseComponent):
     """Class definition for the global config.
 
     Defines global data such as unique user ID and whether they opted in
     for analytics.
     """
 
-    user_id: str = str(uuid4())
+    user_id: UUID = Field(default_factory=uuid4)
     analytics_opt_in: bool = True
 
-    @staticmethod
-    def get_config_dir() -> Text:
+    def __init__(self, **data: Any):
+        """We persist the attributes in the config file. For the global
+        config, we want to persist the data as soon as it is initialized for
+        the first time."""
+        super().__init__(**data)
+
+        # At this point, if the serialization file does not exist we should
+        #  create it and dump our data.
+        f = self.get_serialization_full_path()
+        if not path_utils.file_exists(str(f)):
+            self._dump()
+
+    def get_serialization_dir(self) -> Text:
         """Gets the global config dir for installed package."""
+        # using a version-pinned folder avoids conflicts when
+        #  upgrading zenml versions.
         return click.get_app_dir(constants.APP_NAME)
 
-    @staticmethod
-    def get_config_file_name() -> Text:
+    def get_serialization_file_name(self) -> Text:
         """Gets the global config dir for installed package."""
         return GLOBAL_CONFIG_NAME
-
-    class Config:
-        """Configuration of settings."""
-
-        env_prefix = "zenml_"
-
-        @classmethod
-        def customise_sources(
-            cls,
-            init_settings,
-            env_settings,
-            file_secret_settings,
-        ):
-            return (
-                init_settings,
-                # using a version-pinned folder avoids conflicts when
-                #  upgrading zenml versions.
-                define_yaml_config_settings_source(
-                    os.path.join(__version__, GlobalConfig.get_config_dir()),
-                    GLOBAL_CONFIG_NAME,
-                ),
-                env_settings,
-            )
