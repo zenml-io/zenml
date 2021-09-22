@@ -115,7 +115,7 @@ def test_get_artifacts_by_component(repo):
     )[0]
 
     # pick a component guaranteed to be present
-    component_name = GDPComponent.SplitGen.name
+    component_name = ""  # GDPComponent.SplitGen.name
 
     artifacts = mds.get_artifacts_by_component(random_pipeline, component_name)
 
