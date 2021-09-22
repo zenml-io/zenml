@@ -62,9 +62,9 @@ def get_components_from_store(
         path_utils.get_zenml_config_dir(),
         store_name,
     )
-    stores = {}
+    comps = {}
     for fnames in path_utils.list_dir(store_dir, only_file_names=True):
         uuid = Path(fnames).stem
         key = get_key_from_uuid(UUID(uuid), mapping)
-        stores[key] = get_component_from_key(key, mapping)
-    return stores
+        comps[key] = get_component_from_key(key, mapping)
+    return comps

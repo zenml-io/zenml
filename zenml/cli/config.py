@@ -81,8 +81,8 @@ def register_metadata_store(
     service.register_metadata_store(metadata_store_name, metadata_store)
 
 
-@metadata.command("get")
-def get_metadata_stores():
+@metadata.command("list")
+def list_metadata_stores():
     """Print metadata store from local config."""
     service = Repository().get_service()
     cli_utils.title("Metadata Stores:")

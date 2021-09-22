@@ -107,9 +107,14 @@ def pretty_print(obj: Any):
     click.echo(str(obj))
 
 
-def echo_component_list(component_list: List[BaseComponent]):
+def echo_component_list(component_list: Dict[Text, BaseComponent]):
     """Echoes a list of components in a pretty style."""
-    list_of_dicts = [c.dict() for c in component_list]
+    list_of_dicts = []
+    for key, c in component_list.items():
+        # TODO [LOW]: This will break if component has element called `key`
+        data = {"key": key}
+        data.update(c.dict())
+        list_of_dicts.append(data)
     click.echo(tabulate(list_of_dicts, headers="keys"))
 
 

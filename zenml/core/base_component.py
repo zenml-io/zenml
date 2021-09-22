@@ -47,14 +47,25 @@ class BaseComponent(BaseSettings):
     _component_type: Optional[Enum]
 
     def __init__(self, **values: Any):
-
         # Here, we insert monkey patch the `customise_sources` function
         #  because we want to dynamically generate the serialization
         #  file path and name.
-        self.__config__.customise_sources = generate_customise_sources(
-            self.get_serialization_dir(),
-            self.get_serialization_file_name(),
-        )
+
+        if hasattr(self, "uuid"):
+            self.__config__.customise_sources = generate_customise_sources(
+                self.get_serialization_dir(),
+                self.get_serialization_file_name(),
+            )
+        elif "uuid" in values:
+            self.__config__.customise_sources = generate_customise_sources(
+                self.get_serialization_dir(),
+                f"{str(values['uuid'])}{self._file_suffix}",
+            )
+        else:
+            self.__config__.customise_sources = generate_customise_sources(
+                self.get_serialization_dir(),
+                self.get_serialization_file_name(),
+            )
 
         # Initialize values from the above sources.
         super().__init__(**values)
