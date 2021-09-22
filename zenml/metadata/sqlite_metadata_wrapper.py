@@ -47,14 +47,10 @@ class SQLiteMetadataStore(BaseMetadataStore):
 
     @validator("uri")
     def uri_must_be_local(cls, v):
+        """Validator to ensure uri is local"""
         if path_utils.is_remote(v):
             raise ValueError(
                 f"URI {v} is a non-local path. A sqlite store "
                 f"can only be local paths"
             )
         return v
-
-
-SQLiteMetadataStore(
-    uri="/home/hamza/workspace/maiot/github_temp/zenml/.zenml/local_store"
-)
