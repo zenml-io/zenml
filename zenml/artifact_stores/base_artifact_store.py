@@ -18,11 +18,13 @@ from typing import Text
 
 from zenml.config.global_config import GlobalConfig
 from zenml.core.base_component import BaseComponent
+from zenml.core.component_factory import artifact_store_factory
 from zenml.enums import ArtifactStoreTypes
 from zenml.utils import path_utils
 from zenml.utils.path_utils import get_zenml_config_dir
 
 
+@artifact_store_factory.register(ArtifactStoreTypes.base)
 class BaseArtifactStore(BaseComponent):
     """Base class for all ZenML Artifact Store.
 
@@ -30,7 +32,6 @@ class BaseArtifactStore(BaseComponent):
     """
 
     path: str
-    _component_type: ArtifactStoreTypes = ArtifactStoreTypes.base
     _ARTIFACT_STORE_DIR_NAME: Text = "artifact_stores"
 
     @staticmethod

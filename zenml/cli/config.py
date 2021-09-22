@@ -17,11 +17,14 @@ from typing import List, Text
 
 import click
 
-from zenml import enums
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.config.global_config import GlobalConfig
-from zenml.core.component_factory import component_factory
+from zenml.core.component_factory import (
+    artifact_store_factory,
+    metadata_store_factory,
+    orchestrator_store_factory,
+)
 from zenml.core.repo import Repository
 
 
@@ -73,9 +76,7 @@ def register_metadata_store(
         return
 
     repo: Repository = Repository()
-    comp = component_factory.get_single_component(
-        metadata_store_type, enums.MLMetadataTypes
-    )
+    comp = metadata_store_factory.get_single_component(metadata_store_type)
     metadata_store = comp(**parsed_args)
     service = repo.get_service()
     service.register_metadata_store(metadata_store_name, metadata_store)
@@ -123,9 +124,7 @@ def register_artifact_store(
         return
 
     repo: Repository = Repository()
-    comp = component_factory.get_single_component(
-        artifact_store_type, enums.ArtifactStoreTypes
-    )
+    comp = artifact_store_factory.get_single_component(artifact_store_type)
     artifact_store = comp(**parsed_args)
     service = repo.get_service()
     service.register_artifact_store(artifact_store_name, artifact_store)
@@ -173,9 +172,7 @@ def register_orchestrator(
         return
 
     repo: Repository = Repository()
-    comp = component_factory.get_single_component(
-        orchestrator_type, enums.OrchestratorTypes
-    )
+    comp = orchestrator_store_factory.get_single_component(orchestrator_type)
     orchestrator = comp(**parsed_args)
     service = repo.get_service()
     service.register_orchestrator(orchestrator_name, orchestrator)

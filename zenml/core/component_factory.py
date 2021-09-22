@@ -12,12 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Factory to register all components."""
-from enum import Enum
-from typing import Any, Dict, Text
+from typing import Any, Callable, Dict, Text
 
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 # TODO [LOW]: Type hints need improving here but need to avoid circular
 #  dependencies
+
+
 class ComponentFactory:
     """Definition of ComponentFactory to track all BaseComponent subclasses.
 
@@ -25,22 +29,50 @@ class ComponentFactory:
     registered here.
     """
 
-    def __init__(self):
-        self.components: Dict[Any, Any] = {}
+    components: Dict[Text, Any] = {}
+    name: Text
+
+    def __init__(self, name: Text):
+        """Constructor for the factory.
+
+        Args:
+            name: Unique name for the factory.
+        """
+        self.name = name
 
     def get_components(self) -> Dict[Any, Any]:
         """Return all components"""
         return self.components
 
-    def get_single_component(self, key: Text, enum: Enum) -> Any:
-        """Get a registered component from a key and a defined enum space."""
-        for e in enum:
-            if key == e:
-                return self.components[e]
-        return self.components[key]
+    def get_single_component(self, key: Text) -> Any:
+        """Get a registered component from a key."""
+        # TODO [LOW]: Try catch for the case where key doesnt exist.
+        if key in self.components:
+            return self.components[key]
 
     def register_component(self, key: Any, component: Any):
         self.components[key] = component
 
+    @classmethod
+    def register(cls, name: str) -> Callable:
+        """Class method to register Executor class to the internal registry.
+        Args:
+            name (str): The name of the executor.
+        Returns:
+            The Executor class itself.
+        """
 
-component_factory = ComponentFactory()
+        def inner_wrapper(wrapped_class: Any) -> Callable:
+            if name in cls.components:
+                logger.warning(
+                    "Executor %s already exists. Will replace it", name
+                )
+            cls.components[name] = wrapped_class
+            return wrapped_class
+
+        return inner_wrapper
+
+
+artifact_store_factory = ComponentFactory(name="artifact")
+metadata_store_factory = ComponentFactory(name="metadata")
+orchestrator_store_factory = ComponentFactory(name="orchestrator")
