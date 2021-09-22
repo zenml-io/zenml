@@ -50,6 +50,8 @@ python-dateutil = "2.8.1"
 gitpython = "3.1.18"
 click = "8.0.1"
 pydantic = "^1.8.2"
+analytics-python = "^1.4.0"
+distro = "^1.6.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"
