@@ -1,9 +1,6 @@
 import inspect
 from abc import abstractmethod
 
-from tfx.dsl.components.common.importer import Importer
-from tfx.orchestration import pipeline as tfx_pipeline
-
 from zenml.annotations.artifact_annotations import Input
 from zenml.annotations.step_annotations import Step
 from zenml.utils.exceptions import PipelineInterfaceError
@@ -64,35 +61,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
     def connect(self, *args, **kwargs):
         """ """
 
-    def run(self, enable_cache: bool = False):
+    def run(self, **pipeline_args):
         """ """
-        ### DEBUG ###
+        # DEBUG # TODO: to be removed
         from zenml.providers.local_provider import LocalProvider
         provider = LocalProvider()
 
-        # Resolve the importer components for the external artifacts
-        importers = {}
-        for name, artifact in self.__inputs.items():
-            importers[name] = Importer(source_uri=artifact.uri,
-                                       artifact_type=artifact.type
-                                       ).with_id(name)
-
-        import_artifacts = {n: i.outputs["result"]
-                            for n, i in importers.items()}
-
-        # Establish the connections between the components
-        self.connect(**import_artifacts, **self.__steps)
-
-        # Create the final step list and the corresponding pipeline
-        step_list = list(importers.values()) + [s.get_component()
-                                                for s in self.__steps.values()]
-
-        created_pipeline = tfx_pipeline.Pipeline(
-            pipeline_name="pipeline_name",
-            components=step_list,
-            pipeline_root=provider.artifact_store.path,
-            metadata_connection_config=provider.metadata_store.get_tfx_metadata_config(),
-            enable_cache=enable_cache,
-        )
-
-        provider.orchestrator.run(created_pipeline)
+        provider.orchestrator.run(self, **pipeline_args)
