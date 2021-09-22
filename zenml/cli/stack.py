@@ -78,3 +78,11 @@ def set_active_provider(provider_name: Text):
     repo = Repository()
     repo.set_active_provider(provider_name)
     cli_utils.declare(f"Active provider: {provider_name}")
+
+
+@provider.command("get")
+def get_active_provider():
+    """Gets the active provider."""
+    repo = Repository()
+    key = repo.get_active_provider_key()
+    cli_utils.declare(f"Active provider: {key}")

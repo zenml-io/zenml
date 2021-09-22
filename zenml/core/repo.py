@@ -160,6 +160,27 @@ class Repository:
         gc.set_provider_for_repo(self.path, provider_key)
         gc.update()
 
+    def get_active_provider_key(self) -> Text:
+        """Get the active provider key from global config.
+
+        Returns:
+            Currently active providers key.
+        """
+        gc = GlobalConfig()
+        if self.path not in gc.repo_active_providers:
+            raise AssertionError(
+                f"No active provider set for repo: {self.path}!"
+            )
+        return gc.repo_active_providers[self.path]
+
+    def get_active_provider(self) -> BaseProvider:
+        """Get the active provider from global config.
+
+        Returns:
+            Currently active provider.
+        """
+        return self.service.get_provider(self.get_active_provider_key())
+
     @track(event=GET_PIPELINES)
     def get_pipelines(self) -> List[BasePipeline]:
         """Gets list of all pipelines."""
