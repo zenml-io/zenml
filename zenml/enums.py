@@ -18,8 +18,24 @@ from enum import Enum
 class ArtifactStoreTypes(str, Enum):
     """All supported Artifact Store types."""
 
+    base = "base"
     local = "local"
     gcp = "gcp"
+
+
+class MLMetadataTypes(str, Enum):
+    """All supported ML Metadata types."""
+
+    base = "base"
+    sqlite = "sqlite"
+    mysql = "mysql"
+    mock = "mock"
+
+
+class ProviderTypes(str, Enum):
+    """All supported Provider types."""
+
+    base = "base"
 
 
 class PipelineStatusTypes(str, Enum):
@@ -29,11 +45,3 @@ class PipelineStatusTypes(str, Enum):
     Failed = "Failed"
     Succeeded = "Succeeded"
     Running = "Running"
-
-
-class MLMetadataTypes(str, Enum):
-    """All supported ML Metadata types."""
-
-    sqlite = "sqlite"
-    mysql = "mysql"
-    mock = "mock"
