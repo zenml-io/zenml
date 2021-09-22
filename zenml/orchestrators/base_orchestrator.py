@@ -1,14 +1,15 @@
 import os
 from abc import abstractmethod
-from typing import Optional, Text
+from typing import Text
 
 from zenml.core.base_component import BaseComponent
+from zenml.core.component_factory import orchestrator_store_factory
 from zenml.enums import OrchestratorTypes
 from zenml.utils.path_utils import get_zenml_config_dir
 
 
+@orchestrator_store_factory.register(OrchestratorTypes.base)
 class BaseOrchestrator(BaseComponent):
-    _component_type: Optional[OrchestratorTypes] = OrchestratorTypes.base
     _ORCHESTRATOR_STORE_DIR_NAME: Text = "orchestrators"
 
     @abstractmethod

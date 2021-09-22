@@ -2,13 +2,13 @@ from tfx.dsl.components.common.importer import Importer
 from tfx.orchestration import pipeline as tfx_pipeline
 from tfx.orchestration.local.local_dag_runner import LocalDagRunner
 
+from zenml.core.component_factory import orchestrator_store_factory
 from zenml.enums import OrchestratorTypes
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 
 
+@orchestrator_store_factory.register(OrchestratorTypes.local)
 class LocalOrchestrator(BaseOrchestrator):
-    _component_type: OrchestratorTypes = OrchestratorTypes.local
-
     def run(self, zenml_pipeline, **pipeline_args):
         # DEBUG # TODO: to be removed
         from zenml.providers.local_provider import LocalProvider

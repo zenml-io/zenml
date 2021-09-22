@@ -1,34 +1,35 @@
+from zenml.core.component_factory import orchestrator_store_factory
 from zenml.enums import OrchestratorTypes
-from zenml.orchestrators.airflow.airflow_dag_runner import AirflowDagRunner
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 
 
+@orchestrator_store_factory.register(OrchestratorTypes.airflow)
 class AirflowOrchestrator(BaseOrchestrator):
-    orchestrator_type: OrchestratorTypes = OrchestratorTypes.airflow
-
     def run(self, pipeline):
         # DEBUG # TODO: to be removed
         from zenml.providers.local_provider import LocalProvider
+
         provider = LocalProvider()
 
         runner = LocalDagRunner()
 
         importers = {}
         for name, artifact in zenml_pipeline.__inputs.items():
-            importers[name] = Importer(source_uri=artifact.uri,
-                                       artifact_type=artifact.type
-                                       ).with_id(name)
+            importers[name] = Importer(
+                source_uri=artifact.uri, artifact_type=artifact.type
+            ).with_id(name)
 
-        import_artifacts = {n: i.outputs["result"]
-                            for n, i in importers.items()}
+        import_artifacts = {
+            n: i.outputs["result"] for n, i in importers.items()
+        }
 
         # Establish the connections between the components
         zenml_pipeline.connect(**import_artifacts, **zenml_pipeline.__steps)
 
         # Create the final step list and the corresponding pipeline
-        steps = list(importers.values()) + [s.get_component()
-                                            for s in
-                                            zenml_pipeline.__steps.values()]
+        steps = list(importers.values()) + [
+            s.get_component() for s in zenml_pipeline.__steps.values()
+        ]
 
         artifact_store = provider.artifact_store
         metadata_store = provider.metadata_store
