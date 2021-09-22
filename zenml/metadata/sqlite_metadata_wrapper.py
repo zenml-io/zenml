@@ -18,7 +18,7 @@ from pydantic import Field
 from tfx.orchestration import metadata
 
 from zenml.enums import MLMetadataTypes
-from zenml.metadata.metadata_wrapper import BaseMetadataStore
+from zenml.metadata.base_metadata_store import BaseMetadataStore
 from zenml.utils import path_utils
 from zenml.utils.path_utils import get_zenml_config_dir
 

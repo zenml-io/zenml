@@ -15,24 +15,23 @@
 
 import os
 from typing import Optional, Text
-from uuid import UUID, uuid4
-
-from pydantic import BaseModel, Field
 
 from zenml.config.global_config import GlobalConfig
+from zenml.core.base_component import BaseComponent
 from zenml.enums import ArtifactStoreTypes
 from zenml.utils import path_utils
+from zenml.utils.path_utils import get_zenml_config_dir
 
 
-class BaseArtifactStore(BaseModel):
-    """Base class for all ZenML Artifacts.
+class BaseArtifactStore(BaseComponent):
+    """Base class for all ZenML Artifact Store.
 
     Every ZenML Artifact Store should override this class.
     """
 
     path: Optional[str]
-    uuid: UUID = Field(default_factory=uuid4)
-    store_type: ArtifactStoreTypes = ArtifactStoreTypes.local
+    store_type: Optional[ArtifactStoreTypes] = ArtifactStoreTypes.base
+    _ARTIFACT_STORE_DIR_NAME: Text = "artifact_stores"
 
     @staticmethod
     def get_component_name_from_uri(artifact_uri: Text) -> Text:
@@ -45,6 +44,12 @@ class BaseArtifactStore(BaseModel):
             Name of the component (str).
         """
         return path_utils.get_grandparent(artifact_uri)
+
+    def get_serialization_dir(self):
+        """Gets the global config dir for installed package."""
+        return os.path.join(
+            get_zenml_config_dir(), self._ARTIFACT_STORE_DIR_NAME
+        )
 
     def resolve_uri_locally(
         self, artifact_uri: Text, path: Text = None
@@ -66,7 +71,7 @@ class BaseArtifactStore(BaseModel):
         if path is None:
             # Create a unique path in local machine
             path = os.path.join(
-                GlobalConfig.get_config_dir(),
+                GlobalConfig().get_serialization_dir(),
                 str(self.uuid),
                 BaseArtifactStore.get_component_name_from_uri(artifact_uri),
                 path_utils.get_parent(artifact_uri),  # unique ID from MLMD
@@ -77,3 +82,8 @@ class BaseArtifactStore(BaseModel):
         path_utils.copy_dir(artifact_uri, path, overwrite=True)
 
         return path
+
+    class Config:
+        """Configuration of settings."""
+
+        env_prefix = "zenml_artifact_store_"

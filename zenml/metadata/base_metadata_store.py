@@ -14,11 +14,11 @@
 
 
 from abc import abstractmethod
-from typing import Text
+from typing import Text, Optional
 
 from ml_metadata.metadata_store import metadata_store
-from pydantic import BaseModel
 
+from zenml.core.base_component import BaseComponent
 from zenml.enums import MLMetadataTypes, PipelineStatusTypes
 from zenml.exceptions import DoesNotExistException
 from zenml.logger import get_logger
@@ -26,13 +26,14 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-class BaseMetadataStore(BaseModel):
+class BaseMetadataStore(BaseComponent):
     """Metadata store base class to track metadata of zenml first class
     citizens."""
 
-    store_type: MLMetadataTypes = None
-    run_type_name: str = "pipeline_run"
-    node_type_name: str = "node"
+    store_type: Optional[MLMetadataTypes] = MLMetadataTypes.base
+    _run_type_name: str = "pipeline_run"
+    _node_type_name: str = "node"
+    _METADATA_STORE_DIR_NAME = "metadata_stores"
 
     @property
     def store(self):
@@ -118,7 +119,7 @@ class BaseMetadataStore(BaseModel):
         # First get the context of the component and its artifacts
         component_context = [
             c
-            for c in self.store.get_contexts_by_type(self.node_type_name)
+            for c in self.store.get_contexts_by_type(self._node_type_name)
             if c.name.endswith(component_name)
         ][0]
         component_artifacts = self.store.get_artifacts_by_context(
@@ -127,7 +128,7 @@ class BaseMetadataStore(BaseModel):
 
         # Second, get the context of the particular pipeline and its artifacts
         pipeline_context = self.store.get_context_by_type_and_name(
-            self.run_type_name, pipeline.pipeline_name
+            self._run_type_name, pipeline.pipeline_name
         )
         pipeline_artifacts = self.store.get_artifacts_by_context(
             pipeline_context.id
@@ -151,7 +152,7 @@ class BaseMetadataStore(BaseModel):
         """
         # We rebuild context for ml metadata here.
         run_context = self.store.get_context_by_type_and_name(
-            type_name=self.run_type_name, context_name=pipeline.pipeline_name
+            type_name=self._run_type_name, context_name=pipeline.pipeline_name
         )
         if run_context is None:
             raise DoesNotExistException(
@@ -161,3 +162,8 @@ class BaseMetadataStore(BaseModel):
                 "pipeline before trying to fetch artifacts.",
             )
         return run_context
+
+    class Config:
+        """Configuration of settings."""
+
+        env_prefix = "zenml_metadata_store_"

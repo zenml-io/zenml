@@ -323,7 +323,7 @@
 #             return False
 #         equal = False
 #         equal |= md1.__dict__ == md2.__dict__
-#         equal |= md1.store_type == md2.store_type
+#         equal |= md1.metadata_store_type == md2.metadata_store_type
 #
 #         return equal
 #

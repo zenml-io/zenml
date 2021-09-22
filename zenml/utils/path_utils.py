@@ -23,8 +23,11 @@ from typing import Any, Callable, Iterable, List, Text, Tuple
 from tfx.dsl.io.filesystem import PathType
 from tfx.utils.io_utils import _REMOTE_FS_PREFIX, fileio, load_csv_column_names
 
-from zenml.config.constants import LOCAL_CONFIG_DIR_NAME
+from zenml.config.constants import LOCAL_ZEN_DIR_NAME
 from zenml.exceptions import InitializationException
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def walk(
@@ -116,10 +119,14 @@ def list_dir(dir_path: Text, only_file_names: bool = False) -> List[Text]:
     Returns:
         List of full qualified paths.
     """
-    return [
-        os.path.join(dir_path, f) if not only_file_names else f
-        for f in fileio.listdir(dir_path)
-    ]
+    try:
+        return [
+            os.path.join(dir_path, f) if not only_file_names else f
+            for f in fileio.listdir(dir_path)
+        ]
+    except fileio.NotFoundError:
+        logger.debug(f"Dir {dir_path} not found.")
+        return []
 
 
 def create_file_if_not_exists(file_path: Text, file_contents: Text = "{}"):
@@ -376,7 +383,7 @@ def is_zenml_dir(path: Text) -> bool:
     Returns:
         True if path contains a zenml dir, False if not.
     """
-    config_dir_path = os.path.join(path, LOCAL_CONFIG_DIR_NAME)
+    config_dir_path = os.path.join(path, LOCAL_ZEN_DIR_NAME)
     if is_dir(config_dir_path):
         return True
     return False
@@ -419,5 +426,5 @@ def get_zenml_config_dir(path: Text = os.getcwd()) -> Text:
         InitializationException if directory not found until root of OS.
     """
     return os.path.join(
-        get_zenml_dir(str(Path(path).parent)), LOCAL_CONFIG_DIR_NAME
+        get_zenml_dir(str(Path(path).parent)), LOCAL_ZEN_DIR_NAME
     )

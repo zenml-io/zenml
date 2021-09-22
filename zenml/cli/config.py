@@ -67,9 +67,9 @@
 #
 #
 # @metadata.command("set", context_settings=dict(ignore_unknown_options=True))
-# @click.argument("store_type", type=str)
+# @click.argument("metadata_store_type", type=str)
 # @click.argument("args", nargs=-1, type=click.UNPROCESSED)
-# def set_metadata_store(store_type, args):
+# def set_metadata_store(metadata_store_type, args):
 #     """Set metadata store for local config."""
 #
 #     try:
@@ -79,7 +79,7 @@
 #         return
 #
 #     # TODO: [LOW] Hard-coded
-#     config = {"type": store_type, "args": parsed_args}
+#     config = {"type": metadata_store_type, "args": parsed_args}
 #     from zenml.metadata.metadata_wrapper import ZenMLMetadataStore
 #
 #     store = ZenMLMetadataStore.from_config(config)

@@ -132,10 +132,10 @@ def track_event(event: Text, metadata: Dict = None):
         metadata: Dict of metadata to track.
     """
     try:
-        cfg = GlobalConfig()
-        logger.debug(f"Analytics opt-in: {cfg.analytics_opt_in}.")
+        gc = GlobalConfig()
+        logger.debug(f"Analytics opt-in: {gc.analytics_opt_in}.")
 
-        if cfg.analytics_opt_in is False and event is not INITIALIZE:
+        if gc.analytics_opt_in is False and event is not INITIALIZE:
             return
 
         if metadata is None:
@@ -145,9 +145,9 @@ def track_event(event: Text, metadata: Dict = None):
         metadata.update(get_system_info())
         metadata.update({"version": __version__})
 
-        analytics.track(cfg.user_id, event, metadata)
+        analytics.track(gc.user_id, event, metadata)
         logger.debug(
-            f"Analytics sent: User: {cfg.user_id}, Event: {event}, Metadata: "
+            f"Analytics sent: User: {gc.user_id}, Event: {event}, Metadata: "
             f"{metadata}"
         )
     except Exception as e:

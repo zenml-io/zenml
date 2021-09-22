@@ -21,12 +21,12 @@ from git import InvalidGitRepositoryError
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.config.global_config import GlobalConfig
 from zenml.core.git_wrapper import GitWrapper
+from zenml.core.local_service import LocalService
 from zenml.exceptions import InitializationException
 from zenml.logger import get_logger
-from zenml.metadata.metadata_wrapper import BaseMetadataStore
+from zenml.metadata.base_metadata_store import BaseMetadataStore
 from zenml.pipelines.base_pipeline import BasePipeline
 from zenml.providers.base_provider import BaseProvider
-from zenml.providers.provider_manager import ProviderManager
 from zenml.utils import path_utils
 from zenml.utils.analytics_utils import (
     CREATE_REPO,
@@ -63,7 +63,7 @@ class Repository:
         if not path_utils.is_dir(path):
             raise FileNotFoundError(f"{path} does not exist or is not a dir!")
         self.path = path
-        self.pm = ProviderManager()
+        self.pm = LocalService()
 
         # Hook up git, path needs to have a git folder.
         try:
@@ -94,8 +94,10 @@ class Repository:
             NoSuchPathError: If the repo_path does not exist.
         """
         # edit global config
+        gc = GlobalConfig()
         if analytics_opt_in is not None:
-            GlobalConfig().analytics_opt_in = analytics_opt_in
+            gc.analytics_opt_in = analytics_opt_in
+            gc.update()
 
         try:
             GitWrapper(repo_path)
@@ -118,7 +120,6 @@ class Repository:
 
     def get_artifact_stores(self) -> List[BaseArtifactStore]:
         """Returns a list of all registered artifact stores."""
-        return [BaseArtifactStore()]
 
     def get_orchestrators(self) -> List[Text]:
         """Returns a list of all registered orchestrators."""
