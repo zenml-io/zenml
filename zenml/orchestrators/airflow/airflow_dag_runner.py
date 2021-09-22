@@ -26,7 +26,7 @@ from tfx.orchestration.config import config_utils, pipeline_config
 from tfx.orchestration.data_types import RuntimeParameter
 from tfx.utils.json_utils import json
 
-from zenml.orchestrators.airflow.tfx import airflow_component
+from zenml.orchestrators.airflow import airflow_component
 
 
 class AirflowPipelineConfig(pipeline_config.PipelineConfig):
