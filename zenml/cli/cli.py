@@ -25,7 +25,7 @@ from zenml.logger import set_root_verbosity
 
 
 @click.group()
-def cli(info):
+def cli():
     """ZenML"""
     set_root_verbosity()
 

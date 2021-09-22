@@ -14,7 +14,7 @@
 """Definition of an Artifact Store"""
 
 import os
-from typing import Optional, Text
+from typing import Text
 
 from zenml.config.global_config import GlobalConfig
 from zenml.core.base_component import BaseComponent
@@ -29,8 +29,8 @@ class BaseArtifactStore(BaseComponent):
     Every ZenML Artifact Store should override this class.
     """
 
-    path: Optional[str]
-    store_type: Optional[ArtifactStoreTypes] = ArtifactStoreTypes.base
+    path: str
+    _component_type: ArtifactStoreTypes = ArtifactStoreTypes.base
     _ARTIFACT_STORE_DIR_NAME: Text = "artifact_stores"
 
     @staticmethod

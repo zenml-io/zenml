@@ -9,7 +9,7 @@ from zenml.enums import ArtifactStoreTypes
 class GCPArtifactStore(BaseArtifactStore):
     """Artifact Store for Google Cloud Storage based artifacts."""
 
-    store_type: ArtifactStoreTypes = ArtifactStoreTypes.gcp
+    _component_type: ArtifactStoreTypes = ArtifactStoreTypes.gcp
 
     @validator("path")
     def must_be_gcs_path(cls, v: Text):

@@ -37,7 +37,7 @@ exclude = [
 ]
 
 [tool.poetry.scripts]
-poetry = 'zenml.cli.cli:cli'
+zenml = 'zenml.cli.cli:cli'
 
 [tool.poetry.dependencies]
 python = ">=3.6.2,<3.9"

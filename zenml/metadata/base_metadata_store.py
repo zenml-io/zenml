@@ -15,7 +15,7 @@
 
 import os
 from abc import abstractmethod
-from typing import Optional, Text
+from typing import Text
 
 from ml_metadata.metadata_store import metadata_store
 
@@ -32,7 +32,7 @@ class BaseMetadataStore(BaseComponent):
     """Metadata store base class to track metadata of zenml first class
     citizens."""
 
-    store_type: Optional[MLMetadataTypes] = MLMetadataTypes.base
+    _component_type: MLMetadataTypes = MLMetadataTypes.base
     _run_type_name: str = "pipeline_run"
     _node_type_name: str = "node"
     _METADATA_STORE_DIR_NAME = "metadata_stores"

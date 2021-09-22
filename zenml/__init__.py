@@ -12,9 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-# from zenml.logger import init_logging
-#
-# init_logging()
+from zenml.logger import init_logging
 
 from zenml.pipelines.simple_pipeline import SimplePipeline as pipeline
 from zenml.steps.simple_step import SimpleStep as step
+
+init_logging()

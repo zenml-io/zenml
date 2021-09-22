@@ -13,11 +13,13 @@
 #  permissions and limitations under the License.
 import os
 from abc import abstractmethod
+from enum import Enum
 from typing import Any, Optional, Text
 from uuid import UUID, uuid4
 
 from pydantic import BaseSettings, Field
 
+from zenml.core.component_factory import component_factory
 from zenml.core.utils import generate_customise_sources
 from zenml.logger import get_logger
 from zenml.utils import path_utils
@@ -42,19 +44,37 @@ class BaseComponent(BaseSettings):
 
     uuid: Optional[UUID] = Field(default_factory=uuid4)
     _file_suffix = ".json"
+    _component_type: Optional[Enum]
 
     def __init__(self, **values: Any):
-
         # Here, we insert monkey patch the `customise_sources` function
         #  because we want to dynamically generate the serialization
         #  file path and name.
-        self.__config__.customise_sources = generate_customise_sources(
-            self.get_serialization_dir(),
-            self.get_serialization_file_name(),
-        )
+
+        if hasattr(self, "uuid"):
+            self.__config__.customise_sources = generate_customise_sources(
+                self.get_serialization_dir(),
+                self.get_serialization_file_name(),
+            )
+        elif "uuid" in values:
+            self.__config__.customise_sources = generate_customise_sources(
+                self.get_serialization_dir(),
+                f"{str(values['uuid'])}{self._file_suffix}",
+            )
+        else:
+            self.__config__.customise_sources = generate_customise_sources(
+                self.get_serialization_dir(),
+                self.get_serialization_file_name(),
+            )
 
         # Initialize values from the above sources.
         super().__init__(**values)
+
+        # Register the component if a _component_type enum is specified.
+        if hasattr(self, "_component_type"):
+            component_factory.register_component(
+                self._component_type, self.__class__
+            )
 
     def _dump(self):
         """Dumps all current values to the serialization file."""

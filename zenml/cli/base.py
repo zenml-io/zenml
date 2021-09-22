@@ -46,13 +46,12 @@ def init(
     if repo_path is None:
         repo_path = os.getcwd()
 
+    click.echo(f"Initializing at {repo_path}")
+
     try:
         Repository.init_repo(
-            repo_path,
-            None,
-            None,
-            pipelines_dir,
-            analytics_opt_in,
+            repo_path=repo_path,
+            analytics_opt_in=False,
         )
         click.echo(f"ZenML repo initialized at {repo_path}")
     except git.InvalidGitRepositoryError:
