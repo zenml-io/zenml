@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 
 
+import os
 from abc import abstractmethod
-from typing import Text, Optional
+from typing import Optional, Text
 
 from ml_metadata.metadata_store import metadata_store
 
@@ -22,6 +23,7 @@ from zenml.core.base_component import BaseComponent
 from zenml.enums import MLMetadataTypes, PipelineStatusTypes
 from zenml.exceptions import DoesNotExistException
 from zenml.logger import get_logger
+from zenml.utils.path_utils import get_zenml_config_dir
 
 logger = get_logger(__name__)
 
@@ -43,6 +45,12 @@ class BaseMetadataStore(BaseComponent):
     @abstractmethod
     def get_tfx_metadata_config(self):
         """Return tfx metadata config."""
+
+    def get_serialization_dir(self):
+        """Gets the local path where artifacts are stored."""
+        return os.path.join(
+            get_zenml_config_dir(), self._METADATA_STORE_DIR_NAME
+        )
 
     def get_pipeline_status(self, pipeline) -> Text:
         """Query metadata store to find status of pipeline.

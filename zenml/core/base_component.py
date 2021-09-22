@@ -97,6 +97,10 @@ class BaseComponent(BaseSettings):
         """
         self._dump()
 
+    def delete(self):
+        """Deletes the persisted state of this object."""
+        path_utils.rm_file(self.get_serialization_full_path())
+
     class Config:
         """Configuration of settings."""
 

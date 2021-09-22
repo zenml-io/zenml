@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """ZenML specific exception definitions"""
 
+from typing import Text
+
 
 class InitializationException(Exception):
     """Raises exception when a function is run before zenml initialization."""
@@ -44,8 +46,8 @@ class DoesNotExistException(Exception):
 
     def __init__(
         self,
-        name="",
-        reason="",
+        name: Text = "",
+        reason: Text = "",
         message="{} does not exist! This might be due to: {}",
     ):
         super().__init__(message.format(name, reason))
@@ -55,12 +57,11 @@ class AlreadyExistsException(Exception):
     """Raises exception when the `name` already exist in the system but an
     action is trying to create a resource with the same name."""
 
-    def __init__(self, name="", resource_type=""):
-        message = (
-            f"{resource_type} `{name}` already exists! Please use "
-            f"Repository.get_instance().get_{resource_type}_by_name"
-            f'("{name}") to fetch it.'
-        )
+    def __init__(
+        self, message: Text = None, name: Text = "", resource_type: Text = ""
+    ):
+        if message is None:
+            message = f"{resource_type} `{name}` already exists!"
         super().__init__(message)
 
 
@@ -69,7 +70,9 @@ class PipelineNotSucceededException(Exception):
     pipeline."""
 
     def __init__(
-        self, name="", message="{} is not yet completed successfully."
+        self,
+        name: Text = "",
+        message: Text = "{} is not yet completed successfully.",
     ):
         super().__init__(message.format(name))
 
@@ -79,7 +82,8 @@ class GitException(Exception):
 
     def __init__(
         self,
-        message="There is a problem with git resolution. Please make sure "
-        "that all relevant files are committed.",
+        message: Text = "There is a problem with git resolution. "
+        "Please make sure that all relevant files "
+        "are committed.",
     ):
         super().__init__(message)

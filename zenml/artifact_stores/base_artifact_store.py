@@ -46,7 +46,7 @@ class BaseArtifactStore(BaseComponent):
         return path_utils.get_grandparent(artifact_uri)
 
     def get_serialization_dir(self):
-        """Gets the global config dir for installed package."""
+        """Gets the local path where artifacts are stored."""
         return os.path.join(
             get_zenml_config_dir(), self._ARTIFACT_STORE_DIR_NAME
         )
