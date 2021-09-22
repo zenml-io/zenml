@@ -80,6 +80,7 @@ def register_metadata_store(
         comp = metadata_store_factory.get_single_component(metadata_store_type)
     except AssertionError as e:
         cli_utils.error(str(e))
+        return
 
     metadata_store = comp(**parsed_args)
     service = repo.get_service()
