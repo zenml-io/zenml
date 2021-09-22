@@ -83,7 +83,7 @@ def register_metadata_store(
 
 @metadata.command("list")
 def list_metadata_stores():
-    """Print metadata store from local config."""
+    """List all available metadata stores from service."""
     service = Repository().get_service()
     cli_utils.title("Metadata Stores:")
     cli_utils.echo_component_list(service.metadata_stores)
@@ -99,56 +99,56 @@ def delete_metadata_store(metadata_store_name: Text):
     cli_utils.declare("Deleted!")
 
 
-#
-# # Artifact Store
-# @cli.group()
-# def artifact():
-#     """Utilities for artifact store"""
-#
-#
-# @artifact.command("set")
-# @click.argument("path", type=click.Path())
-# def set_artifact_store(path: Text = None):
-#     """Change artifact store for local config."""
-#     repo: Repository = Repository.get_instance()
-#     repo.zenml_config.set_artifact_store(path)
-#     click.echo(f"Default artifact store updated to {path}")
-#
-#
-# @artifacts.command("get")
-# def get_artifact_store():
-#     """Print artifact store from local config."""
-#     repo: Repository = Repository.get_instance()
-#     click.echo(
-#         f"Default artifact store points to: "
-#         f"{repo.get_default_artifact_store().path}"
-#     )
-#
-#
-# # Pipeline Directory
-# @config.group()
-# def pipelines():
-#     """Utilities for pipelines dir store"""
-#
-#
-# @pipelines.command("set")
-# @click.argument("path", type=click.Path())
-# def set_pipelines_dir(path: Text = None):
-#     """Change pipelines dir for local config."""
-#     repo: Repository = Repository.get_instance()
-#     repo.zenml_config.set_pipelines_dir(path)
-#     click.echo(f"Default pipelines dir updated to {path}")
-#
-#
-# @pipelines.command("get")
-# def get_pipelines_dir():
-#     """Print pipelines dir from local config."""
-#     repo: Repository = Repository.get_instance()
-#     click.echo(
-#         f"Default pipelines dir points to: "
-#         f"{repo.get_default_pipelines_dir()}"
-#     )
-#
+# Artifact Store
+@cli.group()
+def artifact():
+    """Utilities for artifact store"""
+
+
+@artifact.command(
+    "register", context_settings=dict(ignore_unknown_options=True)
+)
+@click.argument("artifact_store_name", type=str)
+@click.argument("artifact_store_type", type=str)
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def register_artifact_store(
+    artifact_store_name: Text, artifact_store_type: Text, args: List[Text]
+):
+    """Register an artifact store."""
+
+    try:
+        parsed_args = cli_utils.parse_unknown_options(args)
+    except AssertionError as e:
+        cli_utils.error(str(e))
+        return
+
+    repo: Repository = Repository()
+    comp = component_factory.get_single_component(
+        artifact_store_type, enums.ArtifactStoreTypes
+    )
+    artifact_store = comp(**parsed_args)
+    service = repo.get_service()
+    service.register_artifact_store(artifact_store_name, artifact_store)
+
+
+@artifact.command("list")
+def list_artifact_stores():
+    """List all available artifact stores from service."""
+    service = Repository().get_service()
+    cli_utils.title("Artifact Stores:")
+    cli_utils.echo_component_list(service.artifact_stores)
+
+
+@artifact.command("delete")
+@click.argument("artifact_store_name", type=str)
+def delete_artifact_store(artifact_store_name: Text):
+    """Delete a artifact store."""
+    service = Repository().get_service()
+    cli_utils.declare(f"Deleting artifact store: {artifact_store_name}")
+    service.delete_artifact_store(artifact_store_name)
+    cli_utils.declare("Deleted!")
+
+
 #
 # @metadata.command("set")
 # @click.argument("metadata_store_name", type=str)
