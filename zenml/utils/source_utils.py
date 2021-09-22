@@ -27,8 +27,9 @@ import importlib
 import inspect
 from typing import Optional, Text, Type, Union
 
+from tfx.utils.import_utils import import_class_by_path
+
 from zenml.constants import APP_NAME
-from zenml.core.repo import Repository
 from zenml.logger import get_logger
 from zenml.version import __version__
 
@@ -133,6 +134,8 @@ def get_module_source_from_file_path(file_path):
     Args:
         file_path: Absolute file path to a file within the module.
     """
+    from zenml.core.repo import Repository
+
     repo_path = Repository().path
 
     # Replace repo_path with file_path to get relative path left over
@@ -185,3 +188,40 @@ def get_module_source_from_class(class_: Union[Type, Text]) -> Optional[Text]:
             raise AssertionError("step_type is neither string nor class.")
         module_source = class_.__module__ + "." + class_.__name__
     return module_source
+
+
+def resolve_class(class_: Type) -> Text:
+    """
+    Resolves a a class into a serializable source string.
+
+    Args:
+        class_: A Python Class reference.
+
+    Returns: source_path e.g. this.module.Class.
+    """
+    initial_source = class_.__module__ + "." + class_.__name__
+    if is_standard_source(initial_source):
+        return resolve_standard_source(initial_source)
+
+    # Get the full module path relative to the repository
+    file_path = inspect.getfile(class_)
+    module_source = get_module_source_from_file_path(file_path)
+
+    class_source = module_source + "." + class_.__name__
+    return class_source
+
+
+def load_source_path_class(source: Text) -> Type:
+    """
+    Loads a Python class from the source.
+
+    Args:
+        source: class_source e.g. this.module.Class[@sha]
+    """
+    source = source.split("@")[0]
+    logger.debug(
+        "Unpinned step found with no git sha. Attempting to "
+        "load class from current repository state."
+    )
+    class_ = import_class_by_path(source)
+    return class_
