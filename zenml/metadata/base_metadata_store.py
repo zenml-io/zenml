@@ -20,6 +20,7 @@ from typing import Text
 from ml_metadata.metadata_store import metadata_store
 
 from zenml.core.base_component import BaseComponent
+from zenml.core.component_factory import metadata_store_factory
 from zenml.enums import MLMetadataTypes, PipelineStatusTypes
 from zenml.exceptions import DoesNotExistException
 from zenml.logger import get_logger
@@ -28,11 +29,11 @@ from zenml.utils.path_utils import get_zenml_config_dir
 logger = get_logger(__name__)
 
 
+@metadata_store_factory.register(MLMetadataTypes.base)
 class BaseMetadataStore(BaseComponent):
     """Metadata store base class to track metadata of zenml first class
     citizens."""
 
-    _component_type: MLMetadataTypes = MLMetadataTypes.base
     _run_type_name: str = "pipeline_run"
     _node_type_name: str = "node"
     _METADATA_STORE_DIR_NAME = "metadata_stores"
