@@ -11,25 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import os.path
-from typing import Any, Optional, Text
+from typing import Any, Text
 
-from pydantic import Field
+from pydantic import validator
 from tfx.orchestration import metadata
 
 from zenml.enums import MLMetadataTypes
 from zenml.metadata.base_metadata_store import BaseMetadataStore
 from zenml.utils import path_utils
-from zenml.utils.path_utils import get_zenml_config_dir
 
 
 class SQLiteMetadataStore(BaseMetadataStore):
     """SQLite backend for ZenML metadata store."""
 
-    store_type: Optional[Text] = Field(default=MLMetadataTypes.sqlite)
-    uri: Optional[Text] = Field(
-        default=os.path.join(get_zenml_config_dir(), "metadata.db")
-    )
+    _component_type: MLMetadataTypes = MLMetadataTypes.sqlite
+    uri: Text
 
     def __init__(self, **data: Any):
         """Constructor for MySQL MetadataStore for ZenML."""
@@ -48,3 +44,17 @@ class SQLiteMetadataStore(BaseMetadataStore):
     def get_tfx_metadata_config(self):
         """Return tfx metadata config for sqlite metadata store."""
         return metadata.sqlite_metadata_connection_config(self.uri)
+
+    @validator("uri")
+    def uri_must_be_local(cls, v):
+        if path_utils.is_remote(v):
+            raise ValueError(
+                f"URI {v} is a non-local path. A sqlite store "
+                f"can only be local paths"
+            )
+        return v
+
+
+SQLiteMetadataStore(
+    uri="/home/hamza/workspace/maiot/github_temp/zenml/.zenml/local_store"
+)

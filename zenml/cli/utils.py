@@ -13,10 +13,13 @@
 #  permissions and limitations under the License.
 import datetime
 from datetime import timedelta
-from typing import List, Any, Text, Dict
+from typing import Any, Dict, List, Text
 
 import click
 from dateutil import tz
+from tabulate import tabulate
+
+from zenml.core.base_component import BaseComponent
 
 
 def title(text: Text):
@@ -104,6 +107,12 @@ def pretty_print(obj: Any):
     click.echo(str(obj))
 
 
+def echo_component_list(component_list: List[BaseComponent]):
+    """Echoes a list of components in a pretty style."""
+    list_of_dicts = [c.dict() for c in component_list]
+    click.echo(tabulate(list_of_dicts, headers="keys"))
+
+
 def format_date(
     dt: datetime.datetime, format: Text = "%Y-%m-%d %H:%M:%S"
 ) -> Text:
@@ -141,7 +150,7 @@ def format_timedelta(td: timedelta) -> Text:
     return "{:02}:{:02}:{:02}".format(int(hours), int(minutes), int(seconds))
 
 
-def parse_unknown_options(args: List[Text]) -> Dict[Text]:
+def parse_unknown_options(args: List[Text]) -> Dict[Text, Any]:
     """Parse unknown options from the cli.
 
     Args:

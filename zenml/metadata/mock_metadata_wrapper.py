@@ -21,7 +21,7 @@ from zenml.metadata.base_metadata_store import BaseMetadataStore
 class MockMetadataStore(BaseMetadataStore):
     """Mock metadata store."""
 
-    store_type = MLMetadataTypes.mock
+    _component_type: MLMetadataTypes = MLMetadataTypes.mock
 
     def get_tfx_metadata_config(self):
         """Return tfx metadata config for mock metadata store."""

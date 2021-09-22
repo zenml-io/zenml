@@ -19,12 +19,15 @@ from typing import List, Optional, Text, Type, Union
 from git import InvalidGitRepositoryError
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
 from zenml.config.global_config import GlobalConfig
+from zenml.core.constants import ZENML_DIR_NAME
 from zenml.core.git_wrapper import GitWrapper
 from zenml.core.local_service import LocalService
 from zenml.exceptions import InitializationException
 from zenml.logger import get_logger
 from zenml.metadata.base_metadata_store import BaseMetadataStore
+from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
 from zenml.pipelines.base_pipeline import BasePipeline
 from zenml.providers.base_provider import BaseProvider
 from zenml.utils import path_utils
@@ -78,7 +81,7 @@ class Repository:
     @track(event=CREATE_REPO)
     def init_repo(
         repo_path: Text = os.getcwd(),
-        provider: BaseProvider = BaseProvider(),
+        provider: BaseProvider = None,
         analytics_opt_in: bool = None,
     ):
         """
@@ -107,23 +110,40 @@ class Repository:
                 f" the repository with `git init`."
             )
 
+        # Create the base dir
+        zen_dir = os.path.join(repo_path, ZENML_DIR_NAME)
+        path_utils.create_dir_recursive_if_not_exists(zen_dir)
+
+        # set up metadata and artifact store defaults
+        artifact_dir = os.path.join(zen_dir, "local_store")
+        metadata_dir = os.path.join(artifact_dir, "metadata.db")
+
+        if provider is None:
+            service = LocalService()
+
+            service.register_artifact_store(
+                "local_artifact_store", LocalArtifactStore(path=artifact_dir)
+            )
+
+            service.register_metadata_store(
+                "local_metadata_store", SQLiteMetadataStore(uri=metadata_dir)
+            )
+
+            service.register_provider(
+                "local_provider",
+                BaseProvider(
+                    metadata_store_name="local_metadata_store",
+                    artifact_store_name="local_artifact_store",
+                    orchestrator_name="local_orchestrator",
+                ),
+            )
+
     def get_git_wrapper(self) -> GitWrapper:
         return self.git_wrapper
 
-    def get_providers(self) -> List[BaseProvider]:
-        """Returns a list of all registered providers."""
-        return self.pm.get_providers()
-
-    def get_metadata_stores(self) -> List[BaseMetadataStore]:
-        """Returns a list of all registered metadata stores."""
-        return [BaseMetadataStore()]
-
-    def get_artifact_stores(self) -> List[BaseArtifactStore]:
-        """Returns a list of all registered artifact stores."""
-
-    def get_orchestrators(self) -> List[Text]:
-        """Returns a list of all registered orchestrators."""
-        return ["Local"]
+    def get_service(self) -> LocalService:
+        """Returns the active service. For now, always local."""
+        return self.pm
 
     @track(event=GET_PIPELINES)
     def get_pipelines(self) -> List[BasePipeline]:
