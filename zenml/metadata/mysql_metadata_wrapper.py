@@ -25,7 +25,6 @@ from zenml.metadata.base_metadata_store import BaseMetadataStore
 class MySQLMetadataStore(BaseMetadataStore):
     """MySQL backend for ZenML metadata store."""
 
-    _component_type: MLMetadataTypes = MLMetadataTypes.mysql
     host: Text
     port: int
     database: Text

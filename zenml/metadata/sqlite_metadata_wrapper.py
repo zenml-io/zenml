@@ -26,7 +26,6 @@ from zenml.utils import path_utils
 class SQLiteMetadataStore(BaseMetadataStore):
     """SQLite backend for ZenML metadata store."""
 
-    _component_type: MLMetadataTypes = MLMetadataTypes.sqlite
     uri: Text
 
     def __init__(self, **data: Any):

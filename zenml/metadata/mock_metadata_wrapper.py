@@ -23,8 +23,6 @@ from zenml.metadata.base_metadata_store import BaseMetadataStore
 class MockMetadataStore(BaseMetadataStore):
     """Mock metadata store."""
 
-    _component_type: MLMetadataTypes = MLMetadataTypes.mock
-
     def get_tfx_metadata_config(self):
         """Return tfx metadata config for mock metadata store."""
         config = metadata_store_pb2.ConnectionConfig()
