@@ -143,6 +143,7 @@ class Repository:
 
             gc = GlobalConfig()
             gc.set_provider_for_repo(repo_path, "local_provider")
+            gc.update()
 
     def get_git_wrapper(self) -> GitWrapper:
         return self.git_wrapper
