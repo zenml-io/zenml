@@ -7,6 +7,7 @@ from zenml.core.mapping_utils import UUIDSourceTuple
 from zenml.exceptions import AlreadyExistsException, DoesNotExistException
 from zenml.logger import get_logger
 from zenml.metadata.base_metadata_store import BaseMetadataStore
+from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.providers.base_provider import BaseProvider
 from zenml.utils import path_utils, source_utils
 
@@ -48,9 +49,12 @@ class LocalService(BaseComponent):
         )
 
     @property
-    def orchestrators(self) -> Dict[Text, Text]:
+    def orchestrators(self) -> Dict[Text, BaseOrchestrator]:
         """Returns all registered orchestrators."""
-        return {}
+        return mapping_utils.get_components_from_store(
+            BaseOrchestrator._ORCHESTRATOR_STORE_DIR_NAME,
+            self.orchestrator_map,
+        )
 
     def get_provider(self, key: Text) -> BaseProvider:
         """Return a single provider based on key.
@@ -213,7 +217,60 @@ class LocalService(BaseComponent):
         s.delete()
         del self.metadata_store_map[key]
         self.update()
-        logger.info(f"Deleted metadata_store with key: {key}.")
+        logger.info(f"Deleted orchestrator with key: {key}.")
+
+    def get_orchestrator(self, key: Text) -> BaseOrchestrator:
+        """Return a single orchestrator based on key.
+
+        Args:
+            key: Unique key of orchestrator.
+
+        Returns:
+            Provider specified by key.
+        """
+        logger.debug(f"Fetching orchestrator with key {key}")
+        if key not in self.orchestrator_map:
+            raise DoesNotExistException(
+                f"Provider of key `{key}` does not exist. "
+                f"Available keys: {self.orchestrator_map.keys()}"
+            )
+        return mapping_utils.get_component_from_key(key, self.orchestrator_map)
+
+    def register_orchestrator(self, key: Text, orchestrator: BaseOrchestrator):
+        """Register an orchestrator.
+
+        Args:
+            orchestrator: Metadata store to be registered.
+            key: Unique key for the orchestrator.
+        """
+        logger.info(
+            f"Registering provider with key {key}, details: "
+            f"{orchestrator.dict()}"
+        )
+        if key in self.orchestrator_map:
+            raise AlreadyExistsException(
+                message=f"Artifact Store `{key}` already exists!"
+            )
+
+        # Add the mapping.
+        orchestrator.update()
+        source = source_utils.resolve_class(orchestrator.__class__)
+        self.orchestrator_map[key] = UUIDSourceTuple(
+            uuid=orchestrator.uuid, source=source
+        )
+        self.update()
+
+    def delete_orchestrator(self, key: Text):
+        """Delete a orchestrator.
+
+        Args:
+            key: Unique key of orchestrator.
+        """
+        s = self.get_orchestrator(key)  # check whether it exists
+        s.delete()
+        del self.orchestrator_map[key]
+        self.update()
+        logger.info(f"Deleted orchestrator with key: {key}.")
 
     def delete(self):
         """Deletes the entire service. Dangerous operation"""
@@ -221,6 +278,6 @@ class LocalService(BaseComponent):
             m.delete()
         for a in self.artifact_stores.values():
             a.delete()
-        # for o in self.orchestrators:
-        #     o.delete()
+        for o in self.orchestrators.values():
+            o.delete()
         super().delete()

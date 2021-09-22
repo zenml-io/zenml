@@ -149,12 +149,51 @@ def delete_artifact_store(artifact_store_name: Text):
     cli_utils.declare("Deleted!")
 
 
-#
-# @metadata.command("set")
-# @click.argument("metadata_store_name", type=str)
-# def set_active_provider(provider_name: Text):
-#     """Sets a provider active."""
-#     repo = Repository()
-#     service = repo.get_service()
-#     service.get_provider(provider_name)
-#     # repo.set_active
+# Orchestrator
+@cli.group()
+def metadata():
+    """Utilities for orchestrator"""
+
+
+@metadata.command(
+    "register", context_settings=dict(ignore_unknown_options=True)
+)
+@click.argument("orchestrator_name", type=str)
+@click.argument("orchestrator_type", type=str)
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def register_orchestrator(
+    orchestrator_name: Text, orchestrator_type: Text, args: List[Text]
+):
+    """Register a orchestrator."""
+
+    try:
+        parsed_args = cli_utils.parse_unknown_options(args)
+    except AssertionError as e:
+        cli_utils.error(str(e))
+        return
+
+    repo: Repository = Repository()
+    comp = component_factory.get_single_component(
+        orchestrator_type, enums.MLMetadataTypes
+    )
+    orchestrator = comp(**parsed_args)
+    service = repo.get_service()
+    service.register_orchestrator(orchestrator_name, orchestrator)
+
+
+@metadata.command("list")
+def list_orchestrators():
+    """List all available orchestrators from service."""
+    service = Repository().get_service()
+    cli_utils.title("Orchestrators:")
+    cli_utils.echo_component_list(service.orchestrators)
+
+
+@metadata.command("delete")
+@click.argument("orchestrator_name", type=str)
+def delete_orchestrator(orchestrator_name: Text):
+    """Delete a orchestrator."""
+    service = Repository().get_service()
+    cli_utils.declare(f"Deleting orchestrator: {orchestrator_name}")
+    service.delete_orchestrator(orchestrator_name)
+    cli_utils.declare("Deleted!")

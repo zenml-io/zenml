@@ -18,7 +18,6 @@ from typing import List, Optional, Text, Type, Union
 
 from git import InvalidGitRepositoryError
 
-from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
 from zenml.config.global_config import GlobalConfig
 from zenml.core.constants import ZENML_DIR_NAME
@@ -26,8 +25,8 @@ from zenml.core.git_wrapper import GitWrapper
 from zenml.core.local_service import LocalService
 from zenml.exceptions import InitializationException
 from zenml.logger import get_logger
-from zenml.metadata.base_metadata_store import BaseMetadataStore
 from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
+from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.pipelines.base_pipeline import BasePipeline
 from zenml.providers.base_provider import BaseProvider
 from zenml.utils import path_utils
@@ -127,6 +126,10 @@ class Repository:
 
             service.register_metadata_store(
                 "local_metadata_store", SQLiteMetadataStore(uri=metadata_dir)
+            )
+
+            service.register_orchestrator(
+                "local_metadata_store", LocalOrchestrator()
             )
 
             service.register_provider(
@@ -304,38 +307,6 @@ class Repository:
         #         else:
         #             steps_dict[class_] = {version}
         # return steps_dict
-
-    def register_provider(self, provider: BaseProvider):
-        """Registers a provider.
-
-        Args:
-            provider: A provider to register.
-        """
-        raise NotImplementedError
-
-    def register_artifact_store(self, artifact_store: BaseArtifactStore):
-        """Registers an artifact store.
-
-        Args:
-            artifact_store: An artifact_store to register.
-        """
-        raise NotImplementedError
-
-    def register_metadata_store(self, metadata_store: BaseMetadataStore):
-        """Registers a metadata store.
-
-        Args:
-            metadata_store: A metadata_store to register.
-        """
-        raise NotImplementedError
-
-    def register_orchestrator(self, orchestrator: Text):
-        """Registers a orchestrator.
-
-        Args:
-            orchestrator: A orchestrator to register.
-        """
-        raise NotImplementedError
 
     def clean(self):
         """Deletes associated metadata store, pipelines dir and artifacts"""
