@@ -14,4 +14,7 @@
 
 from zenml.logger import init_logging
 
+from zenml.pipelines.simple_pipeline import SimplePipeline as pipeline
+from zenml.steps.simple_step import SimpleStep as step
+
 init_logging()

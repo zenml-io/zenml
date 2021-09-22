@@ -32,6 +32,13 @@ class MLMetadataTypes(str, Enum):
     mock = "mock"
 
 
+class OrchestratorTypes(str, Enum):
+    """All supported Orchestrator types"""
+    base = "base"
+    local = "local"
+    airflow = "airflow"
+
+
 class ProviderTypes(str, Enum):
     """All supported Provider types."""
 

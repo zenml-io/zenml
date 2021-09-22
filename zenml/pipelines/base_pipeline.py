@@ -1,11 +1,7 @@
 import inspect
 from abc import abstractmethod
-from tfx.dsl.components.common.importer import Importer
-from tfx.orchestration import metadata
-from tfx.orchestration import pipeline as tfx_pipeline
-from tfx.orchestration.local.local_dag_runner import LocalDagRunner
 
-from zenml.annotations.artifact_annotations import External
+from zenml.annotations.artifact_annotations import Input
 from zenml.annotations.step_annotations import Step
 from zenml.utils.exceptions import PipelineInterfaceError
 
@@ -17,7 +13,7 @@ class BasePipelineMeta(type):
         cls = super().__new__(mcs, name, bases, dct)
 
         cls.STEP_SPEC = dict()
-        cls.EXTERNAL_ARTIFACT_SPEC = dict()
+        cls.INPUT_SPEC = dict()
 
         connect_spec = inspect.getfullargspec(cls.connect)
         connect_args = connect_spec.args
@@ -29,8 +25,8 @@ class BasePipelineMeta(type):
             arg_type = connect_spec.annotations.get(arg, None)
             if isinstance(arg_type, Step):
                 cls.STEP_SPEC.update({arg: arg_type.type})
-            elif isinstance(arg_type, External):
-                cls.EXTERNAL_ARTIFACT_SPEC.update({arg: arg_type.type})
+            elif isinstance(arg_type, Input):
+                cls.INPUT_SPEC.update({arg: arg_type.type})
             else:
                 raise PipelineInterfaceError("")  # TODO: fill message
         return cls
@@ -41,51 +37,34 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
     def __init__(self, *args, **kwargs):
         self.__steps = dict()
-        self.__external_artifacts = dict()
+        self.__inputs = dict()
 
         if args:
-            raise PipelineInterfaceError("")  # TODO: Fill
+            raise PipelineInterfaceError(
+                "You can only use keyword arguments while you are creating an"
+                "instance of a pipeline."
+            )
 
         for k, v in kwargs.items():
             if k in self.STEP_SPEC:
-                self.__steps.update({k: v})  # TODO: assert class
-            elif k in self.EXTERNAL_ARTIFACT_SPEC:
-                self.__external_artifacts.update({k: v})  # TODO: assert class
+                self.__steps.update({k: v})
+            elif k in self.INPUT_SPEC:
+                self.__inputs.update({k: v})
             else:
-                raise PipelineInterfaceError("")  # TODO: Fill
+                raise PipelineInterfaceError(
+                    f"The argument {k} is an unknown argument. Needs to be "
+                    f"one of either {self.INPUT_SPEC.keys()} or "
+                    f"{self.STEP_SPEC.keys()}"
+                )
 
     @abstractmethod
     def connect(self, *args, **kwargs):
         """ """
 
-    def run(self):
+    def run(self, **pipeline_args):
         """ """
-        importers = {}
-        for name, artifact in self.__external_artifacts.items():
-            importers[name] = Importer(
-                source_uri=artifact.uri,
-                artifact_type=artifact.type).with_id(name)
+        # DEBUG # TODO: to be removed
+        from zenml.providers.local_provider import LocalProvider
+        provider = LocalProvider()
 
-        import_artifacts = {n: i.outputs["result"]
-                            for n, i in importers.items()}
-
-        self.connect(**import_artifacts, **self.__steps)
-
-        step_list = list(importers.values()) + \
-                    [s.get_component() for s in self.__steps.values()]
-
-        created_pipeline = tfx_pipeline.Pipeline(
-            pipeline_name="pipeline_name",
-            pipeline_root="/home/baris/zenml/zenml/local_test/new_zenml/",
-            components=step_list,
-            enable_cache=False,
-            metadata_connection_config=metadata.sqlite_metadata_connection_config(
-                "/home/baris/zenml/zenml/local_test/new_zenml/db"
-            ),
-            beam_pipeline_args=[
-                "--direct_running_mode=multi_processing",
-                "--direct_num_workers=0",
-            ],
-        )
-
-        LocalDagRunner().run(created_pipeline)
+        provider.orchestrator.run(self, **pipeline_args)

@@ -1,20 +1,21 @@
+import os
+
 import pandas as pd
 
-from zenml import pipelines
-from zenml import steps
-from zenml.annotations import External, Input, Step, Param
+from zenml import step, pipeline
+from zenml.annotations import Input, Step, Param
 from zenml.annotations.artifact_annotations import BeamOutput
 from zenml.artifacts.data_artifacts.text_artifact import TextArtifact
 
-from zenml.io import gcs_plugin
+
+@step
+def DataIngestionStep(uri: Param[str]
+                      ) -> Output[PandasArtifact]:
+    return pd.read_csv(uri)
 
 
-# TODO: [MEDIUM] change the naming of the decorator
-# TODO: [MEDIUM] change the naming of the external to input
-
-@steps.SimpleStep
+@step
 def DistSplitStep(text_artifact: Input[TextArtifact],
-                  param: Param[float] = 3.0,
                   ) -> BeamOutput[TextArtifact]:
     import apache_beam as beam
 
@@ -25,29 +26,28 @@ def DistSplitStep(text_artifact: Input[TextArtifact],
     return (result, pipeline)
 
 
-@steps.SimpleStep
+@step
 def InMemPreprocesserStep(text_artifact: Input[TextArtifact]
                           ) -> pd.DataFrame:
     data = text_artifact.read_with_pandas()
     return data
 
 
-@pipelines.SimplePipeline
-def SplitPipeline(text_artifact: External[TextArtifact],
+@pipeline
+def SplitPipeline(data_step: Step[DataIngestionStep],
                   split_step: Step[DistSplitStep],
                   preprocesser_step: Step[InMemPreprocesserStep]):
+    text_artifact = data_step()
     split_artifact = split_step(text_artifact=text_artifact)
     _ = preprocesser_step(text_artifact=split_artifact)
 
 
 # Pipeline
-example_text_artifact = TextArtifact()
-example_text_artifact.uri = "PLACEHOLDER"
+DATA_PATH = os.getenv("ZENML_DATA")
 
-dist_split_pipeline = SplitPipeline(
-    text_artifact=example_text_artifact,
-    split_step=DistSplitStep(param=0.1),
-    preprocesser_step=InMemPreprocesserStep()
-)
+split_pipeline = SplitPipeline(
+    data_step=DataIngestionStep(uri=DATA_PATH),
+    split_step=DistSplitStep(),
+    preprocesser_step=InMemPreprocesserStep())
 
-dist_split_pipeline.run()
+split_pipeline.run()
