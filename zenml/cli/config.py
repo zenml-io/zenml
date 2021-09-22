@@ -174,7 +174,7 @@ def register_orchestrator(
 
     repo: Repository = Repository()
     comp = component_factory.get_single_component(
-        orchestrator_type, enums.MLMetadataTypes
+        orchestrator_type, enums.OrchestratorTypes
     )
     orchestrator = comp(**parsed_args)
     service = repo.get_service()

@@ -129,7 +129,7 @@ class Repository:
             )
 
             service.register_orchestrator(
-                "local_metadata_store", LocalOrchestrator()
+                "local_orchestrator", LocalOrchestrator()
             )
 
             service.register_provider(
