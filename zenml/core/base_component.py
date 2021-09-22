@@ -13,86 +13,91 @@
 #  permissions and limitations under the License.
 import os
 from abc import abstractmethod
-from typing import Any, Text
+from typing import Any, Optional, Text
+from uuid import UUID, uuid4
 
-from pydantic import BaseSettings
+from pydantic import BaseSettings, Field
 
-from zenml.config.utils import define_json_config_settings_source
+from zenml.core.utils import generate_customise_sources
 from zenml.logger import get_logger
 from zenml.utils import path_utils
 
 logger = get_logger(__name__)
 
 
-class BaseConfig(BaseSettings):
+class BaseComponent(BaseSettings):
     """Class definition for the base config.
 
-    The base config class defines the basic serialization / deserialization of
-    configs used in ZenML.
+    The base component class defines the basic serialization / deserialization
+    of various components used in ZenML. The logic of the serialization /
+    deserialization is as follows:
+
+    * If a `uuid` is passed in, then the object is read from a file, so the
+    constructor becomes a query for an object that is assumed to already been
+    serialized.
+    * If a 'uuid` is NOT passed, then a new object is created with the default
+    args (and any other args that are passed), and therefore a fresh
+    serialization takes place.
     """
 
-    def __init__(self, **data: Any):
-        """We persist the attributes in the config file."""
-        super().__init__(**data)
-        self._dump()
+    uuid: Optional[UUID] = Field(default_factory=uuid4)
+    _file_suffix = ".json"
 
-    def __setattr__(self, name, value):
-        """We hook into this to persist state as attributes are changed
+    def __init__(self, **values: Any):
 
-        This basically means any variable changed through any object of
-         this class will result in a persistent, stateful change in the system.
-        """
-        super(BaseConfig, self).__setattr__(name, value)
-        self._dump()
-
-    def __setstate__(self, state):
-        super(BaseConfig, self).__setstate__(state)
-        self._dump()
-
-    def __delattr__(self, item):
-        super(BaseConfig, self).__delattr__(item)
-        self._dump()
-
-    def _dump(self):
-        """Dumps all current values to config."""
-        config_path = self.get_config_path()
-        if not path_utils.file_exists(str(config_path)):
-            path_utils.create_file_if_not_exists(str(config_path))
-        path_utils.write_file_contents(
-            config_path, self.json(indent=2, sort_keys=True)
+        # Here, we insert monkey patch the `customise_sources` function
+        #  because we want to dynamically generate the serialization
+        #  file path and name.
+        self.__config__.customise_sources = generate_customise_sources(
+            self.get_serialization_dir(),
+            self.get_serialization_file_name(),
         )
 
-    @staticmethod
-    @abstractmethod
-    def get_config_dir() -> Text:
-        """Return the config dir."""
+        # Initialize values from the above sources.
+        super().__init__(**values)
 
-    @staticmethod
-    @abstractmethod
-    def get_config_file_name() -> Text:
-        """Return the config file name."""
+    def _dump(self):
+        """Dumps all current values to the serialization file."""
+        self._create_serialization_file_if_not_exists()
+        f = self.get_serialization_full_path()
+        path_utils.write_file_contents(f, self.json(indent=2, sort_keys=True))
 
-    def get_config_path(self) -> Text:
-        """Returns the full path of the config file."""
-        return os.path.join(self.get_config_dir(), self.get_config_file_name())
+    def _create_serialization_file_if_not_exists(self):
+        """Creates the serialization file if it does not exist."""
+        f = self.get_serialization_full_path()
+        if not path_utils.file_exists(str(f)):
+            path_utils.create_file_if_not_exists(str(f))
+
+    @abstractmethod
+    def get_serialization_dir(self) -> Text:
+        """Return the dir where object is serialized."""
+
+    def get_serialization_file_name(self) -> Text:
+        """Return the name of the file where object is serialized. This
+        has a sane default in cases where uuid is not passed externally, and
+        therefore reading from a serialize file is not an option for the table.
+        However, we still this function to go through without an exception,
+        therefore the sane default."""
+        if hasattr(self, "uuid"):
+            return f"{str(self.uuid)}{self._file_suffix}"
+        else:
+            return f"DEFAULT{self._file_suffix}"
+
+    def get_serialization_full_path(self) -> Text:
+        """Returns the full path of the serialization file."""
+        return os.path.join(
+            self.get_serialization_dir(), self.get_serialization_file_name()
+        )
+
+    def update(self):
+        """Persist the current state of the component.
+
+        Calling this will result in a persistent, stateful change in the
+        system.
+        """
+        self._dump()
 
     class Config:
         """Configuration of settings."""
 
         env_prefix = "zenml_"
-
-        @classmethod
-        def customise_sources(
-            cls,
-            init_settings,
-            env_settings,
-            file_secret_settings,
-        ):
-            return (
-                init_settings,
-                define_json_config_settings_source(
-                    BaseConfig.get_config_dir(),
-                    BaseConfig.get_config_file_name(),
-                ),
-                env_settings,
-            )
