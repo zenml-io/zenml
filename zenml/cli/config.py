@@ -151,11 +151,11 @@ def delete_artifact_store(artifact_store_name: Text):
 
 # Orchestrator
 @cli.group()
-def metadata():
+def orchestrator():
     """Utilities for orchestrator"""
 
 
-@metadata.command(
+@orchestrator.command(
     "register", context_settings=dict(ignore_unknown_options=True)
 )
 @click.argument("orchestrator_name", type=str)
@@ -181,7 +181,7 @@ def register_orchestrator(
     service.register_orchestrator(orchestrator_name, orchestrator)
 
 
-@metadata.command("list")
+@orchestrator.command("list")
 def list_orchestrators():
     """List all available orchestrators from service."""
     service = Repository().get_service()
@@ -189,7 +189,7 @@ def list_orchestrators():
     cli_utils.echo_component_list(service.orchestrators)
 
 
-@metadata.command("delete")
+@orchestrator.command("delete")
 @click.argument("orchestrator_name", type=str)
 def delete_orchestrator(orchestrator_name: Text):
     """Delete a orchestrator."""
