@@ -1,4 +1,4 @@
-from typing import Dict, List, Text
+from typing import Dict, Text
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.core import mapping_utils
@@ -18,7 +18,7 @@ class LocalService(BaseComponent):
     components.
     """
 
-    provider_map: Dict[Text, UUIDSourceTuple] = {}
+    providers: Dict[Text, BaseProvider] = {}
     metadata_store_map: Dict[Text, UUIDSourceTuple] = {}
     artifact_store_map: Dict[Text, UUIDSourceTuple] = {}
     orchestrator_map: Dict[Text, UUIDSourceTuple] = {}
@@ -34,30 +34,23 @@ class LocalService(BaseComponent):
         return self._LOCAL_SERVICE_FILE_NAME
 
     @property
-    def providers(self) -> List[BaseProvider]:
-        """Returns all registered providers."""
-        return mapping_utils.get_components_from_store(
-            BaseProvider._PROVIDER_STORE_DIR_NAME, self.provider_map
-        )
-
-    @property
-    def metadata_stores(self) -> List[BaseMetadataStore]:
+    def metadata_stores(self) -> Dict[Text, BaseMetadataStore]:
         """Returns all registered metadata stores."""
         return mapping_utils.get_components_from_store(
             BaseMetadataStore._METADATA_STORE_DIR_NAME, self.metadata_store_map
         )
 
     @property
-    def artifact_stores(self) -> List[BaseArtifactStore]:
+    def artifact_stores(self) -> Dict[Text, BaseArtifactStore]:
         """Returns all registered artifact stores."""
         return mapping_utils.get_components_from_store(
             BaseArtifactStore._ARTIFACT_STORE_DIR_NAME, self.artifact_store_map
         )
 
     @property
-    def orchestrators(self) -> List[Text]:
+    def orchestrators(self) -> Dict[Text, Text]:
         """Returns all registered orchestrators."""
-        return []
+        return {}
 
     def get_provider(self, key: Text) -> BaseProvider:
         """Return a single provider based on key.
@@ -69,12 +62,12 @@ class LocalService(BaseComponent):
             Provider specified by key.
         """
         logger.debug(f"Fetching provider with key {key}")
-        if key not in self.provider_map:
+        if key not in self.providers:
             raise DoesNotExistException(
                 f"Provider of key `{key}` does not exist. "
-                f"Available keys: {self.provider_map.keys()}"
+                f"Available keys: {self.providers.keys()}"
             )
-        return mapping_utils.get_component_from_key(key, self.provider_map)
+        return self.providers[key]
 
     def register_provider(self, name: Text, provider: BaseProvider):
         """Register a provider.
@@ -88,17 +81,13 @@ class LocalService(BaseComponent):
             f"{provider.dict()}"
         )
 
-        if name in self.provider_map:
+        if name in self.providers:
             raise AlreadyExistsException(
                 message=f"Provider `{name}` already exists!"
             )
 
         # Add the mapping.
-        provider.update()
-        source = source_utils.resolve_class(provider.__class__)
-        self.provider_map[name] = UUIDSourceTuple(
-            uuid=provider.uuid, source=source
-        )
+        self.providers[name] = provider
         self.update()
 
     def delete_provider(self, key: Text):
@@ -107,9 +96,9 @@ class LocalService(BaseComponent):
         Args:
             key: Unique key of provider.
         """
-        provider = self.get_provider(key)  # check whether it exists
-        del self.provider_map[key]
-        provider.delete()
+        _ = self.get_provider(key)  # check whether it exists
+        del self.providers[key]
+        self.update()
         logger.info(f"Deleted provider with key: {key}.")
 
     def get_artifact_store(self, key: Text) -> BaseArtifactStore:
@@ -228,11 +217,9 @@ class LocalService(BaseComponent):
 
     def delete(self):
         """Deletes the entire service. Dangerous operation"""
-        for p in self.providers:
-            p.delete()
-        for m in self.metadata_stores:
+        for m in self.metadata_stores.values():
             m.delete()
-        for a in self.artifact_stores:
+        for a in self.artifact_stores.values():
             a.delete()
         # for o in self.orchestrators:
         #     o.delete()

@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Dict, List, Text
+from typing import Dict, Text
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -12,6 +12,21 @@ from zenml.utils import path_utils, source_utils
 class UUIDSourceTuple(BaseModel):
     uuid: UUID
     source: Text
+
+
+def get_key_from_uuid(
+    uuid: UUID, mapping: Dict[Text, UUIDSourceTuple]
+) -> Text:
+    """Return they key that points to a certain uuid in a mapping.
+
+    Args:
+        uuid: uuid to query.
+
+    Returns:
+        Returns the key from the mapping.
+    """
+    inverted_map = {v.uuid: k for k, v in mapping.items()}
+    return inverted_map[uuid]
 
 
 def get_component_from_key(
@@ -33,7 +48,7 @@ def get_component_from_key(
 
 def get_components_from_store(
     store_name: Text, mapping: Dict[Text, UUIDSourceTuple]
-) -> List[BaseComponent]:
+) -> Dict[Text, BaseComponent]:
     """Returns a list of components from a store.
 
     Args:
@@ -41,31 +56,15 @@ def get_components_from_store(
         mapping: Dict of type Text -> UUIDSourceTuple.
 
     Returns:
-        A list of objects which are a subclass of type BaseComponent.
-
+        A dict of objects which are a subclass of type BaseComponent.
     """
     store_dir = os.path.join(
         path_utils.get_zenml_config_dir(),
         store_name,
     )
-    stores = []
+    stores = {}
     for fnames in path_utils.list_dir(store_dir, only_file_names=True):
         uuid = Path(fnames).stem
         key = get_key_from_uuid(UUID(uuid), mapping)
-        stores.append(get_component_from_key(key, mapping))
+        stores[key] = get_component_from_key(key, mapping)
     return stores
-
-
-def get_key_from_uuid(
-    uuid: UUID, mapping: Dict[Text, UUIDSourceTuple]
-) -> Text:
-    """Return they key that points to a certain uuid in a mapping.
-
-    Args:
-        uuid: uuid to query.
-
-    Returns:
-        Returns the key from the mapping.
-    """
-    inverted_map = {v.uuid: k for k, v in mapping.items()}
-    return inverted_map[uuid]
