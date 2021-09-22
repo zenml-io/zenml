@@ -49,6 +49,10 @@ class ComponentFactory:
         # TODO [LOW]: Try catch for the case where key doesnt exist.
         if key in self.components:
             return self.components[key]
+        raise AssertionError(
+            f"Type {key} does not exist! Available options: "
+            f"{[k.name for k in self.components.keys()]}"
+        )
 
     def register_component(self, key: Any, component: Any):
         self.components[key] = component

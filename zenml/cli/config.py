@@ -76,7 +76,11 @@ def register_metadata_store(
         return
 
     repo: Repository = Repository()
-    comp = metadata_store_factory.get_single_component(metadata_store_type)
+    try:
+        comp = metadata_store_factory.get_single_component(metadata_store_type)
+    except AssertionError as e:
+        cli_utils.error(str(e))
+
     metadata_store = comp(**parsed_args)
     service = repo.get_service()
     service.register_metadata_store(metadata_store_name, metadata_store)
