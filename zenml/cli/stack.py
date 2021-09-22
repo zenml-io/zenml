@@ -76,6 +76,5 @@ def delete_provider(provider_name: Text):
 def set_active_provider(provider_name: Text):
     """Sets a provider active."""
     repo = Repository()
-    service = repo.get_service()
-    service.get_provider(provider_name)
-    # repo.set_active
+    repo.set_active_provider(provider_name)
+    cli_utils.declare(f"Active provider: {provider_name}")

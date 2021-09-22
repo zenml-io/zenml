@@ -66,7 +66,7 @@ class Repository:
         if not path_utils.is_dir(path):
             raise FileNotFoundError(f"{path} does not exist or is not a dir!")
         self.path = path
-        self.pm = LocalService()
+        self.service = LocalService()
 
         # Hook up git, path needs to have a git folder.
         try:
@@ -138,12 +138,27 @@ class Repository:
                 ),
             )
 
+            gc = GlobalConfig()
+            gc.set_provider_for_repo(repo_path, "local_provider")
+
     def get_git_wrapper(self) -> GitWrapper:
         return self.git_wrapper
 
     def get_service(self) -> LocalService:
         """Returns the active service. For now, always local."""
-        return self.pm
+        return self.service
+
+    def set_active_provider(self, provider_key: Text):
+        """Set the active provider for the repo. This change is local for the
+        machine.
+
+        Args:
+            provider_key: Key of the provider to set active.
+        """
+        gc = GlobalConfig()
+        self.service.get_provider(provider_key)  # check if it exists
+        gc.set_provider_for_repo(self.path, provider_key)
+        gc.update()
 
     @track(event=GET_PIPELINES)
     def get_pipelines(self) -> List[BasePipeline]:

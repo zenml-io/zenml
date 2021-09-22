@@ -69,25 +69,25 @@ class LocalService(BaseComponent):
             )
         return self.providers[key]
 
-    def register_provider(self, name: Text, provider: BaseProvider):
+    def register_provider(self, key: Text, provider: BaseProvider):
         """Register a provider.
 
         Args:
-            name: Unique name for the provider.
+            key: Unique key for the provider.
             provider: Provider to be registered.
         """
         logger.info(
-            f"Registering provider with key {name}, details: "
+            f"Registering provider with key {key}, details: "
             f"{provider.dict()}"
         )
 
-        if name in self.providers:
+        if key in self.providers:
             raise AlreadyExistsException(
-                message=f"Provider `{name}` already exists!"
+                message=f"Provider `{key}` already exists!"
             )
 
         # Add the mapping.
-        self.providers[name] = provider
+        self.providers[key] = provider
         self.update()
 
     def delete_provider(self, key: Text):
@@ -121,27 +121,27 @@ class LocalService(BaseComponent):
         )
 
     def register_artifact_store(
-        self, name: Text, artifact_store: BaseArtifactStore
+        self, key: Text, artifact_store: BaseArtifactStore
     ):
         """Register an artifact store.
 
         Args:
             artifact_store: Artifact store to be registered.
-            name: Unique name for the artifact store.
+            key: Unique key for the artifact store.
         """
         logger.info(
-            f"Registering provider with key {name}, details: "
+            f"Registering provider with key {key}, details: "
             f"{artifact_store.dict()}"
         )
-        if name in self.artifact_store_map:
+        if key in self.artifact_store_map:
             raise AlreadyExistsException(
-                message=f"Artifact Store `{name}` already exists!"
+                message=f"Artifact Store `{key}` already exists!"
             )
 
         # Add the mapping.
         artifact_store.update()
         source = source_utils.resolve_class(artifact_store.__class__)
-        self.artifact_store_map[name] = UUIDSourceTuple(
+        self.artifact_store_map[key] = UUIDSourceTuple(
             uuid=artifact_store.uuid, source=source
         )
         self.update()
@@ -178,27 +178,27 @@ class LocalService(BaseComponent):
         )
 
     def register_metadata_store(
-        self, name: Text, metadata_store: BaseMetadataStore
+        self, key: Text, metadata_store: BaseMetadataStore
     ):
         """Register a metadata store.
 
         Args:
             metadata_store: Metadata store to be registered.
-            name: Unique name for the metadata store.
+            key: Unique key for the metadata store.
         """
         logger.info(
-            f"Registering provider with key {name}, details: "
+            f"Registering provider with key {key}, details: "
             f"{metadata_store.dict()}"
         )
-        if name in self.metadata_store_map:
+        if key in self.metadata_store_map:
             raise AlreadyExistsException(
-                message=f"Artifact Store `{name}` already exists!"
+                message=f"Artifact Store `{key}` already exists!"
             )
 
         # Add the mapping.
         metadata_store.update()
         source = source_utils.resolve_class(metadata_store.__class__)
-        self.metadata_store_map[name] = UUIDSourceTuple(
+        self.metadata_store_map[key] = UUIDSourceTuple(
             uuid=metadata_store.uuid, source=source
         )
         self.update()

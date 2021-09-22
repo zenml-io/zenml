@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Global config for the ZenML installation."""
-from typing import Text, Any
+from typing import Any, Dict, Optional, Text
 from uuid import UUID, uuid4
 
 import click
@@ -36,6 +36,7 @@ class GlobalConfig(BaseComponent):
 
     user_id: UUID = Field(default_factory=uuid4)
     analytics_opt_in: bool = True
+    repo_active_providers: Optional[Dict[Text, Text]] = {}
 
     def __init__(self, **data: Any):
         """We persist the attributes in the config file. For the global
@@ -58,3 +59,6 @@ class GlobalConfig(BaseComponent):
     def get_serialization_file_name(self) -> Text:
         """Gets the global config dir for installed package."""
         return GLOBAL_CONFIG_NAME
+
+    def set_provider_for_repo(self, repo_path: Text, provider_key: Text):
+        self.repo_active_providers[repo_path] = provider_key
