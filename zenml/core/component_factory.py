@@ -56,16 +56,19 @@ class ComponentFactory:
     @classmethod
     def register(cls, name: str) -> Callable:
         """Class method to register Executor class to the internal registry.
+
         Args:
             name (str): The name of the executor.
+
         Returns:
             The Executor class itself.
         """
 
         def inner_wrapper(wrapped_class: Any) -> Callable:
+            """Inner wrapper for decorator."""
             if name in cls.components:
-                logger.warning(
-                    "Executor %s already exists. Will replace it", name
+                logger.debug(
+                    f"Executor {name} already exists. Will replace it"
                 )
             cls.components[name] = wrapped_class
             return wrapped_class
