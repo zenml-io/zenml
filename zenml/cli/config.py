@@ -40,7 +40,7 @@ def analytics():
 def opt_in():
     """Opt-in to analytics"""
     GlobalConfig().analytics_opt_in = True
-    click.echo("Opted in to analytics.")
+    cli_utils.declare("Opted in to analytics.")
 
 
 @analytics.command(
@@ -49,7 +49,7 @@ def opt_in():
 def opt_out():
     """Opt-out to analytics"""
     GlobalConfig().analytics_opt_in = False
-    click.echo("Opted in to analytics.")
+    cli_utils.declare("Opted in to analytics.")
 
 
 # Metadata Store

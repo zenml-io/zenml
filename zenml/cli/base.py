@@ -24,7 +24,7 @@ from zenml.core.repo import Repository
 from zenml.utils.analytics_utils import INITIALIZE, track
 
 
-@cli.command("init")
+@cli.command("init", help="Initialize zenml on a given path.")
 @click.option("--repo_path", type=click.Path(exists=True))
 @click.option("--pipelines_dir", type=click.Path(exists=True))
 @click.option("--analytics_opt_in", "-a", type=click.BOOL)
