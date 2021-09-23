@@ -27,7 +27,7 @@ While there are other pipelining solutions for Machine Learning experiments, **Z
 
 ![How writing ML in ZenML code keeps your code production ready from the start](.gitbook/assets/zenml-deck-q2-21-3-.png)
 
-## What do I do next?
+## Where can I learn more?
 
 A good place to go from this point is to:
 
@@ -35,7 +35,7 @@ A good place to go from this point is to:
 - Get up and running with your [first pipeline](starter-guide/quickstart.md) with our [starter guide](starter-guide/repository.md)
 <!-- * If you are familiar with the basics, jump right into the [advanced guide](advanced-guide/inspecting-all-pipelines.md) section -->
 
-## Get involved
+## Get involved!
 
 If you're just not ready to use **ZenML** for whatever reason, but still would like to stay updated, then the best way is to [star the GitHub repository](https://github.com/zenml-io/zenml)! You can then keep up with the latest and greatest from **ZenML**, and it would help us tremendously to get more people using it.
 
