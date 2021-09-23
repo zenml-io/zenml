@@ -15,7 +15,7 @@
 from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
 from zenml.core.local_service import LocalService
 from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
-from zenml.providers.base_provider import BaseProvider
+from zenml.stacks.base_stack import BaseStack
 
 
 def test_service_crud():
@@ -26,11 +26,11 @@ def test_service_crud():
     ls = LocalService()
     METADATA_KEY = "metadata local"
     ARTIFACT_KEY = "artifact_local"
-    PROVIDER_KEY = "provider_local"
+    STACK_KEY = "stack_local"
     ORCHESTRATOR_KEY = "orchestrator_local"
     local_artifact_store = LocalArtifactStore()
     local_metadata_store = SQLiteMetadataStore()
-    local_provider = BaseProvider(
+    local_stack = BaseStack(
         metadata_store_name=METADATA_KEY,
         artifact_store_name=ARTIFACT_KEY,
         orchestrator_name=ORCHESTRATOR_KEY,
@@ -38,14 +38,14 @@ def test_service_crud():
 
     ls.register_artifact_store(ARTIFACT_KEY, local_artifact_store)
     ls.register_metadata_store(METADATA_KEY, local_metadata_store)
-    ls.register_provider(PROVIDER_KEY, local_provider)
+    ls.register_stack(STACK_KEY, local_stack)
 
     assert ls.get_metadata_store(METADATA_KEY) == local_metadata_store
     assert ls.get_artifact_store(ARTIFACT_KEY) == local_artifact_store
-    assert ls.get_provider(PROVIDER_KEY) == local_provider
+    assert ls.get_stack(STACK_KEY) == local_stack
 
     ls.delete_artifact_store(ARTIFACT_KEY)
     ls.delete_metadata_store(METADATA_KEY)
-    ls.delete_provider(PROVIDER_KEY)
+    ls.delete_stack(STACK_KEY)
 
     ls.delete()

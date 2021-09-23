@@ -2,14 +2,14 @@ from typing import Optional
 
 from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
 from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
-from zenml.providers.base_provider import BaseProvider
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
+from zenml.stacks.base_stack import BaseStack
 
 
-class LocalProvider(BaseProvider):
-    """Default local provider."""
+class LocalStack(BaseStack):
+    """Default local stack."""
 
-    provider_type: str = "local"
+    stack_type: str = "local"
     metadata_store: Optional[SQLiteMetadataStore] = SQLiteMetadataStore()
     artifact_store: Optional[LocalArtifactStore] = LocalArtifactStore()
     orchestrator: Optional[LocalOrchestrator] = LocalOrchestrator()

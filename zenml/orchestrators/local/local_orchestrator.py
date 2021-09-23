@@ -11,9 +11,9 @@ from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 class LocalOrchestrator(BaseOrchestrator):
     def run(self, zenml_pipeline, **pipeline_args):
         # DEBUG # TODO: to be removed
-        from zenml.providers.local_provider import LocalProvider
+        from zenml.stacks.local_stack import LocalStack
 
-        provider = LocalProvider()
+        stack = LocalStack()
 
         runner = LocalDagRunner()
 
@@ -35,8 +35,8 @@ class LocalOrchestrator(BaseOrchestrator):
             s.get_component() for s in zenml_pipeline.__steps.values()
         ]
 
-        artifact_store = provider.artifact_store
-        metadata_store = provider.metadata_store
+        artifact_store = stack.artifact_store
+        metadata_store = stack.metadata_store
 
         created_pipeline = tfx_pipeline.Pipeline(
             pipeline_name="pipeline_name",

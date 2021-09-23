@@ -8,7 +8,7 @@ from zenml.exceptions import AlreadyExistsException, DoesNotExistException
 from zenml.logger import get_logger
 from zenml.metadata.base_metadata_store import BaseMetadataStore
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
-from zenml.providers.base_provider import BaseProvider
+from zenml.stacks.base_stack import BaseStack
 from zenml.utils import path_utils, source_utils
 
 logger = get_logger(__name__)
@@ -19,7 +19,7 @@ class LocalService(BaseComponent):
     components.
     """
 
-    providers: Dict[Text, BaseProvider] = {}
+    stacks: Dict[Text, BaseStack] = {}
     metadata_store_map: Dict[Text, UUIDSourceTuple] = {}
     artifact_store_map: Dict[Text, UUIDSourceTuple] = {}
     orchestrator_map: Dict[Text, UUIDSourceTuple] = {}
@@ -56,54 +56,53 @@ class LocalService(BaseComponent):
             self.orchestrator_map,
         )
 
-    def get_provider(self, key: Text) -> BaseProvider:
-        """Return a single provider based on key.
+    def get_stack(self, key: Text) -> BaseStack:
+        """Return a single stack based on key.
 
         Args:
-            key: Unique key of provider.
+            key: Unique key of stack.
 
         Returns:
-            Provider specified by key.
+            Stack specified by key.
         """
-        logger.debug(f"Fetching provider with key {key}")
-        if key not in self.providers:
+        logger.debug(f"Fetching stack with key {key}")
+        if key not in self.stacks:
             raise DoesNotExistException(
-                f"Provider of key `{key}` does not exist. "
-                f"Available keys: {self.providers.keys()}"
+                f"Stack of key `{key}` does not exist. "
+                f"Available keys: {self.stacks.keys()}"
             )
-        return self.providers[key]
+        return self.stacks[key]
 
-    def register_provider(self, key: Text, provider: BaseProvider):
-        """Register a provider.
+    def register_stack(self, key: Text, stack: BaseStack):
+        """Register a stack.
 
         Args:
-            key: Unique key for the provider.
-            provider: Provider to be registered.
+            key: Unique key for the stack.
+            stack: Stack to be registered.
         """
         logger.info(
-            f"Registering provider with key {key}, details: "
-            f"{provider.dict()}"
+            f"Registering stack with key {key}, details: " f"{stack.dict()}"
         )
 
-        if key in self.providers:
+        if key in self.stacks:
             raise AlreadyExistsException(
-                message=f"Provider `{key}` already exists!"
+                message=f"Stack `{key}` already exists!"
             )
 
         # Add the mapping.
-        self.providers[key] = provider
+        self.stacks[key] = stack
         self.update()
 
-    def delete_provider(self, key: Text):
-        """Delete a provider specified with a key.
+    def delete_stack(self, key: Text):
+        """Delete a stack specified with a key.
 
         Args:
-            key: Unique key of provider.
+            key: Unique key of stack.
         """
-        _ = self.get_provider(key)  # check whether it exists
-        del self.providers[key]
+        _ = self.get_stack(key)  # check whether it exists
+        del self.stacks[key]
         self.update()
-        logger.info(f"Deleted provider with key: {key}.")
+        logger.info(f"Deleted stack with key: {key}.")
 
     def get_artifact_store(self, key: Text) -> BaseArtifactStore:
         """Return a single artifact store based on key.
@@ -112,12 +111,12 @@ class LocalService(BaseComponent):
             key: Unique key of artifact store.
 
         Returns:
-            Provider specified by key.
+            Stack specified by key.
         """
         logger.debug(f"Fetching artifact_store with key {key}")
         if key not in self.artifact_store_map:
             raise DoesNotExistException(
-                f"Provider of key `{key}` does not exist. "
+                f"Stack of key `{key}` does not exist. "
                 f"Available keys: {self.artifact_store_map.keys()}"
             )
         return mapping_utils.get_component_from_key(
@@ -134,7 +133,7 @@ class LocalService(BaseComponent):
             key: Unique key for the artifact store.
         """
         logger.info(
-            f"Registering provider with key {key}, details: "
+            f"Registering stack with key {key}, details: "
             f"{artifact_store.dict()}"
         )
         if key in self.artifact_store_map:
@@ -169,12 +168,12 @@ class LocalService(BaseComponent):
             key: Unique key of metadata store.
 
         Returns:
-            Provider specified by key.
+            Stack specified by key.
         """
         logger.debug(f"Fetching metadata_store with key {key}")
         if key not in self.metadata_store_map:
             raise DoesNotExistException(
-                f"Provider of key `{key}` does not exist. "
+                f"Stack of key `{key}` does not exist. "
                 f"Available keys: {self.metadata_store_map.keys()}"
             )
         return mapping_utils.get_component_from_key(
@@ -191,7 +190,7 @@ class LocalService(BaseComponent):
             key: Unique key for the metadata store.
         """
         logger.info(
-            f"Registering provider with key {key}, details: "
+            f"Registering stack with key {key}, details: "
             f"{metadata_store.dict()}"
         )
         if key in self.metadata_store_map:
@@ -226,12 +225,12 @@ class LocalService(BaseComponent):
             key: Unique key of orchestrator.
 
         Returns:
-            Provider specified by key.
+            Stack specified by key.
         """
         logger.debug(f"Fetching orchestrator with key {key}")
         if key not in self.orchestrator_map:
             raise DoesNotExistException(
-                f"Provider of key `{key}` does not exist. "
+                f"Stack of key `{key}` does not exist. "
                 f"Available keys: {self.orchestrator_map.keys()}"
             )
         return mapping_utils.get_component_from_key(key, self.orchestrator_map)
@@ -244,7 +243,7 @@ class LocalService(BaseComponent):
             key: Unique key for the orchestrator.
         """
         logger.info(
-            f"Registering provider with key {key}, details: "
+            f"Registering stack with key {key}, details: "
             f"{orchestrator.dict()}"
         )
         if key in self.orchestrator_map:

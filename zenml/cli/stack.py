@@ -20,69 +20,67 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.core.repo import Repository
-from zenml.providers.base_provider import BaseProvider
+from zenml.stacks.base_stack import BaseStack
 
 
-# Providers
+# Stacks
 @cli.group()
-def provider():
-    """Providers to define various environments."""
+def stack():
+    """Stacks to define various environments."""
 
 
-@provider.command(
-    "register", context_settings=dict(ignore_unknown_options=True)
-)
-@click.argument("provider_name", type=str)
+@stack.command("register", context_settings=dict(ignore_unknown_options=True))
+@click.argument("stack_name", type=str)
 @click.argument("metadata_store", type=str)
 @click.argument("artifact_store", type=str)
 @click.argument("orchestrator", type=str)
-def register_provider(
-    provider_name: Text,
+def register_stack(
+    stack_name: Text,
     metadata_store: Text,
     artifact_store: Text,
     orchestrator: Text,
 ):
-    """Register a provider."""
+    """Register a stack."""
 
     service = Repository().get_service()
-    provider = BaseProvider(
+    stack = BaseStack(
         artifact_store_name=artifact_store,
         orchestrator_name=orchestrator,
         metadata_store_name=metadata_store,
     )
-    service.register_provider(provider_name, provider)
+    service.register_stack(stack_name, stack)
 
 
-@provider.command("list")
-def list_providers():
-    """List all available providers from service."""
+@stack.command("list")
+def list_stacks():
+    """List all available stacks from service."""
     service = Repository().get_service()
-    cli_utils.title("Providers:")
-    cli_utils.echo_component_list(service.providers)
+    cli_utils.title("Stacks:")
+    cli_utils.echo_component_list(service.stacks)
 
 
-@provider.command("delete")
-@click.argument("provider_name", type=str)
-def delete_provider(provider_name: Text):
-    """Delete a provider."""
+@stack.command("delete")
+@click.argument("stack_name", type=str)
+def delete_stack(stack_name: Text):
+    """Delete a stack."""
     service = Repository().get_service()
-    cli_utils.declare(f"Deleting provider: {provider_name}")
-    service.delete_provider(provider_name)
+    cli_utils.declare(f"Deleting stack: {stack_name}")
+    service.delete_stack(stack_name)
     cli_utils.declare("Deleted!")
 
 
-@provider.command("set")
-@click.argument("provider_name", type=str)
-def set_active_provider(provider_name: Text):
-    """Sets a provider active."""
+@stack.command("set")
+@click.argument("stack_name", type=str)
+def set_active_stack(stack_name: Text):
+    """Sets a stack active."""
     repo = Repository()
-    repo.set_active_provider(provider_name)
-    cli_utils.declare(f"Active provider: {provider_name}")
+    repo.set_active_stack(stack_name)
+    cli_utils.declare(f"Active stack: {stack_name}")
 
 
-@provider.command("get")
-def get_active_provider():
-    """Gets the active provider."""
+@stack.command("get")
+def get_active_stack():
+    """Gets the active stack."""
     repo = Repository()
-    key = repo.get_active_provider_key()
-    cli_utils.declare(f"Active provider: {key}")
+    key = repo.get_active_stack_key()
+    cli_utils.declare(f"Active stack: {key}")

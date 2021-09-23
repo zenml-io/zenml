@@ -16,7 +16,7 @@ import os
 
 from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
 from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
-from zenml.providers.base_provider import BaseProvider
+from zenml.stacks.base_stack import BaseStack
 
 
 def test_env_precedence():
@@ -26,5 +26,5 @@ def test_env_precedence():
 
     os.environ["zenml_metadata_store"] = json.dumps(las.json())
     os.environ["zenml_artifact_store"] = json.dumps(lms.json())
-    bp = BaseProvider()
+    bp = BaseStack()
     print(bp.json())

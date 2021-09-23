@@ -1,0 +1,1 @@
+DEFAULT_STACK_KEY = "local"

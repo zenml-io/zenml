@@ -36,7 +36,7 @@ class GlobalConfig(BaseComponent):
 
     user_id: UUID = Field(default_factory=uuid4)
     analytics_opt_in: bool = True
-    repo_active_providers: Optional[Dict[Text, Text]] = {}
+    repo_active_stacks: Optional[Dict[Text, Text]] = {}
 
     def __init__(self, **data: Any):
         """We persist the attributes in the config file. For the global
@@ -60,5 +60,5 @@ class GlobalConfig(BaseComponent):
         """Gets the global config dir for installed package."""
         return GLOBAL_CONFIG_NAME
 
-    def set_provider_for_repo(self, repo_path: Text, provider_key: Text):
-        self.repo_active_providers[repo_path] = provider_key
+    def set_stack_for_repo(self, repo_path: Text, stack_key: Text):
+        self.repo_active_stacks[repo_path] = stack_key

@@ -2,15 +2,15 @@ from typing import Text
 
 from pydantic import BaseSettings
 
-from zenml.enums import ProviderTypes
+from zenml.enums import StackTypes
 
 
-class BaseProvider(BaseSettings):
-    """Base provider for ZenML.
+class BaseStack(BaseSettings):
+    """Base stack for ZenML.
 
-    A ZenML provider brings together an Metadata Store, an Artifact Store, and
+    A ZenML stack brings together an Metadata Store, an Artifact Store, and
     an Orchestrator, the trifecta of the environment required to run a ZenML
-    pipeline. A ZenML provider also happens to be a pydantic `BaseSettings`
+    pipeline. A ZenML stack also happens to be a pydantic `BaseSettings`
     class, which means that there are multiple ways to use it.
 
     * You can set it via env variables.
@@ -28,7 +28,7 @@ class BaseProvider(BaseSettings):
     * The default field values.
     """
 
-    provider_type: ProviderTypes = ProviderTypes.base
+    stack_type: StackTypes = StackTypes.base
     metadata_store_name: Text
     artifact_store_name: Text
     orchestrator_name: Text
@@ -36,4 +36,4 @@ class BaseProvider(BaseSettings):
     class Config:
         """Configuration of settings."""
 
-        env_prefix = "zenml_provider_"
+        env_prefix = "zenml_stack_"

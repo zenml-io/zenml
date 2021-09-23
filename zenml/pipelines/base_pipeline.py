@@ -64,7 +64,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
     def run(self, **pipeline_args):
         """ """
         # DEBUG # TODO: to be removed
-        from zenml.providers.local_provider import LocalProvider
-        provider = LocalProvider()
+        from zenml.stacks.local_stack import LocalStack
 
-        provider.orchestrator.run(self, **pipeline_args)
+        stack = LocalStack()
+
+        stack.orchestrator.run(self, **pipeline_args)

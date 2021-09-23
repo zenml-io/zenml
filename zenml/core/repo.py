@@ -28,7 +28,7 @@ from zenml.logger import get_logger
 from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.pipelines.base_pipeline import BasePipeline
-from zenml.providers.base_provider import BaseProvider
+from zenml.stacks.base_stack import BaseStack
 from zenml.utils import path_utils
 from zenml.utils.analytics_utils import (
     CREATE_REPO,
@@ -80,7 +80,7 @@ class Repository:
     @track(event=CREATE_REPO)
     def init_repo(
         repo_path: Text = os.getcwd(),
-        provider: BaseProvider = None,
+        stack: BaseStack = None,
         analytics_opt_in: bool = None,
     ):
         """
@@ -88,7 +88,7 @@ class Repository:
 
         Args:
             repo_path (str): path to root of a git repo
-            provider: Initial provider.
+            stack: Initial stack.
             analytics_opt_in: opt-in flag for analytics code.
 
         Raises:
@@ -117,7 +117,7 @@ class Repository:
         artifact_dir = os.path.join(zen_dir, "local_store")
         metadata_dir = os.path.join(artifact_dir, "metadata.db")
 
-        if provider is None:
+        if stack is None:
             service = LocalService()
 
             service.register_artifact_store(
@@ -132,9 +132,9 @@ class Repository:
                 "local_orchestrator", LocalOrchestrator()
             )
 
-            service.register_provider(
-                "local_provider",
-                BaseProvider(
+            service.register_stack(
+                "local_stack",
+                BaseStack(
                     metadata_store_name="local_metadata_store",
                     artifact_store_name="local_artifact_store",
                     orchestrator_name="local_orchestrator",
@@ -142,7 +142,7 @@ class Repository:
             )
 
             gc = GlobalConfig()
-            gc.set_provider_for_repo(repo_path, "local_provider")
+            gc.set_stack_for_repo(repo_path, "local_stack")
             gc.update()
 
     def get_git_wrapper(self) -> GitWrapper:
@@ -152,38 +152,36 @@ class Repository:
         """Returns the active service. For now, always local."""
         return self.service
 
-    def set_active_provider(self, provider_key: Text):
-        """Set the active provider for the repo. This change is local for the
+    def set_active_stack(self, stack_key: Text):
+        """Set the active stack for the repo. This change is local for the
         machine.
 
         Args:
-            provider_key: Key of the provider to set active.
+            stack_key: Key of the stack to set active.
         """
         gc = GlobalConfig()
-        self.service.get_provider(provider_key)  # check if it exists
-        gc.set_provider_for_repo(self.path, provider_key)
+        self.service.get_stack(stack_key)  # check if it exists
+        gc.set_stack_for_repo(self.path, stack_key)
         gc.update()
 
-    def get_active_provider_key(self) -> Text:
-        """Get the active provider key from global config.
+    def get_active_stack_key(self) -> Text:
+        """Get the active stack key from global config.
 
         Returns:
-            Currently active providers key.
+            Currently active stacks key.
         """
         gc = GlobalConfig()
-        if self.path not in gc.repo_active_providers:
-            raise AssertionError(
-                f"No active provider set for repo: {self.path}!"
-            )
-        return gc.repo_active_providers[self.path]
+        if self.path not in gc.repo_active_stacks:
+            raise AssertionError(f"No active stack set for repo: {self.path}!")
+        return gc.repo_active_stacks[self.path]
 
-    def get_active_provider(self) -> BaseProvider:
-        """Get the active provider from global config.
+    def get_active_stack(self) -> BaseStack:
+        """Get the active stack from global config.
 
         Returns:
-            Currently active provider.
+            Currently active stack.
         """
-        return self.service.get_provider(self.get_active_provider_key())
+        return self.service.get_stack(self.get_active_stack_key())
 
     @track(event=GET_PIPELINES)
     def get_pipelines(self) -> List[BasePipeline]:

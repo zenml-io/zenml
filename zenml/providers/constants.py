@@ -1,1 +1,0 @@
-DEFAULT_PROVIDER_KEY = "local"

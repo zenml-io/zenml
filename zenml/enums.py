@@ -34,13 +34,14 @@ class MLMetadataTypes(str, Enum):
 
 class OrchestratorTypes(str, Enum):
     """All supported Orchestrator types"""
+
     base = "base"
     local = "local"
     airflow = "airflow"
 
 
-class ProviderTypes(str, Enum):
-    """All supported Provider types."""
+class StackTypes(str, Enum):
+    """All supported Stack types."""
 
     base = "base"
 
