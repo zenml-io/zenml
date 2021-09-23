@@ -2,8 +2,8 @@
 
 # Table of contents
 
-- [Introduction](index.md)
-- [Installation](installation.md)
+- [ZenML 101](index.md)
+- [Installation & Setup](installation.md)
 - [Core Concepts](core-concepts.md)
 
 ## Starter Guide
