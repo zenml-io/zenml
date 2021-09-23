@@ -12,6 +12,7 @@ class LocalOrchestrator(BaseOrchestrator):
     def run(self, zenml_pipeline, **pipeline_args):
         runner = LocalDagRunner()
 
+        # Resolve the importers for external artifact inputs
         importers = {}
         for name, artifact in zenml_pipeline.inputs.items():
             importers[name] = Importer(
@@ -38,6 +39,6 @@ class LocalOrchestrator(BaseOrchestrator):
             components=steps,
             pipeline_root=artifact_store.path,
             metadata_connection_config=metadata_store.get_tfx_metadata_config(),
-            enable_cache=True,
+            enable_cache=False,
         )
         runner.run(created_pipeline)

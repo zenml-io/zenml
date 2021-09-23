@@ -1,4 +1,5 @@
 from tfx.dsl.components.common.importer import Importer
+from tfx.orchestration import pipeline as tfx_pipeline
 
 from zenml.core.component_factory import orchestrator_store_factory
 from zenml.enums import OrchestratorTypes
@@ -11,8 +12,9 @@ class AirflowOrchestrator(BaseOrchestrator):
     def run(self, zenml_pipeline):
         runner = AirflowDagRunner()
 
+        # Resolve the importers for external artifact inputs
         importers = {}
-        for name, artifact in zenml_pipeline.__inputs.items():
+        for name, artifact in zenml_pipeline.inputs.items():
             importers[name] = Importer(
                 source_uri=artifact.uri, artifact_type=artifact.type
             ).with_id(name)
@@ -22,21 +24,21 @@ class AirflowOrchestrator(BaseOrchestrator):
         }
 
         # Establish the connections between the components
-        zenml_pipeline.connect(**import_artifacts, **zenml_pipeline.__steps)
+        zenml_pipeline.connect(**import_artifacts, **zenml_pipeline.steps)
 
         # Create the final step list and the corresponding pipeline
         steps = list(importers.values()) + [
-            s.get_component() for s in zenml_pipeline.__steps.values()
+            s.get_component() for s in zenml_pipeline.steps.values()
         ]
 
-        artifact_store = stack.artifact_store
-        metadata_store = stack.metadata_store
+        artifact_store = zenml_pipeline.stack.artifact_store
+        metadata_store = zenml_pipeline.stack.metadata_store
 
         created_pipeline = tfx_pipeline.Pipeline(
             pipeline_name="pipeline_name",
             components=steps,
             pipeline_root=artifact_store.path,
             metadata_connection_config=metadata_store.get_tfx_metadata_config(),
-            enable_cache=pipeline_args["enable_cache"],
+            enable_cache=False,
         )
-        runner.run(created_pipeline)
+        run = runner.run(created_pipeline)
