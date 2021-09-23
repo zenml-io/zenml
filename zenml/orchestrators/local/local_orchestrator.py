@@ -12,20 +12,18 @@ class LocalOrchestrator(BaseOrchestrator):
     def run(self, zenml_pipeline, **pipeline_args):
         # DEBUG # TODO: to be removed
         from zenml.stacks.local_stack import LocalStack
-
         stack = LocalStack()
 
         runner = LocalDagRunner()
 
         importers = {}
         for name, artifact in zenml_pipeline.__inputs.items():
-            importers[name] = Importer(
-                source_uri=artifact.uri, artifact_type=artifact.type
-            ).with_id(name)
+            importers[name] = Importer(source_uri=artifact.uri,
+                                       artifact_type=artifact.type
+                                       ).with_id(name)
 
-        import_artifacts = {
-            n: i.outputs["result"] for n, i in importers.items()
-        }
+        import_artifacts = {n: i.outputs["result"]
+                            for n, i in importers.items()}
 
         # Establish the connections between the components
         zenml_pipeline.connect(**import_artifacts, **zenml_pipeline.__steps)

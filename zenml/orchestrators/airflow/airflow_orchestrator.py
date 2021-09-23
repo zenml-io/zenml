@@ -1,17 +1,15 @@
+from tfx.dsl.components.common.importer import Importer
+
 from zenml.core.component_factory import orchestrator_store_factory
 from zenml.enums import OrchestratorTypes
+from zenml.orchestrators.airflow.airflow_dag_runner import AirflowDagRunner
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 
 
 @orchestrator_store_factory.register(OrchestratorTypes.airflow)
 class AirflowOrchestrator(BaseOrchestrator):
-    def run(self, pipeline):
-        # DEBUG # TODO: to be removed
-        from zenml.stacks.local_stack import LocalStack
-
-        stack = LocalStack()
-
-        runner = LocalDagRunner()
+    def run(self, zenml_pipeline):
+        runner = AirflowDagRunner()
 
         importers = {}
         for name, artifact in zenml_pipeline.__inputs.items():

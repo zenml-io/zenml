@@ -6,6 +6,12 @@ from zenml.annotations.step_annotations import Step
 from zenml.utils.exceptions import PipelineInterfaceError
 
 
+def get_active_stack():
+    from zenml.core.repo import Repository
+    repo = Repository()
+    return repo.get_active_stack()
+
+
 class BasePipelineMeta(type):
     """ """
 
@@ -36,6 +42,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
     """ """
 
     def __init__(self, *args, **kwargs):
+
+        self.__stack = get_active_stack()
+
         self.__steps = dict()
         self.__inputs = dict()
 
@@ -61,11 +70,24 @@ class BasePipeline(metaclass=BasePipelineMeta):
     def connect(self, *args, **kwargs):
         """ """
 
+    @property
+    def stack(self):
+        return self.__stack
+
+    @stack.getter
+    def stack(self):
+        return self.__stack
+
+    @stack.setter
+    def stack(self, stack):
+        raise PipelineInterfaceError("The provider will be automatically"
+                                     "inferred from your environment. Please "
+                                     "do no attempt to manually change it.")
+
     def run(self, **pipeline_args):
-        """ """
-        # DEBUG # TODO: to be removed
-        from zenml.stacks.local_stack import LocalStack
+        orchestrator_name = self.__stack.orchestrator_name
 
-        stack = LocalStack()
+        from zenml.core.component_factory import orchestrator_store_factory
+        orchestrator = orchestrator_store_factory.get_single_component(orchestrator_name)
 
-        stack.orchestrator.run(self, **pipeline_args)
+        orchestrator.run(self)
