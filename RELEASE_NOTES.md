@@ -1,3 +1,41 @@
+# 0.5.0rc0
+This long-awaited ZenML release marks a seminar moment in the projects history. This release marks a complete 
+revamp of the internals of ZenML, with a fresh new design and API. While these changes are significant, and have been months 
+in the making, the original vision of ZenML (read more [here]) has not wavered. We hope that the ZenML community finds the new 
+design choices easier to grasp and use, and we welcome feedback on the issues board. *Write some uplifting stuff here 
+to set expectations*
+
+## Warning
+0.5.0rc0 is a complete API change from the previous versions of ZenML, and is a *breaking* upgrade. Fundamental 
+concepts have been changed, and therefore backwards compatability is not maintained. Please only use this version 
+with fresh projects.
+
+With such significant changes, we expect this release to also be breaking. Please report any bugs in the issue board, and 
+they should be addressed in upcoming releases.
+
+## Overview
+
+* Introducing a new functional API for creating pipelines and steps. This is now the default mechanism in which to build ZenML pipelines. [read more]
+* Introducing the new `Stack` paradigm: Easily transition from one MLOps stack to the next with a few CLI commands [read more]
+* Deprecating the `pipelines_dir`: Now individual pipelines will be stored in their metadata stores, making the metadata store a single source of truth. [read more]
+* Deprecating the YAML-config file: ZenML no longer natively compiles to an intermediate YAML-based representation. Instead, it compiled and deployed directly into the selected orchestrators' 
+representation. While we do plan to support running pipelines directly through YAML, it will no longer be
+the default route through which pipelines are run. [read more about orchestrators here].
+
+## Technical Improvements
+* A completely new system design, please refer to the [docs].
+* Better type-hints and docstrings.
+* Numerous performance improvements and bug fixes, including a smaller dependency footprint.
+
+## What to expect in the next weeks
+* Individual step interfaces like `PreprocesserStep`, `TrainerStep`, `DeployerStep` etc. need to be rewritten with the new paradigm. They should
+be included in the non-RC version of this release.
+* The concept of `Backends` will evolve into a simple mechanism of transitioning individual steps into different runners.
+* Support for `KubernetesOrchestrator`, `KubeflowOrchestrator`, `GCPOrchestrator` and `AWSOrchestrator` are also planned.
+* Dependency management including docker support is planned.
+
+Our roadmap goes into further detail on the timeline.
+
 # 0.3.7.1
 This release fixes some known bugs from previous releases and especially 0.3.7. Same procedure as always, please delete existing pipelines, metadata, and artifact stores.
 
