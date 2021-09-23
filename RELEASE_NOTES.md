@@ -16,6 +16,7 @@ they should be addressed in upcoming releases.
 ## Overview
 
 * Introducing a new functional API for creating pipelines and steps. This is now the default mechanism for building ZenML pipelines. [read more]
+* Introducing a new `Artifact`, `Typing`, and `Annotation` system, with `pydantic` (and `dataclasses`) support [read more here]
 * Introducing the new `Stack` paradigm: Easily transition from one MLOps stack to the next with a few CLI commands [read more]
 * Deprecating the `pipelines_dir`: Now individual pipelines will be stored in their metadata stores, making the metadata store a single source of truth. [read more]
 * Deprecating the YAML config file: ZenML no longer natively compiles to an intermediate YAML-based representation. Instead, it compiles and deploys directly into the selected orchestrator's 
@@ -35,6 +36,11 @@ be included in the non-RC version of this release.
 * Dependency management including Docker support is planned.
 
 [Our roadmap](https://docs.zenml.io/support/roadmap) goes into further detail on the timeline.
+
+We encourage every user (old or new) to start afresh with this release. Please go over our latest [docs](https://docs.zenml.io) 
+and [examples](examples) to get a hang of the new system.
+
+Onwards and upwards to 1.0.0!
 
 # 0.3.7.1
 This release fixes some known bugs from previous releases and especially 0.3.7. Same procedure as always, please delete existing pipelines, metadata, and artifact stores.
