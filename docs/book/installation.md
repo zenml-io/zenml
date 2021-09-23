@@ -2,7 +2,7 @@
 description: "TL;DR: Do `pip install zenml` to install."
 ---
 
-# Installation
+# Installation & Setup
 
 ## Welcome
 
