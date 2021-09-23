@@ -3,13 +3,8 @@ from abc import abstractmethod
 
 from zenml.annotations.artifact_annotations import Input
 from zenml.annotations.step_annotations import Step
+from zenml.core.repo import Repository
 from zenml.utils.exceptions import PipelineInterfaceError
-
-
-def get_active_stack():
-    from zenml.core.repo import Repository
-    repo = Repository()
-    return repo.get_active_stack()
 
 
 class BasePipelineMeta(type):
@@ -43,7 +38,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
     def __init__(self, *args, **kwargs):
 
-        self.__stack = get_active_stack()
+        self.__stack = Repository().get_active_stack()
 
         self.__steps = dict()
         self.__inputs = dict()
@@ -74,20 +69,21 @@ class BasePipeline(metaclass=BasePipelineMeta):
     def stack(self):
         return self.__stack
 
-    @stack.getter
-    def stack(self):
-        return self.__stack
-
     @stack.setter
     def stack(self, stack):
-        raise PipelineInterfaceError("The provider will be automatically"
-                                     "inferred from your environment. Please "
-                                     "do no attempt to manually change it.")
+        raise PipelineInterfaceError(
+            "The provider will be automatically"
+            "inferred from your environment. Please "
+            "do no attempt to manually change it."
+        )
+
+    @property
+    def inputs(self):
+        return self.__inputs
+
+    @property
+    def steps(self):
+        return self.__steps
 
     def run(self, **pipeline_args):
-        orchestrator_name = self.__stack.orchestrator_name
-
-        from zenml.core.component_factory import orchestrator_store_factory
-        orchestrator = orchestrator_store_factory.get_single_component(orchestrator_name)
-
-        orchestrator.run(self)
+        self.stack.orchestrator.run(self)

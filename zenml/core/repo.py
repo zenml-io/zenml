@@ -27,7 +27,6 @@ from zenml.exceptions import InitializationException
 from zenml.logger import get_logger
 from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
-from zenml.pipelines.base_pipeline import BasePipeline
 from zenml.stacks.base_stack import BaseStack
 from zenml.utils import path_utils
 from zenml.utils.analytics_utils import (
@@ -184,7 +183,7 @@ class Repository:
         return self.service.get_stack(self.get_active_stack_key())
 
     @track(event=GET_PIPELINES)
-    def get_pipelines(self) -> List[BasePipeline]:
+    def get_pipelines(self):
         """Gets list of all pipelines."""
         raise NotImplementedError
 

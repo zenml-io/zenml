@@ -2,7 +2,10 @@ from typing import Text
 
 from pydantic import BaseSettings
 
+from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.enums import StackTypes
+from zenml.metadata.base_metadata_store import BaseMetadataStore
+from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 
 
 class BaseStack(BaseSettings):
@@ -32,6 +35,28 @@ class BaseStack(BaseSettings):
     metadata_store_name: Text
     artifact_store_name: Text
     orchestrator_name: Text
+
+    @property
+    def orchestrator(self) -> BaseOrchestrator:
+        from zenml.core.repo import Repository
+
+        return Repository().service.get_orchestrator(self.orchestrator_name)
+
+    @property
+    def artifact_store(self) -> BaseArtifactStore:
+        from zenml.core.repo import Repository
+
+        return Repository().service.get_artifact_store(
+            self.artifact_store_name
+        )
+
+    @property
+    def metadata_store(self) -> BaseMetadataStore:
+        from zenml.core.repo import Repository
+
+        return Repository().service.get_metadata_store(
+            self.metadata_store_name
+        )
 
     class Config:
         """Configuration of settings."""
