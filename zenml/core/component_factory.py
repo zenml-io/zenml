@@ -29,9 +29,6 @@ class ComponentFactory:
     registered here.
     """
 
-    components: Dict[Text, Any] = {}
-    name: Text
-
     def __init__(self, name: Text):
         """Constructor for the factory.
 
@@ -39,6 +36,7 @@ class ComponentFactory:
             name: Unique name for the factory.
         """
         self.name = name
+        self.components: Dict[Text, Any] = {}
 
     def get_components(self) -> Dict[Any, Any]:
         """Return all components"""
