@@ -22,7 +22,7 @@ Within your repository, you will have one or more pipelines as part of your expe
 
 Pipelines are functions. They are created by using decorators appropriate to the specific use case you have.
 
-The moment it is `run`, a pipeline is converted to an immutable, declarative YAML configuration file, stored in the pipelines directory. These YAML files may be persisted within the `git` repository as well or kept separate.
+The moment it is `run`, a pipeline is compiled and passed directly to the orchestrator.
 
 **DAG**
 
