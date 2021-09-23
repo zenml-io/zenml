@@ -80,7 +80,7 @@ class LocalService(BaseComponent):
             key: Unique key for the stack.
             stack: Stack to be registered.
         """
-        logger.info(
+        logger.debug(
             f"Registering stack with key {key}, details: " f"{stack.dict()}"
         )
 
@@ -102,7 +102,7 @@ class LocalService(BaseComponent):
         _ = self.get_stack(key)  # check whether it exists
         del self.stacks[key]
         self.update()
-        logger.info(f"Deleted stack with key: {key}.")
+        logger.debug(f"Deleted stack with key: {key}.")
 
     def get_artifact_store(self, key: Text) -> BaseArtifactStore:
         """Return a single artifact store based on key.
@@ -132,8 +132,8 @@ class LocalService(BaseComponent):
             artifact_store: Artifact store to be registered.
             key: Unique key for the artifact store.
         """
-        logger.info(
-            f"Registering stack with key {key}, details: "
+        logger.debug(
+            f"Registering artifact store with key {key}, details: "
             f"{artifact_store.dict()}"
         )
         if key in self.artifact_store_map:
@@ -159,7 +159,7 @@ class LocalService(BaseComponent):
         s.delete()
         del self.artifact_store_map[key]
         self.update()
-        logger.info(f"Deleted artifact_store with key: {key}.")
+        logger.debug(f"Deleted artifact_store with key: {key}.")
 
     def get_metadata_store(self, key: Text) -> BaseMetadataStore:
         """Return a single metadata store based on key.
@@ -168,12 +168,12 @@ class LocalService(BaseComponent):
             key: Unique key of metadata store.
 
         Returns:
-            Stack specified by key.
+            Metadata store specified by key.
         """
-        logger.debug(f"Fetching metadata_store with key {key}")
+        logger.debug(f"Fetching metadata store with key {key}")
         if key not in self.metadata_store_map:
             raise DoesNotExistException(
-                f"Stack of key `{key}` does not exist. "
+                f"Metadata store of key `{key}` does not exist. "
                 f"Available keys: {self.metadata_store_map.keys()}"
             )
         return mapping_utils.get_component_from_key(
@@ -189,13 +189,13 @@ class LocalService(BaseComponent):
             metadata_store: Metadata store to be registered.
             key: Unique key for the metadata store.
         """
-        logger.info(
-            f"Registering stack with key {key}, details: "
+        logger.debug(
+            f"Registering metadata store with key {key}, details: "
             f"{metadata_store.dict()}"
         )
         if key in self.metadata_store_map:
             raise AlreadyExistsException(
-                message=f"Artifact Store `{key}` already exists!"
+                message=f"Metadata store `{key}` already exists!"
             )
 
         # Add the mapping.
@@ -216,7 +216,7 @@ class LocalService(BaseComponent):
         s.delete()
         del self.metadata_store_map[key]
         self.update()
-        logger.info(f"Deleted orchestrator with key: {key}.")
+        logger.debug(f"Deleted metadata store with key: {key}.")
 
     def get_orchestrator(self, key: Text) -> BaseOrchestrator:
         """Return a single orchestrator based on key.
@@ -225,12 +225,12 @@ class LocalService(BaseComponent):
             key: Unique key of orchestrator.
 
         Returns:
-            Stack specified by key.
+            Orchestrator specified by key.
         """
         logger.debug(f"Fetching orchestrator with key {key}")
         if key not in self.orchestrator_map:
             raise DoesNotExistException(
-                f"Stack of key `{key}` does not exist. "
+                f"Orchestrator of key `{key}` does not exist. "
                 f"Available keys: {self.orchestrator_map.keys()}"
             )
         return mapping_utils.get_component_from_key(key, self.orchestrator_map)
@@ -242,13 +242,13 @@ class LocalService(BaseComponent):
             orchestrator: Metadata store to be registered.
             key: Unique key for the orchestrator.
         """
-        logger.info(
-            f"Registering stack with key {key}, details: "
+        logger.debug(
+            f"Registering orchestrator with key {key}, details: "
             f"{orchestrator.dict()}"
         )
         if key in self.orchestrator_map:
             raise AlreadyExistsException(
-                message=f"Artifact Store `{key}` already exists!"
+                message=f"Orchestrator `{key}` already exists!"
             )
 
         # Add the mapping.
@@ -269,7 +269,7 @@ class LocalService(BaseComponent):
         s.delete()
         del self.orchestrator_map[key]
         self.update()
-        logger.info(f"Deleted orchestrator with key: {key}.")
+        logger.debug(f"Deleted orchestrator with key: {key}.")
 
     def delete(self):
         """Deletes the entire service. Dangerous operation"""

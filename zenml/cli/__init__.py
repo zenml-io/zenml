@@ -14,6 +14,9 @@
 
 import os
 
+from zenml.logger import init_logging
+
+init_logging()
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 from .base import *  # noqa
