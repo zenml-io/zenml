@@ -29,7 +29,11 @@ class BasePipelineMeta(type):
             elif isinstance(arg_type, Input):
                 cls.INPUT_SPEC.update({arg: arg_type.type})
             else:
-                raise PipelineInterfaceError("")  # TODO: fill message
+                raise PipelineInterfaceError(
+                    "When you are designing a pipeline, the input signature "
+                    "can only parameters which are annotated by either the "
+                    "step- and the input annotations."
+                )
         return cls
 
 
@@ -65,6 +69,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
     def connect(self, *args, **kwargs):
         """ """
 
+    @classmethod
+    def get_executable(cls):
+        """ """
+        return cls.connect
+
     @property
     def stack(self):
         return self.__stack
@@ -81,9 +90,25 @@ class BasePipeline(metaclass=BasePipelineMeta):
     def inputs(self):
         return self.__inputs
 
+    @inputs.setter
+    def inputs(self, inputs):
+        raise PipelineInterfaceError(
+            "The provider will be automatically"
+            "inferred from your environment. Please "
+            "do no attempt to manually change it."
+        )
+
     @property
     def steps(self):
         return self.__steps
 
-    def run(self, **pipeline_args):
+    @steps.setter
+    def steps(self, steps):
+        raise PipelineInterfaceError(
+            "The provider will be automatically"
+            "inferred from your environment. Please "
+            "do no attempt to manually change it."
+        )
+
+    def run(self):
         self.stack.orchestrator.run(self)
