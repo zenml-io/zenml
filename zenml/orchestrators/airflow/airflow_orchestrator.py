@@ -6,6 +6,8 @@ from zenml.enums import OrchestratorTypes
 from zenml.orchestrators.airflow.airflow_dag_runner import AirflowDagRunner
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 
+print("TEST")
+
 
 @orchestrator_store_factory.register(OrchestratorTypes.airflow)
 class AirflowOrchestrator(BaseOrchestrator):
@@ -41,4 +43,4 @@ class AirflowOrchestrator(BaseOrchestrator):
             metadata_connection_config=metadata_store.get_tfx_metadata_config(),
             enable_cache=False,
         )
-        run = runner.run(created_pipeline)
+        runner.run(created_pipeline)
