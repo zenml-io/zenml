@@ -21,40 +21,22 @@ from zenml.artifacts.utils import WriterFactory
 DEFAULT_FILENAME = "data.txt"
 
 
-def parse_line(x):
-    """
-
-    Args:
-      x:
-
-    Returns:
-
-    """
-    return x
-
-
 def write_with_pandas(artifact, df):
-    """
+    """ writer function to write a text artifact using pandas
 
     Args:
-      artifact:
-      df:
-
-    Returns:
-
+      artifact: the instance of the artifact
+      df: the pandas.DataFrame which needs to be written
     """
     df.to_csv(os.path.join(artifact.uri, DEFAULT_FILENAME))
 
 
 def write_with_beam(artifact, pcolline):
-    """
+    """ writer function to write a text artifact using pandas
 
     Args:
-      artifact:
-      pcolline:
-
-    Returns:
-
+      artifact: the instance of the artifact
+      pcolline: a tuple of (beam.Pipeline, beam.PCollection)
     """
     import apache_beam as beam
 
@@ -66,33 +48,39 @@ def write_with_beam(artifact, pcolline):
 
 
 class TextArtifact(BaseDataArtifact):
-    """ """
+    """ ZenML text-based artifact """
 
     TYPE_NAME = "text_artifact"
 
+    # Registering the corresponding writer functions
     WRITER_FACTORY = WriterFactory()
     WRITER_FACTORY.register_type(PandasOutput, write_with_pandas)
     WRITER_FACTORY.register_type(BeamOutput, write_with_beam)
 
     def read_with_pandas(self):
-        """ """
-        import pandas as pd
-
-        return pd.read_csv(os.path.join(self.uri,
-                                        DEFAULT_FILENAME))
-
-    def read_with_beam(self, pipeline):
-        """
-
-        Args:
-          pipeline:
+        """ reader function to read the artifact with pandas.read_csv
 
         Returns:
+            a pandas.DataFrame
+        """
+        import pandas as pd
 
+        return pd.read_csv(os.path.join(self.uri, DEFAULT_FILENAME))
+
+    def read_with_beam(self, pipeline):
+        """ reader function to read the artifact with apache-beam
+
+        It appends a few steps to the given pipeline to read the data and
+        returns the new pipeline back
+
+        Args:
+          pipeline: a beam.Pipeline instance
+
+        Returns:
+            the new pipeline with the appended read steps
         """
         import apache_beam as beam
 
         return (pipeline
                 | "ReadText" >> beam.io.ReadFromText(
-                    file_pattern=os.path.join(self.uri, "*"))
-                | "ParsedLines" >> beam.Map(parse_line))
+                    file_pattern=os.path.join(self.uri, "*")))
