@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.components.transform package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/456ef8120b4ca9aae8f8fca6e88c08f3cdf35c91/docs/sphinx_docs/_build/html/index.html)
+zenml.components.transform package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/298e3797478aed75d04f90ab115f3c52782368a2/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/zenml-io/zenml/tree/456ef8120b4ca9aae8f8fca6e88c08f3cdf35c91/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/zenml-io/zenml/tree/298e3797478aed75d04f90ab115f3c52782368a2/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/zenml-io/zenml/tree/456ef8120b4ca9aae8f8fca6e88c08f3cdf35c91/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/zenml-io/zenml/tree/298e3797478aed75d04f90ab115f3c52782368a2/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.components.transform.md)
   * * [zenml.components.transform package](zenml.components.transform.md)
       * [Submodules](zenml.components.transform.md#submodules)
@@ -14,7 +14,7 @@ zenml.components.transform package — ZenML documentation  [ZenML](https://gith
       * [Module contents](zenml.components.transform.md#module-contents)
 * [ « zenml.compone...](zenml.components.trainer.md)
 * [ zenml.datasou... »](../zenml.datasources.md)
-*  [Source](https://github.com/zenml-io/zenml/tree/456ef8120b4ca9aae8f8fca6e88c08f3cdf35c91/docs/sphinx_docs/_build/html/_sources/zenml.components.transform.rst.txt)
+*  [Source](https://github.com/zenml-io/zenml/tree/298e3797478aed75d04f90ab115f3c52782368a2/docs/sphinx_docs/_build/html/_sources/zenml.components.transform.rst.txt)
 
 ## zenml.components.transform package[¶](zenml.components.transform.md#zenml-components-transform-package)
 

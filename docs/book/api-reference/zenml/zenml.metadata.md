@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.metadata package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/456ef8120b4ca9aae8f8fca6e88c08f3cdf35c91/docs/sphinx_docs/_build/html/index.html)
+zenml.metadata package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/298e3797478aed75d04f90ab115f3c52782368a2/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/zenml-io/zenml/tree/456ef8120b4ca9aae8f8fca6e88c08f3cdf35c91/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/zenml-io/zenml/tree/298e3797478aed75d04f90ab115f3c52782368a2/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/zenml-io/zenml/tree/456ef8120b4ca9aae8f8fca6e88c08f3cdf35c91/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/zenml-io/zenml/tree/298e3797478aed75d04f90ab115f3c52782368a2/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.metadata.md)
   * * [zenml.metadata package](zenml.metadata.md)
       * [Submodules](zenml.metadata.md#submodules)
@@ -19,7 +19,7 @@ zenml.metadata package — ZenML documentation  [ZenML](https://github.com/zenml
       * [Module contents](zenml.metadata.md#module-contents)
 * [ « zenml.datasou...](zenml.datasources.md)
 * [ zenml.pipelin... »](zenml.pipelines.md)
-*  [Source](https://github.com/zenml-io/zenml/tree/456ef8120b4ca9aae8f8fca6e88c08f3cdf35c91/docs/sphinx_docs/_build/html/_sources/zenml.metadata.rst.txt)
+*  [Source](https://github.com/zenml-io/zenml/tree/298e3797478aed75d04f90ab115f3c52782368a2/docs/sphinx_docs/_build/html/_sources/zenml.metadata.rst.txt)
 
 ## zenml.metadata package[¶](zenml.metadata.md#zenml-metadata-package)
 
