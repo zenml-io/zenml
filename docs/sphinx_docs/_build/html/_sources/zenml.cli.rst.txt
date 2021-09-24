@@ -28,14 +28,6 @@ zenml.cli.config module
    :undoc-members:
    :show-inheritance:
 
-zenml.cli.datasource module
----------------------------
-
-.. automodule:: zenml.cli.datasource
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 zenml.cli.example module
 ------------------------
 
@@ -48,6 +40,14 @@ zenml.cli.pipeline module
 -------------------------
 
 .. automodule:: zenml.cli.pipeline
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.cli.stack module
+----------------------
+
+.. automodule:: zenml.cli.stack
    :members:
    :undoc-members:
    :show-inheritance:

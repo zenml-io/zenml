@@ -1,0 +1,37 @@
+zenml.artifacts package
+=======================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   zenml.artifacts.data_artifacts
+
+Submodules
+----------
+
+zenml.artifacts.base\_artifact module
+-------------------------------------
+
+.. automodule:: zenml.artifacts.base_artifact
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.artifacts.utils module
+----------------------------
+
+.. automodule:: zenml.artifacts.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: zenml.artifacts
+   :members:
+   :undoc-members:
+   :show-inheritance:

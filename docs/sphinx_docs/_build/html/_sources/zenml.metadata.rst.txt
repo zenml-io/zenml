@@ -4,26 +4,18 @@ zenml.metadata package
 Submodules
 ----------
 
-zenml.metadata.metadata\_wrapper module
----------------------------------------
+zenml.metadata.base\_metadata\_store module
+-------------------------------------------
 
-.. automodule:: zenml.metadata.metadata_wrapper
+.. automodule:: zenml.metadata.base_metadata_store
    :members:
    :undoc-members:
    :show-inheritance:
 
-zenml.metadata.metadata\_wrapper\_factory module
-------------------------------------------------
+zenml.metadata.base\_metadata\_wrapper\_test module
+---------------------------------------------------
 
-.. automodule:: zenml.metadata.metadata_wrapper_factory
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-zenml.metadata.metadata\_wrapper\_test module
----------------------------------------------
-
-.. automodule:: zenml.metadata.metadata_wrapper_test
+.. automodule:: zenml.metadata.base_metadata_wrapper_test
    :members:
    :undoc-members:
    :show-inheritance:

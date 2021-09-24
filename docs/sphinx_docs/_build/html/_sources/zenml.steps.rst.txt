@@ -1,21 +1,6 @@
 zenml.steps package
 ===================
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 4
-
-   zenml.steps.deployer
-   zenml.steps.evaluator
-   zenml.steps.inferrer
-   zenml.steps.preprocesser
-   zenml.steps.sequencer
-   zenml.steps.split
-   zenml.steps.tokenizer
-   zenml.steps.trainer
-
 Submodules
 ----------
 
@@ -27,10 +12,26 @@ zenml.steps.base\_step module
    :undoc-members:
    :show-inheritance:
 
-zenml.steps.base\_step\_test module
------------------------------------
+zenml.steps.simple\_step module
+-------------------------------
 
-.. automodule:: zenml.steps.base_step_test
+.. automodule:: zenml.steps.simple_step
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.steps.split\_step module
+------------------------------
+
+.. automodule:: zenml.steps.split_step
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.steps.utils module
+------------------------
+
+.. automodule:: zenml.steps.utils
    :members:
    :undoc-members:
    :show-inheritance:

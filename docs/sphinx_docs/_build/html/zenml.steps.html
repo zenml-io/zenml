@@ -15,8 +15,8 @@
     <script src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="zenml.steps.deployer package" href="zenml.steps.deployer.html" />
-    <link rel="prev" title="zenml.standards package" href="zenml.standards.html" />
+    <link rel="next" title="zenml.utils package" href="zenml.utils.html" />
+    <link rel="prev" title="zenml.stacks package" href="zenml.stacks.html" />
 <meta charset='utf-8'>
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
@@ -71,10 +71,11 @@
       role="menu"
       aria-labelledby="dLabelLocalToc"><ul>
 <li><a class="reference internal" href="#">zenml.steps package</a><ul>
-<li><a class="reference internal" href="#subpackages">Subpackages</a></li>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
 <li><a class="reference internal" href="#zenml-steps-base-step-module">zenml.steps.base_step module</a></li>
-<li><a class="reference internal" href="#zenml-steps-base-step-test-module">zenml.steps.base_step_test module</a></li>
+<li><a class="reference internal" href="#zenml-steps-simple-step-module">zenml.steps.simple_step module</a></li>
+<li><a class="reference internal" href="#zenml-steps-split-step-module">zenml.steps.split_step module</a></li>
+<li><a class="reference internal" href="#zenml-steps-utils-module">zenml.steps.utils module</a></li>
 <li><a class="reference internal" href="#module-contents">Module contents</a></li>
 </ul>
 </li>
@@ -87,11 +88,11 @@
               
                 
   <li>
-    <a href="zenml.standards.html" title="Previous Chapter: zenml.standards package"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; zenml.standar...</span>
+    <a href="zenml.stacks.html" title="Previous Chapter: zenml.stacks package"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; zenml.stacks package</span>
     </a>
   </li>
   <li>
-    <a href="zenml.steps.deployer.html" title="Next Chapter: zenml.steps.deployer package"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">zenml.steps.d... &raquo;</span>
+    <a href="zenml.utils.html" title="Next Chapter: zenml.utils package"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">zenml.utils package &raquo;</span>
     </a>
   </li>
               
@@ -127,126 +128,20 @@
       
   <section id="zenml-steps-package">
 <h1>zenml.steps package<a class="headerlink" href="#zenml-steps-package" title="Permalink to this headline">¶</a></h1>
-<section id="subpackages">
-<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="zenml.steps.deployer.html">zenml.steps.deployer package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.deployer.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.deployer.html#zenml-steps-deployer-base-deployer-module">zenml.steps.deployer.base_deployer module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.deployer.html#zenml-steps-deployer-cortex-deployer-module">zenml.steps.deployer.cortex_deployer module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.deployer.html#zenml-steps-deployer-gcaip-deployer-module">zenml.steps.deployer.gcaip_deployer module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.deployer.html#module-contents">Module contents</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="zenml.steps.evaluator.html">zenml.steps.evaluator package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.evaluator.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.evaluator.html#zenml-steps-evaluator-agnostic-evaluator-module">zenml.steps.evaluator.agnostic_evaluator module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.evaluator.html#zenml-steps-evaluator-base-evaluator-module">zenml.steps.evaluator.base_evaluator module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.evaluator.html#zenml-steps-evaluator-tfma-evaluator-module">zenml.steps.evaluator.tfma_evaluator module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.evaluator.html#zenml-steps-evaluator-tfma-module-module">zenml.steps.evaluator.tfma_module module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.evaluator.html#module-contents">Module contents</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="zenml.steps.inferrer.html">zenml.steps.inferrer package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.inferrer.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.inferrer.html#zenml-steps-inferrer-base-inferrer-step-module">zenml.steps.inferrer.base_inferrer_step module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.inferrer.html#zenml-steps-inferrer-inference-file-writer-step-module">zenml.steps.inferrer.inference_file_writer_step module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.inferrer.html#zenml-steps-inferrer-tensorflow-inferrer-step-module">zenml.steps.inferrer.tensorflow_inferrer_step module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.inferrer.html#module-contents">Module contents</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="zenml.steps.preprocesser.html">zenml.steps.preprocesser package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.preprocesser.html#subpackages">Subpackages</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="zenml.steps.preprocesser.standard_preprocesser.html">zenml.steps.preprocesser.standard_preprocesser package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="zenml.steps.preprocesser.standard_preprocesser.html#subpackages">Subpackages</a></li>
-<li class="toctree-l4"><a class="reference internal" href="zenml.steps.preprocesser.standard_preprocesser.html#submodules">Submodules</a></li>
-<li class="toctree-l4"><a class="reference internal" href="zenml.steps.preprocesser.standard_preprocesser.html#zenml-steps-preprocesser-standard-preprocesser-standard-preprocesser-module">zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="zenml.steps.preprocesser.standard_preprocesser.html#module-contents">Module contents</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.preprocesser.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.preprocesser.html#zenml-steps-preprocesser-base-preprocesser-module">zenml.steps.preprocesser.base_preprocesser module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.preprocesser.html#module-contents">Module contents</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="zenml.steps.sequencer.html">zenml.steps.sequencer package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.sequencer.html#subpackages">Subpackages</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="zenml.steps.sequencer.standard_sequencer.html">zenml.steps.sequencer.standard_sequencer package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="zenml.steps.sequencer.standard_sequencer.html#subpackages">Subpackages</a></li>
-<li class="toctree-l4"><a class="reference internal" href="zenml.steps.sequencer.standard_sequencer.html#submodules">Submodules</a></li>
-<li class="toctree-l4"><a class="reference internal" href="zenml.steps.sequencer.standard_sequencer.html#zenml-steps-sequencer-standard-sequencer-standard-sequencer-module">zenml.steps.sequencer.standard_sequencer.standard_sequencer module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="zenml.steps.sequencer.standard_sequencer.html#zenml-steps-sequencer-standard-sequencer-utils-module">zenml.steps.sequencer.standard_sequencer.utils module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="zenml.steps.sequencer.standard_sequencer.html#module-contents">Module contents</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.sequencer.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.sequencer.html#zenml-steps-sequencer-base-sequencer-module">zenml.steps.sequencer.base_sequencer module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.sequencer.html#module-contents">Module contents</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="zenml.steps.split.html">zenml.steps.split package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.split.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.split.html#zenml-steps-split-base-split-step-module">zenml.steps.split.base_split_step module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.split.html#zenml-steps-split-categorical-domain-split-step-module">zenml.steps.split.categorical_domain_split_step module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.split.html#zenml-steps-split-categorical-ratio-split-step-module">zenml.steps.split.categorical_ratio_split_step module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.split.html#zenml-steps-split-constants-module">zenml.steps.split.constants module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.split.html#zenml-steps-split-no-split-step-module">zenml.steps.split.no_split_step module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.split.html#zenml-steps-split-random-split-module">zenml.steps.split.random_split module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.split.html#zenml-steps-split-split-step-test-module">zenml.steps.split.split_step_test module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.split.html#zenml-steps-split-utils-module">zenml.steps.split.utils module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.split.html#zenml-steps-split-utils-test-module">zenml.steps.split.utils_test module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.split.html#module-contents">Module contents</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="zenml.steps.tokenizer.html">zenml.steps.tokenizer package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.tokenizer.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.tokenizer.html#zenml-steps-tokenizer-base-tokenizer-module">zenml.steps.tokenizer.base_tokenizer module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.tokenizer.html#zenml-steps-tokenizer-hf-tokenizer-module">zenml.steps.tokenizer.hf_tokenizer module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.tokenizer.html#zenml-steps-tokenizer-utils-module">zenml.steps.tokenizer.utils module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.tokenizer.html#module-contents">Module contents</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="zenml.steps.trainer.html">zenml.steps.trainer package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.trainer.html#subpackages">Subpackages</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="zenml.steps.trainer.pytorch_trainers.html">zenml.steps.trainer.pytorch_trainers package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="zenml.steps.trainer.pytorch_trainers.html#submodules">Submodules</a></li>
-<li class="toctree-l4"><a class="reference internal" href="zenml.steps.trainer.pytorch_trainers.html#zenml-steps-trainer-pytorch-trainers-torch-base-trainer-module">zenml.steps.trainer.pytorch_trainers.torch_base_trainer module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="zenml.steps.trainer.pytorch_trainers.html#zenml-steps-trainer-pytorch-trainers-torch-ff-trainer-module">zenml.steps.trainer.pytorch_trainers.torch_ff_trainer module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="zenml.steps.trainer.pytorch_trainers.html#zenml-steps-trainer-pytorch-trainers-utils-module">zenml.steps.trainer.pytorch_trainers.utils module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="zenml.steps.trainer.pytorch_trainers.html#module-contents">Module contents</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="zenml.steps.trainer.tensorflow_trainers.html">zenml.steps.trainer.tensorflow_trainers package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="zenml.steps.trainer.tensorflow_trainers.html#submodules">Submodules</a></li>
-<li class="toctree-l4"><a class="reference internal" href="zenml.steps.trainer.tensorflow_trainers.html#zenml-steps-trainer-tensorflow-trainers-tf-base-trainer-module">zenml.steps.trainer.tensorflow_trainers.tf_base_trainer module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="zenml.steps.trainer.tensorflow_trainers.html#zenml-steps-trainer-tensorflow-trainers-tf-ff-trainer-module">zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="zenml.steps.trainer.tensorflow_trainers.html#module-contents">Module contents</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.trainer.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.trainer.html#zenml-steps-trainer-base-trainer-module">zenml.steps.trainer.base_trainer module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.trainer.html#zenml-steps-trainer-utils-module">zenml.steps.trainer.utils module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.steps.trainer.html#module-contents">Module contents</a></li>
-</ul>
-</li>
-</ul>
-</div>
-</section>
 <section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
 </section>
 <section id="zenml-steps-base-step-module">
 <h2>zenml.steps.base_step module<a class="headerlink" href="#zenml-steps-base-step-module" title="Permalink to this headline">¶</a></h2>
 </section>
-<section id="zenml-steps-base-step-test-module">
-<h2>zenml.steps.base_step_test module<a class="headerlink" href="#zenml-steps-base-step-test-module" title="Permalink to this headline">¶</a></h2>
+<section id="zenml-steps-simple-step-module">
+<h2>zenml.steps.simple_step module<a class="headerlink" href="#zenml-steps-simple-step-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="zenml-steps-split-step-module">
+<h2>zenml.steps.split_step module<a class="headerlink" href="#zenml-steps-split-step-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="zenml-steps-utils-module">
+<h2>zenml.steps.utils module<a class="headerlink" href="#zenml-steps-utils-module" title="Permalink to this headline">¶</a></h2>
 </section>
 <section id="module-contents">
 <h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
