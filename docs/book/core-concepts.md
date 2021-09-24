@@ -6,7 +6,7 @@ description: A good place to start before diving further into the docs.
 
 **ZenML** consists of the following key components:
 
-![ZenML Architectural Overview](.gitbook/assets/architecture-overview-zenml.png)
+![ZenML Architectural Overview](.gitbook/assets/Architecture_Diagram.png)
 
 **CLI**
 
