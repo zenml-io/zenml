@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
 from tfx.types.artifact import Property, PropertyType
 
 from zenml.artifacts.base_artifact import BaseArtifact
@@ -19,7 +20,13 @@ SPLIT_NAMES_PROPERTY = Property(type=PropertyType.STRING)
 
 
 class BaseDataArtifact(BaseArtifact):
-    """ """
+    """ Base class for any ZenML data artifact
+
+    The custom properties include a property to hold split names
+    """
 
     TYPE_NAME = "data_artifact"
     PROPERTIES = {"split_names": SPLIT_NAMES_PROPERTY}
+
+    # TODO: [LOW] Instead of split names, we can include a more comprehensive
+    #   split mapping
