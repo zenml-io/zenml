@@ -12,14 +12,21 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+""" Plugin which is created to add Google Cloud Store support to ZenML
+
+It inherits from the base Filesystem created by TFX and overwrites the
+corresponding functions thanks to gcsfs.
+
+Finally, the plugin is registered in the filesystem registry.
+"""
+
+from builtins import FileNotFoundError
 from typing import Any, Callable, Iterable, List, Optional, Tuple
 
 import gcsfs
 from tfx.dsl.io import filesystem
 from tfx.dsl.io import filesystem_registry
 from tfx.dsl.io.filesystem import PathType
-
-from builtins import FileNotFoundError
 
 
 class ZenGCS(filesystem.Filesystem):
@@ -90,4 +97,6 @@ class ZenGCS(filesystem.Filesystem):
         return ZenGCS.fs.walk(path=top)
 
 
+# TODO: [LOW] The registration of the filesystem should happen probably at an
+#   artifact store basis
 filesystem_registry.DEFAULT_FILESYSTEM_REGISTRY.register(ZenGCS, priority=15)
