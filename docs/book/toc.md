@@ -17,17 +17,18 @@
 - [Post-training workflow](starter-guide/post-training.md)
 - [Scaling to the cloud](starter-guide/scaling-to-the-cloud.md)
 
-## Advanced Guide
+<!-- ## Advanced Guide
 
 - [Inspecting all pipelines in a repository](advanced-guide/inspecting-all-pipelines.md)
 - [Querying the metadata store](advanced-guide/querying-the-metadata-store.md)
 - [Fetching artifacts](advanced-guide/fetching-artifacts.md)
 - [Team Collaboration](advanced-guide/team-collaboration.md)
-- [Backends](advanced-guide/backends.md)
+- [Backends](advanced-guide/backends.md) -->
 
 ## Support
 
-- [Tutorials](support/tutorials.md)
+- [CLI Command Reference](cli_command_reference.md)
+<!-- - [Tutorials](support/tutorials.md) -->
 - [Roadmap](support/roadmap.md)
 - [Changelogs](support/release_notes.md)
 - [Usage Analytics](support/usage-analytics.md)
