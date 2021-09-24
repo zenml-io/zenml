@@ -17,12 +17,24 @@ from zenml.artifacts.utils import WriterFactory
 
 
 class BaseArtifact(Artifact):
-    """ """
+    """ Base class for all ZenML artifacts.
+
+    Every implementation of an artifact needs to inherit this class.
+
+    While inheriting from this class there are a few things to consider:
+
+    - Upon creation, each artifact class needs to be given a unique TYPE_NAME.
+    - Your artifact can feature different properties under the parameter
+        PROPERTIES which will be tracked throughout your pipeline runs.
+    - Lastly, each artifact features a writer factory. This factory is used
+        to dictate how the artifact needs to be written based on the output
+        type within the step definition
+    """
 
     TYPE_NAME = "BaseArtifact"
     PROPERTIES = {}
-
     WRITER_FACTORY = WriterFactory()
 
     def get_writer(self, key):
+        """ Utility function to have a direct access to the factory """
         return self.WRITER_FACTORY.get_single_type(key)
