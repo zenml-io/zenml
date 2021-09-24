@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.steps.sequencer package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/index.html)
+zenml.steps.sequencer package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/2b2ef42152bc47c393e786e6d22bc48c6db84316/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/zenml-io/zenml/tree/2b2ef42152bc47c393e786e6d22bc48c6db84316/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/zenml-io/zenml/tree/2b2ef42152bc47c393e786e6d22bc48c6db84316/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](./)
   * * [zenml.steps.sequencer package](./)
       * [Subpackages](./#subpackages)
@@ -15,7 +15,7 @@ zenml.steps.sequencer package — ZenML documentation  [ZenML](https://github.co
       * [Module contents](./#module-contents)
 * [ « zenml.steps.p...](../zenml.steps.preprocesser/zenml.steps.preprocesser.standard_preprocesser/zenml.steps.preprocesser.standard_preprocesser.methods.md)
 * [ zenml.steps.s... »](zenml.steps.sequencer.standard_sequencer/)
-*  [Source](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/_sources/zenml.steps.sequencer.rst.txt)
+*  [Source](https://github.com/zenml-io/zenml/tree/2b2ef42152bc47c393e786e6d22bc48c6db84316/docs/sphinx_docs/_build/html/_sources/zenml.steps.sequencer.rst.txt)
 
 ## zenml.steps.sequencer package[¶](./#zenml-steps-sequencer-package)
 
