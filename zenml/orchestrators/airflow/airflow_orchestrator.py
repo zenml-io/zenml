@@ -6,8 +6,6 @@ from zenml.enums import OrchestratorTypes
 from zenml.orchestrators.airflow.airflow_dag_runner import AirflowDagRunner
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 
-print("TEST")
-
 
 @orchestrator_store_factory.register(OrchestratorTypes.airflow)
 class AirflowOrchestrator(BaseOrchestrator):
