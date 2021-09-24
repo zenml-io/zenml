@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.steps.trainer.pytorch\_trainers package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/index.html)
+zenml.steps.trainer.pytorch\_trainers package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/456ef8120b4ca9aae8f8fca6e88c08f3cdf35c91/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/zenml-io/zenml/tree/456ef8120b4ca9aae8f8fca6e88c08f3cdf35c91/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/zenml-io/zenml/tree/456ef8120b4ca9aae8f8fca6e88c08f3cdf35c91/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.steps.trainer.pytorch_trainers.md)
   * * [zenml.steps.trainer.pytorch\_trainers package](zenml.steps.trainer.pytorch_trainers.md)
       * [Submodules](zenml.steps.trainer.pytorch_trainers.md#submodules)
@@ -16,7 +16,7 @@ zenml.steps.trainer.pytorch\_trainers package — ZenML documentation  [ZenML](h
       * [Module contents](zenml.steps.trainer.pytorch_trainers.md#module-contents)
 * [ « zenml.steps.t...](./)
 * [ zenml.steps.t... »](zenml.steps.trainer.tensorflow_trainers.md)
-*  [Source](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/_sources/zenml.steps.trainer.pytorch_trainers.rst.txt)
+*  [Source](https://github.com/zenml-io/zenml/tree/456ef8120b4ca9aae8f8fca6e88c08f3cdf35c91/docs/sphinx_docs/_build/html/_sources/zenml.steps.trainer.pytorch_trainers.rst.txt)
 
 ## zenml.steps.trainer.pytorch\_trainers package[¶](zenml.steps.trainer.pytorch_trainers.md#zenml-steps-trainer-pytorch-trainers-package)
 

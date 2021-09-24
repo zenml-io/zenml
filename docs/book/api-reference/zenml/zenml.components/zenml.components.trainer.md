@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.components.trainer package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/index.html)
+zenml.components.trainer package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/456ef8120b4ca9aae8f8fca6e88c08f3cdf35c91/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/zenml-io/zenml/tree/456ef8120b4ca9aae8f8fca6e88c08f3cdf35c91/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/zenml-io/zenml/tree/456ef8120b4ca9aae8f8fca6e88c08f3cdf35c91/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.components.trainer.md)
   * * [zenml.components.trainer package](zenml.components.trainer.md)
       * [Submodules](zenml.components.trainer.md#submodules)
@@ -18,7 +18,7 @@ zenml.components.trainer package — ZenML documentation  [ZenML](https://github
       * [Module contents](zenml.components.trainer.md#module-contents)
 * [ « zenml.compone...](zenml.components.tokenizer.md)
 * [ zenml.compone... »](zenml.components.transform.md)
-*  [Source](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/_sources/zenml.components.trainer.rst.txt)
+*  [Source](https://github.com/zenml-io/zenml/tree/456ef8120b4ca9aae8f8fca6e88c08f3cdf35c91/docs/sphinx_docs/_build/html/_sources/zenml.components.trainer.rst.txt)
 
 ## zenml.components.trainer package[¶](zenml.components.trainer.md#zenml-components-trainer-package)
 
