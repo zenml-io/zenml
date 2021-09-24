@@ -29,9 +29,6 @@ class ComponentFactory:
     registered here.
     """
 
-    components: Dict[Text, Any] = {}
-    name: Text
-
     def __init__(self, name: Text):
         """Constructor for the factory.
 
@@ -39,6 +36,7 @@ class ComponentFactory:
             name: Unique name for the factory.
         """
         self.name = name
+        self.components: Dict[Text, Any] = {}
 
     def get_components(self) -> Dict[Any, Any]:
         """Return all components"""
@@ -57,8 +55,7 @@ class ComponentFactory:
     def register_component(self, key: Any, component: Any):
         self.components[key] = component
 
-    @classmethod
-    def register(cls, name: str) -> Callable:
+    def register(self, name: str) -> Callable:
         """Class method to register Executor class to the internal registry.
 
         Args:
@@ -70,11 +67,11 @@ class ComponentFactory:
 
         def inner_wrapper(wrapped_class: Any) -> Callable:
             """Inner wrapper for decorator."""
-            if name in cls.components:
+            if name in self.components:
                 logger.debug(
                     f"Executor {name} already exists. Will replace it"
                 )
-            cls.components[name] = wrapped_class
+            self.components[name] = wrapped_class
             return wrapped_class
 
         return inner_wrapper

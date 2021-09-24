@@ -51,4 +51,6 @@ class AirflowOrchestrator(BaseOrchestrator):
             metadata_connection_config=metadata_store.get_tfx_metadata_config(),
             enable_cache=False,
         )
+
         return runner.run(created_pipeline)
+
