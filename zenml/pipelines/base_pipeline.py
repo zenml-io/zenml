@@ -111,4 +111,4 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
 
     def run(self):
-        self.stack.orchestrator.run(self)
+        return self.stack.orchestrator.run(self)

@@ -15,7 +15,7 @@ def DataIngestionStep(uri: Param[str]) -> PandasOutput[TextArtifact]:
 
 @step
 def DistSplitStep(
-    text_artifact: Input[TextArtifact],
+        text_artifact: Input[TextArtifact],
 ) -> BeamOutput[TextArtifact]:
     import apache_beam as beam
 
@@ -34,9 +34,9 @@ def InMemPreprocesserStep(text_artifact: Input[TextArtifact]) -> pd.DataFrame:
 
 @pipeline
 def SplitPipeline(
-    data_step: Step[DataIngestionStep],
-    split_step: Step[DistSplitStep],
-    preprocesser_step: Step[InMemPreprocesserStep],
+        data_step: Step[DataIngestionStep],
+        split_step: Step[DistSplitStep],
+        preprocesser_step: Step[InMemPreprocesserStep],
 ):
     text_artifact = data_step()
     split_artifact = split_step(text_artifact=text_artifact)
@@ -52,4 +52,4 @@ split_pipeline = SplitPipeline(
     preprocesser_step=InMemPreprocesserStep(),
 )
 
-split_pipeline.run()
+DAG = split_pipeline.run()
