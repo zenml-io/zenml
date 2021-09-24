@@ -1,18 +1,21 @@
 # Creating your ZenML repository
 
-Every **ZenML** project starts inside a **ZenML repository**. Think of it just like a normal Git repository, except that there are some added bonuses on top! In order to create a **ZenML repository**, create a git repo and do the following within this repository:
+<!-- TODO: This repo uses a lot of references to the original setup. I'm not sure what of this even works any more. Presumably most of the latter parts are broken. -->
 
-```text
+Every **ZenML** project starts inside a **ZenML repository**. Think of it just like a normal Git repository, except that there are some added bonuses on top! In order to create a **ZenML repository**, create a git repo (with `git init`) and do the following within this repository:
+
+```bash
 zenml init
 ```
 
 The initialization will execute the following steps:
 
-* It will create a **default** local SQLite **metadata store** and **artifact store** inside a `.zenml` folder in the root of your **repository.**
-* It will create an empty **pipelines directory** at the root as well, which is the path where all your pipeline configurations will be stored on **default.**
-* Adds a `.zenml_config` YAML configuration file inside the `.zenml` folder that tracks these defaults.
+- It will create a **default** local SQLite **metadata store** and **artifact store** inside a `.zen` folder in the root of your **repository.**
+- Adds a `.zenml_config` YAML configuration file inside the `.zen` folder that tracks these defaults.
 
-If you want to change your **metadata store**, **artifact store**, or **pipelines directory**, please use the `zenml config` CLI group.
+<!-- TODO: does this CLI group still work? -->
+
+If you want to change your **metadata store** or **artifact store**, please use the `zenml config` CLI group:
 
 ```bash
 # Display the current property
@@ -24,7 +27,7 @@ zenml config PROPERTY set [OPTIONS] ARGUMENTS
 
 ## Local and Global Config[¶](http://docs.zenml.io.s3-website.eu-central-1.amazonaws.com/repository/what-is-a-repository.html#local-vs-global-config)
 
-Similar to other tools like Git, **ZenML** maintains both a per-repository configuration as well as a global configuration on your machine. As mentioned above, the local configuration is stored in a `.zenml/` directory at the root of your **repository**. This configuration is written in YAML and may look like this:
+Similar to other tools like Git, **ZenML** maintains both a per-repository configuration as well as a global configuration on your machine. As mentioned above, the local configuration is stored in a `.zen/` directory at the root of your **repository**. This configuration is written in YAML and may look like this:
 
 ```yaml
 artifact_store: /path/to/zenml/repo/.zenml/local_store
@@ -59,7 +62,7 @@ datasources = repo.get_datasources()
 # Get all pipelines
 pipelines = repo.get_pipelines()
 
-# List all registered steps in the 
+# List all registered steps in the
 steps = repo.get_step_versions()
 
 # Get a step by its version
@@ -77,6 +80,5 @@ It is important to note that most of the methods listed above involve parsing th
 
 ## What's next?
 
-* As we now have our **ZenML repository** set up, we can go ahead and start developing our first **pipeline**.
-* If you want to learn more about how the git integration works under the hood or see our suggestions on how to organize your **repository,** you can check [here](../advanced-guide/fetching-artifacts.md).
-
+- As we now have our **ZenML repository** set up, we can go ahead and start developing our first **pipeline**.
+- If you want to learn more about how the git integration works under the hood or see our suggestions on how to organize your **repository,** you can check [here](../advanced-guide/fetching-artifacts.md).

@@ -1,5 +1,5 @@
 ---
-description: 'Structure your steps, pipelines, backends and more.'
+description: "Structure your steps, pipelines, backends and more."
 ---
 
 # Fetching artifacts
@@ -10,16 +10,16 @@ The only requirement for the structure of any **ZenML** repository is that it sh
 
 **ZenML** has the following core components:
 
-* [Steps](../core-concepts.md#steps)
-* [Datasources](../core-concepts.md#datasources)
-* [Pipelines](../core-concepts.md#pipelines)
-* [Backends](../core-concepts.md#backends)
+- [Steps](../core-concepts.md#steps)
+- [Datasources](../core-concepts.md#datasources)
+- [Pipelines](../core-concepts.md#pipelines)
+- [Backends](../core-concepts.md#backends)
 
 Each component has its own intricacies and its own rules of precisely how to extend them. However, there are some rules that are general when writing **ZenML** code:
 
-* All components have `Base` classes, e.g., `BaseDatasource`, `BasePipeline`, `BaseStep` etc that need to be inherited from.
-* All custom classes must exist within their own `module` \(directory\) in a **ZenML** repo.
-* All components follow the same Git-pinning methodology outlined [below](fetching-artifacts.md#integration-with-git).
+- All components have `Base` classes, e.g., `BaseDatasource`, `BasePipeline`, `BaseStep` etc that need to be inherited from.
+- All custom classes must exist within their own `module` \(directory\) in a **ZenML** repo.
+- All components follow the same Git-pinning methodology outlined [below](fetching-artifacts.md#integration-with-git).
 
 ## Recommended Repository Structure
 
@@ -32,20 +32,15 @@ repository
 |   .gitignore
 |   Dockerfile
 |
-└───.git 
-|    
-└───.zenml
+└───.git
+|
+└───.zen
 |       .zenml_config
-|       local_store/    
+|       local_store/
 |
 └───notebooks
 |       pipeline_exploration.ipynb
-|       pipeline_evaluation.ipynb 
-|
-└───pipelines
-|       pipeline_1.yaml
-|       pipeline_2.yaml
-|       pipeline_n.yaml
+|       pipeline_evaluation.ipynb
 |
 └───split
 |   │   __init__.py
@@ -69,14 +64,14 @@ repository
 |       |   __init__.py
 |
 └───other_step
-    │   __init__.py
-    |
-    └───my_step_module
-        │   step.py
-        |   __init__.py
+│   __init__.py
+|
+└───my_step_module
+│   step.py
+|   __init__.py
 ```
 
-Some things to note: There can be many scripts of the type **pipeline\_run\_script.py**, and can potentially be placed in their own directory. These sorts of files are where the actual **ZenML** pipeline is constructed. When using **ZenML** in a CI/CD setting with automated runs, these files can be checked into source control as well.
+Some things to note: There can be many scripts of the type **pipeline_run_script.py**, and can potentially be placed in their own directory. These sorts of files are where the actual **ZenML** pipeline is constructed. When using **ZenML** in a CI/CD setting with automated runs, these files can be checked into source control as well.
 
 {% hint style="info" %}
 You can put pipeline construction files anywhere within a ZenML repo, and not just the root. **ZenML** figures out automatically from which context you are executing and always finds a reference to the root of the repository!
@@ -92,8 +87,8 @@ Concretely, ZenML **optionally** uses Git SHAs to resolve your version-pinned pi
 
 At pipeline run time, ZenML ties into your local Git history and automatically resolves the SHA into usable code. Every pipeline configuration will persist the combination of the class used, and the related SHA in the [pipeline config](https://github.com/zenml-io/zenml/blob/1b4e7d68c6d1c9c92e04d7b52ebb1cc63a20fde5/docs/book/pipelines/what-is-a-pipeline.md). The format used is: `class@git_sha`, where:
 
-* **class**: a fully-qualified python import path of a ZenML-compatible class, e.g. `my_module.my_class.MyClassName`  \_\_
-* _**git\_sha**_ **\(optional\)**: a 40-digit string representing the commit git sha at which the class exists
+- **class**: a fully-qualified python import path of a ZenML-compatible class, e.g. `my_module.my_class.MyClassName` \_\_
+- _**git_sha**_ **\(optional\)**: a 40-digit string representing the commit git sha at which the class exists
 
 You can, of course, run your code as-is and maintain version control via your own logic and your own automation. This is why the `git_sha` above is optional: If you run a pipeline where the `class` is not committed \(i.e. unstaged or staged but not committed\), then no `git_sha` is added to the config. In this case, each time the pipeline is run or loaded the `class` is loaded **as is** from the `class` path, directly from the working tree's current state.
 
@@ -185,14 +180,13 @@ steps:
 
 Notice the `source` key is tagged with the full path to trainer class and the sha `e9448e0abbc6f03252578ca877bc80c94f137edd`. If we ever load this pipeline or step using e.g. `repo.get_pipeline_by_name()` then the following would happen:
 
-* All files within the directory `trainers/my_awesome_trainer/` would be checked to see if committed or not. Only if all files are committed properly would ZenML allow for loading the pipeline.
-* The directory `repository/trainers/my_awesome_trainer/` would be checked out to sha `e9448e0a`. This is achieved by executing `git checkout e9448e0a -- trainers/my_awesome_trainer/`
-* The module is loaded using the standard Python `importlib` library.
-* The git checkout is reverted.
+- All files within the directory `trainers/my_awesome_trainer/` would be checked to see if committed or not. Only if all files are committed properly would ZenML allow for loading the pipeline.
+- The directory `repository/trainers/my_awesome_trainer/` would be checked out to sha `e9448e0a`. This is achieved by executing `git checkout e9448e0a -- trainers/my_awesome_trainer/`
+- The module is loaded using the standard Python `importlib` library.
+- The git checkout is reverted.
 
 {% hint style="info" %}
 We change `e9448e0abbc6f03252578ca877bc80c94f137edd` to `e9448e0a` for readability purposes.
 {% endhint %}
 
 This way, all **ZenML** custom classes can be used in different environments, and reproducibility is ensured.
-
