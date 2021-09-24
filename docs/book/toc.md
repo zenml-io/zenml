@@ -3,8 +3,9 @@
 - [ZenML 101](index.md)
 - [Installation & Setup](installation.md)
 - [Core Concepts](core-concepts.md)
+- [Quickstart Guide](quickstart-guide.md)
 
-## Starter Guide
+<!-- ## Starter Guide
 
 - [Creating your ZenML repository](starter-guide/repository.md)
 - [Writing your first training pipeline](starter-guide/quickstart.md)
@@ -15,7 +16,7 @@
 - [Adding evaluation metrics](starter-guide/evaluator.md)
 - [Deploy your model](starter-guide/deployer.md)
 - [Post-training workflow](starter-guide/post-training.md)
-- [Scaling to the cloud](starter-guide/scaling-to-the-cloud.md)
+- [Scaling to the cloud](starter-guide/scaling-to-the-cloud.md) -->
 
 <!-- ## Advanced Guide
 
@@ -27,7 +28,7 @@
 
 ## Support
 
-- [CLI Command Reference](cli_command_reference.md)
+- [CLI Command Reference](cli-command-reference.md)
 <!-- - [Tutorials](support/tutorials.md) -->
 - [Roadmap](support/roadmap.md)
 - [Changelogs](support/release_notes.md)
