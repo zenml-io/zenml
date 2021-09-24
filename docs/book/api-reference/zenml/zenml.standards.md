@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.standards package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/index.html)
+zenml.standards package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/2b2ef42152bc47c393e786e6d22bc48c6db84316/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/zenml-io/zenml/tree/2b2ef42152bc47c393e786e6d22bc48c6db84316/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/zenml-io/zenml/tree/2b2ef42152bc47c393e786e6d22bc48c6db84316/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.standards.md)
   * * [zenml.standards package](zenml.standards.md)
       * [Submodules](zenml.standards.md#submodules)
@@ -14,7 +14,7 @@ zenml.standards package — ZenML documentation  [ZenML](https://github.com/zenm
       * [Module contents](zenml.standards.md#module-contents)
 * [ « zenml.repo package](zenml.repo.md)
 * [ zenml.steps package »](zenml.steps/)
-*  [Source](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/_sources/zenml.standards.rst.txt)
+*  [Source](https://github.com/zenml-io/zenml/tree/2b2ef42152bc47c393e786e6d22bc48c6db84316/docs/sphinx_docs/_build/html/_sources/zenml.standards.rst.txt)
 
 ## zenml.standards package[¶](zenml.standards.md#zenml-standards-package)
 

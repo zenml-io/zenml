@@ -2,7 +2,6 @@
 
 <img src="https://zenml.io/assets/social/github.svg">
 
-
 <p align="center">
   <a href="https://zenml.io">zenml.io</a> •
   <a href="https://docs.zenml.io">docs.zenml.io</a> •
@@ -16,6 +15,7 @@
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zenml)](https://pypi.org/project/zenml/)
 [![PyPI Status](https://pepy.tech/badge/zenml)](https://pepy.tech/project/zenml)
 ![GitHub](https://img.shields.io/github/license/zenml-io/zenml)
+
 </div>
 
 <div align="center"> Join our
@@ -29,54 +29,68 @@
 </div>
 
 ## NOTICE August 23 2021
+
+[We are hiring!](https://zenml.io/careers)
+If you would like to be part of the ZenML journey alongside the already
+[awesome and growing team](https://zenml.io/team), then make sure to
+[check out our careers page](https://zenml.io/careers) and apply directly!
 [We are hiring!](https://zenml.io/careers) 
 If you would like to be part of the ZenML journey alongside the already 
 [awesome and growing team](https://zenml.io/team), then make sure to 
 [check out our careers page](https://zenml.io/careers) and apply directly!
 
 ## NOTICE August 12 2021
-First off, thank you everyone so much for the support ZenML has received since its release a few months ago. It has been 
-a crazy ride for the core development team. Now, we are taking the time to absorb all the feedback we have receieved 
-and are undergoing a **major rehaul of ZenML**. We will be releasing in the coming weeks a much slimmer, faster, and more production-ready 
+
+First off, thank you everyone so much for the support ZenML has received since its release a few months ago. It has been
+a crazy ride for the core development team. Now, we are taking the time to absorb all the feedback we have receieved
+and are undergoing a **major rehaul of ZenML**. We will be releasing in the coming weeks a much slimmer, faster, and more production-ready
 version of ZenML soon!
 
 If you are here as an existing user, or someone who is curious in what we are up to with the redesign, head over to the [playground](playground) directory!
 
 In the meanwhile, feel free to read the rest of the README and get an idea where ZenML fits in the whole MLOps space.
 
-
 ## Why?
+
 _**Ichi Wa Zen, Zen Wa Ichi.**_
 
 ZenML is built for ML practitioners who are ramping up their ML workflows towards production. We built ZenML because we could not find an easy framework that translates the patterns observed in the research phase with Jupyter notebooks into a production-ready ML environment. Here is what's hard to replicate in production:
 
-* It's hard to **version** data, code, configuration, and models.
-* It's difficult to **reproduce** experiments across environments.
-* There is no **gold-standard** to organize ML code and manage technical debt as complexity grows.
-* It's a struggle to **establish a reliable link** between training and deployment.
-* It's arduous to **track** metadata and artifacts that are produced.
+- It's hard to **version** data, code, configuration, and models.
+- It's difficult to **reproduce** experiments across environments.
+- There is no **gold-standard** to organize ML code and manage technical debt as complexity grows.
+- It's a struggle to **establish a reliable link** between training and deployment.
+- It's arduous to **track** metadata and artifacts that are produced.
 
-ZenML is not here to replace the great tools that solve the individual problems above. Rather, it uses them as [integrations](https://docs.zenml.io/benefits/integrations.html) to expose a coherent, simple path to getting any ML model in production. 
+ZenML is not here to replace the great tools that solve the individual problems above. Rather, it uses them as [integrations](https://docs.zenml.io/benefits/integrations.html) to expose a coherent, simple path to getting any ML model in production.
 
 ## What is ZenML?
-**ZenML** is an extensible, open-source MLOps framework for creating production-ready Machine Learning pipelines - in a simple way. 
 
-A user of ZenML is asked to break down their ML development into individual [Steps](https://docs.zenml.io/core-concepts#steps), each representing an individual task in the ML development process. A sequence of  steps put together is a [Pipeline](https://docs.zenml.io/core-concepts#pipelines). Each pipeline contains a [Datasource](https://docs.zenml.io/core-concepts#datasources), which represents a snapshot of a versioned dataset in time. Lastly, every pipeline (and indeed almost every step) can run in [Backends](https://docs.zenml.io/core-concepts#backends), that specify how and where a step is executed.
+**ZenML** is an extensible, open-source MLOps framework for creating production-ready Machine Learning pipelines - in a simple way.
+
+<!-- TODO: this section needs clarifying -->
+
+A user of ZenML is asked to break down their ML development into individual [Steps](https://docs.zenml.io/core-concepts#steps), each representing an individual task in the ML development process. A sequence of steps put together is a [Pipeline](https://docs.zenml.io/core-concepts#pipelines). Each pipeline contains a [Artifacts](), which represents a snapshot of a versioned dataset in time. Lastly, every pipeline (and indeed almost every step) can run in [Backends](), that specify how and where a step is executed.
 
 By developing in pipelines, ML practitioners give themselves a platform to transition from research to production from the very beginning, and are also helped in the research phase by the powerful automations introduced by ZenML.
 
-## Quickstart 
-The quickest way to get started is to create a simple pipeline. The dataset used here is the [Pima Indians Diabetes Dataset](https://storage.googleapis.com/zenml_quickstart/diabetes.csv) (originally from the National Institute of Diabetes and Digestive and Kidney Diseases) 
+## Quickstart
+
+<!-- TODO: Replace with new Quickstart example -->
+
+The quickest way to get started is to create a simple pipeline. The dataset used here is the [Pima Indians Diabetes Dataset](https://storage.googleapis.com/zenml_quickstart/diabetes.csv) (originally from the National Institute of Diabetes and Digestive and Kidney Diseases)
 
 #### Step 0: Installation
 
 ZenML is available for easy installation into your environment via PyPI:
+
 ```bash
 pip install zenml
 ```
 
 Alternatively, if you’re feeling brave, feel free to install the bleeding edge:
 **NOTE:** Do so on your own risk, no guarantees given!
+
 ```bash
 pip install git+https://github.com/zenml-io/zenml.git@main --upgrade
 ```
@@ -105,14 +119,14 @@ ds = CSVDatasource(name='Pima Indians Diabetes Dataset',
 training_pipeline.add_datasource(ds)
 
 # Add a random 70/30 train-eval split
-training_pipeline.add_split(RandomSplit(split_map={'train': 0.7, 
+training_pipeline.add_split(RandomSplit(split_map={'train': 0.7,
                                                    'eval': 0.2,
                                                    'test': 0.1}))
 
 # StandardPreprocesser() has sane defaults for normal preprocessing methods
 training_pipeline.add_preprocesser(
     StandardPreprocesser(
-        features=['times_pregnant', 'pgc', 'dbp', 'tst', 
+        features=['times_pregnant', 'pgc', 'dbp', 'tst',
                   'insulin', 'bmi', 'pedigree', 'age'],
         labels=['has_diabetes'],
         overwrite={'has_diabetes': {
@@ -138,6 +152,7 @@ training_pipeline.run()
 ```
 
 ## Leverage powerful integrations
+
 Once code is organized into a ZenML pipeline, you can supercharge your ML development through powerful [integrations](https://docs.zenml.io/installation#integrations). Some of the benefits you get are:
 
 ### Work locally but switch seamlessly to the cloud
@@ -165,23 +180,23 @@ training_pipeline.view_schema()
 
 ![Automatic schema dection](docs/schema.png)
 
-
 ### View statistics
+
 ```python
 # See statistics of train and eval
 training_pipeline.view_statistics()
 ```
+
 <img src="docs/statistics.png" alt="ZenML statistics visualization" />
 
-
 ### Evaluate the model using built-in evaluators
+
 ```python
 # Creates a notebook for evaluation
 training_pipeline.evaluate()
 ```
 
 <img src="docs/tensorboard_inline.png" alt="Tensorboard built-in"   />
-
 
 ### Compare training pipelines
 
@@ -191,9 +206,10 @@ repo.compare_training_runs()
 
 ![ZenML built-in pipeline comparison](docs/compare.png)
 
-
 ### Distribute preprocessing to the cloud
+
 Leverage distributed compute powered by [Apache Beam](https://beam.apache.org/):
+
 ```python
 training_pipeline.add_preprocesser(
     StandardPreprocesser(...).with_backend(
@@ -203,10 +219,13 @@ training_pipeline.add_preprocesser(
     ))
 )
 ```
+
 <img src="docs/zenml_distribute.png" alt="ZenML distributed processing"   />
 
 ### Train on spot instances
+
 Easily train on spot instances to [save 80% cost](https://towardsdatascience.com/spot-the-difference-in-ml-costs-358202e60266).
+
 ```python
 training_pipeline.run(
   OrchestratorGCPBackend(
@@ -221,6 +240,7 @@ training_pipeline.run(
 ```
 
 ### Deploy models automatically
+
 Automatically deploy each model with powerful Deployment integrations like [Cortex](examples/cortex).
 
 ```python
@@ -232,26 +252,29 @@ training_pipeline.add_deployment(
 )
 ```
 
-The best part is that ZenML is extensible easily, and can be molded to your use-case. You can create your own custom logic or create a PR 
-and contribute to the ZenML community, so that everyone can benefit.
+The best part is that ZenML is extensible easily, and can be molded to your use-case. You can create your own custom logic or create a PR and contribute to the ZenML community, so that everyone can benefit.
 
 ## Roadmap
 Missing a feature/integration? Our roadmap is public, and hosted on Notion. 
 Check it out [here](https://zenml.io/roadmap).
 
 ## Community
+
 Our community is the backbone of making ZenML a success! We are currently actively maintaining two main channels for community discussions:
 
-* Our Slack Channel: Chat with us [here](https://zenml.io/slack-invite/).
+- Our Slack Channel: Chat with us [here](https://zenml.io/slack-invite/).
 
 ## Contributing
-We would love to receive your contributions! Check our [Contributing Guide](CONTRIBUTING.md) for more details on how to contribute best.
+
+We would love to receive your contributions! Check our [Contributing Guide](CONTRIBUTING.md) for more details on how best to contribute.
 
 ## Copyright
+
 ZenML is distributed under the terms of the Apache License Version 2.0. A complete version of the license is available in the [LICENSE.md](LICENSE.md) in this repository.
 
 Any contribution made to this project will be licensed under the Apache License Version 2.0.
 
 ## Credit
-ZenML is built on the shoulders of giants: We leverage, and would like to give credit to, existing open-source libraries like [TFX](https://github.com/tensorflow/tfx/). The goal of our framework is neither to replace these libraries, nor to diminish their usage. ZenML is simply an opinionated, higher level interface with the focus being purely on easy-of-use and coherent intuitive design.
+
+ZenML is built on the shoulders of giants: we leverage, and would like to give credit to, existing open-source libraries like [TFX](https://github.com/tensorflow/tfx/). The goal of our framework is neither to replace these libraries, nor to diminish their usage. ZenML is simply an opinionated, higher-level interface with the focus being purely on easy-of-use and coherent intuitive design.
 You can read more about why we actually started building ZenML at our [blog](https://blog.zenml.io/why-zenml/).

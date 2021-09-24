@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.datasources package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/index.html)
+zenml.datasources package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/2b2ef42152bc47c393e786e6d22bc48c6db84316/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/zenml-io/zenml/tree/2b2ef42152bc47c393e786e6d22bc48c6db84316/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/zenml-io/zenml/tree/2b2ef42152bc47c393e786e6d22bc48c6db84316/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.datasources.md)
   * * [zenml.datasources package](zenml.datasources.md)
       * [Submodules](zenml.datasources.md#submodules)
@@ -30,7 +30,7 @@ zenml.datasources package — ZenML documentation  [ZenML](https://github.com/ze
       * [Module contents](zenml.datasources.md#module-contents)
 * [ « zenml.compone...](zenml.components/zenml.components.transform.md)
 * [ zenml.metadat... »](zenml.metadata.md)
-*  [Source](https://github.com/zenml-io/zenml/tree/e03186485a4d97ca52ee0268d9168304783fdd47/docs/sphinx_docs/_build/html/_sources/zenml.datasources.rst.txt)
+*  [Source](https://github.com/zenml-io/zenml/tree/2b2ef42152bc47c393e786e6d22bc48c6db84316/docs/sphinx_docs/_build/html/_sources/zenml.datasources.rst.txt)
 
 ## zenml.datasources package[¶](zenml.datasources.md#zenml-datasources-package)
 
