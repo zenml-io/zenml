@@ -29,6 +29,7 @@
 ## Support
 
 - [CLI Command Reference](cli-command-reference.md)
+- [Glossary](glossary.md)
 <!-- - [Tutorials](support/tutorials.md) -->
 - [Roadmap](support/roadmap.md)
 - [Changelogs](support/release_notes.md)
