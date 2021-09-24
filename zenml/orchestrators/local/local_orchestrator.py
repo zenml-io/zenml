@@ -41,4 +41,4 @@ class LocalOrchestrator(BaseOrchestrator):
             metadata_connection_config=metadata_store.get_tfx_metadata_config(),
             enable_cache=False,
         )
-        runner.run(created_pipeline)
+        return runner.run(created_pipeline)

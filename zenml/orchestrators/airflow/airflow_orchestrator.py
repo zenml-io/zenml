@@ -1,16 +1,26 @@
+import datetime
+
 from tfx.dsl.components.common.importer import Importer
 from tfx.orchestration import pipeline as tfx_pipeline
 
 from zenml.core.component_factory import orchestrator_store_factory
 from zenml.enums import OrchestratorTypes
 from zenml.orchestrators.airflow.airflow_dag_runner import AirflowDagRunner
+from zenml.orchestrators.airflow.airflow_dag_runner import \
+    AirflowPipelineConfig
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 
 
 @orchestrator_store_factory.register(OrchestratorTypes.airflow)
 class AirflowOrchestrator(BaseOrchestrator):
     def run(self, zenml_pipeline):
-        runner = AirflowDagRunner()
+        # TODO: [LOW] remove or modify the configuration here
+        _airflow_config = {
+            'schedule_interval': None,
+            'start_date': datetime.datetime(2019, 1, 1),
+        }
+
+        runner = AirflowDagRunner(AirflowPipelineConfig(_airflow_config))
 
         # Resolve the importers for external artifact inputs
         importers = {}
@@ -41,4 +51,4 @@ class AirflowOrchestrator(BaseOrchestrator):
             metadata_connection_config=metadata_store.get_tfx_metadata_config(),
             enable_cache=False,
         )
-        run = runner.run(created_pipeline)
+        return runner.run(created_pipeline)
