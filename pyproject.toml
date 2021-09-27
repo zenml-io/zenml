@@ -52,6 +52,12 @@ click = "8.0.1"
 pydantic = "^1.8.2"
 analytics-python = "^1.4.0"
 distro = "^1.6.0"
+# A list of all of the optional dependencies, some of which are included in the
+# below `extras`. They can be opted into by apps.
+apache-airflow = {version = "^2.1.4", optional = true }
+
+[tool.poetry.extras]
+airflow = ["apache-airflow"]
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"
