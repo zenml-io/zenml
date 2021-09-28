@@ -42,7 +42,6 @@ include = [
     "examples",
     "*.txt",
     "*.md",
-    "zenml",
     "*.sh"
 ]
 
@@ -121,7 +120,7 @@ parallel = true
 source = [
     "docs",
     "tests",
-    "zenml"
+    "src/zenml"
 ]
 
 [tool.coverage.report]
