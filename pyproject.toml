@@ -35,10 +35,11 @@ exclude = [
     "tests",
     "docs",
     "legacy",
+    "examples/legacy",
     "playground"
 ]
 include = [
-    "src/zenml/*",
+    "src/zenml",
     "examples",
     "*.txt",
     "*.md",
