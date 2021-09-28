@@ -61,10 +61,8 @@ def SplitPipeline(
 
 
 # Pipeline
-DATA_PATH = os.getenv("ZENML_DATA")
-
 split_pipeline = SplitPipeline(
-    data_step=DataIngestionStep(uri=DATA_PATH),
+    data_step=DataIngestionStep(uri=os.getenv("ZENML_DATA")),
     split_step=DistSplitStep(),
     preprocesser_step=InMemPreprocesserStep(),
 )
