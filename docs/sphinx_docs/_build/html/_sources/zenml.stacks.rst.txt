@@ -12,14 +12,6 @@ zenml.stacks.base\_stack module
    :undoc-members:
    :show-inheritance:
 
-zenml.stacks.base\_stack\_test module
--------------------------------------
-
-.. automodule:: zenml.stacks.base_stack_test
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 zenml.stacks.constants module
 -----------------------------
 

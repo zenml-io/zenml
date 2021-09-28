@@ -1,0 +1,60 @@
+name: generate-docstring-docs
+
+on:
+  # Trigger the workflow on push to main branch
+  push:
+    branches:
+      - main
+
+# This job installs dependencies, build the book, and pushes it to `gh-pages`
+jobs:
+  build-and-deploy-book:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: [3.8]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install poetry
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "poetry"
+
+      - name: Install Dependencies
+        run: python -m poetry install
+
+      # Generate docstring documentation
+      - name: Generate docstring documentation
+        run: |
+          rm -rf docs/sphinx_docs/_build/
+          sphinx-apidoc -o docs/sphinx_docs/ src/zenml/
+          cd docs/sphinx_docs/
+          make html
+
+      # Generate docstring documentation
+      - name: Appending to toc
+        run: |
+          cd docs/
+          python generate_api_docs.py
+
+      # Commit and push to gitbook
+      - name: Commit and push to gitbook
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add docs/sphinx_docs/_build/
+          git add docs/book/toc.md
+          git commit -m 'Generated docs [ci skip]'
+          git push
+
+      # Build the book
+      - name: Print output
+        run: |
+          ls docs/sphinx_docs/_build/html
