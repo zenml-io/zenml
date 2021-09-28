@@ -136,7 +136,9 @@ def infer_artifact_type(obj):
     import pandas as pd
 
     if issubclass(obj, pd.DataFrame):
-        from zenml.artifacts.data_artifacts.pandas_artifact import PandasArtifact
+        from zenml.artifacts.data_artifacts.pandas_artifact import (
+            PandasArtifact,  # isort: skip
+        )
 
         return PandasArtifact
     elif issubclass(obj, (int, float, str)):
