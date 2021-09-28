@@ -17,7 +17,7 @@ repos:
     rev: v1.1
     hooks:
       - id: autoflake
-        args: [ '--in-place', '--remove-all-unused-imports', '--remove-unused-variable' ]
+        args: [ '--in-place', '--remove-all-unused-imports', '--remove-unused-variable', '--recursive']
 #  - repo: https://github.com/pre-commit/mirrors-mypy
 #    rev: v0.910
 #    hooks:
@@ -27,4 +27,4 @@ repos:
     rev: 1.4.0
     hooks:
       - id: interrogate
-        args: [ -vv, -i, --fail-under=80 ]
+        args: []
