@@ -27,4 +27,4 @@ repos:
     rev: 1.4.0
     hooks:
       - id: interrogate
-        args: []
+        args: [-c]
