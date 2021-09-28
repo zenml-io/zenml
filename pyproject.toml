@@ -84,6 +84,8 @@ autoflake = "^1.4"
 pyment = "^0.3.3"
 tox = "^3.24.3"
 hypothesis = "^6.23.0"
+Sphinx = "^4.2.0"
+sphinx-bootstrap-theme = "^0.8.0"
 
 [build-system]
 requires = ["poetry-core"]
