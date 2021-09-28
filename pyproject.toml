@@ -33,7 +33,9 @@ exclude = [
     "*.tests.*",
     "tests.*",
     "tests",
-    "docs"
+    "docs",
+    "legacy",
+    "playground"
 ]
 
 [tool.poetry.scripts]
