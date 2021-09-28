@@ -30,27 +30,6 @@
 <b>GitHub star</b> to show your love
 </div>
 
-## NOTICE August 23 2021
-
-[We are hiring!](https://zenml.io/careers)
-If you would like to be part of the ZenML journey alongside the already
-[awesome and growing team](https://zenml.io/team), then make sure to
-[check out our careers page](https://zenml.io/careers) and apply directly!
-[We are hiring!](https://zenml.io/careers) 
-If you would like to be part of the ZenML journey alongside the already 
-[awesome and growing team](https://zenml.io/team), then make sure to 
-[check out our careers page](https://zenml.io/careers) and apply directly!
-
-## NOTICE August 12 2021
-
-First off, thank you everyone so much for the support ZenML has received since its release a few months ago. It has been
-a crazy ride for the core development team. Now, we are taking the time to absorb all the feedback we have receieved
-and are undergoing a **major rehaul of ZenML**. We will be releasing in the coming weeks a much slimmer, faster, and more production-ready
-version of ZenML soon!
-
-If you are here as an existing user, or someone who is curious in what we are up to with the redesign, head over to the [playground](playground) directory!
-
-In the meanwhile, feel free to read the rest of the README and get an idea where ZenML fits in the whole MLOps space.
 
 ## Why?
 
