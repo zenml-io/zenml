@@ -27,4 +27,4 @@ repos:
     rev: 1.4.0
     hooks:
       - id: interrogate
-        args: [-c pyproject.toml]
+        args: [ '-c pyproject.toml' ]
