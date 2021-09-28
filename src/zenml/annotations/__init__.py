@@ -12,6 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.annotations.artifact_annotations import Input, Output
-from zenml.annotations.misc_annotations import Param
-from zenml.annotations.step_annotations import Step
+from zenml.annotations.artifact_annotations import Input, Output  # noqa
+from zenml.annotations.misc_annotations import Param  # noqa
+from zenml.annotations.step_annotations import Step  # noqa

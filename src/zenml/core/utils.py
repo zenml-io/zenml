@@ -1,6 +1,5 @@
-import os
 from pathlib import Path
-from typing import Any, Callable, Dict, Text, Optional, Type
+from typing import Any, Callable, Dict, Text
 
 from pydantic import BaseSettings
 
@@ -48,9 +47,7 @@ def define_json_config_settings_source(
     return json_config_settings_source
 
 
-def generate_customise_sources(
-    file_dir: Text, file_name: Text
-):
+def generate_customise_sources(file_dir: Text, file_name: Text):
     """Generate a customise_sources function as defined here:
     https://pydantic-docs.helpmanual.io/usage/settings/. This function
     generates a function that configures the priorities of the sources through

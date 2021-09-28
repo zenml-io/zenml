@@ -38,4 +38,5 @@ class PandasArtifact(BaseDataArtifact):
     def read_with_pandas(self):
         """ reader function to read the df from a csv at the given filepath """
         import pandas as pd
+
         return pd.read_csv(os.path.join(self.uri, DEFAULT_FILENAME))

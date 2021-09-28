@@ -22,7 +22,7 @@ DEFAULT_FILENAME = "data.txt"
 
 
 def write_with_pandas(artifact, df):
-    """ writer function to write a text artifact using pandas
+    """Writer function to write a text artifact using pandas
 
     Args:
       artifact: the instance of the artifact
@@ -32,7 +32,7 @@ def write_with_pandas(artifact, df):
 
 
 def write_with_beam(artifact, pcolline):
-    """ writer function to write a text artifact using pandas
+    """Writer function to write a text artifact using pandas
 
     Args:
       artifact: the instance of the artifact
@@ -43,7 +43,8 @@ def write_with_beam(artifact, pcolline):
     _ = pcolline[0] | beam.io.WriteToText(
         os.path.join(artifact.uri, DEFAULT_FILENAME),
         num_shards=1,
-        shard_name_template="")
+        shard_name_template="",
+    )
     pcolline[1].run()
 
 
@@ -58,7 +59,7 @@ class TextArtifact(BaseDataArtifact):
     WRITER_FACTORY.register_type(BeamOutput, write_with_beam)
 
     def read_with_pandas(self):
-        """ reader function to read the artifact with pandas.read_csv
+        """reader function to read the artifact with pandas.read_csv
 
         Returns:
             a pandas.DataFrame
@@ -68,7 +69,7 @@ class TextArtifact(BaseDataArtifact):
         return pd.read_csv(os.path.join(self.uri, DEFAULT_FILENAME))
 
     def read_with_beam(self, pipeline):
-        """ reader function to read the artifact with apache-beam
+        """reader function to read the artifact with apache-beam
 
         It appends a few steps to the given pipeline to read the data and
         returns the new pipeline back
@@ -81,6 +82,6 @@ class TextArtifact(BaseDataArtifact):
         """
         import apache_beam as beam
 
-        return (pipeline
-                | "ReadText" >> beam.io.ReadFromText(
-                    file_pattern=os.path.join(self.uri, "*")))
+        return pipeline | "ReadText" >> beam.io.ReadFromText(
+            file_pattern=os.path.join(self.uri, "*")
+        )

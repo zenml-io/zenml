@@ -17,7 +17,7 @@ from zenml.artifacts.utils import WriterFactory
 
 
 class BaseArtifact(Artifact):
-    """ Base class for all ZenML artifacts.
+    """Base class for all ZenML artifacts.
 
     Every implementation of an artifact needs to inherit this class.
 

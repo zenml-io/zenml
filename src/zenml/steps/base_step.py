@@ -45,7 +45,8 @@ class BaseStepMeta(type):
                     f"Unsupported or unknown annotation detected in the input "
                     f"signature {arg_type}. When designing your step please "
                     f"use either Input[AnyArtifact] or Param[AnyParam] for "
-                    f"annotating your input signature.")
+                    f"annotating your input signature."
+                )
 
         # Infer the defaults
         process_defaults = process_spec.defaults
@@ -58,7 +59,8 @@ class BaseStepMeta(type):
                 if not isinstance(arg_type, Param):
                     raise StepInterfaceError(
                         f"A default value in the signature of a step can only "
-                        f"be used for a Param[...] not {arg_type}.")
+                        f"be used for a Param[...] not {arg_type}."
+                    )
 
         # Parse the output annotations
         return_spec = process_spec.annotations.get("return", None)
@@ -90,7 +92,8 @@ class BaseStep(metaclass=BaseStepMeta):
         if args:
             raise StepInterfaceError(
                 "When you are creating an instance of a step, please only "
-                "use key-word arguments.")
+                "use key-word arguments."
+            )
 
         for k, v in kwargs.items():
             assert k in self.PARAM_SPEC
@@ -100,8 +103,9 @@ class BaseStep(metaclass=BaseStepMeta):
                 raise StepInterfaceError("")
 
     def __call__(self, **artifacts):
-        self.__component = generate_component(self)(**artifacts,
-                                                    **self.__params)
+        self.__component = generate_component(self)(
+            **artifacts, **self.__params
+        )
         # todo: multiple outputs
         return list(self.__component.outputs.values())[0]
 
@@ -130,21 +134,25 @@ class BaseStep(metaclass=BaseStepMeta):
 # TODO: [LOW] find a more elegant solution to the lookup tables
 def infer_artifact_type(obj):
     import pandas as pd
+
     if issubclass(obj, pd.DataFrame):
-        from zenml.artifacts.data_artifacts.pandas_artifact import \
-            PandasArtifact
+        from zenml.artifacts.data_artifacts.pandas_artifact import PandasArtifact
+
         return PandasArtifact
     elif issubclass(obj, (int, float, str)):
-        from zenml.artifacts.data_artifacts.json_artifact import \
-            JSONArtifact
+        from zenml.artifacts.data_artifacts.json_artifact import JSONArtifact
+
         return JSONArtifact
 
 
 def infer_writer_type(obj):
     import pandas as pd
+
     if issubclass(obj, pd.DataFrame):
         from zenml.annotations.artifact_annotations import PandasOutput
+
         return PandasOutput
     elif issubclass(obj, (int, float, str)):
         from zenml.annotations.artifact_annotations import JSONOutput
+
         return JSONOutput

@@ -35,7 +35,7 @@ from six import with_metaclass
 
 
 class BaseAnnotationMeta(type):
-    """ The Metaclass for the annotations in ZenML. It defines a __get_item__
+    """The Metaclass for the annotations in ZenML. It defines a __get_item__
     method which in return class the __generic_getitem of the main class
     with the same param
     """
@@ -50,7 +50,7 @@ class BaseAnnotation(with_metaclass(BaseAnnotationMeta, object)):
     VALID_TYPES = None
 
     def __init__(self, object_type, _init_via_getitem=False):
-        """ Initialization of the BaseAnnotation
+        """Initialization of the BaseAnnotation
 
         The usage of this initialization is only allowed through the
         metaclass.

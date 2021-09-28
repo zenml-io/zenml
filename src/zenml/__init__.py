@@ -13,8 +13,7 @@
 #  permissions and limitations under the License.
 
 from zenml.logger import init_logging
-
-from zenml.pipelines.simple_pipeline import SimplePipeline as pipeline
-from zenml.steps.simple_step import SimpleStep as step
+from zenml.pipelines.simple_pipeline import SimplePipeline as pipeline  # noqa
+from zenml.steps.simple_step import SimpleStep as step  # noqa
 
 init_logging()

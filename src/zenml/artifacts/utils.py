@@ -12,9 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+
 class WriterFactory:
-    """ A factory class which is used by the ZenML artifacts to keep track
-    of different write methods based on the output type """
+    """A factory class which is used by the ZenML artifacts to keep track
+    of different write methods based on the output type"""
 
     def __init__(self):
         """ Initialization with an empty factory """
@@ -25,7 +26,7 @@ class WriterFactory:
         return self.types
 
     def get_single_type(self, key):
-        """ Get a single write based on the key
+        """Get a single write based on the key
         Args:
           key: an output annotation which indicates which type of output is
             being used by the step
@@ -36,7 +37,7 @@ class WriterFactory:
         return self.types[key]
 
     def register_type(self, key, type_):
-        """ Register a new writer in the factory
+        """Register a new writer in the factory
 
         Args:
           key: an output annotation which indicates which type of output is
@@ -45,5 +46,3 @@ class WriterFactory:
             function of the step
         """
         self.types[key] = type_
-
-

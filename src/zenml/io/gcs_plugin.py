@@ -24,18 +24,17 @@ from builtins import FileNotFoundError
 from typing import Any, Callable, Iterable, List, Optional, Tuple
 
 import gcsfs
-from tfx.dsl.io import filesystem
-from tfx.dsl.io import filesystem_registry
+from tfx.dsl.io import filesystem, filesystem_registry
 from tfx.dsl.io.filesystem import PathType
 
 
 class ZenGCS(filesystem.Filesystem):
-    SUPPORTED_SCHEMES = ['gs://']
+    SUPPORTED_SCHEMES = ["gs://"]
 
     fs = gcsfs.GCSFileSystem()
 
     @staticmethod
-    def open(name: PathType, mode: str = 'r') -> Any:
+    def open(name: PathType, mode: str = "r") -> Any:
         return ZenGCS.fs.open(path=name, mode=mode)
 
     @staticmethod
@@ -89,9 +88,9 @@ class ZenGCS(filesystem.Filesystem):
 
     @staticmethod
     def walk(
-            top: PathType,
-            topdown: bool = True,
-            onerror: Optional[Callable[..., None]] = None
+        top: PathType,
+        topdown: bool = True,
+        onerror: Optional[Callable[..., None]] = None,
     ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
         # TODO: additional params
         return ZenGCS.fs.walk(path=top)

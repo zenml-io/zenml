@@ -20,7 +20,7 @@ SPLIT_NAMES_PROPERTY = Property(type=PropertyType.STRING)
 
 
 class BaseDataArtifact(BaseArtifact):
-    """ Base class for any ZenML data artifact
+    """Base class for any ZenML data artifact
 
     The custom properties include a property to hold split names
     """

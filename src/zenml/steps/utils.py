@@ -40,10 +40,12 @@ class _FunctionExecutor(BaseExecutor):
     _FUNCTION = staticmethod(lambda: None)
     _WRITERS = list()
 
-    def Do(self,
-           input_dict: Dict[Text, List[tfx_types.Artifact]],
-           output_dict: Dict[Text, List[tfx_types.Artifact]],
-           exec_properties: Dict[Text, Any]) -> None:
+    def Do(
+        self,
+        input_dict: Dict[Text, List[tfx_types.Artifact]],
+        output_dict: Dict[Text, List[tfx_types.Artifact]],
+        exec_properties: Dict[Text, Any],
+    ) -> None:
         """
 
         Args:

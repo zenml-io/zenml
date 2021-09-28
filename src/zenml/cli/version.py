@@ -21,7 +21,9 @@ from zenml.version import __version__
 @cli.command()
 def version():
     """Version of ZenML"""
-    click.echo(click.style(r"""      
+    click.echo(
+        click.style(
+            r"""      
            .-') _   ('-.       .-') _  _   .-')              
           (  OO) )_(  OO)     ( OO ) )( '.( OO )_            
         ,(_)----.(,------.,--./ ,--,'  ,--.   ,--.),--.      
@@ -31,5 +33,8 @@ def version():
          /   /___ |  .--' |  |\    |   |  |   |  |(|  '---.' 
         |        ||  `---.|  | \   |   |  |   |  | |      |  
         `--------'`------'`--'  `--'   `--'   `--' `------' 
-         """, fg='green'))
+         """,
+            fg="green",
+        )
+    )
     click.echo(click.style(f"version: {__version__}", bold=True))
