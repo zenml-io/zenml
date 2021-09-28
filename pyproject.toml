@@ -118,8 +118,6 @@ commands =
 [tool.coverage.run]
 parallel = true
 source = [
-    "docs",
-    "tests",
     "src/zenml"
 ]
 

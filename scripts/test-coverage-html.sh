@@ -3,5 +3,5 @@
 set -e
 set -x
 
-bash ./scripts/test.sh
+bash ./scripts/test-coverage-xml.sh
 coverage html
