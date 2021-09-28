@@ -6,7 +6,7 @@ on:
 
 jobs:
   testing:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: [3.6, 3.7, 3.8]
@@ -35,5 +35,5 @@ jobs:
 
       - name: Upload coverage
         # only do it for python 3.6, we don't need to do it for every version
-        if: ${{ matrix.python-version == '3.6' }}
+        if: ${{ matrix.python-version == '3.8' }}
         uses: codecov/codecov-action@v2
