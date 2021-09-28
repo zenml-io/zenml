@@ -49,7 +49,7 @@ def write_with_beam(artifact, pcolline):
 
 
 class TextArtifact(BaseDataArtifact):
-    """ ZenML text-based artifact """
+    """ZenML text-based artifact"""
 
     TYPE_NAME = "text_artifact"
 

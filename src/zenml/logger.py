@@ -20,7 +20,7 @@ from typing import Any
 
 from absl import logging as absl_logging
 
-from zenml.constants import (
+from zenml.constants import (  # isort: skip
     ABSL_LOGGING_VERBOSITY,
     APP_NAME,
     ZENML_LOGGING_VERBOSITY,

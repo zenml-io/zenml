@@ -18,11 +18,11 @@ class WriterFactory:
     of different write methods based on the output type"""
 
     def __init__(self):
-        """ Initialization with an empty factory """
+        """Initialization with an empty factory"""
         self.types = {}
 
     def get_types(self):
-        """ Get the whole writer dictionary """
+        """Get the whole writer dictionary"""
         return self.types
 
     def get_single_type(self, key):

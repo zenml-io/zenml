@@ -23,14 +23,14 @@ DEFAULT_FILENAME = "data.json"
 
 
 def write_with_json(artifact, data):
-    """ Writer function to simply write the artifact with json.dump """
+    """Writer function to simply write the artifact with json.dump"""
 
     file = open(os.path.join(artifact.uri, DEFAULT_FILENAME), "w")
     json.dump(data, file)
 
 
 class JSONArtifact(BaseDataArtifact):
-    """ ZenML JSON artifact"""
+    """ZenML JSON artifact"""
 
     TYPE_NAME = "primitive_artifact"
 
@@ -39,7 +39,7 @@ class JSONArtifact(BaseDataArtifact):
     WRITER_FACTORY.register_type(JSONOutput, write_with_json)
 
     def read_with_json(self):
-        """ Reader function to simply read the artifact with json.load """
+        """Reader function to simply read the artifact with json.load"""
 
         file = open(os.path.join(self.uri, DEFAULT_FILENAME), "r")
         return json.load(file)

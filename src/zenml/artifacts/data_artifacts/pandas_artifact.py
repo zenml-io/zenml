@@ -22,12 +22,12 @@ DEFAULT_FILENAME = "data.csv"
 
 
 def write_with_pandas(artifact, df):
-    """ writer function to write the dataframe to a csv file"""
+    """writer function to write the dataframe to a csv file"""
     df.to_csv(os.path.join(artifact.uri, DEFAULT_FILENAME))
 
 
 class PandasArtifact(BaseDataArtifact):
-    """ ZenML Pandas artifact """
+    """ZenML Pandas artifact"""
 
     TYPE_NAME = "pandas_artifact"
 
@@ -36,7 +36,7 @@ class PandasArtifact(BaseDataArtifact):
     WRITER_FACTORY.register_type(PandasOutput, write_with_pandas)
 
     def read_with_pandas(self):
-        """ reader function to read the df from a csv at the given filepath """
+        """reader function to read the df from a csv at the given filepath"""
         import pandas as pd
 
         return pd.read_csv(os.path.join(self.uri, DEFAULT_FILENAME))

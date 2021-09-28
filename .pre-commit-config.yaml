@@ -1,4 +1,10 @@
 repos:
+  - repo: https://github.com/timothycrosley/isort
+    rev: 5.9.3
+    hooks:
+      - id: isort
+        args: [--filter-files]
+        files: \.py$
   - repo: https://github.com/ambv/black
     rev: 20.8b1
     hooks:
@@ -12,12 +18,6 @@ repos:
     hooks:
       - id: autoflake
         args: [ '--in-place', '--remove-all-unused-imports', '--remove-unused-variable' ]
-  - repo: https://github.com/timothycrosley/isort
-    rev: 5.9.3
-    hooks:
-      - id: isort
-        args: [--filter-files]
-        files: \.py$
 #  - repo: https://github.com/pre-commit/mirrors-mypy
 #    rev: v0.910
 #    hooks:

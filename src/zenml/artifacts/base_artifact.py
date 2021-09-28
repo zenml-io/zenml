@@ -36,5 +36,5 @@ class BaseArtifact(Artifact):
     WRITER_FACTORY = WriterFactory()
 
     def get_writer(self, key):
-        """ Utility function to have a direct access to the factory """
+        """Utility function to have a direct access to the factory"""
         return self.WRITER_FACTORY.get_single_type(key)

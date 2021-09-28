@@ -64,7 +64,7 @@ class BaseAnnotation(with_metaclass(BaseAnnotationMeta, object)):
         self.type = object_type
 
     def __repr__(self):
-        """ Representation of the annotation object """
+        """Representation of the annotation object"""
         return "%s[%s]" % (self.__class__.__name__, self.type)
 
     @classmethod
