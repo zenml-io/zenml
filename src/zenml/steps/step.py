@@ -3,8 +3,8 @@ from typing import Type
 
 from zenml.steps.base_step import BaseStep
 
-
-def SimpleStep(func: types.FunctionType) -> Type:
+def step(name)
+def step(func: types.FunctionType) -> Type:
     """
 
     Args:
