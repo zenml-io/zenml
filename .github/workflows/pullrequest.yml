@@ -28,9 +28,6 @@ jobs:
 
       - name: Install poetry
         if: steps.cache.outputs.cache-hit != 'true'
-        # TODO: remove python -m pip install --force git+https://github.com/python-poetry/poetry-core.git@ad33bc2
-        # once there's a release of Poetry 1.2.x including poetry-core > 1.1.0a6
-        # Ref: https://github.com/python-poetry/poetry-core/pull/188
         run: |
           python -m pip install --upgrade pip
           python -m pip install "poetry"
@@ -47,4 +44,4 @@ jobs:
         run: python -m poetry run bash scripts/test-coverage-xml.sh
         
       - name: Upload coverage
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v2
