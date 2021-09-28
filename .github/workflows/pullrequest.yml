@@ -1,32 +1,50 @@
-# This is a basic workflow to help you get started with Actions
-name: Pull Request
+name: Test
 
-# Controls when the action will run. Triggers the workflow on pull request
-on: pull_request
+on:
+  push:
+  pull_request:
+    types: [opened, synchronize]
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  testing:
-    name: Build and test ZenML on Python 🐍 distributions
-    runs-on: ubuntu-18.04
-    steps:
-      - uses: actions/checkout@master
-      - name: local-fix
-        run: |
-          # Hack to get setup-python to work with act locally (see https://github.com/nektos/act/issues/251)
-          if [ ! -f "/etc/lsb-release" ] ; then
-            echo "DISTRIB_RELEASE=18.04" > /etc/lsb-release
-          fi
-      - name: Set up Python 3.7
-        uses: actions/setup-python@v1
-        with:
-          python-version: 3.7
+  test:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
+      fail-fast: false
 
-      # Run script directly
-      - name: testing
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: actions/cache@v2
+        id: cache
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ runner.os }}-python-${{ env.pythonLocation }}-${{ hashFiles('pyproject.toml') }}-root
+
+      - name: Install poetry
+        if: steps.cache.outputs.cache-hit != 'true'
+        # TODO: remove python -m pip install --force git+https://github.com/python-poetry/poetry-core.git@ad33bc2
+        # once there's a release of Poetry 1.2.x including poetry-core > 1.1.0a6
+        # Ref: https://github.com/python-poetry/poetry-core/pull/188
         run: |
-          pip install -e .[all]
-          pip install pytest
-          cd tests
-          ./testing.sh
-          cat ~/.config/zenml/info.json
+          python -m pip install --upgrade pip
+          python -m pip install "poetry"
+
+      - name: Install Dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: python -m poetry install
+
+      - name: Lint
+        if: ${{ matrix.python-version != '3.6' }}
+        run: python -m poetry run bash scripts/lint.sh
+
+      - name: Test
+        run: python -m poetry run bash scripts/test-coverage-xml.sh
+        
+      - name: Upload coverage
+        uses: codecov/codecov-action@v1
