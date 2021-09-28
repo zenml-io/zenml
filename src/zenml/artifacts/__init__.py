@@ -11,3 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
+from zenml.artifacts.data_artifacts.csv_artifact import CSVArtifact
+from zenml.artifacts.data_artifacts.json_artifact import JSONArtifact
+from zenml.artifacts.data_artifacts.text_artifact import TextArtifact
