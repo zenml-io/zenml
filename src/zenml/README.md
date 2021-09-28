@@ -1,55 +1,70 @@
-Hello there! This is the repository for ZenML. If you would like to see the published 
-pip package can be found [here](https://pypi.org/project/zenml).
+Hello there! This is the repository for ZenML. ZenML is an open-source framework to create production-grade MLOps pipelines. 
+If you would like to see the published pip package can be found [here](https://pypi.org/project/zenml).
 
-ZenML is an open-source framework to create production-grade MLOps pipelines. 
+This guide is intended to help you install ZenML from source, primarily for development purposes.
 
-Our [website](https://zenml.io) gives an overview of the features of ZenML and if you find 
-it interesting,  you can learn more about how to use ZenML [here](https://docs.zenml.io).
+# Install from source
 
-## How to install from pip
+ZenML uses [poetry](https://python-poetry.org/) for packaging and dependency management. Please make sure you 
+install it first before moving ahead.
 
-You can easily install `zenml` using pip:
-```bash
-pip install zenml
-```
-
-To install an integration, use the pattern:
+## Clone the repo
 
 ```bash
-pip install zenml[INTEGRATION]
+git clone https://github.com/zenml-io/zenml.git
+
+# or ssh
+git clone git@github.com:zenml-io/zenml.git
 ```
 
-e.g.
+## Create a virtualenv
+To install with poetry, first create a virtualenv. Poetry can help with this, but you 
+can also use your own virtualenv management tool. Please make sure the Python version is 
+between the supported types (currently >=3.6 <9)
+
 ```bash
-pip install zenml[pytorch]
+poetry shell
 ```
 
-Use the keyword `all` in the square brackets if you would like to install all integrations.
-
-## How to install from source
-
-### With Poetry
+## Install dependencies
+Then from the root of the package:
 ```bash
 poetry install
 ```
 
-### Legacy Method
-On the other hand, if you like to install from the source directly, you can follow:
+This will only install non-optional dependencies (i.e. NO integrations). To install all integrations:
+
 ```bash
-make venv
-source venv/bin/activate
-make install
-make build
+poetry install --extras all
 ```
 
-Note: This will install all integrations!
-
-## Known errors in installation
-If you run into a `psutil` error, please install the python-dev libraries:
+If you would like to install the base package and only a few optional dependencies:
 
 ```bash
-sudo apt update
-sudo apt install python3.x-dev
+poetry install --extras airflow  # pass in here whatever you'd like
+```
+
+Poetry will install the ZenML package as an editable source (including all dev-dependencies), so now you should be good to go with 
+that virtualenv. 
+
+## Known quirks
+Poetry is still relatively young. If it is not behaving as it should consider doing the following:
+
+* Delete the poetry.lock file and run a fresh install.
+* Run `poetry lock`. This will refresh your lock file.
+* Run `poetry install` again to make sure you have the latest editable package installed.
+
+# CLI
+After doing the above, you should have the `zenml` CLI installed in your virtualenv. You can check this with:
+
+```bash
+zenml version
+```
+
+If this does not work, you can try:
+
+```bash
+poetry run zenml version
 ```
 
 ## Enabling auto completion on the CLI

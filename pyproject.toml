@@ -38,7 +38,7 @@ exclude = [
     "playground"
 ]
 include = [
-    "zenml/VERSION",
+    "src/zenml/*",
     "examples",
     "*.txt",
     "*.md",
@@ -68,6 +68,8 @@ apache-airflow = {version = "^2.1.4", optional = true }
 
 [tool.poetry.extras]
 airflow = ["apache-airflow"]
+# This should contain ALL of the above
+all = ["apache-airflow"]
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"
@@ -101,7 +103,7 @@ envlist = py36,py37,py38,py39
 [testenv]
 whitelist_externals = poetry
 commands =
-    poetry install -v
+    poetry install -v --extras all
     poetry run pytest tests
 """
 
