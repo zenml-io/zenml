@@ -6,4 +6,4 @@ set -x
 flake8 src/zenml tests
 isort src/zenml tests scripts --check-only
 black src/zenml tests  --check
-interrogate -c src/zenml
+interrogate src/zenml -c pyproject.toml
