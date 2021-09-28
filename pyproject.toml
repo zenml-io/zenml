@@ -83,6 +83,7 @@ pre-commit = "^2.14.0"
 autoflake = "^1.4"
 pyment = "^0.3.3"
 tox = "^3.24.3"
+hypothesis = "^6.23.0"
 
 [build-system]
 requires = ["poetry-core"]
