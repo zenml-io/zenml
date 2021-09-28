@@ -5,7 +5,7 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  test:
+  testing:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
