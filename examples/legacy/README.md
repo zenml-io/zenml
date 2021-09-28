@@ -1,5 +1,7 @@
 ## Examples
 
+Note: These examples are for the legacy ZenML < 0.5.0.
+
 Here you can find a list of practical examples on how you can use ZenML with brief descriptions for each example:
 
 - **aws_orchestrated**: Runs pipeline on an EC2 instance on `Amazon Web Services` as the orchestration backend.
