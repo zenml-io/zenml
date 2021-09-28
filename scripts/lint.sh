@@ -6,3 +6,4 @@ set -x
 flake8 src/zenml tests
 isort src/zenml tests scripts --check-only
 black src/zenml tests  --check
+interrogate src/zenml
