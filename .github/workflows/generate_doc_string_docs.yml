@@ -56,6 +56,7 @@ jobs:
           git config user.email github-actions@github.com
           git add docs/sphinx_docs/_build/
           git add docs/book/toc.md
+          git add docs/interrogate.svg
           git commit -m 'Generated docs [ci skip]'
           git push
 
