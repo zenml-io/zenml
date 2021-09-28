@@ -117,7 +117,7 @@ def generate_component(step) -> Callable[..., Any]:
         "%s_Executor" % step.__class__.__name__,
         (_FunctionExecutor,),
         {
-            "_FUNCTION": staticmethod(step.get_executable()),
+            "_FUNCTION": staticmethod(step.process),
             "_WRITERS": step.OUTPUT_WRITERS,
             "__module__": step.__module__,
         },
