@@ -37,6 +37,14 @@ exclude = [
     "legacy",
     "playground"
 ]
+include = [
+    "zenml/VERSION",
+    "examples",
+    "*.txt",
+    "*.md",
+    "zenml",
+    "*.sh"
+]
 
 [tool.poetry.scripts]
 zenml = 'zenml.cli.cli:cli'
@@ -87,12 +95,14 @@ authors = ["Hamza Tahir <hamza@zenml.io>"]
 legacy_tox_ini = """
 [tox]
 isolated_build = True
+skipsdist = true
 envlist = py36,py37,py38,py39
 
 [testenv]
-deps = pytest
+whitelist_externals = poetry
 commands =
-    pytest
+    poetry install -v
+    poetry run pytest tests
 """
 
 [tool.pytest.ini_options]
