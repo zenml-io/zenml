@@ -28,7 +28,7 @@ jobs:
 
       # Runs a single command using the runners shell
       - name: install requirements
-        run: sudo apt-get update && sudo apt-get install -y make && pip install twine
+        run: sudo apt-get update && sudo apt-get install -y make && pip install poetry
 
       # Run script directly
       - name: testing
