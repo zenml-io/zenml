@@ -28,7 +28,8 @@ def step(name: Text = None):
         name: str, the given name for the step
 
     Returns:
-        the inner decorator which creates the step class
+        the inner decorator which creates the step class based on the
+        ZenML BaseStep
     """
 
     def inner_decorator(func: types.FunctionType) -> Type:
@@ -36,15 +37,15 @@ def step(name: Text = None):
 
         Args:
           func: types.FunctionType, this function will be used as the
-            process method of the generated Step
+            "process" method of the generated Step
 
         Returns:
             the class of a newly generated ZenML Step
         """
         step_class = type(
-            name if name is not None else func.__name__,
-            (BaseStep,),
-            {"process": staticmethod(func)}
+            name=name if name else func.__name__,
+            bases=(BaseStep,),
+            dict={"process": staticmethod(func)}
         )
 
         return step_class
