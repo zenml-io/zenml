@@ -2,7 +2,7 @@
 set -e
 set -x
 
-mypy zenml
-flake8 zenml tests
-isort zenml tests scripts --check-only
-black zenml tests  --check
+# mypy src/zenml
+flake8 src/zenml tests
+isort src/zenml tests scripts --check-only
+black src/zenml tests  --check
