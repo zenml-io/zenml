@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - hamza/devtools
 
 # This job installs dependencies, build the book, and pushes it to `gh-pages`
 jobs:
