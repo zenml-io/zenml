@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - hamza/devtools
 
 # This job installs dependencies, build the book, and pushes it to `gh-pages`
 jobs:
@@ -24,11 +25,15 @@ jobs:
 
       - name: Install poetry
         run: |
+          sudo apt-get update && sudo apt-get install -y make
           python -m pip install --upgrade pip
           python -m pip install "poetry"
 
       - name: Install Dependencies
         run: python -m poetry install
+
+      - name: Generate Interrogate Badge
+        run: python -m poetry run bash scripts/interrogate.sh
 
       # Generate docstring documentation
       - name: Generate docstring documentation
