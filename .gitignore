@@ -132,15 +132,6 @@ dmypy.json
 .idea
 __pycache__
 
-# zenml
-*.yaml
-*.csv
-temp/*
-local_test/
-.zenml/
-!cloudbuild.yaml
-docs/book/_build/
-
 # macOS specific
 .DS_Store
 
@@ -170,3 +161,13 @@ scratchpad/
 
 # pyenv local version file
 .python-version
+
+# zen
+# zenml
+*.yaml
+*.csv
+temp/*
+local_test/
+.zen/
+!cloudbuild.yaml
+docs/book/_build/

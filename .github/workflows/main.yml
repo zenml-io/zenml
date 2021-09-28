@@ -43,8 +43,7 @@ jobs:
       - name: publish
         if: ${{ !env.ACT }}  # we dont want this tested locally with [act](https://github.com/nektos/act)
         env: # Or as an environment variable
-          TWINE_NON_INTERACTIVE: ${{ secrets.TWINE_NON_INTERACTIVE }}
-          TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
-          TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
+          PYPI_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         run: |
-          if [ "$(cat zenml/VERSION)" = "$(echo ${GITHUB_REF} | sed 's|refs/tags/||g')" ]; then make publish; else exit 1; fi
+          if [ "$(cat zenml/VERSION)" = "$(echo ${GITHUB_REF} | sed 's|refs/tags/||g')" ]; then ./scripts/publish.sh; else exit 1; fi
