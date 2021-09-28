@@ -14,22 +14,42 @@
 
 
 import types
-from typing import Type
+from typing import Type, Text
 
 from zenml.pipelines.base_pipeline import BasePipeline
 
 
-def SimplePipeline(func: types.FunctionType) -> Type:
-    """
+def pipeline(name: Text = None):
+    """ Outer decorator function for the creation of a ZenML pipeline
+
+    In order to be able work with parameters such as "name", it features a
+    nested decorator structure.
 
     Args:
-      func: types.FunctionType:
+        name: str, the given name for the pipeline
 
     Returns:
-
+        the inner decorator which creates the pipeline class based on the
+        ZenML BasePipeline
     """
-    pipeline_class = type(
-        func.__name__, (BasePipeline,), {"connect": staticmethod(func)}
-    )
 
-    return pipeline_class
+    def inner_decorator(func: types.FunctionType) -> Type:
+        """ Inner decorator function for the creation of a ZenML Pipeline
+
+        Args:
+          func: types.FunctionType, this function will be used as the
+            "connect" method of the generated Pipeline
+
+        Returns:
+            the class of a newly generated ZenML Pipeline
+
+        """
+        pipeline_class = type(
+            name=name if name else func.__name__,
+            bases=(BasePipeline,),
+            dict={"connect": staticmethod(func)}
+        )
+
+        return pipeline_class
+
+    return inner_decorator
