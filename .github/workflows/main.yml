@@ -39,4 +39,6 @@ jobs:
         run: python -m poetry run bash scripts/test-coverage-xml.sh
 
       - name: Upload coverage
+        # only do it for python 3.6, we don't need to do it for every version
+        if: ${{ matrix.python-version == '3.6' }}
         uses: codecov/codecov-action@v2
