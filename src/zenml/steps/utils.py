@@ -38,7 +38,6 @@ class _FunctionExecutor(BaseExecutor):
     """ """
 
     _FUNCTION = staticmethod(lambda: None)
-    _WRITERS = list()
 
     def Do(
         self,
