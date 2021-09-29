@@ -45,9 +45,9 @@ def pipeline(name: Text = None):
 
         """
         pipeline_class = type(
-            name=name if name else func.__name__,
-            bases=(BasePipeline,),
-            dict={"connect": staticmethod(func)}
+            name if name else func.__name__,
+            (BasePipeline,),
+            {"connect": staticmethod(func)}
         )
 
         return pipeline_class
