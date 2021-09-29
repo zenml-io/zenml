@@ -2,9 +2,11 @@
 set -e
 set -x
 
+SRC=${1:-"src/zenml tests"}
+
 # mypy src/zenml
-flake8 src/zenml tests
+flake8 $SRC
 autoflake --remove-all-unused-imports --recursive --remove-unused-variables --in-place $SRC --exclude=__init__.py,legacy/* --check
-isort src/zenml tests scripts --check-only
-black src/zenml tests  --check
-interrogate src/zenml -c pyproject.toml
+isort $SRC scripts --check-only
+black $SRC  --check
+interrogate $SRC -c pyproject.toml
