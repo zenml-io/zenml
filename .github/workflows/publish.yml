@@ -18,9 +18,9 @@ jobs:
         id: get_version
         run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
 
-      - name: Exit if tag does not start with v
-        if: ${{ !startsWith(steps.get_version.outputs.VERSION, 'v') }}
-        run: exit -1
+#      - name: Exit if tag does not start with v
+#        if: ${{ !startsWith(steps.get_version.outputs.VERSION, 'v') }}
+#        run: exit -1
 
       - uses: actions/checkout@v2
 
