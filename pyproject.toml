@@ -33,7 +33,17 @@ exclude = [
     "*.tests.*",
     "tests.*",
     "tests",
-    "docs"
+    "docs",
+    "legacy",
+    "examples/legacy",
+    "playground"
+]
+include = [
+    "src/zenml",
+    "examples",
+    "*.txt",
+    "*.md",
+    "*.sh"
 ]
 
 [tool.poetry.scripts]
@@ -55,9 +65,13 @@ distro = "^1.6.0"
 # A list of all of the optional dependencies, some of which are included in the
 # below `extras`. They can be opted into by apps.
 apache-airflow = {version = "^2.1.4", optional = true }
+gcsfs = {version= "^2021.9.0", optional = true}
 
 [tool.poetry.extras]
 airflow = ["apache-airflow"]
+gcp = ["gcsfs"]
+# This should contain ALL of the above
+all = ["apache-airflow"]
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"
@@ -71,6 +85,9 @@ pre-commit = "^2.14.0"
 autoflake = "^1.4"
 pyment = "^0.3.3"
 tox = "^3.24.3"
+hypothesis = "^6.23.0"
+Sphinx = "^4.2.0"
+sphinx-bootstrap-theme = "^0.8.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -85,26 +102,27 @@ authors = ["Hamza Tahir <hamza@zenml.io>"]
 legacy_tox_ini = """
 [tox]
 isolated_build = True
+skipsdist = true
 envlist = py36,py37,py38,py39
 
 [testenv]
-deps = pytest
+whitelist_externals = poetry
 commands =
-    pytest
+    poetry install -v --extras all
+    poetry run pytest tests
 """
 
 [tool.pytest.ini_options]
-#filterwarnings = [
-#    ignore::DeprecationWarning,
-#    ignore::UserWarning
-#]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+log_cli = true
+log_cli_level = "INFO"
 
 [tool.coverage.run]
 parallel = true
 source = [
-    "docs",
-    "tests",
-    "zenml"
+    "src/zenml"
 ]
 
 [tool.coverage.report]
@@ -154,7 +172,7 @@ exclude = '''
 
 [tool.interrogate]
 ignore-init-method = true
-ignore-init-module = false
+ignore-init-module = true
 ignore-magic = false
 ignore-semiprivate = false
 ignore-private = false
@@ -163,10 +181,10 @@ ignore-module = true
 ignore-nested-functions = false
 ignore-nested-classes = true
 ignore-setters = false
-fail-under = 95
+fail-under = 80
 exclude = ["setup.py", "docs", "build"]
 ignore-regex = ["^get$", "^mock_.*", ".*BaseClass.*"]
-verbose = 0
+verbose = 1
 quiet = false
 whitelist-regex = []
 color = true

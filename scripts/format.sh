@@ -1,6 +1,8 @@
 #!/bin/sh -e
 set -x
 
-autoflake --remove-all-unused-imports --recursive --remove-unused-variables --in-place zenml tests --exclude=__init__.py,zenml/legacy/*
-isort zenml tests --skip  zenml/legacy/
-black zenml tests --exclude zenml/legacy/
+SRC=${1:-"src/zenml tests"}
+
+autoflake --remove-all-unused-imports --recursive --remove-unused-variables --in-place $SRC --exclude=__init__.py,legacy/*
+isort src/zenml $SRC --skip  legacy/
+black src/zenml $SRC --exclude legacy/

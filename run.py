@@ -1,53 +1,68 @@
+#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+
 import os
 
-import pandas as pd
-
 from zenml import pipeline, step
-from zenml.annotations import Input, Param, Step
-from zenml.annotations.artifact_annotations import BeamOutput, PandasOutput
+from zenml.annotations import Input, Param, Step, Output
 from zenml.artifacts.data_artifacts.text_artifact import TextArtifact
 
 
-@step
-def DataIngestionStep(uri: Param[str]) -> PandasOutput[TextArtifact]:
-    return pd.read_csv(uri)
+@step(name="data_ingest")
+def DataIngestionStep(uri: Param[str],
+                      output_artifact: Output[TextArtifact]):
+    import pandas as pd
+    df = pd.read_csv(uri)
+    output_artifact.write_with_pandas(df)
 
 
-@step
-def DistSplitStep(
-        text_artifact: Input[TextArtifact],
-) -> BeamOutput[TextArtifact]:
+@step(name="split")
+def DistSplitStep(input_artifact: Input[TextArtifact],
+                  output_artifact: Output[TextArtifact]):
     import apache_beam as beam
 
-    pipeline = beam.Pipeline()
-    data = text_artifact.read_with_beam(pipeline)
-    result = data | beam.Map(lambda x: x)
-
-    return (result, pipeline)
-
-
-@step
-def InMemPreprocesserStep(text_artifact: Input[TextArtifact]) -> pd.DataFrame:
-    data = text_artifact.read_with_pandas()
-    return data
+    with beam.Pipeline() as p:
+        _ = (p
+             | input_artifact.read_with_beam()
+             | output_artifact.write_with_beam())
 
 
-@pipeline
+@step(name="preprocessing")
+def InMemPreprocesserStep(input_artifact: Input[TextArtifact],
+                          output_artifact: Output[TextArtifact]):
+    data = input_artifact.read_with_pandas()
+    output_artifact.write_with_pandas(data)
+
+
+@pipeline(name="my_pipeline")
 def SplitPipeline(
         data_step: Step[DataIngestionStep],
         split_step: Step[DistSplitStep],
         preprocesser_step: Step[InMemPreprocesserStep],
 ):
-    text_artifact = data_step()
-    split_artifact = split_step(text_artifact=text_artifact)
-    _ = preprocesser_step(text_artifact=split_artifact)
+    split_step.set_inputs(
+        input_artifact=data_step.get_outputs()["output_artifact"],
+    )
+
+    preprocesser_step.set_inputs(
+        input_artifact=split_step.get_outputs()["output_artifact"],
+    )
 
 
 # Pipeline
-DATA_PATH = os.getenv("ZENML_DATA")
-
 split_pipeline = SplitPipeline(
-    data_step=DataIngestionStep(uri=DATA_PATH),
+    data_step=DataIngestionStep(uri=os.getenv("test_data")),
     split_step=DistSplitStep(),
     preprocesser_step=InMemPreprocesserStep(),
 )

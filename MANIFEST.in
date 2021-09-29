@@ -1,3 +1,0 @@
-include zenml/VERSION
-recursive-include examples *.txt *.md
-recursive-include zenml *.sh

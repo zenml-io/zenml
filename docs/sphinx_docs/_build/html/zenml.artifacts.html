@@ -3,16 +3,14 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>zenml.artifacts package &#8212; ZenML  documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/bootstrap-sphinx.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="zenml.artifacts.data_artifacts package" href="zenml.artifacts.data_artifacts.html" />
@@ -21,9 +19,9 @@
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
 <meta name="apple-mobile-web-app-capable" content="yes">
-<script type="text/javascript" src="_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-1.12.4.min.js "></script>
 <script type="text/javascript" src="_static/js/jquery-fix.js "></script>
-<script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.4.1/js/bootstrap.min.js "></script>
 <script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
 
   </head><body>
@@ -54,7 +52,7 @@
      href="index.html">Site <b class="caret"></b></a>
   <ul class="dropdown-menu globaltoc"
       role="menu"
-      aria-labelledby="dLabelGlobalToc"><p><span class="caption-text">Contents:</span></p>
+      aria-labelledby="dLabelGlobalToc"><p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
 </ul>
@@ -73,9 +71,9 @@
 <li><a class="reference internal" href="#">zenml.artifacts package</a><ul>
 <li><a class="reference internal" href="#subpackages">Subpackages</a></li>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#zenml-artifacts-base-artifact-module">zenml.artifacts.base_artifact module</a></li>
-<li><a class="reference internal" href="#zenml-artifacts-utils-module">zenml.artifacts.utils module</a></li>
-<li><a class="reference internal" href="#module-contents">Module contents</a></li>
+<li><a class="reference internal" href="#module-zenml.artifacts.base_artifact">zenml.artifacts.base_artifact module</a></li>
+<li><a class="reference internal" href="#module-zenml.artifacts.utils">zenml.artifacts.utils module</a></li>
+<li><a class="reference internal" href="#module-zenml.artifacts">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -125,37 +123,126 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <section id="zenml-artifacts-package">
+  <div class="section" id="zenml-artifacts-package">
 <h1>zenml.artifacts package<a class="headerlink" href="#zenml-artifacts-package" title="Permalink to this headline">¶</a></h1>
-<section id="subpackages">
+<div class="section" id="subpackages">
 <h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="zenml.artifacts.data_artifacts.html">zenml.artifacts.data_artifacts package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="zenml.artifacts.data_artifacts.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.artifacts.data_artifacts.html#zenml-artifacts-data-artifacts-base-data-artifact-module">zenml.artifacts.data_artifacts.base_data_artifact module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.artifacts.data_artifacts.html#zenml-artifacts-data-artifacts-json-artifact-module">zenml.artifacts.data_artifacts.json_artifact module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.artifacts.data_artifacts.html#zenml-artifacts-data-artifacts-pandas-artifact-module">zenml.artifacts.data_artifacts.pandas_artifact module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.artifacts.data_artifacts.html#zenml-artifacts-data-artifacts-text-artifact-module">zenml.artifacts.data_artifacts.text_artifact module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.artifacts.data_artifacts.html#module-contents">Module contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.artifacts.data_artifacts.html#module-zenml.artifacts.data_artifacts.base_data_artifact">zenml.artifacts.data_artifacts.base_data_artifact module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.artifacts.data_artifacts.html#module-zenml.artifacts.data_artifacts.json_artifact">zenml.artifacts.data_artifacts.json_artifact module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.artifacts.data_artifacts.html#module-zenml.artifacts.data_artifacts.pandas_artifact">zenml.artifacts.data_artifacts.pandas_artifact module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.artifacts.data_artifacts.html#module-zenml.artifacts.data_artifacts.text_artifact">zenml.artifacts.data_artifacts.text_artifact module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.artifacts.data_artifacts.html#module-zenml.artifacts.data_artifacts">Module contents</a></li>
 </ul>
 </li>
 </ul>
 </div>
-</section>
-<section id="submodules">
+</div>
+<div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-</section>
-<section id="zenml-artifacts-base-artifact-module">
-<h2>zenml.artifacts.base_artifact module<a class="headerlink" href="#zenml-artifacts-base-artifact-module" title="Permalink to this headline">¶</a></h2>
-</section>
-<section id="zenml-artifacts-utils-module">
-<h2>zenml.artifacts.utils module<a class="headerlink" href="#zenml-artifacts-utils-module" title="Permalink to this headline">¶</a></h2>
-</section>
-<section id="module-contents">
-<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
-</section>
-</section>
+</div>
+<div class="section" id="module-zenml.artifacts.base_artifact">
+<span id="zenml-artifacts-base-artifact-module"></span><h2>zenml.artifacts.base_artifact module<a class="headerlink" href="#module-zenml.artifacts.base_artifact" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.artifacts.base_artifact.BaseArtifact">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.artifacts.base_artifact.</span></span><span class="sig-name descname"><span class="pre">BaseArtifact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mlmd_artifact_type</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">ml_metadata.proto.metadata_store_pb2.ArtifactType</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.artifacts.base_artifact.BaseArtifact" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tfx.types.artifact.Artifact</span></code></p>
+<p>Base class for all ZenML artifacts.</p>
+<p>Every implementation of an artifact needs to inherit this class.</p>
+<p>While inheriting from this class there are a few things to consider:</p>
+<ul class="simple">
+<li><p>Upon creation, each artifact class needs to be given a unique TYPE_NAME.</p></li>
+<li><dl class="simple">
+<dt>Your artifact can feature different properties under the parameter</dt><dd><p>PROPERTIES which will be tracked throughout your pipeline runs.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Lastly, each artifact features a writer factory. This factory is used</dt><dd><p>to dictate how the artifact needs to be written based on the output
+type within the step definition</p>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.artifacts.base_artifact.BaseArtifact.PROPERTIES">
+<span class="sig-name descname"><span class="pre">PROPERTIES</span></span><em class="property"> <span class="pre">=</span> <span class="pre">{}</span></em><a class="headerlink" href="#zenml.artifacts.base_artifact.BaseArtifact.PROPERTIES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.artifacts.base_artifact.BaseArtifact.TYPE_NAME">
+<span class="sig-name descname"><span class="pre">TYPE_NAME</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'BaseArtifact'</span></em><a class="headerlink" href="#zenml.artifacts.base_artifact.BaseArtifact.TYPE_NAME" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.artifacts.base_artifact.BaseArtifact.WRITER_FACTORY">
+<span class="sig-name descname"><span class="pre">WRITER_FACTORY</span></span><em class="property"> <span class="pre">=</span> <span class="pre">&lt;zenml.artifacts.utils.WriterFactory</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#zenml.artifacts.base_artifact.BaseArtifact.WRITER_FACTORY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.artifacts.base_artifact.BaseArtifact.get_writer">
+<span class="sig-name descname"><span class="pre">get_writer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.artifacts.base_artifact.BaseArtifact.get_writer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Utility function to have a direct access to the factory</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.artifacts.utils">
+<span id="zenml-artifacts-utils-module"></span><h2>zenml.artifacts.utils module<a class="headerlink" href="#module-zenml.artifacts.utils" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.artifacts.utils.WriterFactory">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.artifacts.utils.</span></span><span class="sig-name descname"><span class="pre">WriterFactory</span></span><a class="headerlink" href="#zenml.artifacts.utils.WriterFactory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A factory class which is used by the ZenML artifacts to keep track
+of different write methods based on the output type</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.artifacts.utils.WriterFactory.get_single_type">
+<span class="sig-name descname"><span class="pre">get_single_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.artifacts.utils.WriterFactory.get_single_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a single write based on the key
+:param key: an output annotation which indicates which type of output is</p>
+<blockquote>
+<div><p>being used by the step</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The corresponding writer function within the factory</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.artifacts.utils.WriterFactory.get_types">
+<span class="sig-name descname"><span class="pre">get_types</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.artifacts.utils.WriterFactory.get_types" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the whole writer dictionary</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.artifacts.utils.WriterFactory.register_type">
+<span class="sig-name descname"><span class="pre">register_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type_</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.artifacts.utils.WriterFactory.register_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register a new writer in the factory</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> – an output annotation which indicates which type of output is
+being used by the step</p></li>
+<li><p><strong>type</strong> – a function which is used to write the returns of the process
+function of the step</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.artifacts">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.artifacts" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
 
 
     </div>
@@ -170,7 +257,7 @@
     </p>
     <p>
         &copy; Copyright 2021, ZenML GmbH.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.3.1.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br/>
     </p>
   </div>
 </footer>

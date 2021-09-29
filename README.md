@@ -15,6 +15,9 @@
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zenml)](https://pypi.org/project/zenml/)
 [![PyPI Status](https://pepy.tech/badge/zenml)](https://pepy.tech/project/zenml)
 ![GitHub](https://img.shields.io/github/license/zenml-io/zenml)
+[![Codecov](https://codecov.io/gh/zenml-io/zenml/branch/main/graph/badge.svg)](https://codecov.io/gh/zenml-io/zenml)
+[![Interrogate](docs/interrogate.svg)](https://interrogate.readthedocs.io/en/latest/)
+![Main Workflow Tests](https://github.com/zenml-io/zenml/actions/workflows/main.yml/badge.svg)
 
 </div>
 
@@ -28,27 +31,6 @@
 <b>GitHub star</b> to show your love
 </div>
 
-## NOTICE August 23 2021
-
-[We are hiring!](https://zenml.io/careers)
-If you would like to be part of the ZenML journey alongside the already
-[awesome and growing team](https://zenml.io/team), then make sure to
-[check out our careers page](https://zenml.io/careers) and apply directly!
-[We are hiring!](https://zenml.io/careers) 
-If you would like to be part of the ZenML journey alongside the already 
-[awesome and growing team](https://zenml.io/team), then make sure to 
-[check out our careers page](https://zenml.io/careers) and apply directly!
-
-## NOTICE August 12 2021
-
-First off, thank you everyone so much for the support ZenML has received since its release a few months ago. It has been
-a crazy ride for the core development team. Now, we are taking the time to absorb all the feedback we have receieved
-and are undergoing a **major rehaul of ZenML**. We will be releasing in the coming weeks a much slimmer, faster, and more production-ready
-version of ZenML soon!
-
-If you are here as an existing user, or someone who is curious in what we are up to with the redesign, head over to the [playground](playground) directory!
-
-In the meanwhile, feel free to read the rest of the README and get an idea where ZenML fits in the whole MLOps space.
 
 ## Why?
 
