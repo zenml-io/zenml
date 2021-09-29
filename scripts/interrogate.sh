@@ -2,5 +2,7 @@
 set -e
 set -x
 
+SRC=${1:-"src/zenml"}
+
 # mypy src/zenml
-interrogate src/zenml -c pyproject.toml --generate-badge docs/interrogate.svg
+interrogate $SRC -c pyproject.toml --generate-badge docs/interrogate.svg

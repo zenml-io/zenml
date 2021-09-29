@@ -3,7 +3,9 @@
 set -e
 set -x
 
-coverage run -m pytest tests
+TEST_SRC=${1:-"tests"}
+
+coverage run -m pytest $TEST_SRC
 coverage combine
 coverage report --show-missing
 coverage xml
