@@ -12,6 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import pytest
+from pydantic import ValidationError
 
-def test_me():
-    """A simple test to check a functionality"""
+from zenml.artifact_stores.gcp_artifact_store import GCPArtifactStore
+
+
+def test_must_be_gcs_path():
+    """Checks must_be_gcs_path validator"""
+    with pytest.raises(ValidationError):
+        GCPArtifactStore(path="/local/path")
+
+    with pytest.raises(ValidationError):
+        GCPArtifactStore(path="s3://local/path")
+
+    gcp_as = GCPArtifactStore(path="gs://mybucket")
+    assert gcp_as.path == "gs://mybucket"

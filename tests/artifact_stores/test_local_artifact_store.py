@@ -12,6 +12,22 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import pytest
+from pydantic import ValidationError
 
-def test_me():
-    """A simple test to check a functionality"""
+from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
+
+
+def test_must_be_local_path():
+    """Checks must_be_gcs_path validator"""
+    with pytest.raises(ValidationError):
+        LocalArtifactStore(path="gs://remote/path")
+
+    with pytest.raises(ValidationError):
+        LocalArtifactStore(path="s3://remote/path")
+
+    with pytest.raises(ValidationError):
+        LocalArtifactStore(path="hdfs://remote/path")
+
+    gcp_as = LocalArtifactStore(path="/local/path")
+    assert gcp_as.path == "/local/path"

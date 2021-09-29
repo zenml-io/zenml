@@ -13,5 +13,5 @@
 #  permissions and limitations under the License.
 
 
-def test_me():
-    """A simple test to check a functionality"""
+def test_resolve_uri_locally():
+    """Checks if URI's are resolved locally properly"""
