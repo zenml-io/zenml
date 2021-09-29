@@ -28,7 +28,7 @@ class LocalOrchestrator(BaseOrchestrator):
 
         # Create the final step list and the corresponding pipeline
         steps = list(importers.values()) + [
-            s.get_component() for s in zenml_pipeline.steps.values()
+            s.component for s in zenml_pipeline.steps.values()
         ]
 
         artifact_store = zenml_pipeline.stack.artifact_store

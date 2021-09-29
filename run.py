@@ -51,18 +51,18 @@ def SplitPipeline(
         split_step: Step[DistSplitStep],
         preprocesser_step: Step[InMemPreprocesserStep],
 ):
-    split_step.connect_inputs(
-        text_artifact=data_step.outputs.output_artifact,
+    split_step.set_inputs(
+        input_artifact=data_step.get_outputs()["output_artifact"],
     )
 
-    preprocesser_step.connect_inputs(
-        text_artifact=split_step.outputs.output_artifact,
+    preprocesser_step.set_inputs(
+        input_artifact=split_step.get_outputs()["output_artifact"],
     )
 
 
 # Pipeline
 split_pipeline = SplitPipeline(
-    data_step=DataIngestionStep(uri=os.getenv("ZENML_DATA")),
+    data_step=DataIngestionStep(uri=os.getenv("test_data")),
     split_step=DistSplitStep(),
     preprocesser_step=InMemPreprocesserStep(),
 )

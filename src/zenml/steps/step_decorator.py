@@ -43,9 +43,9 @@ def step(name: Text = None):
             the class of a newly generated ZenML Step
         """
         step_class = type(
-            name=name if name else func.__name__,
-            bases=(BaseStep,),
-            dict={"process": staticmethod(func)},
+            name if name else func.__name__,
+            (BaseStep,),
+            {"process": staticmethod(func)},
         )
 
         return step_class
