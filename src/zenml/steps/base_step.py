@@ -6,11 +6,6 @@ from zenml.steps.utils import generate_component
 from zenml.utils.exceptions import StepInterfaceError
 
 
-class MultiOutput:
-    # TODO: to be implemented
-    pass
-
-
 class BaseStepMeta(type):
     """ """
 
@@ -20,13 +15,13 @@ class BaseStepMeta(type):
         cls = super().__new__(mcs, name, bases, dct)
 
         cls.INPUT_SPEC = dict()
-        cls.PARAM_SPEC = dict()
-        cls.PARAM_DEFAULTS = dict()
         cls.OUTPUT_SPEC = dict()
-        cls.OUTPUT_WRITERS = dict()
+        cls.PARAM_SPEC = dict()
+
+        cls.PARAM_DEFAULTS = dict()
 
         # Looking into the signature of the provided process function
-        process_spec = inspect.getfullargspec(cls.get_executable())
+        process_spec = inspect.getfullargspec(cls.process)
         process_args = process_spec.args
 
         # Remove the self from the signature if it exists
@@ -38,14 +33,17 @@ class BaseStepMeta(type):
             arg_type = process_spec.annotations.get(arg, None)
             if isinstance(arg_type, Input):
                 cls.INPUT_SPEC.update({arg: arg_type.type})
+            elif isinstance(arg_type, Output):
+                cls.OUTPUT_SPEC.update({arg: arg_type.type})
             elif isinstance(arg_type, Param):
                 cls.PARAM_SPEC.update({arg: arg_type.type})
             else:
                 raise StepInterfaceError(
-                    f"Unsupported or unknown annotation detected in the input "
-                    f"signature {arg_type}. When designing your step please "
-                    f"use either Input[AnyArtifact] or Param[AnyParam] for "
-                    f"annotating your input signature."
+                    f"Unsupported or unknown annotation {arg_type} detected "
+                    f"in the input signature . When designing your step "
+                    f"please use either Input[AnyArtifactType], "
+                    f"Output[AnyArtifactType] or Param[AnyPrimitiveType] for "
+                    f"your annotations."
                 )
 
         # Infer the defaults
@@ -61,23 +59,6 @@ class BaseStepMeta(type):
                         f"A default value in the signature of a step can only "
                         f"be used for a Param[...] not {arg_type}."
                     )
-
-        # Parse the output annotations
-        return_spec = process_spec.annotations.get("return", None)
-        if return_spec is not None:
-            # TODO: we can put the entire inference into a single function
-            if issubclass(type(return_spec), MultiOutput):
-                # TODO: the multi-output support will be added later
-                pass
-            else:
-                if issubclass(type(return_spec), Output):
-                    cls.OUTPUT_WRITERS.update({"output": type(return_spec)})
-                    cls.OUTPUT_SPEC.update({"output": return_spec.type})
-                else:
-                    writer_type = infer_writer_type(return_spec)
-                    artifact_type = infer_artifact_type(return_spec)
-                    cls.OUTPUT_WRITERS.update({"output": writer_type})
-                    cls.OUTPUT_SPEC.update({"output": artifact_type})
 
         return cls
 
@@ -124,37 +105,3 @@ class BaseStep(metaclass=BaseStepMeta):
     def get_component(self):
         """ """
         return self.__component
-
-    @classmethod
-    def get_executable(cls):
-        """ """
-        return cls.process
-
-
-# TODO: [LOW] find a more elegant solution to the lookup tables
-def infer_artifact_type(obj):
-    import pandas as pd
-
-    if issubclass(obj, pd.DataFrame):
-        from zenml.artifacts.data_artifacts.pandas_artifact import (
-            PandasArtifact,  # isort: skip
-        )
-
-        return PandasArtifact
-    elif issubclass(obj, (int, float, str)):
-        from zenml.artifacts.data_artifacts.json_artifact import JSONArtifact
-
-        return JSONArtifact
-
-
-def infer_writer_type(obj):
-    import pandas as pd
-
-    if issubclass(obj, pd.DataFrame):
-        from zenml.annotations.artifact_annotations import PandasOutput
-
-        return PandasOutput
-    elif issubclass(obj, (int, float, str)):
-        from zenml.annotations.artifact_annotations import JSONOutput
-
-        return JSONOutput

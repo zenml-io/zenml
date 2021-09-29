@@ -46,16 +46,6 @@ class _FunctionExecutor(BaseExecutor):
         output_dict: Dict[Text, List[tfx_types.Artifact]],
         exec_properties: Dict[Text, Any],
     ) -> None:
-        """
-
-        Args:
-          input_dict: Dict[Text, List[tfx_types.Artifact]]:
-          output_dict: Dict[Text, List[tfx_types.Artifact]]:
-          exec_properties: Dict[Text, Any]:
-
-        Returns:
-
-        """
         function_args = {}
         for name, artifact in input_dict.items():
             if len(artifact) == 1:
@@ -70,31 +60,26 @@ class _FunctionExecutor(BaseExecutor):
                     % (name, self, artifact)
                 )
 
+        for name, artifact in output_dict.items():
+            if len(artifact) == 1:
+                function_args[name] = artifact[0]
+            else:
+                raise ValueError(
+                    (
+                        "Expected output %r to %s to be a singleton "
+                        "ValueArtifact channel (got %s "
+                        "instead)."
+                    )
+                    % (name, self, artifact)
+                )
+
         for name, parameter in exec_properties.items():
             function_args[name] = parameter
 
-        results = self._FUNCTION(**function_args)
-
-        if isinstance(type(results), list):
-            # TODO: the multi-output support will be added later
-            pass
-        else:
-            output_artifact = output_dict["output"][0]
-            output_writer_type = self._WRITERS["output"]
-
-            func = output_artifact.get_writer(output_writer_type)
-            func(output_artifact, results)
+        self._FUNCTION(**function_args)
 
 
 def generate_component(step) -> Callable[..., Any]:
-    """
-
-    Args:
-      step:
-
-    Returns:
-
-    """
     spec_inputs, spec_outputs, spec_params = {}, {}, {}
     for key, artifact_type in step.INPUT_SPEC.items():
         spec_inputs[key] = component_spec.ChannelParameter(type=artifact_type)
@@ -117,8 +102,7 @@ def generate_component(step) -> Callable[..., Any]:
         "%s_Executor" % step.__class__.__name__,
         (_FunctionExecutor,),
         {
-            "_FUNCTION": staticmethod(step.get_executable()),
-            "_WRITERS": step.OUTPUT_WRITERS,
+            "_FUNCTION": staticmethod(step.process),
             "__module__": step.__module__,
         },
     )

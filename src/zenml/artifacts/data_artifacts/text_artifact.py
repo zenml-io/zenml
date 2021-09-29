@@ -12,40 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os
+# TODO: [LOW] Revise the docstrings
 
-from zenml.annotations.artifact_annotations import BeamOutput, PandasOutput
 from zenml.artifacts.data_artifacts.base_data_artifact import BaseDataArtifact
-from zenml.artifacts.utils import WriterFactory
 
 DEFAULT_FILENAME = "data.txt"
-
-
-def write_with_pandas(artifact, df):
-    """Writer function to write a text artifact using pandas
-
-    Args:
-      artifact: the instance of the artifact
-      df: the pandas.DataFrame which needs to be written
-    """
-    df.to_csv(os.path.join(artifact.uri, DEFAULT_FILENAME))
-
-
-def write_with_beam(artifact, pcolline):
-    """Writer function to write a text artifact using pandas
-
-    Args:
-      artifact: the instance of the artifact
-      pcolline: a tuple of (beam.Pipeline, beam.PCollection)
-    """
-    import apache_beam as beam
-
-    _ = pcolline[0] | beam.io.WriteToText(
-        os.path.join(artifact.uri, DEFAULT_FILENAME),
-        num_shards=1,
-        shard_name_template="",
-    )
-    pcolline[1].run()
 
 
 class TextArtifact(BaseDataArtifact):
@@ -53,17 +24,16 @@ class TextArtifact(BaseDataArtifact):
 
     TYPE_NAME = "text_artifact"
 
-    # Registering the corresponding writer functions
-    WRITER_FACTORY = WriterFactory()
-    WRITER_FACTORY.register_type(PandasOutput, write_with_pandas)
-    WRITER_FACTORY.register_type(BeamOutput, write_with_beam)
+    # READERS #################################################################
 
     def read_with_pandas(self):
-        """reader function to read the artifact with pandas.read_csv
+        """reader function to read the artifact with pandas
 
         Returns:
             a pandas.DataFrame
         """
+        import os
+
         import pandas as pd
 
         return pd.read_csv(os.path.join(self.uri, DEFAULT_FILENAME))
@@ -71,17 +41,49 @@ class TextArtifact(BaseDataArtifact):
     def read_with_beam(self, pipeline):
         """reader function to read the artifact with apache-beam
 
-        It appends a few steps to the given pipeline to read the data and
-        returns the new pipeline back
+        It appends a step to the given pipeline to read the data
+
+        Args:
+            pipeline: a beam.Pipeline instance
+
+        Returns:
+            the new pipeline with the appended read steps
+        """
+        import os
+
+        import apache_beam as beam
+
+        return pipeline | "ReadText" >> beam.io.ReadFromText(
+            file_pattern=os.path.join(self.uri, "*")
+        )
+
+    # WRITERS #################################################################
+
+    def write_with_pandas(self, df):
+        """writer function to write a text artifact with pandas
+
+        Args:
+          df: the pandas.DataFrame which needs to be written to the artifact
+        """
+        import os
+
+        df.to_csv(os.path.join(self.uri, DEFAULT_FILENAME))
+
+    def write_with_beam(self, pipeline):
+        """writer function to write a text artifact with apache-beam
+
+        It appends a step to the given pipeline to write the data
 
         Args:
           pipeline: a beam.Pipeline instance
 
         Returns:
-            the new pipeline with the appended read steps
+            the new pipeline with the appended write steps
         """
+        import os
+
         import apache_beam as beam
 
-        return pipeline | "ReadText" >> beam.io.ReadFromText(
-            file_pattern=os.path.join(self.uri, "*")
+        return pipeline | beam.io.WriteToText(
+            os.path.join(self.uri, DEFAULT_FILENAME)
         )
