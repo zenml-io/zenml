@@ -24,11 +24,9 @@ jobs:
       - name: Install Dependencies
         run: python -m poetry install
 
+      # This should be unnecessary, but good to run it.
       - name: Lint
         run: python -m poetry run bash scripts/lint.sh
-
-      - name: Test
-        run: python -m poetry run bash scripts/test-coverage-xml.sh
 
       # Runs a set of commands using the runners shell
       - name: publish
