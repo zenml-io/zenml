@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Exit if not on main branch
-        if: endsWith(github.ref, 'main') == false
+        if: ${{ github.ref != 'ref/head/master' }}
         run: exit -1
 
       - uses: actions/checkout@v2
