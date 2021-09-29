@@ -111,10 +111,11 @@ commands =
 """
 
 [tool.pytest.ini_options]
-#filterwarnings = [
-#    ignore::DeprecationWarning,
-#    ignore::UserWarning
-#]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+log_cli = true
+log_cli_level = "INFO"
 
 [tool.coverage.run]
 parallel = true
