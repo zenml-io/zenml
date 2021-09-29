@@ -14,8 +14,12 @@ jobs:
     name: Build and publish Python 🐍 distributions 📦 to PyPI
     runs-on: ubuntu-latest
     steps:
-      - name: Exit if not on main branch
-        if: ${{ github.ref != 'ref/head/master' }}
+      - name: Get the version from the github tag ref
+        id: get_version
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+
+      - name: Exit if tag does not start with 'v'
+        if: ${{ ! startsWith( "v",  steps.get_version.outputs.VERSION) }}
         run: exit -1
 
       - uses: actions/checkout@v2
