@@ -94,7 +94,11 @@ class Repository:
             InvalidGitRepositoryError: If repository is not a git repository.
             NoSuchPathError: If the repo_path does not exist.
         """
-        # edit global config
+        # First check whether it already exists or not
+        if path_utils.is_zenml_dir(repo_path):
+            raise AssertionError(f"{repo_path} is already initialized!")
+
+        # Edit global config
         gc = GlobalConfig()
         if analytics_opt_in is not None:
             gc.analytics_opt_in = analytics_opt_in
