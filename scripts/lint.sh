@@ -4,7 +4,7 @@ set -x
 
 # mypy src/zenml
 flake8 src/zenml tests
-autoflake src/zenml --check
+autoflake --remove-all-unused-imports --recursive --remove-unused-variables --in-place $SRC --exclude=__init__.py,legacy/* --check
 isort src/zenml tests scripts --check-only
 black src/zenml tests  --check
 interrogate src/zenml -c pyproject.toml
