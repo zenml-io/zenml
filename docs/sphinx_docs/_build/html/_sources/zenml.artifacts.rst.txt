@@ -20,14 +20,6 @@ zenml.artifacts.base\_artifact module
    :undoc-members:
    :show-inheritance:
 
-zenml.artifacts.utils module
-----------------------------
-
-.. automodule:: zenml.artifacts.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Module contents
 ---------------
 

@@ -72,7 +72,6 @@
 <li><a class="reference internal" href="#subpackages">Subpackages</a></li>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
 <li><a class="reference internal" href="#module-zenml.artifacts.base_artifact">zenml.artifacts.base_artifact module</a></li>
-<li><a class="reference internal" href="#module-zenml.artifacts.utils">zenml.artifacts.utils module</a></li>
 <li><a class="reference internal" href="#module-zenml.artifacts">Module contents</a></li>
 </ul>
 </li>
@@ -132,8 +131,6 @@
 <li class="toctree-l1"><a class="reference internal" href="zenml.artifacts.data_artifacts.html">zenml.artifacts.data_artifacts package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="zenml.artifacts.data_artifacts.html#submodules">Submodules</a></li>
 <li class="toctree-l2"><a class="reference internal" href="zenml.artifacts.data_artifacts.html#module-zenml.artifacts.data_artifacts.base_data_artifact">zenml.artifacts.data_artifacts.base_data_artifact module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.artifacts.data_artifacts.html#module-zenml.artifacts.data_artifacts.json_artifact">zenml.artifacts.data_artifacts.json_artifact module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.artifacts.data_artifacts.html#module-zenml.artifacts.data_artifacts.pandas_artifact">zenml.artifacts.data_artifacts.pandas_artifact module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="zenml.artifacts.data_artifacts.html#module-zenml.artifacts.data_artifacts.text_artifact">zenml.artifacts.data_artifacts.text_artifact module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="zenml.artifacts.data_artifacts.html#module-zenml.artifacts.data_artifacts">Module contents</a></li>
 </ul>
@@ -160,16 +157,16 @@
 </dd>
 </dl>
 </li>
-<li><dl class="simple">
-<dt>Lastly, each artifact features a writer factory. This factory is used</dt><dd><p>to dictate how the artifact needs to be written based on the output
-type within the step definition</p>
-</dd>
-</dl>
-</li>
+<li><p>TODO: Write about the reader/writer factories</p></li>
 </ul>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="zenml.artifacts.base_artifact.BaseArtifact.PROPERTIES">
 <span class="sig-name descname"><span class="pre">PROPERTIES</span></span><em class="property"> <span class="pre">=</span> <span class="pre">{}</span></em><a class="headerlink" href="#zenml.artifacts.base_artifact.BaseArtifact.PROPERTIES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.artifacts.base_artifact.BaseArtifact.READER_FACTORY">
+<span class="sig-name descname"><span class="pre">READER_FACTORY</span></span><em class="property"> <span class="pre">=</span> <span class="pre">&lt;zenml.artifacts.base_artifact.IOFactory</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#zenml.artifacts.base_artifact.BaseArtifact.READER_FACTORY" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -179,33 +176,44 @@ type within the step definition</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="zenml.artifacts.base_artifact.BaseArtifact.WRITER_FACTORY">
-<span class="sig-name descname"><span class="pre">WRITER_FACTORY</span></span><em class="property"> <span class="pre">=</span> <span class="pre">&lt;zenml.artifacts.utils.WriterFactory</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#zenml.artifacts.base_artifact.BaseArtifact.WRITER_FACTORY" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">WRITER_FACTORY</span></span><em class="property"> <span class="pre">=</span> <span class="pre">&lt;zenml.artifacts.base_artifact.IOFactory</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#zenml.artifacts.base_artifact.BaseArtifact.WRITER_FACTORY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.artifacts.base_artifact.BaseArtifact.get_reader">
+<span class="sig-name descname"><span class="pre">get_reader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.artifacts.base_artifact.BaseArtifact.get_reader" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="zenml.artifacts.base_artifact.BaseArtifact.get_writer">
 <span class="sig-name descname"><span class="pre">get_writer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.artifacts.base_artifact.BaseArtifact.get_writer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Utility function to have a direct access to the factory</p>
-</dd></dl>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.artifacts.base_artifact.BaseArtifact.register_reader">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">register_reader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">func</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.artifacts.base_artifact.BaseArtifact.register_reader" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.artifacts.base_artifact.BaseArtifact.register_writer">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">register_writer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">func</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.artifacts.base_artifact.BaseArtifact.register_writer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
-</div>
-<div class="section" id="module-zenml.artifacts.utils">
-<span id="zenml-artifacts-utils-module"></span><h2>zenml.artifacts.utils module<a class="headerlink" href="#module-zenml.artifacts.utils" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
-<dt class="sig sig-object py" id="zenml.artifacts.utils.WriterFactory">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.artifacts.utils.</span></span><span class="sig-name descname"><span class="pre">WriterFactory</span></span><a class="headerlink" href="#zenml.artifacts.utils.WriterFactory" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="zenml.artifacts.base_artifact.IOFactory">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.artifacts.base_artifact.</span></span><span class="sig-name descname"><span class="pre">IOFactory</span></span><a class="headerlink" href="#zenml.artifacts.base_artifact.IOFactory" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>A factory class which is used by the ZenML artifacts to keep track
-of different write methods based on the output type</p>
+of different read/write methods</p>
 <dl class="py method">
-<dt class="sig sig-object py" id="zenml.artifacts.utils.WriterFactory.get_single_type">
-<span class="sig-name descname"><span class="pre">get_single_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.artifacts.utils.WriterFactory.get_single_type" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get a single write based on the key
-:param key: an output annotation which indicates which type of output is</p>
+<dt class="sig sig-object py" id="zenml.artifacts.base_artifact.IOFactory.get_single_type">
+<span class="sig-name descname"><span class="pre">get_single_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.artifacts.base_artifact.IOFactory.get_single_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a single reader/writer based on the key
+:param key: str, which indicates which type of method will be used within</p>
 <blockquote>
-<div><p>being used by the step</p>
+<div><p>the step</p>
 </div></blockquote>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
@@ -215,22 +223,21 @@ of different write methods based on the output type</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="zenml.artifacts.utils.WriterFactory.get_types">
-<span class="sig-name descname"><span class="pre">get_types</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.artifacts.utils.WriterFactory.get_types" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the whole writer dictionary</p>
+<dt class="sig sig-object py" id="zenml.artifacts.base_artifact.IOFactory.get_types">
+<span class="sig-name descname"><span class="pre">get_types</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.artifacts.base_artifact.IOFactory.get_types" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the whole reader/writer dictionary</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="zenml.artifacts.utils.WriterFactory.register_type">
-<span class="sig-name descname"><span class="pre">register_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type_</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.artifacts.utils.WriterFactory.register_type" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="zenml.artifacts.base_artifact.IOFactory.register_type">
+<span class="sig-name descname"><span class="pre">register_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type_</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.artifacts.base_artifact.IOFactory.register_type" title="Permalink to this definition">¶</a></dt>
 <dd><p>Register a new writer in the factory</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>key</strong> – an output annotation which indicates which type of output is
-being used by the step</p></li>
-<li><p><strong>type</strong> – a function which is used to write the returns of the process
-function of the step</p></li>
+<li><p><strong>key</strong> – str, which indicates which type of method</p></li>
+<li><p><strong>type</strong> – a function which is used to read/write the artifact within
+the context of a step</p></li>
 </ul>
 </dd>
 </dl>

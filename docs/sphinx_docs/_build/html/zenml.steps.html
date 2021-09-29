@@ -71,8 +71,7 @@
 <li><a class="reference internal" href="#">zenml.steps package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
 <li><a class="reference internal" href="#module-zenml.steps.base_step">zenml.steps.base_step module</a></li>
-<li><a class="reference internal" href="#module-zenml.steps.simple_step">zenml.steps.simple_step module</a></li>
-<li><a class="reference internal" href="#module-zenml.steps.split_step">zenml.steps.split_step module</a></li>
+<li><a class="reference internal" href="#module-zenml.steps.step_decorator">zenml.steps.step_decorator module</a></li>
 <li><a class="reference internal" href="#module-zenml.steps.utils">zenml.steps.utils module</a></li>
 <li><a class="reference internal" href="#module-zenml.steps">Module contents</a></li>
 </ul>
@@ -135,6 +134,8 @@
 <dt class="sig sig-object py" id="zenml.steps.base_step.BaseStep">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.steps.base_step.</span></span><span class="sig-name descname"><span class="pre">BaseStep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.base_step.BaseStep" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>The base implementation of a ZenML Step which will be inherited by all
+the other step implementations</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="zenml.steps.base_step.BaseStep.INPUT_SPEC">
 <span class="sig-name descname"><span class="pre">INPUT_SPEC</span></span><em class="property"> <span class="pre">=</span> <span class="pre">{}</span></em><a class="headerlink" href="#zenml.steps.base_step.BaseStep.INPUT_SPEC" title="Permalink to this definition">¶</a></dt>
@@ -143,11 +144,6 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="zenml.steps.base_step.BaseStep.OUTPUT_SPEC">
 <span class="sig-name descname"><span class="pre">OUTPUT_SPEC</span></span><em class="property"> <span class="pre">=</span> <span class="pre">{}</span></em><a class="headerlink" href="#zenml.steps.base_step.BaseStep.OUTPUT_SPEC" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="zenml.steps.base_step.BaseStep.OUTPUT_WRITERS">
-<span class="sig-name descname"><span class="pre">OUTPUT_WRITERS</span></span><em class="property"> <span class="pre">=</span> <span class="pre">{}</span></em><a class="headerlink" href="#zenml.steps.base_step.BaseStep.OUTPUT_WRITERS" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -160,29 +156,25 @@
 <span class="sig-name descname"><span class="pre">PARAM_SPEC</span></span><em class="property"> <span class="pre">=</span> <span class="pre">{}</span></em><a class="headerlink" href="#zenml.steps.base_step.BaseStep.PARAM_SPEC" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="py method">
-<dt class="sig sig-object py" id="zenml.steps.base_step.BaseStep.get_component">
-<span class="sig-name descname"><span class="pre">get_component</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.base_step.BaseStep.get_component" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.steps.base_step.BaseStep.component">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">component</span></span><a class="headerlink" href="#zenml.steps.base_step.BaseStep.component" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="zenml.steps.base_step.BaseStep.get_executable">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">get_executable</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.base_step.BaseStep.get_executable" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="zenml.steps.base_step.BaseStep.get_outputs">
+<span class="sig-name descname"><span class="pre">get_outputs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.base_step.BaseStep.get_outputs" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="zenml.steps.base_step.BaseStep.process">
 <em class="property"><span class="pre">abstract</span> </em><span class="sig-name descname"><span class="pre">process</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.base_step.BaseStep.process" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>*args</strong> – </p></li>
-<li><p><strong>**kwargs</strong> – </p></li>
-</ul>
-</dd>
-</dl>
-<p>Returns:</p>
-</dd></dl>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.steps.base_step.BaseStep.set_inputs">
+<span class="sig-name descname"><span class="pre">set_inputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">artifacts</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.base_step.BaseStep.set_inputs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
@@ -192,39 +184,26 @@
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></p>
 </dd></dl>
 
-<dl class="py class">
-<dt class="sig sig-object py" id="zenml.steps.base_step.MultiOutput">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.steps.base_step.</span></span><span class="sig-name descname"><span class="pre">MultiOutput</span></span><a class="headerlink" href="#zenml.steps.base_step.MultiOutput" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="zenml.steps.base_step.infer_artifact_type">
-<span class="sig-prename descclassname"><span class="pre">zenml.steps.base_step.</span></span><span class="sig-name descname"><span class="pre">infer_artifact_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.base_step.infer_artifact_type" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="zenml.steps.base_step.infer_writer_type">
-<span class="sig-prename descclassname"><span class="pre">zenml.steps.base_step.</span></span><span class="sig-name descname"><span class="pre">infer_writer_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.base_step.infer_writer_type" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 </div>
-<div class="section" id="module-zenml.steps.simple_step">
-<span id="zenml-steps-simple-step-module"></span><h2>zenml.steps.simple_step module<a class="headerlink" href="#module-zenml.steps.simple_step" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-zenml.steps.step_decorator">
+<span id="zenml-steps-step-decorator-module"></span><h2>zenml.steps.step_decorator module<a class="headerlink" href="#module-zenml.steps.step_decorator" title="Permalink to this headline">¶</a></h2>
 <dl class="py function">
-<dt class="sig sig-object py" id="zenml.steps.simple_step.SimpleStep">
-<span class="sig-prename descclassname"><span class="pre">zenml.steps.simple_step.</span></span><span class="sig-name descname"><span class="pre">SimpleStep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">function</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Type</span></span></span><a class="headerlink" href="#zenml.steps.simple_step.SimpleStep" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dt class="sig sig-object py" id="zenml.steps.step_decorator.step">
+<span class="sig-prename descclassname"><span class="pre">zenml.steps.step_decorator.</span></span><span class="sig-name descname"><span class="pre">step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.steps.step_decorator.step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Outer decorator function for the creation of a ZenML step</p>
+<p>In order to be able work with parameters such as “name”, it features a
+nested decorator structure.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>func</strong> – types.FunctionType:</p>
+<dd class="field-odd"><p><strong>name</strong> – str, the given name for the step</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the inner decorator which creates the step class based on the
+ZenML BaseStep</p>
 </dd>
 </dl>
-<p>Returns:</p>
 </dd></dl>
 
-</div>
-<div class="section" id="module-zenml.steps.split_step">
-<span id="zenml-steps-split-step-module"></span><h2>zenml.steps.split_step module<a class="headerlink" href="#module-zenml.steps.split_step" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="module-zenml.steps.utils">
 <span id="zenml-steps-utils-module"></span><h2>zenml.steps.utils module<a class="headerlink" href="#module-zenml.steps.utils" title="Permalink to this headline">¶</a></h2>
@@ -236,13 +215,7 @@ is proposed by ZenML.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="zenml.steps.utils.generate_component">
 <span class="sig-prename descclassname"><span class="pre">zenml.steps.utils.</span></span><span class="sig-name descname"><span class="pre">generate_component</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.steps.utils.generate_component" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>step</strong> – </p>
-</dd>
-</dl>
-<p>Returns:</p>
-</dd></dl>
+<dd></dd></dl>
 
 </div>
 <div class="section" id="module-zenml.steps">

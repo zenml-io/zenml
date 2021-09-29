@@ -112,7 +112,6 @@
  | <a href="#G"><strong>G</strong></a>
  | <a href="#H"><strong>H</strong></a>
  | <a href="#I"><strong>I</strong></a>
- | <a href="#J"><strong>J</strong></a>
  | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
  | <a href="#N"><strong>N</strong></a>
@@ -207,8 +206,6 @@
 </li>
       <li><a href="zenml.steps.html#zenml.steps.base_step.BaseStepMeta">BaseStepMeta (class in zenml.steps.base_step)</a>
 </li>
-      <li><a href="zenml.annotations.html#zenml.annotations.artifact_annotations.BeamOutput">BeamOutput (class in zenml.annotations.artifact_annotations)</a>
-</li>
   </ul></td>
 </tr></table>
 
@@ -223,14 +220,16 @@
 </li>
       <li><a href="zenml.core.html#zenml.core.repo.Repository.clean">clean() (zenml.core.repo.Repository method)</a>
 </li>
+      <li><a href="zenml.steps.html#zenml.steps.base_step.BaseStep.component">component (zenml.steps.base_step.BaseStep property)</a>
+</li>
       <li><a href="zenml.core.html#zenml.core.component_factory.ComponentFactory">ComponentFactory (class in zenml.core.component_factory)</a>
 </li>
       <li><a href="zenml.cli.html#zenml.cli.utils.confirmation">confirmation() (in module zenml.cli.utils)</a>
 </li>
-      <li><a href="zenml.pipelines.html#zenml.pipelines.base_pipeline.BasePipeline.connect">connect() (zenml.pipelines.base_pipeline.BasePipeline method)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="zenml.pipelines.html#zenml.pipelines.base_pipeline.BasePipeline.connect">connect() (zenml.pipelines.base_pipeline.BasePipeline method)</a>
+</li>
       <li><a href="zenml.utils.html#zenml.utils.path_utils.copy">copy() (in module zenml.utils.path_utils)</a>
 </li>
       <li><a href="zenml.utils.html#zenml.utils.path_utils.copy_dir">copy_dir() (in module zenml.utils.path_utils)</a>
@@ -351,8 +350,6 @@
 </li>
       <li><a href="zenml.utils.html#zenml.utils.source_utils.get_class_source_from_source">get_class_source_from_source() (in module zenml.utils.source_utils)</a>
 </li>
-      <li><a href="zenml.steps.html#zenml.steps.base_step.BaseStep.get_component">get_component() (zenml.steps.base_step.BaseStep method)</a>
-</li>
       <li><a href="zenml.core.html#zenml.core.mapping_utils.get_component_from_key">get_component_from_key() (in module zenml.core.mapping_utils)</a>
 </li>
       <li><a href="zenml.artifact_stores.html#zenml.artifact_stores.base_artifact_store.BaseArtifactStore.get_component_name_from_uri">get_component_name_from_uri() (zenml.artifact_stores.base_artifact_store.BaseArtifactStore static method)</a>
@@ -372,11 +369,7 @@
       <li><a href="zenml.cli.html#zenml.cli.example.get_examples_dir">get_examples_dir() (in module zenml.cli.example)</a>
 </li>
       <li><a href="zenml.pipelines.html#zenml.pipelines.base_pipeline.BasePipeline.get_executable">get_executable() (zenml.pipelines.base_pipeline.BasePipeline class method)</a>
-
-      <ul>
-        <li><a href="zenml.steps.html#zenml.steps.base_step.BaseStep.get_executable">(zenml.steps.base_step.BaseStep class method)</a>
 </li>
-      </ul></li>
       <li><a href="zenml.html#zenml.logger.get_file_handler">get_file_handler() (in module zenml.logger)</a>
 </li>
       <li><a href="zenml.core.html#zenml.core.repo.Repository.get_git_wrapper">get_git_wrapper() (zenml.core.repo.Repository method)</a>
@@ -397,6 +390,8 @@
 </li>
       <li><a href="zenml.core.html#zenml.core.local_service.LocalService.get_orchestrator">get_orchestrator() (zenml.core.local_service.LocalService method)</a>
 </li>
+      <li><a href="zenml.steps.html#zenml.steps.base_step.BaseStep.get_outputs">get_outputs() (zenml.steps.base_step.BaseStep method)</a>
+</li>
       <li><a href="zenml.utils.html#zenml.utils.path_utils.get_parent">get_parent() (in module zenml.utils.path_utils)</a>
 </li>
       <li><a href="zenml.utils.html#zenml.utils.source_utils.get_path_from_source">get_path_from_source() (in module zenml.utils.source_utils)</a>
@@ -405,10 +400,10 @@
 </li>
       <li><a href="zenml.core.html#zenml.core.repo.Repository.get_pipeline_by_name">get_pipeline_by_name() (zenml.core.repo.Repository method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="zenml.metadata.html#zenml.metadata.base_metadata_store.BaseMetadataStore.get_pipeline_context">get_pipeline_context() (zenml.metadata.base_metadata_store.BaseMetadataStore method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="zenml.metadata.html#zenml.metadata.base_metadata_store.BaseMetadataStore.get_pipeline_executions">get_pipeline_executions() (zenml.metadata.base_metadata_store.BaseMetadataStore method)</a>
 </li>
       <li><a href="zenml.core.html#zenml.core.repo.Repository.get_pipeline_names">get_pipeline_names() (zenml.core.repo.Repository method)</a>
@@ -418,6 +413,8 @@
       <li><a href="zenml.core.html#zenml.core.repo.Repository.get_pipelines">get_pipelines() (zenml.core.repo.Repository method)</a>
 </li>
       <li><a href="zenml.core.html#zenml.core.repo.Repository.get_pipelines_by_type">get_pipelines_by_type() (zenml.core.repo.Repository method)</a>
+</li>
+      <li><a href="zenml.artifacts.html#zenml.artifacts.base_artifact.BaseArtifact.get_reader">get_reader() (zenml.artifacts.base_artifact.BaseArtifact method)</a>
 </li>
       <li><a href="zenml.utils.html#zenml.utils.source_utils.get_relative_path_from_module_source">get_relative_path_from_module_source() (in module zenml.utils.source_utils)</a>
 </li>
@@ -451,7 +448,7 @@
 </li>
       <li><a href="zenml.core.html#zenml.core.component_factory.ComponentFactory.get_single_component">get_single_component() (zenml.core.component_factory.ComponentFactory method)</a>
 </li>
-      <li><a href="zenml.artifacts.html#zenml.artifacts.utils.WriterFactory.get_single_type">get_single_type() (zenml.artifacts.utils.WriterFactory method)</a>
+      <li><a href="zenml.artifacts.html#zenml.artifacts.base_artifact.IOFactory.get_single_type">get_single_type() (zenml.artifacts.base_artifact.IOFactory method)</a>
 </li>
       <li><a href="zenml.core.html#zenml.core.local_service.LocalService.get_stack">get_stack() (zenml.core.local_service.LocalService method)</a>
 </li>
@@ -473,7 +470,7 @@
         <li><a href="zenml.metadata.html#zenml.metadata.sqlite_metadata_wrapper.SQLiteMetadataStore.get_tfx_metadata_config">(zenml.metadata.sqlite_metadata_wrapper.SQLiteMetadataStore method)</a>
 </li>
       </ul></li>
-      <li><a href="zenml.artifacts.html#zenml.artifacts.utils.WriterFactory.get_types">get_types() (zenml.artifacts.utils.WriterFactory method)</a>
+      <li><a href="zenml.artifacts.html#zenml.artifacts.base_artifact.IOFactory.get_types">get_types() (zenml.artifacts.base_artifact.IOFactory method)</a>
 </li>
       <li><a href="zenml.artifacts.html#zenml.artifacts.base_artifact.BaseArtifact.get_writer">get_writer() (zenml.artifacts.base_artifact.BaseArtifact method)</a>
 </li>
@@ -505,10 +502,6 @@
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="zenml.steps.html#zenml.steps.base_step.infer_artifact_type">infer_artifact_type() (in module zenml.steps.base_step)</a>
-</li>
-      <li><a href="zenml.steps.html#zenml.steps.base_step.infer_writer_type">infer_writer_type() (in module zenml.steps.base_step)</a>
-</li>
       <li><a href="zenml.html#zenml.logger.init_logging">init_logging() (in module zenml.logger)</a>
 </li>
       <li><a href="zenml.core.html#zenml.core.repo.Repository.init_repo">init_repo() (zenml.core.repo.Repository static method)</a>
@@ -524,6 +517,8 @@
 </li>
       </ul></li>
       <li><a href="zenml.pipelines.html#zenml.pipelines.base_pipeline.BasePipeline.inputs">inputs (zenml.pipelines.base_pipeline.BasePipeline property)</a>
+</li>
+      <li><a href="zenml.artifacts.html#zenml.artifacts.base_artifact.IOFactory">IOFactory (class in zenml.artifacts.base_artifact)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -544,18 +539,6 @@
       <li><a href="zenml.utils.html#zenml.utils.yaml_utils.is_yaml">is_yaml() (in module zenml.utils.yaml_utils)</a>
 </li>
       <li><a href="zenml.utils.html#zenml.utils.path_utils.is_zenml_dir">is_zenml_dir() (in module zenml.utils.path_utils)</a>
-</li>
-  </ul></td>
-</tr></table>
-
-<h2 id="J">J</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="zenml.artifacts.data_artifacts.html#zenml.artifacts.data_artifacts.json_artifact.JSONArtifact">JSONArtifact (class in zenml.artifacts.data_artifacts.json_artifact)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="zenml.annotations.html#zenml.annotations.artifact_annotations.JSONOutput">JSONOutput (class in zenml.annotations.artifact_annotations)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -619,7 +602,7 @@
 </li>
         <li><a href="zenml.annotations.html#module-zenml.annotations.base_annotations">zenml.annotations.base_annotations</a>
 </li>
-        <li><a href="zenml.annotations.html#module-zenml.annotations.misc_annotations">zenml.annotations.misc_annotations</a>
+        <li><a href="zenml.annotations.html#module-zenml.annotations.param_annotations">zenml.annotations.param_annotations</a>
 </li>
         <li><a href="zenml.annotations.html#module-zenml.annotations.step_annotations">zenml.annotations.step_annotations</a>
 </li>
@@ -639,13 +622,7 @@
 </li>
         <li><a href="zenml.artifacts.data_artifacts.html#module-zenml.artifacts.data_artifacts.base_data_artifact">zenml.artifacts.data_artifacts.base_data_artifact</a>
 </li>
-        <li><a href="zenml.artifacts.data_artifacts.html#module-zenml.artifacts.data_artifacts.json_artifact">zenml.artifacts.data_artifacts.json_artifact</a>
-</li>
-        <li><a href="zenml.artifacts.data_artifacts.html#module-zenml.artifacts.data_artifacts.pandas_artifact">zenml.artifacts.data_artifacts.pandas_artifact</a>
-</li>
         <li><a href="zenml.artifacts.data_artifacts.html#module-zenml.artifacts.data_artifacts.text_artifact">zenml.artifacts.data_artifacts.text_artifact</a>
-</li>
-        <li><a href="zenml.artifacts.html#module-zenml.artifacts.utils">zenml.artifacts.utils</a>
 </li>
         <li><a href="zenml.cli.html#module-zenml.cli">zenml.cli</a>
 </li>
@@ -672,8 +649,6 @@
         <li><a href="zenml.config.html#module-zenml.config.constants">zenml.config.constants</a>
 </li>
         <li><a href="zenml.config.html#module-zenml.config.global_config">zenml.config.global_config</a>
-</li>
-        <li><a href="zenml.html#module-zenml.conftest">zenml.conftest</a>
 </li>
         <li><a href="zenml.html#module-zenml.constants">zenml.constants</a>
 </li>
@@ -731,7 +706,7 @@
 </li>
         <li><a href="zenml.pipelines.html#module-zenml.pipelines.base_pipeline">zenml.pipelines.base_pipeline</a>
 </li>
-        <li><a href="zenml.pipelines.html#module-zenml.pipelines.simple_pipeline">zenml.pipelines.simple_pipeline</a>
+        <li><a href="zenml.pipelines.html#module-zenml.pipelines.pipeline_decorator">zenml.pipelines.pipeline_decorator</a>
 </li>
         <li><a href="zenml.stacks.html#module-zenml.stacks">zenml.stacks</a>
 </li>
@@ -743,9 +718,7 @@
 </li>
         <li><a href="zenml.steps.html#module-zenml.steps.base_step">zenml.steps.base_step</a>
 </li>
-        <li><a href="zenml.steps.html#module-zenml.steps.simple_step">zenml.steps.simple_step</a>
-</li>
-        <li><a href="zenml.steps.html#module-zenml.steps.split_step">zenml.steps.split_step</a>
+        <li><a href="zenml.steps.html#module-zenml.steps.step_decorator">zenml.steps.step_decorator</a>
 </li>
         <li><a href="zenml.steps.html#module-zenml.steps.utils">zenml.steps.utils</a>
 </li>
@@ -768,9 +741,9 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="zenml.utils.html#zenml.utils.path_utils.move">move() (in module zenml.utils.path_utils)</a>
 </li>
-      <li><a href="zenml.steps.html#zenml.steps.base_step.MultiOutput">MultiOutput (class in zenml.steps.base_step)</a>
-</li>
       <li><a href="zenml.artifact_stores.html#zenml.artifact_stores.gcp_artifact_store.GCPArtifactStore.must_be_gcs_path">must_be_gcs_path() (zenml.artifact_stores.gcp_artifact_store.GCPArtifactStore class method)</a>
+</li>
+      <li><a href="zenml.artifact_stores.html#zenml.artifact_stores.local_artifact_store.LocalArtifactStore.must_be_local_path">must_be_local_path() (zenml.artifact_stores.local_artifact_store.LocalArtifactStore class method)</a>
 </li>
       <li><a href="zenml.html#zenml.enums.MLMetadataTypes.mysql">mysql (zenml.enums.MLMetadataTypes attribute)</a>
 </li>
@@ -800,17 +773,15 @@
 </li>
       <li><a href="zenml.stacks.html#zenml.stacks.base_stack.BaseStack.orchestrator_name">orchestrator_name (zenml.stacks.base_stack.BaseStack attribute)</a>
 </li>
-      <li><a href="zenml.core.html#zenml.core.local_service.LocalService.orchestrators">orchestrators (zenml.core.local_service.LocalService property)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="zenml.core.html#zenml.core.local_service.LocalService.orchestrators">orchestrators (zenml.core.local_service.LocalService property)</a>
+</li>
       <li><a href="zenml.html#zenml.enums.OrchestratorTypes">OrchestratorTypes (class in zenml.enums)</a>
 </li>
       <li><a href="zenml.annotations.html#zenml.annotations.artifact_annotations.Output">Output (class in zenml.annotations.artifact_annotations)</a>
 </li>
       <li><a href="zenml.steps.html#zenml.steps.base_step.BaseStep.OUTPUT_SPEC">OUTPUT_SPEC (zenml.steps.base_step.BaseStep attribute)</a>
-</li>
-      <li><a href="zenml.steps.html#zenml.steps.base_step.BaseStep.OUTPUT_WRITERS">OUTPUT_WRITERS (zenml.steps.base_step.BaseStep attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -818,11 +789,7 @@
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="zenml.artifacts.data_artifacts.html#zenml.artifacts.data_artifacts.pandas_artifact.PandasArtifact">PandasArtifact (class in zenml.artifacts.data_artifacts.pandas_artifact)</a>
-</li>
-      <li><a href="zenml.annotations.html#zenml.annotations.artifact_annotations.PandasOutput">PandasOutput (class in zenml.annotations.artifact_annotations)</a>
-</li>
-      <li><a href="zenml.annotations.html#zenml.annotations.misc_annotations.Param">Param (class in zenml.annotations.misc_annotations)</a>
+      <li><a href="zenml.annotations.html#zenml.annotations.param_annotations.Param">Param (class in zenml.annotations.param_annotations)</a>
 </li>
       <li><a href="zenml.steps.html#zenml.steps.base_step.BaseStep.PARAM_DEFAULTS">PARAM_DEFAULTS (zenml.steps.base_step.BaseStep attribute)</a>
 </li>
@@ -844,6 +811,8 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="zenml.pipelines.html#zenml.pipelines.pipeline_decorator.pipeline">pipeline() (in module zenml.pipelines.pipeline_decorator)</a>
+</li>
       <li><a href="zenml.utils.html#zenml.utils.exceptions.PipelineInterfaceError">PipelineInterfaceError</a>
 </li>
       <li><a href="zenml.html#zenml.exceptions.PipelineNotSucceededException">PipelineNotSucceededException</a>
@@ -882,15 +851,11 @@
 </li>
       <li><a href="zenml.artifacts.data_artifacts.html#zenml.artifacts.data_artifacts.text_artifact.TextArtifact.read_with_beam">read_with_beam() (zenml.artifacts.data_artifacts.text_artifact.TextArtifact method)</a>
 </li>
-      <li><a href="zenml.artifacts.data_artifacts.html#zenml.artifacts.data_artifacts.json_artifact.JSONArtifact.read_with_json">read_with_json() (zenml.artifacts.data_artifacts.json_artifact.JSONArtifact method)</a>
+      <li><a href="zenml.artifacts.data_artifacts.html#zenml.artifacts.data_artifacts.text_artifact.TextArtifact.read_with_pandas">read_with_pandas() (zenml.artifacts.data_artifacts.text_artifact.TextArtifact method)</a>
 </li>
-      <li><a href="zenml.artifacts.data_artifacts.html#zenml.artifacts.data_artifacts.pandas_artifact.PandasArtifact.read_with_pandas">read_with_pandas() (zenml.artifacts.data_artifacts.pandas_artifact.PandasArtifact method)</a>
-
-      <ul>
-        <li><a href="zenml.artifacts.data_artifacts.html#zenml.artifacts.data_artifacts.text_artifact.TextArtifact.read_with_pandas">(zenml.artifacts.data_artifacts.text_artifact.TextArtifact method)</a>
-</li>
-      </ul></li>
       <li><a href="zenml.utils.html#zenml.utils.yaml_utils.read_yaml">read_yaml() (in module zenml.utils.yaml_utils)</a>
+</li>
+      <li><a href="zenml.artifacts.html#zenml.artifacts.base_artifact.BaseArtifact.READER_FACTORY">READER_FACTORY (zenml.artifacts.base_artifact.BaseArtifact attribute)</a>
 </li>
       <li><a href="zenml.core.html#zenml.core.component_factory.ComponentFactory.register">register() (zenml.core.component_factory.ComponentFactory method)</a>
 </li>
@@ -902,14 +867,18 @@
 </li>
       <li><a href="zenml.core.html#zenml.core.local_service.LocalService.register_orchestrator">register_orchestrator() (zenml.core.local_service.LocalService method)</a>
 </li>
+      <li><a href="zenml.artifacts.html#zenml.artifacts.base_artifact.BaseArtifact.register_reader">register_reader() (zenml.artifacts.base_artifact.BaseArtifact class method)</a>
+</li>
       <li><a href="zenml.core.html#zenml.core.local_service.LocalService.register_stack">register_stack() (zenml.core.local_service.LocalService method)</a>
 </li>
-      <li><a href="zenml.artifacts.html#zenml.artifacts.utils.WriterFactory.register_type">register_type() (zenml.artifacts.utils.WriterFactory method)</a>
+      <li><a href="zenml.artifacts.html#zenml.artifacts.base_artifact.IOFactory.register_type">register_type() (zenml.artifacts.base_artifact.IOFactory method)</a>
 </li>
-      <li><a href="zenml.config.html#zenml.config.global_config.GlobalConfig.repo_active_stacks">repo_active_stacks (zenml.config.global_config.GlobalConfig attribute)</a>
+      <li><a href="zenml.artifacts.html#zenml.artifacts.base_artifact.BaseArtifact.register_writer">register_writer() (zenml.artifacts.base_artifact.BaseArtifact class method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="zenml.config.html#zenml.config.global_config.GlobalConfig.repo_active_stacks">repo_active_stacks (zenml.config.global_config.GlobalConfig attribute)</a>
+</li>
       <li><a href="zenml.core.html#zenml.core.repo.Repository">Repository (class in zenml.core.repo)</a>
 </li>
       <li><a href="zenml.core.html#zenml.core.git_wrapper.GitWrapper.reset">reset() (zenml.core.git_wrapper.GitWrapper method)</a>
@@ -952,13 +921,11 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="zenml.core.html#zenml.core.repo.Repository.set_active_stack">set_active_stack() (zenml.core.repo.Repository method)</a>
 </li>
+      <li><a href="zenml.steps.html#zenml.steps.base_step.BaseStep.set_inputs">set_inputs() (zenml.steps.base_step.BaseStep method)</a>
+</li>
       <li><a href="zenml.html#zenml.logger.set_root_verbosity">set_root_verbosity() (in module zenml.logger)</a>
 </li>
       <li><a href="zenml.config.html#zenml.config.global_config.GlobalConfig.set_stack_for_repo">set_stack_for_repo() (zenml.config.global_config.GlobalConfig method)</a>
-</li>
-      <li><a href="zenml.pipelines.html#zenml.pipelines.simple_pipeline.SimplePipeline">SimplePipeline() (in module zenml.pipelines.simple_pipeline)</a>
-</li>
-      <li><a href="zenml.steps.html#zenml.steps.simple_step.SimpleStep">SimpleStep() (in module zenml.steps.simple_step)</a>
 </li>
       <li><a href="zenml.core.html#zenml.core.mapping_utils.UUIDSourceTuple.source">source (zenml.core.mapping_utils.UUIDSourceTuple attribute)</a>
 </li>
@@ -970,10 +937,10 @@
 </li>
       <li><a href="zenml.stacks.html#zenml.stacks.base_stack.BaseStack.stack_type">stack_type (zenml.stacks.base_stack.BaseStack attribute)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="zenml.core.html#zenml.core.local_service.LocalService.stacks">stacks (zenml.core.local_service.LocalService attribute)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="zenml.html#zenml.enums.StackTypes">StackTypes (class in zenml.enums)</a>
 </li>
       <li><a href="zenml.core.html#zenml.core.git_wrapper.GitWrapper.stash">stash() (zenml.core.git_wrapper.GitWrapper method)</a>
@@ -981,6 +948,8 @@
       <li><a href="zenml.core.html#zenml.core.git_wrapper.GitWrapper.stash_pop">stash_pop() (zenml.core.git_wrapper.GitWrapper method)</a>
 </li>
       <li><a href="zenml.annotations.html#zenml.annotations.step_annotations.Step">Step (class in zenml.annotations.step_annotations)</a>
+</li>
+      <li><a href="zenml.steps.html#zenml.steps.step_decorator.step">step() (in module zenml.steps.step_decorator)</a>
 </li>
       <li><a href="zenml.pipelines.html#zenml.pipelines.base_pipeline.BasePipeline.STEP_SPEC">STEP_SPEC (zenml.pipelines.base_pipeline.BasePipeline attribute)</a>
 </li>
@@ -1006,18 +975,14 @@
 </li>
       <li><a href="zenml.utils.html#zenml.utils.analytics_utils.track">track() (in module zenml.utils.analytics_utils)</a>
 </li>
-      <li><a href="zenml.utils.html#zenml.utils.analytics_utils.track_event">track_event() (in module zenml.utils.analytics_utils)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="zenml.utils.html#zenml.utils.analytics_utils.track_event">track_event() (in module zenml.utils.analytics_utils)</a>
+</li>
       <li><a href="zenml.artifacts.html#zenml.artifacts.base_artifact.BaseArtifact.TYPE_NAME">TYPE_NAME (zenml.artifacts.base_artifact.BaseArtifact attribute)</a>
 
       <ul>
         <li><a href="zenml.artifacts.data_artifacts.html#zenml.artifacts.data_artifacts.base_data_artifact.BaseDataArtifact.TYPE_NAME">(zenml.artifacts.data_artifacts.base_data_artifact.BaseDataArtifact attribute)</a>
-</li>
-        <li><a href="zenml.artifacts.data_artifacts.html#zenml.artifacts.data_artifacts.json_artifact.JSONArtifact.TYPE_NAME">(zenml.artifacts.data_artifacts.json_artifact.JSONArtifact attribute)</a>
-</li>
-        <li><a href="zenml.artifacts.data_artifacts.html#zenml.artifacts.data_artifacts.pandas_artifact.PandasArtifact.TYPE_NAME">(zenml.artifacts.data_artifacts.pandas_artifact.PandasArtifact attribute)</a>
 </li>
         <li><a href="zenml.artifacts.data_artifacts.html#zenml.artifacts.data_artifacts.text_artifact.TextArtifact.TYPE_NAME">(zenml.artifacts.data_artifacts.text_artifact.TextArtifact attribute)</a>
 </li>
@@ -1058,20 +1023,14 @@
 <h2 id="V">V</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="zenml.annotations.html#zenml.annotations.artifact_annotations.BeamOutput.VALID_TYPES">VALID_TYPES (zenml.annotations.artifact_annotations.BeamOutput attribute)</a>
+      <li><a href="zenml.annotations.html#zenml.annotations.artifact_annotations.Input.VALID_TYPES">VALID_TYPES (zenml.annotations.artifact_annotations.Input attribute)</a>
 
       <ul>
-        <li><a href="zenml.annotations.html#zenml.annotations.artifact_annotations.Input.VALID_TYPES">(zenml.annotations.artifact_annotations.Input attribute)</a>
-</li>
-        <li><a href="zenml.annotations.html#zenml.annotations.artifact_annotations.JSONOutput.VALID_TYPES">(zenml.annotations.artifact_annotations.JSONOutput attribute)</a>
-</li>
         <li><a href="zenml.annotations.html#zenml.annotations.artifact_annotations.Output.VALID_TYPES">(zenml.annotations.artifact_annotations.Output attribute)</a>
-</li>
-        <li><a href="zenml.annotations.html#zenml.annotations.artifact_annotations.PandasOutput.VALID_TYPES">(zenml.annotations.artifact_annotations.PandasOutput attribute)</a>
 </li>
         <li><a href="zenml.annotations.html#zenml.annotations.base_annotations.BaseAnnotation.VALID_TYPES">(zenml.annotations.base_annotations.BaseAnnotation attribute)</a>
 </li>
-        <li><a href="zenml.annotations.html#zenml.annotations.misc_annotations.Param.VALID_TYPES">(zenml.annotations.misc_annotations.Param attribute)</a>
+        <li><a href="zenml.annotations.html#zenml.annotations.param_annotations.Param.VALID_TYPES">(zenml.annotations.param_annotations.Param attribute)</a>
 </li>
         <li><a href="zenml.annotations.html#zenml.annotations.step_annotations.Step.VALID_TYPES">(zenml.annotations.step_annotations.Step attribute)</a>
 </li>
@@ -1090,31 +1049,15 @@
 </li>
       <li><a href="zenml.utils.html#zenml.utils.yaml_utils.write_json">write_json() (in module zenml.utils.yaml_utils)</a>
 </li>
-      <li><a href="zenml.artifacts.data_artifacts.html#zenml.artifacts.data_artifacts.text_artifact.write_with_beam">write_with_beam() (in module zenml.artifacts.data_artifacts.text_artifact)</a>
-</li>
-      <li><a href="zenml.artifacts.data_artifacts.html#zenml.artifacts.data_artifacts.json_artifact.write_with_json">write_with_json() (in module zenml.artifacts.data_artifacts.json_artifact)</a>
-</li>
-      <li><a href="zenml.artifacts.data_artifacts.html#zenml.artifacts.data_artifacts.pandas_artifact.write_with_pandas">write_with_pandas() (in module zenml.artifacts.data_artifacts.pandas_artifact)</a>
-
-      <ul>
-        <li><a href="zenml.artifacts.data_artifacts.html#zenml.artifacts.data_artifacts.text_artifact.write_with_pandas">(in module zenml.artifacts.data_artifacts.text_artifact)</a>
-</li>
-      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="zenml.artifacts.data_artifacts.html#zenml.artifacts.data_artifacts.text_artifact.TextArtifact.write_with_beam">write_with_beam() (zenml.artifacts.data_artifacts.text_artifact.TextArtifact method)</a>
+</li>
+      <li><a href="zenml.artifacts.data_artifacts.html#zenml.artifacts.data_artifacts.text_artifact.TextArtifact.write_with_pandas">write_with_pandas() (zenml.artifacts.data_artifacts.text_artifact.TextArtifact method)</a>
+</li>
       <li><a href="zenml.utils.html#zenml.utils.yaml_utils.write_yaml">write_yaml() (in module zenml.utils.yaml_utils)</a>
 </li>
       <li><a href="zenml.artifacts.html#zenml.artifacts.base_artifact.BaseArtifact.WRITER_FACTORY">WRITER_FACTORY (zenml.artifacts.base_artifact.BaseArtifact attribute)</a>
-
-      <ul>
-        <li><a href="zenml.artifacts.data_artifacts.html#zenml.artifacts.data_artifacts.json_artifact.JSONArtifact.WRITER_FACTORY">(zenml.artifacts.data_artifacts.json_artifact.JSONArtifact attribute)</a>
-</li>
-        <li><a href="zenml.artifacts.data_artifacts.html#zenml.artifacts.data_artifacts.pandas_artifact.PandasArtifact.WRITER_FACTORY">(zenml.artifacts.data_artifacts.pandas_artifact.PandasArtifact attribute)</a>
-</li>
-        <li><a href="zenml.artifacts.data_artifacts.html#zenml.artifacts.data_artifacts.text_artifact.TextArtifact.WRITER_FACTORY">(zenml.artifacts.data_artifacts.text_artifact.TextArtifact attribute)</a>
-</li>
-      </ul></li>
-      <li><a href="zenml.artifacts.html#zenml.artifacts.utils.WriterFactory">WriterFactory (class in zenml.artifacts.utils)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1151,10 +1094,10 @@
 </li>
       </ul></li>
       <li>
-    zenml.annotations.misc_annotations
+    zenml.annotations.param_annotations
 
       <ul>
-        <li><a href="zenml.annotations.html#module-zenml.annotations.misc_annotations">module</a>
+        <li><a href="zenml.annotations.html#module-zenml.annotations.param_annotations">module</a>
 </li>
       </ul></li>
       <li>
@@ -1221,31 +1164,10 @@
 </li>
       </ul></li>
       <li>
-    zenml.artifacts.data_artifacts.json_artifact
-
-      <ul>
-        <li><a href="zenml.artifacts.data_artifacts.html#module-zenml.artifacts.data_artifacts.json_artifact">module</a>
-</li>
-      </ul></li>
-      <li>
-    zenml.artifacts.data_artifacts.pandas_artifact
-
-      <ul>
-        <li><a href="zenml.artifacts.data_artifacts.html#module-zenml.artifacts.data_artifacts.pandas_artifact">module</a>
-</li>
-      </ul></li>
-      <li>
     zenml.artifacts.data_artifacts.text_artifact
 
       <ul>
         <li><a href="zenml.artifacts.data_artifacts.html#module-zenml.artifacts.data_artifacts.text_artifact">module</a>
-</li>
-      </ul></li>
-      <li>
-    zenml.artifacts.utils
-
-      <ul>
-        <li><a href="zenml.artifacts.html#module-zenml.artifacts.utils">module</a>
 </li>
       </ul></li>
       <li>
@@ -1340,13 +1262,6 @@
 </li>
       </ul></li>
       <li>
-    zenml.conftest
-
-      <ul>
-        <li><a href="zenml.html#module-zenml.conftest">module</a>
-</li>
-      </ul></li>
-      <li>
     zenml.constants
 
       <ul>
@@ -1388,8 +1303,6 @@
         <li><a href="zenml.core.html#module-zenml.core.git_wrapper">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     zenml.core.local_service
 
@@ -1404,6 +1317,8 @@
         <li><a href="zenml.core.html#module-zenml.core.local_service_test">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     zenml.core.mapping_utils
 
@@ -1545,10 +1460,10 @@
 </li>
       </ul></li>
       <li>
-    zenml.pipelines.simple_pipeline
+    zenml.pipelines.pipeline_decorator
 
       <ul>
-        <li><a href="zenml.pipelines.html#module-zenml.pipelines.simple_pipeline">module</a>
+        <li><a href="zenml.pipelines.html#module-zenml.pipelines.pipeline_decorator">module</a>
 </li>
       </ul></li>
       <li>
@@ -1587,17 +1502,10 @@
 </li>
       </ul></li>
       <li>
-    zenml.steps.simple_step
+    zenml.steps.step_decorator
 
       <ul>
-        <li><a href="zenml.steps.html#module-zenml.steps.simple_step">module</a>
-</li>
-      </ul></li>
-      <li>
-    zenml.steps.split_step
-
-      <ul>
-        <li><a href="zenml.steps.html#module-zenml.steps.split_step">module</a>
+        <li><a href="zenml.steps.html#module-zenml.steps.step_decorator">module</a>
 </li>
       </ul></li>
       <li>

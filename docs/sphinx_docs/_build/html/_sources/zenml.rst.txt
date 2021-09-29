@@ -24,14 +24,6 @@ Subpackages
 Submodules
 ----------
 
-zenml.conftest module
----------------------
-
-.. automodule:: zenml.conftest
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 zenml.constants module
 ----------------------
 

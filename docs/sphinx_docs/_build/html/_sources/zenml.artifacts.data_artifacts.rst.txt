@@ -12,22 +12,6 @@ zenml.artifacts.data\_artifacts.base\_data\_artifact module
    :undoc-members:
    :show-inheritance:
 
-zenml.artifacts.data\_artifacts.json\_artifact module
------------------------------------------------------
-
-.. automodule:: zenml.artifacts.data_artifacts.json_artifact
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-zenml.artifacts.data\_artifacts.pandas\_artifact module
--------------------------------------------------------
-
-.. automodule:: zenml.artifacts.data_artifacts.pandas_artifact
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 zenml.artifacts.data\_artifacts.text\_artifact module
 -----------------------------------------------------
 
