@@ -44,15 +44,14 @@ class ComponentFactory:
 
     def get_single_component(self, key: Text) -> Any:
         """Get a registered component from a key."""
-        # TODO [LOW]: Try catch for the case where key doesnt exist.
         if key in self.components:
             return self.components[key]
         raise AssertionError(
             f"Type {key} does not exist! Available options: "
-            f"{[k.name for k in self.components.keys()]}"
+            f"{[k for k in self.components.keys()]}"
         )
 
-    def register_component(self, key: Any, component: Any):
+    def register_component(self, key: Text, component: Any):
         self.components[key] = component
 
     def register(self, name: str) -> Callable:
@@ -69,9 +68,9 @@ class ComponentFactory:
             """Inner wrapper for decorator."""
             if name in self.components:
                 logger.debug(
-                    f"Executor {name} already exists. Will replace it"
+                    f"Executor {name} already exists for factory {self.name}. Will replace it"
                 )
-            self.components[name] = wrapped_class
+            self.register_component(name, wrapped_class)
             return wrapped_class
 
         return inner_wrapper
