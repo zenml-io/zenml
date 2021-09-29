@@ -20,10 +20,10 @@ zenml.annotations.base\_annotations module
    :undoc-members:
    :show-inheritance:
 
-zenml.annotations.misc\_annotations module
-------------------------------------------
+zenml.annotations.param\_annotations module
+-------------------------------------------
 
-.. automodule:: zenml.annotations.misc_annotations
+.. automodule:: zenml.annotations.param_annotations
    :members:
    :undoc-members:
    :show-inheritance:

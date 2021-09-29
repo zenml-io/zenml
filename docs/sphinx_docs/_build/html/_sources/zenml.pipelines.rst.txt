@@ -12,18 +12,10 @@ zenml.pipelines.base\_pipeline module
    :undoc-members:
    :show-inheritance:
 
-zenml.pipelines.simple\_pipeline module
----------------------------------------
+zenml.pipelines.pipeline\_decorator module
+------------------------------------------
 
-.. automodule:: zenml.pipelines.simple_pipeline
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-zenml.pipelines.training\_pipeline module
------------------------------------------
-
-.. automodule:: zenml.pipelines.training_pipeline
+.. automodule:: zenml.pipelines.pipeline_decorator
    :members:
    :undoc-members:
    :show-inheritance:

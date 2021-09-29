@@ -12,18 +12,10 @@ zenml.steps.base\_step module
    :undoc-members:
    :show-inheritance:
 
-zenml.steps.simple\_step module
--------------------------------
+zenml.steps.step\_decorator module
+----------------------------------
 
-.. automodule:: zenml.steps.simple_step
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-zenml.steps.split\_step module
-------------------------------
-
-.. automodule:: zenml.steps.split_step
+.. automodule:: zenml.steps.step_decorator
    :members:
    :undoc-members:
    :show-inheritance:
