@@ -64,18 +64,22 @@ class BaseStepMeta(type):
 
 
 class BaseStep(metaclass=BaseStepMeta):
-    """ """
+    """ The base implementation of a ZenML Step which will be inherited by all
+    the other step implementations
+    """
 
     def __init__(self, *args, **kwargs):
-        self.__component = None
-        self.__params = dict()
+        self.__component_class = generate_component(self)
 
         if args:
             raise StepInterfaceError(
                 "When you are creating an instance of a step, please only "
-                "use key-word arguments."
-            )
+                "use key-word arguments.")
 
+        self.__component = None
+
+        self.__inputs = dict()
+        self.__params = dict()
         for k, v in kwargs.items():
             assert k in self.PARAM_SPEC
             try:
@@ -83,25 +87,20 @@ class BaseStep(metaclass=BaseStepMeta):
             except TypeError or ValueError:
                 raise StepInterfaceError("")
 
-    def __call__(self, **artifacts):
-        self.__component = generate_component(self)(
-            **artifacts, **self.__params
-        )
-        # todo: multiple outputs
-        return list(self.__component.outputs.values())[0]
-
     @abstractmethod
     def process(self, *args, **kwargs):
-        """
+        pass
 
-        Args:
-          *args:
-          **kwargs:
+    @property
+    def component(self):
+        if self.__component is None:
+            # TODO: [HIGH] Check whether inputs are provided
+            return self.__component_class(**self.__inputs, **self.__params)
+        else:
+            return self.__component
 
-        Returns:
+    def set_inputs(self, **artifacts):
+        self.__inputs.update(artifacts)
 
-        """
-
-    def get_component(self):
-        """ """
-        return self.__component
+    def get_outputs(self):
+        return self.component.outputs
