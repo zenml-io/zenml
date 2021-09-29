@@ -3,12 +3,13 @@ repos:
     rev: 5.9.3
     hooks:
       - id: isort
-        args: [--filter-files]
+        args: [--filter-files,  --check-only]
         files: \.py$
   - repo: https://github.com/ambv/black
     rev: 20.8b1
     hooks:
       - id: black
+        args: [--check]
   - repo: https://github.com/pycqa/flake8
     rev: 3.9.2
     hooks:
