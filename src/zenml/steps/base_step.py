@@ -3,7 +3,9 @@ from abc import abstractmethod
 
 from pydantic import create_model
 
-from zenml.annotations import Input, Output, Param
+from zenml.annotations import Input, Output
+from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.artifacts.data_artifacts.json_artifact import JSONArtifact
 from zenml.steps.utils import generate_component
 from zenml.utils.exceptions import StepInterfaceError
 
@@ -20,8 +22,6 @@ class BaseStepMeta(type):
         cls.OUTPUT_SPEC = dict()
         cls.PARAM_SPEC = dict()
 
-        cls.PARAM_DEFAULTS = dict()
-
         # Looking into the signature of the provided process function
         process_spec = inspect.getfullargspec(cls.process)
         process_args = process_spec.args
@@ -34,27 +34,41 @@ class BaseStepMeta(type):
         for arg in process_args:
             arg_type = process_spec.annotations.get(arg, None)
             if isinstance(arg_type, Input):
-                cls.INPUT_SPEC.update({arg: arg_type.type})
+                if issubclass(arg_type, BaseArtifact):
+                    cls.INPUT_SPEC.update({arg: arg_type.type})
+                else:
+                    cls.INPUT_SPEC.update({arg: JSONArtifact})
             elif isinstance(arg_type, Output):
                 cls.OUTPUT_SPEC.update({arg: arg_type.type})
-            elif isinstance(arg_type, Param):
-                cls.PARAM_SPEC.update({arg: arg_type.type})
             else:
                 cls.PARAM_SPEC.update({arg: arg_type})
 
+        # Infer the returned values
+        return_spec = process_spec.annotations.get("return", None)
+        if return_spec is not None:
+            cls.OUTPUT_SPEC.update({"return_output": JSONArtifact})
+
         # Infer the defaults
+        cls.PARAM_DEFAULTS = dict()
+
         process_defaults = process_spec.defaults
         if process_defaults is not None:
-            for i, default in enumerate(process_defaults):
-                # TODO: [HIGH] fix the implementation
-                process_args.reverse()
-                arg = process_args[i]
-                arg_type = process_spec.annotations.get(arg, None)
-                if not isinstance(arg_type, Param):
-                    raise StepInterfaceError(
-                        f"A default value in the signature of a step can only "
-                        f"be used for a Param[...] not {arg_type}."
-                    )
+            raise StepInterfaceError(
+                "The usage of default values for "
+                "parameters is not fully implemented yet."
+                "Please do not use default values in "
+                "your step definition."
+            )
+            # for i, default in enumerate(process_defaults):
+            #     # TODO: [HIGH] fix the implementation
+            #     process_args.reverse()
+            #     arg = process_args[i]
+            #     arg_type = process_spec.annotations.get(arg, None)
+            #     if not isinstance(arg_type, Param):
+            #         raise StepInterfaceError(
+            #             f"A default value in the signature of a step can only "
+            #             f"be used for a Param[...] not {arg_type}."
+            #         )
 
         return cls
 
@@ -78,30 +92,26 @@ class BaseStep(metaclass=BaseStepMeta):
 
         self.__inputs = dict()
         self.__params = dict()
+
         for k, v in kwargs.items():
-            assert k in self.PARAM_SPEC  # TODO [LOW]: Be more verbose here
+            if k not in self.PARAM_SPEC:
+                raise StepInterfaceError()  # TODO [LOW]: Be more verbose here
 
-            try:
-                # create a pydantic model out of a primitive type
-                pydantic_c = create_model(k, **{k: (self.PARAM_SPEC[k], ...)})
-                model = pydantic_c(**{k: v})
+        try:
+            # create a pydantic model out of a primitive type
+            pydantic_c = create_model(
+                "params", **{k: (self.PARAM_SPEC[k], ...) for k in kwargs}
+            )
+            model = pydantic_c(**kwargs)
 
-                # always jsonify
-                self.__params[k] = model.json()
+            # always jsonify
+            import json
+            self.__params = {k: json.dumps(v) for k, v in model.dict().items()}
 
-                # we can also maybe use dict or json here
-                self.PARAM_SPEC[k] = str
-
-            except RuntimeError:
-                # TODO [MED]: Change this to say more clearly what
-                #  happened: Even pydantic didnt support this type.
-                raise StepInterfaceError(
-                    # f"Unsupported or unknown annotation {arg_type} detected "
-                    # f"in the input signature . When designing your step "
-                    # f"please use either Input[AnyArtifactType], "
-                    # f"Output[AnyArtifactType] or Param[AnyPrimitiveType] for "
-                    # f"your annotations."
-                )
+        except RuntimeError:
+            # TODO [MED]: Change this to say more clearly what
+            #  happened: Even pydantic didnt support this type.
+            raise StepInterfaceError()
 
     @abstractmethod
     def process(self, *args, **kwargs):
