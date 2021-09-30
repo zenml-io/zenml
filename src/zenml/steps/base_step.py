@@ -1,6 +1,8 @@
 import inspect
 from abc import abstractmethod
 
+from pydantic import create_model
+
 from zenml.annotations import Input, Output, Param
 from zenml.steps.utils import generate_component
 from zenml.utils.exceptions import StepInterfaceError
@@ -38,13 +40,7 @@ class BaseStepMeta(type):
             elif isinstance(arg_type, Param):
                 cls.PARAM_SPEC.update({arg: arg_type.type})
             else:
-                raise StepInterfaceError(
-                    f"Unsupported or unknown annotation {arg_type} detected "
-                    f"in the input signature . When designing your step "
-                    f"please use either Input[AnyArtifactType], "
-                    f"Output[AnyArtifactType] or Param[AnyPrimitiveType] for "
-                    f"your annotations."
-                )
+                cls.PARAM_SPEC.update({arg: arg_type})
 
         # Infer the defaults
         process_defaults = process_spec.defaults
@@ -71,6 +67,7 @@ class BaseStep(metaclass=BaseStepMeta):
     def __init__(self, *args, **kwargs):
         self.__component_class = generate_component(self)
 
+        # TODO [LOW]: Support args
         if args:
             raise StepInterfaceError(
                 "When you are creating an instance of a step, please only "
@@ -82,11 +79,29 @@ class BaseStep(metaclass=BaseStepMeta):
         self.__inputs = dict()
         self.__params = dict()
         for k, v in kwargs.items():
-            assert k in self.PARAM_SPEC
+            assert k in self.PARAM_SPEC  # TODO [LOW]: Be more verbose here
+
             try:
-                self.__params[k] = self.PARAM_SPEC[k](v)
-            except TypeError or ValueError:
-                raise StepInterfaceError("")
+                # create a pydantic model out of a primitive type
+                pydantic_c = create_model(k, **{k: (self.PARAM_SPEC[k], ...)})
+                model = pydantic_c(**{k: v})
+
+                # always jsonify
+                self.__params[k] = model.json()
+
+                # we can also maybe use dict or json here
+                self.PARAM_SPEC[k] = str
+
+            except RuntimeError:
+                # TODO [MED]: Change this to say more clearly what
+                #  happened: Even pydantic didnt support this type.
+                raise StepInterfaceError(
+                    # f"Unsupported or unknown annotation {arg_type} detected "
+                    # f"in the input signature . When designing your step "
+                    # f"please use either Input[AnyArtifactType], "
+                    # f"Output[AnyArtifactType] or Param[AnyPrimitiveType] for "
+                    # f"your annotations."
+                )
 
     @abstractmethod
     def process(self, *args, **kwargs):

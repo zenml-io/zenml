@@ -14,42 +14,53 @@
 
 import os
 
-from zenml import pipeline, step
-from zenml.annotations import Input, Param, Step, Output
+from zenml import pipeline
+from zenml.annotations import Input, Output, Param, Step
 from zenml.artifacts.data_artifacts.text_artifact import TextArtifact
+from zenml.steps import step
+
+
+@step(name="SimplestStepEver")
+def SimplestStepEver(basic_param_1: int, basic_param_2: str) -> int:
+    return basic_param_1 + int(basic_param_2)
 
 
 @step(name="data_ingest")
-def DataIngestionStep(uri: Param[str],
-                      output_artifact: Output[TextArtifact]):
+def DataIngestionStep(uri: Param[str], output_artifact: Output[TextArtifact]):
     import pandas as pd
+
     df = pd.read_csv(uri)
     output_artifact.write_with_pandas(df)
 
 
 @step(name="split")
-def DistSplitStep(input_artifact: Input[TextArtifact],
-                  output_artifact: Output[TextArtifact]):
+def DistSplitStep(
+    input_artifact: Input[TextArtifact], output_artifact: Output[TextArtifact]
+):
     import apache_beam as beam
 
     with beam.Pipeline() as p:
-        _ = (p
-             | input_artifact.read_with_beam()
-             | output_artifact.write_with_beam())
+        _ = (
+            p
+            | input_artifact.read_with_beam()
+            | output_artifact.write_with_beam()
+        )
 
 
 @step(name="preprocessing")
-def InMemPreprocesserStep(input_artifact: Input[TextArtifact],
-                          output_artifact: Output[TextArtifact]):
+def InMemPreprocesserStep(
+    input_artifact: Input[TextArtifact], output_artifact: Output[TextArtifact]
+):
     data = input_artifact.read_with_pandas()
     output_artifact.write_with_pandas(data)
 
 
 @pipeline(name="my_pipeline")
 def SplitPipeline(
-        data_step: Step[DataIngestionStep],
-        split_step: Step[DistSplitStep],
-        preprocesser_step: Step[InMemPreprocesserStep],
+    simple_step: Step[SimplestStepEver],
+    data_step: Step[DataIngestionStep],
+    split_step: Step[DistSplitStep],
+    preprocesser_step: Step[InMemPreprocesserStep],
 ):
     split_step.set_inputs(
         input_artifact=data_step.get_outputs()["output_artifact"],
@@ -62,6 +73,7 @@ def SplitPipeline(
 
 # Pipeline
 split_pipeline = SplitPipeline(
+    simple_step=SimplestStepEver(basic_param_1=2, basic_param_2="3"),
     data_step=DataIngestionStep(uri=os.getenv("test_data")),
     split_step=DistSplitStep(),
     preprocesser_step=InMemPreprocesserStep(),
