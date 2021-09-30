@@ -2,11 +2,11 @@
 description: A simple example to get started with ZenML
 ---
 
-# ZenML Quickstart Guide
+# Quickstart Guide
 
 Our goal here is to help you to get the first practical experience with our tool and give you a brief overview on some basic functionalities of ZenML.
 
-The quickest way to get started is to create a simple pipeline. We'll be using the [MNIST](http://yann.lecun.com/exdb/mnist/) dataset (originally developed by Yann LeCun and others) digits, and then later the [Fashion MNIST](https://github.com/zalandoresearch/fashion-mnist) dataset developed by Zalando.
+The quickest way to get started is to create a simple pipeline. We'll be using the [MNIST](http://yann.lecun.com/exdb/mnist/) dataset \(originally developed by Yann LeCun and others\) digits, and then later the [Fashion MNIST](https://github.com/zalandoresearch/fashion-mnist) dataset developed by Zalando.
 
 If you want to run this notebook in an interactive environment, feel free to run it in a Google Colab.
 
@@ -18,9 +18,9 @@ This quickstart guide is designed to provide a practical introduction to some of
 
 You will want to use a GPU for this example. If you are following this quickstart in Google's Colab, follow these steps:
 
-- Before running anything, you need to tell Colab that you want to use a GPU. You can do this by clicking on the ‘Runtime’ tab and selecting ‘Change runtime type’. A pop-up window will open up with a drop-down menu.
-- Select ‘GPU’ from the menu and click ‘Save’.
-- It may ask if you want to restart the runtime. If so, go ahead and do that.
+* Before running anything, you need to tell Colab that you want to use a GPU. You can do this by clicking on the ‘Runtime’ tab and selecting ‘Change runtime type’. A pop-up window will open up with a drop-down menu.
+* Select ‘GPU’ from the menu and click ‘Save’.
+* It may ask if you want to restart the runtime. If so, go ahead and do that.
 
 ## Install libraries
 
@@ -192,3 +192,4 @@ However, if you had a hiccup or you have some suggestions/questions regarding ou
 Cheers!
 
 For more detailed information on all the components and steps that went into this short example, please continue reading [our more detailed documentation pages](https://docs.zenml.io/).
+
