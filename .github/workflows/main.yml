@@ -11,6 +11,9 @@ on:
 jobs:
   main:
     runs-on: ${{ matrix.os }}
+    # Exit if its a commit from Gitbook
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
+
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest]
@@ -19,10 +22,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      - name: Exit if its a commit from Gitbook
-        if: ${{ startsWith(github.event.head_commit.message, 'GitBook:') }}
-        run: exit -1
 
       - name: Set up Python
         uses: actions/setup-python@v2
