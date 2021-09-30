@@ -2,55 +2,50 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.pipelines package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/2b2ef42152bc47c393e786e6d22bc48c6db84316/docs/sphinx_docs/_build/html/index.html)
+zenml.pipelines package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/zenml-io/zenml/tree/2b2ef42152bc47c393e786e6d22bc48c6db84316/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/zenml-io/zenml/tree/2b2ef42152bc47c393e786e6d22bc48c6db84316/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.pipelines.md)
   * * [zenml.pipelines package](zenml.pipelines.md)
       * [Submodules](zenml.pipelines.md#submodules)
-      * [zenml.pipelines.base\_pipeline module](zenml.pipelines.md#zenml-pipelines-base-pipeline-module)
-      * [zenml.pipelines.base\_pipeline\_test module](zenml.pipelines.md#zenml-pipelines-base-pipeline-test-module)
-      * [zenml.pipelines.data\_pipeline module](zenml.pipelines.md#zenml-pipelines-data-pipeline-module)
-      * [zenml.pipelines.deploy\_pipeline module](zenml.pipelines.md#zenml-pipelines-deploy-pipeline-module)
-      * [zenml.pipelines.infer\_pipeline module](zenml.pipelines.md#zenml-pipelines-infer-pipeline-module)
-      * [zenml.pipelines.nlp\_pipeline module](zenml.pipelines.md#zenml-pipelines-nlp-pipeline-module)
-      * [zenml.pipelines.training\_pipeline module](zenml.pipelines.md#zenml-pipelines-training-pipeline-module)
-      * [zenml.pipelines.training\_pipeline\_test module](zenml.pipelines.md#zenml-pipelines-training-pipeline-test-module)
-      * [zenml.pipelines.utils module](zenml.pipelines.md#zenml-pipelines-utils-module)
-      * [Module contents](zenml.pipelines.md#module-contents)
-* [ « zenml.metadat...](zenml.metadata.md)
-* [ zenml.repo package »](zenml.repo.md)
-*  [Source](https://github.com/zenml-io/zenml/tree/2b2ef42152bc47c393e786e6d22bc48c6db84316/docs/sphinx_docs/_build/html/_sources/zenml.pipelines.rst.txt)
+      * [zenml.pipelines.base\_pipeline module](zenml.pipelines.md#module-zenml.pipelines.base_pipeline)
+      * [zenml.pipelines.pipeline\_decorator module](zenml.pipelines.md#module-zenml.pipelines.pipeline_decorator)
+      * [Module contents](zenml.pipelines.md#module-zenml.pipelines)
+* [ « zenml.orchest...](zenml.orchestrators/zenml.orchestrators.local.md)
+* [ zenml.stacks package »](zenml.stacks.md)
+*  [Source](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/_sources/zenml.pipelines.rst.txt)
 
 ## zenml.pipelines package[¶](zenml.pipelines.md#zenml-pipelines-package)
 
 ### Submodules[¶](zenml.pipelines.md#submodules)
 
-### zenml.pipelines.base\_pipeline module[¶](zenml.pipelines.md#zenml-pipelines-base-pipeline-module)
+### zenml.pipelines.base\_pipeline module[¶](zenml.pipelines.md#module-zenml.pipelines.base_pipeline)
 
-### zenml.pipelines.base\_pipeline\_test module[¶](zenml.pipelines.md#zenml-pipelines-base-pipeline-test-module)
+ _class_ zenml.pipelines.base\_pipeline.BasePipeline\(_\*args_, _\*\*kwargs_\)[¶](zenml.pipelines.md#zenml.pipelines.base_pipeline.BasePipeline)
 
-### zenml.pipelines.data\_pipeline module[¶](zenml.pipelines.md#zenml-pipelines-data-pipeline-module)
+Bases: `object` INPUT\_SPEC _= {}_[¶](zenml.pipelines.md#zenml.pipelines.base_pipeline.BasePipeline.INPUT_SPEC) STEP\_SPEC _= {}_[¶](zenml.pipelines.md#zenml.pipelines.base_pipeline.BasePipeline.STEP_SPEC) _abstract_ connect\(_\*args_, _\*\*kwargs_\)[¶](zenml.pipelines.md#zenml.pipelines.base_pipeline.BasePipeline.connect) _classmethod_ get\_executable\(\)[¶](zenml.pipelines.md#zenml.pipelines.base_pipeline.BasePipeline.get_executable) _property_ inputs[¶](zenml.pipelines.md#zenml.pipelines.base_pipeline.BasePipeline.inputs) run\(\)[¶](zenml.pipelines.md#zenml.pipelines.base_pipeline.BasePipeline.run) _property_ stack[¶](zenml.pipelines.md#zenml.pipelines.base_pipeline.BasePipeline.stack) _property_ steps[¶](zenml.pipelines.md#zenml.pipelines.base_pipeline.BasePipeline.steps) _class_ zenml.pipelines.base\_pipeline.BasePipelineMeta\(_name_, _bases_, _dct_\)[¶](zenml.pipelines.md#zenml.pipelines.base_pipeline.BasePipelineMeta)
 
-### zenml.pipelines.deploy\_pipeline module[¶](zenml.pipelines.md#zenml-pipelines-deploy-pipeline-module)
+Bases: `type`
 
-### zenml.pipelines.infer\_pipeline module[¶](zenml.pipelines.md#zenml-pipelines-infer-pipeline-module)
+### zenml.pipelines.pipeline\_decorator module[¶](zenml.pipelines.md#module-zenml.pipelines.pipeline_decorator)
 
-### zenml.pipelines.nlp\_pipeline module[¶](zenml.pipelines.md#zenml-pipelines-nlp-pipeline-module)
+ zenml.pipelines.pipeline\_decorator.pipeline\(_name: Optional\[str\] = None_\)[¶](zenml.pipelines.md#zenml.pipelines.pipeline_decorator.pipeline)
 
-### zenml.pipelines.training\_pipeline module[¶](zenml.pipelines.md#zenml-pipelines-training-pipeline-module)
+Outer decorator function for the creation of a ZenML pipeline
 
-### zenml.pipelines.training\_pipeline\_test module[¶](zenml.pipelines.md#zenml-pipelines-training-pipeline-test-module)
+In order to be able work with parameters such as “name”, it features a nested decorator structure.Parameters
 
-### zenml.pipelines.utils module[¶](zenml.pipelines.md#zenml-pipelines-utils-module)
+**name** – str, the given name for the pipelineReturns
 
-### Module contents[¶](zenml.pipelines.md#module-contents)
+the inner decorator which creates the pipeline class based on the ZenML BasePipeline
+
+### Module contents[¶](zenml.pipelines.md#module-zenml.pipelines)
 
  [Back to top](zenml.pipelines.md)
 
  © Copyright 2021, ZenML GmbH.  
- Created using [Sphinx](http://sphinx-doc.org/) 3.3.1.  
+ Created using [Sphinx](http://sphinx-doc.org/) 4.2.0.  
 
 
