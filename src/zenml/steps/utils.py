@@ -33,6 +33,8 @@ from tfx.dsl.components.base.base_executor import BaseExecutor
 from tfx.dsl.components.base.executor_spec import ExecutorClassSpec
 from tfx.types import component_spec
 
+from zenml.utils.exceptions import StepInterfaceError
+
 
 class _FunctionExecutor(BaseExecutor):
     """ """
@@ -40,11 +42,11 @@ class _FunctionExecutor(BaseExecutor):
     _FUNCTION = staticmethod(lambda: None)
 
     def Do(
-        self,
-        input_dict: Dict[Text, List[tfx_types.Artifact]],
-        output_dict: Dict[Text, List[tfx_types.Artifact]],
-        exec_properties: Dict[Text, Any],
-    ) -> None:
+            self,
+            input_dict: Dict[Text, List[tfx_types.Artifact]],
+            output_dict: Dict[Text, List[tfx_types.Artifact]],
+            exec_properties: Dict[Text, Any],
+    ):
         function_args = {}
         for name, artifact in input_dict.items():
             if len(artifact) == 1:
@@ -53,12 +55,12 @@ class _FunctionExecutor(BaseExecutor):
                 raise ValueError(
                     (
                         "Expected input %r to %s to be a singleton "
-                        "ValueArtifact channel (got %s "
-                        "instead)."
+                        "ValueArtifact channel (got %s instead)."
                     )
                     % (name, self, artifact)
                 )
 
+        return_artifact = output_dict.pop("return_output", None)
         for name, artifact in output_dict.items():
             if len(artifact) == 1:
                 function_args[name] = artifact[0]
@@ -66,8 +68,7 @@ class _FunctionExecutor(BaseExecutor):
                 raise ValueError(
                     (
                         "Expected output %r to %s to be a singleton "
-                        "ValueArtifact channel (got %s "
-                        "instead)."
+                        "ValueArtifact channel (got %s instead)."
                     )
                     % (name, self, artifact)
                 )
@@ -75,7 +76,15 @@ class _FunctionExecutor(BaseExecutor):
         for name, parameter in exec_properties.items():
             function_args[name] = parameter
 
-        self._FUNCTION(**function_args)
+        returns = self._FUNCTION(**function_args)
+        if return_artifact is not None:
+            if returns is not None:
+                return_artifact.materializers.json.write(returns)
+            else:
+                raise StepInterfaceError()
+
+        if returns is not None and return_artifact is None:
+            raise StepInterfaceError()
 
 
 def generate_component(step) -> Callable[..., Any]:
@@ -85,7 +94,7 @@ def generate_component(step) -> Callable[..., Any]:
     for key, artifact_type in step.OUTPUT_SPEC.items():
         spec_outputs[key] = component_spec.ChannelParameter(type=artifact_type)
     for key, prim_type in step.PARAM_SPEC.items():
-        spec_params[key] = component_spec.ExecutionParameter(type=prim_type)
+        spec_params[key] = component_spec.ExecutionParameter(type=str)
 
     component_spec_class = type(
         "%s_Spec" % step.__class__.__name__,
