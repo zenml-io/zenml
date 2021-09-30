@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.cli package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/f912d2d512477e6ed84e839259d42cb73eeedf2b/docs/sphinx_docs/_build/html/index.html)
+zenml.cli package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/25d9c27ff1e23c67d7247993006f83f8404d83c4/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/zenml-io/zenml/tree/f912d2d512477e6ed84e839259d42cb73eeedf2b/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/zenml-io/zenml/tree/25d9c27ff1e23c67d7247993006f83f8404d83c4/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/zenml-io/zenml/tree/f912d2d512477e6ed84e839259d42cb73eeedf2b/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/zenml-io/zenml/tree/25d9c27ff1e23c67d7247993006f83f8404d83c4/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.cli.md)
   * * [zenml.cli package](zenml.cli.md)
       * [Submodules](zenml.cli.md#submodules)
@@ -20,9 +20,9 @@ zenml.cli package — ZenML documentation  [ZenML](https://github.com/zenml-io/z
       * [zenml.cli.utils module](zenml.cli.md#module-zenml.cli.utils)
       * [zenml.cli.version module](zenml.cli.md#module-zenml.cli.version)
       * [Module contents](zenml.cli.md#module-zenml.cli)
-* [ « zenml.artifac...](https://github.com/zenml-io/zenml/tree/f912d2d512477e6ed84e839259d42cb73eeedf2b/docs/sphinx_docs/_build/html/zenml.artifacts.data_artifacts.html)
+* [ « zenml.artifac...](https://github.com/zenml-io/zenml/tree/25d9c27ff1e23c67d7247993006f83f8404d83c4/docs/sphinx_docs/_build/html/zenml.artifacts.data_artifacts.html)
 * [ zenml.config package »](zenml.config.md)
-*  [Source](https://github.com/zenml-io/zenml/tree/f912d2d512477e6ed84e839259d42cb73eeedf2b/docs/sphinx_docs/_build/html/_sources/zenml.cli.rst.txt)
+*  [Source](https://github.com/zenml-io/zenml/tree/25d9c27ff1e23c67d7247993006f83f8404d83c4/docs/sphinx_docs/_build/html/_sources/zenml.cli.rst.txt)
 
 ## zenml.cli package[¶](zenml.cli.md#zenml-cli-package)
 
