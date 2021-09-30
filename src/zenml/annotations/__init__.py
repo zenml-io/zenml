@@ -13,5 +13,4 @@
 #  permissions and limitations under the License.
 
 from zenml.annotations.artifact_annotations import Input, Output  # noqa
-from zenml.annotations.param_annotations import Param  # noqa
 from zenml.annotations.step_annotations import Step  # noqa
