@@ -1,4 +1,5 @@
 import inspect
+import json
 from abc import abstractmethod
 
 from pydantic import create_model
@@ -105,7 +106,7 @@ class BaseStep(metaclass=BaseStepMeta):
             model = pydantic_c(**kwargs)
 
             # always jsonify
-            import json
+
             self.__params = {k: json.dumps(v) for k, v in model.dict().items()}
 
         except RuntimeError:
