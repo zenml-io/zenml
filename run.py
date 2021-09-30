@@ -23,14 +23,19 @@ from zenml.steps import step
 
 
 @step(name="SimplestStepEver")
-def SimplestStepEver(basic_param_1: int, basic_param_2: str) -> int:
+def SimplestStepEver(
+        basic_param_1: int,
+        basic_param_2: str
+) -> int:
     return basic_param_1 + int(basic_param_2)
 
 
 @step(name="data_ingest")
-def DataIngestionStep(uri: str,
-                      input_random_number: Input[JSONArtifact],
-                      output_artifact: Output[TextArtifact]):
+def DataIngestionStep(
+        input_random_number: Input[JSONArtifact],
+        output_artifact: Output[TextArtifact],
+        uri: str,
+):
     import pandas as pd
 
     df = pd.read_csv(uri)
@@ -62,17 +67,9 @@ def SplitPipeline(simple_step: Step[SimplestStepEver],
                   data_step: Step[DataIngestionStep],
                   split_step: Step[DistSplitStep],
                   preprocesser_step: Step[InMemPreprocesserStep]):
-    data_step.set_inputs(
-        input_random_number=simple_step.get_outputs()["return_output"],
-    )
-
-    split_step.set_inputs(
-        input_artifact=data_step.get_outputs()["output_artifact"],
-    )
-
-    preprocesser_step.set_inputs(
-        input_artifact=split_step.get_outputs()["output_artifact"],
-    )
+    data_step(input_random_number=simple_step.outputs["return_output"])
+    split_step(input_artifact=data_step.outputs["output_artifact"])
+    preprocesser_step(input_artifact=split_step.outputs["output_artifact"])
 
 
 # Pipeline

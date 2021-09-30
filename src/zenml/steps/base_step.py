@@ -35,7 +35,7 @@ class BaseStepMeta(type):
         for arg in process_args:
             arg_type = process_spec.annotations.get(arg, None)
             if isinstance(arg_type, Input):
-                if issubclass(arg_type, BaseArtifact):
+                if issubclass(arg_type.type, BaseArtifact):
                     cls.INPUT_SPEC.update({arg: arg_type.type})
                 else:
                     cls.INPUT_SPEC.update({arg: JSONArtifact})
@@ -114,20 +114,24 @@ class BaseStep(metaclass=BaseStepMeta):
             #  happened: Even pydantic didnt support this type.
             raise StepInterfaceError()
 
+    def __call__(self, **artifacts):
+        self.__component = generate_component(self)(
+            **artifacts,
+            **self.__params
+        )
+
+    def __getattr__(self, item):
+        if item == "outputs":
+            return self.component.outputs
+        else:
+            raise AttributeError(f"{item}")
+
     @abstractmethod
     def process(self, *args, **kwargs):
         pass
 
     @property
     def component(self):
-        if self.__component is None:
-            # TODO: [HIGH] Check whether inputs are provided
-            return self.__component_class(**self.__inputs, **self.__params)
-        else:
-            return self.__component
-
-    def set_inputs(self, **artifacts):
-        self.__inputs.update(artifacts)
-
-    def get_outputs(self):
-        return self.component.outputs
+        if self.__component is None and len(self.INPUT_SPEC) == 0:
+            self.__component = generate_component(self)(**self.__params)
+        return self.__component
