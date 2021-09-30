@@ -17,6 +17,10 @@ from zenml.artifacts.base_artifact import BaseArtifact
 
 # General Artifact Annotations
 
-Input = type("Input", (BaseAnnotation,), {"VALID_TYPES": [BaseArtifact]})
+Input = type(
+    "Input",
+    (BaseAnnotation,),
+    {"VALID_TYPES": [BaseArtifact, int, float, str]},
+)
 
 Output = type("Output", (BaseAnnotation,), {"VALID_TYPES": [BaseArtifact]})
