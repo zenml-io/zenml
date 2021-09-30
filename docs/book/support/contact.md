@@ -1,9 +1,5 @@
 # Contact
 
-<!-- ## Community Hour
-
-We are hosting a weekly community hour with the entire **ZenML** family. Come talk to us about **ZenML** \(or whatever else tickles your fancy\)! Community hour happens on **Wednesday at 5 PM GMT+2**. Register in advance [here](https://calendly.com/zenml/community-hour) to join. -->
-
 ## GitHub
 
 If you have any questions you'd like to ask, you can join our GitHub community right [here](https://github.com/zenml-io/zenml/discussions).
@@ -15,3 +11,4 @@ We have a [Slack community](https://zenml.io/slack-invite) where you can also re
 ## Email
 
 Email us any time at [support@zenml.io](mailto:support@zenml.io) for additional queries.
+

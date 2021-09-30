@@ -1,5 +1,5 @@
 ---
-description: "TL;DR: Do *pip install zenml* to install."
+description: 'TL;DR: Do *pip install zenml* to install.'
 ---
 
 # Installation & Setup
@@ -14,9 +14,7 @@ Please note that we only support Python &gt;= 3.6 &lt;3.9, so please adjust your
 
 ## Virtual Environment
 
-We highly encourage you to install **ZenML** in a virtual environment. We install dependencies like `PyArrow` and `Tensorflow` that might cause your base installations to be overridden.
-
-We like to use [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to manage our Python virtual environments.
+We highly encourage you to install **ZenML** in a virtual environment. We like to use [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to manage our Python virtual environments.
 
 ## Install with pip
 
@@ -31,24 +29,6 @@ Alternatively, if you’re feeling brave, feel free to install the bleeding edge
 ```bash
 pip install git+https://github.com/zenml-io/zenml.git@main --upgrade
 ```
-
-<!-- TODO: reinstate these when we bring integrations back -->
-
-<!-- ## Integrations
-
-The **ZenML** base package does not come up with all integrations pre-installed. Read more [here](installation.md). In order to install an integration, use the pattern:
-
-```bash
-pip install zenml[INTEGRATION]
-```
-
-e.g.
-
-```bash
-pip install zenml[pytorch]
-```
-
-Use the keyword `all` in the square brackets if you would like to install all integrations. -->
 
 Once the installation is completed, you can check whether the installation was successful through:
 
@@ -87,19 +67,3 @@ For Fish, add this to `~/.config/fish/completions/foo-bar.fish`:
 eval (env _ZENML_COMPLETE=source_fish zenml)
 ```
 
-<!-- TODO: Revisit this when we add Tensorflow model analysis functionality back into the codebase -->
-
-<!-- ## Tensorflow Model Analysis \(TFMA\) support
-
-In order to get the [Tensorflow Model Analysis](https://github.com/tensorflow/model-analysis) evaluation visualizations to work, you must also run:
-
-```bash
-jupyter nbextension install --py --symlink tensorflow_model_analysis
-jupyter nbextension enable --py tensorflow_model_analysis
-```
-
-{% hint style="warning" %}
-If you encounter a `File already exists in database` error after the first command, this is most likely due to a [known bug](https://stackoverflow.com/questions/59165505/file-already-exists-in-database-error-from-protobuf-when-deploying-google-datafl) with one of our dependencies, namely [PyArrow](https://pypi.org/project/pyarrow/). Unfortunately, this will cause some features to not work on your machine namely **evaluate** and **compare**.
-
-We are aware of this issue and are working hard to fix it. A future release of **ZenML** will fix this issue.
-{% endhint %} -->
