@@ -15,8 +15,10 @@
 import os
 
 from zenml import pipeline
-from zenml.annotations import Input, Output, Param, Step
+from zenml.annotations import Input, Output, Step
 from zenml.artifacts.data_artifacts.text_artifact import TextArtifact
+from zenml.artifacts.data_artifacts.json_artifact import JSONArtifact
+
 from zenml.steps import step
 
 
@@ -26,7 +28,9 @@ def SimplestStepEver(basic_param_1: int, basic_param_2: str) -> int:
 
 
 @step(name="data_ingest")
-def DataIngestionStep(uri: Param[str], output_artifact: Output[TextArtifact]):
+def DataIngestionStep(uri: str,
+                      input_random_number: Input[JSONArtifact],
+                      output_artifact: Output[TextArtifact]):
     import pandas as pd
 
     df = pd.read_csv(uri)
@@ -35,33 +39,33 @@ def DataIngestionStep(uri: Param[str], output_artifact: Output[TextArtifact]):
 
 @step(name="split")
 def DistSplitStep(
-    input_artifact: Input[TextArtifact], output_artifact: Output[TextArtifact]
+        input_artifact: Input[TextArtifact],
+        output_artifact: Output[TextArtifact]
 ):
     import apache_beam as beam
 
     with beam.Pipeline() as p:
-        _ = (
-            p
-            | input_artifact.read_with_beam()
-            | output_artifact.write_with_beam()
-        )
+        _ = (p
+             | input_artifact.read_with_beam()
+             | output_artifact.write_with_beam())
 
 
 @step(name="preprocessing")
-def InMemPreprocesserStep(
-    input_artifact: Input[TextArtifact], output_artifact: Output[TextArtifact]
-):
+def InMemPreprocesserStep(input_artifact: Input[TextArtifact],
+                          output_artifact: Output[TextArtifact]):
     data = input_artifact.read_with_pandas()
     output_artifact.write_with_pandas(data)
 
 
 @pipeline(name="my_pipeline")
-def SplitPipeline(
-    simple_step: Step[SimplestStepEver],
-    data_step: Step[DataIngestionStep],
-    split_step: Step[DistSplitStep],
-    preprocesser_step: Step[InMemPreprocesserStep],
-):
+def SplitPipeline(simple_step: Step[SimplestStepEver],
+                  data_step: Step[DataIngestionStep],
+                  split_step: Step[DistSplitStep],
+                  preprocesser_step: Step[InMemPreprocesserStep]):
+    data_step.set_inputs(
+        input_random_number=simple_step.get_outputs()["return_output"],
+    )
+
     split_step.set_inputs(
         input_artifact=data_step.get_outputs()["output_artifact"],
     )
