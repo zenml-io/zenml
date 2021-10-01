@@ -12,12 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-# TODO: [LOW] Revise the docstrings
-
 from zenml.artifacts.data_artifacts.base_data_artifact import BaseDataArtifact
+from zenml.materializers.json_materializer import JsonMaterializer
 
 DEFAULT_FILENAME = "data.json"
 
 
 class JSONArtifact(BaseDataArtifact):
     TYPE_NAME = "json_artifact"
+
+
+JSONArtifact.MATERIALIZER_FACTORY.register_type("json", JsonMaterializer)
