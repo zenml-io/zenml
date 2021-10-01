@@ -2,7 +2,6 @@ import inspect
 import json
 from abc import abstractmethod
 
-import pydantic
 from pydantic import create_model
 
 from zenml.annotations import Input, Output
