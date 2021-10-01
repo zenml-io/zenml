@@ -31,36 +31,67 @@
 <b>GitHub star</b> to show your love
 </div>
 
+## What is ZenML?
 
-## Why?
+**ZenML** is an extensible, open-source MLOps framework to create production-ready Machine Learning pipelines. It has a simple, flexible syntax, 
+is cloud and tooling agnostic, and has interfaces/abstractions that are catered towards ML workflows. It helps you get your ML models from experimentation 
+to production. ZenML is not here to replace the great tools that solve the individual problems above. Rather, it integrates natively with many popular ML tooling, 
+and gives standard abstraction to write your workflows.
+
+## Why do I need it?
 
 _**Ichi Wa Zen, Zen Wa Ichi.**_
 
-ZenML is built for ML practitioners who are ramping up their ML workflows towards production. We built ZenML because we could not find an easy framework that translates the patterns observed in the research phase with Jupyter notebooks into a production-ready ML environment. Here is what's hard to replicate in production:
+We built ZenML because we could not find an easy framework that translates the patterns observed in the research phase with Jupyter notebooks into a production-ready ML environment.
+ZenML follows the paradigm of `Pipeline As Experiments` (PaS), meaning ZenML pipelines are designed to be written early on the development lifecycle, where the users can explore their 
+pipelines as they develop towards production.
 
-- It's hard to **version** data, code, configuration, and models.
-- It's difficult to **reproduce** experiments across environments.
-- There is no **gold-standard** to organize ML code and manage technical debt as complexity grows.
-- It's a struggle to **establish a reliable link** between training and deployment.
-- It's arduous to **track** metadata and artifacts that are produced.
+By using ZenML at the early stages of development, you get the following features:
 
-ZenML is not here to replace the great tools that solve the individual problems above. Rather, it uses them as [integrations](https://docs.zenml.io/benefits/integrations.html) to expose a coherent, simple path to getting any ML model in production.
+* **Reproducibility** of training and inference workflows.
+* Managing ML **metadata**, including versioning data, code, and models.
+* Getting an **overview** of your ML development, with a clear and reliable link between training and deployment.
+* Maintaining **comparability** between ML models.
+* **Scaling** ML training/inference to large datasets.
+* Retaining code **quality** alongside development velocity. 
+* **Reusing** code/data and reducing waste.
+* Keeping up with the **ML tooling landscape** with standard abstractions and interfaces.
 
-## What is ZenML?
 
-**ZenML** is an extensible, open-source MLOps framework for creating production-ready Machine Learning pipelines - in a simple way.
 
-<!-- TODO: this section needs clarifying -->
+## Who is it for?
+ZenML is built for ML practitioners who are ramping up their ML workflows towards production. 
+It is created for data science / machine learning teams that are engaged in not only training models, but also putting them out in production. Production can mean many things, but examples would be:
 
-A user of ZenML is asked to break down their ML development into individual [Steps](https://docs.zenml.io/core-concepts#steps), each representing an individual task in the ML development process. A sequence of steps put together is a [Pipeline](https://docs.zenml.io/core-concepts#pipelines). Each pipeline contains a [Artifacts](), which represents a snapshot of a versioned dataset in time. Lastly, every pipeline (and indeed almost every step) can run in [Backends](), that specify how and where a step is executed.
+* If you are using a model to generate analysis periodically for any business process.
+* If you are using models as a software service to serve predictions and are consistently improving the model over time.
+* If you are trying to understand patterns using machine learning for any business process.
 
-By developing in pipelines, ML practitioners give themselves a platform to transition from research to production from the very beginning, and are also helped in the research phase by the powerful automations introduced by ZenML.
+* In all of the above, there will be team that is engaged with creating, deploying, managing and improving the entire process. You always want the best results, the best models, and the most robust and reliable results. This is where ZenML can help.
+In terms of user persona, ZenML is created for producers of the models. This role is classically known as 'data scientist' in the industry and can range from research-minded individuals to more engineering-driven people. The goal of ZenML is to enable these practitioners to own their models until deployment and beyond.
+
+
+## Release 0.5.0 and what lies ahead
+The current release is bare bones (as it is a complete rewrite).
+We are missing some basic features which used to be part of ZenML 0.3.8 (the previous release):
+
+* Standard interfaces for `TrainingPipeline`.
+* Individual step interfaces like `PreprocesserStep`, `TrainerStep`, `DeployerStep` etc. need to be rewritten from within the new paradigm. They should
+be included in the non-RC version of this release.
+* A proper production setup with an orchestrator like Airflow.
+* A post-execution workflow to analyze and inspect pipeline runs.
+* The concept of `Backends` will evolve into a simple mechanism of transitioning individual steps into different runners.
+* Support for `KubernetesOrchestrator`, `KubeflowOrchestrator`, `GCPOrchestrator` and `AWSOrchestrator` are also planned.
+* Dependency management including Docker support is planned.
+
+However, bare with us: Adding those features back in should be relatively faster as we now have a solid foundation to build on. Look out for the next email!
+
+From this point onwards, the README is intended to give a glimpse as to what lies ahead. We have redesigned our [public roadmap](https://zenml.io/roadmap) 
+to showcase better the timeline in which these features will be complete.
 
 ## Quickstart
 
-<!-- TODO: Replace with new Quickstart example -->
-
-The quickest way to get started is to create a simple pipeline. The dataset used here is the [Pima Indians Diabetes Dataset](https://storage.googleapis.com/zenml_quickstart/diabetes.csv) (originally from the National Institute of Diabetes and Digestive and Kidney Diseases)
+The quickest way to get started is to create a simple pipeline.
 
 #### Step 0: Installation
 
@@ -80,68 +111,48 @@ pip install git+https://github.com/zenml-io/zenml.git@main --upgrade
 #### Step 1: Initialize a ZenML repo from within a git repo
 
 ```bash
+git init
 zenml init
 ```
 
 #### Step 2: Assemble, run and evaluate your pipeline locally
 
 ```python
-from zenml.datasources import CSVDatasource
 from zenml.pipelines import TrainingPipeline
 from zenml.steps.evaluator import TFMAEvaluator
 from zenml.steps.split import RandomSplit
 from zenml.steps.preprocesser import StandardPreprocesser
 from zenml.steps.trainer import TFFeedForwardTrainer
 
-training_pipeline = TrainingPipeline(name='Quickstart')
 
-# Add a datasource. This will automatically track and version it.
-ds = CSVDatasource(name='Pima Indians Diabetes Dataset',
-                   path='gs://zenml_quickstart/diabetes.csv')
-training_pipeline.add_datasource(ds)
+@step.trainer
+def TFFeedForwardTrainer():
+    pass
 
-# Add a random 70/30 train-eval split
-training_pipeline.add_split(RandomSplit(split_map={'train': 0.7,
-                                                   'eval': 0.2,
-                                                   'test': 0.1}))
-
-# StandardPreprocesser() has sane defaults for normal preprocessing methods
-training_pipeline.add_preprocesser(
-    StandardPreprocesser(
-        features=['times_pregnant', 'pgc', 'dbp', 'tst',
-                  'insulin', 'bmi', 'pedigree', 'age'],
-        labels=['has_diabetes'],
-        overwrite={'has_diabetes': {
-            'transform': [{'method': 'no_transform', 'parameters': {}}]}}
-    ))
-
-# Add a trainer
-training_pipeline.add_trainer(TFFeedForwardTrainer(
-    loss='binary_crossentropy',
-    last_activation='sigmoid',
-    output_units=1,
-    metrics=['accuracy'],
-    epochs=20))
-
-# Add an evaluator
-training_pipeline.add_evaluator(
-    TFMAEvaluator(slices=[['has_diabetes']],
-                  metrics={'has_diabetes': ['binary_crossentropy',
-                                            'binary_accuracy']}))
+pipeline = TrainingPipeline(
+    data_step=ImportDataStep(uri='gs://zenml_quickstart/diabetes.csv'),
+    split_step=RandomSplit(split_map={'train': 0.7, 'test': 0.3}),
+    preprocesser_step=StandardPreprocesser(),
+    trainer_step=TFFeedForwardTrainer(),
+    evaluator_step=TFMAEvaluator()
+)
 
 # Run the pipeline locally
-training_pipeline.run()
+pipeline.run()
 ```
 
 ## Leverage powerful integrations
 
-Once code is organized into a ZenML pipeline, you can supercharge your ML development through powerful [integrations](https://docs.zenml.io/installation#integrations). Some of the benefits you get are:
+Once code is organized into a ZenML pipeline, you can supercharge your ML development with powerful integrations and 
+on multiple [MLOps stacks].
 
 ### Work locally but switch seamlessly to the cloud
 
 Switching from local experiments to cloud-based pipelines doesn't need to be complex.
 
-![From local to cloud with one parameter](docs/local-and-clound.png)
+```
+pipeline.run('airflow_gcp_stack')
+```
 
 ### Versioning galore
 
@@ -157,7 +168,7 @@ ZenML makes sure for every pipeline you can trust that:
 
 ```python
 # See the schema of your data
-training_pipeline.view_schema()
+pipeline.view_schema()
 ```
 
 ![Automatic schema dection](docs/schema.png)
@@ -166,7 +177,7 @@ training_pipeline.view_schema()
 
 ```python
 # See statistics of train and eval
-training_pipeline.view_statistics()
+pipeline.view_statistics()
 ```
 
 <img src="docs/statistics.png" alt="ZenML statistics visualization" />
@@ -204,30 +215,13 @@ training_pipeline.add_preprocesser(
 
 <img src="docs/zenml_distribute.png" alt="ZenML distributed processing"   />
 
-### Train on spot instances
-
-Easily train on spot instances to [save 80% cost](https://towardsdatascience.com/spot-the-difference-in-ml-costs-358202e60266).
-
-```python
-training_pipeline.run(
-  OrchestratorGCPBackend(
-    preemptible=True,  # reduce costs by using preemptible instances
-    machine_type='n1-standard-4',
-    gpu='nvidia-tesla-k80',
-    gpu_count=1,
-    ...
-  )
-  ...
-)
-```
-
 ### Deploy models automatically
 
 Automatically deploy each model with powerful Deployment integrations like [Cortex](examples/cortex).
 
 ```python
-training_pipeline.add_deployment(
-    CortexDeployer(
+pipeline.add_deployment(
+    CortexDeployerStep(
         api_spec=api_spec,
         predictor=PythonPredictor,
     )

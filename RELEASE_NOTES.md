@@ -26,11 +26,17 @@ the default route through which pipelines are run. [read more about orchestrator
 ## Technical Improvements
 * A completely new system design, please refer to the [docs].
 * Better type hints and docstrings.
+* Auto-completion support.
 * Numerous performance improvements and bug fixes, including a smaller dependency footprint.
 
 ## What to expect in the next weeks
+Currently, this release is bare bones. We are missing some basic features which used to be part of ZenML 0.3.8 (the previous release):
+
+* Standard interfaces for `TrainingPipeline`.
 * Individual step interfaces like `PreprocesserStep`, `TrainerStep`, `DeployerStep` etc. need to be rewritten from within the new paradigm. They should
 be included in the non-RC version of this release.
+* A proper production setup with an orchestrator like Airflow.
+* A post-execution workflow to analyze and inspect pipeline runs.
 * The concept of `Backends` will evolve into a simple mechanism of transitioning individual steps into different runners.
 * Support for `KubernetesOrchestrator`, `KubeflowOrchestrator`, `GCPOrchestrator` and `AWSOrchestrator` are also planned.
 * Dependency management including Docker support is planned.
