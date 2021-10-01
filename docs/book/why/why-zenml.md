@@ -17,8 +17,6 @@ By using ZenML at the early stages of development, you get the following feature
 * **Reusing** code/data and reducing waste. 
 * Keeping up with the **ML tooling landscape** with standard abstractions and interfaces.
 
-
-
 ## What is so special about ZenML?
 
 Here, we could dive into an analysis of other similar tools out there, but as these tend to get outdated really quickly, it is not a useful endeavor. We can however list the vision and philosophy behind ZenML:
