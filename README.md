@@ -33,30 +33,31 @@
 
 ## What is ZenML?
 
-**ZenML** is an extensible, open-source MLOps framework to create production-ready Machine Learning pipelines. It has a simple, flexible syntax, 
-is cloud and tooling agnostic, and has interfaces/abstractions that are catered towards ML workflows. It helps you get your ML models from experimentation 
-to production. ZenML is not here to replace the great tools that solve the individual problems above. Rather, it integrates natively with many popular ML tooling, 
-and gives standard abstraction to write your workflows.
+**ZenML** is an extensible, open-source MLOps framework to create production-ready machine learning pipelines. It has a simple, flexible syntax, 
+is cloud and tool agnostic, and has interfaces/abstractions that are catered towards ML workflows.
+
+At its core, ZenML  pipelines execute ML-specific workflows from sourcing data to splitting, preprocessing, training, all the way to the evaluation of 
+results and even serving. There are many built-in batteries as things progress in ML development. ZenML is not here to replace the great tools that 
+solve these individual problems. Rather, it integrates natively with many popular ML tooling, and gives standard abstraction to write your workflows.
 
 ## Why do I need it?
 
 _**Ichi Wa Zen, Zen Wa Ichi.**_
 
 We built ZenML because we could not find an easy framework that translates the patterns observed in the research phase with Jupyter notebooks into a production-ready ML environment.
-ZenML follows the paradigm of `Pipeline As Experiments` (PaS), meaning ZenML pipelines are designed to be written early on the development lifecycle, where the users can explore their 
+ZenML follows the paradigm of [`Pipelines As Experiments` (PaE)](https://docs.zenml.io/why/why-zenml#pipelines-as-experiments-pae), meaning ZenML pipelines are designed to be written early on the development lifecycle, where the users can explore their 
 pipelines as they develop towards production.
 
 By using ZenML at the early stages of development, you get the following features:
 
 * **Reproducibility** of training and inference workflows.
 * Managing ML **metadata**, including versioning data, code, and models.
-* Getting an **overview** of your ML development, with a clear and reliable link between training and deployment.
+* Getting an **overview** of your ML development, with a reliable link between training and deployment.
 * Maintaining **comparability** between ML models.
 * **Scaling** ML training/inference to large datasets.
 * Retaining code **quality** alongside development velocity. 
 * **Reusing** code/data and reducing waste.
 * Keeping up with the **ML tooling landscape** with standard abstractions and interfaces.
-
 
 
 ## Who is it for?

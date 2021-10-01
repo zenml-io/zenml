@@ -2,8 +2,7 @@
 This long-awaited ZenML release marks a seminal moment in the project's history. We present to you a complete 
 revamp of the internals of ZenML, with a fresh new design and API. While these changes are significant, and have been months 
 in the making, the original vision of ZenML (read more [here](https://blog.zenml.io/why-zenml/)) has not wavered. We hope that the ZenML community finds the new 
-design choices easier to grasp and use, and we welcome feedback on the issues board. *Write some uplifting stuff here 
-to set expectations*
+design choices easier to grasp and use, and we welcome feedback on the [issues board](https://github.com/zenml-io/zenml/issues).
 
 ## Warning
 0.5.0rc0 is a complete API change from the previous versions of ZenML, and is a *breaking* upgrade. Fundamental 
@@ -16,8 +15,8 @@ they should be addressed in upcoming releases.
 ## Overview
 
 * Introducing a new functional API for creating pipelines and steps. This is now the default mechanism for building ZenML pipelines. [read more]
-* Introducing a new `Artifact`, `Typing`, and `Annotation` system, with `pydantic` (and `dataclasses`) support [read more here]
 * Introducing the new `Stack` paradigm: Easily transition from one MLOps stack to the next with a few CLI commands [read more]
+* Introducing a new `Artifact`, `Typing`, and `Annotation` system, with `pydantic` (and `dataclasses`) support [read more here]
 * Deprecating the `pipelines_dir`: Now individual pipelines will be stored in their metadata stores, making the metadata store a single source of truth. [read more]
 * Deprecating the YAML config file: ZenML no longer natively compiles to an intermediate YAML-based representation. Instead, it compiles and deploys directly into the selected orchestrator's 
 representation. While we do plan to support running pipelines directly through YAML in the future, it will no longer be
@@ -29,7 +28,7 @@ the default route through which pipelines are run. [read more about orchestrator
 * Auto-completion support.
 * Numerous performance improvements and bug fixes, including a smaller dependency footprint.
 
-## What to expect in the next weeks
+## What to expect in the next weeks and the new ZenML
 Currently, this release is bare bones. We are missing some basic features which used to be part of ZenML 0.3.8 (the previous release):
 
 * Standard interfaces for `TrainingPipeline`.
