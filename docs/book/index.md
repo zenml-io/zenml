@@ -16,14 +16,16 @@ While there are other pipelining solutions for Machine Learning experiments, **Z
 
 **ZenML** solves the problem of getting Machine Learning in models to production. You should use **ZenML** if you struggle with:
 
+### Features
+
 * **Reproducing** training results in production.
-* Managing ML **metadata**, including data, code, and model versioning.
-* Getting \(and keeping\) ML models in **production**.
-* **Reusing** code/data and reducing waste.
+* Managing ML **metadata**, including **versioning** data, code, and models.
+* Getting an **overview** of your ML development, with a clear and reliable link between training and deployment.
 * Maintaining **comparability** between ML models.
 * **Scaling ML** training/inference to large datasets.
-* Retaining code **quality** alongside development velocity.
-* Keeping up with the ML **tooling landscape** in a coherent manner.
+* Retaining code **quality** alongside development velocity. 
+* **Reusing** code/data and reducing waste.
+* Keeping up with the ML **tooling landscape** with standard abstractions and interfaces.
 
 ![How writing ML in ZenML code keeps your code production ready from the start](.gitbook/assets/zenml-deck-q2-21-3-.png)
 

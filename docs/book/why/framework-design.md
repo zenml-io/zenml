@@ -1,5 +1,7 @@
 ---
-description: We discuss some of the fundamental framework decisions we have made
+description: >-
+  We discuss some of the fundamental framework decisions we have made and why we
+  made them
 ---
 
 # Framework Design
@@ -33,7 +35,7 @@ run_1 = my_pipeline(
 # compare
 ```
 
-The above design also lends itself to swapping in and out different step logic if the INTERFACE of the steps remain consistent. For an example of this, see the [Quickstart](quickstart-guide.md).
+The above design also lends itself to swapping in and out different step logic if the INTERFACE of the steps remain consistent. For an example of this, see the [Quickstart](../quickstart-guide.md).
 
 ### Relation To Stacks
 
