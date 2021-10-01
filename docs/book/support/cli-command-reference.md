@@ -2,7 +2,7 @@
 description: Learn more about how to use the ZenML command-line tool
 ---
 
-# CLI Command Reference
+# CLI
 
 The ZenML CLI tool is usually downloaded and installed via PyPI and a `pip install zenml` command. Please see the Installation & Setup section above for more information about that process.
 
@@ -28,7 +28,7 @@ If you were instead looking to know more about a specific command, you can type 
 zenml metadata register --help
 ```
 
-This will give you information about how to register a metadata store. (See below for more on that).
+This will give you information about how to register a metadata store. \(See below for more on that\).
 
 ## Beginning a Project
 
@@ -38,7 +38,7 @@ When you begin a project, you should first initialize your base project director
 git init
 ```
 
-Once your directory is setup with a (usually hidden) `.git` folder, initialize the directory with ZenML's own config and resource management tools. Type:
+Once your directory is setup with a \(usually hidden\) `.git` folder, initialize the directory with ZenML's own config and resource management tools. Type:
 
 ```bash
 zenml init
@@ -62,9 +62,9 @@ Read more about exactly what information it sends back here.
 
 If you wish to delete all data relating to your project from the directory, use the `zenml clean` command. This will:
 
-- delete all pipelines
-- delete all artifacts
-- delete all metadata
+* delete all pipelines
+* delete all artifacts
+* delete all metadata
 
 _Note that the_ `clean` _command is not implemented for the current version._
 
@@ -169,3 +169,4 @@ To see which stack is currently set as the default active stack, type:
 ```bash
 zenml stack get
 ```
+
