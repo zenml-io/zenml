@@ -6,5 +6,5 @@ class PipelineInterfaceError(Exception):
     """ """
 
 
-class DatasourceInterfaceError(Exception):
+class ArtifactInterfaceError(Exception):
     """ """
