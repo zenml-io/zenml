@@ -24,15 +24,22 @@ is proposed by ZenML.
 
 from __future__ import absolute_import, division, print_function
 
+import json
+from typing import Type
+import inspect
 import sys
 from typing import Any, Callable, Dict, List, Text
 
+import pydantic
+from pydantic import create_model
 from tfx import types as tfx_types
 from tfx.dsl.component.experimental.decorators import _SimpleComponent
 from tfx.dsl.components.base.base_executor import BaseExecutor
 from tfx.dsl.components.base.executor_spec import ExecutorClassSpec
 from tfx.types import component_spec
 
+from zenml.annotations import Input, Output
+from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.utils.exceptions import StepInterfaceError
 
 
@@ -73,10 +80,31 @@ class _FunctionExecutor(BaseExecutor):
                     % (name, self, artifact)
                 )
 
-        for name, parameter in exec_properties.items():
-            function_args[name] = parameter
+        ####
+        spec = inspect.getfullargspec(self._FUNCTION)
+
+        args = spec.args
+
+        inputs_to_take_care_of = []
+        param_spec = {}
+        for arg in args:
+            arg_type = spec.annotations.get(arg, None)
+            if isinstance(arg_type, Input):
+                if not issubclass(arg_type.type, BaseArtifact):
+                    inputs_to_take_care_of.append(arg)
+            elif isinstance(arg_type, Output):
+                pass
+            else:
+                param_spec.update({arg: arg_type})
+
+        new_exec = {k: json.loads(v) for k,v in exec_properties.items()}
+        pydantic_c: Type[pydantic.BaseModel] = create_model(
+            "params", **{k: (v, ...) for k, v in param_spec.items()}
+        )
+        function_args.update(pydantic_c.parse_obj(new_exec).dict())
 
         returns = self._FUNCTION(**function_args)
+
         if return_artifact is not None:
             if returns is not None:
                 return_artifact.materializers.json.write(returns)
