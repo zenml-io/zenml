@@ -21,10 +21,10 @@ DEFAULT_FILENAME = "data.json"
 
 
 class JsonMaterializer(BaseMaterializer):
-    """
-    """
+    """ """
 
-    def read(self, input_artifact, filename=None):
+    @staticmethod
+    def read(input_artifact, filename=None):
         """ """
         filepath = os.path.join(
             input_artifact.uri,
@@ -33,7 +33,8 @@ class JsonMaterializer(BaseMaterializer):
         with open(filepath, 'r') as f:
             return json.load(f)
 
-    def write(self, output_artifact, data, filename=None):
+    @staticmethod
+    def write(output_artifact, data, filename=None):
         """ """
         filepath = os.path.join(
             output_artifact.uri,

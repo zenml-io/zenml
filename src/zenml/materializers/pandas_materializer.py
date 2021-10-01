@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+
 import pandas as pd
 
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -21,10 +22,10 @@ DEFAULT_FILENAME = "data.csv"
 
 
 class PandasMaterializer(BaseMaterializer):
-    """
-    """
+    """ """
 
-    def read(self, input_artifact, filename=None):
+    @staticmethod
+    def read(input_artifact, filename=None):
         """ """
         filepath = os.path.join(
             input_artifact.uri,
@@ -33,7 +34,8 @@ class PandasMaterializer(BaseMaterializer):
 
         return pd.read_csv(filepath)
 
-    def write(self, output_artifact, df, filename=None):
+    @staticmethod
+    def write(output_artifact, df, filename=None):
         """ """
         filepath = os.path.join(
             output_artifact.uri,
