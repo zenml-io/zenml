@@ -14,38 +14,42 @@
 
 from tfx.types import Artifact
 
+from zenml.utils.exceptions import ArtifactInterfaceError
 
-class IOFactory:
+
+class MaterializerFactory(object):
     """A factory class which is used by the ZenML artifacts to keep track
-    of different read/write methods"""
+    of different materializers"""
 
     def __init__(self):
         """Initialization with an empty factory"""
         self.types = {}
 
-    def get_types(self):
-        """Get the whole reader/writer dictionary"""
-        return self.types
+    def __getattr__(self, key):
+        """Get a single materializers based on the key
 
-    def get_single_type(self, key):
-        """Get a single reader/writer based on the key
         Args:
-            key: str, which indicates which type of method will be used within
-                the step
+            key: str, which indicates the materializer name
 
         Returns:
             The corresponding writer function within the factory
         """
-        return self.types[key]
+        if key in self.types:
+            return self.types[key]
+        else:
+            return object.__getattribute__(self, key)
+
+    def get_types(self):
+        """Get the materializer dictionary"""
+        return self.types
 
     def register_type(self, key, type_):
-        """Register a new writer in the factory
+        """Register a new materializer in the factory
 
         Args:
-            key: str, which indicates which type of method
+            key: str, which indicates the materializer used within the step
 
-            type_: a function which is used to read/write the artifact within
-                the context of a step
+            type_: a ZenML materializer object
         """
         self.types[key] = type_
 
@@ -60,27 +64,19 @@ class BaseArtifact(Artifact):
     - Upon creation, each artifact class needs to be given a unique TYPE_NAME.
     - Your artifact can feature different properties under the parameter
         PROPERTIES which will be tracked throughout your pipeline runs.
-    - TODO: Write about the reader/writer factories
+    - TODO: Write about the materializers
     """
 
     TYPE_NAME = "BaseArtifact"
     PROPERTIES = {}
 
     # Initialize the io factories
-    READER_FACTORY = IOFactory()
-    WRITER_FACTORY = IOFactory()
+    MATERIALIZER_FACTORY: MaterializerFactory = MaterializerFactory()
 
-    # TODO: Improve the following methods with more checks and error messages
-    @classmethod
-    def register_reader(cls, key, func):
-        cls.READER_FACTORY.register_type(key, func)
+    @property
+    def materializers(self) -> MaterializerFactory:
+        return self.MATERIALIZER_FACTORY
 
-    @classmethod
-    def register_writer(cls, key, func):
-        cls.WRITER_FACTORY.register_type(key, func)
-
-    def get_reader(self, key):
-        return self.READER_FACTORY.get_single_type(key)
-
-    def get_writer(self, key):
-        return self.WRITER_FACTORY.get_single_type(key)
+    @materializers.setter
+    def materializers(self, m):
+        raise ArtifactInterfaceError("")
