@@ -6,7 +6,7 @@ description: >-
 
 # Framework Design
 
-## Pipeline Design
+## Pipelines
 
 ### Separating Configuration \(Connections\) From Runs
 
@@ -41,7 +41,7 @@ The above design also lends itself to swapping in and out different step logic i
 
 Stacks are an important concept in ZenML, and they have an implicit relationship to pipelines. Stacks define where a pipelines steps are storing data, metadata, and where the pipeline is orchestrated. 
 
-## Step Design
+## Steps
 
 ### Simple Functions
 

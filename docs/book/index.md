@@ -4,30 +4,13 @@ description: 'Simple, reproducible MLOps.'
 
 # ZenML 101
 
-**ZenML** is an extensible, open-source MLOps framework for using production-ready Machine Learning pipelines, in a simple way. At its core, **ZenML** will orchestrate your experiment pipelines from **sourcing data** to **splitting, preprocessing, training**, all the way to the **evaluation of results** and even **serving**.
+**ZenML** is an extensible, open-source MLOps framework to create production-ready machine learning pipelines. It has a simple, flexible syntax, is cloud and tooling agnostic, and has interfaces/abstractions that are catered towards ML workflows. 
 
-While there are other pipelining solutions for Machine Learning experiments, **ZenML** is focused on the following:
+At its core, **ZenML**  pipelines execute ML-specific workflows from **sourcing data** to **splitting, preprocessing, training**, all the way to the **evaluation of results** and even **serving**. There are many built-in batteries as things progress in ML development. ZenML is not here to replace the great tools that solve the individual problems. Rather, it integrates natively with many popular ML tooling, and gives standard abstraction to write your workflows.
 
-* Simplicity.
-* Reproducibility.
-* Integrations.
-
-## Why do I need ZenML?
-
-**ZenML** solves the problem of getting Machine Learning in models to production. You should use **ZenML** if you struggle with:
-
-### Features
-
-* **Reproducing** training results in production.
-* Managing ML **metadata**, including **versioning** data, code, and models.
-* Getting an **overview** of your ML development, with a clear and reliable link between training and deployment.
-* Maintaining **comparability** between ML models.
-* **Scaling ML** training/inference to large datasets.
-* Retaining code **quality** alongside development velocity. 
-* **Reusing** code/data and reducing waste.
-* Keeping up with the ML **tooling landscape** with standard abstractions and interfaces.
-
-![How writing ML in ZenML code keeps your code production ready from the start](.gitbook/assets/zenml-deck-q2-21-3-.png)
+{% hint style="success" %}
+Read more about Why ZenML exists [here](why/why-zenml.md).
+{% endhint %}
 
 ## Who is ZenML for?
 
@@ -40,15 +23,6 @@ ZenML is created for data science / machine learning teams that are engaged in n
 In all of the above, there will be team that is engaged with creating, deploying, managing and improving the entire process. You always want the best results, the best models, and the most robust and reliable results. This is where ZenML can help.
 
 In terms of user persona, ZenML is created for **producers of the models.** This role is classically known as 'data scientist' in the industry and can range from research-minded individuals to more engineering-driven people. The goal of ZenML is to enable these practitioners to **own** their models until deployment and beyond.
-
-## What is so special about ZenML?
-
-Here, we could dive into an analysis of other similar tools out there, but as these tend to get outdated really quickly, it is not a useful endeavor. We can however list the vision and philosophy behind ZenML:
-
-* We wanted a tool that is **flexible**: Simple python functions can be converted into a workflow step.
-* We wanted a tool that is **simple:** You can run it locally and with a few commands can get it running on the cloud with minimum changes.
-* We wanted to created a **machine learning specific** workflow tool: With ML, workflows need to focus not just on tasks, but also data like models, parameters, statistics and other ML-specific artifacts. This way we can solve machine learning specific problems and create a more understandable API.
-* We wanted a tool that can **integrate** with the exploding ML/MLOps landscape: It is so confusing right now because every team that is doing serious ML has their own way of doing things. This is completely fine, but we built ZenML to be a connector and gateway to many other amazing tools for specific problems in machine learning.
 
 ## Okay, how can I learn more?
 
