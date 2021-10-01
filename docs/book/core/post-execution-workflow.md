@@ -66,12 +66,7 @@ Once an output\_artifact is acquired from history, one can visualize it with any
 
 ```python
 df = output.materializers.pandas.read() # can Read TextArtifact into Pandas DF
-
-
-
-
-
-Seeing statistics and schema
+df.head()
 ```
 
 ### Seeing statistics and schema

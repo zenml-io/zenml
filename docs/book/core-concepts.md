@@ -102,16 +102,6 @@ A few rules apply:
 
 A quick example for large datasets makes this clearer. By default, your experiments will run locally. Pipelines that load large datasets would be severely bottlenecked, so you can configure [Google Dataflow](https://cloud.google.com/dataflow) as a **processing executor** for distributed computation, and [Google AI Platform](https://cloud.google.com/ai-platform) as a **training executor**.
 
-**DAG**
-
-Pipelines are traditionally represented as DAGs. DAG is an acronym for Directed Acyclic Graph.
-
-* Directed, because the nodes of the graph \(i.e. the steps of a pipeline\), have a sequence. Nodes do not exist as free-standing entities in this way.
-* Acyclic, because there must be one \(or more\) straight paths through the graph from the beginning to the end. It is acyclic because the graph doesn't loop back on itself at any point.
-* Graph, because the steps of the pipeline are represented as nodes in a graph.
-
-ZenML follows this paradigm and it is a useful mental model to have in your head when thinking about how the pieces of your pipeline get executed and how dependencies between the different stages are managed.
-
 ### System design
 
 The design choices in **ZenML** follow the understanding that production-ready model training **pipelines** need to be immutable, repeatable, discoverable, descriptive, and efficient. **ZenML** takes care of the orchestration of your **pipelines**, from sourcing data all the way to continuous training - no matter if it's running somewhere locally, in an on-premise data center, or in the cloud.

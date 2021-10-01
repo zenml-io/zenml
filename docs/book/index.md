@@ -4,30 +4,13 @@ description: 'Simple, reproducible MLOps.'
 
 # ZenML 101
 
-**ZenML** is an extensible, open-source MLOps framework for using production-ready Machine Learning pipelines, in a simple way. At its core, **ZenML** will orchestrate your experiment pipelines from **sourcing data** to **splitting, preprocessing, training**, all the way to the **evaluation of results** and even **serving**.
+**ZenML** is an extensible, open-source MLOps framework to create production-ready machine learning pipelines. It has a simple, flexible syntax, is cloud and tooling agnostic, and has interfaces/abstractions that are catered towards ML workflows. 
 
-While there are other pipelining solutions for Machine Learning experiments, **ZenML** is focused on the following:
+At its core, **ZenML**  pipelines execute ML-specific workflows from **sourcing data** to **splitting, preprocessing, training**, all the way to the **evaluation of results** and even **serving**. There are many built-in batteries as things progress in ML development. ZenML is not here to replace the great tools that solve the individual problems. Rather, it integrates natively with many popular ML tooling, and gives standard abstraction to write your workflows.
 
-* Simplicity.
-* Reproducibility.
-* Integrations.
-
-## Why do I need ZenML?
-
-**ZenML** solves the problem of getting Machine Learning in models to production. You should use **ZenML** if you struggle with:
-
-### Features
-
-* **Reproducing** training results in production.
-* Managing ML **metadata**, including **versioning** data, code, and models.
-* Getting an **overview** of your ML development, with a clear and reliable link between training and deployment.
-* Maintaining **comparability** between ML models.
-* **Scaling ML** training/inference to large datasets.
-* Retaining code **quality** alongside development velocity. 
-* **Reusing** code/data and reducing waste.
-* Keeping up with the ML **tooling landscape** with standard abstractions and interfaces.
-
-![How writing ML in ZenML code keeps your code production ready from the start](.gitbook/assets/zenml-deck-q2-21-3-.png)
+{% hint style="success" %}
+Read more about Why ZenML exists [here](why/why-zenml.md).
+{% endhint %}
 
 ## Who is ZenML for?
 
