@@ -2,6 +2,7 @@ import inspect
 import json
 from abc import abstractmethod
 
+import pydantic
 from pydantic import create_model
 
 from zenml.annotations import Input, Output
@@ -94,20 +95,14 @@ class BaseStep(metaclass=BaseStepMeta):
         self.__inputs = dict()
         self.__params = dict()
 
-        for k, v in kwargs.items():
-            if k not in self.PARAM_SPEC:
-                raise StepInterfaceError()  # TODO [LOW]: Be more verbose here
-
+        # TODO: [med] add defaults to kwargs
         try:
             # create a pydantic model out of a primitive type
             pydantic_c = create_model(
                 "params", **{k: (self.PARAM_SPEC[k], ...) for k in kwargs}
             )
-            model = pydantic_c(**kwargs)
-
-            # always jsonify
-
-            self.__params = {k: json.dumps(v) for k, v in model.dict().items()}
+            model_dict = pydantic_c(**kwargs).dict()
+            self.__params = {k: json.dumps(v) for k, v in model_dict.items()}
 
         except RuntimeError:
             # TODO [MED]: Change this to say more clearly what
