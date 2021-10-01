@@ -24,16 +24,6 @@ Within your repository, you will have one or more pipelines as part of your expe
 
 Pipelines are functions. They are created by using decorators appropriate to the specific use case you have. The moment it is `run`, a pipeline is compiled and passed directly to the orchestrator.
 
-**DAG**
-
-Pipelines are traditionally represented as DAGs. DAG is an acronym for Directed Acyclic Graph.
-
-* Directed, because the nodes of the graph \(i.e. the steps of a pipeline\), have a sequence. Nodes do not exist as free-standing entities in this way.
-* Acyclic, because there must be one \(or more\) straight paths through the graph from the beginning to the end. It is acyclic because the graph doesn't loop back on itself at any point.
-* Graph, because the steps of the pipeline are represented as nodes in a graph.
-
-ZenML follows this paradigm and it is a useful mental model to have in your head when thinking about how the pieces of your pipeline get executed and how dependencies between the different stages are managed.
-
 **Step**
 
 A step is a single piece or stage of a ZenML pipeline. Think of each step as being one of the nodes of the DAG. Steps are responsible for one aspect of processing or interacting with the data / artifacts in the pipeline. ZenML currently implements a `SimpleStep` interface, but there will be other more customised interfaces \(layered in a hierarchy\) for specialized implementations. For example, broad steps like `SplitStep`, `PreprocesserStep,` `TrainerStep` and so on.
@@ -111,6 +101,16 @@ A few rules apply:
 * **Pipelines** can be configured to utilize more powerful **processing** \(e.g. distributed\) and **training** \(e.g. Google AI Platform\) **executors**.
 
 A quick example for large datasets makes this clearer. By default, your experiments will run locally. Pipelines that load large datasets would be severely bottlenecked, so you can configure [Google Dataflow](https://cloud.google.com/dataflow) as a **processing executor** for distributed computation, and [Google AI Platform](https://cloud.google.com/ai-platform) as a **training executor**.
+
+**DAG**
+
+Pipelines are traditionally represented as DAGs. DAG is an acronym for Directed Acyclic Graph.
+
+* Directed, because the nodes of the graph \(i.e. the steps of a pipeline\), have a sequence. Nodes do not exist as free-standing entities in this way.
+* Acyclic, because there must be one \(or more\) straight paths through the graph from the beginning to the end. It is acyclic because the graph doesn't loop back on itself at any point.
+* Graph, because the steps of the pipeline are represented as nodes in a graph.
+
+ZenML follows this paradigm and it is a useful mental model to have in your head when thinking about how the pieces of your pipeline get executed and how dependencies between the different stages are managed.
 
 ### System design
 

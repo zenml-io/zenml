@@ -4,8 +4,20 @@
 * [Installation & Setup](installation.md)
 * [Core Concepts](core-concepts.md)
 * [Quickstart Guide](quickstart-guide.md)
-* [Framework Design](framework-design.md)
-* [Why ZenML?](why-zenml.md)
+
+## Core
+
+* [Repository](core/repository.md)
+* [Steps](core/steps.md)
+* [Artifacts](core/artifacts.md)
+* [Pipelines](core/pipelines.md)
+* [Stacks](core/stacks.md)
+* [Post Execution Workflow](core/post-execution-workflow.md)
+
+## Why
+
+* [Why ZenML?](why/why-zenml.md)
+* [Framework Design](why/framework-design.md)
 
 ## Support
 
