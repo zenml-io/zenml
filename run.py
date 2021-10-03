@@ -39,7 +39,7 @@ def DataIngestionStep(
     import pandas as pd
 
     df = pd.read_csv(uri)
-    output_artifact.write_with_pandas(df)
+    output_artifact.materializers.pandas.write(output_artifact, df)
 
 
 @step(name="split")
@@ -50,16 +50,15 @@ def DistSplitStep(
     import apache_beam as beam
 
     with beam.Pipeline() as p:
-        _ = (p
-             | input_artifact.read_with_beam()
-             | output_artifact.write_with_beam())
+        data = input_artifact.materializers.beam.read(input_artifact, p)
+        output_artifact.materializers.beam.write(output_artifact, data)
 
 
 @step(name="preprocessing")
 def InMemPreprocesserStep(input_artifact: Input[TextArtifact],
                           output_artifact: Output[TextArtifact]):
-    data = input_artifact.read_with_pandas()
-    output_artifact.write_with_pandas(data)
+    data = input_artifact.materializers.pandas.read(input_artifact)
+    output_artifact.materializers.pandas.write(output_artifact, data)
 
 
 @pipeline(name="my_pipeline")

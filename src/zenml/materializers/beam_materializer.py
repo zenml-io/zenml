@@ -12,14 +12,28 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.artifacts.data_artifacts.base_data_artifact import BaseDataArtifact
-from zenml.materializers.json_materializer import JsonMaterializer
+import os
 
-DEFAULT_FILENAME = "data.json"
+import apache_beam as beam
+
+from zenml.materializers.base_materializer import BaseMaterializer
+
+DEFAULT_FILENAME = "data"
 
 
-class JSONArtifact(BaseDataArtifact):
-    TYPE_NAME = "json_artifact"
+class BeamMaterializer(BaseMaterializer):
+    """ """
 
+    @staticmethod
+    def read(input_artifact, pipeline):
+        """ """
+        return pipeline | "ReadText" >> beam.io.ReadFromText(
+            file_pattern=os.path.join(input_artifact.uri, "*")
+        )
 
-JSONArtifact.MATERIALIZER_FACTORY.register_type("json", JsonMaterializer)
+    @staticmethod
+    def write(output_artifact, pipeline):
+        """ """
+        return pipeline | beam.io.WriteToText(
+            os.path.join(output_artifact.uri, DEFAULT_FILENAME)
+        )

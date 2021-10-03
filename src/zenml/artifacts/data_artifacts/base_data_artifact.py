@@ -26,7 +26,8 @@ class BaseDataArtifact(BaseArtifact):
     """
 
     TYPE_NAME = "data_artifact"
-    PROPERTIES = {"split_names": SPLIT_NAMES_PROPERTY}
 
     # TODO: [LOW] Instead of split names, we can include a more comprehensive
     #   split mapping
+    PROPERTIES = {"split_names": SPLIT_NAMES_PROPERTY}
+

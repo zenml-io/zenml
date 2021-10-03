@@ -97,7 +97,7 @@ class _FunctionExecutor(BaseExecutor):
             else:
                 param_spec.update({arg: arg_type})
 
-        new_exec = {k: json.loads(v) for k,v in exec_properties.items()}
+        new_exec = {k: json.loads(v) for k, v in exec_properties.items()}
         pydantic_c: Type[pydantic.BaseModel] = create_model(
             "params", **{k: (v, ...) for k, v in param_spec.items()}
         )
@@ -106,8 +106,9 @@ class _FunctionExecutor(BaseExecutor):
         returns = self._FUNCTION(**function_args)
 
         if return_artifact is not None:
+            artifact = return_artifact[0]
             if returns is not None:
-                return_artifact.materializers.json.write(returns)
+                artifact.materializers.json.write(artifact, returns)
             else:
                 raise StepInterfaceError()
 
