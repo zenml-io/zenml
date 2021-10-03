@@ -9,7 +9,7 @@ description: 'Simple, reproducible MLOps.'
 At its core, **ZenML**  pipelines execute ML-specific workflows from **sourcing data** to **splitting, preprocessing, training**, all the way to the **evaluation of results** and even **serving**. There are many built-in batteries as things progress in ML development. ZenML is not here to replace the great tools that solve the individual problems. Rather, it integrates natively with many popular ML tooling, and gives standard abstraction to write your workflows.
 
 {% hint style="success" %}
-Read more about Why ZenML exists [here](why/why-zenml.md).
+Read more about Why ZenML exists [here](why-zenml.md).
 {% endhint %}
 
 ## Who is ZenML for?
@@ -28,8 +28,10 @@ In terms of user persona, ZenML is created for **producers of the models.** This
 
 A good place to go from this point is to:
 
-* Read more about [core concepts](core-concepts.md) to inform your decision about using **ZenML**
-* Get up and running with your [first pipeline](https://github.com/zenml-io/zenml/tree/f912d2d512477e6ed84e839259d42cb73eeedf2b/docs/book/starter-guide/quickstart.md) with our [starter guide](https://github.com/zenml-io/zenml/tree/f912d2d512477e6ed84e839259d42cb73eeedf2b/docs/book/starter-guide/repository.md)
+* Understand [what is so special about ZenML](why-zenml.md).
+* Take a look at some of the [key decisions that we made while building ZenML.](framework-design.md)
+* Get up and running with your [first pipeline](https://github.com/zenml-io/zenml/tree/f912d2d512477e6ed84e839259d42cb73eeedf2b/docs/book/starter-guide/quickstart.md) with our [starter guide](https://github.com/zenml-io/zenml/tree/f912d2d512477e6ed84e839259d42cb73eeedf2b/docs/book/starter-guide/repository.md).
+* Read more about [core concepts](core/core-concepts.md) to inform your decision about using **ZenML.**
 
 ## Get involved!
 

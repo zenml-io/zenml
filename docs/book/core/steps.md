@@ -25,7 +25,13 @@ There are only a few considerations for the parameters and return types.
 
 While this is just a function with a decorator, it is not super useful. ZenML steps really get powerful when you put them together with [data artifacts](artifacts.md). Read about more of that here!
 
-### Utilizing standard Step Interfaces \[Coming Soon\]
+## Step Input and Output
+
+When we think about steps as functions, they receive input in the form of [artifacts](artifacts.md) and parameters. They produce output also in the form of artifacts, stored in the artifact store. 
+
+* The parameters that you pass into the steps are also stored in the metadata store. This helps freeze the iterations of your experimentation workflow in time so you can return to them exactly as you ran them.
+
+## Utilizing standard Step Interfaces \[Coming Soon\]
 
 While a completely custom step might be necessary for behavior not captured in the ZenML design, more often than not, it will be enough to extend one of the standard step interfaces in your pipelines. These are defined as:
 
