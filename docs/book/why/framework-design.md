@@ -6,6 +6,15 @@ description: >-
 
 # Framework Design
 
+One of the biggest questions often left unasked when designing a new framework is **WHY**?
+
+* Why did you design this interface this way?
+* Why did you choose this abstraction over another seemingly easy way?
+* Why did you select this integration and not another?
+* and many more..
+
+When designing a framework as broad as ZenML, the team is probably making hundreds of micro-decisions weekly. While all of these are impossible to capture, we have decided to capture the most key decisions here, and hopefully illuminate why we built ZenML this way.
+
 ## Pipelines
 
 ### Separating Configuration \(Connections\) From Runs
@@ -42,6 +51,8 @@ The above design also lends itself to swapping in and out different step logic i
 Stacks are an important concept in ZenML, and they have an implicit relationship to pipelines. Stacks define where a pipelines steps are storing data, metadata, and where the pipeline is orchestrated. 
 
 ## Steps
+
+One small step for data scientist..
 
 ### Simple Functions
 
