@@ -14,45 +14,8 @@
 
 from tfx.types import Artifact
 
+from zenml.materializers.materializer_factory import MaterializerFactory
 from zenml.utils.exceptions import ArtifactInterfaceError
-
-
-class MaterializerFactory(object):
-    """A factory class which is used by the ZenML artifacts to keep track
-    of different materializers"""
-
-    def __init__(self, artifact):
-        """Initialization with an empty factory"""
-        self.types = {}
-        self.artifact = artifact
-
-    def __getattr__(self, key):
-        """Get a single materializers based on the key
-
-        Args:
-            key: str, which indicates the materializer name
-
-        Returns:
-            The corresponding writer function within the factory
-        """
-        if key in self.types:
-            return self.types[key](self.artifact)
-        else:
-            return object.__getattribute__(self, key)(self.artifact)
-
-    def get_types(self):
-        """Get the materializer dictionary"""
-        return self.types
-
-    def register_type(self, key, type_):
-        """Register a new materializer in the factory
-
-        Args:
-            key: str, which indicates the materializer used within the step
-
-            type_: a ZenML materializer object
-        """
-        self.types[key] = type_
 
 
 class BaseArtifact(Artifact):
