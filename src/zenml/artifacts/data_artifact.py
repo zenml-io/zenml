@@ -12,18 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.artifacts.data_artifacts.base_data_artifact import BaseDataArtifact
-from zenml.materializers.beam_materializer import BeamMaterializer
-from zenml.materializers.pandas_materializer import PandasMaterializer
+from tfx.types.artifact import Property, PropertyType
 
-DEFAULT_FILENAME = "data.txt"
+from zenml.artifacts.base_artifact import BaseArtifact
 
-
-class TextArtifact(BaseDataArtifact):
-    """ZenML text-based artifact"""
-
-    TYPE_NAME = "text_artifact"
+SPLIT_NAMES_PROPERTY = Property(type=PropertyType.STRING)
 
 
-TextArtifact.MATERIALIZER_FACTORY.register_type("beam", BeamMaterializer)
-TextArtifact.MATERIALIZER_FACTORY.register_type("pandas", PandasMaterializer)
+class DataArtifact(BaseArtifact):
+    """Base class for any ZenML data artifact
+
+    The custom properties include a property to hold split names
+    """
+
+    TYPE_NAME = "data_artifact"
+
+    PROPERTIES = {"split_names": SPLIT_NAMES_PROPERTY}
