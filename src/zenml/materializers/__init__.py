@@ -11,3 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
+from zenml.materializers.beam_materializer import BeamMaterializer  # noqa
+from zenml.materializers.json_materializer import JsonMaterializer  # noqa
+from zenml.materializers.keras_meterializer import KerasMaterializer  # noqa
+from zenml.materializers.materializer_factory import MaterializerFactory
+from zenml.materializers.pandas_materializer import PandasMaterializer  # noqa

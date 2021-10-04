@@ -24,14 +24,17 @@ DEFAULT_FILENAME = "data"
 class BeamMaterializer(BaseMaterializer):
     """Read to and from Beam artifacts."""
 
-    def read(self, pipeline):
+    TYPE_NAME = "beam"
+
+    def read_text(self, pipeline):
         """Read from text"""
         return pipeline | "ReadText" >> beam.io.ReadFromText(
             file_pattern=os.path.join(self.artifact.uri, "*")
         )
 
-    def write(self, pipeline):
+    def write_text(self, pipeline, shard_name_template="''"):
         """Write from text"""
         return pipeline | beam.io.WriteToText(
-            os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+            os.path.join(self.artifact.uri, DEFAULT_FILENAME),
+            shard_name_template=shard_name_template,
         )

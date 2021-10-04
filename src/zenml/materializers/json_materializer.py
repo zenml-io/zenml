@@ -23,7 +23,9 @@ DEFAULT_FILENAME = "data.json"
 class JsonMaterializer(BaseMaterializer):
     """Read data to and from JSON."""
 
-    def read(self, filename=None):
+    TYPE_NAME = "json"
+
+    def read_file(self, filename=None):
         """Read JSON from filename."""
         filepath = os.path.join(
             self.artifact.uri,
@@ -31,7 +33,7 @@ class JsonMaterializer(BaseMaterializer):
         )
         return yaml_utils.read_json(filepath)
 
-    def write(self, data, filename=None):
+    def write_file(self, data, filename=None):
         """Write JSON to filename."""
         filepath = os.path.join(
             self.artifact.uri,

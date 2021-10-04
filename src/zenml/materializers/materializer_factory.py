@@ -19,9 +19,10 @@ class MaterializerFactory(object):
     """A factory class which is used by the ZenML artifacts to keep track
     of different materializers"""
 
+    materializer_types = {}
+
     def __init__(self, artifact):
         """Initialization with an empty factory"""
-        self.types = {}
         self.artifact = artifact
 
     def __getattr__(self, key: Text):
@@ -33,16 +34,17 @@ class MaterializerFactory(object):
         Returns:
             The corresponding writer function within the factory.
         """
-        if key in self.types:
-            return self.types[key](self.artifact)
+        if key in self.materializer_types:
+            return self.materializer_types[key](self.artifact)
         else:
             return object.__getattribute__(self, key)(self.artifact)
 
     def get_types(self):
         """Get the materializer dictionary"""
-        return self.types
+        return self.materializer_types
 
-    def register_type(self, key, type_):
+    @classmethod
+    def register_type(cls, key, type_):
         """Register a new materializer in the factory
 
         Args:
@@ -50,4 +52,4 @@ class MaterializerFactory(object):
 
             type_: a ZenML materializer object
         """
-        self.types[key] = type_
+        cls.materializer_types[key] = type_

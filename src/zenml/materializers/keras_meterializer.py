@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import json
 import os
 
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -19,10 +20,12 @@ from zenml.materializers.base_materializer import BaseMaterializer
 DEFAULT_FILENAME = "model.hdf5"
 
 
-class KerasModelMaterializer(BaseMaterializer):
+class KerasMaterializer(BaseMaterializer):
     """Materializer to read Keras model."""
 
-    def read(self, filename=None):
+    TYPE_NAME = "keras"
+
+    def read_model(self, filename=None):
         """ """
         filepath = os.path.join(
             self.artifact.uri,
@@ -31,7 +34,7 @@ class KerasModelMaterializer(BaseMaterializer):
         with open(filepath, "r") as f:
             return json.load(f)
 
-    def write(self, data, filename=None):
+    def write_model(self, data, filename=None):
         """ """
         filepath = os.path.join(
             self.artifact.uri,

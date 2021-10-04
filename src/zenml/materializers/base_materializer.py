@@ -12,21 +12,29 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from abc import abstractmethod
-
-from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.materializers.materializer_factory import MaterializerFactory
 
 
-class BaseMaterializer:
+class BaseMaterializerMeta(type):
+    def __new__(mcs, name, bases, dct):
+        """ """
+
+        cls = super().__new__(mcs, name, bases, dct)
+        if name != "BaseMaterializer":
+            assert cls.TYPE_NAME != "base", (
+                f"You have used the name `base` as a TYPE_NAME "
+                f"for your class {name}. When you are defining a new "
+                f"materializer, please make sure that you give it a "
+                f"TYPE_NAME other than `base`."
+            )
+            MaterializerFactory.register_type(cls.TYPE_NAME, cls)
+        return cls
+
+
+class BaseMaterializer(metaclass=BaseMaterializerMeta):
     """Base Materializer to realize artifact data."""
 
-    def __init__(self, artifact: BaseArtifact):
+    TYPE_NAME = "base"
+
+    def __init__(self, artifact):
         self.artifact = artifact
-
-    @abstractmethod
-    def read(self, *args, **kwargs):
-        """Base read method to read artifact."""
-
-    @abstractmethod
-    def write(self, *args, **kwargs):
-        """Base write method to write artifact."""
