@@ -34,7 +34,7 @@ def step(name: Text = None):
     """
 
     if not isinstance(name, str):
-        raise StepInterfaceError("")  # TODO: [MEDIUM] fill
+        raise StepInterfaceError("Please give your step a unique name!")
 
     def inner_decorator(func: types.FunctionType) -> Type:
         """Inner decorator function for the creation of a ZenML Step

@@ -12,9 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import json
-import os
-
 from zenml.materializers.base_materializer import BaseMaterializer
 
 DEFAULT_FILENAME = "model.hdf5"
@@ -25,21 +22,12 @@ class KerasMaterializer(BaseMaterializer):
 
     TYPE_NAME = "keras"
 
-    def read_model(self, filename=None):
+    def read_model(self):
         """ """
-        filepath = os.path.join(
-            self.artifact.uri,
-            filename if filename is not None else DEFAULT_FILENAME,
-        )
-        with open(filepath, "r") as f:
-            return json.load(f)
+        from tensorflow import keras
 
-    def write_model(self, data, filename=None):
+        return keras.models.load_model(self.artifact.uri)
+
+    def write_model(self, model):
         """ """
-        filepath = os.path.join(
-            self.artifact.uri,
-            filename if filename is not None else DEFAULT_FILENAME,
-        )
-
-        with open(filepath, "w") as f:
-            json.dump(data, f)
+        model.save(self.artifact.uri)

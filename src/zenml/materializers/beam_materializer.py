@@ -45,18 +45,23 @@ class BeamMaterializer(BaseMaterializer):
             csv_files = path_utils.list_dir(self.artifact.uri)
             if not csv_files:
                 raise RuntimeError(
-                    'Split pattern {} does not match any files.'.format(
-                        file_pattern))
+                    "Split pattern {} does not match any files.".format(
+                        file_pattern
+                    )
+                )
 
             # weed out bad file exts with this logic
             allowed_file_exts = [".csv", ".txt"]  # ".dat"
-            csv_files = [uri for uri in csv_files
-                         if Path(uri).suffix in allowed_file_exts]
+            csv_files = [
+                uri
+                for uri in csv_files
+                if Path(uri).suffix in allowed_file_exts
+            ]
 
-            logger.info(f'Matched {len(csv_files)}: {csv_files}')
+            logger.info(f"Matched {len(csv_files)}: {csv_files}")
 
             # Always use header from file
-            logger.info(f'Using header from file: {csv_files[0]}.')
+            logger.info(f"Using header from file: {csv_files[0]}.")
             header = ",".join(path_utils.load_csv_header(csv_files[0]))
 
             return header, pipeline

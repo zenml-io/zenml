@@ -27,7 +27,7 @@ from __future__ import absolute_import, division, print_function
 import inspect
 import json
 import sys
-from typing import Any, Callable, Dict, List, Text, Type
+from typing import Any, Callable, Dict, List, Optional, Text, Type
 
 import pydantic
 from pydantic import create_model
@@ -36,10 +36,67 @@ from tfx.dsl.component.experimental.decorators import _SimpleComponent
 from tfx.dsl.components.base.base_executor import BaseExecutor
 from tfx.dsl.components.base.executor_spec import ExecutorClassSpec
 from tfx.types import component_spec
+from tfx.types.channel import Channel
+from tfx.utils import json_utils
 
 from zenml.annotations import Input, Output
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.utils.exceptions import StepInterfaceError
+
+
+class _PropertyDictWrapper(json_utils.Jsonable):
+    """Helper class to wrap inputs/outputs from TFX nodes.
+    Currently, this class is read-only (setting properties is not implemented).
+    Internal class: no backwards compatibility guarantees.
+    Code Credit: https://github.com/tensorflow/tfx/blob/51946061ae3be656f1718a3d62cd47228b89b8f4/tfx/types/node_common.py
+    """
+
+    def __init__(
+        self,
+        data: Dict[str, Channel],
+        compat_aliases: Optional[Dict[str, str]] = None,
+    ):
+        self._data = data
+        self._compat_aliases = compat_aliases or {}
+
+    def __iter__(self):
+        yield from self._data
+
+    def __getitem__(self, key):
+        if key in self._compat_aliases:
+            key = self._compat_aliases[key]
+        return self._data[key]
+
+    def __getattr__(self, key):
+        if key in self._compat_aliases:
+            key = self._compat_aliases[key]
+        try:
+            return self._data[key]
+        except KeyError:
+            raise AttributeError
+
+    def __repr__(self):
+        return repr(self._data)
+
+    def get_all(self) -> Dict[str, Channel]:
+        return self._data
+
+    def keys(self):
+        return self._data.keys()
+
+    def values(self):
+        return self._data.values()
+
+    def items(self):
+        return self._data.items()
+
+
+class _ZenMLSimpleComponent(_SimpleComponent):
+    """Simple ZenML TFX component with outputs overridden."""
+
+    @property
+    def outputs(self) -> _PropertyDictWrapper:
+        return _PropertyDictWrapper(self.spec.outputs)
 
 
 class _FunctionExecutor(BaseExecutor):
@@ -150,7 +207,7 @@ def generate_component(step) -> Callable[..., Any]:
 
     return type(
         step.__class__.__name__,
-        (_SimpleComponent,),
+        (_ZenMLSimpleComponent,),
         {
             "SPEC_CLASS": component_spec_class,
             "EXECUTOR_SPEC": executor_spec_instance,

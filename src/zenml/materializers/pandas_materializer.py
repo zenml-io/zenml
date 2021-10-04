@@ -33,8 +33,11 @@ class PandasMaterializer(BaseMaterializer):
             self.artifact.uri, only_file_names=True
         )
 
-        valid_filenames = [os.path.join(self.artifact.uri, f)
-                           for f in filenames if DEFAULT_FILENAME in f]
+        valid_filenames = [
+            os.path.join(self.artifact.uri, f)
+            for f in filenames
+            if DEFAULT_FILENAME in f
+        ]
 
         li = []
         for filename in valid_filenames:

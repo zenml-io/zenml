@@ -3,38 +3,51 @@ from typing import List
 import numpy as np
 import tensorflow as tf
 
-from zenml import step
-from zenml.annotations import Output, Input, Step
-from zenml.artifacts import ModelArtifact
+from zenml.annotations import Input, Output, Step
+from zenml.artifacts import DataArtifact, ModelArtifact
 from zenml.pipelines import pipeline
+from zenml.steps import step
 
 
-@step
-def ImportDataStep() -> List[np.array]:
+@step(name="import")
+def ImportDataStep() -> List[float]:
     """Download the MNIST data store it as an artifact"""
     (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
-    return [X_train, X_test, y_train, y_test]
+    return [
+        X_train.tolist(),
+        X_test.tolist(),
+        y_train.tolist(),
+        y_test.tolist(),
+    ]
 
 
-@step
-def NormalizeDataStep(X_train: np.array, X_test: np.array) -> List[np.array]:
+@step(name="normalize")
+def NormalizeDataStep(data: Input[DataArtifact]) -> List[float]:
     """Normalize the values for all the images so they are between 0 and 1"""
-    return [X_train / 255.0, X_test / 255]
+    import_data = data.materializers.json.read_file()
+    X_train_normed = np.array(import_data[0]) / 255.0
+    X_test_normed = np.array(import_data[2]) / 255.0
+    return [
+        X_train_normed.tolist(),
+        import_data[1],
+        X_test_normed.tolist(),
+        import_data[3],
+    ]
 
 
-@step
+@step(name="trainer")
 def MNISTTrainModelStep(
-    X_train: np.array,
-    y_train: np.array,
+    data: Input[DataArtifact],
     model_artifact: Output[ModelArtifact],
-    epochs: int = 10,
+    epochs: int,
 ):
     """Train a neural net from scratch to recognise MNIST digits return our
     model or the learner"""
+    import_data = data.materializers.json.read_file()
     model = tf.keras.models.Sequential(
         [
             tf.keras.layers.Flatten(input_shape=(28, 28)),
-            tf.keras.layers.Dense(128, activation="relu"),
+            tf.keras.layers.Dense(28, activation="relu"),
             tf.keras.layers.Dense(10),
         ]
     )
@@ -46,29 +59,29 @@ def MNISTTrainModelStep(
     )
 
     model.fit(
-        X_train,
-        y_train,
+        import_data[0],
+        import_data[1],
         epochs=epochs,
     )
 
     # write model
-    model_artifact.write(model)
+    model_artifact.materializers.keras.write_model(model)
 
 
-@step
+@step(name="evaluate")
 def EvaluateModelStep(
-    X_test: np.array, y_test: np.array, model_artifact: Input[ModelArtifact]
+    data: Input[DataArtifact], model_artifact: Input[ModelArtifact]
 ) -> List[float]:
     """Calculate the loss for the model for each epoch in a graph"""
-    model = model_artifact.read()
-    test_loss, test_acc = model.evaluate(X_test, y_test, verbose=2)
+    model = model_artifact.materializers.keras.read_model()
+    test_loss, test_acc = model.evaluate(data[2], data[3], verbose=2)
     return [test_loss, test_acc]
 
 
 # Define the pipeline
 
 
-@pipeline
+@pipeline("mnist")
 def MNISTTrainingPipeline(
     import_data: Step[ImportDataStep],
     normalize_data: Step[NormalizeDataStep],
@@ -76,22 +89,19 @@ def MNISTTrainingPipeline(
     evaluator: Step[EvaluateModelStep],
 ):
     # Link all the steps artifacts together
-    normalize_data(
-        X_train=import_data.outputs["return_outputs"][0],
-        X_test=import_data.outputs["return_outputs"][2],
+    normalize_data(data=import_data.outputs.return_output)
+    trainer(data=normalize_data.outputs.return_output)
+    evaluator(
+        data=normalize_data.outputs.return_output,
+        model_artifact=trainer.outputs.model_artifact,
     )
-    trainer(
-        X_train=normalize_data.outputs["return_outputs"][0],
-        y_train=normalize_data.outputs["return_outputs"][1],
-    )
-    evaluator(model_artifact=trainer.outputs["model_artifact"])
 
 
 # Initialise the pipeline
 mnist_pipeline = MNISTTrainingPipeline(
     import_data=ImportDataStep(),
     normalize_data=NormalizeDataStep(),
-    trainer=MNISTTrainModelStep(epochs=10),
+    trainer=MNISTTrainModelStep(epochs=1),
     evaluator=EvaluateModelStep(),
 )
 
