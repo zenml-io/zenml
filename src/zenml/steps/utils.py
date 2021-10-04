@@ -107,7 +107,7 @@ class _FunctionExecutor(BaseExecutor):
         if return_artifact is not None:
             artifact = return_artifact[0]
             if returns is not None:
-                artifact.materializers.json.write(artifact, returns)
+                artifact.materializers.json.write_file(returns)
             else:
                 raise StepInterfaceError()
 
