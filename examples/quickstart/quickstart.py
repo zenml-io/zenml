@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 
 from zenml import step
-from zenml.annotations import Output
+from zenml.annotations import Output, Input, Step
 from zenml.artifacts import ModelArtifact
 from zenml.pipelines import pipeline
 
@@ -24,7 +24,10 @@ def NormalizeDataStep(X_train: np.array, X_test: np.array) -> List[np.array]:
 
 @step
 def MNISTTrainModelStep(
-    X_train: np.array, y_train: np.array, model_artifact: Output[ModelArtifact]
+    X_train: np.array,
+    y_train: np.array,
+    model_artifact: Output[ModelArtifact],
+    epochs: int = 10,
 ):
     """Train a neural net from scratch to recognise MNIST digits return our
     model or the learner"""
@@ -43,9 +46,9 @@ def MNISTTrainModelStep(
     )
 
     model.fit(
-        train_data,
-        epochs=10,
-        validation_data=test_data,
+        X_train,
+        y_train,
+        epochs=epochs,
     )
 
     # write model
@@ -68,27 +71,30 @@ def EvaluateModelStep(
 @pipeline
 def MNISTTrainingPipeline(
     import_data: Step[ImportDataStep],
-    train_test_split: Step[TrainTestSplitStep],
     normalize_data: Step[NormalizeDataStep],
     trainer: Step[MNISTTrainModelStep],
     evaluator: Step[EvaluateModelStep],
 ):
-    # takes all the steps, in order
-    # runs them on the local machine
-
-    # Initialise the pipeline
-
-    mnist_data = tf.keras.datasets.mnist
-
-    mnist_trainer = MNISTTrainingPipeline(
-        import_data=ImportDataStep(mnist_data),
-        normalize_data=NormalizeDataStep(),
-        train_test_split=TrainTestSplitStep(),
-        trainer=MNISTTrainModelStep(),
-        evaluator=EvaluateModelStep(),
+    # Link all the steps artifacts together
+    normalize_data(
+        X_train=import_data.outputs["return_outputs"][0],
+        X_test=import_data.outputs["return_outputs"][2],
     )
+    trainer(
+        X_train=normalize_data.outputs["return_outputs"][0],
+        y_train=normalize_data.outputs["return_outputs"][1],
+    )
+    evaluator(model_artifact=trainer.outputs["model_artifact"])
+
+
+# Initialise the pipeline
+mnist_pipeline = MNISTTrainingPipeline(
+    import_data=ImportDataStep(),
+    normalize_data=NormalizeDataStep(),
+    trainer=MNISTTrainModelStep(epochs=10),
+    evaluator=EvaluateModelStep(),
+)
 
 
 # Run the pipeline
-
-mnist_trainer.run()
+mnist_pipeline.run()
