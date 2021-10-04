@@ -12,11 +12,14 @@ from zenml.steps import step
 @step(name="import")
 def ImportDataStep() -> List[float]:
     """Download the MNIST data store it as an artifact"""
-    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
+    (X_train, y_train), (
+        X_test,
+        y_test,
+    ) = tf.keras.datasets.boston_housing.load_data()
     return [
         X_train.tolist(),
-        X_test.tolist(),
         y_train.tolist(),
+        X_test.tolist(),
         y_test.tolist(),
     ]
 
@@ -46,16 +49,15 @@ def MNISTTrainModelStep(
     import_data = data.materializers.json.read_file()
     model = tf.keras.models.Sequential(
         [
-            tf.keras.layers.Flatten(input_shape=(28, 28)),
             tf.keras.layers.Dense(28, activation="relu"),
-            tf.keras.layers.Dense(10),
+            tf.keras.layers.Dense(1, activation="linear"),
         ]
     )
 
     model.compile(
         optimizer=tf.keras.optimizers.Adam(0.001),
-        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-        metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
+        loss=tf.keras.losses.MeanSquaredError(),
+        metrics=[tf.keras.metrics.MeanSquaredError()],
     )
 
     model.fit(
@@ -74,7 +76,11 @@ def EvaluateModelStep(
 ) -> List[float]:
     """Calculate the loss for the model for each epoch in a graph"""
     model = model_artifact.materializers.keras.read_model()
-    test_loss, test_acc = model.evaluate(data[2], data[3], verbose=2)
+    import_data = data.materializers.json.read_file()
+
+    test_loss, test_acc = model.evaluate(
+        import_data[2], import_data[3], verbose=2
+    )
     return [test_loss, test_acc]
 
 
@@ -101,7 +107,7 @@ def MNISTTrainingPipeline(
 mnist_pipeline = MNISTTrainingPipeline(
     import_data=ImportDataStep(),
     normalize_data=NormalizeDataStep(),
-    trainer=MNISTTrainModelStep(epochs=1),
+    trainer=MNISTTrainModelStep(epochs=10),
     evaluator=EvaluateModelStep(),
 )
 
