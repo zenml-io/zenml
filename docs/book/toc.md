@@ -10,9 +10,9 @@
 
 * [Core Concepts](core/core-concepts.md)
 * [Repository](core/repository.md)
+* [Pipelines](core/pipelines.md)
 * [Steps](core/steps.md)
 * [Artifacts](core/artifacts.md)
-* [Pipelines](core/pipelines.md)
 * [Stacks](core/stacks.md)
 * [Post Execution Workflow](core/post-execution-workflow.md)
 
