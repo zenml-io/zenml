@@ -130,6 +130,16 @@ from zenml.steps.trainer import TFFeedForwardTrainer
 def TFFeedForwardTrainer():
     pass
 
+@pipeline(name="my_pipeline")
+def SplitPipeline(simple_step: Step[SimplestStepEver],
+                  data_step: Step[DataIngestionStep],
+                  split_step: Step[DistSplitStep],
+                  preprocesser_step: Step[InMemPreprocesserStep]):
+    data_step(input_random_number=simple_step.outputs["return_output"])
+    split_step(input_artifact=data_step.outputs["output_artifact"])
+    preprocesser_step(input_artifact=split_step.outputs["output_artifact"])
+
+
 pipeline = TrainingPipeline(
     data_step=ImportDataStep(uri='gs://zenml_quickstart/diabetes.csv'),
     split_step=RandomSplit(split_map={'train': 0.7, 'test': 0.3}),

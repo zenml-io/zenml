@@ -1,62 +1,94 @@
-from zenml.datasources import CSVDatasource
-from zenml.pipelines import TrainingPipeline
-from zenml.repo import Repository
-from zenml.steps.evaluator import TFMAEvaluator
-from zenml.steps.preprocesser import StandardPreprocesser
-from zenml.steps.split import RandomSplit
-from zenml.steps.trainer import TFFeedForwardTrainer
-from zenml.exceptions import AlreadyExistsException
+from typing import List
 
-from zenml.utils.naming_utils import transformed_label_name
+import numpy as np
+import tensorflow as tf
 
-# Define the training pipeline
-training_pipeline = TrainingPipeline()
+from zenml import step
+from zenml.annotations import Output
+from zenml.artifacts import ModelArtifact
+from zenml.pipelines import pipeline
 
-# Add a datasource. This will automatically track and version it.
-try:
-    ds = CSVDatasource(name='Pima Indians Diabetes',
-                       path='gs://zenml_quickstart/diabetes.csv')
-except AlreadyExistsException:
-    ds = Repository.get_instance().get_datasource_by_name(
-        'Pima Indians Diabetes')
-training_pipeline.add_datasource(ds)
 
-# Add a split
-training_pipeline.add_split(RandomSplit(
-    split_map={'train': 0.7, 'eval': 0.2, 'test': 0.1}))
+@step
+def ImportDataStep() -> List[np.array]:
+    """Download the MNIST data store it as an artifact"""
+    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
+    return [X_train, X_test, y_train, y_test]
 
-# Add a preprocessing unit
-training_pipeline.add_preprocesser(
-    StandardPreprocesser(
-        features=['times_pregnant', 'pgc', 'dbp', 'tst', 'insulin', 'bmi',
-                  'pedigree', 'age'],
-        labels=['has_diabetes'],
-        overwrite={'has_diabetes': {
-            'transform': [{'method': 'no_transform', 'parameters': {}}]}}
-    ))
 
-# Add a trainer
-training_pipeline.add_trainer(TFFeedForwardTrainer(
-    loss='binary_crossentropy',
-    last_activation='sigmoid',
-    output_units=1,
-    metrics=['accuracy'],
-    epochs=20))
+@step
+def NormalizeDataStep(X_train: np.array, X_test: np.array) -> List[np.array]:
+    """Normalize the values for all the images so they are between 0 and 1"""
+    return [X_train / 255.0, X_test / 255]
 
-# Add an evaluator
-training_pipeline.add_evaluator(
-    TFMAEvaluator(slices=[['has_diabetes']],
-                  metrics={transformed_label_name('has_diabetes'):
-                               ['binary_crossentropy', 'binary_accuracy']}))
 
-# Run the pipeline locally
-training_pipeline.run()
+@step
+def MNISTTrainModelStep(
+    X_train: np.array, y_train: np.array, model_artifact: Output[ModelArtifact]
+):
+    """Train a neural net from scratch to recognise MNIST digits return our
+    model or the learner"""
+    model = tf.keras.models.Sequential(
+        [
+            tf.keras.layers.Flatten(input_shape=(28, 28)),
+            tf.keras.layers.Dense(128, activation="relu"),
+            tf.keras.layers.Dense(10),
+        ]
+    )
 
-# See schema of data
-training_pipeline.view_schema()
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(0.001),
+        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+        metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
+    )
 
-# See statistics of train and eval
-training_pipeline.view_statistics()
+    model.fit(
+        train_data,
+        epochs=10,
+        validation_data=test_data,
+    )
 
-# Creates a notebook for evaluation
-training_pipeline.evaluate()
+    # write model
+    model_artifact.write(model)
+
+
+@step
+def EvaluateModelStep(
+    X_test: np.array, y_test: np.array, model_artifact: Input[ModelArtifact]
+) -> List[float]:
+    """Calculate the loss for the model for each epoch in a graph"""
+    model = model_artifact.read()
+    test_loss, test_acc = model.evaluate(X_test, y_test, verbose=2)
+    return [test_loss, test_acc]
+
+
+# Define the pipeline
+
+
+@pipeline
+def MNISTTrainingPipeline(
+    import_data: Step[ImportDataStep],
+    train_test_split: Step[TrainTestSplitStep],
+    normalize_data: Step[NormalizeDataStep],
+    trainer: Step[MNISTTrainModelStep],
+    evaluator: Step[EvaluateModelStep],
+):
+    # takes all the steps, in order
+    # runs them on the local machine
+
+    # Initialise the pipeline
+
+    mnist_data = tf.keras.datasets.mnist
+
+    mnist_trainer = MNISTTrainingPipeline(
+        import_data=ImportDataStep(mnist_data),
+        normalize_data=NormalizeDataStep(),
+        train_test_split=TrainTestSplitStep(),
+        trainer=MNISTTrainModelStep(),
+        evaluator=EvaluateModelStep(),
+    )
+
+
+# Run the pipeline
+
+mnist_trainer.run()

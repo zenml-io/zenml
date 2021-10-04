@@ -1,7 +1,7 @@
 # 0.5.0rc0
 This long-awaited ZenML release marks a seminal moment in the project's history. We present to you a complete 
 revamp of the internals of ZenML, with a fresh new design and API. While these changes are significant, and have been months 
-in the making, the original vision of ZenML (read more [here](https://blog.zenml.io/why-zenml/)) has not wavered. We hope that the ZenML community finds the new 
+in the making, the original vision of ZenML has not wavered. We hope that the ZenML community finds the new 
 design choices easier to grasp and use, and we welcome feedback on the [issues board](https://github.com/zenml-io/zenml/issues).
 
 ## Warning
@@ -14,16 +14,16 @@ they should be addressed in upcoming releases.
 
 ## Overview
 
-* Introducing a new functional API for creating pipelines and steps. This is now the default mechanism for building ZenML pipelines. [read more]
-* Introducing the new `Stack` paradigm: Easily transition from one MLOps stack to the next with a few CLI commands [read more]
-* Introducing a new `Artifact`, `Typing`, and `Annotation` system, with `pydantic` (and `dataclasses`) support [read more here]
-* Deprecating the `pipelines_dir`: Now individual pipelines will be stored in their metadata stores, making the metadata store a single source of truth. [read more]
+* Introducing a new functional API for creating pipelines and steps. This is now the default mechanism for building ZenML pipelines. [read more](https://docs.zenml.io/quickstart-guide)
+* Introducing the new `Stack` paradigm: Easily transition from one MLOps stack to the next with a few CLI commands [read more](https://docs.zenml.io/core/stacks)
+* Introducing a new `Artifact`, `Typing`, and `Annotation` system, with `pydantic` (and `dataclasses`) support [read more](https://docs.zenml.io/core/artifacts)
+* Deprecating the `pipelines_dir`: Now individual pipelines will be stored in their metadata stores, making the metadata store a single source of truth. [read more](https://docs.zenml.io/core/stacks)
 * Deprecating the YAML config file: ZenML no longer natively compiles to an intermediate YAML-based representation. Instead, it compiles and deploys directly into the selected orchestrator's 
 representation. While we do plan to support running pipelines directly through YAML in the future, it will no longer be
-the default route through which pipelines are run. [read more about orchestrators here].
+the default route through which pipelines are run. [read more about orchestrators here](https://docs.zenml.io/core/stacks)
 
 ## Technical Improvements
-* A completely new system design, please refer to the [docs].
+* A completely new system design, please refer to the [docs](https://docs.zenml.io/core/core-concepts).
 * Better type hints and docstrings.
 * Auto-completion support.
 * Numerous performance improvements and bug fixes, including a smaller dependency footprint.
