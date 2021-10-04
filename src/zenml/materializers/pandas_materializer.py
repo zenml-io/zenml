@@ -17,6 +17,7 @@ import os
 import pandas as pd
 
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.utils import path_utils
 
 DEFAULT_FILENAME = "data.csv"
 
@@ -28,12 +29,20 @@ class PandasMaterializer(BaseMaterializer):
 
     def read_dataframe(self, filename=None):
         """ """
-        filepath = os.path.join(
-            self.artifact.uri,
-            filename if filename is not None else DEFAULT_FILENAME,
+        filenames = path_utils.list_dir(
+            self.artifact.uri, only_file_names=True
         )
 
-        return pd.read_csv(filepath)
+        valid_filenames = [os.path.join(self.artifact.uri, f)
+                           for f in filenames if DEFAULT_FILENAME in f]
+
+        li = []
+        for filename in valid_filenames:
+            df = pd.read_csv(filename, index_col=None, header=0)
+            li.append(df)
+        frame = pd.concat(li, axis=0, ignore_index=True)
+
+        return frame
 
     def write_dataframe(self, df, filename=None):
         """ """
