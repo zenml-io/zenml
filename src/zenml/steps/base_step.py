@@ -6,7 +6,7 @@ from pydantic import create_model
 
 from zenml.annotations import Input, Output
 from zenml.artifacts.base_artifact import BaseArtifact
-from zenml.artifacts.data_artifacts.json_artifact import JSONArtifact
+from zenml.artifacts.data_artifact import DataArtifact
 from zenml.steps.utils import generate_component
 from zenml.utils.exceptions import StepInterfaceError
 
@@ -38,7 +38,7 @@ class BaseStepMeta(type):
                 if issubclass(arg_type.type, BaseArtifact):
                     cls.INPUT_SPEC.update({arg: arg_type.type})
                 else:
-                    cls.INPUT_SPEC.update({arg: JSONArtifact})
+                    cls.INPUT_SPEC.update({arg: DataArtifact})
             elif isinstance(arg_type, Output):
                 cls.OUTPUT_SPEC.update({arg: arg_type.type})
             else:
@@ -47,7 +47,7 @@ class BaseStepMeta(type):
         # Infer the returned values
         return_spec = process_spec.annotations.get("return", None)
         if return_spec is not None:
-            cls.OUTPUT_SPEC.update({"return_output": JSONArtifact})
+            cls.OUTPUT_SPEC.update({"return_output": DataArtifact})
 
         # Infer the defaults
         cls.PARAM_DEFAULTS = dict()
