@@ -17,7 +17,7 @@ In addition, ZenML uses the following modern concepts in pipeline design to brin
 
 ## Pipelines As Experiments \(PaE\)
 
-We built ZenML because we could not find an easy framework that translates the patterns observed in the research phase with Jupyter notebooks into a production-ready ML environment. ZenML follows the paradigm of [Pipelines of Experiments \(PaE\),](why-zenml.md#pipelines-as-experiments-pae) meaning ZenML pipelines are designed to be written early on the development lifecycle, where the users can explore their pipelines as they develop towards production.
+We built ZenML because we could not find an easy framework that translates the patterns observed in the research phase with Jupyter notebooks into a production-ready ML environment. ZenML follows the paradigm of Pipelines of Experiments \(PaE\), meaning ZenML pipelines are designed to be written early on the development lifecycle, where the users can explore their pipelines as they develop towards production.
 
 ## Developmer Experience \(DX\)
 
