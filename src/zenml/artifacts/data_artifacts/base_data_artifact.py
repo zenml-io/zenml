@@ -30,4 +30,3 @@ class BaseDataArtifact(BaseArtifact):
     # TODO: [LOW] Instead of split names, we can include a more comprehensive
     #   split mapping
     PROPERTIES = {"split_names": SPLIT_NAMES_PROPERTY}
-

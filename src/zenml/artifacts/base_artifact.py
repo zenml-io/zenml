@@ -21,9 +21,10 @@ class MaterializerFactory(object):
     """A factory class which is used by the ZenML artifacts to keep track
     of different materializers"""
 
-    def __init__(self):
+    def __init__(self, artifact):
         """Initialization with an empty factory"""
         self.types = {}
+        self.artifact = artifact
 
     def __getattr__(self, key):
         """Get a single materializers based on the key
@@ -35,9 +36,9 @@ class MaterializerFactory(object):
             The corresponding writer function within the factory
         """
         if key in self.types:
-            return self.types[key]
+            return self.types[key](self.artifact)
         else:
-            return object.__getattribute__(self, key)
+            return object.__getattribute__(self, key)(self.artifact)
 
     def get_types(self):
         """Get the materializer dictionary"""
@@ -64,19 +65,16 @@ class BaseArtifact(Artifact):
     - Upon creation, each artifact class needs to be given a unique TYPE_NAME.
     - Your artifact can feature different properties under the parameter
         PROPERTIES which will be tracked throughout your pipeline runs.
-    - TODO: Write about the materializers
+    - TODO [MEDIUM]: Write about the materializers
     """
 
     TYPE_NAME = "BaseArtifact"
     PROPERTIES = {}
 
-    # Initialize the io factories
-    MATERIALIZER_FACTORY: MaterializerFactory = MaterializerFactory()
-
     @property
     def materializers(self) -> MaterializerFactory:
-        return self.MATERIALIZER_FACTORY
+        return MaterializerFactory(self)
 
     @materializers.setter
     def materializers(self, m):
-        raise ArtifactInterfaceError("")
+        raise ArtifactInterfaceError("You cannot set materializers.")

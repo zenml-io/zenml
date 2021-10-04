@@ -22,24 +22,22 @@ DEFAULT_FILENAME = "data.csv"
 
 
 class PandasMaterializer(BaseMaterializer):
-    """ """
+    """Materializer to read data to and from pandas."""
 
-    @staticmethod
-    def read(input_artifact, filename=None):
+    def read(self, filename=None):
         """ """
         filepath = os.path.join(
-            input_artifact.uri,
-            filename if filename is not None else DEFAULT_FILENAME
+            self.artifact.uri,
+            filename if filename is not None else DEFAULT_FILENAME,
         )
 
         return pd.read_csv(filepath)
 
-    @staticmethod
-    def write(output_artifact, df, filename=None):
+    def write(self, df, filename=None):
         """ """
         filepath = os.path.join(
-            output_artifact.uri,
-            filename if filename is not None else DEFAULT_FILENAME
+            self.artifact.uri,
+            filename if filename is not None else DEFAULT_FILENAME,
         )
 
         df.to_csv(filepath)

@@ -14,14 +14,19 @@
 
 from abc import abstractmethod
 
+from zenml.artifacts.base_artifact import BaseArtifact
+
 
 class BaseMaterializer:
-    """ """
+    """Base Materializer to realize artifact data."""
+
+    def __init__(self, artifact: BaseArtifact):
+        self.artifact = artifact
 
     @abstractmethod
-    def read(self):
-        """ """
+    def read(self, *args, **kwargs):
+        """Base read method to read artifact."""
 
     @abstractmethod
-    def write(self):
-        """ """
+    def write(self, *args, **kwargs):
+        """Base write method to write artifact."""

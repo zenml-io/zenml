@@ -12,4 +12,5 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.artifacts.data_artifacts.text_artifact import TextArtifact
+from zenml.artifacts.data_artifacts.model_artifact import ModelArtifact  # noqa
+from zenml.artifacts.data_artifacts.text_artifact import TextArtifact  # noqa

@@ -22,18 +22,16 @@ DEFAULT_FILENAME = "data"
 
 
 class BeamMaterializer(BaseMaterializer):
-    """ """
+    """Read to and from Beam artifacts."""
 
-    @staticmethod
-    def read(input_artifact, pipeline):
-        """ """
+    def read(self, pipeline):
+        """Read from text"""
         return pipeline | "ReadText" >> beam.io.ReadFromText(
-            file_pattern=os.path.join(input_artifact.uri, "*")
+            file_pattern=os.path.join(self.artifact.uri, "*")
         )
 
-    @staticmethod
-    def write(output_artifact, pipeline):
-        """ """
+    def write(self, pipeline):
+        """Write from text"""
         return pipeline | beam.io.WriteToText(
-            os.path.join(output_artifact.uri, DEFAULT_FILENAME)
+            os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         )

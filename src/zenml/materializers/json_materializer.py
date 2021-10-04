@@ -12,34 +12,30 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import json
 import os
 
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.utils import yaml_utils
 
 DEFAULT_FILENAME = "data.json"
 
 
 class JsonMaterializer(BaseMaterializer):
-    """ """
+    """Read data to and from JSON."""
 
-    @staticmethod
-    def read(input_artifact, filename=None):
-        """ """
+    def read(self, filename=None):
+        """Read JSON from filename."""
         filepath = os.path.join(
-            input_artifact.uri,
-            filename if filename is not None else DEFAULT_FILENAME
+            self.artifact.uri,
+            filename if filename is not None else DEFAULT_FILENAME,
         )
-        with open(filepath, 'r') as f:
-            return json.load(f)
+        return yaml_utils.read_json(filepath)
 
-    @staticmethod
-    def write(output_artifact, data, filename=None):
-        """ """
+    def write(self, data, filename=None):
+        """Write JSON to filename."""
         filepath = os.path.join(
-            output_artifact.uri,
-            filename if filename is not None else DEFAULT_FILENAME
+            self.artifact.uri,
+            filename if filename is not None else DEFAULT_FILENAME,
         )
 
-        with open(filepath, 'w') as f:
-            json.dump(data, f)
+        yaml_utils.write_json(filepath, data)

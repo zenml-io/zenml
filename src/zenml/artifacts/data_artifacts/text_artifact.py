@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 
 from zenml.artifacts.data_artifacts.base_data_artifact import BaseDataArtifact
-
 from zenml.materializers.beam_materializer import BeamMaterializer
 from zenml.materializers.pandas_materializer import PandasMaterializer
 
@@ -22,6 +21,7 @@ DEFAULT_FILENAME = "data.txt"
 
 class TextArtifact(BaseDataArtifact):
     """ZenML text-based artifact"""
+
     TYPE_NAME = "text_artifact"
 
 

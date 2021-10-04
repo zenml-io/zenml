@@ -14,26 +14,29 @@
 
 import os
 
-import apache_beam as beam
-
 from zenml.materializers.base_materializer import BaseMaterializer
 
-DEFAULT_FILENAME = "data"
+DEFAULT_FILENAME = "model.hdf5"
 
 
-class BeamMaterializer(BaseMaterializer):
-    """ """
+class KerasModelMaterializer(BaseMaterializer):
+    """Materializer to read Keras model."""
 
-    @staticmethod
-    def read(input_artifact, pipeline):
+    def read(self, filename=None):
         """ """
-        return pipeline | "ReadText" >> beam.io.ReadFromText(
-            file_pattern=os.path.join(input_artifact.uri, "*")
+        filepath = os.path.join(
+            self.artifact.uri,
+            filename if filename is not None else DEFAULT_FILENAME,
+        )
+        with open(filepath, "r") as f:
+            return json.load(f)
+
+    def write(self, data, filename=None):
+        """ """
+        filepath = os.path.join(
+            self.artifact.uri,
+            filename if filename is not None else DEFAULT_FILENAME,
         )
 
-    @staticmethod
-    def write(output_artifact, pipeline):
-        """ """
-        return pipeline | beam.io.WriteToText(
-            os.path.join(output_artifact.uri, DEFAULT_FILENAME)
-        )
+        with open(filepath, "w") as f:
+            json.dump(data, f)

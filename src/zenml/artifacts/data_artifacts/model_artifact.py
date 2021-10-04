@@ -13,13 +13,15 @@
 #  permissions and limitations under the License.
 
 from zenml.artifacts.data_artifacts.base_data_artifact import BaseDataArtifact
-from zenml.materializers.json_materializer import JsonMaterializer
+from zenml.materializers.keras_meterializer import KerasModelMaterializer
 
-DEFAULT_FILENAME = "data.json"
-
-
-class JSONArtifact(BaseDataArtifact):
-    TYPE_NAME = "json_artifact"
+DEFAULT_FILENAME = "my_model"
 
 
-JSONArtifact.MATERIALIZER_FACTORY.register_type("json", JsonMaterializer)
+class ModelArtifact(BaseDataArtifact):
+    TYPE_NAME = "model_artifact"
+
+
+ModelArtifact.MATERIALIZER_FACTORY.register_type(
+    "keras", KerasModelMaterializer
+)

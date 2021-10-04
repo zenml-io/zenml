@@ -24,11 +24,10 @@ is proposed by ZenML.
 
 from __future__ import absolute_import, division, print_function
 
-import json
-from typing import Type
 import inspect
+import json
 import sys
-from typing import Any, Callable, Dict, List, Text
+from typing import Any, Callable, Dict, List, Text, Type
 
 import pydantic
 from pydantic import create_model
@@ -49,10 +48,10 @@ class _FunctionExecutor(BaseExecutor):
     _FUNCTION = staticmethod(lambda: None)
 
     def Do(
-            self,
-            input_dict: Dict[Text, List[tfx_types.Artifact]],
-            output_dict: Dict[Text, List[tfx_types.Artifact]],
-            exec_properties: Dict[Text, Any],
+        self,
+        input_dict: Dict[Text, List[tfx_types.Artifact]],
+        output_dict: Dict[Text, List[tfx_types.Artifact]],
+        exec_properties: Dict[Text, Any],
     ):
         function_args = {}
         for name, artifact in input_dict.items():

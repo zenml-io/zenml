@@ -110,8 +110,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
     def __call__(self, **artifacts):
         self.__component = generate_component(self)(
-            **artifacts,
-            **self.__params
+            **artifacts, **self.__params
         )
 
     def __getattr__(self, item):
