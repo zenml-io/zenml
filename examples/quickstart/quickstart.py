@@ -9,7 +9,7 @@ from zenml.pipelines import pipeline
 from zenml.steps import step
 
 
-@step(name="import")
+@step(name="import_basic_mnist")
 def ImportDataStep() -> List[float]:
     """Download the MNIST data store it as an artifact"""
     (X_train, y_train), (
@@ -113,6 +113,33 @@ mnist_pipeline = MNISTTrainingPipeline(
     evaluator=EvaluateModelStep(),
 )
 
-
 # Run the pipeline
 mnist_pipeline.run()
+
+
+# Define a new modified import data step to download the Fashion MNIST model
+@step(name="import_fashion_mnist")
+def ImportDataStep() -> List[float]:
+    """Download the Fashion MNIST data store it as an artifact"""
+    (X_train, y_train), (
+        X_test,
+        y_test,
+    ) = tf.keras.datasets.fashion_mnist.load_data()  # CHANGING to fashion
+    return [
+        X_train.tolist()[0:100],
+        y_train.tolist()[0:100],
+        X_test.tolist()[0:100],
+        y_test.tolist()[0:100],
+    ]
+
+
+# Initialise a new pipeline
+fashion_mnist_trainer = MNISTTrainingPipeline(
+    import_data=ImportDataStep(),
+    normalize_data=NormalizeDataStep(),
+    trainer=MNISTTrainModelStep(epochs=10),
+    evaluator=EvaluateModelStep(),
+)
+
+# Run the new pipeline
+fashion_mnist_trainer.run()
