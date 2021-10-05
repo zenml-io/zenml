@@ -25,5 +25,3 @@ from zenml.pipelines.pipeline_decorator import pipeline  # noqa
 from zenml.steps.step_decorator import step  # noqa
 
 init_logging()
-
-import os
