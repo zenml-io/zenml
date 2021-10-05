@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.5.0rc0"
+version = "0.5.0rc1"
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
 readme = "README.md"
@@ -48,14 +48,14 @@ zenml = 'zenml.cli.cli:cli'
 
 [tool.poetry.dependencies]
 python = ">=3.6.2,<3.9"
-ml-pipelines-sdk = "1.2.0"
-panel = "0.11.3"
-pandas = "1.1.5"
-apache-beam = "2.30.0"
-pyyaml = "5.4.1"
-python-dateutil = "2.8.1"
-gitpython = "3.1.18"
-click = "8.0.1"
+ml-pipelines-sdk = "^1.2.0"
+panel = "^0.11.3"
+pandas = "^1.1.5"
+apache-beam = "^2.30.0"
+pyyaml = "^5.4.1"
+python-dateutil = "^2.8.1"
+gitpython = "^3.1.18"
+click = "^8.0.1"
 pydantic = "^1.8.2"
 analytics-python = "^1.4.0"
 distro = "^1.6.0"
