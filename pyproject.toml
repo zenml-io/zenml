@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.3.9rc2"
+version = "0.5.0rc0"
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
 readme = "README.md"
@@ -13,7 +13,6 @@ keywords = [
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
-    "Framework :: MLOps",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Intended Audience :: System Administrators",
@@ -22,10 +21,8 @@ classifiers = [
     "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Topic :: Deep Learning",
-    "Topic :: Software Engineering",
-    "Topic :: MLOps",
+    "Topic :: System :: Distributed Computing",
+    "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]
 exclude = [
