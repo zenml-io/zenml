@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zenml.annotations package &#8212; ZenML  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/bootstrap-sphinx.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="zenml.artifact_stores package" href="zenml.artifact_stores.html" />
+    <link rel="prev" title="zenml package" href="zenml.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="_static/js/jquery-1.12.4.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.4.1/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          ZenML</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">zenml.annotations package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-zenml.annotations.artifact_annotations">zenml.annotations.artifact_annotations module</a></li>
+<li><a class="reference internal" href="#module-zenml.annotations.base_annotations">zenml.annotations.base_annotations module</a></li>
+<li><a class="reference internal" href="#module-zenml.annotations.step_annotations">zenml.annotations.step_annotations module</a></li>
+<li><a class="reference internal" href="#module-zenml.annotations">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="zenml.html" title="Previous Chapter: zenml package"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; zenml package</span>
+    </a>
+  </li>
+  <li>
+    <a href="zenml.artifact_stores.html" title="Next Chapter: zenml.artifact_stores package"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">zenml.artifac... &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/zenml.annotations.rst.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="section" id="zenml-annotations-package">
+<h1>zenml.annotations package<a class="headerlink" href="#zenml-annotations-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.annotations.artifact_annotations">
+<span id="zenml-annotations-artifact-annotations-module"></span><h2>zenml.annotations.artifact_annotations module<a class="headerlink" href="#module-zenml.annotations.artifact_annotations" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.annotations.artifact_annotations.Input">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.annotations.artifact_annotations.</span></span><span class="sig-name descname"><span class="pre">Input</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">object_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_init_via_getitem</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.annotations.artifact_annotations.Input" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.annotations.base_annotations.BaseAnnotation" title="zenml.annotations.base_annotations.BaseAnnotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.annotations.base_annotations.BaseAnnotation</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.annotations.artifact_annotations.Input.VALID_TYPES">
+<span class="sig-name descname"><span class="pre">VALID_TYPES</span></span><em class="property"> <span class="pre">=</span> <span class="pre">[&lt;class</span> <span class="pre">'zenml.artifacts.base_artifact.BaseArtifact'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'int'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;]</span></em><a class="headerlink" href="#zenml.annotations.artifact_annotations.Input.VALID_TYPES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.annotations.artifact_annotations.Output">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.annotations.artifact_annotations.</span></span><span class="sig-name descname"><span class="pre">Output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">object_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_init_via_getitem</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.annotations.artifact_annotations.Output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.annotations.base_annotations.BaseAnnotation" title="zenml.annotations.base_annotations.BaseAnnotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.annotations.base_annotations.BaseAnnotation</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.annotations.artifact_annotations.Output.VALID_TYPES">
+<span class="sig-name descname"><span class="pre">VALID_TYPES</span></span><em class="property"> <span class="pre">=</span> <span class="pre">[&lt;class</span> <span class="pre">'zenml.artifacts.base_artifact.BaseArtifact'&gt;]</span></em><a class="headerlink" href="#zenml.annotations.artifact_annotations.Output.VALID_TYPES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.annotations.base_annotations">
+<span id="zenml-annotations-base-annotations-module"></span><h2>zenml.annotations.base_annotations module<a class="headerlink" href="#module-zenml.annotations.base_annotations" title="Permalink to this headline">¶</a></h2>
+<p>The implementation of the  GenericType and GenericMeta class below is
+inspired by the implementation by the Tensorflow Extended team, which can be
+found here:</p>
+<p><a class="reference external" href="https://github.com/tensorflow/tfx/blob/master/tfx/dsl/component/experimental/annotations.py">https://github.com/tensorflow/tfx/blob/master/tfx/dsl/component/experimental/annotations.py</a></p>
+<p>The list of changes to improve the interaction with ZenML:</p>
+<ul class="simple">
+<li><p>The main classes are merged into a single class which serves as the base</p></li>
+</ul>
+<p>class to be extended
+- A class variable is added to be utilized while checking the type of T
+- A few more classes are created on top of artifacts and primitives in order to
+use the same paradigm with steps and datasources as well</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.annotations.base_annotations.BaseAnnotation">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.annotations.base_annotations.</span></span><span class="sig-name descname"><span class="pre">BaseAnnotation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">object_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_init_via_getitem</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.annotations.base_annotations.BaseAnnotation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A main generic class which will be used as the base for annotations</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.annotations.base_annotations.BaseAnnotation.VALID_TYPES">
+<span class="sig-name descname"><span class="pre">VALID_TYPES</span></span><em class="property"> <span class="pre">=</span> <span class="pre">None</span></em><a class="headerlink" href="#zenml.annotations.base_annotations.BaseAnnotation.VALID_TYPES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.annotations.base_annotations.BaseAnnotationMeta">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.annotations.base_annotations.</span></span><span class="sig-name descname"><span class="pre">BaseAnnotationMeta</span></span><a class="headerlink" href="#zenml.annotations.base_annotations.BaseAnnotationMeta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></p>
+<p>The Metaclass for the annotations in ZenML. It defines a __get_item__
+method which in return class the __generic_getitem of the main class
+with the same param</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.annotations.step_annotations">
+<span id="zenml-annotations-step-annotations-module"></span><h2>zenml.annotations.step_annotations module<a class="headerlink" href="#module-zenml.annotations.step_annotations" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.annotations.step_annotations.Step">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.annotations.step_annotations.</span></span><span class="sig-name descname"><span class="pre">Step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">object_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_init_via_getitem</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.annotations.step_annotations.Step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.annotations.base_annotations.BaseAnnotation" title="zenml.annotations.base_annotations.BaseAnnotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.annotations.base_annotations.BaseAnnotation</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.annotations.step_annotations.Step.VALID_TYPES">
+<span class="sig-name descname"><span class="pre">VALID_TYPES</span></span><em class="property"> <span class="pre">=</span> <span class="pre">[&lt;class</span> <span class="pre">'zenml.steps.base_step.BaseStep'&gt;]</span></em><a class="headerlink" href="#zenml.annotations.step_annotations.Step.VALID_TYPES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.annotations">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.annotations" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2021, ZenML GmbH.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

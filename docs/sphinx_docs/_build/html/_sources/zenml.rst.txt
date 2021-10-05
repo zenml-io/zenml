@@ -14,6 +14,7 @@ Subpackages
    zenml.config
    zenml.core
    zenml.io
+   zenml.materializers
    zenml.metadata
    zenml.orchestrators
    zenml.pipelines
@@ -52,14 +53,6 @@ zenml.logger module
 -------------------
 
 .. automodule:: zenml.logger
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-zenml.version module
---------------------
-
-.. automodule:: zenml.version
    :members:
    :undoc-members:
    :show-inheritance:

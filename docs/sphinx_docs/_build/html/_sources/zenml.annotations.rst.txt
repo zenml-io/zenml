@@ -20,14 +20,6 @@ zenml.annotations.base\_annotations module
    :undoc-members:
    :show-inheritance:
 
-zenml.annotations.param\_annotations module
--------------------------------------------
-
-.. automodule:: zenml.annotations.param_annotations
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 zenml.annotations.step\_annotations module
 ------------------------------------------
 
