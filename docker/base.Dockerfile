@@ -1,6 +1,14 @@
 FROM ubuntu:18.04
 
-WORKDIR /zenml
+# python
+ENV PYTHONFAULTHANDLER=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONHASHSEED=random \
+    PIP_NO_CACHE_DIR=off \
+    PIP_DISABLE_PIP_VERSION_CHECK=on \
+    POETRY_VERSION=1.0.3 \
+    POETRY_HOME=/root/.local
+
 
 RUN apt-get update -y && \
   apt-get install --no-install-recommends -y -q software-properties-common && \
@@ -32,7 +40,21 @@ RUN apt-get update -y && \
   pip install --no-cache-dir --upgrade --pre pip  && \
   wget https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py && python install-poetry.py
 
+# prepend poetry and venv to path
+ENV PATH="$POETRY_HOME/bin:$PATH"
+
+# copy project requirement files here to ensure they will be cached.
+WORKDIR /zenml
+COPY pyproject.toml /zenml
+
+# install runtime deps - uses $POETRY_VIRTUALENVS_IN_PROJECT internally
+RUN poetry config virtualenvs.create false && poetry install --no-dev
+
+# create an alias for zenml
+RUN echo 'alias zenml="poetry run zenml"' >> ~/.bashrc
+
 ADD . /zenml
-RUN rm -rf poetry.lock || /root/.local/bin/poetry install
-RUN export PATH="/root/.local/bin:$PATH"
-RUN alias zenml='poetry run zenml'
+
+#RUN rm -rf poetry.lock || /root/.local/bin/poetry install
+#RUN export PATH="/root/.local/bin:$PATH"
+#RUN alias zenml='poetry run zenml'
