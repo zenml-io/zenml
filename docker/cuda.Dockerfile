@@ -10,7 +10,6 @@ ENV PYTHONFAULTHANDLER=1 \
     PYTHONHASHSEED=random \
     PIP_NO_CACHE_DIR=off \
     PIP_DISABLE_PIP_VERSION_CHECK=on \
-    POETRY_VERSION=1.0.3 \
     POETRY_HOME=/root/.local
 
 # prepend poetry and venv to path
@@ -29,7 +28,7 @@ RUN apt-get update -y && \
   apt-get autoremove --purge && \
   CFLAGS=$(/usr/bin/python3.6-config --cflags) python3.6 -m pip install --no-cache-dir  \
     "tensorflow-gpu==${TENSORFLOW_VERSION}" && \
-  wget https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py && python install-poetry.py
+  wget https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py && python install-poetry.py --preview
 
 
 # copy project requirement files here to ensure they will be cached.
