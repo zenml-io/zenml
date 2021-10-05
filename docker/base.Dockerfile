@@ -48,13 +48,9 @@ WORKDIR /zenml
 COPY pyproject.toml /zenml
 
 # install runtime deps - uses $POETRY_VIRTUALENVS_IN_PROJECT internally
-RUN poetry config virtualenvs.create false && poetry install --no-dev
+RUN poetry config virtualenvs.create false && poetry install
 
 # create an alias for zenml
 RUN echo 'alias zenml="poetry run zenml"' >> ~/.bashrc
 
 ADD . /zenml
-
-#RUN rm -rf poetry.lock || /root/.local/bin/poetry install
-#RUN export PATH="/root/.local/bin:$PATH"
-#RUN alias zenml='poetry run zenml'

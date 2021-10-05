@@ -1,20 +1,47 @@
 steps:
+  # login to dockerhub
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args: ['-c', 'docker login --username=$$USERNAME --password=$$PASSWORD']
+    secretEnv: ['USERNAME', 'PASSWORD']
+
   # build base image with tag
   - name : 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'eu.gcr.io/maiot-zenml/zenml:base-$TAG_NAME', '-f', 'zenml/docker/base.Dockerfile', '.']
+    entrypoint: 'bash'
+    args: ['-c', 'docker build -t $$USERNAME/zenml:$TAG_NAME -f docker/base.Dockerfile .']
+    secretEnv: ['USERNAME']
   # push base image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'eu.gcr.io/maiot-zenml/zenml:base-$TAG_NAME']
+    entrypoint: 'bash'
+    args: ['-c', 'docker push $$USERNAME/zenml:$TAG_NAME']
+    secretEnv: ['USERNAME']
+
   # build CUDA image with tag
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'eu.gcr.io/maiot-zenml/zenml:cuda-$TAG_NAME', '-f', 'zenml/docker/cuda.Dockerfile', '.']
+  - name : 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args: ['-c', 'docker build -t $$USERNAME/cuda-zenml:$TAG_NAME -f docker/cuda.Dockerfile .']
+    secretEnv: ['USERNAME']
   # push CUDA image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'eu.gcr.io/maiot-zenml/zenml:cuda-$TAG_NAME']
+    entrypoint: 'bash'
+    args: ['-c', 'docker push $$USERNAME/cuda-zenml:$TAG_NAME']
+    secretEnv: ['USERNAME']
+
   # build dataflow image with tag
-  - name: 'gcr.io/cloud-builders/docker'
-    args: [ 'build', '-t', 'eu.gcr.io/maiot-zenml/zenml:dataflow-$TAG_NAME', '-f', 'zenml/docker/dataflow.Dockerfile', '.' ]
+  - name : 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args: ['-c', 'docker build -t $$USERNAME/dataflow-zenml:$TAG_NAME -f docker/dataflow.Dockerfile .']
+    secretEnv: ['USERNAME']
   # push dataflow image
   - name: 'gcr.io/cloud-builders/docker'
-    args: [ 'push', 'eu.gcr.io/maiot-zenml/zenml:dataflow-$TAG_NAME' ]
+    entrypoint: 'bash'
+    args: ['-c', 'docker push $$USERNAME/dataflow-zenml:$TAG_NAME']
+    secretEnv: ['USERNAME']
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/docker-password/versions/1
+      env: 'PASSWORD'
+    - versionName: projects/$PROJECT_ID/secrets/docker-username/versions/1
+      env: 'USERNAME'
 timeout: 3600s
