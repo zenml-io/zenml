@@ -29,7 +29,10 @@ RUN apt-get update -y && \
   apt-get autoclean && \
   apt-get autoremove --purge && \
   wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py && \
-  pip install --no-cache-dir --upgrade --pre pip
+  pip install --no-cache-dir --upgrade --pre pip  && \
+  wget https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py && python install-poetry.py
 
 ADD . /zenml
-RUN pip install -e .[all]
+RUN rm -rf poetry.lock || /root/.local/bin/poetry install
+RUN export PATH="/root/.local/bin:$PATH"
+RUN alias zenml='poetry run zenml'
