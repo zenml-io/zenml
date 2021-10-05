@@ -72,7 +72,6 @@ df.head()
 ### Seeing statistics and schema
 
 ```python
-
 stats = output.materializers.statistics.read()
 stats  # visualize facet
 

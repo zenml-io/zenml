@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/index.html)
+zenml package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](./)
   * * [zenml package](./)
       * [Subpackages](./#subpackages)
@@ -15,11 +15,10 @@ zenml package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml
       * [zenml.enums module](./#module-zenml.enums)
       * [zenml.exceptions module](./#module-zenml.exceptions)
       * [zenml.logger module](./#module-zenml.logger)
-      * [zenml.version module](./#module-zenml.version)
       * [Module contents](./#module-zenml)
-* [ « zenml](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/modules.html)
+* [ « zenml](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/modules.html)
 * [ zenml.annotat... »](zenml.annotations.md)
-*  [Source](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/_sources/zenml.rst.txt)
+*  [Source](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/_sources/zenml.rst.txt)
 
 ## zenml package[¶](./#zenml-package)
 
@@ -29,7 +28,6 @@ zenml package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml
   * [Submodules](zenml.annotations.md#submodules)
   * [zenml.annotations.artifact\_annotations module](zenml.annotations.md#module-zenml.annotations.artifact_annotations)
   * [zenml.annotations.base\_annotations module](zenml.annotations.md#module-zenml.annotations.base_annotations)
-  * [zenml.annotations.param\_annotations module](zenml.annotations.md#module-zenml.annotations.param_annotations)
   * [zenml.annotations.step\_annotations module](zenml.annotations.md#module-zenml.annotations.step_annotations)
   * [Module contents](zenml.annotations.md#module-zenml.annotations)
 * [zenml.artifact\_stores package](zenml.artifact_stores.md)
@@ -39,14 +37,10 @@ zenml package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml
   * [zenml.artifact\_stores.local\_artifact\_store module](zenml.artifact_stores.md#module-zenml.artifact_stores.local_artifact_store)
   * [Module contents](zenml.artifact_stores.md#module-zenml.artifact_stores)
 * [zenml.artifacts package](zenml.artifacts.md)
-  * [Subpackages](zenml.artifacts.md#subpackages)
-    * [zenml.artifacts.data\_artifacts package](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/zenml.artifacts.data_artifacts.html)
-      * [Submodules](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/zenml.artifacts.data_artifacts.html#submodules)
-      * [zenml.artifacts.data\_artifacts.base\_data\_artifact module](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/zenml.artifacts.data_artifacts.html#module-zenml.artifacts.data_artifacts.base_data_artifact)
-      * [zenml.artifacts.data\_artifacts.text\_artifact module](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/zenml.artifacts.data_artifacts.html#module-zenml.artifacts.data_artifacts.text_artifact)
-      * [Module contents](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/zenml.artifacts.data_artifacts.html#module-zenml.artifacts.data_artifacts)
   * [Submodules](zenml.artifacts.md#submodules)
   * [zenml.artifacts.base\_artifact module](zenml.artifacts.md#module-zenml.artifacts.base_artifact)
+  * [zenml.artifacts.data\_artifact module](zenml.artifacts.md#module-zenml.artifacts.data_artifact)
+  * [zenml.artifacts.model\_artifact module](zenml.artifacts.md#module-zenml.artifacts.model_artifact)
   * [Module contents](zenml.artifacts.md#module-zenml.artifacts)
 * [zenml.cli package](zenml.cli.md)
   * [Submodules](zenml.cli.md#submodules)
@@ -82,6 +76,15 @@ zenml package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml
   * [Submodules](zenml.io.md#submodules)
   * [zenml.io.gcs\_plugin module](zenml.io.md#zenml-io-gcs-plugin-module)
   * [Module contents](zenml.io.md#module-zenml.io)
+* [zenml.materializers package](zenml.materializers.md)
+  * [Submodules](zenml.materializers.md#submodules)
+  * [zenml.materializers.base\_materializer module](zenml.materializers.md#module-zenml.materializers.base_materializer)
+  * [zenml.materializers.beam\_materializer module](zenml.materializers.md#module-zenml.materializers.beam_materializer)
+  * [zenml.materializers.json\_materializer module](zenml.materializers.md#module-zenml.materializers.json_materializer)
+  * [zenml.materializers.keras\_meterializer module](zenml.materializers.md#module-zenml.materializers.keras_meterializer)
+  * [zenml.materializers.materializer\_factory module](zenml.materializers.md#module-zenml.materializers.materializer_factory)
+  * [zenml.materializers.pandas\_materializer module](zenml.materializers.md#module-zenml.materializers.pandas_materializer)
+  * [Module contents](zenml.materializers.md#module-zenml.materializers)
 * [zenml.metadata package](zenml.metadata.md)
   * [Submodules](zenml.metadata.md#submodules)
   * [zenml.metadata.base\_metadata\_store module](zenml.metadata.md#module-zenml.metadata.base_metadata_store)
@@ -92,12 +95,12 @@ zenml package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml
   * [Module contents](zenml.metadata.md#module-zenml.metadata)
 * [zenml.orchestrators package](zenml.orchestrators/)
   * [Subpackages](zenml.orchestrators/#subpackages)
-    * [zenml.orchestrators.airflow package](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/zenml.orchestrators.airflow.html)
-      * [Submodules](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/zenml.orchestrators.airflow.html#submodules)
-      * [zenml.orchestrators.airflow.airflow\_component module](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/zenml.orchestrators.airflow.html#zenml-orchestrators-airflow-airflow-component-module)
-      * [zenml.orchestrators.airflow.airflow\_dag\_runner module](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/zenml.orchestrators.airflow.html#zenml-orchestrators-airflow-airflow-dag-runner-module)
-      * [zenml.orchestrators.airflow.airflow\_orchestrator module](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/zenml.orchestrators.airflow.html#zenml-orchestrators-airflow-airflow-orchestrator-module)
-      * [Module contents](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/zenml.orchestrators.airflow.html#module-zenml.orchestrators.airflow)
+    * [zenml.orchestrators.airflow package](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/zenml.orchestrators.airflow.html)
+      * [Submodules](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/zenml.orchestrators.airflow.html#submodules)
+      * [zenml.orchestrators.airflow.airflow\_component module](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/zenml.orchestrators.airflow.html#zenml-orchestrators-airflow-airflow-component-module)
+      * [zenml.orchestrators.airflow.airflow\_dag\_runner module](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/zenml.orchestrators.airflow.html#zenml-orchestrators-airflow-airflow-dag-runner-module)
+      * [zenml.orchestrators.airflow.airflow\_orchestrator module](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/zenml.orchestrators.airflow.html#zenml-orchestrators-airflow-airflow-orchestrator-module)
+      * [Module contents](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/zenml.orchestrators.airflow.html#module-zenml.orchestrators.airflow)
     * [zenml.orchestrators.local package](zenml.orchestrators/zenml.orchestrators.local.md)
       * [Submodules](zenml.orchestrators/zenml.orchestrators.local.md#submodules)
       * [zenml.orchestrators.local.local\_orchestrator module](zenml.orchestrators/zenml.orchestrators.local.md#module-zenml.orchestrators.local.local_orchestrator)
@@ -209,10 +212,6 @@ Initialize logging with default levels. zenml.logger.resolve\_logging\_level\(\)
 Resolve the logging level from the env variable. zenml.logger.set\_root\_verbosity\(\)[¶](./#zenml.logger.set_root_verbosity)
 
 Set the root verbosity.
-
-### zenml.version module[¶](./#module-zenml.version)
-
-This module contains project version information.
 
 ### Module contents[¶](./#module-zenml)
 

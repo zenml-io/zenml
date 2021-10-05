@@ -6,7 +6,7 @@ Artifacts can be of many different types like `TFRecord`s or saved model pickles
 
 ## Materializers
 
-In the very basic sense, an Artifact consists of a simple path that points to data. How to read that data is defined by `Materializers`. A Materializer how the data of a particular data is read, and one artifact can have many materializers. 
+In the very basic sense, an Artifact consists of a simple path that points to data. How to read that data is defined by `Materializers`. A Materializer how the data of a particular data is read, and one artifact can have many materializers.
 
 ## **Relation to Artifact Store**
 

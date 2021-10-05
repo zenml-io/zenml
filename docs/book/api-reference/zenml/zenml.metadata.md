@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.metadata package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/index.html)
+zenml.metadata package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.metadata.md)
   * * [zenml.metadata package](zenml.metadata.md)
       * [Submodules](zenml.metadata.md#submodules)
@@ -16,9 +16,9 @@ zenml.metadata package — ZenML documentation  [ZenML](https://github.com/zenml
       * [zenml.metadata.mysql\_metadata\_wrapper module](zenml.metadata.md#module-zenml.metadata.mysql_metadata_wrapper)
       * [zenml.metadata.sqlite\_metadata\_wrapper module](zenml.metadata.md#module-zenml.metadata.sqlite_metadata_wrapper)
       * [Module contents](zenml.metadata.md#module-zenml.metadata)
-* [ « zenml.io package](zenml.io.md)
+* [ « zenml.materia...](zenml.materializers.md)
 * [ zenml.orchest... »](zenml.orchestrators/)
-*  [Source](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/_sources/zenml.metadata.rst.txt)
+*  [Source](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/_sources/zenml.metadata.rst.txt)
 
 ## zenml.metadata package[¶](zenml.metadata.md#zenml-metadata-package)
 

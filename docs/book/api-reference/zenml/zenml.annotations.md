@@ -2,22 +2,21 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.annotations package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/index.html)
+zenml.annotations package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.annotations.md)
   * * [zenml.annotations package](zenml.annotations.md)
       * [Submodules](zenml.annotations.md#submodules)
       * [zenml.annotations.artifact\_annotations module](zenml.annotations.md#module-zenml.annotations.artifact_annotations)
       * [zenml.annotations.base\_annotations module](zenml.annotations.md#module-zenml.annotations.base_annotations)
-      * [zenml.annotations.param\_annotations module](zenml.annotations.md#module-zenml.annotations.param_annotations)
       * [zenml.annotations.step\_annotations module](zenml.annotations.md#module-zenml.annotations.step_annotations)
       * [Module contents](zenml.annotations.md#module-zenml.annotations)
 * [ « zenml package](./)
 * [ zenml.artifac... »](zenml.artifact_stores.md)
-*  [Source](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/_sources/zenml.annotations.rst.txt)
+*  [Source](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/_sources/zenml.annotations.rst.txt)
 
 ## zenml.annotations package[¶](zenml.annotations.md#zenml-annotations-package)
 
@@ -27,7 +26,7 @@ zenml.annotations package — ZenML documentation  [ZenML](https://github.com/ze
 
  _class_ zenml.annotations.artifact\_annotations.Input\(_object\_type_, _\_init\_via\_getitem=False_\)[¶](zenml.annotations.md#zenml.annotations.artifact_annotations.Input)
 
-Bases: [`zenml.annotations.base_annotations.BaseAnnotation`](zenml.annotations.md#zenml.annotations.base_annotations.BaseAnnotation) VALID\_TYPES _= \[&lt;class 'zenml.artifacts.base\_artifact.BaseArtifact'&gt;\]_[¶](zenml.annotations.md#zenml.annotations.artifact_annotations.Input.VALID_TYPES) _class_ zenml.annotations.artifact\_annotations.Output\(_object\_type_, _\_init\_via\_getitem=False_\)[¶](zenml.annotations.md#zenml.annotations.artifact_annotations.Output)
+Bases: [`zenml.annotations.base_annotations.BaseAnnotation`](zenml.annotations.md#zenml.annotations.base_annotations.BaseAnnotation) VALID\_TYPES _= \[&lt;class 'zenml.artifacts.base\_artifact.BaseArtifact'&gt;, &lt;class 'int'&gt;, &lt;class 'float'&gt;, &lt;class 'str'&gt;\]_[¶](zenml.annotations.md#zenml.annotations.artifact_annotations.Input.VALID_TYPES) _class_ zenml.annotations.artifact\_annotations.Output\(_object\_type_, _\_init\_via\_getitem=False_\)[¶](zenml.annotations.md#zenml.annotations.artifact_annotations.Output)
 
 Bases: [`zenml.annotations.base_annotations.BaseAnnotation`](zenml.annotations.md#zenml.annotations.base_annotations.BaseAnnotation) VALID\_TYPES _= \[&lt;class 'zenml.artifacts.base\_artifact.BaseArtifact'&gt;\]_[¶](zenml.annotations.md#zenml.annotations.artifact_annotations.Output.VALID_TYPES)
 
@@ -50,12 +49,6 @@ A main generic class which will be used as the base for annotations VALID\_TYPES
 Bases: `type`
 
 The Metaclass for the annotations in ZenML. It defines a \_\_get\_item\_\_ method which in return class the \_\_generic\_getitem of the main class with the same param
-
-### zenml.annotations.param\_annotations module[¶](zenml.annotations.md#module-zenml.annotations.param_annotations)
-
- _class_ zenml.annotations.param\_annotations.Param\(_object\_type_, _\_init\_via\_getitem=False_\)[¶](zenml.annotations.md#zenml.annotations.param_annotations.Param)
-
-Bases: [`zenml.annotations.base_annotations.BaseAnnotation`](zenml.annotations.md#zenml.annotations.base_annotations.BaseAnnotation) VALID\_TYPES _= \[&lt;class 'int'&gt;, &lt;class 'float'&gt;, &lt;class 'str'&gt;, &lt;class 'bool'&gt;\]_[¶](zenml.annotations.md#zenml.annotations.param_annotations.Param.VALID_TYPES)
 
 ### zenml.annotations.step\_annotations module[¶](zenml.annotations.md#module-zenml.annotations.step_annotations)
 

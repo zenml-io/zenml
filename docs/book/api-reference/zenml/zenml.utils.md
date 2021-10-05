@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.utils package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/index.html)
+zenml.utils package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.utils.md)
   * * [zenml.utils package](zenml.utils.md)
       * [Submodules](zenml.utils.md#submodules)
@@ -17,7 +17,7 @@ zenml.utils package — ZenML documentation  [ZenML](https://github.com/zenml-io
       * [zenml.utils.yaml\_utils module](zenml.utils.md#module-zenml.utils.yaml_utils)
       * [Module contents](zenml.utils.md#module-zenml.utils)
 * [ « zenml.steps package](zenml.steps.md)
-*  [Source](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/_sources/zenml.utils.rst.txt)
+*  [Source](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/_sources/zenml.utils.rst.txt)
 
 ## zenml.utils package[¶](zenml.utils.md#zenml-utils-package)
 
@@ -48,7 +48,7 @@ Track segment event if user opted-in.Parameters
 
 ### zenml.utils.exceptions module[¶](zenml.utils.md#module-zenml.utils.exceptions)
 
- _exception_ zenml.utils.exceptions.DatasourceInterfaceError[¶](zenml.utils.md#zenml.utils.exceptions.DatasourceInterfaceError)
+ _exception_ zenml.utils.exceptions.ArtifactInterfaceError[¶](zenml.utils.md#zenml.utils.exceptions.ArtifactInterfaceError)
 
 Bases: `Exception` _exception_ zenml.utils.exceptions.PipelineInterfaceError[¶](zenml.utils.md#zenml.utils.exceptions.PipelineInterfaceError)
 
@@ -223,7 +223,7 @@ Deletes dir recursively. Dangerous operation.Parameters
 
 Deletes file. Dangerous operation.Parameters
 
-**file\_path** – Path of file to delete. zenml.utils.path\_utils.walk\(_dir\_path_\) → Iterable\[Tuple\[Union\[bytes, str\], List\[Union\[bytes, str\]\], List\[Union\[bytes, str\]\]\]\][¶](zenml.utils.md#zenml.utils.path_utils.walk)
+**file\_path** – Path of file to delete. zenml.utils.path\_utils.walk\(_dir\_path_\) → Iterable\[Tuple\[Union\[bytes, str\], List\[Union\[str, bytes\]\], List\[Union\[str, bytes\]\]\]\][¶](zenml.utils.md#zenml.utils.path_utils.walk)
 
 Walks down the dir\_path.Parameters
 
