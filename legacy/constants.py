@@ -14,26 +14,26 @@
 
 import os
 
-from zenml.version import __version__
+from zenml import __version__
 
 
 def handle_bool_env_var(var, default=False):
     """Converts normal env var to boolean"""
     var = os.getenv(var, None)
-    for i in ['1', 'y', 'yes', 'True', 'true']:
+    for i in ["1", "y", "yes", "True", "true"]:
         if i == var:
             return True
     return default
 
 
 # Global constants
-APP_NAME = 'zenml'
-CONFIG_VERSION = '1'
+APP_NAME = "zenml"
+CONFIG_VERSION = "1"
 
 # Environment variables
-ENV_ZENML_DEBUG = 'ZENML_DEBUG'
-ENV_ZENML_LOGGING_VERBOSITY = 'ZENML_LOGGING_VERBOSITY'
-ENV_ABSL_LOGGING_VERBOSITY = 'ZENML_ABSL_LOGGING_VERBOSITY'
+ENV_ZENML_DEBUG = "ZENML_DEBUG"
+ENV_ZENML_LOGGING_VERBOSITY = "ZENML_LOGGING_VERBOSITY"
+ENV_ABSL_LOGGING_VERBOSITY = "ZENML_ABSL_LOGGING_VERBOSITY"
 
 # Logging variables
 IS_DEBUG_ENV = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
@@ -41,21 +41,22 @@ ZENML_LOGGING_VERBOSITY = os.getenv(ENV_ZENML_LOGGING_VERBOSITY, 3)
 ABSL_LOGGING_VERBOSITY = os.getenv(ENV_ABSL_LOGGING_VERBOSITY, -100)
 
 # Base images for zenml
-ZENML_REGISTRY = 'eu.gcr.io/maiot-zenml'
-ZENML_BASE_IMAGE_NAME = f'{ZENML_REGISTRY}/zenml:base-{__version__}'
-ZENML_TRAINER_IMAGE_NAME = f'{ZENML_REGISTRY}/zenml:cuda-{__version__}'
-ZENML_DATAFLOW_IMAGE_NAME = f'{ZENML_REGISTRY}/zenml:dataflow-{__version__}'
+ZENML_REGISTRY = "eu.gcr.io/maiot-zenml"
+ZENML_BASE_IMAGE_NAME = f"{ZENML_REGISTRY}/zenml:base-{__version__}"
+ZENML_TRAINER_IMAGE_NAME = f"{ZENML_REGISTRY}/zenml:cuda-{__version__}"
+ZENML_DATAFLOW_IMAGE_NAME = f"{ZENML_REGISTRY}/zenml:dataflow-{__version__}"
 
 # Evaluation utils constants
-COMPARISON_NOTEBOOK = 'comparison_notebook.ipynb'
-EVALUATION_NOTEBOOK = 'evaluation_notebook.ipynb'
+COMPARISON_NOTEBOOK = "comparison_notebook.ipynb"
+EVALUATION_NOTEBOOK = "evaluation_notebook.ipynb"
 
 # Pipeline related constants
-PREPROCESSING_FN = 'zenml.components.transform.transform_module' \
-                   '.preprocessing_fn'
-TRAINER_FN = 'zenml.components.trainer.trainer_module.run_fn'
+PREPROCESSING_FN = (
+    "zenml.components.transform.transform_module" ".preprocessing_fn"
+)
+TRAINER_FN = "zenml.components.trainer.trainer_module.run_fn"
 
 # GCP Orchestration
-GCP_ENTRYPOINT = 'zenml.backends.orchestrator.entrypoint'
-AWS_ENTRYPOINT = 'zenml.backends.orchestrator.entrypoint'
-K8S_ENTRYPOINT = 'zenml.backends.orchestrator.entrypoint'
+GCP_ENTRYPOINT = "zenml.backends.orchestrator.entrypoint"
+AWS_ENTRYPOINT = "zenml.backends.orchestrator.entrypoint"
+K8S_ENTRYPOINT = "zenml.backends.orchestrator.entrypoint"

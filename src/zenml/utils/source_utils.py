@@ -29,9 +29,9 @@ from typing import Optional, Text, Type, Union
 
 from tfx.utils.import_utils import import_class_by_path
 
+from zenml import __version__
 from zenml.constants import APP_NAME
 from zenml.logger import get_logger
-from zenml.version import __version__
 
 logger = get_logger(__name__)
 

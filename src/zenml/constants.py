@@ -14,7 +14,7 @@
 
 import os
 
-from zenml.version import __version__
+from zenml import __version__
 
 
 def handle_bool_env_var(var, default=False):

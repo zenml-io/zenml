@@ -21,10 +21,10 @@ import analytics
 import distro
 import requests
 
+from zenml import __version__
 from zenml.config.global_config import GlobalConfig
 from zenml.constants import IS_DEBUG_ENV
 from zenml.logger import get_logger
-from zenml.version import __version__
 
 logger = get_logger(__name__)
 
