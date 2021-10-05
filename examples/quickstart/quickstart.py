@@ -15,12 +15,12 @@ def ImportDataStep() -> List[float]:
     (X_train, y_train), (
         X_test,
         y_test,
-    ) = tf.keras.datasets.boston_housing.load_data()
+    ) = tf.keras.datasets.mnist.load_data()
     return [
-        X_train.tolist(),
-        y_train.tolist(),
-        X_test.tolist(),
-        y_test.tolist(),
+        X_train.tolist()[0:100],
+        y_train.tolist()[0:100],
+        X_test.tolist()[0:100],
+        y_test.tolist()[0:100],
     ]
 
 
@@ -47,17 +47,19 @@ def MNISTTrainModelStep(
     """Train a neural net from scratch to recognise MNIST digits return our
     model or the learner"""
     import_data = data.materializers.json.read_file()
-    model = tf.keras.models.Sequential(
+
+    model = tf.keras.Sequential(
         [
-            tf.keras.layers.Dense(28, activation="relu"),
-            tf.keras.layers.Dense(1, activation="linear"),
+            tf.keras.layers.Flatten(input_shape=(28, 28)),
+            tf.keras.layers.Dense(10, activation="relu"),
+            tf.keras.layers.Dense(10),
         ]
     )
 
     model.compile(
         optimizer=tf.keras.optimizers.Adam(0.001),
-        loss=tf.keras.losses.MeanSquaredError(),
-        metrics=[tf.keras.metrics.MeanSquaredError()],
+        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+        metrics=["accuracy"],
     )
 
     model.fit(
