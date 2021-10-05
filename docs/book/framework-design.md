@@ -44,7 +44,7 @@ run_1 = my_pipeline(
 # compare
 ```
 
-The above design also lends itself to swapping in and out different step logic if the INTERFACE of the steps remain consistent. For an example of this, see the [Quickstart](../quickstart-guide.md).
+The above design also lends itself to swapping in and out different step logic if the INTERFACE of the steps remain consistent. For an example of this, see the [Quickstart](quickstart-guide.md).
 
 ### Relation To Stacks
 
