@@ -7,25 +7,29 @@ from pydantic import create_model
 from zenml.annotations import Input, Output
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.data_artifact import DataArtifact
+from zenml.logger import get_logger
 from zenml.steps.utils import generate_component
 from zenml.utils.exceptions import StepInterfaceError
 
+logger = get_logger(__name__)
+
 
 class BaseStepMeta(type):
-    """ """
+    """Meta class for `BaseStep`."""
 
     def __new__(mcs, name, bases, dct):
-        """ """
-        # Setting up the class
+        """Set up a new class with a qualified spec."""
+        logger.debug(f"Registering class {name}, bases: {bases}, dct: {dct}")
         cls = super().__new__(mcs, name, bases, dct)
 
-        cls.INPUT_SPEC = dict()
-        cls.OUTPUT_SPEC = dict()
-        cls.PARAM_SPEC = dict()
+        cls.INPUT_SPEC = dict()  # all input params
+        cls.OUTPUT_SPEC = dict()  # all output params
+        cls.PARAM_SPEC = dict()  # all execution params
 
         # Looking into the signature of the provided process function
         process_spec = inspect.getfullargspec(cls.process)
         process_args = process_spec.args
+        logger.debug(f"{name} args: {process_args}")
 
         # Remove the self from the signature if it exists
         if process_args and process_args[0] == "self":
@@ -76,8 +80,7 @@ class BaseStepMeta(type):
 
 class BaseStep(metaclass=BaseStepMeta):
     """The base implementation of a ZenML Step which will be inherited by all
-    the other step implementations
-    """
+    the other step implementations"""
 
     def __init__(self, *args, **kwargs):
         self.__component_class = generate_component(self)
@@ -94,7 +97,7 @@ class BaseStep(metaclass=BaseStepMeta):
         self.__inputs = dict()
         self.__params = dict()
 
-        # TODO: [med] add defaults to kwargs
+        # TODO: [MEDIUM] add defaults to kwargs
         try:
             # create a pydantic model out of a primitive type
             pydantic_c = create_model(
@@ -108,12 +111,21 @@ class BaseStep(metaclass=BaseStepMeta):
             #  happened: Even pydantic didnt support this type.
             raise StepInterfaceError()
 
+    @property
+    def component(self):
+        """Returns a TFX component."""
+        if self.__component is None and len(self.INPUT_SPEC) == 0:
+            self.__component = generate_component(self)(**self.__params)
+        return self.__component
+
     def __call__(self, **artifacts):
+        """Generates a component when called."""
         self.__component = generate_component(self)(
             **artifacts, **self.__params
         )
 
     def __getattr__(self, item):
+        """OVerrides the __getattr__ metho."""
         if item == "outputs":
             return self.component.outputs
         else:
@@ -121,10 +133,4 @@ class BaseStep(metaclass=BaseStepMeta):
 
     @abstractmethod
     def process(self, *args, **kwargs):
-        pass
-
-    @property
-    def component(self):
-        if self.__component is None and len(self.INPUT_SPEC) == 0:
-            self.__component = generate_component(self)(**self.__params)
-        return self.__component
+        """Abstract method for core step logic."""

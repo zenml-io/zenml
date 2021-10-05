@@ -22,11 +22,11 @@ from zenml.utils.exceptions import StepInterfaceError
 def step(name: Text = None):
     """Outer decorator function for the creation of a ZenML step
 
-    In order to be able work with parameters such as "name", it features a
+    In order to be able work with parameters such as `name`, it features a
     nested decorator structure.
 
     Args:
-        name: str, the given name for the step
+        name (required) the given name for the step.
 
     Returns:
         the inner decorator which creates the step class based on the
@@ -44,14 +44,13 @@ def step(name: Text = None):
             "process" method of the generated Step
 
         Returns:
-            the class of a newly generated ZenML Step
+            The class of a newly generated ZenML Step.
         """
         step_class = type(
             name if name else func.__name__,
             (BaseStep,),
             {"process": staticmethod(func)},
         )
-
         return step_class
 
     return inner_decorator
