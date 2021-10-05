@@ -1,6 +1,9 @@
 [tool.poetry]
 name = "zenml"
 version = "0.5.0rc1"
+packages = [
+    { include = "zenml", from = "src" },
+]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
 readme = "README.md"
@@ -32,12 +35,11 @@ exclude = [
     "tests",
     "docs",
     "legacy",
-    "examples/legacy",
+    "examples",
     "playground"
 ]
 include = [
     "src/zenml",
-    "examples",
     "*.txt",
     "*.md",
     "*.sh"
@@ -63,6 +65,7 @@ distro = "^1.6.0"
 # below `extras`. They can be opted into by apps.
 apache-airflow = {version = "^2.1.4", optional = true }
 gcsfs = {version= "^2021.9.0", optional = true}
+tabulate = "^0.8.9"
 
 [tool.poetry.extras]
 airflow = ["apache-airflow"]
