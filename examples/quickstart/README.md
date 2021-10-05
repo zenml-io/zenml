@@ -9,9 +9,15 @@ If you want to run this notebook in an interactive environment, feel free to run
 In order to run this example, you need to install and initialize ZenML:
 
 ```bash
-pip install "zenml"
-pip install pytorch-lightning==1.1.8
-zenml example pull quickstart
+# install CLI
+pip install zenml
+pip install tensorflow
+
+# initialize CLI
+cd ~
+mkdir zenml_examples
+git clone https://github.com/zenml-io/zenml.git
+cp -r zenml/examples/quickstart zenml_examples
 cd zenml_examples/quickstart
 git init
 zenml init
@@ -35,9 +41,6 @@ Or check out a [Google Colab version](https://colab.research.google.com/drive/1e
 In order to clean up, in the root of your repo, delete the remaining zenml references.
 
 ```python
-rm -r .zenml
-rm -r pipelines
+rm -rf ~/zenml_examples
+rm -rf ~/zenml
 ```
-
-## Next Steps
-Try some of the other examples including using [PyTorch](../pytorch), [custom Backends](../backends), or [distributed processing](../gcp_dataflow_processing)!
