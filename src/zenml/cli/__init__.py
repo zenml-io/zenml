@@ -21,6 +21,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 from .base import *  # noqa
 from .config import *  # noqa
-from .example import *  # noqa
+
+# from .example import *  # noqa
 from .stack import *  # noqa
 from .version import *  # noqa
