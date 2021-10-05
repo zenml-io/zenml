@@ -28,7 +28,7 @@ RUN apt-get update -y && \
   apt-get autoremove --purge && \
   CFLAGS=$(/usr/bin/python3.6-config --cflags) python3.6 -m pip install --no-cache-dir  \
     "tensorflow-gpu==${TENSORFLOW_VERSION}" && \
-  wget https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py && python install-poetry.py --preview
+  wget https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py && python install-poetry.py
 
 
 # copy project requirement files here to ensure they will be cached.

@@ -41,7 +41,7 @@ RUN apt-get update -y && \
   apt-get autoremove --purge && \
   wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py && \
   pip install --no-cache-dir --upgrade --pre pip && \
-  wget https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py && python install-poetry.py --preview
+  wget https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py && python install-poetry.py
 
 # copy project requirement files here to ensure they will be cached.
 COPY pyproject.toml /zenml
