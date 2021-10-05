@@ -21,7 +21,7 @@ We highly encourage you to install **ZenML** in a virtual environment. We like t
 When you're set with your environment, run:
 
 ```bash
-pip install zenml
+pip install zenml==0.5.0rc2
 ```
 
 Alternatively, if you’re feeling brave, feel free to install the bleeding edge: **NOTE:** Do so at your own risk; no guarantees given!

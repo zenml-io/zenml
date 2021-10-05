@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.cli package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/index.html)
+zenml.cli package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/711f49d6653bf121f04e60e02202a23afad8e933/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/zenml-io/zenml/tree/711f49d6653bf121f04e60e02202a23afad8e933/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/zenml-io/zenml/tree/711f49d6653bf121f04e60e02202a23afad8e933/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.cli.md)
   * * [zenml.cli package](zenml.cli.md)
       * [Submodules](zenml.cli.md#submodules)
@@ -20,9 +20,9 @@ zenml.cli package — ZenML documentation  [ZenML](https://github.com/zenml-io/z
       * [zenml.cli.utils module](zenml.cli.md#module-zenml.cli.utils)
       * [zenml.cli.version module](zenml.cli.md#module-zenml.cli.version)
       * [Module contents](zenml.cli.md#module-zenml.cli)
-* [ « zenml.artifac...](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/zenml.artifacts.data_artifacts.html)
+* [ « zenml.artifac...](zenml.artifacts.md)
 * [ zenml.config package »](zenml.config.md)
-*  [Source](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/_sources/zenml.cli.rst.txt)
+*  [Source](https://github.com/zenml-io/zenml/tree/711f49d6653bf121f04e60e02202a23afad8e933/docs/sphinx_docs/_build/html/_sources/zenml.cli.rst.txt)
 
 ## zenml.cli package[¶](zenml.cli.md#zenml-cli-package)
 
@@ -37,14 +37,6 @@ zenml.cli package — ZenML documentation  [ZenML](https://github.com/zenml-io/z
 CLI for manipulating ZenML local and global config file.
 
 ### zenml.cli.example module[¶](zenml.cli.md#module-zenml.cli.example)
-
- zenml.cli.example.get\_all\_examples\(\) → List\[str\][¶](zenml.cli.md#zenml.cli.example.get_all_examples)
-
-Get all the examples zenml.cli.example.get\_example\_readme\(_example\_path_\) → str[¶](zenml.cli.md#zenml.cli.example.get_example_readme)
-
-Get the example README file contents. zenml.cli.example.get\_examples\_dir\(\) → str[¶](zenml.cli.md#zenml.cli.example.get_examples_dir)
-
-Return the examples dir.
 
 ### zenml.cli.pipeline module[¶](zenml.cli.md#module-zenml.cli.pipeline)
 

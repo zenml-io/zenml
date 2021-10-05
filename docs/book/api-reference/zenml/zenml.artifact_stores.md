@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.artifact\_stores package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/index.html)
+zenml.artifact\_stores package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.artifact_stores.md)
   * * [zenml.artifact\_stores package](zenml.artifact_stores.md)
       * [Submodules](zenml.artifact_stores.md#submodules)
@@ -16,7 +16,7 @@ zenml.artifact\_stores package — ZenML documentation  [ZenML](https://github.c
       * [Module contents](zenml.artifact_stores.md#module-zenml.artifact_stores)
 * [ « zenml.annotat...](zenml.annotations.md)
 * [ zenml.artifac... »](zenml.artifacts.md)
-*  [Source](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/_sources/zenml.artifact_stores.rst.txt)
+*  [Source](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/_sources/zenml.artifact_stores.rst.txt)
 
 ## zenml.artifact\_stores package[¶](zenml.artifact_stores.md#zenml-artifact-stores-package)
 

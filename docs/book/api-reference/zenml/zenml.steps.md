@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.steps package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/index.html)
+zenml.steps package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.steps.md)
   * * [zenml.steps package](zenml.steps.md)
       * [Submodules](zenml.steps.md#submodules)
@@ -16,7 +16,7 @@ zenml.steps package — ZenML documentation  [ZenML](https://github.com/zenml-io
       * [Module contents](zenml.steps.md#module-zenml.steps)
 * [ « zenml.stacks package](zenml.stacks.md)
 * [ zenml.utils package »](zenml.utils.md)
-*  [Source](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/_sources/zenml.steps.rst.txt)
+*  [Source](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/_sources/zenml.steps.rst.txt)
 
 ## zenml.steps package[¶](zenml.steps.md#zenml-steps-package)
 
@@ -28,9 +28,15 @@ zenml.steps package — ZenML documentation  [ZenML](https://github.com/zenml-io
 
 Bases: `object`
 
-The base implementation of a ZenML Step which will be inherited by all the other step implementations INPUT\_SPEC _= {}_[¶](zenml.steps.md#zenml.steps.base_step.BaseStep.INPUT_SPEC) OUTPUT\_SPEC _= {}_[¶](zenml.steps.md#zenml.steps.base_step.BaseStep.OUTPUT_SPEC) PARAM\_DEFAULTS _= {}_[¶](zenml.steps.md#zenml.steps.base_step.BaseStep.PARAM_DEFAULTS) PARAM\_SPEC _= {}_[¶](zenml.steps.md#zenml.steps.base_step.BaseStep.PARAM_SPEC) _property_ component[¶](zenml.steps.md#zenml.steps.base_step.BaseStep.component) get\_outputs\(\)[¶](zenml.steps.md#zenml.steps.base_step.BaseStep.get_outputs) _abstract_ process\(_\*args_, _\*\*kwargs_\)[¶](zenml.steps.md#zenml.steps.base_step.BaseStep.process) set\_inputs\(_\*\*artifacts_\)[¶](zenml.steps.md#zenml.steps.base_step.BaseStep.set_inputs) _class_ zenml.steps.base\_step.BaseStepMeta\(_name_, _bases_, _dct_\)[¶](zenml.steps.md#zenml.steps.base_step.BaseStepMeta)
+The base implementation of a ZenML Step which will be inherited by all the other step implementations INPUT\_SPEC _= {}_[¶](zenml.steps.md#zenml.steps.base_step.BaseStep.INPUT_SPEC) OUTPUT\_SPEC _= {}_[¶](zenml.steps.md#zenml.steps.base_step.BaseStep.OUTPUT_SPEC) PARAM\_DEFAULTS _= {}_[¶](zenml.steps.md#zenml.steps.base_step.BaseStep.PARAM_DEFAULTS) PARAM\_SPEC _= {}_[¶](zenml.steps.md#zenml.steps.base_step.BaseStep.PARAM_SPEC) _property_ component[¶](zenml.steps.md#zenml.steps.base_step.BaseStep.component)
+
+Returns a TFX component. _abstract_ process\(_\*args_, _\*\*kwargs_\)[¶](zenml.steps.md#zenml.steps.base_step.BaseStep.process)
+
+Abstract method for core step logic. _class_ zenml.steps.base\_step.BaseStepMeta\(_name_, _bases_, _dct_\)[¶](zenml.steps.md#zenml.steps.base_step.BaseStepMeta)
 
 Bases: `type`
+
+Meta class for BaseStep.
 
 ### zenml.steps.step\_decorator module[¶](zenml.steps.md#module-zenml.steps.step_decorator)
 
@@ -38,9 +44,9 @@ Bases: `type`
 
 Outer decorator function for the creation of a ZenML step
 
-In order to be able work with parameters such as “name”, it features a nested decorator structure.Parameters
+In order to be able work with parameters such as name, it features a nested decorator structure.Parameters
 
-**name** – str, the given name for the stepReturns
+**name** \(_required_\) –Returns
 
 the inner decorator which creates the step class based on the ZenML BaseStep
 
