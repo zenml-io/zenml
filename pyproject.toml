@@ -117,8 +117,9 @@ commands =
 filterwarnings = [
     "ignore::DeprecationWarning",
 ]
-log_cli = true
+log_cli = "True"
 log_cli_level = "INFO"
+testpaths = "tests"
 
 [tool.coverage.run]
 parallel = true
