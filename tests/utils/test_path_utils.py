@@ -21,6 +21,8 @@ from tfx.utils.io_utils import _REMOTE_FS_PREFIX
 
 from zenml.utils import path_utils
 
+BAD_REMOTE_PREFIXES = ["http://", "12345", "----"]
+
 
 def test_walk_function_returns_a_generator_object():
     """Check walk function returns a generator object"""
@@ -81,14 +83,14 @@ def test_find_files_when_file_absent():
 
 
 @pytest.mark.parametrize("filesystem", _REMOTE_FS_PREFIX)
-def test_is_remote_when_true(filesystem):
+def test_is_remote_when_using_remote_prefix(filesystem):
     """Returns true when path starts with one of the TFX remote file prefixes"""
     some_random_path = os.path.join(filesystem + "some_directory")
     assert path_utils.is_remote(some_random_path)
 
 
-@pytest.mark.parametrize("filesystem", ["http://", "12345", "----"])
-def test_is_remote_when_false(filesystem):
+@pytest.mark.parametrize("filesystem", BAD_REMOTE_PREFIXES)
+def test_is_remote_when_using_non_remote_prefix(filesystem):
     """"""
     some_random_path = os.path.join(filesystem + "some_directory")
     assert path_utils.is_remote(some_random_path) is False
