@@ -48,8 +48,15 @@ def test_is_dir_when_false():
         assert path_utils.is_dir(temp_file.name) is False
 
 
-# def test_find_files_returns_generator_object_when_file_present():
-#     """"""
+def test_find_files_returns_generator_object_when_file_present():
+    """Check function finds a file within a temporary directory"""
+    with TemporaryDirectory() as temp_dir:
+        temp_file_name = "abcdefg.txt"
+        temp_file_path = os.path.join(temp_dir, temp_file_name)
+        open(temp_file_path, "x")
+        assert isinstance(
+            path_utils.find_files(temp_dir, "abc*.*"), GeneratorType
+        )
 
 
 def test_find_files_when_file_present():
