@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from tempfile import TemporaryDirectory
 from types import GeneratorType
 
 from zenml.utils import path_utils
@@ -20,3 +21,14 @@ from zenml.utils import path_utils
 def test_walk_function_returns_a_generator_object():
     """Check walk function returns a generator object"""
     assert isinstance(path_utils.walk("/"), GeneratorType)
+
+
+def test_is_root_when_true():
+    """Check function returns true if path is the root"""
+    assert path_utils.is_root("/")
+
+
+def test_is_root_when_false():
+    """Check function returns false if path isn't the root"""
+    with TemporaryDirectory() as temp_dir:
+        assert path_utils.is_root(temp_dir) is False
