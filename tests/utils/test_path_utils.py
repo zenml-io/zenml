@@ -12,6 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from types import GeneratorType
 
-def test_me():
-    """A simple test to check a functionality"""
+from zenml.utils import path_utils
+
+
+def test_walk_function_returns_a_generator():
+    """Check walk function returns a generator object"""
+    assert isinstance(path_utils.walk("/"), GeneratorType)
