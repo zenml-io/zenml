@@ -23,7 +23,7 @@ from zenml.artifacts.data_artifact import DataArtifact
 from zenml.steps import step
 
 
-@step(name="SimplestStepEver")
+@step(name="simple_step")
 def SimplestStepEver(
     basic_param_1: int,
     basic_param_2: str,

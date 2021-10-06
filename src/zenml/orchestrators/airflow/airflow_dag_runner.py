@@ -19,14 +19,11 @@ import typing
 import warnings
 from typing import Any, Dict, Optional, Union
 
-from airflow import models
 from tfx.dsl.components.base import base_component
 from tfx.orchestration import pipeline, tfx_runner
 from tfx.orchestration.config import config_utils, pipeline_config
 from tfx.orchestration.data_types import RuntimeParameter
 from tfx.utils.json_utils import json
-
-from zenml.orchestrators.airflow import airflow_component
 
 
 class AirflowPipelineConfig(pipeline_config.PipelineConfig):
@@ -57,8 +54,8 @@ class AirflowDagRunner(tfx_runner.TfxRunner):
         """Creates an instance of AirflowDagRunner.
 
         Args:
-          config: Optional Airflow pipeline config for customizing the launching of
-            each component.
+          config: Optional Airflow pipeline config for customizing the
+          launching of each component.
         """
         if config and not isinstance(config, AirflowPipelineConfig):
             warnings.warn(
@@ -73,12 +70,18 @@ class AirflowDagRunner(tfx_runner.TfxRunner):
         """Deploys given logical pipeline on Airflow.
 
         Args:
-          tfx_pipeline: Logical pipeline containing pipeline args and components.
+          tfx_pipeline: Logical pipeline containing pipeline args and comps.
+
         Returns:
           An Airflow DAG.
         """
+        # Only import these when needed.
+        from airflow import models  # noqa
+
+        from zenml.orchestrators.airflow import airflow_component  # noqa
 
         # Merge airflow-specific configs with pipeline args
+
         airflow_dag = models.DAG(
             dag_id=tfx_pipeline.pipeline_info.pipeline_name,
             **(
@@ -95,10 +98,8 @@ class AirflowDagRunner(tfx_runner.TfxRunner):
 
         component_impl_map = {}
         for tfx_component in tfx_pipeline.components:
-            # TODO(b/187122662): Pass through pip dependencies as a first-class
-            # component flag.
             if isinstance(tfx_component, base_component.BaseComponent):
-                tfx_component._resolve_pip_dependencies(  # pylint: disable=protected-access
+                tfx_component._resolve_pip_dependencies(
                     tfx_pipeline.pipeline_info.pipeline_root
                 )
 
@@ -133,18 +134,26 @@ class AirflowDagRunner(tfx_runner.TfxRunner):
         return airflow_dag
 
     def _replace_runtime_params(self, comp):
+        """Replaces runtime params for dynamic Airflow parameter execution.
+
+        Args:
+            comp (tfx.component): TFX component to be parsed.
+
+        Returns:
+            Returns edited component.
+        """
         for k, prop in comp.exec_properties.copy().items():
             if isinstance(prop, RuntimeParameter):
                 # Airflow only supports string parameters.
                 if prop.ptype != str:
                     raise RuntimeError(
-                        f"RuntimeParameter in Airflow does not support {prop.ptype}. The"
-                        "only ptype supported is string."
+                        f"RuntimeParameter in Airflow does not support "
+                        f"{prop.ptype}. The only ptype supported is string."
                     )
 
-                # If the default is a template, drop the template markers when inserting
-                # it into the .get() default argument below. Otherwise, provide the
-                # default as a quoted string.
+                # If the default is a template, drop the template markers
+                # when inserting it into the .get() default argument below.
+                # Otherwise, provide the default as a quoted string.
                 if prop.default.startswith("{{") and prop.default.endswith(
                     "}}"
                 ):
