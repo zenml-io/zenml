@@ -32,30 +32,30 @@ def test_walk_function_returns_a_generator_object():
 
 
 def test_is_root_when_true():
-    """Check function returns true if path is the root"""
+    """Check is_root returns true if path is the root"""
     assert path_utils.is_root("/")
 
 
 def test_is_root_when_false():
-    """Check function returns false if path isn't the root"""
+    """Check is_root returns false if path isn't the root"""
     with TemporaryDirectory() as temp_dir:
         assert path_utils.is_root(temp_dir) is False
 
 
 def test_is_dir_when_true():
-    """Returns true when path refers to a directory"""
+    """is_dir returns true when path refers to a directory"""
     with TemporaryDirectory() as temp_dir:
         assert path_utils.is_dir(temp_dir)
 
 
 def test_is_dir_when_false():
-    """Returns false when path doesn't refer to a directory"""
+    """is_dir returns false when path doesn't refer to a directory"""
     with NamedTemporaryFile() as temp_file:
         assert path_utils.is_dir(temp_file.name) is False
 
 
 def test_find_files_returns_generator_object_when_file_present():
-    """Check function finds a file within a temporary directory"""
+    """find_files returns a generator object when it finds a file"""
     with TemporaryDirectory() as temp_dir:
         temp_file_name = "abcdefg.txt"
         temp_file_path = os.path.join(temp_dir, temp_file_name)
@@ -66,7 +66,7 @@ def test_find_files_returns_generator_object_when_file_present():
 
 
 def test_find_files_when_file_present():
-    """Check function finds a file within a temporary directory"""
+    """find_files locates finds a file within a temporary directory"""
     with TemporaryDirectory() as temp_dir:
         temp_file_name = "abcdefg.txt"
         temp_file_path = os.path.join(temp_dir, temp_file_name)
@@ -75,7 +75,7 @@ def test_find_files_when_file_present():
 
 
 def test_find_files_when_file_absent():
-    """Function returns None when it doesn't find a file"""
+    """find_files returns None when it doesn't find a file"""
     with TemporaryDirectory() as temp_dir:
         temp_file_name = "qqq.txt"
         temp_file_path = os.path.join(temp_dir, temp_file_name)
@@ -85,21 +85,21 @@ def test_find_files_when_file_absent():
 
 @pytest.mark.parametrize("filesystem", _REMOTE_FS_PREFIX)
 def test_is_remote_when_using_remote_prefix(filesystem):
-    """Returns True when path starts with one of the TFX remote file prefixes"""
+    """is_remote returns True when path starts with one of the TFX remote file prefixes"""
     some_random_path = os.path.join(filesystem + "some_directory")
     assert path_utils.is_remote(some_random_path)
 
 
 @pytest.mark.parametrize("filesystem", BAD_REMOTE_PREFIXES)
 def test_is_remote_when_using_non_remote_prefix(filesystem):
-    """Returns False when path doesn't start with a remote prefix"""
+    """is_remote returns False when path doesn't start with a remote prefix"""
     some_random_path = os.path.join(filesystem + "some_directory")
     assert path_utils.is_remote(some_random_path) is False
 
 
 @pytest.mark.parametrize("sample_file", SAMPLE_FILE_NAMES)
 def test_gcs_path_when_true(sample_file):
-    """Checks if a file begins with the prefix `gs`"""
+    """is_gcs checks if a file begins with the prefix `gs`"""
     gs_prefix = "gs://"
     sample_file_path = gs_prefix + sample_file
     assert path_utils.is_gcs_path(sample_file_path)
@@ -107,6 +107,6 @@ def test_gcs_path_when_true(sample_file):
 
 @pytest.mark.parametrize("filesystem", BAD_REMOTE_PREFIXES)
 def test_gcs_path_when_false(filesystem):
-    """Checks that false is returned when file has no `gs` prefix"""
+    """is_gcs checks that false is returned when file has no `gs` prefix"""
     sample_file_path = filesystem + "test_file.txt"
     assert path_utils.is_gcs_path(sample_file_path) is False
