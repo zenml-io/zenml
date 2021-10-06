@@ -12,7 +12,7 @@ class BasePipelineMeta(type):
 
     def __new__(mcs, name, bases, dct):
         cls = super().__new__(mcs, name, bases, dct)
-
+        cls.NAME = name
         cls.STEP_SPEC = dict()
         cls.INPUT_SPEC = dict()
 
@@ -38,7 +38,7 @@ class BasePipelineMeta(type):
 
 
 class BasePipeline(metaclass=BasePipelineMeta):
-    """ """
+    """Base ZenML pipeline."""
 
     def __init__(self, *args, **kwargs):
 
@@ -73,6 +73,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
     def get_executable(cls):
         """ """
         return cls.connect
+
+    @property
+    def name(self):
+        """Name of pipeline is always equal to self.NAME"""
+        return self.NAME
 
     @property
     def stack(self):
