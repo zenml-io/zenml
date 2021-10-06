@@ -12,6 +12,75 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
+from tempfile import NamedTemporaryFile, TemporaryDirectory
+from types import GeneratorType
 
-def test_me():
-    """A simple test to check a functionality"""
+from zenml.utils import path_utils
+
+
+def test_walk_function_returns_a_generator_object():
+    """Check walk function returns a generator object"""
+    with TemporaryDirectory() as temp_dir:
+        assert isinstance(path_utils.walk(temp_dir), GeneratorType)
+
+
+def test_is_root_when_true():
+    """Check function returns true if path is the root"""
+    assert path_utils.is_root("/")
+
+
+def test_is_root_when_false():
+    """Check function returns false if path isn't the root"""
+    with TemporaryDirectory() as temp_dir:
+        assert path_utils.is_root(temp_dir) is False
+
+
+def test_is_dir_when_true():
+    """Returns true when path refers to a directory"""
+    with TemporaryDirectory() as temp_dir:
+        assert path_utils.is_dir(temp_dir)
+
+
+def test_is_dir_when_false():
+    """Returns false when path doesn't refer to a directory"""
+    with NamedTemporaryFile() as temp_file:
+        assert path_utils.is_dir(temp_file.name) is False
+
+
+def test_find_files_returns_generator_object_when_file_present():
+    """Check function finds a file within a temporary directory"""
+    with TemporaryDirectory() as temp_dir:
+        temp_file_name = "abcdefg.txt"
+        temp_file_path = os.path.join(temp_dir, temp_file_name)
+        open(temp_file_path, "x")
+        assert isinstance(
+            path_utils.find_files(temp_dir, "abc*.*"), GeneratorType
+        )
+
+
+def test_find_files_when_file_present():
+    """Check function finds a file within a temporary directory"""
+    with TemporaryDirectory() as temp_dir:
+        temp_file_name = "abcdefg.txt"
+        temp_file_path = os.path.join(temp_dir, temp_file_name)
+        open(temp_file_path, "x")
+        assert path_utils.find_files(temp_dir, "abc*.*")
+
+
+def test_find_files_when_file_absent():
+    """Function returns None when it doesn't find a file"""
+    with TemporaryDirectory() as temp_dir:
+        temp_file_name = "qqq.txt"
+        temp_file_path = os.path.join(temp_dir, temp_file_name)
+        open(temp_file_path, "x")
+        assert path_utils.find_files(temp_dir, "abc*.*")
+
+
+# def test_is_remote_when_true():
+#     # ['gs://', 'hdfs://', 's3://']
+#     # use parametrize
+
+
+# def test_is_remote_when_false():
+#     # something other than in the previous test
