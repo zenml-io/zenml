@@ -16,6 +16,9 @@ import os
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from types import GeneratorType
 
+import pytest
+from tfx.utils.io_utils import _REMOTE_FS_PREFIX
+
 from zenml.utils import path_utils
 
 
@@ -77,10 +80,15 @@ def test_find_files_when_file_absent():
         assert path_utils.find_files(temp_dir, "abc*.*")
 
 
-# def test_is_remote_when_true():
-#     # ['gs://', 'hdfs://', 's3://']
-#     # use parametrize
+@pytest.mark.parametrize("filesystem", _REMOTE_FS_PREFIX)
+def test_is_remote_when_true(filesystem):
+    """Returns true when path starts with one of the TFX remote file prefixes"""
+    some_random_path = os.path.join(filesystem + "some_directory")
+    assert path_utils.is_remote(some_random_path)
 
 
-# def test_is_remote_when_false():
-#     # something other than in the previous test
+@pytest.mark.parametrize("filesystem", ["http://", "12345", "----"])
+def test_is_remote_when_false(filesystem):
+    """"""
+    some_random_path = os.path.join(filesystem + "some_directory")
+    assert path_utils.is_remote(some_random_path) is False
