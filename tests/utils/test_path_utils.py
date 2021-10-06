@@ -17,6 +17,6 @@ from types import GeneratorType
 from zenml.utils import path_utils
 
 
-def test_walk_function_returns_a_generator():
+def test_walk_function_returns_a_generator_object():
     """Check walk function returns a generator object"""
     assert isinstance(path_utils.walk("/"), GeneratorType)
