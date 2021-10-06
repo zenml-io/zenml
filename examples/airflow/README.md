@@ -17,7 +17,7 @@ We will assume in this example that Airflow has been set up with the following s
 
 Airflow home is at `~/airflow`:
 ```
-AIRFLOW_HOME=~/airflow
+export AIRFLOW_HOME=~/airflow
 ```
 
 In the `~/airflow/airflow.cfg`:
