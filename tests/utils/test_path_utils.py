@@ -22,6 +22,7 @@ from tfx.utils.io_utils import _REMOTE_FS_PREFIX
 from zenml.utils import path_utils
 
 BAD_REMOTE_PREFIXES = ["http://", "12345", "----"]
+SAMPLE_FILE_NAMES = ["12345", "important_file.txt", "main.py"]
 
 
 def test_walk_function_returns_a_generator_object():
@@ -84,13 +85,28 @@ def test_find_files_when_file_absent():
 
 @pytest.mark.parametrize("filesystem", _REMOTE_FS_PREFIX)
 def test_is_remote_when_using_remote_prefix(filesystem):
-    """Returns true when path starts with one of the TFX remote file prefixes"""
+    """Returns True when path starts with one of the TFX remote file prefixes"""
     some_random_path = os.path.join(filesystem + "some_directory")
     assert path_utils.is_remote(some_random_path)
 
 
 @pytest.mark.parametrize("filesystem", BAD_REMOTE_PREFIXES)
 def test_is_remote_when_using_non_remote_prefix(filesystem):
-    """"""
+    """Returns False when path doesn't start with a remote prefix"""
     some_random_path = os.path.join(filesystem + "some_directory")
     assert path_utils.is_remote(some_random_path) is False
+
+
+@pytest.mark.parametrize("sample_file", SAMPLE_FILE_NAMES)
+def test_gcs_path_when_true(sample_file):
+    """Checks if a file begins with the prefix `gs`"""
+    gs_prefix = "gs://"
+    sample_file_path = gs_prefix + sample_file
+    assert path_utils.is_gcs_path(sample_file_path)
+
+
+@pytest.mark.parametrize("filesystem", BAD_REMOTE_PREFIXES)
+def test_gcs_path_when_false(filesystem):
+    """Checks that false is returned when file has no `gs` prefix"""
+    sample_file_path = filesystem + "test_file.txt"
+    assert path_utils.is_gcs_path(sample_file_path) is False
