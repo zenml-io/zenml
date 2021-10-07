@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, ClassVar, Dict, Text, Type
+from typing import TYPE_CHECKING, ClassVar, Dict, Type
 
 if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
@@ -29,7 +29,7 @@ class MaterializerFactory(object):
         """Initialization with an empty factory"""
         self.artifact = artifact
 
-    def __getattr__(self, key: Text) -> "BaseMaterializer":
+    def __getattr__(self, key: str) -> "BaseMaterializer":
         """Get a single materializers based on the key.
 
         Args:

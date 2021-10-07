@@ -18,7 +18,7 @@ import fnmatch
 import os
 import tarfile
 from pathlib import Path
-from typing import Any, Callable, Iterable, List, Text, Tuple
+from typing import Any, Callable, Iterable, List, Tuple
 
 from tfx.dsl.io.filesystem import PathType
 from tfx.utils.io_utils import _REMOTE_FS_PREFIX, fileio, load_csv_column_names
@@ -44,7 +44,7 @@ def walk(
     return fileio.walk(dir_path)
 
 
-def is_root(path: Text) -> bool:
+def is_root(path: str) -> bool:
     """Returns true if path has no parent in local filesystem.
 
     Args:
@@ -56,7 +56,7 @@ def is_root(path: Text) -> bool:
     return Path(path).parent == Path(path)
 
 
-def is_dir(dir_path: Text) -> bool:
+def is_dir(dir_path: str) -> bool:
     """Returns true if dir_path points to a dir.
 
     Args:
@@ -68,7 +68,7 @@ def is_dir(dir_path: Text) -> bool:
     return fileio.isdir(dir_path)
 
 
-def find_files(dir_path, pattern) -> List[Text]:
+def find_files(dir_path, pattern) -> List[str]:
     """Find files in a directory that match pattern.
 
     Args:
@@ -85,7 +85,7 @@ def find_files(dir_path, pattern) -> List[Text]:
                 yield filename
 
 
-def is_remote(path: Text) -> bool:
+def is_remote(path: str) -> bool:
     """Returns True if path exists remotely.
 
     Args:
@@ -97,7 +97,7 @@ def is_remote(path: Text) -> bool:
     return any([path.startswith(prefix) for prefix in _REMOTE_FS_PREFIX])
 
 
-def is_gcs_path(path: Text) -> bool:
+def is_gcs_path(path: str) -> bool:
     """Returns True if path is on Google Cloud Storage.
 
     Args:
@@ -109,7 +109,7 @@ def is_gcs_path(path: Text) -> bool:
     return path.startswith("gs://")
 
 
-def list_dir(dir_path: Text, only_file_names: bool = False) -> List[Text]:
+def list_dir(dir_path: str, only_file_names: bool = False) -> List[str]:
     """Returns a list of files under dir.
 
     Args:
@@ -129,7 +129,7 @@ def list_dir(dir_path: Text, only_file_names: bool = False) -> List[Text]:
         return []
 
 
-def create_file_if_not_exists(file_path: Text, file_contents: Text = "{}"):
+def create_file_if_not_exists(file_path: str, file_contents: str = "{}"):
     """Creates directory if it does not exist.
 
     Args:
@@ -145,7 +145,7 @@ def create_file_if_not_exists(file_path: Text, file_contents: Text = "{}"):
         f.write(file_contents)
 
 
-def append_file(file_path: Text, file_contents: Text):
+def append_file(file_path: str, file_contents: str):
     """Appends file_contents to file.
 
     Args:
@@ -157,7 +157,7 @@ def append_file(file_path: Text, file_contents: Text):
     raise NotImplementedError
 
 
-def create_dir_if_not_exists(dir_path: Text):
+def create_dir_if_not_exists(dir_path: str):
     """Creates directory if it does not exist.
 
     Args:
@@ -167,7 +167,7 @@ def create_dir_if_not_exists(dir_path: Text):
         fileio.mkdir(dir_path)
 
 
-def create_dir_recursive_if_not_exists(dir_path: Text):
+def create_dir_recursive_if_not_exists(dir_path: str):
     """Creates directory recursively if it does not exist.
 
     Args:
@@ -177,7 +177,7 @@ def create_dir_recursive_if_not_exists(dir_path: Text):
         fileio.mkdir(dir_path)  # TODO [LOW]:  check if working recursively
 
 
-def resolve_relative_path(path: Text):
+def resolve_relative_path(path: str) -> str:
     """Takes relative path and resolves it absolutely.
 
     Args:
@@ -191,7 +191,7 @@ def resolve_relative_path(path: Text):
     return str(Path(path).resolve())
 
 
-def file_exists(path: Text) -> bool:
+def file_exists(path: str) -> bool:
     """Returns true if file exists at path.
 
     Args:
@@ -203,7 +203,7 @@ def file_exists(path: Text) -> bool:
     return fileio.exists(path)
 
 
-def copy(source: Text, destination: Text, overwrite: bool = False):
+def copy(source: str, destination: str, overwrite: bool = False):
     """Copies dir from source to destination.
 
     Args:
@@ -214,7 +214,7 @@ def copy(source: Text, destination: Text, overwrite: bool = False):
     return fileio.copy(source, destination, overwrite)
 
 
-def copy_dir(source_dir: Text, destination_dir: Text, overwrite: bool = False):
+def copy_dir(source_dir: str, destination_dir: str, overwrite: bool = False):
     """Copies dir from source to destination.
 
     Args:
@@ -234,7 +234,7 @@ def copy_dir(source_dir: Text, destination_dir: Text, overwrite: bool = False):
             copy(f, destination_name, overwrite)
 
 
-def move(source: Text, destination: Text, overwrite: bool = False):
+def move(source: str, destination: str, overwrite: bool = False):
     """Moves dir from source to destination. Can be used to rename.
 
     Args:
@@ -245,7 +245,7 @@ def move(source: Text, destination: Text, overwrite: bool = False):
     return fileio.rename(source, destination, overwrite)
 
 
-def rm_dir(dir_path: Text):
+def rm_dir(dir_path: str):
     """Deletes dir recursively. Dangerous operation.
 
     Args:
@@ -254,7 +254,7 @@ def rm_dir(dir_path: Text):
     fileio.rmtree(dir_path)
 
 
-def rm_file(file_path: Text):
+def rm_file(file_path: str):
     """Deletes file. Dangerous operation.
 
     Args:
@@ -265,7 +265,7 @@ def rm_file(file_path: Text):
     return fileio.remove(file_path)
 
 
-def read_file_contents(file_path: Text):
+def read_file_contents(file_path: str):
     """Reads contents of file.
 
     Args:
@@ -274,11 +274,11 @@ def read_file_contents(file_path: Text):
     # if not file_exists(file_path):
     #     raise Exception(f'{file_path} does not exist!')
     # return file_io.read_file_to_string(file_path)
-    # tODO: Check for proper implementation
+    # TODO: Check for proper implementation
     raise NotImplementedError
 
 
-def write_file_contents(file_path: Text, content: Text):
+def write_file_contents(file_path: str, content: str):
     """Writes contents of file.
 
     Args:
@@ -289,7 +289,7 @@ def write_file_contents(file_path: Text, content: Text):
         f.write(content)
 
 
-def get_grandparent(dir_path: Text) -> Text:
+def get_grandparent(dir_path: str) -> str:
     """Get grandparent of dir.
 
     Args:
@@ -301,7 +301,7 @@ def get_grandparent(dir_path: Text) -> Text:
     return Path(dir_path).parent.stem
 
 
-def get_parent(dir_path: Text) -> Text:
+def get_parent(dir_path: str) -> str:
     """Get parent of dir.
 
     Args:
@@ -313,7 +313,7 @@ def get_parent(dir_path: Text) -> Text:
     return Path(dir_path).stem
 
 
-def load_csv_header(csv_path: Text) -> List[Text]:
+def load_csv_header(csv_path: str) -> List[str]:
     """Gets header column of csv and returns list.
 
     Args:
@@ -326,8 +326,8 @@ def load_csv_header(csv_path: Text) -> List[Text]:
 
 
 def create_tarfile(
-    source_dir: Text,
-    output_filename: Text = "zipped.tar.gz",
+    source_dir: str,
+    output_filename: str = "zipped.tar.gz",
     exclude_function: Callable = None,
 ):
     """Create a compressed representation of source_dir.
@@ -360,7 +360,7 @@ def create_tarfile(
         tar.add(source_dir, arcname="", filter=exclude_function)
 
 
-def extract_tarfile(source_tar: Text, output_dir: Text):
+def extract_tarfile(source_tar: str, output_dir: str):
     """Untars a compressed tar file to output_dir.
 
     Args:
@@ -374,7 +374,7 @@ def extract_tarfile(source_tar: Text, output_dir: Text):
         tar.extractall(output_dir)
 
 
-def is_zenml_dir(path: Text) -> bool:
+def is_zenml_dir(path: str) -> bool:
     """Check if dir is a zenml dir or not.
 
     Args:
@@ -389,7 +389,7 @@ def is_zenml_dir(path: Text) -> bool:
     return False
 
 
-def get_zenml_dir(path: Text = os.getcwd()) -> Text:
+def get_zenml_dir(path: str = os.getcwd()) -> str:
     """Recursive function to find the zenml config starting from path.
 
     Args:
@@ -413,7 +413,7 @@ def get_zenml_dir(path: Text = os.getcwd()) -> Text:
     return get_zenml_dir(str(Path(path).parent))
 
 
-def get_zenml_config_dir(path: Text = os.getcwd()) -> Text:
+def get_zenml_config_dir(path: str = os.getcwd()) -> str:
     """Recursive function to find the zenml config starting from path.
 
     Args:

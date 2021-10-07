@@ -1,5 +1,3 @@
-from typing import Text
-
 from pydantic import BaseSettings
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
@@ -32,9 +30,9 @@ class BaseStack(BaseSettings):
     """
 
     stack_type: StackTypes = StackTypes.base
-    metadata_store_name: Text
-    artifact_store_name: Text
-    orchestrator_name: Text
+    metadata_store_name: str
+    artifact_store_name: str
+    orchestrator_name: str
 
     @property
     def orchestrator(self) -> BaseOrchestrator:

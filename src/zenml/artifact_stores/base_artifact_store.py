@@ -14,7 +14,6 @@
 """Definition of an Artifact Store"""
 
 import os
-from typing import Text
 
 from zenml.config.global_config import GlobalConfig
 from zenml.core.base_component import BaseComponent
@@ -32,10 +31,10 @@ class BaseArtifactStore(BaseComponent):
     """
 
     path: str
-    _ARTIFACT_STORE_DIR_NAME: Text = "artifact_stores"
+    _ARTIFACT_STORE_DIR_NAME: str = "artifact_stores"
 
     @staticmethod
-    def get_component_name_from_uri(artifact_uri: Text) -> Text:
+    def get_component_name_from_uri(artifact_uri: str) -> str:
         """Gets component name from artifact URI.
 
         Args:
@@ -52,9 +51,7 @@ class BaseArtifactStore(BaseComponent):
             get_zenml_config_dir(), self._ARTIFACT_STORE_DIR_NAME
         )
 
-    def resolve_uri_locally(
-        self, artifact_uri: Text, path: Text = None
-    ) -> Text:
+    def resolve_uri_locally(self, artifact_uri: str, path: str = None) -> str:
         """Takes a URI that points within the artifact store, downloads the
         URI locally, then returns local URI.
 

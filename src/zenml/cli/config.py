@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
 
-from typing import List, Text
+from typing import List
 
 import click
 
@@ -65,7 +65,7 @@ def metadata():
 @click.argument("metadata_store_type", type=str)
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def register_metadata_store(
-    metadata_store_name: Text, metadata_store_type: Text, args: List[Text]
+    metadata_store_name: str, metadata_store_type: str, args: List[str]
 ):
     """Register a metadata store."""
 
@@ -97,7 +97,7 @@ def list_metadata_stores():
 
 @metadata.command("delete")
 @click.argument("metadata_store_name", type=str)
-def delete_metadata_store(metadata_store_name: Text):
+def delete_metadata_store(metadata_store_name: str):
     """Delete a metadata store."""
     service = Repository().get_service()
     cli_utils.declare(f"Deleting metadata store: {metadata_store_name}")
@@ -118,7 +118,7 @@ def artifact():
 @click.argument("artifact_store_type", type=str)
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def register_artifact_store(
-    artifact_store_name: Text, artifact_store_type: Text, args: List[Text]
+    artifact_store_name: str, artifact_store_type: str, args: List[str]
 ):
     """Register an artifact store."""
 
@@ -145,7 +145,7 @@ def list_artifact_stores():
 
 @artifact.command("delete")
 @click.argument("artifact_store_name", type=str)
-def delete_artifact_store(artifact_store_name: Text):
+def delete_artifact_store(artifact_store_name: str):
     """Delete a artifact store."""
     service = Repository().get_service()
     cli_utils.declare(f"Deleting artifact store: {artifact_store_name}")
@@ -166,7 +166,7 @@ def orchestrator():
 @click.argument("orchestrator_type", type=str)
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def register_orchestrator(
-    orchestrator_name: Text, orchestrator_type: Text, args: List[Text]
+    orchestrator_name: str, orchestrator_type: str, args: List[str]
 ):
     """Register a orchestrator."""
 
@@ -193,7 +193,7 @@ def list_orchestrators():
 
 @orchestrator.command("delete")
 @click.argument("orchestrator_name", type=str)
-def delete_orchestrator(orchestrator_name: Text):
+def delete_orchestrator(orchestrator_name: str):
     """Delete a orchestrator."""
     service = Repository().get_service()
     cli_utils.declare(f"Deleting orchestrator: {orchestrator_name}")

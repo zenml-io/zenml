@@ -13,13 +13,13 @@
 #  permissions and limitations under the License.
 
 import types
-from typing import Text, Type
+from typing import Type
 
 from zenml.steps.base_step import BaseStep
 from zenml.utils.exceptions import StepInterfaceError
 
 
-def step(name: Text = None):
+def step(name: str = None):
     """Outer decorator function for the creation of a ZenML step
 
     In order to be able work with parameters such as `name`, it features a

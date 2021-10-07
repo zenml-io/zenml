@@ -13,8 +13,6 @@
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
 
-from typing import Text
-
 import click
 
 from zenml.cli import utils as cli_utils
@@ -35,10 +33,10 @@ def stack():
 @click.argument("artifact_store", type=str)
 @click.argument("orchestrator", type=str)
 def register_stack(
-    stack_name: Text,
-    metadata_store: Text,
-    artifact_store: Text,
-    orchestrator: Text,
+    stack_name: str,
+    metadata_store: str,
+    artifact_store: str,
+    orchestrator: str,
 ):
     """Register a stack."""
 
@@ -61,7 +59,7 @@ def list_stacks():
 
 @stack.command("delete")
 @click.argument("stack_name", type=str)
-def delete_stack(stack_name: Text):
+def delete_stack(stack_name: str):
     """Delete a stack."""
     service = Repository().get_service()
     cli_utils.declare(f"Deleting stack: {stack_name}")
@@ -71,7 +69,7 @@ def delete_stack(stack_name: Text):
 
 @stack.command("set")
 @click.argument("stack_name", type=str)
-def set_active_stack(stack_name: Text):
+def set_active_stack(stack_name: str):
     """Sets a stack active."""
     repo = Repository()
     repo.set_active_stack(stack_name)

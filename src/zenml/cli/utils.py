@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import datetime
 from datetime import timedelta
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, List
 
 import click
 from dateutil import tz
@@ -22,7 +22,7 @@ from tabulate import tabulate
 from zenml.core.base_component import BaseComponent
 
 
-def title(text: Text):
+def title(text: str):
     """Echo a title formatted string on the CLI.
 
     Args:
@@ -31,7 +31,7 @@ def title(text: Text):
     click.echo(click.style(text.upper(), fg="cyan", bold=True, underline=True))
 
 
-def confirmation(text: Text, *args, **kwargs) -> bool:
+def confirmation(text: str, *args, **kwargs) -> bool:
     """Echo a confirmation string on the CLI.
 
     Args:
@@ -45,7 +45,7 @@ def confirmation(text: Text, *args, **kwargs) -> bool:
     return click.confirm(click.style(text, fg="yellow"), *args, **kwargs)
 
 
-def question(text: Text, *args, **kwargs) -> Any:
+def question(text: str, *args, **kwargs) -> Any:
     """Echo a question string on the CLI.
 
     Args:
@@ -59,7 +59,7 @@ def question(text: Text, *args, **kwargs) -> Any:
     return click.prompt(text=text, *args, **kwargs)
 
 
-def declare(text: Text):
+def declare(text: str):
     """Echo a declaration on the CLI.
 
     Args:
@@ -68,7 +68,7 @@ def declare(text: Text):
     click.echo(click.style(text, fg="green"))
 
 
-def notice(text: Text):
+def notice(text: str):
     """Echo a notice string on the CLI.
 
     Args:
@@ -77,7 +77,7 @@ def notice(text: Text):
     click.echo(click.style(text, fg="cyan"))
 
 
-def error(text: Text):
+def error(text: str):
     """Echo an error string on the CLI.
 
     Args:
@@ -89,7 +89,7 @@ def error(text: Text):
     raise click.ClickException(message=click.style(text, fg="red", bold=True))
 
 
-def warning(text: Text):
+def warning(text: str):
     """Echo a warning string on the CLI.
 
     Args:
@@ -107,7 +107,7 @@ def pretty_print(obj: Any):
     click.echo(str(obj))
 
 
-def echo_component_list(component_list: Dict[Text, BaseComponent]):
+def echo_component_list(component_list: Dict[str, BaseComponent]):
     """Echoes a list of components in a pretty style."""
     list_of_dicts = []
     for key, c in component_list.items():
@@ -119,8 +119,8 @@ def echo_component_list(component_list: Dict[Text, BaseComponent]):
 
 
 def format_date(
-    dt: datetime.datetime, format: Text = "%Y-%m-%d %H:%M:%S"
-) -> Text:
+    dt: datetime.datetime, format: str = "%Y-%m-%d %H:%M:%S"
+) -> str:
     """Format a date into a string.
 
     Args:
@@ -139,7 +139,7 @@ def format_date(
     return local_time.strftime(format)
 
 
-def format_timedelta(td: timedelta) -> Text:
+def format_timedelta(td: timedelta) -> str:
     """Format a timedelta into a string.
 
     Args:
@@ -155,7 +155,7 @@ def format_timedelta(td: timedelta) -> Text:
     return "{:02}:{:02}:{:02}".format(int(hours), int(minutes), int(seconds))
 
 
-def parse_unknown_options(args: List[Text]) -> Dict[Text, Any]:
+def parse_unknown_options(args: List[str]) -> Dict[str, Any]:
     """Parse unknown options from the cli.
 
     Args:

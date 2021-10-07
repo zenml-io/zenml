@@ -15,7 +15,6 @@
 # import os
 # import random
 # from pathlib import Path
-# from typing import Text
 #
 # import pytest
 #
@@ -67,7 +66,7 @@
 # def test_get_pipeline_file_paths(repo, monkeypatch):
 #     mock_paths = ["pipeline_1.yaml", "pipeline_2.yaml", "awjfof.txt"]
 #
-#     def mock_list_dir(dir_path: Text, only_file_names: bool = False):
+#     def mock_list_dir(dir_path: str, only_file_names: bool = False):
 #         # add a corrupted file into the pipelines
 #         return mock_paths
 #

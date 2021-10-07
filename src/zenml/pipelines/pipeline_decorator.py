@@ -14,12 +14,12 @@
 
 
 import types
-from typing import Text, Type
+from typing import Type
 
 from zenml.pipelines.base_pipeline import BasePipeline
 
 
-def pipeline(name: Text = None):
+def pipeline(name: str = None):
     """Outer decorator function for the creation of a ZenML pipeline
 
     In order to be able work with parameters such as "name", it features a

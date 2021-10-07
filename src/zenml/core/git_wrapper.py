@@ -14,7 +14,7 @@
 """Wrapper class to handle Git integration"""
 import inspect
 import os
-from typing import List, Text, Type
+from typing import List, Type
 
 from git import BadName
 from git import Repo as GitRepo
@@ -45,7 +45,7 @@ class GitWrapper:
     handling versioning of different steps in pipelines.
     """
 
-    def __init__(self, repo_path: Text):
+    def __init__(self, repo_path: str):
         """
         Initialize GitWrapper. Should be initialize by ZenML Repository.
         Args:
@@ -56,11 +56,11 @@ class GitWrapper:
             NoSuchPathError: If the repo_path does not exist.
         """
         # TODO: [LOW] Raise ZenML exceptions here instead.
-        self.repo_path: Text = repo_path
-        self.git_root_path: Text = os.path.join(repo_path, GIT_FOLDER_NAME)
+        self.repo_path: str = repo_path
+        self.git_root_path: str = os.path.join(repo_path, GIT_FOLDER_NAME)
         self.git_repo: GitRepo = GitRepo(self.repo_path)
 
-    def add_gitignore(self, items: List[Text]):
+    def add_gitignore(self, items: List[str]):
         """
         Adds `items` to .gitignore, if .gitignore exists. Otherwise creates
         and adds.
@@ -77,7 +77,7 @@ class GitWrapper:
         else:
             path_utils.append_file(gitignore_path, str_items)
 
-    def check_file_committed(self, file_path: Text) -> bool:
+    def check_file_committed(self, file_path: str) -> bool:
         """
         Checks file is committed. If yes, return True, else False.
 
@@ -102,13 +102,13 @@ class GitWrapper:
                 return False
         return True
 
-    def get_current_sha(self) -> Text:
+    def get_current_sha(self) -> str:
         """
         Finds the git sha that each file within the module is currently on.
         """
         return self.git_repo.head.object.hexsha
 
-    def check_module_clean(self, source: Text):
+    def check_module_clean(self, source: str):
         """
         Returns True if all files within source's module are committed.
 
@@ -163,7 +163,7 @@ class GitWrapper:
         if git.stash("list") != "":
             git.stash("pop")
 
-    def checkout(self, sha_or_branch: Text = None, directory: Text = None):
+    def checkout(self, sha_or_branch: str = None, directory: str = None):
         """
         Wrapper for git checkout
 
@@ -187,7 +187,7 @@ class GitWrapper:
             # In this case, the whole repo is checked out at sha_or_branch
             git.checkout(sha_or_branch)
 
-    def reset(self, directory: Text = None):
+    def reset(self, directory: str = None):
         """
         Wrapper for `git reset HEAD <directory>`.
 
@@ -197,7 +197,7 @@ class GitWrapper:
         git = self.git_repo.git
         git.reset("HEAD", directory)
 
-    def resolve_class_source(self, class_source: Text) -> Text:
+    def resolve_class_source(self, class_source: str) -> str:
         """
         Resolves class_source with an optional pin.
         Takes source (e.g. this.module.ClassName), and appends relevant
@@ -227,7 +227,7 @@ class GitWrapper:
             return class_source
         return class_source + "@" + self.get_current_sha()
 
-    def is_valid_source(self, source: Text) -> bool:
+    def is_valid_source(self, source: str) -> bool:
         """
         Checks whether the source_path is valid or not.
 
@@ -240,7 +240,7 @@ class GitWrapper:
             return False
         return True
 
-    def load_source_path_class(self, source: Text) -> Type:
+    def load_source_path_class(self, source: str) -> Type:
         """
         Loads a Python class from the source.
 
@@ -308,7 +308,7 @@ class GitWrapper:
 
         return class_
 
-    def resolve_class(self, class_: Type) -> Text:
+    def resolve_class(self, class_: Type) -> str:
         """
         Resolves
         Args:

@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Text
-
 from pydantic import validator
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
@@ -27,7 +25,7 @@ class LocalArtifactStore(BaseArtifactStore):
     """Artifact Store for local artifacts."""
 
     @validator("path")
-    def must_be_local_path(cls, v: Text):
+    def must_be_local_path(cls, v: str):
         """Validates that the path is a valid gcs path."""
         if any([v.startswith(prefix) for prefix in _REMOTE_FS_PREFIX]):
             raise ValueError(
