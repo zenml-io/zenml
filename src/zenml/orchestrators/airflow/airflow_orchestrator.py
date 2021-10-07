@@ -53,14 +53,14 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         # Create the final step list and the corresponding pipeline
         steps = list(importers.values()) + [
-            s.get_component() for s in zenml_pipeline.steps.values()
+            s.component for s in zenml_pipeline.steps.values()
         ]
 
         artifact_store = zenml_pipeline.stack.artifact_store
         metadata_store = zenml_pipeline.stack.metadata_store
 
         created_pipeline = tfx_pipeline.Pipeline(
-            pipeline_name="pipeline_name",
+            pipeline_name=zenml_pipeline.name,
             components=steps,
             pipeline_root=artifact_store.path,
             metadata_connection_config=metadata_store.get_tfx_metadata_config(),
