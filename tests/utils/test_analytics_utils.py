@@ -14,6 +14,7 @@
 
 from zenml.utils.analytics_utils import get_segment_key, get_system_info
 
+# TODO: [LOW] shift these constants into our constants file
 SEGMENT_ANALYTICS_ID = "1VW1bQMu9ifpYbDFkEZFnpqODduiE1Xm"
 SEGMENT_DEV_ANALYTICS_ID = "Syrnr1ajPS49tgUQTzPdYNA6C48zGOL0"
 VALID_OPERATING_SYSTEMS = ["Windows", "Darwin", "Linux"]

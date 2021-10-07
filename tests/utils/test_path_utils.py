@@ -17,6 +17,8 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory
 from types import GeneratorType
 
 import pytest
+
+# TODO: [LOW] replace with our own list in constants
 from tfx.utils.io_utils import _REMOTE_FS_PREFIX
 
 from zenml.utils import path_utils
