@@ -36,12 +36,14 @@ class BaseStack(BaseSettings):
 
     @property
     def orchestrator(self) -> BaseOrchestrator:
+        """Returns the orchestrator of this stack."""
         from zenml.core.repo import Repository
 
         return Repository().service.get_orchestrator(self.orchestrator_name)
 
     @property
     def artifact_store(self) -> BaseArtifactStore:
+        """Returns the artifact store of this stack."""
         from zenml.core.repo import Repository
 
         return Repository().service.get_artifact_store(
@@ -50,6 +52,7 @@ class BaseStack(BaseSettings):
 
     @property
     def metadata_store(self) -> BaseMetadataStore:
+        """Returns the metadata store of this stack."""
         from zenml.core.repo import Repository
 
         return Repository().service.get_metadata_store(
