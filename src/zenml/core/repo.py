@@ -149,6 +149,7 @@ class Repository:
             gc.update()
 
     def get_git_wrapper(self) -> GitWrapper:
+        """Returns the git wrapper for the repo."""
         return self.git_wrapper
 
     def get_service(self) -> LocalService:
