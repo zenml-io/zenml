@@ -18,4 +18,6 @@ DEFAULT_FILENAME = "my_model"
 
 
 class ModelArtifact(BaseArtifact):
+    """Base class for any ZenML model artifact."""
+
     TYPE_NAME = "model_artifact"
