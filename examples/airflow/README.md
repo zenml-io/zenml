@@ -26,7 +26,7 @@ export AIRFLOW_HOME=~/airflow
 In the `~/airflow/airflow.cfg`:
 ```
 dags_folder = ~/airflow/dags/
-dag_discovery_safe_mode = True
+dag_discovery_safe_mode = False
 ```
 
 ### Initialize zenml at the Airflow DAGs folder root:
@@ -35,6 +35,11 @@ cd ~/airflow/dags
 git init
 zenml init
 ```
+
+### Create a new Airflow Stack
+zenml orchestrator register airflow_orchestrator airflow
+zenml stack set airflow_stack
+
 
 ### Copy the runner script to the Airflow dag folder:
 ```bash

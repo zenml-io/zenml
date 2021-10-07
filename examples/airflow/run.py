@@ -128,4 +128,4 @@ mnist_pipeline = MNISTTrainingPipeline(
 )
 
 # Run the pipeline
-mnist_pipeline.run()
+DAG = mnist_pipeline.run()
