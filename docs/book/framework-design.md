@@ -19,7 +19,7 @@ When designing a framework as broad as ZenML, the team is probably making hundre
 
 ### Separating Configuration \(Connections\) From Runs
 
-We decided early on that we wanted to clearly define what a Pipeline and a Pipeline Run were. Here is the key: 
+We decided early on that we wanted to clearly define what a Pipeline and a Pipeline Run were. Here is the key:
 
 * Pipelines define the \(data\) **dependencies** between steps.
 * Pipeline runs define the **parameters** of each step.
@@ -32,7 +32,7 @@ def my_pipeline(
     step_2: Step[AnotherStep]
 )
     # connect the two together
-    
+
 run_1 = my_pipeline(
     step_1=SimplestStepEver(param=2)
     step_2=AnotherStep(param=2)
@@ -48,7 +48,7 @@ The above design also lends itself to swapping in and out different step logic i
 
 ### Relation To Stacks
 
-Stacks are an important concept in ZenML, and they have an implicit relationship to pipelines. Stacks define where a pipelines steps are storing data, metadata, and where the pipeline is orchestrated. 
+Stacks are an important concept in ZenML, and they have an implicit relationship to pipelines. Stacks define where a pipelines steps are storing data, metadata, and where the pipeline is orchestrated.
 
 ## Steps
 
@@ -85,7 +85,7 @@ ZenML solves this with the `Artifact` Input/Output paradigm:
 def ASlightComplexStep(output_artifact: Output[ModelArtifact]):
     # defines where ZenML wants you to store the model
     output_artifact.uri  
-    
+
     # now you can write the model in a custom function 
     write_model(output_artifact)
 
@@ -93,10 +93,10 @@ def ASlightComplexStep(output_artifact: Output[ModelArtifact]):
 def AnotherSlightComplexStep(input_artifact: Output[ModelArtifact]):
     # defines where you stored the model in the prev step
     input_artifact.uri  
-    
+
     # now you can write the model in a custom function 
     model = read_model(input_artifact)
-    
+
 # connect these together and run
 ```
 
@@ -123,7 +123,7 @@ Why is this important?
 
 ### Can we make this better? Yes, lets introduce Materializers:
 
-Because reading and writing is such a common pattern, we can introduce another abstraction known as `Materializers` to encapsulate this logic. Each `Materializer` can implement a standard `read` and `write` function, and we can thus separate the writing/reading logic from the step itself. 
+Because reading and writing is such a common pattern, we can introduce another abstraction known as `Materializers` to encapsulate this logic. Each `Materializer` can implement a standard `read` and `write` function, and we can thus separate the writing/reading logic from the step itself.
 
 ```python
 @step
@@ -135,7 +135,7 @@ def ASlightComplexStep(output_artifact: Output[ModelArtifact]):
 
 Each artifact can therefore support as many Materializers as required. Think of them as views of the data the artifacts are pointing to. The advantage here is that one can now theoritically paramaterize the `key` of the Materializers \(`keras` in this case\) and completely separate the business logic from the writing logic.
 
-The disadvantage of this design is that one needs to know all the implemented Materializers  and adding more Materializers and combining with artifacts is a bit non-intuitive at first.
+The disadvantage of this design is that one needs to know all the implemented Materializers and adding more Materializers and combining with artifacts is a bit non-intuitive at first.
 
 #### Rejected Alternative 1: Artifacts own the Materializer:
 
@@ -146,7 +146,7 @@ There are some alternative ways of implementing Materializers. The first is to c
 def ASlightComplexStep(output_artifact: Output[ModelArtifact]):
     # defines where ZenML wants you to store the model
     output_artifact.uri  
-    
+
     # materializers control the logic of writing the model
     m = KerasMaterializer()
     m.write(model, output_artifact)
@@ -156,10 +156,10 @@ def AnotherSlightComplexStep(input_artifact: Output[ModelArtifact]):
     # defines where you stored the model in the prev step
     m = KerasMaterializer()  # you can change this in the future
     model = m.read(input_artifact)
-    
+
     # now you can write the model in a custom function 
     model = read_model(input_artifact)
-    
+
 # connect these together and run
 ```
 
@@ -167,7 +167,7 @@ The advantage of this is there is a separation of concerns: The relationship bet
 
 #### Rejected Alternative 2: Using special signals to indicate data written
 
-Another way to solve this is to invert the relationship between a artifacts and steps. Rather than the steps being aware of artifacts, one can simply "emit" an event that indicates that a step yields a specific artifat. 
+Another way to solve this is to invert the relationship between a artifacts and steps. Rather than the steps being aware of artifacts, one can simply "emit" an event that indicates that a step yields a specific artifat.
 
 ```python
 @step

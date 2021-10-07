@@ -41,10 +41,10 @@ By using ZenML at the early stages of development, you get the following feature
 
 A good place to go from this point is to:
 
-* Understand [what is so special about ZenML](why-zenml.md).
-* Take a look at some of the [key decisions that we made while building ZenML.](framework-design.md)
+* Understand [what is so special about ZenML]().
+* Take a look at some of the [key decisions that we made while building ZenML.]()
 * Get up and running with your [first pipeline](https://github.com/zenml-io/zenml/tree/f912d2d512477e6ed84e839259d42cb73eeedf2b/docs/book/starter-guide/quickstart.md) with our [starter guide](https://github.com/zenml-io/zenml/tree/f912d2d512477e6ed84e839259d42cb73eeedf2b/docs/book/starter-guide/repository.md).
-* Read more about [core concepts](core/core-concepts.md) to inform your decision about using **ZenML.**
+* Read more about [core concepts]() to inform your decision about using **ZenML.**
 
 ## Get involved!
 

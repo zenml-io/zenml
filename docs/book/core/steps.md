@@ -4,7 +4,7 @@ description: Steps are individual tasks within a pipeline.
 
 # Steps
 
-Conceptually, a `Step` is a discrete and independent part of a pipeline that is responsible for one particular aspect of data manipulation inside a [ZenML pipeline](../pipelines/what-is-a-pipeline.md). 
+Conceptually, a `Step` is a discrete and independent part of a pipeline that is responsible for one particular aspect of data manipulation inside a [ZenML pipeline](https://github.com/zenml-io/zenml/tree/711f49d6653bf121f04e60e02202a23afad8e933/docs/book/pipelines/what-is-a-pipeline.md).
 
 A ZenML installation already comes with many `standard` steps found in `zenml.core.steps.*` for users to get started. For example, a `SplitStep` is responsible for splitting the data into various split's like `train` and `eval` for downstream steps to then use. However, in essence, virtually any Python function can be a ZenML step as well.
 
@@ -27,7 +27,7 @@ While this is just a function with a decorator, it is not super useful. ZenML st
 
 ## Step Input and Output
 
-When we think about steps as functions, they receive input in the form of [artifacts](artifacts.md) and parameters. They produce output also in the form of artifacts, stored in the artifact store. 
+When we think about steps as functions, they receive input in the form of [artifacts](artifacts.md) and parameters. They produce output also in the form of artifacts, stored in the artifact store.
 
 * The parameters that you pass into the steps are also stored in the metadata store. This helps freeze the iterations of your experimentation workflow in time so you can return to them exactly as you ran them.
 

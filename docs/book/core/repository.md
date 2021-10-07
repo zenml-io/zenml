@@ -47,7 +47,7 @@ In short: ZenML **optionally** uses Git SHAs to resolve your version-pinned pipe
 
 When you add steps to ZenML, you have the ability to specify a specific Git SHA for your code. ZenML ties into your local Git history and will automatically try to resolve the SHA into usable code. Every pipeline configuration will persist the combination of the class used, and the related SHA in the pipeline config.
 
-The format used is: `class@git_sha`, where:  __
+The format used is: `class@git_sha`, where: \_\_
 
 * _**class**: a fully-qualified python import path of a ZenML-compatible class, e.g. `my_module.my_class.MyClassName`_ 
 * **git\_sha** \(optional\): a 40-digit string representing the commit git sha at which the class exists

@@ -16,7 +16,7 @@ def SplitPipeline(
     split_step: Step[DistSplitStep],
     preprocesser_step: Step[InMemPreprocesserStep]
 ):
-    
+
     data_step(input_random_number=simple_step.outputs["return_output"])
     split_step(input_artifact=data_step.outputs["output_artifact"])
     preprocesser_step(input_artifact=split_step.outputs["output_artifact"])

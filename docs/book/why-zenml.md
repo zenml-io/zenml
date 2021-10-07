@@ -31,7 +31,7 @@ Going from model-centric to data-centric AI has been a theme of the last years, 
 * It allows developers to explore data artifacts natively in interactive environments.
 * It exposes first class data comparison mechanisms, and tracks relevant metadata automatically.
 
-{% embed url="https://www.youtube.com/watch?v=06-AZXmwHjo" %}
+{% embed url="https://www.youtube.com/watch?v=06-AZXmwHjo" caption="" %}
 
 ## The Right Abstractions
 
@@ -58,8 +58,4 @@ Too little ops:
 ## The modular MLOps stack \(Integrations\)
 
 Integrating with others is an important piece that many orchestrators seem to miss \[coming soon\]
-
-
-
-## 
 

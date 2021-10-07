@@ -17,7 +17,6 @@ zenml stack register MY_NEW_STACK
     --metadata_store my-new-metadata-store \
     --artifact_store my-new-artifact-store \ 
     --orchestrator my-new-orchestrator
-
 ```
 
 {% hint style="info" %}

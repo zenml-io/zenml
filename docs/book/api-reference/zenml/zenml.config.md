@@ -2,11 +2,11 @@
 
 &lt;!DOCTYPE html&gt;
 
-zenml.config package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/index.html)
+zenml.config package — ZenML documentation  [ZenML](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/index.html)
 
-*  [Site](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/index.html)
+*  [Site](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/index.html)
   * Contents:
-    * [zenml](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/modules.html)
+    * [zenml](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/modules.html)
 *  [Page](zenml.config.md)
   * * [zenml.config package](zenml.config.md)
       * [Submodules](zenml.config.md#submodules)
@@ -15,7 +15,7 @@ zenml.config package — ZenML documentation  [ZenML](https://github.com/zenml-i
       * [Module contents](zenml.config.md#module-zenml.config)
 * [ « zenml.cli package](zenml.cli.md)
 * [ zenml.core package »](zenml.core.md)
-*  [Source](https://github.com/zenml-io/zenml/tree/f72adcd1e42495f4df75b34799ad8ac19cae3e95/docs/sphinx_docs/_build/html/_sources/zenml.config.rst.txt)
+*  [Source](https://github.com/zenml-io/zenml/tree/154f041af2db9874b351cccd305478a173a7e939/docs/sphinx_docs/_build/html/_sources/zenml.config.rst.txt)
 
 ## zenml.config package[¶](zenml.config.md#zenml-config-package)
 

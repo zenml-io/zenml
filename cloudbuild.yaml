@@ -16,27 +16,27 @@ steps:
     args: ['-c', 'docker push $$USERNAME/zenml:$TAG_NAME']
     secretEnv: ['USERNAME']
 
-  # build CUDA image with tag
-  - name : 'gcr.io/cloud-builders/docker'
-    entrypoint: 'bash'
-    args: ['-c', 'docker build -t $$USERNAME/cuda-zenml:$TAG_NAME -f docker/cuda.Dockerfile .']
-    secretEnv: ['USERNAME']
-  # push CUDA image
-  - name: 'gcr.io/cloud-builders/docker'
-    entrypoint: 'bash'
-    args: ['-c', 'docker push $$USERNAME/cuda-zenml:$TAG_NAME']
-    secretEnv: ['USERNAME']
-
-  # build dataflow image with tag
-  - name : 'gcr.io/cloud-builders/docker'
-    entrypoint: 'bash'
-    args: ['-c', 'docker build -t $$USERNAME/dataflow-zenml:$TAG_NAME -f docker/dataflow.Dockerfile .']
-    secretEnv: ['USERNAME']
-  # push dataflow image
-  - name: 'gcr.io/cloud-builders/docker'
-    entrypoint: 'bash'
-    args: ['-c', 'docker push $$USERNAME/dataflow-zenml:$TAG_NAME']
-    secretEnv: ['USERNAME']
+#  # build CUDA image with tag
+#  - name : 'gcr.io/cloud-builders/docker'
+#    entrypoint: 'bash'
+#    args: ['-c', 'docker build -t $$USERNAME/cuda-zenml:$TAG_NAME -f docker/cuda.Dockerfile .']
+#    secretEnv: ['USERNAME']
+#  # push CUDA image
+#  - name: 'gcr.io/cloud-builders/docker'
+#    entrypoint: 'bash'
+#    args: ['-c', 'docker push $$USERNAME/cuda-zenml:$TAG_NAME']
+#    secretEnv: ['USERNAME']
+#
+#  # build dataflow image with tag
+#  - name : 'gcr.io/cloud-builders/docker'
+#    entrypoint: 'bash'
+#    args: ['-c', 'docker build -t $$USERNAME/dataflow-zenml:$TAG_NAME -f docker/dataflow.Dockerfile .']
+#    secretEnv: ['USERNAME']
+#  # push dataflow image
+#  - name: 'gcr.io/cloud-builders/docker'
+#    entrypoint: 'bash'
+#    args: ['-c', 'docker push $$USERNAME/dataflow-zenml:$TAG_NAME']
+#    secretEnv: ['USERNAME']
 
 availableSecrets:
   secretManager:
