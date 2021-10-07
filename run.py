@@ -78,4 +78,5 @@ split_pipeline = SplitPipeline(
     preprocesser_step=InMemPreprocesserStep(),
 )
 
+# needed for airflow
 DAG = split_pipeline.run()
