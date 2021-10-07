@@ -114,11 +114,20 @@ def test_gcs_path_when_false(filesystem):
     assert path_utils.is_gcs_path(sample_file_path) is False
 
 
-def test_list_dir_returns_a_list_of_files():
+def test_list_dir_returns_a_list_of_file_names():
     """list_dir should return a list of files inside the queried directory"""
     with TemporaryDirectory() as temp_dir:
         with NamedTemporaryFile(dir=temp_dir) as temp_file:
             assert path_utils.list_dir(temp_dir) == [temp_file.name]
+
+
+def test_list_dir_returns_a_list_of_file_paths():
+    """list_dir should return a list of files inside the queried directory"""
+    with TemporaryDirectory() as temp_dir:
+        with NamedTemporaryFile(dir=temp_dir) as temp_file:
+            assert path_utils.list_dir(temp_dir) == [
+                os.path.join(temp_dir, temp_file.name)
+            ]
 
 
 def test_list_dir_returns_one_result_for_one_file():
@@ -128,9 +137,14 @@ def test_list_dir_returns_one_result_for_one_file():
             assert len(path_utils.list_dir(temp_dir)) == 1
 
 
-def test_list_dir_returns_empty_list_when_dir_doesnt_exist():
+@pytest.mark.parametrize("sample_file", SAMPLE_FILE_NAMES)
+def test_list_dir_returns_empty_list_when_dir_doesnt_exist(sample_file):
     """list_dir should return an empty list when the directory"""
     """doesn't exist"""
     with TemporaryDirectory() as temp_dir:
-        not_a_real_dir = os.path.join(temp_dir, "i_dont_exist")
+        not_a_real_dir = os.path.join(temp_dir, sample_file)
         assert isinstance(path_utils.list_dir(not_a_real_dir), list)
+
+
+# def test_logging_takes_place_on_fail_of_list_dir():
+#     """logger should output a debug statement on failure to find directory"""
