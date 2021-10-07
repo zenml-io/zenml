@@ -12,14 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Factory to register all components."""
-from typing import Any, Callable, Dict, Text
+from typing import Callable, Dict, Text, Type
 
+from zenml.core.base_component import BaseComponent
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
-
-# TODO [LOW]: Type hints need improving here but need to avoid circular
-#  dependencies
+BaseComponentType = Type[BaseComponent]
 
 
 class ComponentFactory:
@@ -36,13 +35,13 @@ class ComponentFactory:
             name: Unique name for the factory.
         """
         self.name = name
-        self.components: Dict[Text, Any] = {}
+        self.components: Dict[Text, BaseComponentType] = {}
 
-    def get_components(self) -> Dict[Any, Any]:
+    def get_components(self) -> Dict[Text, BaseComponentType]:
         """Return all components"""
         return self.components
 
-    def get_single_component(self, key: Text) -> Any:
+    def get_single_component(self, key: Text) -> BaseComponentType:
         """Get a registered component from a key."""
         if key in self.components:
             return self.components[key]
@@ -51,20 +50,23 @@ class ComponentFactory:
             f"{[k for k in self.components.keys()]}"
         )
 
-    def register_component(self, key: Text, component: Any):
+    def register_component(self, key: Text, component: BaseComponentType):
+        """Registers a single component class for a given key."""
         self.components[key] = component
 
     def register(self, name: str) -> Callable:
-        """Class method to register Executor class to the internal registry.
+        """Class decorator to register component classes to the internal registry.
 
         Args:
-            name (str): The name of the executor.
+            name: The name of the component.
 
         Returns:
-            The Executor class itself.
+            A class decorator which registers the class at this ComponentFactory instance.
         """
 
-        def inner_wrapper(wrapped_class: Any) -> Callable:
+        def inner_wrapper(
+            wrapped_class: BaseComponentType,
+        ) -> BaseComponentType:
             """Inner wrapper for decorator."""
             if name in self.components:
                 logger.debug(
