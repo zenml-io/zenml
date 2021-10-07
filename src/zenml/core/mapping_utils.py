@@ -10,6 +10,15 @@ from zenml.utils import path_utils, source_utils
 
 
 class UUIDSourceTuple(BaseModel):
+    """Container used to store UUID and source information
+    of a single BaseComponent subclass.
+
+    Attributes:
+        uuid: Identifier of the BaseComponent
+        source: Contains the fully qualified class name and information
+         about a git hash/tag. E.g. foo.bar.BaseComponentSubclass@git_tag
+    """
+
     uuid: UUID
     source: str
 
@@ -19,6 +28,7 @@ def get_key_from_uuid(uuid: UUID, mapping: Dict[str, UUIDSourceTuple]) -> str:
 
     Args:
         uuid: uuid to query.
+        mapping: Dict mapping keys to UUIDs and source information.
 
     Returns:
         Returns the key from the mapping.
@@ -39,9 +49,9 @@ def get_component_from_key(
     Returns:
         An object which is a subclass of type BaseComponent.
     """
-    tuple = mapping[key]
-    class_ = source_utils.load_source_path_class(tuple.source)
-    return class_(uuid=tuple.uuid)
+    tuple_ = mapping[key]
+    class_ = source_utils.load_source_path_class(tuple_.source)
+    return class_(uuid=tuple_.uuid)
 
 
 def get_components_from_store(

@@ -61,4 +61,5 @@ class GlobalConfig(BaseComponent):
         return GLOBAL_CONFIG_NAME
 
     def set_stack_for_repo(self, repo_path: str, stack_key: str):
+        """Sets the active stack for a specific repository."""
         self.repo_active_stacks[repo_path] = stack_key
