@@ -133,9 +133,15 @@
 <dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipeline">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.pipelines.base_pipeline.</span></span><span class="sig-name descname"><span class="pre">BasePipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Base ZenML pipeline.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipeline.INPUT_SPEC">
 <span class="sig-name descname"><span class="pre">INPUT_SPEC</span></span><em class="property"> <span class="pre">=</span> <span class="pre">{}</span></em><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.INPUT_SPEC" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipeline.NAME">
+<span class="sig-name descname"><span class="pre">NAME</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'BasePipeline'</span></em><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.NAME" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -157,6 +163,12 @@
 <dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipeline.inputs">
 <em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">inputs</span></span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.inputs" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipeline.name">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of pipeline is always equal to self.NAME</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipeline.run">
