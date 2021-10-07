@@ -112,3 +112,25 @@ def test_gcs_path_when_false(filesystem):
     """is_gcs checks that false is returned when file has no `gs` prefix"""
     sample_file_path = filesystem + "test_file.txt"
     assert path_utils.is_gcs_path(sample_file_path) is False
+
+
+def test_list_dir_returns_a_list_of_files():
+    """list_dir should return a list of files inside the queried directory"""
+    with TemporaryDirectory() as temp_dir:
+        with NamedTemporaryFile(dir=temp_dir) as temp_file:
+            assert path_utils.list_dir(temp_dir) == [temp_file.name]
+
+
+def test_list_dir_returns_one_result_for_one_file():
+    """list_dir should return only one result, when there is only one file created"""
+    with TemporaryDirectory() as temp_dir:
+        with NamedTemporaryFile(dir=temp_dir) as _:
+            assert len(path_utils.list_dir(temp_dir)) == 1
+
+
+def test_list_dir_returns_empty_list_when_dir_doesnt_exist():
+    """list_dir should return an empty list when the directory"""
+    """doesn't exist"""
+    with TemporaryDirectory() as temp_dir:
+        not_a_real_dir = os.path.join(temp_dir, "i_dont_exist")
+        assert isinstance(path_utils.list_dir(not_a_real_dir), list)
