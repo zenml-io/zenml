@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import Text
 
 import click
 import git
@@ -30,13 +29,13 @@ from zenml.utils.analytics_utils import INITIALIZE, track
 @click.option("--analytics_opt_in", "-a", type=click.BOOL)
 @track(event=INITIALIZE)
 def init(
-    repo_path: Text, pipelines_dir: Text = None, analytics_opt_in: bool = True
+    repo_path: str, pipelines_dir: str = None, analytics_opt_in: bool = True
 ):
     """Initialize ZenML on given path.
 
     Args:
-      repo_path: Text:
-      pipelines_dir: Text:  (Default value = None)
+      repo_path: str:
+      pipelines_dir: str:  (Default value = None)
       analytics_opt_in: bool:  (Default value = True)
 
     Raises:

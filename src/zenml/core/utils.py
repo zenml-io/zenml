@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Callable, Dict, Text
+from typing import Any, Callable, Dict
 
 from pydantic import BaseSettings
 
@@ -10,7 +10,7 @@ logger = get_logger(__name__)
 
 
 def define_json_config_settings_source(
-    config_dir: Text, config_name: Text
+    config_dir: str, config_name: str
 ) -> Callable:
     """
     Define a function to essentially deserialize a model from a serialized
@@ -47,7 +47,7 @@ def define_json_config_settings_source(
     return json_config_settings_source
 
 
-def generate_customise_sources(file_dir: Text, file_name: Text):
+def generate_customise_sources(file_dir: str, file_name: str):
     """Generate a customise_sources function as defined here:
     https://pydantic-docs.helpmanual.io/usage/settings/. This function
     generates a function that configures the priorities of the sources through

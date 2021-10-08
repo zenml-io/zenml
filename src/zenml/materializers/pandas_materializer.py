@@ -27,8 +27,9 @@ class PandasMaterializer(BaseMaterializer):
 
     TYPE_NAME = "pandas"
 
-    def read_dataframe(self, filename=None):
-        """ """
+    def read_dataframe(self) -> pd.DataFrame:
+        """Reads all files inside the artifact directory and concatenates them to a pandas dataframe."""
+
         filenames = path_utils.list_dir(
             self.artifact.uri, only_file_names=True
         )
@@ -47,11 +48,12 @@ class PandasMaterializer(BaseMaterializer):
 
         return frame
 
-    def write_dataframe(self, df, filename=None):
-        """ """
-        filepath = os.path.join(
-            self.artifact.uri,
-            filename if filename is not None else DEFAULT_FILENAME,
-        )
+    def write_dataframe(self, df: pd.DataFrame, filename=DEFAULT_FILENAME):
+        """Writes a pandas dataframe to the specified filename.
 
+        Args:
+            df: The pandas dataframe to write.
+            filename: The output filename.
+        """
+        filepath = os.path.join(self.artifact.uri, filename)
         df.to_csv(filepath)

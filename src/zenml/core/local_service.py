@@ -1,4 +1,4 @@
-from typing import Dict, Text
+from typing import Dict
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.core import mapping_utils
@@ -19,44 +19,44 @@ class LocalService(BaseComponent):
     components.
     """
 
-    stacks: Dict[Text, BaseStack] = {}
-    metadata_store_map: Dict[Text, UUIDSourceTuple] = {}
-    artifact_store_map: Dict[Text, UUIDSourceTuple] = {}
-    orchestrator_map: Dict[Text, UUIDSourceTuple] = {}
+    stacks: Dict[str, BaseStack] = {}
+    metadata_store_map: Dict[str, UUIDSourceTuple] = {}
+    artifact_store_map: Dict[str, UUIDSourceTuple] = {}
+    orchestrator_map: Dict[str, UUIDSourceTuple] = {}
 
     _LOCAL_SERVICE_FILE_NAME = "zenservice.json"
 
-    def get_serialization_dir(self) -> Text:
+    def get_serialization_dir(self) -> str:
         """The local service stores everything in the zenml config dir."""
         return path_utils.get_zenml_config_dir()
 
-    def get_serialization_file_name(self) -> Text:
+    def get_serialization_file_name(self) -> str:
         """Return the name of the file where object is serialized."""
         return self._LOCAL_SERVICE_FILE_NAME
 
     @property
-    def metadata_stores(self) -> Dict[Text, BaseMetadataStore]:
+    def metadata_stores(self) -> Dict[str, BaseMetadataStore]:
         """Returns all registered metadata stores."""
         return mapping_utils.get_components_from_store(
             BaseMetadataStore._METADATA_STORE_DIR_NAME, self.metadata_store_map
         )
 
     @property
-    def artifact_stores(self) -> Dict[Text, BaseArtifactStore]:
+    def artifact_stores(self) -> Dict[str, BaseArtifactStore]:
         """Returns all registered artifact stores."""
         return mapping_utils.get_components_from_store(
             BaseArtifactStore._ARTIFACT_STORE_DIR_NAME, self.artifact_store_map
         )
 
     @property
-    def orchestrators(self) -> Dict[Text, BaseOrchestrator]:
+    def orchestrators(self) -> Dict[str, BaseOrchestrator]:
         """Returns all registered orchestrators."""
         return mapping_utils.get_components_from_store(
             BaseOrchestrator._ORCHESTRATOR_STORE_DIR_NAME,
             self.orchestrator_map,
         )
 
-    def get_stack(self, key: Text) -> BaseStack:
+    def get_stack(self, key: str) -> BaseStack:
         """Return a single stack based on key.
 
         Args:
@@ -73,7 +73,7 @@ class LocalService(BaseComponent):
             )
         return self.stacks[key]
 
-    def register_stack(self, key: Text, stack: BaseStack):
+    def register_stack(self, key: str, stack: BaseStack):
         """Register a stack.
 
         Args:
@@ -93,7 +93,7 @@ class LocalService(BaseComponent):
         self.stacks[key] = stack
         self.update()
 
-    def delete_stack(self, key: Text):
+    def delete_stack(self, key: str):
         """Delete a stack specified with a key.
 
         Args:
@@ -104,7 +104,7 @@ class LocalService(BaseComponent):
         self.update()
         logger.debug(f"Deleted stack with key: {key}.")
 
-    def get_artifact_store(self, key: Text) -> BaseArtifactStore:
+    def get_artifact_store(self, key: str) -> BaseArtifactStore:
         """Return a single artifact store based on key.
 
         Args:
@@ -124,7 +124,7 @@ class LocalService(BaseComponent):
         )
 
     def register_artifact_store(
-        self, key: Text, artifact_store: BaseArtifactStore
+        self, key: str, artifact_store: BaseArtifactStore
     ):
         """Register an artifact store.
 
@@ -149,7 +149,7 @@ class LocalService(BaseComponent):
         )
         self.update()
 
-    def delete_artifact_store(self, key: Text):
+    def delete_artifact_store(self, key: str):
         """Delete an artifact_store.
 
         Args:
@@ -161,7 +161,7 @@ class LocalService(BaseComponent):
         self.update()
         logger.debug(f"Deleted artifact_store with key: {key}.")
 
-    def get_metadata_store(self, key: Text) -> BaseMetadataStore:
+    def get_metadata_store(self, key: str) -> BaseMetadataStore:
         """Return a single metadata store based on key.
 
         Args:
@@ -181,7 +181,7 @@ class LocalService(BaseComponent):
         )
 
     def register_metadata_store(
-        self, key: Text, metadata_store: BaseMetadataStore
+        self, key: str, metadata_store: BaseMetadataStore
     ):
         """Register a metadata store.
 
@@ -206,7 +206,7 @@ class LocalService(BaseComponent):
         )
         self.update()
 
-    def delete_metadata_store(self, key: Text):
+    def delete_metadata_store(self, key: str):
         """Delete a metadata store.
 
         Args:
@@ -218,7 +218,7 @@ class LocalService(BaseComponent):
         self.update()
         logger.debug(f"Deleted metadata store with key: {key}.")
 
-    def get_orchestrator(self, key: Text) -> BaseOrchestrator:
+    def get_orchestrator(self, key: str) -> BaseOrchestrator:
         """Return a single orchestrator based on key.
 
         Args:
@@ -235,7 +235,7 @@ class LocalService(BaseComponent):
             )
         return mapping_utils.get_component_from_key(key, self.orchestrator_map)
 
-    def register_orchestrator(self, key: Text, orchestrator: BaseOrchestrator):
+    def register_orchestrator(self, key: str, orchestrator: BaseOrchestrator):
         """Register an orchestrator.
 
         Args:
@@ -259,7 +259,7 @@ class LocalService(BaseComponent):
         )
         self.update()
 
-    def delete_orchestrator(self, key: Text):
+    def delete_orchestrator(self, key: str):
         """Delete a orchestrator.
 
         Args:

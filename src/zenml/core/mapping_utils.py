@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Dict, Text
+from typing import Dict
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -10,17 +10,25 @@ from zenml.utils import path_utils, source_utils
 
 
 class UUIDSourceTuple(BaseModel):
+    """Container used to store UUID and source information
+    of a single BaseComponent subclass.
+
+    Attributes:
+        uuid: Identifier of the BaseComponent
+        source: Contains the fully qualified class name and information
+         about a git hash/tag. E.g. foo.bar.BaseComponentSubclass@git_tag
+    """
+
     uuid: UUID
-    source: Text
+    source: str
 
 
-def get_key_from_uuid(
-    uuid: UUID, mapping: Dict[Text, UUIDSourceTuple]
-) -> Text:
+def get_key_from_uuid(uuid: UUID, mapping: Dict[str, UUIDSourceTuple]) -> str:
     """Return they key that points to a certain uuid in a mapping.
 
     Args:
         uuid: uuid to query.
+        mapping: Dict mapping keys to UUIDs and source information.
 
     Returns:
         Returns the key from the mapping.
@@ -30,30 +38,30 @@ def get_key_from_uuid(
 
 
 def get_component_from_key(
-    key: Text, mapping: Dict[Text, UUIDSourceTuple]
+    key: str, mapping: Dict[str, UUIDSourceTuple]
 ) -> BaseComponent:
     """Given a key and a mapping, return an initialized component.
 
     Args:
         key: Unique key.
-        mapping: Dict of type Text -> UUIDSourceTuple.
+        mapping: Dict of type str -> UUIDSourceTuple.
 
     Returns:
         An object which is a subclass of type BaseComponent.
     """
-    tuple = mapping[key]
-    class_ = source_utils.load_source_path_class(tuple.source)
-    return class_(uuid=tuple.uuid)
+    tuple_ = mapping[key]
+    class_ = source_utils.load_source_path_class(tuple_.source)
+    return class_(uuid=tuple_.uuid)
 
 
 def get_components_from_store(
-    store_name: Text, mapping: Dict[Text, UUIDSourceTuple]
-) -> Dict[Text, BaseComponent]:
+    store_name: str, mapping: Dict[str, UUIDSourceTuple]
+) -> Dict[str, BaseComponent]:
     """Returns a list of components from a store.
 
     Args:
         store_name: Name of the store.
-        mapping: Dict of type Text -> UUIDSourceTuple.
+        mapping: Dict of type str -> UUIDSourceTuple.
 
     Returns:
         A dict of objects which are a subclass of type BaseComponent.

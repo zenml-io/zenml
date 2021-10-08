@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Text
-
 from tfx.orchestration import metadata
 
 from zenml.core.component_factory import metadata_store_factory
@@ -25,11 +23,11 @@ from zenml.metadata.base_metadata_store import BaseMetadataStore
 class MySQLMetadataStore(BaseMetadataStore):
     """MySQL backend for ZenML metadata store."""
 
-    host: Text
+    host: str
     port: int
-    database: Text
-    username: Text
-    password: Text
+    database: str
+    username: str
+    password: str
 
     def get_tfx_metadata_config(self):
         """Return tfx metadata config for mysql metadata store."""

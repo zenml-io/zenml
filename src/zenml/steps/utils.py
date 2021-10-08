@@ -27,7 +27,7 @@ from __future__ import absolute_import, division, print_function
 import inspect
 import json
 import sys
-from typing import Any, Callable, Dict, List, Optional, Text, Type
+from typing import Any, Callable, Dict, List, Optional, Type
 
 import pydantic
 from pydantic import create_model
@@ -106,9 +106,9 @@ class _FunctionExecutor(BaseExecutor):
 
     def Do(
         self,
-        input_dict: Dict[Text, List[tfx_types.Artifact]],
-        output_dict: Dict[Text, List[tfx_types.Artifact]],
-        exec_properties: Dict[Text, Any],
+        input_dict: Dict[str, List[tfx_types.Artifact]],
+        output_dict: Dict[str, List[tfx_types.Artifact]],
+        exec_properties: Dict[str, Any],
     ):
         function_args = {}
         for name, artifact in input_dict.items():

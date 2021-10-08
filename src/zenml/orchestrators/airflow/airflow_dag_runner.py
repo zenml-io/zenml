@@ -133,6 +133,7 @@ class AirflowDagRunner(tfx_runner.TfxRunner):
         return airflow_dag
 
     def _replace_runtime_params(self, comp):
+        """Prepares runtime parameters of a tfx component for airflow."""
         for k, prop in comp.exec_properties.copy().items():
             if isinstance(prop, RuntimeParameter):
                 # Airflow only supports string parameters.

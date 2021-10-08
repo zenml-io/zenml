@@ -14,6 +14,7 @@
 
 
 def test_check_materializer_registry_with_artifacts():
+    """Tests that the base materializer class is not registered as a usable materializer."""
     from zenml.artifacts.base_artifact import BaseArtifact
 
     artifact = BaseArtifact()
