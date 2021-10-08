@@ -29,54 +29,68 @@ from tfx.dsl.io.filesystem import PathType
 
 
 class ZenGCS(filesystem.Filesystem):
+    """Filesystem that delegates to Google Cloud Store using gcsfs."""
+
     SUPPORTED_SCHEMES = ["gs://"]
 
     fs = gcsfs.GCSFileSystem()
 
     @staticmethod
     def open(name: PathType, mode: str = "r") -> Any:
+        """Open a file at the given path."""
         return ZenGCS.fs.open(path=name, mode=mode)
 
     @staticmethod
     def copy(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+        """Copy a file."""
         # TODO: additional params
         ZenGCS.fs.copy(path1=src, path2=dst)
 
     @staticmethod
     def exists(path: PathType) -> bool:
+        """Check whether a path exists."""
         return ZenGCS.fs.exists(path=path)
 
     @staticmethod
     def glob(pattern: PathType) -> List[PathType]:
+        """Return all paths that match the given glob pattern."""
         return ZenGCS.fs.glob(path=pattern)
 
     @staticmethod
     def isdir(path: PathType) -> bool:
+        """Check whether a path is a directory."""
         return ZenGCS.fs.isdir(path=path)
 
     @staticmethod
     def listdir(path: PathType) -> List[PathType]:
+        """Return a list of files in a directory."""
         return ZenGCS.fs.listdir(path=path)
 
     @staticmethod
     def makedirs(path: PathType) -> None:
+        """Create a directory at the given path. If needed also
+        create missing parent directories."""
         ZenGCS.fs.makedirs(path=path, exist_ok=True)
 
     @staticmethod
     def mkdir(path: PathType) -> None:
+        """Create a directory at the given path."""
         ZenGCS.fs.makedir(path=path)
 
     @staticmethod
     def remove(path: PathType) -> None:
+        """Remove the file at the given path."""
         ZenGCS.fs.rm_file(path=path)
 
     @staticmethod
     def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+        """Rename source file to destination file."""
         # TODO: additional params
         ZenGCS.fs.rename(path1=src, path2=dst)
 
     @staticmethod
     def rmtree(path: PathType) -> None:
+        """Remove the given directory."""
         try:
             ZenGCS.fs.delete(path=path, recursive=True)
         except FileNotFoundError as e:
@@ -84,6 +98,7 @@ class ZenGCS(filesystem.Filesystem):
 
     @staticmethod
     def stat(path: PathType) -> Any:
+        """Return stat info for the given path."""
         ZenGCS.fs.stat(path=path)
 
     @staticmethod
@@ -92,6 +107,7 @@ class ZenGCS(filesystem.Filesystem):
         topdown: bool = True,
         onerror: Optional[Callable[..., None]] = None,
     ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
+        """Return an iterator that walks the contents of the given directory."""
         # TODO: additional params
         return ZenGCS.fs.walk(path=top)
 
