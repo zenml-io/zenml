@@ -52,9 +52,9 @@ class _PropertyDictWrapper(json_utils.Jsonable):
     """
 
     def __init__(
-            self,
-            data: Dict[str, Channel],
-            compat_aliases: Optional[Dict[str, str]] = None,
+        self,
+        data: Dict[str, Channel],
+        compat_aliases: Optional[Dict[str, str]] = None,
     ):
         """Initializes the wrapper object.
 
@@ -115,17 +115,17 @@ class _ZenMLSimpleComponent(_SimpleComponent):
 
 
 class _FunctionExecutor(BaseExecutor):
-    """ Base TFX Executor class which is compatible with ZenML steps"""
+    """Base TFX Executor class which is compatible with ZenML steps"""
 
     _FUNCTION = staticmethod(lambda: None)
 
     def Do(
-            self,
-            input_dict: Dict[str, List[tfx_types.Artifact]],
-            output_dict: Dict[str, List[tfx_types.Artifact]],
-            exec_properties: Dict[str, Any],
+        self,
+        input_dict: Dict[str, List[tfx_types.Artifact]],
+        output_dict: Dict[str, List[tfx_types.Artifact]],
+        exec_properties: Dict[str, Any],
     ):
-        """ Main block for the execution of the step
+        """Main block for the execution of the step
 
         Args:
             input_dict: dictionary containing the input artifacts
@@ -200,7 +200,7 @@ class _FunctionExecutor(BaseExecutor):
 
 
 def generate_component(step) -> Callable[..., Any]:
-    """ Utility function which converts a ZenML step into a TFX Component
+    """Utility function which converts a ZenML step into a TFX Component
 
     Args:
         step: a ZenML step instance
