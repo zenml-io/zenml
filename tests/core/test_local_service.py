@@ -18,7 +18,7 @@ from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
 from zenml.stacks.base_stack import BaseStack
 
 
-def test_service_crud():
+def test_service_crud(tmp_path):
     """Test basic service crud."""
     # TODO [LOW] [TEST]: Need to improve this logic, potentially with
     #  physically checking the FS us `path_utils`.
@@ -28,8 +28,12 @@ def test_service_crud():
     ARTIFACT_KEY = "artifact_local"
     STACK_KEY = "stack_local"
     ORCHESTRATOR_KEY = "orchestrator_local"
-    local_artifact_store = LocalArtifactStore()
-    local_metadata_store = SQLiteMetadataStore()
+    local_artifact_store = LocalArtifactStore(
+        path=str(tmp_path / "local_store")
+    )
+    local_metadata_store = SQLiteMetadataStore(
+        uri=str(tmp_path / "local_store" / "metadata.db")
+    )
     local_stack = BaseStack(
         metadata_store_name=METADATA_KEY,
         artifact_store_name=ARTIFACT_KEY,
