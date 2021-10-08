@@ -52,9 +52,9 @@ class _PropertyDictWrapper(json_utils.Jsonable):
     """
 
     def __init__(
-        self,
-        data: Dict[str, Channel],
-        compat_aliases: Optional[Dict[str, str]] = None,
+            self,
+            data: Dict[str, Channel],
+            compat_aliases: Optional[Dict[str, str]] = None,
     ):
         """Initializes the wrapper object.
 
@@ -115,17 +115,28 @@ class _ZenMLSimpleComponent(_SimpleComponent):
 
 
 class _FunctionExecutor(BaseExecutor):
-    """ """
+    """ Base TFX Executor class which is compatible with ZenML steps"""
 
     _FUNCTION = staticmethod(lambda: None)
 
     def Do(
-        self,
-        input_dict: Dict[str, List[tfx_types.Artifact]],
-        output_dict: Dict[str, List[tfx_types.Artifact]],
-        exec_properties: Dict[str, Any],
+            self,
+            input_dict: Dict[str, List[tfx_types.Artifact]],
+            output_dict: Dict[str, List[tfx_types.Artifact]],
+            exec_properties: Dict[str, Any],
     ):
+        """ Main block for the execution of the step
+
+        Args:
+            input_dict: dictionary containing the input artifacts
+            output_dict: dictionary containing the output artifacts
+            exec_properties: dictionary containing the execution parameters
+        """
+
+        # Building the args for the process function
         function_args = {}
+
+        # Resolving the input artifacts
         for name, artifact in input_dict.items():
             if len(artifact) == 1:
                 function_args[name] = artifact[0]
@@ -138,6 +149,7 @@ class _FunctionExecutor(BaseExecutor):
                     % (name, self, artifact)
                 )
 
+        # Resolving the output artifacts and the return annotations
         return_artifact = output_dict.pop("return_output", None)
         for name, artifact in output_dict.items():
             if len(artifact) == 1:
@@ -151,11 +163,9 @@ class _FunctionExecutor(BaseExecutor):
                     % (name, self, artifact)
                 )
 
-        ####
+        # Resolving the primitive input and output annotations
         spec = inspect.getfullargspec(self._FUNCTION)
-
         args = spec.args
-
         inputs_to_take_care_of = []
         param_spec = {}
         for arg in args:
@@ -168,6 +178,7 @@ class _FunctionExecutor(BaseExecutor):
             else:
                 param_spec.update({arg: arg_type})
 
+        # Resolving the execution parameters
         new_exec = {k: json.loads(v) for k, v in exec_properties.items()}
         pydantic_c: Type[pydantic.BaseModel] = create_model(
             "params", **{k: (v, ...) for k, v in param_spec.items()}
@@ -176,6 +187,7 @@ class _FunctionExecutor(BaseExecutor):
 
         returns = self._FUNCTION(**function_args)
 
+        # Managing the returns of the process function
         if return_artifact is not None:
             artifact = return_artifact[0]
             if returns is not None:
@@ -188,6 +200,16 @@ class _FunctionExecutor(BaseExecutor):
 
 
 def generate_component(step) -> Callable[..., Any]:
+    """ Utility function which converts a ZenML step into a TFX Component
+
+    Args:
+        step: a ZenML step instance
+
+    Returns:
+        component: the class of the corresponding TFX component
+    """
+
+    # Managing the parameters for component spec creation
     spec_inputs, spec_outputs, spec_params = {}, {}, {}
     for key, artifact_type in step.INPUT_SPEC.items():
         spec_inputs[key] = component_spec.ChannelParameter(type=artifact_type)
@@ -206,6 +228,7 @@ def generate_component(step) -> Callable[..., Any]:
         },
     )
 
+    # Defining a executor class bu utilizing the process function
     executor_class = type(
         "%s_Executor" % step.__class__.__name__,
         (_FunctionExecutor,),
@@ -217,9 +240,9 @@ def generate_component(step) -> Callable[..., Any]:
 
     module = sys.modules[step.__module__]
     setattr(module, "%s_Executor" % step.__class__.__name__, executor_class)
-
     executor_spec_instance = ExecutorClassSpec(executor_class=executor_class)
 
+    # Defining the component with the corresponding executor and spec
     return type(
         step.__class__.__name__,
         (_ZenMLSimpleComponent,),
