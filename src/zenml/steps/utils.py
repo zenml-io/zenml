@@ -56,18 +56,27 @@ class _PropertyDictWrapper(json_utils.Jsonable):
         data: Dict[str, Channel],
         compat_aliases: Optional[Dict[str, str]] = None,
     ):
+        """Initializes the wrapper object.
+
+        Args:
+            data: The data to be wrapped.
+            compat_aliases: Compatability aliases to support deprecated keys.
+        """
         self._data = data
         self._compat_aliases = compat_aliases or {}
 
     def __iter__(self):
+        """Returns a generator that yields keys of the wrapped dictionary."""
         yield from self._data
 
     def __getitem__(self, key):
+        """Returns the dictionary value for the specified key."""
         if key in self._compat_aliases:
             key = self._compat_aliases[key]
         return self._data[key]
 
     def __getattr__(self, key):
+        """Returns the dictionary value for the specified key."""
         if key in self._compat_aliases:
             key = self._compat_aliases[key]
         try:
@@ -75,19 +84,24 @@ class _PropertyDictWrapper(json_utils.Jsonable):
         except KeyError:
             raise AttributeError
 
-    def __repr__(self):
+    def __repr__(self) -> str:
+        """Returns the representation of the wrapped dictionary."""
         return repr(self._data)
 
     def get_all(self) -> Dict[str, Channel]:
+        """Returns the wrapped dictionary."""
         return self._data
 
     def keys(self):
+        """Returns the keys of the wrapped dictionary."""
         return self._data.keys()
 
     def values(self):
+        """Returns the values of the wrapped dictionary."""
         return self._data.values()
 
     def items(self):
+        """Returns the items of the wrapped dictionary."""
         return self._data.items()
 
 
@@ -96,6 +110,7 @@ class _ZenMLSimpleComponent(_SimpleComponent):
 
     @property
     def outputs(self) -> _PropertyDictWrapper:
+        """Returns the wrapped spec outputs."""
         return _PropertyDictWrapper(self.spec.outputs)
 
 
