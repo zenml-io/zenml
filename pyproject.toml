@@ -137,6 +137,7 @@ exclude_lines = [
 profile = "black"
 known_third_party = []
 skip_glob = []
+line_length = 79
 
 [tool.mypy]
 # --strict

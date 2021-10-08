@@ -25,7 +25,8 @@ class BaseMaterializerMeta(type):
     subclasses for reading/writing artifacts."""
 
     def __new__(mcs, name, bases, dct):
-        """Creates a Materializer class and registers it at the `MaterializerFactory`."""
+        """Creates a Materializer class and registers it at
+        the `MaterializerFactory`."""
         cls = super().__new__(mcs, name, bases, dct)
         if name != "BaseMaterializer":
             assert cls.TYPE_NAME != "base", (

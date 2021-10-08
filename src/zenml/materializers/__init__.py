@@ -20,8 +20,8 @@ from zenml.materializers.pandas_materializer import PandasMaterializer  # noqa
 logger = get_logger(__name__)
 
 try:
-    from zenml.materializers.keras_meterializer import (
+    from zenml.materializers.keras_meterializer import (  # noqa
         KerasMaterializer,
-    )  # noqa
+    )
 except ImportError:
     logger.debug("Tensorflow not installed.")

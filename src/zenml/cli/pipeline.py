@@ -13,8 +13,6 @@
 # #  permissions and limitations under the License.
 # """CLI for pipelines."""
 #
-# from typing import Text
-#
 # import click
 # from tabulate import tabulate
 #
@@ -64,7 +62,7 @@
 # @pipeline.command('get')
 # @click.argument('pipeline_name')
 # @pass_repo
-# def get_pipeline_by_name(repo: Repository, pipeline_name: Text):
+# def get_pipeline_by_name(repo: Repository, pipeline_name: str):
 #     """
 #     Gets pipeline from current repository by matching a name against a
 #     pipeline name in the repository.
@@ -80,7 +78,7 @@
 #
 # @pipeline.command('run')
 # @click.argument('path_to_config')
-# def run_pipeline(path_to_config: Text):
+# def run_pipeline(path_to_config: str):
 #     """
 #     Runs pipeline specified by the given config YAML object.
 #

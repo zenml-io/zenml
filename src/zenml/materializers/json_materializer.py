@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+from typing import Any, Dict
 
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import yaml_utils
@@ -21,23 +22,16 @@ DEFAULT_FILENAME = "data.json"
 
 
 class JsonMaterializer(BaseMaterializer):
-    """Read data to and from JSON."""
+    """Read/Write JSON files."""
 
     TYPE_NAME = "json"
 
-    def read_file(self, filename=None):
+    def read_file(self, filename=DEFAULT_FILENAME) -> Any:
         """Read JSON from filename."""
-        filepath = os.path.join(
-            self.artifact.uri,
-            filename if filename is not None else DEFAULT_FILENAME,
-        )
+        filepath = os.path.join(self.artifact.uri, filename)
         return yaml_utils.read_json(filepath)
 
-    def write_file(self, data, filename=None):
-        """Write JSON to filename."""
-        filepath = os.path.join(
-            self.artifact.uri,
-            filename if filename is not None else DEFAULT_FILENAME,
-        )
-
+    def write_file(self, data: Dict, filename=DEFAULT_FILENAME):
+        """Write JSON data to filename."""
+        filepath = os.path.join(self.artifact.uri, filename)
         yaml_utils.write_json(filepath, data)

@@ -13,8 +13,6 @@
 #  permissions and limitations under the License.
 """ZenML specific exception definitions"""
 
-from typing import Text
-
 
 class InitializationException(Exception):
     """Raises exception when a function is run before zenml initialization."""
@@ -46,8 +44,8 @@ class DoesNotExistException(Exception):
 
     def __init__(
         self,
-        name: Text = "",
-        reason: Text = "",
+        name: str = "",
+        reason: str = "",
         message="{} does not exist! This might be due to: {}",
     ):
         super().__init__(message.format(name, reason))
@@ -58,7 +56,7 @@ class AlreadyExistsException(Exception):
     action is trying to create a resource with the same name."""
 
     def __init__(
-        self, message: Text = None, name: Text = "", resource_type: Text = ""
+        self, message: str = None, name: str = "", resource_type: str = ""
     ):
         if message is None:
             message = f"{resource_type} `{name}` already exists!"
@@ -71,8 +69,8 @@ class PipelineNotSucceededException(Exception):
 
     def __init__(
         self,
-        name: Text = "",
-        message: Text = "{} is not yet completed successfully.",
+        name: str = "",
+        message: str = "{} is not yet completed successfully.",
     ):
         super().__init__(message.format(name))
 
@@ -82,7 +80,7 @@ class GitException(Exception):
 
     def __init__(
         self,
-        message: Text = "There is a problem with git resolution. "
+        message: str = "There is a problem with git resolution. "
         "Please make sure that all relevant files "
         "are committed.",
     ):

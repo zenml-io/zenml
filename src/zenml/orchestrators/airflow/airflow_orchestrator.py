@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import datetime
+from typing import TYPE_CHECKING
 
 from tfx.dsl.components.common.importer import Importer
 from tfx.orchestration import pipeline as tfx_pipeline
@@ -25,10 +26,21 @@ from zenml.orchestrators.airflow.airflow_dag_runner import (
 )
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 
+if TYPE_CHECKING:
+    from zenml.pipelines.base_pipeline import BasePipeline
+
 
 @orchestrator_store_factory.register(OrchestratorTypes.airflow)
 class AirflowOrchestrator(BaseOrchestrator):
-    def run(self, zenml_pipeline):
+    """Orchestrator responsible for running pipelines using Airflow."""
+
+    def run(self, zenml_pipeline: "BasePipeline", **kwargs):
+        """Prepares the pipeline so it can be run in Airflow.
+
+        Args:
+            zenml_pipeline: The pipeline to run.
+            **kwargs: Unused argument to conform with base class signature.
+        """
         # TODO: [LOW] remove or modify the configuration here
         _airflow_config = {
             "schedule_interval": None,

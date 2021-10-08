@@ -99,7 +99,7 @@ class AirflowDagRunner(tfx_runner.TfxRunner):
         component_impl_map = {}
         for tfx_component in tfx_pipeline.components:
             if isinstance(tfx_component, base_component.BaseComponent):
-                tfx_component._resolve_pip_dependencies(
+                tfx_component._resolve_pip_dependencies(  # pylint: disable=protected-access
                     tfx_pipeline.pipeline_info.pipeline_root
                 )
 

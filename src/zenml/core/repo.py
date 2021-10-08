@@ -14,7 +14,7 @@
 """Base ZenML repository"""
 
 import os
-from typing import List, Optional, Text, Type, Union
+from typing import List, Optional, Type, Union
 
 from git import InvalidGitRepositoryError
 
@@ -46,7 +46,7 @@ class Repository:
     Every ZenML project exists inside a ZenML repository.
     """
 
-    def __init__(self, path: Text = None):
+    def __init__(self, path: str = None):
         """
         Construct reference a ZenML repository.
 
@@ -78,7 +78,7 @@ class Repository:
     @staticmethod
     @track(event=CREATE_REPO)
     def init_repo(
-        repo_path: Text = os.getcwd(),
+        repo_path: str = os.getcwd(),
         stack: BaseStack = None,
         analytics_opt_in: bool = None,
     ):
@@ -149,13 +149,14 @@ class Repository:
             gc.update()
 
     def get_git_wrapper(self) -> GitWrapper:
+        """Returns the git wrapper for the repo."""
         return self.git_wrapper
 
     def get_service(self) -> LocalService:
         """Returns the active service. For now, always local."""
         return self.service
 
-    def set_active_stack(self, stack_key: Text):
+    def set_active_stack(self, stack_key: str):
         """Set the active stack for the repo. This change is local for the
         machine.
 
@@ -167,7 +168,7 @@ class Repository:
         gc.set_stack_for_repo(self.path, stack_key)
         gc.update()
 
-    def get_active_stack_key(self) -> Text:
+    def get_active_stack_key(self) -> str:
         """Get the active stack key from global config.
 
         Returns:
@@ -191,7 +192,7 @@ class Repository:
         """Gets list of all pipelines."""
         raise NotImplementedError
 
-    def get_pipeline_by_name(self, pipeline_name: Text = None):
+    def get_pipeline_by_name(self, pipeline_name: str = None):
         """
         Loads a pipeline just by its name.
 
@@ -208,7 +209,7 @@ class Repository:
         #         c = yaml_utils.read_yaml(y)
         #         return BasePipeline.from_config(c)
 
-    def get_pipelines_by_type(self, type_filter: List[Text]) -> List:
+    def get_pipelines_by_type(self, type_filter: List[str]) -> List:
         """
         Gets list of pipelines filtered by type.
 
@@ -219,7 +220,7 @@ class Repository:
         # pipelines = self.get_pipelines()
         # return [p for p in pipelines if p.PIPELINE_TYPE in type_filter]
 
-    def get_pipeline_names(self) -> Optional[List[Text]]:
+    def get_pipeline_names(self) -> Optional[List[str]]:
         """Gets list of pipeline (unique) names"""
         raise NotImplementedError
         # from zenml.pipelines import BasePipeline
@@ -228,7 +229,7 @@ class Repository:
         # return [BasePipeline.get_name_from_pipeline_name(p) for p in yamls]
 
     @track(event=GET_STEP_VERSION)
-    def get_step_by_version(self, step_type: Union[Type, Text], version: Text):
+    def get_step_by_version(self, step_type: Union[Type, str], version: str):
         """
         Gets a Step object by version. There might be many objects of a
         particular Step registered in many pipelines. This function just
@@ -261,7 +262,7 @@ class Repository:
         #         if class_ == type_str and version == source_version:
         #             return BaseStep.from_config(step_config)
 
-    def get_step_versions_by_type(self, step_type: Union[Type, Text]):
+    def get_step_versions_by_type(self, step_type: Union[Type, str]):
         """
         List all registered steps in repository by step_type.
 
