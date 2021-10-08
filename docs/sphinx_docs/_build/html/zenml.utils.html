@@ -188,18 +188,24 @@ with arguments:</p>
 <dt class="sig sig-object py" id="zenml.utils.exceptions.ArtifactInterfaceError">
 <em class="property"><span class="pre">exception</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.utils.exceptions.</span></span><span class="sig-name descname"><span class="pre">ArtifactInterfaceError</span></span><a class="headerlink" href="#zenml.utils.exceptions.ArtifactInterfaceError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raises exception when interacting with the Artifact interface
+in an unsupported way.</p>
 </dd></dl>
 
 <dl class="py exception">
 <dt class="sig sig-object py" id="zenml.utils.exceptions.PipelineInterfaceError">
 <em class="property"><span class="pre">exception</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.utils.exceptions.</span></span><span class="sig-name descname"><span class="pre">PipelineInterfaceError</span></span><a class="headerlink" href="#zenml.utils.exceptions.PipelineInterfaceError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raises exception when interacting with the Pipeline interface
+in an unsupported way.</p>
 </dd></dl>
 
 <dl class="py exception">
 <dt class="sig sig-object py" id="zenml.utils.exceptions.StepInterfaceError">
 <em class="property"><span class="pre">exception</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.utils.exceptions.</span></span><span class="sig-name descname"><span class="pre">StepInterfaceError</span></span><a class="headerlink" href="#zenml.utils.exceptions.StepInterfaceError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raises exception when interacting with the Step interface
+in an unsupported way.</p>
 </dd></dl>
 
 </div>
@@ -534,7 +540,7 @@ with arguments:</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="zenml.utils.path_utils.resolve_relative_path">
-<span class="sig-prename descclassname"><span class="pre">zenml.utils.path_utils.</span></span><span class="sig-name descname"><span class="pre">resolve_relative_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.path_utils.resolve_relative_path" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">zenml.utils.path_utils.</span></span><span class="sig-name descname"><span class="pre">resolve_relative_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#zenml.utils.path_utils.resolve_relative_path" title="Permalink to this definition">¶</a></dt>
 <dd><p>Takes relative path and resolves it absolutely.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -612,18 +618,18 @@ can also be optionally pinned.
 or the version of zenml as a string.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="zenml.utils.source_utils.create_zenml_pin">
-<span class="sig-prename descclassname"><span class="pre">zenml.utils.source_utils.</span></span><span class="sig-name descname"><span class="pre">create_zenml_pin</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.source_utils.create_zenml_pin" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">zenml.utils.source_utils.</span></span><span class="sig-name descname"><span class="pre">create_zenml_pin</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#zenml.utils.source_utils.create_zenml_pin" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a ZenML pin for source pinning from release version.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="zenml.utils.source_utils.get_absolute_path_from_module_source">
-<span class="sig-prename descclassname"><span class="pre">zenml.utils.source_utils.</span></span><span class="sig-name descname"><span class="pre">get_absolute_path_from_module_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.source_utils.get_absolute_path_from_module_source" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">zenml.utils.source_utils.</span></span><span class="sig-name descname"><span class="pre">get_absolute_path_from_module_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#zenml.utils.source_utils.get_absolute_path_from_module_source" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get a directory path from module source.</p>
 <p>E.g. <cite>zenml.core.step</cite> will return <cite>full/path/to/zenml/core/step</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>module</strong> (<em>str</em>) – A module e.g. <cite>zenml.core.step</cite>.</p>
+<dd class="field-odd"><p><strong>module</strong> – A module e.g. <cite>zenml.core.step</cite>.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -653,7 +659,7 @@ then returns the same.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="zenml.utils.source_utils.get_module_source_from_file_path">
-<span class="sig-prename descclassname"><span class="pre">zenml.utils.source_utils.</span></span><span class="sig-name descname"><span class="pre">get_module_source_from_file_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.source_utils.get_module_source_from_file_path" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">zenml.utils.source_utils.</span></span><span class="sig-name descname"><span class="pre">get_module_source_from_file_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#zenml.utils.source_utils.get_module_source_from_file_path" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets module_source from a file_path. E.g. <cite>/home/myrepo/step/trainer.py</cite>
 returns <cite>myrepo.step.trainer</cite> if <cite>myrepo</cite> is the root of the repo.</p>
 <dl class="field-list simple">
@@ -677,11 +683,11 @@ returns <cite>some.module</cite>.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="zenml.utils.source_utils.get_path_from_source">
-<span class="sig-prename descclassname"><span class="pre">zenml.utils.source_utils.</span></span><span class="sig-name descname"><span class="pre">get_path_from_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.source_utils.get_path_from_source" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">zenml.utils.source_utils.</span></span><span class="sig-name descname"><span class="pre">get_path_from_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#zenml.utils.source_utils.get_path_from_source" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get file path from source</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>source</strong> (<em>str</em>) – class_source e.g. this.module.Class.</p>
+<dd class="field-odd"><p><strong>source</strong> – class_source e.g. this.module.Class.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -692,19 +698,19 @@ returns <cite>some.module</cite>.</p>
 <dd><p>Gets pin from source, i.e. <a class="reference external" href="mailto:module&#46;path&#37;&#52;&#48;pin">module<span>&#46;</span>path<span>&#64;</span>pin</a>, returns pin.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>source</strong> (<em>str</em>) – class_source e.g. this.module.Class[&#64;pin].</p>
+<dd class="field-odd"><p><strong>source</strong> – class_source e.g. this.module.Class[&#64;pin].</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="zenml.utils.source_utils.get_relative_path_from_module_source">
-<span class="sig-prename descclassname"><span class="pre">zenml.utils.source_utils.</span></span><span class="sig-name descname"><span class="pre">get_relative_path_from_module_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module_source</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.source_utils.get_relative_path_from_module_source" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">zenml.utils.source_utils.</span></span><span class="sig-name descname"><span class="pre">get_relative_path_from_module_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module_source</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#zenml.utils.source_utils.get_relative_path_from_module_source" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get a directory path from module, relative to root of repository.</p>
 <p>E.g. zenml.core.step will return zenml/core/step.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>module_source</strong> (<em>str</em>) – A module e.g. zenml.core.step</p>
+<dd class="field-odd"><p><strong>module_source</strong> – A module e.g. zenml.core.step</p>
 </dd>
 </dl>
 </dd></dl>
@@ -715,7 +721,7 @@ returns <cite>some.module</cite>.</p>
 <dd><p>Returns True if pin is valid ZenML pin, else False.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>pin</strong> (<em>str</em>) – potential ZenML pin like ‘zenml_0.1.1’</p>
+<dd class="field-odd"><p><strong>pin</strong> – potential ZenML pin like ‘zenml_0.1.1’</p>
 </dd>
 </dl>
 </dd></dl>
@@ -760,7 +766,7 @@ returns <cite>some.module</cite>.</p>
 <dd><p>Creates a ZenML pin for source pinning from release version.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>source</strong> (<em>str</em>) – class_source e.g. this.module.Class.</p>
+<dd class="field-odd"><p><strong>source</strong> – class_source e.g. this.module.Class.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -770,7 +776,7 @@ returns <cite>some.module</cite>.</p>
 <span id="zenml-utils-yaml-utils-module"></span><h2>zenml.utils.yaml_utils module<a class="headerlink" href="#module-zenml.utils.yaml_utils" title="Permalink to this headline">¶</a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="zenml.utils.yaml_utils.is_yaml">
-<span class="sig-prename descclassname"><span class="pre">zenml.utils.yaml_utils.</span></span><span class="sig-name descname"><span class="pre">is_yaml</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.yaml_utils.is_yaml" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">zenml.utils.yaml_utils.</span></span><span class="sig-name descname"><span class="pre">is_yaml</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#zenml.utils.yaml_utils.is_yaml" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns True if file_path is YAML, else False</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -784,7 +790,7 @@ returns <cite>some.module</cite>.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="zenml.utils.yaml_utils.read_json">
-<span class="sig-prename descclassname"><span class="pre">zenml.utils.yaml_utils.</span></span><span class="sig-name descname"><span class="pre">read_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.yaml_utils.read_json" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">zenml.utils.yaml_utils.</span></span><span class="sig-name descname"><span class="pre">read_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#zenml.utils.yaml_utils.read_json" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read JSON on file path and returns contents as dict.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>

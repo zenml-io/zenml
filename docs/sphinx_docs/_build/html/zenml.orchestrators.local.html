@@ -132,10 +132,20 @@
 <dt class="sig sig-object py" id="zenml.orchestrators.local.local_orchestrator.LocalOrchestrator">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.orchestrators.local.local_orchestrator.</span></span><span class="sig-name descname"><span class="pre">LocalOrchestrator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uuid</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">uuid.UUID</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.orchestrators.local.local_orchestrator.LocalOrchestrator" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="zenml.orchestrators.html#zenml.orchestrators.base_orchestrator.BaseOrchestrator" title="zenml.orchestrators.base_orchestrator.BaseOrchestrator"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.orchestrators.base_orchestrator.BaseOrchestrator</span></code></a></p>
+<p>Orchestrator responsible for running pipelines locally.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="zenml.orchestrators.local.local_orchestrator.LocalOrchestrator.run">
-<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zenml_pipeline</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">pipeline_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.orchestrators.local.local_orchestrator.LocalOrchestrator.run" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zenml_pipeline</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">BasePipeline</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">pipeline_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.orchestrators.local.local_orchestrator.LocalOrchestrator.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs a pipeline locally.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>zenml_pipeline</strong> – The pipeline to run.</p></li>
+<li><p><strong>**pipeline_args</strong> – Unused kwargs to conform with base signature.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 </dd></dl>
 
