@@ -6,7 +6,7 @@ assignees: 'htahir1'
 ---
 
 **Tell us what you're thinking**
-A clear and concise description of what the bug is.
+A clear and concise description is best.
 
 **Context (if applicable):**
  - OS: [e.g. Ubuntu 18.04]
