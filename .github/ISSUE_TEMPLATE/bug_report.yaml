@@ -44,7 +44,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: Version
+      label: ZenML Version
       description: "What version of ZenML are you using?"
       placeholder: "e.g. 0.5.0rc2"
       value: 0.5.0rc2
@@ -54,7 +54,8 @@ body:
   - type: dropdown
     id: python
     attributes:
-      label: Which Python are you using (Please specify minor version in the above description if relevant)
+      label: Python Version
+      description: Please specify minor version in the above description if relevant.
       multiple: true
       options:
         - 3.6
@@ -65,8 +66,8 @@ body:
   - type: dropdown
     id: os
     attributes:
-      label: What OS are you using (Please specify exact version in the above description if relevant)
-      multiple: true
+      label: OS Type
+      multiple: Please specify exact version in the above description if relevant.
       options:
         - Windows
         - Mac OS
