@@ -162,9 +162,6 @@ scratchpad/
 # pyenv local version file
 .python-version
 
-# GitHub Folder YAML files not to be ignored
-!.github/**/*.yaml
-
 # zen
 *.yaml
 *.csv
@@ -174,3 +171,5 @@ local_test/
 !cloudbuild.yaml
 docs/book/_build/
 
+# GitHub Folder YAML files not to be ignored
+!.github/ISSUE_TEMPLATE/**
