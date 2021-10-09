@@ -56,7 +56,7 @@ body:
     attributes:
       label: Python Version
       description: Please specify minor version in the above description if relevant.
-      multiple: true
+      multiple: false
       options:
         - 3.6
         - 3.7
@@ -67,7 +67,8 @@ body:
     id: os
     attributes:
       label: OS Type
-      multiple: Please specify exact version in the above description if relevant.
+      description: Please specify exact version in the above description if relevant.
+      multiple: false
       options:
         - Windows
         - Mac OS
