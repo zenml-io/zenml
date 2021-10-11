@@ -14,14 +14,16 @@
 
 import os
 
+from zenml.logger import init_logging
+from zenml.pipelines.pipeline_decorator import pipeline  # noqa
+from zenml.steps.step_decorator import step  # noqa
+from zenml.utils.analytics_utils import initialize_telemetry
+
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 with open(os.path.join(ROOT_DIR, "VERSION")) as version_file:
     __version__ = version_file.read().strip()
 
 
-from zenml.logger import init_logging
-from zenml.pipelines.pipeline_decorator import pipeline  # noqa
-from zenml.steps.step_decorator import step  # noqa
-
 init_logging()
+initialize_telemetry()

@@ -86,7 +86,10 @@ def get_segment_key() -> str:
         logger.debug("Failed to get segment write key", exc_info=True)
 
 
-analytics.write_key = get_segment_key()
+def initialize_telemetry():
+    """Initializes telemetry with the right key"""
+    if analytics.write_key is None:
+        analytics.write_key = get_segment_key()
 
 
 def get_system_info() -> Dict:
@@ -132,6 +135,10 @@ def track_event(event: str, metadata: Dict = None):
         metadata: Dict of metadata to track.
     """
     try:
+        assert (
+            analytics.write_key is not None
+        ), "Analytics key not set but trying to make telemetry call."
+
         gc = GlobalConfig()
         logger.debug(f"Analytics opt-in: {gc.analytics_opt_in}.")
 
@@ -153,7 +160,6 @@ def track_event(event: str, metadata: Dict = None):
     except Exception as e:
         # We should never fail main thread
         logger.debug(f"Analytics failed due to: {e}")
-        return
 
 
 def parametrized(dec):
