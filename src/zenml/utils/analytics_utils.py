@@ -84,6 +84,17 @@ def initialize_telemetry():
         analytics.write_key = get_segment_key()
 
 
+def in_docker():
+    """Returns: True if running in a Docker container, else False"""
+    # TODO [MEDIUM]: Make this more reliable and add test.
+    try:
+        with open("/proc/1/cgroup", "rt") as ifh:
+            info = ifh.read()
+            return "docker" in info or "kubepod" in info
+    except (FileNotFoundError, Exception):
+        return False
+
+
 def get_system_info() -> Dict:
     """Returns system info as a dict.
 
@@ -142,7 +153,7 @@ def track_event(event: str, metadata: Dict = None):
 
         # add basics
         metadata.update(get_system_info())
-        metadata.update({"version": __version__})
+        metadata.update({"in_docker": in_docker(), "version": __version__})
 
         analytics.track(gc.user_id, event, metadata)
         logger.debug(
