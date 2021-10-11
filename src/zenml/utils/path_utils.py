@@ -21,7 +21,8 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, List, Tuple
 
 from tfx.dsl.io.filesystem import PathType
-from tfx.utils.io_utils import _REMOTE_FS_PREFIX, fileio, load_csv_column_names
+from tfx.utils.io_utils import _REMOTE_FS_PREFIX as _REMOTE_FS_PREFIX
+from tfx.utils.io_utils import fileio, load_csv_column_names
 
 from zenml.core.constants import ZENML_DIR_NAME
 from zenml.exceptions import InitializationException
