@@ -10,7 +10,7 @@ readme = "README.md"
 homepage = "https://zenml.io"
 documentation = "https://docs.zenml.io"
 repository = "https://github.com/zenml-io/zenml"
-license = 'Apache-2.0'
+license = "Apache-2.0"
 keywords = [
     "machine learning", "production", "pipeline", "mlops", "devops"
 ]
@@ -46,7 +46,7 @@ include = [
 ]
 
 [tool.poetry.scripts]
-zenml = 'zenml.cli.cli:cli'
+zenml = "zenml.cli.cli:cli"
 
 [tool.poetry.dependencies]
 python = ">=3.6.2,<3.9"
@@ -75,7 +75,7 @@ all = ["apache-airflow"]
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"
-mypy = "^0.812"
+mypy = "^0.910"
 flake8 = "^3.9.2"
 black = "^21.7b0"
 interrogate = "^1.4.0"
