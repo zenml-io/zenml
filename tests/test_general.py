@@ -19,4 +19,4 @@ from zenml.constants import ENV_ZENML_DEBUG
 
 def test_handle_int_env_var():
     """Checks that the ZENML_DEBUG is set in the tests."""
-    assert os.environ[ENV_ZENML_DEBUG] == "test"
+    assert os.environ[ENV_ZENML_DEBUG] == "true"

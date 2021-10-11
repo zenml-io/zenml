@@ -369,13 +369,11 @@
 #     return wrapper
 
 
+import logging
 import os
 
 from zenml.constants import ENV_ZENML_DEBUG
 from zenml.core.repo import Repository
-from zenml.logger import get_logger
-
-logger = get_logger(__name__)
 
 
 def pytest_sessionstart(session):
@@ -387,7 +385,7 @@ def pytest_sessionstart(session):
         Repository.init_repo()
     except AssertionError:
         # already initialized
-        logger.info("Repo already initialized for testing.")
+        logging.info("Repo already initialized for testing.")
 
 
 def pytest_sessionfinish(session, exitstatus):
