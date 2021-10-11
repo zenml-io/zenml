@@ -371,6 +371,7 @@
 
 import os
 
+from zenml.constants import ENV_ZENML_DEBUG
 from zenml.core.repo import Repository
 from zenml.logger import get_logger
 
@@ -381,7 +382,7 @@ def pytest_sessionstart(session):
     """Called after the Session object has been created and
     before performing collection and entering the run test loop.
     """
-    os.environ["ZENML_DEBUG"] = "true"
+    os.environ[ENV_ZENML_DEBUG] = "true"
     try:
         Repository.init_repo()
     except AssertionError:
