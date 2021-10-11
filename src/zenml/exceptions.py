@@ -18,7 +18,7 @@ class InitializationException(Exception):
     """Raises exception when a function is run before zenml initialization."""
 
     def __init__(
-        self, message="ZenML config is none. Did you do `zenml init`?"
+        self, message: str = "ZenML config is none. Did you do `zenml init`?"
     ):
         super().__init__(message)
 
@@ -29,8 +29,8 @@ class EmptyDatasourceException(Exception):
 
     def __init__(
         self,
-        message="This datasource has not been used in any "
-        "pipelines, therefore the associated data has no "
+        message: str = "This datasource has not been used in "
+        "any pipelines, therefore the associated data has no "
         "versions. Please use this datasouce in any ZenML "
         "pipeline with `pipeline.add_datasource("
         "datasource)`",
@@ -46,7 +46,7 @@ class DoesNotExistException(Exception):
         self,
         name: str = "",
         reason: str = "",
-        message="{} does not exist! This might be due to: {}",
+        message: str = "{} does not exist! This might be due to: {}",
     ):
         super().__init__(message.format(name, reason))
 
