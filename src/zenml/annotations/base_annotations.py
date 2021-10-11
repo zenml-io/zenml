@@ -29,9 +29,7 @@ use the same paradigm with steps and datasources as well
 
 """
 import inspect
-from typing import Type
-
-from six import with_metaclass
+from typing import Any, List, Type
 
 
 class BaseAnnotationMeta(type):
@@ -40,19 +38,20 @@ class BaseAnnotationMeta(type):
     with the same param
     """
 
-    def __getitem__(
-        cls: Type["BaseAnnotation"], params: Type
-    ) -> "BaseAnnotation":
-        """Creates an instance of the annotation with the class given by `params`."""
+    def __getitem__(cls, params: Type[Any]) -> "BaseAnnotation":
+        """Creates an instance of the annotation with the
+        class given by `params`."""
         return cls._generic_getitem(params)
 
 
-class BaseAnnotation(with_metaclass(BaseAnnotationMeta, object)):
+class BaseAnnotation(metaclass=BaseAnnotationMeta):
     """A main generic class which will be used as the base for annotations"""
 
-    VALID_TYPES = None
+    VALID_TYPES: List[Type[Any]] = []
 
-    def __init__(self, object_type: Type, _init_via_getitem=False):
+    def __init__(
+        self, object_type: Type[Any], _init_via_getitem: bool = False
+    ):
         """Initialization of the BaseAnnotation.
 
         The usage of this initialization is only allowed through the
@@ -60,7 +59,8 @@ class BaseAnnotation(with_metaclass(BaseAnnotationMeta, object)):
 
         Args:
             object_type: The class which is given with the annotation.
-            _init_via_getitem: `True` if this instance was created via a __getitem__ call on the class.
+            _init_via_getitem: `True` if this instance was created via
+                a __getitem__ call on the class.
         """
         if not _init_via_getitem:
             class_name = self.__class__.__name__
@@ -70,12 +70,12 @@ class BaseAnnotation(with_metaclass(BaseAnnotationMeta, object)):
             )
         self.type = object_type
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Representation of the annotation object"""
         return "%s[%s]" % (self.__class__.__name__, self.type)
 
     @classmethod
-    def _generic_getitem(cls, params: Type) -> "BaseAnnotation":
+    def _generic_getitem(cls, params: Type[Any]) -> "BaseAnnotation":
         """This method will get called by the metaclass if __getitem__ is called
         on an annotation class, e.g. ``BaseAnnotation[int]``.
 
