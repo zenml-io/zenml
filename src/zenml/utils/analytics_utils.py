@@ -30,12 +30,6 @@ logger = get_logger(__name__)
 
 # EVENTS
 
-# Datasources
-
-GET_DATASOURCES = "Datasources listed"
-
-CREATE_DATASOURCE = "Datasource created"
-
 # Functions
 
 CREATE_STEP = "Step created"
@@ -47,8 +41,6 @@ GET_STEP_VERSION = "Step listed"
 # Pipelines
 
 CREATE_PIPELINE = "Pipeline created"
-
-REGISTER_PIPELINE = "Pipeline registered"
 
 RUN_PIPELINE = "Pipeline run"
 
