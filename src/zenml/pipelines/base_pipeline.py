@@ -67,8 +67,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             else:
                 raise PipelineInterfaceError(
                     f"The argument {k} is an unknown argument. Needs to be "
-                    f"one of either {self.INPUT_SPEC.keys()} or "
-                    f"{self.STEP_SPEC.keys()}"
+                    f"one of {self.STEP_SPEC.keys()}"
                 )
 
     @abstractmethod
