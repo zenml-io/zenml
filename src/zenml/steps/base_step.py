@@ -11,11 +11,11 @@ from zenml.materializers.default_materializer_registry import (
 )
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
-from zenml.steps.utils import generate_component
+from zenml.steps.utils import STEP_INNER_FUNC_NAME, generate_component
 
 logger = get_logger(__name__)
 
-STEP_INNER_FUNC_NAME: str = "process"
+
 SINGLE_RETURN_OUT_NAME: str = "output"
 
 
@@ -33,6 +33,7 @@ class BaseStepMeta(type):
         cls = super().__new__(mcs, name, bases, dct)
 
         cls.INPUT_SPEC = dict()  # all input params
+        # TODO [MEDIUM]: Ensure that this is an OrderedDict
         cls.OUTPUT_SPEC = dict()  # all output params
         cls.CONFIG: Optional[Type[BaseStepConfig]] = None  # noqa all params
 
@@ -63,13 +64,12 @@ class BaseStepMeta(type):
             elif default_materializer_factory.is_registered(arg_type):
                 cls.INPUT_SPEC.update({arg: BaseArtifact})
             else:
-                pass
-                # raise StepInterfaceError(
-                #     f"In a ZenML step, you can only pass in a "
-                #     f"`BaseStepConfig` or an arg type with a default "
-                #     f"materializer. You passed in {arg_type}, which does not "
-                #     f"have a registered materializer."
-                # )
+                raise StepInterfaceError(
+                    f"In a ZenML step, you can only pass in a "
+                    f"`BaseStepConfig` or an arg type with a default "
+                    f"materializer. You passed in {arg_type}, which does not "
+                    f"have a registered materializer."
+                )
 
         # Infer the returned values
         return_spec = process_spec.annotations.get("return", None)
@@ -86,12 +86,11 @@ class BaseStepMeta(type):
                 # If its one output, then give it a single return name.
                 cls.OUTPUT_SPEC.update({SINGLE_RETURN_OUT_NAME: BaseArtifact})
             else:
-                pass
-                # raise StepInterfaceError(
-                #     f"In a ZenML step, you can only return  an arg type with "
-                #     f"a default materializer. You passed in {return_spec}, "
-                #     f"which does not have a default materializer."
-                # )
+                raise StepInterfaceError(
+                    f"In a ZenML step, you can only return  an arg type with "
+                    f"a default materializer. You passed in {return_spec}, "
+                    f"which does not have a default materializer."
+                )
         return cls
 
 
@@ -103,7 +102,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
         self.__component = None
         self.__inputs = dict()
-        self.__params = dict()
+        self.PARAM_SPEC = dict()
 
         # TODO [LOW]: Support args
         if args:
@@ -135,22 +134,25 @@ class BaseStep(metaclass=BaseStepMeta):
     @property
     def component(self):
         """Returns a TFX component."""
-        if self.__component is None and len(self.INPUT_SPEC) == 0:
-            self.__component = generate_component(self)(**self.__params)
         return self.__component
 
     def __call__(self, **artifacts):
         """Generates a component when called."""
-        self.__component = generate_component(self)(
-            **artifacts, **self.__params
+        # TODO [MEDIUM]: Support *args as well.
+
+        self.__component = self.__component_class(
+            **artifacts, **self.PARAM_SPEC
         )
 
-    def __getattr__(self, item):
-        """OVerrides the __getattr__ metho."""
-        if item == "outputs":
-            return self.component.outputs
-        else:
-            raise AttributeError(f"{item}")
+        # Resolve the returns in the right order.
+        returns = []
+        for k in self.OUTPUT_SPEC.keys():
+            returns.append(getattr(self.component.outputs, k))
+
+        # If its one return we just return the one channel not as a list
+        if len(returns) == 1:
+            returns = returns[0]
+        return returns
 
     @abstractmethod
     def process(self, *args, **kwargs):
