@@ -49,7 +49,5 @@ def test_global_config_persistence():
     assert old_analytics_opt_in == gc.analytics_opt_in
 
     # Get raw config
-    raw_config = yaml_utils.read_json(
-        os.path.join(APP_DIR, GLOBAL_CONFIG_NAME)
-    )
+    raw_config = yaml_utils.read_json(os.path.join(APP_DIR, GLOBAL_CONFIG_NAME))
     assert raw_config["analytics_opt_in"] == old_analytics_opt_in

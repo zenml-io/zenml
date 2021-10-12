@@ -30,8 +30,8 @@ class BasePipelineMeta(type):
 
         for arg in connect_args:
             arg_type = connect_spec.annotations.get(arg, None)
-            if isinstance(arg_type, BaseStep):
-                cls.STEP_SPEC.update({arg: arg_type.type})
+            if issubclass(arg_type, BaseStep):
+                cls.STEP_SPEC.update({arg: arg_type})
             else:
                 raise PipelineInterfaceError(
                     "When you are designing a pipeline, you can only pass in "
@@ -48,19 +48,22 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self.__stack = Repository().get_active_stack()
 
         self.__steps = dict()
-        self.__inputs = dict()
 
         if args:
             raise PipelineInterfaceError(
-                "You can only use keyword arguments while you are creating an"
+                "You can only use keyword arguments while you are creating an "
                 "instance of a pipeline."
             )
 
         for k, v in kwargs.items():
             if k in self.STEP_SPEC:
-                self.__steps.update({k: v})
-            elif k in self.INPUT_SPEC:
-                self.__inputs.update({k: v})
+                if issubclass(type(v), self.STEP_SPEC[k]):  # noqa
+                    self.__steps.update({k: v})
+                else:
+                    raise PipelineInterfaceError(
+                        f"Type {type(v)} does not match type specified in "
+                        f"pipeline: {self.STEP_SPEC[k]}"
+                    )
             else:
                 raise PipelineInterfaceError(
                     f"The argument {k} is an unknown argument. Needs to be "
@@ -93,25 +96,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         raises a PipelineInterfaceError.
         """
         raise PipelineInterfaceError(
-            "The provider will be automatically"
-            "inferred from your environment. Please "
-            "do no attempt to manually change it."
-        )
-
-    @property
-    def inputs(self) -> Dict:
-        """Returns a dictionary of pipeline inputs."""
-        return self.__inputs
-
-    @inputs.setter
-    def inputs(self, inputs: Dict):
-        """Setting the inputs property is not allowed. This method always
-        raises a PipelineInterfaceError.
-        """
-        raise PipelineInterfaceError(
-            "The provider will be automatically"
-            "inferred from your environment. Please "
-            "do no attempt to manually change it."
+            "The stack will be automatically inferred from your environment. "
+            "Please do no attempt to manually change it."
         )
 
     @property
@@ -124,11 +110,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         """Setting the steps property is not allowed. This method always
         raises a PipelineInterfaceError.
         """
-        raise PipelineInterfaceError(
-            "The provider will be automatically"
-            "inferred from your environment. Please "
-            "do no attempt to manually change it."
-        )
+        raise PipelineInterfaceError("Cannot set steps manually!")
 
     def run(self):
         """Runs the pipeline using the orchestrator of the pipeline stack."""
