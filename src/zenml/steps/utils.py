@@ -161,7 +161,7 @@ class _FunctionExecutor(BaseExecutor):
         return materializer.handle_input()
 
     def resolve_output_artifact(
-        self, obj_type: Any, artifact: tfx_types.Artifact, return_values: Any
+        self, obj_type: Any, artifact: tfx_types.Artifact, data: Any
     ) -> None:
         """Resolves an output artifact, i.e., writing it to the Artifact Store.
         Calls `handle_return(return_values)` of the selected materializer.
@@ -169,10 +169,10 @@ class _FunctionExecutor(BaseExecutor):
         Args:
             obj_type: Type of object.
             artifact: A TFX artifact type.
-            return_values: The object to be passed to `handle_return()`.
+            data: The object to be passed to `handle_return()`.
         """
         materializer = self.resolve_materializer(obj_type, artifact)
-        materializer.handle_return(return_values)
+        materializer.handle_return(data)
 
     def Do(
         self,

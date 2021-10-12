@@ -18,7 +18,9 @@ from typing import Callable, Type
 from zenml.steps.base_step import STEP_INNER_FUNC_NAME, BaseStep
 
 
-def step(name: str = None) -> Callable[..., Type[BaseStep]]:
+def step(
+    _func: Callable = None, *, name: str = None
+) -> Callable[..., Type[BaseStep]]:
     """Outer decorator function for the creation of a ZenML step
 
     In order to be able work with parameters such as `name`, it features a
@@ -49,4 +51,7 @@ def step(name: str = None) -> Callable[..., Type[BaseStep]]:
         )
         return step_class
 
-    return inner_decorator
+    if _func is None:
+        return inner_decorator
+    else:
+        return inner_decorator(_func)
