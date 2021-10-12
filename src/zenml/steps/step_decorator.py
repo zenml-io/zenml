@@ -15,7 +15,7 @@
 import types
 from typing import Type
 
-from zenml.steps.base_step import BaseStep
+from zenml.steps.base_step import STEP_INNER_FUNC_NAME, BaseStep
 
 
 def step(name: str = None):
@@ -45,7 +45,7 @@ def step(name: str = None):
         step_class = type(
             name if name else func.__name__,
             (BaseStep,),
-            {"process": staticmethod(func)},
+            {STEP_INNER_FUNC_NAME: staticmethod(func)},
         )
         return step_class
 

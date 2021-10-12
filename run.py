@@ -18,7 +18,7 @@ import apache_beam as beam
 import pandas as pd
 
 from zenml import pipeline
-from zenml.annotations import Input, Output, Step
+from zenml.annotations import Input, Output
 from zenml.artifacts.data_artifact import DataArtifact
 from zenml.steps import step
 
@@ -60,10 +60,10 @@ def InMemPreprocesserStep(
 
 @pipeline(name="my_pipeline")
 def SplitPipeline(
-    simple_step: Step[SimplestStepEver],
-    data_step: Step[DataIngestionStep],
-    split_step: Step[DistSplitStep],
-    preprocesser_step: Step[InMemPreprocesserStep],
+    simple_step: SimplestStepEver,
+    data_step: DataIngestionStep,
+    split_step: DistSplitStep,
+    preprocesser_step: InMemPreprocesserStep,
 ):
     data_step(input_random_number=simple_step.outputs.return_output)
     split_step(input_artifact=data_step.outputs.output_artifact)

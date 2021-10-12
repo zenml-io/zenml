@@ -4,18 +4,28 @@ from abc import abstractmethod
 
 from pydantic import create_model
 
-from zenml.annotations import Input, Output
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.data_artifact import DataArtifact
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
+from zenml.materializers.default_materializer_registry import (
+    default_materializer_factory,
+)
+from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.utils import generate_component
 
 logger = get_logger(__name__)
 
+STEP_INNER_FUNC_NAME: str = "process"
+
 
 class BaseStepMeta(type):
-    """Meta class for `BaseStep`."""
+    """Meta class for `BaseStep`.
+
+    Checks whether everything passed in:
+    * Has a matching materializer.
+    * Is a subclass of the Config class
+    """
 
     def __new__(mcs, name, bases, dct):
         """Set up a new class with a qualified spec."""
@@ -27,7 +37,9 @@ class BaseStepMeta(type):
         cls.PARAM_SPEC = dict()  # all execution params
 
         # Looking into the signature of the provided process function
-        process_spec = inspect.getfullargspec(cls.process)
+        process_spec = inspect.getfullargspec(
+            getattr(cls, STEP_INNER_FUNC_NAME)
+        )
         process_args = process_spec.args
         logger.debug(f"{name} args: {process_args}")
 
@@ -38,15 +50,17 @@ class BaseStepMeta(type):
         # Parse the input signature of the function
         for arg in process_args:
             arg_type = process_spec.annotations.get(arg, None)
-            if isinstance(arg_type, Input):
-                if issubclass(arg_type.type, BaseArtifact):
-                    cls.INPUT_SPEC.update({arg: arg_type.type})
-                else:
-                    cls.INPUT_SPEC.update({arg: DataArtifact})
-            elif isinstance(arg_type, Output):
-                cls.OUTPUT_SPEC.update({arg: arg_type.type})
-            else:
+            if issubclass(arg_type, BaseStepConfig):
                 cls.PARAM_SPEC.update({arg: arg_type})
+            elif default_materializer_factory.is_registered(arg_type):
+                cls.INPUT_SPEC.update({arg: BaseArtifact})
+            else:
+                raise StepInterfaceError(
+                    f"In a ZenML step, you can only pass in a "
+                    f"`BaseStepConfig` or an arg type with a default "
+                    f"materializer. You passed in {arg_type}, which does not "
+                    f"have a default materializer."
+                )
 
         # Infer the returned values
         return_spec = process_spec.annotations.get("return", None)
@@ -71,7 +85,8 @@ class BaseStepMeta(type):
             #     arg_type = process_spec.annotations.get(arg, None)
             #     if not isinstance(arg_type, Param):
             #         raise StepInterfaceError(
-            #             f"A default value in the signature of a step can only "
+            #             f"A default value in the signature of a step can
+            #             only "
             #             f"be used for a Param[...] not {arg_type}."
             #         )
 
