@@ -136,7 +136,7 @@ exclude_lines = [
 profile = "black"
 known_third_party = []
 skip_glob = []
-line_length = 79
+line_length = 80
 
 [tool.mypy]
 # --strict
@@ -156,7 +156,7 @@ strict_equality = true
 # --strict end
 
 [tool.black]
-line-length = 79
+line-length = 80
 include = '\.pyi?$'
 exclude = '''
 /(
