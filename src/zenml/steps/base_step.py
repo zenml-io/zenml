@@ -1,8 +1,7 @@
 import inspect
 import json
 from abc import abstractmethod
-
-from pydantic import create_model
+from typing import Optional, Type
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.exceptions import StepInterfaceError
@@ -35,7 +34,7 @@ class BaseStepMeta(type):
 
         cls.INPUT_SPEC = dict()  # all input params
         cls.OUTPUT_SPEC = dict()  # all output params
-        cls.PARAM_SPEC = dict()  # all execution params
+        cls.CONFIG: Optional[Type[BaseStepConfig]] = None  # noqa all params
 
         # Looking into the signature of the provided process function
         process_spec = inspect.getfullargspec(
@@ -54,16 +53,23 @@ class BaseStepMeta(type):
             # Check whether its a `BaseStepConfig` or a registered
             # materializer type.
             if issubclass(arg_type, BaseStepConfig):
-                cls.PARAM_SPEC.update({arg: arg_type})
+                # It needs to be None at this point, otherwise multi configs.
+                if cls.CONFIG is not None:
+                    raise StepInterfaceError(
+                        "Please only use one `BaseStepConfig` type object in "
+                        "your step."
+                    )
+                cls.CONFIG = arg_type
             elif default_materializer_factory.is_registered(arg_type):
                 cls.INPUT_SPEC.update({arg: BaseArtifact})
             else:
-                raise StepInterfaceError(
-                    f"In a ZenML step, you can only pass in a "
-                    f"`BaseStepConfig` or an arg type with a default "
-                    f"materializer. You passed in {arg_type}, which does not "
-                    f"have a registered materializer."
-                )
+                pass
+                # raise StepInterfaceError(
+                #     f"In a ZenML step, you can only pass in a "
+                #     f"`BaseStepConfig` or an arg type with a default "
+                #     f"materializer. You passed in {arg_type}, which does not "
+                #     f"have a registered materializer."
+                # )
 
         # Infer the returned values
         return_spec = process_spec.annotations.get("return", None)
@@ -80,11 +86,12 @@ class BaseStepMeta(type):
                 # If its one output, then give it a single return name.
                 cls.OUTPUT_SPEC.update({SINGLE_RETURN_OUT_NAME: BaseArtifact})
             else:
-                raise StepInterfaceError(
-                    f"In a ZenML step, you can only return  an arg type with "
-                    f"a default materializer. You passed in {return_spec}, "
-                    f"which does not have a default materializer."
-                )
+                pass
+                # raise StepInterfaceError(
+                #     f"In a ZenML step, you can only return  an arg type with "
+                #     f"a default materializer. You passed in {return_spec}, "
+                #     f"which does not have a default materializer."
+                # )
         return cls
 
 
@@ -93,7 +100,10 @@ class BaseStep(metaclass=BaseStepMeta):
     the other step implementations"""
 
     def __init__(self, *args, **kwargs):
-        self.__component_class = generate_component(self)
+
+        self.__component = None
+        self.__inputs = dict()
+        self.__params = dict()
 
         # TODO [LOW]: Support args
         if args:
@@ -102,24 +112,25 @@ class BaseStep(metaclass=BaseStepMeta):
                 "use key-word arguments."
             )
 
-        self.__component = None
+        if self.CONFIG:
+            # Find the config
+            for v in kwargs.values():
+                if isinstance(v, BaseStepConfig):
+                    config = v
 
-        self.__inputs = dict()
-        self.__params = dict()
-
-        # TODO: [MEDIUM] add defaults to kwargs
-        try:
-            # create a pydantic model out of a primitive type
-            pydantic_c = create_model(
-                "params", **{k: (self.PARAM_SPEC[k], ...) for k in kwargs}
-            )
-            model_dict = pydantic_c(**kwargs).dict()
-            self.__params = {k: json.dumps(v) for k, v in model_dict.items()}
-
-        except RuntimeError:
-            # TODO [MED]: Change this to say more clearly what
-            #  happened: Even pydantic didnt support this type.
-            raise StepInterfaceError()
+            try:
+                # create a pydantic model out of a primitive type
+                model_dict = config.dict()  # noqa
+                self.PARAM_SPEC = {
+                    k: json.dumps(v) for k, v in model_dict.items()
+                }
+            except RuntimeError:
+                # TODO [LOW]: Attach a URL with all supported types.
+                raise StepInterfaceError(
+                    "You passed in a parameter that we cannot serialzie to a "
+                    "json."
+                )
+        self.__component_class = generate_component(self)
 
     @property
     def component(self):
