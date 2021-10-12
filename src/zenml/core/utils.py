@@ -71,6 +71,7 @@ def generate_customise_sources(file_dir: str, file_name: str):
         env_settings,
         file_secret_settings,
     ):
+        """Defines precedence of sources to read/write settings from."""
         return (
             init_settings,
             env_settings,

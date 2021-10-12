@@ -37,12 +37,12 @@ class BaseArtifact(Artifact):
 
     @property
     def materializers(self) -> MaterializerFactory:
-        """Returns a MaterializerFactory which provides
-        access to all registered materializers."""
+        """Returns a MaterializerFactory which provides access
+        to all registered materializers."""
         return MaterializerFactory(self)
 
     @materializers.setter
-    def materializers(self, _: MaterializerFactory) -> None:
+    def materializers(self, materializers: MaterializerFactory) -> None:
         """Setting the materializers property is not allowed.
         This method always raises an ArtifactInterfaceError
         with an explanation how to use materializers.
