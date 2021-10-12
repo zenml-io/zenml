@@ -5,18 +5,19 @@ from abc import abstractmethod
 from pydantic import create_model
 
 from zenml.artifacts.base_artifact import BaseArtifact
-from zenml.artifacts.data_artifact import DataArtifact
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.default_materializer_registry import (
     default_materializer_factory,
 )
 from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps.step_output import Output
 from zenml.steps.utils import generate_component
 
 logger = get_logger(__name__)
 
 STEP_INNER_FUNC_NAME: str = "process"
+SINGLE_RETURN_OUT_NAME: str = "output"
 
 
 class BaseStepMeta(type):
@@ -50,6 +51,8 @@ class BaseStepMeta(type):
         # Parse the input signature of the function
         for arg in process_args:
             arg_type = process_spec.annotations.get(arg, None)
+            # Check whether its a `BaseStepConfig` or a registered
+            # materializer type.
             if issubclass(arg_type, BaseStepConfig):
                 cls.PARAM_SPEC.update({arg: arg_type})
             elif default_materializer_factory.is_registered(arg_type):
@@ -59,37 +62,29 @@ class BaseStepMeta(type):
                     f"In a ZenML step, you can only pass in a "
                     f"`BaseStepConfig` or an arg type with a default "
                     f"materializer. You passed in {arg_type}, which does not "
-                    f"have a default materializer."
+                    f"have a registered materializer."
                 )
 
         # Infer the returned values
         return_spec = process_spec.annotations.get("return", None)
         if return_spec is not None:
-            cls.OUTPUT_SPEC.update({"return_output": DataArtifact})
-
-        # Infer the defaults
-        cls.PARAM_DEFAULTS = dict()
-
-        process_defaults = process_spec.defaults
-        if process_defaults is not None:
-            raise StepInterfaceError(
-                "The usage of default values for "
-                "parameters is not fully implemented yet."
-                "Please do not use default values in "
-                "your step definition."
-            )
-            # for i, default in enumerate(process_defaults):
-            #     # TODO: [HIGH] fix the implementation
-            #     process_args.reverse()
-            #     arg = process_args[i]
-            #     arg_type = process_spec.annotations.get(arg, None)
-            #     if not isinstance(arg_type, Param):
-            #         raise StepInterfaceError(
-            #             f"A default value in the signature of a step can
-            #             only "
-            #             f"be used for a Param[...] not {arg_type}."
-            #         )
-
+            if isinstance(return_spec, Output):
+                # If its a named, potentially multi, outputs we go through
+                #  each and create a spec.
+                for return_tuple in return_spec.items():
+                    if default_materializer_factory.is_registered(
+                        return_tuple[1]
+                    ):
+                        cls.OUTPUT_SPEC.update({return_tuple[0]: BaseArtifact})
+            elif default_materializer_factory.is_registered(return_spec):
+                # If its one output, then give it a single return name.
+                cls.OUTPUT_SPEC.update({SINGLE_RETURN_OUT_NAME: BaseArtifact})
+            else:
+                raise StepInterfaceError(
+                    f"In a ZenML step, you can only return  an arg type with "
+                    f"a default materializer. You passed in {return_spec}, "
+                    f"which does not have a default materializer."
+                )
         return cls
 
 
