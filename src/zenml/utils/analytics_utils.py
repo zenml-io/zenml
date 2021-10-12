@@ -193,6 +193,7 @@ def track(func: Callable, event: str = None) -> Callable:
     #     metadata['module'] = func.__module__
 
     def inner_func(*args, **kwargs):
+        """Inner decorator function."""
         track_event(event, metadata=metadata)
         result = func(*args, **kwargs)
         return result
