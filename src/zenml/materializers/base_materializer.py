@@ -32,7 +32,7 @@ class BaseMaterializerMeta(type):
         the `MaterializerFactory`."""
         cls = super().__new__(mcs, name, bases, dct)
         if name != "BaseMaterializer":
-            assert cls.ASSOCIATED_TYPE is not None, (  # noqa
+            assert cls.ASSOCIATED_TYPES is not None, (  # noqa
                 "You should specify a list of ASSOCIATED_TYPES when creating a "
                 "Materializer!"
             )
