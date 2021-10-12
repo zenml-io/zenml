@@ -12,70 +12,48 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os
-
-import apache_beam as beam
 import pandas as pd
 
 from zenml import pipeline
-from zenml.annotations import Input, Output
-from zenml.artifacts.data_artifact import DataArtifact
 from zenml.steps import step
+from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps.step_output import Output
 
 
-@step(name="SimplestStepEver")
-def SimplestStepEver(
-    basic_param_1: int,
-    basic_param_2: str,
-) -> int:
-    return basic_param_1 + int(basic_param_2)
+class StepConfig(BaseStepConfig):
+    basic_param_1: int = 1
+    basic_param_2: str = 2
 
 
-@step(name="data_ingest")
-def DataIngestionStep(
-    input_random_number: Input[int],
-    output_artifact: Output[DataArtifact],
-    uri: str,
+@step()
+def number_returner(
+    config: StepConfig,
+) -> Output(number=int, non_number=int):
+    return Output(
+        number=config.basic_param_1 + int(config.basic_param_2),
+        non_number="test",
+    )
+
+
+@step()
+def import_dataframe(sum: int) -> pd.DataFrame:
+    return pd.DataFrame({"sum": sum})
+
+
+@pipeline()
+def my_pipeline(
+    step_1: number_returner,
+    step_2: import_dataframe,
 ):
-    df = pd.read_csv(uri)
-    output_artifact.materializers.pandas.write_dataframe(df)
-
-
-@step(name="split")
-def DistSplitStep(
-    input_artifact: Input[DataArtifact], output_artifact: Output[DataArtifact]
-):
-    with beam.Pipeline() as p:
-        header, data = input_artifact.materializers.beam.read_text(p)
-        output_artifact.materializers.beam.write_text(data, header=header)
-
-
-@step(name="preprocessing")
-def InMemPreprocesserStep(
-    input_artifact: Input[DataArtifact], output_artifact: Output[DataArtifact]
-):
-    data = input_artifact.materializers.pandas.read_dataframe()
-    output_artifact.materializers.pandas.write_dataframe(data)
-
-
-@pipeline(name="my_pipeline")
-def SplitPipeline(
-    simple_step: SimplestStepEver,
-    data_step: DataIngestionStep,
-    split_step: DistSplitStep,
-    preprocesser_step: InMemPreprocesserStep,
-):
-    data_step(input_random_number=simple_step.outputs.return_output)
-    split_step(input_artifact=data_step.outputs.output_artifact)
-    preprocesser_step(input_artifact=split_step.outputs.output_artifact)
+    number, non_number = step_1()
+    step_2(sum=number)
 
 
 # Pipeline
-split_pipeline = SplitPipeline(
-    simple_step=SimplestStepEver(basic_param_1=2, basic_param_2="3"),
-    data_step=DataIngestionStep(uri=os.getenv("test_data")),
-    split_step=DistSplitStep(),
-    preprocesser_step=InMemPreprocesserStep(),
+# TODO [HIGH]: Check that the kwargs passed match my_pipeline definition.
+split_pipeline = my_pipeline(
+    step_1=number_returner(config=StepConfig(basic_param_2="2")),
+    step_2=import_dataframe(),
 )
 
 # needed for airflow
