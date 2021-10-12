@@ -22,7 +22,7 @@ DEFAULT_FILENAME = "model.hdf5"
 class KerasMaterializer(BaseMaterializer):
     """Materializer to read/write Keras models."""
 
-    TYPE_NAME = "keras"
+    ASSOCIATED_TYPES = [keras.Model]
 
     def read_model(self):
         """Reads and returns a Keras model."""
