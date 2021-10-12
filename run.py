@@ -29,24 +29,28 @@ class StepConfig(BaseStepConfig):
 def number_returner(
     config: StepConfig,
 ) -> Output(number=int, non_number=int):
-    return Output(
-        number=config.basic_param_1 + int(config.basic_param_2),
-        non_number="test",
-    )
+    return config.basic_param_1 + int(config.basic_param_2), "test"
 
 
 @step()
 def import_dataframe(sum: int) -> pd.DataFrame:
-    return pd.DataFrame({"sum": sum})
+    return pd.DataFrame({"sum": [sum]})
+
+
+@step()
+def last_step(df: pd.DataFrame) -> pd.DataFrame:
+    return df
 
 
 @pipeline()
 def my_pipeline(
     step_1: number_returner,
     step_2: import_dataframe,
+    step_3: last_step,
 ):
     number, non_number = step_1()
-    step_2(sum=number)
+    df = step_2(sum=number)
+    step_3(df=df)
 
 
 # Pipeline
@@ -54,6 +58,7 @@ def my_pipeline(
 split_pipeline = my_pipeline(
     step_1=number_returner(config=StepConfig(basic_param_2="2")),
     step_2=import_dataframe(),
+    step_3=last_step(),
 )
 
 # needed for airflow
