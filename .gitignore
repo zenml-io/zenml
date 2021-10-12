@@ -163,7 +163,6 @@ scratchpad/
 .python-version
 
 # zen
-# zenml
 *.yaml
 *.csv
 temp/*
@@ -171,3 +170,6 @@ local_test/
 .zen/
 !cloudbuild.yaml
 docs/book/_build/
+
+# GitHub Folder YAML files not to be ignored
+!.github/ISSUE_TEMPLATE/**
