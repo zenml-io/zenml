@@ -12,12 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING
+from abc import abstractmethod
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
 
-from zenml.materializers.materializer_factory import MaterializerFactory
+from zenml.materializers.default_materializer_registry import (
+    default_materializer_factory,
+)
 
 
 class BaseMaterializerMeta(type):
@@ -29,21 +32,39 @@ class BaseMaterializerMeta(type):
         the `MaterializerFactory`."""
         cls = super().__new__(mcs, name, bases, dct)
         if name != "BaseMaterializer":
-            assert cls.TYPE_NAME != "base", (
-                f"You have used the name `base` as a TYPE_NAME "
-                f"for your class {name}. When you are defining a new "
-                f"materializer, please make sure that you give it a "
-                f"TYPE_NAME other than `base`."
+            assert cls.ASSOCIATED_TYPE is not None, (  # noqa
+                "You should specify a list of ASSOCIATED_TYPES when creating a "
+                "Materializer!"
             )
-            MaterializerFactory.register_type(cls.TYPE_NAME, cls)
+            [
+                default_materializer_factory.register_materializer_type(x, cls)
+                for x in cls.ASSOCIATED_TYPES  # noqa
+            ]  # noqa
         return cls
 
 
 class BaseMaterializer(metaclass=BaseMaterializerMeta):
     """Base Materializer to realize artifact data."""
 
-    TYPE_NAME = "base"
+    ASSOCIATED_TYPES = None
 
     def __init__(self, artifact: "BaseArtifact"):
         """Initializes a materializer with the given artifact."""
         self.artifact = artifact
+
+    @abstractmethod
+    def handle_input(self) -> Any:
+        """Write logic here to handle input of the step function.
+
+        Returns:
+            Any object that is to be passed into the relevant artifact in the
+            step.
+        """
+
+    @abstractmethod
+    def handle_return(self, data: Any) -> None:
+        """Write logic here to handle return of the step function.
+
+        Args:
+            Any object that is specified as an input artifact of the step.
+        """

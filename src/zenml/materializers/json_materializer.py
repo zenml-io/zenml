@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import Any, Dict
+from typing import Union
 
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import yaml_utils
@@ -21,17 +21,20 @@ from zenml.utils import yaml_utils
 DEFAULT_FILENAME = "data.json"
 
 
+# TODO [MEDIUM]: Make this more extensive.
 class JsonMaterializer(BaseMaterializer):
     """Read/Write JSON files."""
 
-    TYPE_NAME = "json"
+    ASSOCIATED_TYPES = [int, str, bytes, dict, float, list, tuple]
 
-    def read_file(self, filename=DEFAULT_FILENAME) -> Any:
-        """Read JSON from filename."""
-        filepath = os.path.join(self.artifact.uri, filename)
+    def handle_input(self) -> dict:
+        """TBD"""
+        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         return yaml_utils.read_json(filepath)
 
-    def write_file(self, data: Dict, filename=DEFAULT_FILENAME):
-        """Write JSON data to filename."""
-        filepath = os.path.join(self.artifact.uri, filename)
+    def handle_return(
+        self, data: Union[int, str, bytes, dict, float, list, tuple]
+    ):
+        """TBD"""
+        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         yaml_utils.write_json(filepath, data)

@@ -25,10 +25,11 @@ DEFAULT_FILENAME = "data.csv"
 class PandasMaterializer(BaseMaterializer):
     """Materializer to read data to and from pandas."""
 
-    TYPE_NAME = "pandas"
+    ASSOCIATED_TYPES = [pd.DataFrame]
 
-    def read_dataframe(self) -> pd.DataFrame:
-        """Reads all files inside the artifact directory and concatenates them to a pandas dataframe."""
+    def handle_input(self) -> pd.DataFrame:
+        """Reads all files inside the artifact directory and concatenates
+        them to a pandas dataframe."""
 
         filenames = path_utils.list_dir(self.artifact.uri, only_file_names=True)
 
@@ -43,15 +44,13 @@ class PandasMaterializer(BaseMaterializer):
             df = pd.read_csv(filename, index_col=None, header=0)
             li.append(df)
         frame = pd.concat(li, axis=0, ignore_index=True)
-
         return frame
 
-    def write_dataframe(self, df: pd.DataFrame, filename=DEFAULT_FILENAME):
+    def handle_return(self, df: pd.DataFrame):
         """Writes a pandas dataframe to the specified filename.
 
         Args:
             df: The pandas dataframe to write.
-            filename: The output filename.
         """
-        filepath = os.path.join(self.artifact.uri, filename)
+        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         df.to_csv(filepath)
