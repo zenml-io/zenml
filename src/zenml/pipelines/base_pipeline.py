@@ -2,11 +2,12 @@ import inspect
 from abc import abstractmethod
 from typing import Dict
 
-from zenml.annotations.artifact_annotations import Input
-from zenml.annotations.step_annotations import Step
 from zenml.core.repo import Repository
+from zenml.exceptions import PipelineInterfaceError
 from zenml.stacks.base_stack import BaseStack
-from zenml.utils.exceptions import PipelineInterfaceError
+from zenml.steps.base_step import BaseStep
+
+PIPELINE_INNER_FUNC_NAME: str = "connect"
 
 
 class BasePipelineMeta(type):
@@ -18,9 +19,10 @@ class BasePipelineMeta(type):
         cls = super().__new__(mcs, name, bases, dct)
         cls.NAME = name
         cls.STEP_SPEC = dict()
-        cls.INPUT_SPEC = dict()
 
-        connect_spec = inspect.getfullargspec(cls.connect)
+        connect_spec = inspect.getfullargspec(
+            getattr(cls, PIPELINE_INNER_FUNC_NAME)
+        )
         connect_args = connect_spec.args
 
         if connect_args and connect_args[0] == "self":
@@ -28,15 +30,12 @@ class BasePipelineMeta(type):
 
         for arg in connect_args:
             arg_type = connect_spec.annotations.get(arg, None)
-            if isinstance(arg_type, Step):
+            if isinstance(arg_type, BaseStep):
                 cls.STEP_SPEC.update({arg: arg_type.type})
-            elif isinstance(arg_type, Input):
-                cls.INPUT_SPEC.update({arg: arg_type.type})
             else:
                 raise PipelineInterfaceError(
-                    "When you are designing a pipeline, the input signature "
-                    "can only parameters which are annotated by either the "
-                    "step- and the input annotations."
+                    "When you are designing a pipeline, you can only pass in "
+                    "@step like annotated objects."
                 )
         return cls
 

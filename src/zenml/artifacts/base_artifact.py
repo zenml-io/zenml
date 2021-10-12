@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 from tfx.types import Artifact
 
+from zenml.exceptions import ArtifactInterfaceError
 from zenml.materializers.materializer_factory import MaterializerFactory
-from zenml.utils.exceptions import ArtifactInterfaceError
 
 
 class BaseArtifact(Artifact):

@@ -16,7 +16,7 @@
 import types
 from typing import Type
 
-from zenml.pipelines.base_pipeline import BasePipeline
+from zenml.pipelines.base_pipeline import PIPELINE_INNER_FUNC_NAME, BasePipeline
 
 
 def pipeline(name: str = None):
@@ -47,7 +47,7 @@ def pipeline(name: str = None):
         pipeline_class = type(
             name if name else func.__name__,
             (BasePipeline,),
-            {"connect": staticmethod(func)},
+            {PIPELINE_INNER_FUNC_NAME: staticmethod(func)},
         )
 
         return pipeline_class

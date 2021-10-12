@@ -30,9 +30,7 @@ class PandasMaterializer(BaseMaterializer):
     def read_dataframe(self) -> pd.DataFrame:
         """Reads all files inside the artifact directory and concatenates them to a pandas dataframe."""
 
-        filenames = path_utils.list_dir(
-            self.artifact.uri, only_file_names=True
-        )
+        filenames = path_utils.list_dir(self.artifact.uri, only_file_names=True)
 
         valid_filenames = [
             os.path.join(self.artifact.uri, f)

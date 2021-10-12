@@ -7,9 +7,9 @@ from pydantic import create_model
 from zenml.annotations import Input, Output
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.data_artifact import DataArtifact
+from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.steps.utils import generate_component
-from zenml.utils.exceptions import StepInterfaceError
 
 logger = get_logger(__name__)
 

@@ -41,7 +41,7 @@ from tfx.utils import json_utils
 
 from zenml.annotations import Input, Output
 from zenml.artifacts.base_artifact import BaseArtifact
-from zenml.utils.exceptions import StepInterfaceError
+from zenml.exceptions import StepInterfaceError
 
 
 class _PropertyDictWrapper(json_utils.Jsonable):

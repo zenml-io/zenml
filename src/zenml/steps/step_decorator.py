@@ -16,7 +16,6 @@ import types
 from typing import Type
 
 from zenml.steps.base_step import BaseStep
-from zenml.utils.exceptions import StepInterfaceError
 
 
 def step(name: str = None):
@@ -32,9 +31,6 @@ def step(name: str = None):
         the inner decorator which creates the step class based on the
         ZenML BaseStep
     """
-
-    if not isinstance(name, str):
-        raise StepInterfaceError("Please give your step a unique name!")
 
     def inner_decorator(func: types.FunctionType) -> Type:
         """Inner decorator function for the creation of a ZenML Step
