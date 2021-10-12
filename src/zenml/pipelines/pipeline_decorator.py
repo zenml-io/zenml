@@ -14,12 +14,14 @@
 
 
 import types
-from typing import Type
+from typing import Callable, Type
 
 from zenml.pipelines.base_pipeline import PIPELINE_INNER_FUNC_NAME, BasePipeline
 
 
-def pipeline(name: str = None):
+def pipeline(
+    _func: Callable = None, *, name: str = None
+) -> Callable[..., Type[BasePipeline]]:
     """Outer decorator function for the creation of a ZenML pipeline
 
     In order to be able work with parameters such as "name", it features a
@@ -33,7 +35,7 @@ def pipeline(name: str = None):
         ZenML BasePipeline
     """
 
-    def inner_decorator(func: types.FunctionType) -> Type:
+    def inner_decorator(func: types.FunctionType) -> Type[BasePipeline]:
         """Inner decorator function for the creation of a ZenML Pipeline
 
         Args:
@@ -52,4 +54,7 @@ def pipeline(name: str = None):
 
         return pipeline_class
 
-    return inner_decorator
+    if _func is None:
+        return inner_decorator
+    else:
+        return inner_decorator(_func)
