@@ -36,14 +36,40 @@ class ZenGCS(filesystem.Filesystem):
     fs = gcsfs.GCSFileSystem()
 
     @staticmethod
-    def open(name: PathType, mode: str = "r") -> Any:
-        """Open a file at the given path."""
-        return ZenGCS.fs.open(path=name, mode=mode)
+    def open(path: PathType, mode: str = "r") -> Any:
+        """Open a file at the given path.
+
+        Args:
+            path: Path of the file to open.
+            mode: Mode in which to open the file. Currently only
+                'rb' and 'wb' to read and write binary files are supported.
+        """
+        return ZenGCS.fs.open(path=path, mode=mode)
 
     @staticmethod
     def copy(src: PathType, dst: PathType, overwrite: bool = False) -> None:
-        """Copy a file."""
-        # TODO: additional params
+        """Copy a file.
+
+        Args:
+            src: The path to copy from.
+            dst: The path to copy to.
+            overwrite: If a file already exists at the destination, this
+                method will overwrite it if overwrite=`True` and
+                raise a FileExistsError otherwise.
+        Raises:
+            FileNotFoundError: If the source file does not exist.
+            FileExistsError: If a file already exists at the destination
+                and overwrite is not set to `True`.
+        """
+        if not overwrite and ZenGCS.fs.exists(dst):
+            raise FileExistsError(
+                f"Unable to copy to destination '{dst}', "
+                f"file already exists. Set `overwrite=True`"
+                f"to copy anyway."
+            )
+
+        # TODO: check if it works with overwrite=True or if we need to manually
+        #  remove it first
         ZenGCS.fs.copy(path1=src, path2=dst)
 
     @staticmethod
@@ -53,7 +79,16 @@ class ZenGCS(filesystem.Filesystem):
 
     @staticmethod
     def glob(pattern: PathType) -> List[PathType]:
-        """Return all paths that match the given glob pattern."""
+        """Return all paths that match the given glob pattern.
+
+        Args:
+            pattern: The glob pattern to match, which may include
+                - '*' to match any number of characters
+                - '?' to match a single character
+                - '[...]' to match one of the characters inside the brackets
+                - '**' as the full name of a path component to match to search
+                  in subdirectories of any depth (e.g. '/some_dir/**/some_file)
+        """
         return ZenGCS.fs.glob(path=pattern)
 
     @staticmethod
@@ -84,8 +119,28 @@ class ZenGCS(filesystem.Filesystem):
 
     @staticmethod
     def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
-        """Rename source file to destination file."""
-        # TODO: additional params
+        """Rename source file to destination file.
+
+        Args:
+            src: The path of the file to rename.
+            dst: The path to rename the source file to.
+            overwrite: If a file already exists at the destination, this
+                method will overwrite it if overwrite=`True` and
+                raise a FileExistsError otherwise.
+        Raises:
+            FileNotFoundError: If the source file does not exist.
+            FileExistsError: If a file already exists at the destination
+                and overwrite is not set to `True`.
+        """
+        if not overwrite and ZenGCS.fs.exists(dst):
+            raise FileExistsError(
+                f"Unable to rename file to '{dst}', "
+                f"file already exists. Set `overwrite=True`"
+                f"to rename anyway."
+            )
+
+        # TODO: check if it works with overwrite=True or if we need to manually
+        #  remove it first
         ZenGCS.fs.rename(path1=src, path2=dst)
 
     @staticmethod
@@ -107,7 +162,13 @@ class ZenGCS(filesystem.Filesystem):
         topdown: bool = True,
         onerror: Optional[Callable[..., None]] = None,
     ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
-        """Return an iterator that walks the contents of the given directory."""
+        """Return an iterator that walks the contents of the given directory.
+
+        Args:
+            top: Path of directory to walk.
+            topdown: Unused argument to conform to interface.
+            onerror: Unused argument to conform to interface.
+        """
         # TODO: additional params
         return ZenGCS.fs.walk(path=top)
 
