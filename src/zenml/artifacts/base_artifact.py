@@ -11,8 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Any
-
 from tfx.types import Artifact
 
 from zenml.materializers.materializer_factory import MaterializerFactory
@@ -37,13 +35,15 @@ class BaseArtifact(Artifact):
 
     @property
     def materializers(self) -> MaterializerFactory:
-        """Returns a MaterializerFactory which provides access to all registered materializers."""
+        """Returns a MaterializerFactory which provides access
+        to all registered materializers."""
         return MaterializerFactory(self)
 
     @materializers.setter
-    def materializers(self, _: Any):
-        """Setting the materializers property is not allowed. This method always raises
-        an ArtifactInterfaceError with an explanation how to use materializers.
+    def materializers(self, materializers: MaterializerFactory):
+        """Setting the materializers property is not allowed.
+        This method always raises an ArtifactInterfaceError
+        with an explanation how to use materializers.
         """
         raise ArtifactInterfaceError(
             "Setting the materializers property on an artifact is not allowed. "

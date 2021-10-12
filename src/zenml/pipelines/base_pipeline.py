@@ -1,6 +1,6 @@
 import inspect
 from abc import abstractmethod
-from typing import Any, Dict
+from typing import Dict
 
 from zenml.annotations.artifact_annotations import Input
 from zenml.annotations.step_annotations import Step
@@ -89,7 +89,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         return self.__stack
 
     @stack.setter
-    def stack(self, stack: Any):
+    def stack(self, stack: BaseStack):
         """Setting the stack property is not allowed. This method always
         raises a PipelineInterfaceError.
         """
@@ -105,7 +105,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         return self.__inputs
 
     @inputs.setter
-    def inputs(self, inputs: Any):
+    def inputs(self, inputs: Dict):
         """Setting the inputs property is not allowed. This method always
         raises a PipelineInterfaceError.
         """
@@ -121,7 +121,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         return self.__steps
 
     @steps.setter
-    def steps(self, steps: Any):
+    def steps(self, steps: Dict):
         """Setting the steps property is not allowed. This method always
         raises a PipelineInterfaceError.
         """
