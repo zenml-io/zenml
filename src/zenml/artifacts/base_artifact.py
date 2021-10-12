@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Dict
+from typing import Dict, NoReturn
 
 from tfx.types.artifact import Artifact, Property
 
@@ -42,7 +42,7 @@ class BaseArtifact(Artifact):
         return MaterializerFactory(self)
 
     @materializers.setter
-    def materializers(self, materializers: MaterializerFactory) -> None:
+    def materializers(self, materializers: MaterializerFactory) -> NoReturn:
         """Setting the materializers property is not allowed.
         This method always raises an ArtifactInterfaceError
         with an explanation how to use materializers.

@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Global config for the ZenML installation."""
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from uuid import UUID, uuid4
 
 import click
@@ -36,7 +36,7 @@ class GlobalConfig(BaseComponent):
 
     user_id: UUID = Field(default_factory=uuid4)
     analytics_opt_in: bool = True
-    repo_active_stacks: Optional[Dict[str, str]] = {}
+    repo_active_stacks: Dict[str, str] = {}
 
     def __init__(self, **data: Any):
         """We persist the attributes in the config file. For the global
@@ -60,6 +60,6 @@ class GlobalConfig(BaseComponent):
         """Gets the global config dir for installed package."""
         return GLOBAL_CONFIG_NAME
 
-    def set_stack_for_repo(self, repo_path: str, stack_key: str):
+    def set_stack_for_repo(self, repo_path: str, stack_key: str) -> None:
         """Sets the active stack for a specific repository."""
         self.repo_active_stacks[repo_path] = stack_key

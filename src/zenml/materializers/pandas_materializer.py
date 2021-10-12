@@ -48,7 +48,9 @@ class PandasMaterializer(BaseMaterializer):
 
         return frame
 
-    def write_dataframe(self, df: pd.DataFrame, filename=DEFAULT_FILENAME):
+    def write_dataframe(
+        self, df: pd.DataFrame, filename=DEFAULT_FILENAME
+    ) -> None:
         """Writes a pandas dataframe to the specified filename.
 
         Args:

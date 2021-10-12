@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import Optional
 
 from tensorflow import keras
 
@@ -24,10 +25,10 @@ class KerasMaterializer(BaseMaterializer):
 
     TYPE_NAME = "keras"
 
-    def read_model(self):
+    def read_model(self) -> Optional[keras.Model]:
         """Reads and returns a Keras model."""
         return keras.models.load_model(self.artifact.uri)
 
-    def write_model(self, model: keras.Model):
+    def write_model(self, model: keras.Model) -> None:
         """Writes a keras model."""
         model.save(self.artifact.uri)

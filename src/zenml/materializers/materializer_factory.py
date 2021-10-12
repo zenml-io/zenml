@@ -36,19 +36,26 @@ class MaterializerFactory(object):
             key: Indicates the materializer name
 
         Returns:
-            Instance of a `BaseMaterializer` subclass initialized with the artifact of this factory.
+            Instance of a `BaseMaterializer` subclass initialized
+            with the artifact of this factory.
+
+        Raises
+            AttributeError: If no materializer was registered for
+                the given key.
         """
         if key in self.materializer_types:
             return self.materializer_types[key](self.artifact)
         else:
-            return object.__getattribute__(self, key)(self.artifact)
+            raise AttributeError(
+                f"No materializer registered for key `{key}`."
+            )
 
     def get_types(self) -> Dict[str, Type["BaseMaterializer"]]:
         """Get all registered materializers."""
         return self.materializer_types
 
     @classmethod
-    def register_type(cls, key: str, type_: Type["BaseMaterializer"]):
+    def register_type(cls, key: str, type_: Type["BaseMaterializer"]) -> None:
         """Registers a new materializer.
 
         Args:
