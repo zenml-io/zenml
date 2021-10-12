@@ -13,20 +13,21 @@
 #  permissions and limitations under the License.
 
 import types
-from typing import Callable
+from typing import Callable, Type, Union
 
 from zenml.steps.base_step import STEP_INNER_FUNC_NAME, BaseStep
 
 
 def step(
-    _func: Callable = None, *, name: str = None
-) -> Callable[..., BaseStep]:
+    _func: types.FunctionType = None, *, name: str = None
+) -> Union[BaseStep, Callable[..., BaseStep]]:
     """Outer decorator function for the creation of a ZenML step
 
     In order to be able work with parameters such as `name`, it features a
     nested decorator structure.
 
     Args:
+        _func: Optional func from outside.
         name (required) the given name for the step.
 
     Returns:
@@ -34,7 +35,7 @@ def step(
         ZenML BaseStep
     """
 
-    def inner_decorator(func: types.FunctionType) -> BaseStep:
+    def inner_decorator(func: types.FunctionType) -> Type:
         """Inner decorator function for the creation of a ZenML Step
 
         Args:
@@ -44,12 +45,11 @@ def step(
         Returns:
             The class of a newly generated ZenML Step.
         """
-        step_class = type(
+        return type(
             name if name else func.__name__,
             (BaseStep,),
             {STEP_INNER_FUNC_NAME: staticmethod(func)},
         )
-        return step_class
 
     if _func is None:
         return inner_decorator
