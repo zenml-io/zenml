@@ -11,12 +11,13 @@ from zenml.materializers.default_materializer_registry import (
 )
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
-from zenml.steps.utils import STEP_INNER_FUNC_NAME, generate_component
+from zenml.steps.utils import (
+    SINGLE_RETURN_OUT_NAME,
+    STEP_INNER_FUNC_NAME,
+    generate_component,
+)
 
 logger = get_logger(__name__)
-
-
-SINGLE_RETURN_OUT_NAME: str = "output"
 
 
 class BaseStepMeta(type):

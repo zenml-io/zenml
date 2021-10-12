@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 
 from zenml.logger import get_logger
-from zenml.materializers.beam_materializer import BeamMaterializer  # noqa
+
+# from zenml.materializers.beam_materializer import BeamMaterializer  # noqa
 from zenml.materializers.json_materializer import JsonMaterializer  # noqa
 from zenml.materializers.pandas_materializer import PandasMaterializer  # noqa
 

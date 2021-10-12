@@ -36,7 +36,7 @@ class DefaultMaterializerRegistry(object):
             artifact of this factory.
         """
         if key in self.materializer_types:
-            return self.materializer_types[key](self.artifact)
+            return self.materializer_types[key]
         else:
             raise AttributeError(
                 f"Type {key} does not have a default `Materializer`! Please "

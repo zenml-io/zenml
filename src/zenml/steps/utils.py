@@ -16,7 +16,8 @@
 The collection of utility functions/classes are inspired by their original
 implementation of the Tensorflow Extended team, which can be found here:
 
-https://github.com/tensorflow/tfx/blob/master/tfx/dsl/component/experimental/decorators.py
+https://github.com/tensorflow/tfx/blob/master/tfx/dsl/component/experimental
+/decorators.py
 
 This version is heavily adjusted to work with the Pipeline-Step paradigm which
 is proposed by ZenML.
@@ -27,10 +28,8 @@ from __future__ import absolute_import, division, print_function
 import inspect
 import json
 import sys
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import Any, Callable, Dict, List, Optional
 
-import pydantic
-from pydantic import create_model
 from tfx import types as tfx_types
 from tfx.dsl.component.experimental.decorators import _SimpleComponent
 from tfx.dsl.components.base.base_executor import BaseExecutor
@@ -39,18 +38,23 @@ from tfx.types import component_spec
 from tfx.types.channel import Channel
 from tfx.utils import json_utils
 
-from zenml.annotations import Input, Output
-from zenml.artifacts.base_artifact import BaseArtifact
-from zenml.exceptions import StepInterfaceError
+from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.materializers.default_materializer_registry import (
+    default_materializer_factory,
+)
+from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps.step_output import Output
 
 STEP_INNER_FUNC_NAME: str = "process"
+SINGLE_RETURN_OUT_NAME: str = "output"
 
 
 class _PropertyDictWrapper(json_utils.Jsonable):
     """Helper class to wrap inputs/outputs from TFX nodes.
     Currently, this class is read-only (setting properties is not implemented).
     Internal class: no backwards compatibility guarantees.
-    Code Credit: https://github.com/tensorflow/tfx/blob/51946061ae3be656f1718a3d62cd47228b89b8f4/tfx/types/node_common.py
+    Code Credit: https://github.com/tensorflow/tfx/blob
+    /51946061ae3be656f1718a3d62cd47228b89b8f4/tfx/types/node_common.py
     """
 
     def __init__(
@@ -136,69 +140,61 @@ class _FunctionExecutor(BaseExecutor):
         """
 
         # Building the args for the process function
-        function_args = {}
+        function_params = {}
 
-        # Resolving the input artifacts
-        for name, artifact in input_dict.items():
-            if len(artifact) == 1:
-                function_args[name] = artifact[0]
-            else:
-                raise ValueError(
-                    (
-                        "Expected input %r to %s to be a singleton "
-                        "ValueArtifact channel (got %s instead)."
-                    )
-                    % (name, self, artifact)
-                )
-
-        # Resolving the output artifacts and the return annotations
-        return_artifact = output_dict.pop("return_output", None)
-        for name, artifact in output_dict.items():
-            if len(artifact) == 1:
-                function_args[name] = artifact[0]
-            else:
-                raise ValueError(
-                    (
-                        "Expected output %r to %s to be a singleton "
-                        "ValueArtifact channel (got %s instead)."
-                    )
-                    % (name, self, artifact)
-                )
-
-        # Resolving the primitive input and output annotations
         spec = inspect.getfullargspec(self._FUNCTION)
         args = spec.args
-        inputs_to_take_care_of = []
-        param_spec = {}
         for arg in args:
             arg_type = spec.annotations.get(arg, None)
-            if isinstance(arg_type, Input):
-                if not issubclass(arg_type.type, BaseArtifact):
-                    inputs_to_take_care_of.append(arg)
-            elif isinstance(arg_type, Output):
-                pass
+            if issubclass(arg_type, BaseStepConfig):
+                # Resolving the execution parameters
+                new_exec = {
+                    k: json.loads(v) for k, v in exec_properties.items()
+                }
+                config_object = arg_type.parse_obj(new_exec)
+                function_params[arg] = config_object
             else:
-                param_spec.update({arg: arg_type})
+                # At this point, it has to be an artifact, so we resolve
+                input_artifact = input_dict[arg][0]
+                materializer_class = (
+                    default_materializer_factory.get_single_materializer_type(
+                        arg_type
+                    )
+                )
+                materializer: BaseMaterializer = materializer_class(
+                    input_artifact
+                )
+                # The materializer now returns a resolved input
+                resolved_input = materializer.handle_input()
+                function_params[arg] = resolved_input
 
-        # Resolving the execution parameters
-        new_exec = {k: json.loads(v) for k, v in exec_properties.items()}
-        pydantic_c: Type[pydantic.BaseModel] = create_model(
-            "params", **{k: (v, ...) for k, v in param_spec.items()}
-        )
-        function_args.update(pydantic_c.parse_obj(new_exec).dict())
-
-        returns = self._FUNCTION(**function_args)
-
-        # Managing the returns of the process function
-        if return_artifact is not None:
-            artifact = return_artifact[0]
-            if returns is not None:
-                artifact.materializers.json.write_file(returns)
+        return_values = self._FUNCTION(**function_params)
+        spec = inspect.getfullargspec(self._FUNCTION)
+        return_spec = spec.annotations.get("return", None)
+        if return_spec is not None:
+            if isinstance(return_spec, Output):
+                # Resolve named (and multi-) outputs.
+                for i, return_tuple in enumerate(return_spec.items()):
+                    output_artifact = output_dict[return_tuple[0]][0]
+                    materializer_class = default_materializer_factory.get_single_materializer_type(
+                        return_tuple[1]
+                    )
+                    materializer: BaseMaterializer = materializer_class(
+                        output_artifact
+                    )
+                    materializer.handle_return(return_values[i])
             else:
-                raise StepInterfaceError()
-
-        if returns is not None and return_artifact is None:
-            raise StepInterfaceError()
+                # Resolve single output
+                output_artifact = output_dict[SINGLE_RETURN_OUT_NAME][0]
+                materializer_class = (
+                    default_materializer_factory.get_single_materializer_type(
+                        return_spec
+                    )
+                )
+                materializer: BaseMaterializer = materializer_class(
+                    output_artifact
+                )
+                materializer.handle_return(return_values)
 
 
 def generate_component(step) -> Callable[..., Any]:
