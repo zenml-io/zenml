@@ -125,6 +125,55 @@ class _FunctionExecutor(BaseExecutor):
 
     _FUNCTION = staticmethod(lambda: None)
 
+    def resolve_materializer(
+        self, obj_type: Any, artifact: tfx_types.Artifact
+    ) -> BaseMaterializer:
+        """Resolves the materializer for the given obj_type.
+
+        Args:
+            obj_type: Type of object..
+            artifact: A TFX artifact type.
+
+        Returns:
+            The right materializer based on the defaults or optionally the one
+            set by the user.
+        """
+        materializer_class = (
+            default_materializer_factory.get_single_materializer_type(obj_type)
+        )
+        return materializer_class(artifact)
+
+    def resolve_input_artifact(
+        self, obj_type: Any, artifact: tfx_types.Artifact
+    ) -> Any:
+        """Resolves an input artifact, i.e., reading it from the Artifact Store
+        to a pythonic object.
+
+        Args:
+            obj_type: Type of object.
+            artifact: A TFX artifact type.
+
+        Returns:
+            Return the output of `handle_input()` of selected materializer.
+        """
+        materializer = self.resolve_materializer(obj_type, artifact)
+        # The materializer now returns a resolved input
+        return materializer.handle_input()
+
+    def resolve_output_artifact(
+        self, obj_type: Any, artifact: tfx_types.Artifact, return_values: Any
+    ) -> None:
+        """Resolves an output artifact, i.e., writing it to the Artifact Store.
+        Calls `handle_return(return_values)` of the selected materializer.
+
+        Args:
+            obj_type: Type of object.
+            artifact: A TFX artifact type.
+            return_values: The object to be passed to `handle_return()`.
+        """
+        materializer = self.resolve_materializer(obj_type, artifact)
+        materializer.handle_return(return_values)
+
     def Do(
         self,
         input_dict: Dict[str, List[tfx_types.Artifact]],
@@ -142,6 +191,7 @@ class _FunctionExecutor(BaseExecutor):
         # Building the args for the process function
         function_params = {}
 
+        # First, we parse the inputs, i.e., params and input artifacts.
         spec = inspect.getfullargspec(self._FUNCTION)
         args = spec.args
         for arg in args:
@@ -155,46 +205,29 @@ class _FunctionExecutor(BaseExecutor):
                 function_params[arg] = config_object
             else:
                 # At this point, it has to be an artifact, so we resolve
-                input_artifact = input_dict[arg][0]
-                materializer_class = (
-                    default_materializer_factory.get_single_materializer_type(
-                        arg_type
-                    )
+                function_params[arg] = self.resolve_input_artifact(
+                    arg_type, input_dict[arg][0]
                 )
-                materializer: BaseMaterializer = materializer_class(
-                    input_artifact
-                )
-                # The materializer now returns a resolved input
-                resolved_input = materializer.handle_input()
-                function_params[arg] = resolved_input
 
         return_values = self._FUNCTION(**function_params)
         spec = inspect.getfullargspec(self._FUNCTION)
-        return_spec = spec.annotations.get("return", None)
-        if return_spec is not None:
-            if isinstance(return_spec, Output):
+        return_type = spec.annotations.get("return", None)
+        if return_type is not None:
+            if isinstance(return_type, Output):
                 # Resolve named (and multi-) outputs.
-                for i, return_tuple in enumerate(return_spec.items()):
-                    output_artifact = output_dict[return_tuple[0]][0]
-                    materializer_class = default_materializer_factory.get_single_materializer_type(
-                        return_tuple[1]
+                for i, output_tuple in enumerate(return_type.items()):
+                    self.resolve_output_artifact(
+                        output_tuple[1],
+                        output_dict[output_tuple[0]][0],
+                        return_values[i],  # order preserved.
                     )
-                    materializer: BaseMaterializer = materializer_class(
-                        output_artifact
-                    )
-                    materializer.handle_return(return_values[i])
             else:
                 # Resolve single output
-                output_artifact = output_dict[SINGLE_RETURN_OUT_NAME][0]
-                materializer_class = (
-                    default_materializer_factory.get_single_materializer_type(
-                        return_spec
-                    )
+                self.resolve_output_artifact(
+                    return_type,
+                    output_dict[SINGLE_RETURN_OUT_NAME][0],
+                    return_values,
                 )
-                materializer: BaseMaterializer = materializer_class(
-                    output_artifact
-                )
-                materializer.handle_return(return_values)
 
 
 def generate_component(step) -> Callable[..., Any]:

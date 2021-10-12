@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import NamedTuple
+from typing import Any, NamedTuple, Tuple
 
 
 class Output(object):
@@ -21,6 +21,6 @@ class Output(object):
     def __init__(self, **kwargs):
         self.outputs = NamedTuple("ZenOutput", **kwargs)
 
-    def items(self):
+    def items(self) -> Tuple[str, Any]:
         """Yields a tuple of type (output_name, output_type)."""
         yield from self.outputs.__annotations__.items()
