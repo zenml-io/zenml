@@ -68,7 +68,7 @@ class ZenGCS(filesystem.Filesystem):
                 f"to copy anyway."
             )
 
-        # TODO: check if it works with overwrite=True or if we need to manually
+        # TODO: [LOW] check if it works with overwrite=True or if we need to manually
         #  remove it first
         ZenGCS.fs.copy(path1=src, path2=dst)
 
@@ -139,8 +139,8 @@ class ZenGCS(filesystem.Filesystem):
                 f"to rename anyway."
             )
 
-        # TODO: check if it works with overwrite=True or if we need to manually
-        #  remove it first
+        # TODO: [LOW] check if it works with overwrite=True or if we need
+        #  to manually remove it first
         ZenGCS.fs.rename(path1=src, path2=dst)
 
     @staticmethod
@@ -169,7 +169,7 @@ class ZenGCS(filesystem.Filesystem):
             topdown: Unused argument to conform to interface.
             onerror: Unused argument to conform to interface.
         """
-        # TODO: additional params
+        # TODO: [LOW] additional params
         return ZenGCS.fs.walk(path=top)
 
 
