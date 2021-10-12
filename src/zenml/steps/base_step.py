@@ -164,3 +164,4 @@ class BaseStep(metaclass=BaseStepMeta):
         self, materializers: Dict[Type[Any], Type[BaseMaterializer]]
     ):
         self.materializers = materializers
+        return self
