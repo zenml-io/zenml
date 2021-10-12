@@ -1,11 +1,12 @@
 import inspect
 import json
 from abc import abstractmethod
-from typing import Optional, Type
+from typing import Any, Dict, Optional, Type
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
+from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
     default_materializer_factory,
 )
@@ -100,7 +101,7 @@ class BaseStep(metaclass=BaseStepMeta):
     the other step implementations"""
 
     def __init__(self, *args, **kwargs):
-
+        self.materializers = None
         self.__component = None
         self.__inputs = dict()
         self.PARAM_SPEC = dict()
@@ -132,11 +133,6 @@ class BaseStep(metaclass=BaseStepMeta):
                 )
         self.__component_class = generate_component(self)
 
-    @property
-    def component(self):
-        """Returns a TFX component."""
-        return self.__component
-
     def __call__(self, **artifacts):
         """Generates a component when called."""
         # TODO [MEDIUM]: Support *args as well.
@@ -155,6 +151,16 @@ class BaseStep(metaclass=BaseStepMeta):
             returns = returns[0]
         return returns
 
+    @property
+    def component(self):
+        """Returns a TFX component."""
+        return self.__component
+
     @abstractmethod
     def process(self, *args, **kwargs):
         """Abstract method for core step logic."""
+
+    def with_materializers(
+        self, materializers: Dict[Type[Any], Type[BaseMaterializer]]
+    ):
+        self.materializers = materializers

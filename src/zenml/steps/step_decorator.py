@@ -13,12 +13,12 @@
 #  permissions and limitations under the License.
 
 import types
-from typing import Type
+from typing import Callable, Type
 
 from zenml.steps.base_step import STEP_INNER_FUNC_NAME, BaseStep
 
 
-def step(name: str = None):
+def step(name: str = None) -> Callable[..., Type[BaseStep]]:
     """Outer decorator function for the creation of a ZenML step
 
     In order to be able work with parameters such as `name`, it features a
@@ -32,7 +32,7 @@ def step(name: str = None):
         ZenML BaseStep
     """
 
-    def inner_decorator(func: types.FunctionType) -> Type:
+    def inner_decorator(func: types.FunctionType) -> Type[BaseStep]:
         """Inner decorator function for the creation of a ZenML Step
 
         Args:
