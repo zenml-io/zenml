@@ -103,7 +103,6 @@ class BaseStep(metaclass=BaseStepMeta):
     def __init__(self, *args, **kwargs):
         self.materializers = None
         self.__component = None
-        self.__inputs = dict()
         self.PARAM_SPEC = dict()
 
         # TODO [LOW]: Support args
@@ -119,23 +118,42 @@ class BaseStep(metaclass=BaseStepMeta):
                 if isinstance(v, BaseStepConfig):
                     config = v
 
-            try:
-                # create a pydantic model out of a primitive type
-                model_dict = config.dict()  # noqa
-                self.PARAM_SPEC = {
-                    k: json.dumps(v) for k, v in model_dict.items()
-                }
-            except RuntimeError:
-                # TODO [LOW]: Attach a URL with all supported types.
-                raise StepInterfaceError(
-                    "You passed in a parameter that we cannot serialzie to a "
-                    "json."
+                try:
+                    # create a pydantic model out of a primitive type
+                    model_dict = config.dict()  # noqa
+                    self.PARAM_SPEC = {
+                        k: json.dumps(v) for k, v in model_dict.items()
+                    }
+                except RuntimeError as e:
+                    # TODO [LOW]: Attach a URL with all supported types.
+                    logger.debug(f"Pydantic Error: {str(e)}")
+                    raise StepInterfaceError(
+                        "You passed in a parameter that we cannot serialize!"
+                    )
+                assert self.PARAM_SPEC, (
+                    "Could not find step config even "
+                    "though specified in signature."
                 )
         self.__component_class = generate_component(self)
 
     def __call__(self, **artifacts):
         """Generates a component when called."""
         # TODO [MEDIUM]: Support *args as well.
+        # Basic checks
+        for artifact in artifacts.keys():
+            if artifact not in self.INPUT_SPEC:
+                raise ValueError(
+                    f"Artifact `{artifact}` is not defined in the input "
+                    f"signature of the step. Defined artifacts: "
+                    f"{list(self.INPUT_SPEC.keys())}"
+                )
+
+        for artifact in self.INPUT_SPEC.keys():
+            if artifact not in artifacts.keys():
+                raise ValueError(
+                    f"Artifact {artifact} is defined in the input signature "
+                    f"of the step but not connected in the pipeline creation!"
+                )
 
         self.__component = self.__component_class(
             **artifacts, **self.PARAM_SPEC
