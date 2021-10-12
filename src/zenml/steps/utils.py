@@ -43,6 +43,8 @@ from zenml.annotations import Input, Output
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.exceptions import StepInterfaceError
 
+STEP_INNER_FUNC_NAME: str = "process"
+
 
 class _PropertyDictWrapper(json_utils.Jsonable):
     """Helper class to wrap inputs/outputs from TFX nodes.
@@ -233,7 +235,7 @@ def generate_component(step) -> Callable[..., Any]:
         "%s_Executor" % step.__class__.__name__,
         (_FunctionExecutor,),
         {
-            "_FUNCTION": staticmethod(step.process),
+            "_FUNCTION": staticmethod(getattr(step, STEP_INNER_FUNC_NAME)),
             "__module__": step.__module__,
         },
     )
