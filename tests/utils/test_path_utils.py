@@ -26,9 +26,6 @@ from zenml.utils import path_utils
 
 logger = get_logger(__name__)
 
-# TODO: [MEDIUM] replace this pattern with Hypothesis pattern
-BAD_REMOTE_PREFIXES = ["http://", "12345", "----"]
-SAMPLE_FILE_NAMES = ["12345", "important_file.txt", "main.py"]
 TEMPORARY_FILE_NAME = "a_file.txt"
 TEMPORARY_FILE_SEARCH_PREFIX = "a_f*.*"
 
@@ -88,7 +85,6 @@ def test_find_files_when_file_absent(tmp_path):
 
 
 @pytest.mark.parametrize("filesystem", REMOTE_FS_PREFIX)
-# TODO: [MEDIUM] replace this pattern with Hypothesis pattern
 def test_is_remote_when_using_remote_prefix(filesystem):
     """is_remote returns True when path starts with one of the TFX remote file prefixes"""
     some_random_path = os.path.join(filesystem + "some_directory")
@@ -137,8 +133,8 @@ def test_list_dir_returns_one_result_for_one_file(tmp_path):
         assert len(path_utils.list_dir(str(tmp_path))) == 1
 
 
-@pytest.mark.parametrize("sample_file", SAMPLE_FILE_NAMES)
-# TODO: [MEDIUM] replace this pattern with Hypothesis pattern
+@pytest.fixture(scope="module")
+@given(sample_file=text())
 def test_list_dir_returns_empty_list_when_dir_doesnt_exist(
     sample_file, tmp_path
 ):
