@@ -13,14 +13,14 @@
 #  permissions and limitations under the License.
 
 import types
-from typing import Callable, Type, Union
+from typing import Callable, Type
 
 from zenml.steps.base_step import STEP_INNER_FUNC_NAME, BaseStep
 
 
 def step(
     _func: types.FunctionType = None, *, name: str = None
-) -> Union[BaseStep, Callable[..., BaseStep]]:
+) -> Callable[..., BaseStep]:
     """Outer decorator function for the creation of a ZenML step
 
     In order to be able work with parameters such as `name`, it features a

@@ -14,14 +14,14 @@
 
 
 import types
-from typing import Callable, Type, Union
+from typing import Callable, Type
 
 from zenml.pipelines.base_pipeline import PIPELINE_INNER_FUNC_NAME, BasePipeline
 
 
 def pipeline(
     _func: types.FunctionType = None, *, name: str = None
-) -> Union[BasePipeline, Callable[..., Type]]:
+) -> Callable[..., BasePipeline]:
     """Outer decorator function for the creation of a ZenML pipeline
 
     In order to be able work with parameters such as "name", it features a
