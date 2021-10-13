@@ -38,9 +38,10 @@ from tfx.types import component_spec
 from tfx.types.channel import Channel
 from tfx.utils import json_utils
 
+from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.materializers.default_materializer_registry import (
-    default_materializer_factory,
+from zenml.materializers.spec_materializer_registry import (
+    SpecMaterializerRegistry,
 )
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
@@ -124,14 +125,15 @@ class _FunctionExecutor(BaseExecutor):
     """Base TFX Executor class which is compatible with ZenML steps"""
 
     _FUNCTION = staticmethod(lambda: None)
+    spec_materializer_registry: SpecMaterializerRegistry = None
 
     def resolve_materializer(
-        self, obj_type: Any, artifact: tfx_types.Artifact
+        self, param_name: str, artifact: BaseArtifact
     ) -> BaseMaterializer:
         """Resolves the materializer for the given obj_type.
 
         Args:
-            obj_type: Type of object..
+            param_name: Name of param.
             artifact: A TFX artifact type.
 
         Returns:
@@ -139,45 +141,47 @@ class _FunctionExecutor(BaseExecutor):
             set by the user.
         """
         materializer_class = (
-            default_materializer_factory.get_single_materializer_type(obj_type)
+            self.spec_materializer_registry.get_single_materializer_type(
+                param_name
+            )
         )
         return materializer_class(artifact)
 
     def resolve_input_artifact(
-        self, obj_type: Any, artifact: tfx_types.Artifact
+        self, param_name: str, artifact: BaseArtifact
     ) -> Any:
         """Resolves an input artifact, i.e., reading it from the Artifact Store
         to a pythonic object.
 
         Args:
-            obj_type: Type of object.
+            param_name: Name of input param.
             artifact: A TFX artifact type.
 
         Returns:
             Return the output of `handle_input()` of selected materializer.
         """
-        materializer = self.resolve_materializer(obj_type, artifact)
+        materializer = self.resolve_materializer(param_name, artifact)
         # The materializer now returns a resolved input
         return materializer.handle_input()
 
     def resolve_output_artifact(
-        self, obj_type: Any, artifact: tfx_types.Artifact, data: Any
+        self, param_name: str, artifact: BaseArtifact, data: Any
     ) -> None:
         """Resolves an output artifact, i.e., writing it to the Artifact Store.
         Calls `handle_return(return_values)` of the selected materializer.
 
         Args:
-            obj_type: Type of object.
+            param_name: Name of output param.
             artifact: A TFX artifact type.
             data: The object to be passed to `handle_return()`.
         """
-        materializer = self.resolve_materializer(obj_type, artifact)
+        materializer = self.resolve_materializer(param_name, artifact)
         materializer.handle_return(data)
 
     def Do(
         self,
-        input_dict: Dict[str, List[tfx_types.Artifact]],
-        output_dict: Dict[str, List[tfx_types.Artifact]],
+        input_dict: Dict[str, List[BaseArtifact]],
+        output_dict: Dict[str, List[BaseArtifact]],
         exec_properties: Dict[str, Any],
     ):
         """Main block for the execution of the step
@@ -206,7 +210,7 @@ class _FunctionExecutor(BaseExecutor):
             else:
                 # At this point, it has to be an artifact, so we resolve
                 function_params[arg] = self.resolve_input_artifact(
-                    arg_type, input_dict[arg][0]
+                    arg, input_dict[arg][0]
                 )
 
         return_values = self._FUNCTION(**function_params)
@@ -217,14 +221,14 @@ class _FunctionExecutor(BaseExecutor):
                 # Resolve named (and multi-) outputs.
                 for i, output_tuple in enumerate(return_type.items()):
                     self.resolve_output_artifact(
-                        output_tuple[1],
+                        output_tuple[0],
                         output_dict[output_tuple[0]][0],
                         return_values[i],  # order preserved.
                     )
             else:
                 # Resolve single output
                 self.resolve_output_artifact(
-                    return_type,
+                    SINGLE_RETURN_OUT_NAME,
                     output_dict[SINGLE_RETURN_OUT_NAME][0],
                     return_values,
                 )
@@ -266,6 +270,7 @@ def generate_component(step) -> Callable[..., Any]:
         {
             "_FUNCTION": staticmethod(getattr(step, STEP_INNER_FUNC_NAME)),
             "__module__": step.__module__,
+            "spec_materializer_registry": step.spec_materializer_registry,
         },
     )
 

@@ -8,7 +8,10 @@ from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
-    default_materializer_factory,
+    default_materializer_registry,
+)
+from zenml.materializers.spec_materializer_registry import (
+    SpecMaterializerRegistry,
 )
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
@@ -19,6 +22,19 @@ from zenml.steps.utils import (
 )
 
 logger = get_logger(__name__)
+
+
+def check_dict_keys_match(x: Dict, y: Dict) -> bool:
+    """Checks whether there is even one key shared between two dicts.
+
+    Returns:
+        True if there is a shared key, otherwise False.
+    """
+    shared_items = {k: x[k] for k in x if k in y and x[k] == y[k]}
+    if len(shared_items) == 0:
+        return False
+    logger.debug(f"Matched keys for dicts {x} and {y}: {shared_items}")
+    return True
 
 
 class BaseStepMeta(type):
@@ -34,9 +50,9 @@ class BaseStepMeta(type):
         logger.debug(f"Registering class {name}, bases: {bases}, dct: {dct}")
         cls = super().__new__(mcs, name, bases, dct)
 
-        cls.INPUT_SPEC = dict()  # all input params
+        cls.INPUT_SIGNATURE = dict()  # all input params
         # TODO [MEDIUM]: Ensure that this is an OrderedDict
-        cls.OUTPUT_SPEC = dict()  # all output params
+        cls.OUTPUT_SIGNATURE = dict()  # all output params
         cls.CONFIG: Optional[Type[BaseStepConfig]] = None  # noqa all params
 
         # Looking into the signature of the provided process function
@@ -63,15 +79,18 @@ class BaseStepMeta(type):
                         "your step."
                     )
                 cls.CONFIG = arg_type
-            elif default_materializer_factory.is_registered(arg_type):
-                cls.INPUT_SPEC.update({arg: BaseArtifact})
             else:
-                raise StepInterfaceError(
-                    f"In a ZenML step, you can only pass in a "
-                    f"`BaseStepConfig` or an arg type with a default "
-                    f"materializer. You passed in {arg_type} for paramaeter "
-                    f"{arg}, which does not have a registered materializer."
-                )
+                cls.INPUT_SIGNATURE.update({arg: arg_type})
+
+            # elif default_materializer_registry.is_registered(arg_type):
+            #     cls.INPUT_SPEC.update({arg: BaseArtifact})
+            # else:
+            #     raise StepInterfaceError(
+            #         f"In a ZenML step, you can only pass in a "
+            #         f"`BaseStepConfig` or an arg type with a default "
+            #         f"materializer. You passed in {arg_type} for paramaeter "
+            #         f"{arg}, which does not have a registered materializer."
+            #     )
 
         # Infer the returned values
         return_spec = process_spec.annotations.get("return", None)
@@ -80,27 +99,35 @@ class BaseStepMeta(type):
                 # If its a named, potentially multi, outputs we go through
                 #  each and create a spec.
                 for return_tuple in return_spec.items():
-                    if default_materializer_factory.is_registered(
-                        return_tuple[1]
-                    ):
-                        cls.OUTPUT_SPEC.update({return_tuple[0]: BaseArtifact})
-                    else:
-                        raise StepInterfaceError(
-                            f"In a ZenML step, you can only return  an arg "
-                            f"type with a default materializer. You returned "
-                            f"{return_tuple[1]} as {return_tuple[0]}, a type "
-                            f"which does not have a default materializer."
-                        )
-            elif default_materializer_factory.is_registered(return_spec):
-                # If its one output, then give it a single return name.
-                cls.OUTPUT_SPEC.update({SINGLE_RETURN_OUT_NAME: BaseArtifact})
+                    cls.OUTPUT_SIGNATURE.update(
+                        {return_tuple[0]: return_tuple[1]}
+                    )
+
+                    # if default_materializer_registry.is_registered(
+                    #     return_tuple[1]
+                    # ):
+                    #     cls.OUTPUT_SPEC.update({return_tuple[0]: BaseArtifact})
+                    # else:
+                    #     raise StepInterfaceError(
+                    #         f"In a ZenML step, you can only return  an arg "
+                    #         f"type with a default materializer. You returned "
+                    #         f"{return_tuple[1]} as {return_tuple[0]}, a type "
+                    #         f"which does not have a default materializer."
+                    #     )
             else:
-                raise StepInterfaceError(
-                    f"In a ZenML step, you can only return  an arg type with "
-                    f"a default materializer. You returned a "
-                    f"{return_spec}, a type which does not have a default "
-                    f"materializer."
-                )
+                # If its one output, then give it a single return name.
+                cls.OUTPUT_SIGNATURE.update({SINGLE_RETURN_OUT_NAME: arg_type})
+
+            # elif default_materializer_registry.is_registered(return_spec):
+            #     # If its one output, then give it a single return name.
+            #     cls.OUTPUT_SPEC.update({SINGLE_RETURN_OUT_NAME: BaseArtifact})
+            # else:
+            #     raise StepInterfaceError(
+            #         f"In a ZenML step, you can only return  an arg type with "
+            #         f"a default materializer. You returned a "
+            #         f"{return_spec}, a type which does not have a default "
+            #         f"materializer."
+            #     )
         return cls
 
 
@@ -112,6 +139,9 @@ class BaseStep(metaclass=BaseStepMeta):
         self.materializers = None
         self.__component = None
         self.PARAM_SPEC = dict()
+        self.INPUT_SPEC = dict()
+        self.OUTPUT_SPEC = dict()
+        self.spec_materializer_registry = SpecMaterializerRegistry()
 
         # TODO [LOW]: Support args
         if args:
@@ -142,11 +172,47 @@ class BaseStep(metaclass=BaseStepMeta):
                     "Could not find step config even "
                     "though specified in signature."
                 )
-        self.__component_class = generate_component(self)
 
     def __call__(self, **artifacts):
         """Generates a component when called."""
         # TODO [MEDIUM]: Support *args as well.
+
+        # register defaults
+        if check_dict_keys_match(self.INPUT_SIGNATURE, self.OUTPUT_SIGNATURE):
+            raise StepInterfaceError(
+                "The input names and output names cannot be the same!"
+            )
+
+        # Construct INPUT_SPEC from INPUT_SIGNATURE
+        for arg, arg_type in self.INPUT_SIGNATURE.items():
+            if default_materializer_registry.is_registered(arg_type):
+                self.spec_materializer_registry.register_materializer_type(
+                    arg,
+                    default_materializer_registry.get_single_materializer_type(
+                        arg_type
+                    ),
+                )
+            else:
+                pass
+
+            # For now, all artifacts are BaseArtifacts
+            self.INPUT_SPEC[arg] = BaseArtifact
+
+        # Construct OUTPUT_SPEC from OUTPUT_SIGNATURE
+        for arg, arg_type in self.OUTPUT_SIGNATURE.items():
+            if default_materializer_registry.is_registered(arg_type):
+                self.spec_materializer_registry.register_materializer_type(
+                    arg,
+                    default_materializer_registry.get_single_materializer_type(
+                        arg_type
+                    ),
+                )
+            else:
+                pass
+
+            # For now, all artifacts are BaseArtifacts
+            self.OUTPUT_SPEC[arg] = BaseArtifact
+
         # Basic checks
         for artifact in artifacts.keys():
             if artifact not in self.INPUT_SPEC:
@@ -163,7 +229,7 @@ class BaseStep(metaclass=BaseStepMeta):
                     f"of the step but not connected in the pipeline creation!"
                 )
 
-        self.__component = self.__component_class(
+        self.__component = generate_component(self)(
             **artifacts, **self.PARAM_SPEC
         )
 
