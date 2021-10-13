@@ -69,8 +69,8 @@ class BaseStepMeta(type):
                 raise StepInterfaceError(
                     f"In a ZenML step, you can only pass in a "
                     f"`BaseStepConfig` or an arg type with a default "
-                    f"materializer. You passed in {arg_type}, which does not "
-                    f"have a registered materializer."
+                    f"materializer. You passed in {arg_type} for paramaeter "
+                    f"{arg}, which does not have a registered materializer."
                 )
 
         # Infer the returned values
@@ -87,9 +87,9 @@ class BaseStepMeta(type):
                     else:
                         raise StepInterfaceError(
                             f"In a ZenML step, you can only return  an arg "
-                            f"type with a default materializer. You passed in "
-                            f"{return_tuple[0]}, which does not have a "
-                            f"default materializer."
+                            f"type with a default materializer. You returned "
+                            f"{return_tuple[1]} as {return_tuple[0]}, a type "
+                            f"which does not have a default materializer."
                         )
             elif default_materializer_factory.is_registered(return_spec):
                 # If its one output, then give it a single return name.
@@ -97,8 +97,8 @@ class BaseStepMeta(type):
             else:
                 raise StepInterfaceError(
                     f"In a ZenML step, you can only return  an arg type with "
-                    f"a default materializer. You passed in "
-                    f"{return_spec}, which does not have a default "
+                    f"a default materializer. You returned a "
+                    f"{return_spec}, a type which does not have a default "
                     f"materializer."
                 )
         return cls
