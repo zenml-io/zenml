@@ -32,7 +32,7 @@ jobs:
           git config user.name github-actions
           git config user.email github-actions@github.com
           git pull
-          git merge origin/gitbook -m "Synced GitBook [ci skip]"
+          git merge gitbook -m "Synced GitBook [ci skip]"
 
       - name: Install poetry
         run: |
