@@ -14,6 +14,10 @@
 
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Type
 
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
+
 if TYPE_CHECKING:
     from zenml.materializers.base_materializer import BaseMaterializer
 
@@ -65,7 +69,14 @@ class DefaultMaterializerRegistry(object):
             key: Indicates the type of an object.
             type_: A BaseMaterializer subclass.
         """
-        cls.materializer_types[key] = type_
+        if key not in cls.materializer_types:
+            cls.materializer_types[key] = type_
+            logger.debug(f"Registered materializer {type_} for {key}")
+        else:
+            logger.debug(
+                f"{key} already registered with "
+                f"{cls.materializer_types[key]}. Cannot register {type_}."
+            )
 
 
-default_materializer_factory = DefaultMaterializerRegistry()
+default_materializer_registry = DefaultMaterializerRegistry()

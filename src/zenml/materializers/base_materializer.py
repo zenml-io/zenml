@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
 
 from zenml.materializers.default_materializer_registry import (
-    default_materializer_factory,
+    default_materializer_registry,
 )
 
 
@@ -37,7 +37,7 @@ class BaseMaterializerMeta(type):
                 "Materializer!"
             )
             [
-                default_materializer_factory.register_materializer_type(x, cls)
+                default_materializer_registry.register_materializer_type(x, cls)
                 for x in cls.ASSOCIATED_TYPES  # noqa
             ]  # noqa
         return cls
