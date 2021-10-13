@@ -18,9 +18,7 @@ from types import GeneratorType
 
 import pytest
 
-# TODO: [LOW] replace with our own list in constants
-from tfx.utils.io_utils import _REMOTE_FS_PREFIX
-
+from zenml.constants import REMOTE_FS_PREFIX
 from zenml.logger import get_logger
 from zenml.utils import path_utils
 
@@ -97,7 +95,7 @@ def test_find_files_when_file_absent():
         assert path_utils.find_files(temp_dir, "abc*.*")
 
 
-@pytest.mark.parametrize("filesystem", _REMOTE_FS_PREFIX)
+@pytest.mark.parametrize("filesystem", REMOTE_FS_PREFIX)
 def test_is_remote_when_using_remote_prefix(filesystem):
     """is_remote returns True when path starts with one of the TFX remote file prefixes"""
     some_random_path = os.path.join(filesystem + "some_directory")
