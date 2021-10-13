@@ -1,7 +1,7 @@
 import inspect
 import json
 from abc import abstractmethod
-from typing import Dict, Optional, Type
+from typing import Dict, Optional, Type, Union
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.exceptions import StepInterfaceError
@@ -201,11 +201,39 @@ class BaseStep(metaclass=BaseStepMeta):
     def process(self, *args, **kwargs):
         """Abstract method for core step logic."""
 
-    def with_materializers(
-        self, materializers: Dict[str, Type[BaseMaterializer]]
+    def with_return_materializers(
+        self,
+        materializers: Union[
+            Type[BaseMaterializer], Dict[str, Type[BaseMaterializer]]
+        ],
     ):
-        """Inject materializers from the outside."""
-        self.materializers = materializers
+        """Inject materializers from the outside. If one materializer is passed
+        in then all outputs are assigned that materializer. If a dict is passed
+        in then we make sure the output names match.
+
+        Args:
+            materializers: Either a `Type[BaseMaterializer]`, or a
+            dict that maps {output_name: Type[BaseMaterializer]}.
+        """
+        if not isinstance(materializers, dict):
+            assert isinstance(materializers, type) and issubclass(
+                materializers, BaseMaterializer
+            ), "Need to pass in a subclass of `BaseMaterializer`!"
+            if len(self.OUTPUT_SIGNATURE) == 1:
+                # If only one return, assign to `SINGLE_RETURN_OUT_NAME`.
+                self.materializers = {SINGLE_RETURN_OUT_NAME: materializers}
+            else:
+                # If multi return, then assign to all.
+                self.materializers = {
+                    k: materializers for k in self.OUTPUT_SIGNATURE
+                }
+        else:
+            # Check whether signature matches.
+            assert all([x in self.OUTPUT_SIGNATURE for x in materializers]), (
+                f"One of {materializers.keys()} not defined in outputs: "
+                f"{self.OUTPUT_SIGNATURE.keys()}"
+            )
+            self.materializers = materializers
         return self
 
     def resolve_signature_materializers(

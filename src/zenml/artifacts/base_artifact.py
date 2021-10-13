@@ -12,9 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from tfx.types import Artifact
+from tfx.types.artifact import Property, PropertyType
 
 from zenml.exceptions import ArtifactInterfaceError
 from zenml.materializers.materializer_factory import MaterializerFactory
+
+MATERIALIZERS = Property(type=PropertyType.STRING)
 
 
 class BaseArtifact(Artifact):
@@ -31,7 +34,9 @@ class BaseArtifact(Artifact):
     """
 
     TYPE_NAME = "BaseArtifact"
-    PROPERTIES = {}
+    PROPERTIES = {
+        "materializers": MATERIALIZERS,
+    }
 
     @property
     def materializers(self) -> MaterializerFactory:
