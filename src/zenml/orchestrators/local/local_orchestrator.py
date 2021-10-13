@@ -27,7 +27,7 @@ class LocalOrchestrator(BaseOrchestrator):
 
         # Establish the connections between the components
         assert all(
-            issubclass(type(s), BaseStep) for s in zenml_pipeline.steps
+            issubclass(type(s), BaseStep) for s in zenml_pipeline.steps.values()
         ), (
             "When you are designing a pipeline, you can only pass in @step "
             "like annotated objects."
