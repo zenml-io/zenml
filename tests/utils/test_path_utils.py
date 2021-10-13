@@ -26,6 +26,7 @@ from zenml.utils import path_utils
 
 logger = get_logger(__name__)
 
+# TODO: [MEDIUM] replace this pattern with Hypothesis pattern
 BAD_REMOTE_PREFIXES = ["http://", "12345", "----"]
 SAMPLE_FILE_NAMES = ["12345", "important_file.txt", "main.py"]
 
@@ -56,16 +57,18 @@ def test_is_dir_when_true():
 
 def test_is_dir_when_false():
     """is_dir returns false when path doesn't refer to a directory"""
-    # TODO: [LOW] replace TemporaryDirectory with pytest's tmp_path
+    # TODO: [HIGH] replace with the tempfile paradigm
     with NamedTemporaryFile() as temp_file:
         assert path_utils.is_dir(temp_file.name) is False
 
 
 def test_find_files_returns_generator_object_when_file_present():
     """find_files returns a generator object when it finds a file"""
+    # TODO: [LOW] replace TemporaryDirectory with pytest's tmp_path
     with TemporaryDirectory() as temp_dir:
         temp_file_name = "abcdefg.txt"
         temp_file_path = os.path.join(temp_dir, temp_file_name)
+        # TODO: [HIGH] replace with the tempfile paradigm
         open(temp_file_path, "x")
         assert isinstance(
             path_utils.find_files(temp_dir, "abc*.*"), GeneratorType
@@ -74,15 +77,18 @@ def test_find_files_returns_generator_object_when_file_present():
 
 def test_find_files_when_file_present():
     """find_files locates a file within a temporary directory"""
+    # TODO: [LOW] replace TemporaryDirectory with pytest's tmp_path
     with TemporaryDirectory() as temp_dir:
         temp_file_name = "abcdefg.txt"
         temp_file_path = os.path.join(temp_dir, temp_file_name)
+        # TODO: [HIGH] replace with the tempfile paradigm
         open(temp_file_path, "x")
         assert path_utils.find_files(temp_dir, "abc*.*")
 
 
 def test_find_files_when_file_absent():
     """find_files returns None when it doesn't find a file"""
+    # TODO: [LOW] replace TemporaryDirectory with pytest's tmp_path
     with TemporaryDirectory() as temp_dir:
         temp_file_name = "qqq.txt"
         temp_file_path = os.path.join(temp_dir, temp_file_name)
@@ -122,14 +128,18 @@ def test_gcs_path_when_false(filesystem):
 
 def test_list_dir_returns_a_list_of_file_names():
     """list_dir should return a list of file names inside the queried directory"""
+    # TODO: [LOW] replace TemporaryDirectory with pytest's tmp_path
     with TemporaryDirectory() as temp_dir:
+        # TODO: [HIGH] replace with the tempfile paradigm
         with NamedTemporaryFile(dir=temp_dir) as temp_file:
             assert path_utils.list_dir(temp_dir) == [temp_file.name]
 
 
 def test_list_dir_returns_a_list_of_file_paths():
     """list_dir should return a list of file paths inside the queried directory"""
+    # TODO: [LOW] replace TemporaryDirectory with pytest's tmp_path
     with TemporaryDirectory() as temp_dir:
+        # TODO: [HIGH] replace with the tempfile paradigm
         with NamedTemporaryFile(dir=temp_dir) as temp_file:
             assert path_utils.list_dir(temp_dir) == [
                 os.path.join(temp_dir, temp_file.name)
@@ -138,7 +148,9 @@ def test_list_dir_returns_a_list_of_file_paths():
 
 def test_list_dir_returns_one_result_for_one_file():
     """list_dir should return only one result, when there is only one file created"""
+    # TODO: [LOW] replace TemporaryDirectory with pytest's tmp_path
     with TemporaryDirectory() as temp_dir:
+        # TODO: [HIGH] replace with the tempfile paradigm
         with NamedTemporaryFile(dir=temp_dir) as _:
             assert len(path_utils.list_dir(temp_dir)) == 1
 
@@ -147,6 +159,7 @@ def test_list_dir_returns_one_result_for_one_file():
 def test_list_dir_returns_empty_list_when_dir_doesnt_exist(sample_file):
     """list_dir should return an empty list when the directory"""
     """doesn't exist"""
+    # TODO: [LOW] replace TemporaryDirectory with pytest's tmp_path
     with TemporaryDirectory() as temp_dir:
         not_a_real_dir = os.path.join(temp_dir, sample_file)
         assert isinstance(path_utils.list_dir(not_a_real_dir), list)
