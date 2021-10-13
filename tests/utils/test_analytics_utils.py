@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+import platform
 
 from zenml.constants import (
     SEGMENT_ANALYTICS_ID,
@@ -42,8 +43,6 @@ def test_get_system_info_type():
 
 def test_platform_info_correctness():
     """Checks that the method returns the correct platform"""
-    import platform
-
     system_id = platform.system()
 
     if system_id == "Darwin":
