@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Any, Text
+from typing import Any
 
 from pydantic import validator
 from tfx.orchestration import metadata
@@ -26,7 +26,7 @@ from zenml.utils import path_utils
 class SQLiteMetadataStore(BaseMetadataStore):
     """SQLite backend for ZenML metadata store."""
 
-    uri: Text
+    uri: str
 
     def __init__(self, **data: Any):
         """Constructor for MySQL MetadataStore for ZenML."""

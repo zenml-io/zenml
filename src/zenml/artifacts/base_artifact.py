@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
 from tfx.types import Artifact
 
 from zenml.materializers.materializer_factory import MaterializerFactory
@@ -36,8 +35,19 @@ class BaseArtifact(Artifact):
 
     @property
     def materializers(self) -> MaterializerFactory:
+        """Returns a MaterializerFactory which provides access
+        to all registered materializers."""
         return MaterializerFactory(self)
 
     @materializers.setter
-    def materializers(self, m):
-        raise ArtifactInterfaceError("You cannot set materializers.")
+    def materializers(self, materializers: MaterializerFactory):
+        """Setting the materializers property is not allowed.
+        This method always raises an ArtifactInterfaceError
+        with an explanation how to use materializers.
+        """
+        raise ArtifactInterfaceError(
+            "Setting the materializers property on an artifact is not allowed. "
+            "To add a custom materializer to read/write artifacts, make sure "
+            "to subclass `BaseMaterializer` which will automatically register "
+            "it and make it accessible via the MaterializerFactory."
+        )

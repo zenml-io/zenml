@@ -15,7 +15,6 @@
 
 import os
 from abc import abstractmethod
-from typing import Text
 
 from ml_metadata.metadata_store import metadata_store
 
@@ -47,13 +46,13 @@ class BaseMetadataStore(BaseComponent):
     def get_tfx_metadata_config(self):
         """Return tfx metadata config."""
 
-    def get_serialization_dir(self):
+    def get_serialization_dir(self) -> str:
         """Gets the local path where artifacts are stored."""
         return os.path.join(
             get_zenml_config_dir(), self._METADATA_STORE_DIR_NAME
         )
 
-    def get_pipeline_status(self, pipeline) -> Text:
+    def get_pipeline_status(self, pipeline) -> str:
         """Query metadata store to find status of pipeline.
 
         Args:
@@ -114,13 +113,13 @@ class BaseMetadataStore(BaseComponent):
 
         return result
 
-    def get_artifacts_by_component(self, pipeline, component_name: Text):
+    def get_artifacts_by_component(self, pipeline, component_name: str):
         """Gets artifacts by component name.
 
         Args:
           pipeline(BasePipeline): a ZenML pipeline object
           component_name:
-          component_name: Text:
+          component_name: str:
 
         Returns:
 

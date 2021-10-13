@@ -159,7 +159,8 @@
 <dl class="py property">
 <dt class="sig sig-object py" id="zenml.artifacts.base_artifact.BaseArtifact.materializers">
 <em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">materializers</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="zenml.materializers.html#zenml.materializers.materializer_factory.MaterializerFactory" title="zenml.materializers.materializer_factory.MaterializerFactory"><span class="pre">zenml.materializers.materializer_factory.MaterializerFactory</span></a></em><a class="headerlink" href="#zenml.artifacts.base_artifact.BaseArtifact.materializers" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Returns a MaterializerFactory which provides access to all registered materializers.</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -191,6 +192,7 @@
 <dt class="sig sig-object py" id="zenml.artifacts.model_artifact.ModelArtifact">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.artifacts.model_artifact.</span></span><span class="sig-name descname"><span class="pre">ModelArtifact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mlmd_artifact_type</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">ml_metadata.proto.metadata_store_pb2.ArtifactType</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.artifacts.model_artifact.ModelArtifact" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#zenml.artifacts.base_artifact.BaseArtifact" title="zenml.artifacts.base_artifact.BaseArtifact"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.artifacts.base_artifact.BaseArtifact</span></code></a></p>
+<p>Base class for any ZenML model artifact.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="zenml.artifacts.model_artifact.ModelArtifact.TYPE_NAME">
 <span class="sig-name descname"><span class="pre">TYPE_NAME</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'model_artifact'</span></em><a class="headerlink" href="#zenml.artifacts.model_artifact.ModelArtifact.TYPE_NAME" title="Permalink to this definition">¶</a></dt>

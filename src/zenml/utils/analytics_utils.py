@@ -15,7 +15,7 @@
 
 import platform
 import sys
-from typing import Any, Callable, Dict, Text
+from typing import Any, Callable, Dict
 
 import analytics
 import distro
@@ -63,7 +63,7 @@ CREATE_REPO = "Repository created"
 INITIALIZE = "ZenML initialized"
 
 
-def get_segment_key() -> Text:
+def get_segment_key() -> str:
     """Get key for authorizing to Segment backend.
 
     Returns:
@@ -123,7 +123,7 @@ def get_system_info() -> Dict:
     return {"os": "unknown"}
 
 
-def track_event(event: Text, metadata: Dict = None):
+def track_event(event: str, metadata: Dict = None):
     """
     Track segment event if user opted-in.
 
@@ -174,7 +174,7 @@ def parametrized(dec):
 
 
 @parametrized
-def track(func: Callable, event: Text = None) -> Callable:
+def track(func: Callable, event: str = None) -> Callable:
     """Decorator to track event.
 
     Args:
@@ -193,6 +193,7 @@ def track(func: Callable, event: Text = None) -> Callable:
     #     metadata['module'] = func.__module__
 
     def inner_func(*args, **kwargs):
+        """Inner decorator function."""
         track_event(event, metadata=metadata)
         result = func(*args, **kwargs)
         return result

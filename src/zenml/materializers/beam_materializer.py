@@ -14,6 +14,7 @@
 
 import os
 from pathlib import Path
+from typing import Text, Tuple, Union
 
 import apache_beam as beam
 
@@ -27,12 +28,25 @@ DEFAULT_FILENAME = "data.csv"
 
 
 class BeamMaterializer(BaseMaterializer):
-    """Read to and from Beam artifacts."""
+    """Read/Write Apache Beam artifacts."""
 
     TYPE_NAME = "beam"
 
-    def read_text(self, pipeline, read_header: bool = True):
-        """Read from text"""
+    def read_text(
+        self, pipeline, read_header=True
+    ) -> Union[beam.Pipeline, Tuple[str, beam.Pipeline]]:
+        """Appends a text reading step to an existing beam pipeline.
+
+        Args:
+            pipeline: The pipeline to which the reading step will be added.
+            read_header: Indicates if the header should be read and
+              returned in addition to the pipeline.
+
+        Returns:
+            If `read_header` is False, returns just the modified pipeline.
+            If `read_header` is True, returns the header as a comma-separated
+              string as well as the modified pipeline.
+        """
         pipeline = pipeline | "ReadText" >> beam.io.ReadFromText(
             file_pattern=os.path.join(self.artifact.uri, "*"),
             skip_header_lines=True,
@@ -68,8 +82,21 @@ class BeamMaterializer(BaseMaterializer):
         else:
             return pipeline
 
-    def write_text(self, pipeline, shard_name_template=None, header=None):
-        """Write from text"""
+    def write_text(
+        self,
+        pipeline,
+        shard_name_template: Text = None,
+        header: Text = None,
+    ):
+        """Appends a text writing step to an existing beam pipeline.
+
+        Args:
+            pipeline: The pipeline to which the reading step will be added.
+            shard_name_template: A template string containing placeholders
+             for the shard number and shard count. See `beam.io.WriteToText`
+             for more information.
+            header: String to write at beginning of file as a header.
+        """
         return pipeline | beam.io.WriteToText(
             os.path.join(self.artifact.uri, DEFAULT_FILENAME),
             shard_name_template=shard_name_template,

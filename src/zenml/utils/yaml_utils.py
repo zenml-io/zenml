@@ -14,14 +14,14 @@
 
 import json
 from pathlib import Path
-from typing import Dict, Text
+from typing import Any, Dict
 
 import yaml
 
 from zenml.utils import path_utils
 
 
-def write_yaml(file_path: Text, contents: Dict):
+def write_yaml(file_path: str, contents: Dict):
     """Write contents as YAML format to file_path.
 
     Args:
@@ -38,7 +38,7 @@ def write_yaml(file_path: Text, contents: Dict):
     path_utils.write_file_contents(file_path, yaml.dump(contents))
 
 
-def read_yaml(file_path: Text) -> Dict:
+def read_yaml(file_path: str) -> Dict:
     """Read YAML on file path and returns contents as dict.
 
     Args:
@@ -57,7 +57,7 @@ def read_yaml(file_path: Text) -> Dict:
         raise FileNotFoundError(f"{file_path} does not exist.")
 
 
-def is_yaml(file_path: Text):
+def is_yaml(file_path: str) -> bool:
     """Returns True if file_path is YAML, else False
 
     Args:
@@ -71,7 +71,7 @@ def is_yaml(file_path: Text):
     return False
 
 
-def write_json(file_path: Text, contents: Dict):
+def write_json(file_path: str, contents: Dict):
     """Write contents as JSON format to file_path.
 
     Args:
@@ -92,7 +92,7 @@ def write_json(file_path: Text, contents: Dict):
     path_utils.write_file_contents(file_path, json.dumps(contents))
 
 
-def read_json(file_path: Text):
+def read_json(file_path: str) -> Any:
     """Read JSON on file path and returns contents as dict.
 
     Args:

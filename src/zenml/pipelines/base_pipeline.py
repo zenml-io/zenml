@@ -1,18 +1,22 @@
 import inspect
 from abc import abstractmethod
+from typing import Dict
 
 from zenml.annotations.artifact_annotations import Input
 from zenml.annotations.step_annotations import Step
 from zenml.core.repo import Repository
+from zenml.stacks.base_stack import BaseStack
 from zenml.utils.exceptions import PipelineInterfaceError
 
 
 class BasePipelineMeta(type):
-    """ """
+    """Pipeline Metaclass responsible for validating the pipeline definition."""
 
     def __new__(mcs, name, bases, dct):
+        """Ensures that all function arguments are either a `Step`
+        or an `Input`."""
         cls = super().__new__(mcs, name, bases, dct)
-
+        cls.NAME = name
         cls.STEP_SPEC = dict()
         cls.INPUT_SPEC = dict()
 
@@ -38,7 +42,7 @@ class BasePipelineMeta(type):
 
 
 class BasePipeline(metaclass=BasePipelineMeta):
-    """ """
+    """Base ZenML pipeline."""
 
     def __init__(self, *args, **kwargs):
 
@@ -67,19 +71,28 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
     @abstractmethod
     def connect(self, *args, **kwargs):
-        """ """
+        """Function that connects inputs and outputs of the pipeline steps."""
 
     @classmethod
     def get_executable(cls):
-        """ """
+        """Returns the `connect` function."""
         return cls.connect
 
     @property
-    def stack(self):
+    def name(self) -> str:
+        """Name of pipeline is always equal to self.NAME"""
+        return self.NAME
+
+    @property
+    def stack(self) -> BaseStack:
+        """Returns the stack for this pipeline."""
         return self.__stack
 
     @stack.setter
-    def stack(self, stack):
+    def stack(self, stack: BaseStack):
+        """Setting the stack property is not allowed. This method always
+        raises a PipelineInterfaceError.
+        """
         raise PipelineInterfaceError(
             "The provider will be automatically"
             "inferred from your environment. Please "
@@ -87,11 +100,15 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
 
     @property
-    def inputs(self):
+    def inputs(self) -> Dict:
+        """Returns a dictionary of pipeline inputs."""
         return self.__inputs
 
     @inputs.setter
-    def inputs(self, inputs):
+    def inputs(self, inputs: Dict):
+        """Setting the inputs property is not allowed. This method always
+        raises a PipelineInterfaceError.
+        """
         raise PipelineInterfaceError(
             "The provider will be automatically"
             "inferred from your environment. Please "
@@ -99,11 +116,15 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
 
     @property
-    def steps(self):
+    def steps(self) -> Dict:
+        """Returns a dictionary of pipeline steps."""
         return self.__steps
 
     @steps.setter
-    def steps(self, steps):
+    def steps(self, steps: Dict):
+        """Setting the steps property is not allowed. This method always
+        raises a PipelineInterfaceError.
+        """
         raise PipelineInterfaceError(
             "The provider will be automatically"
             "inferred from your environment. Please "
@@ -111,4 +132,5 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
 
     def run(self):
+        """Runs the pipeline using the orchestrator of the pipeline stack."""
         return self.stack.orchestrator.run(self)

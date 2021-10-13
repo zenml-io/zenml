@@ -25,7 +25,7 @@ or the version of zenml as a string.
 """
 import importlib
 import inspect
-from typing import Optional, Text, Type, Union
+from typing import Optional, Type, Union
 
 from tfx.utils.import_utils import import_class_by_path
 
@@ -36,29 +36,29 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-def is_standard_pin(pin: Text) -> bool:
+def is_standard_pin(pin: str) -> bool:
     """
     Returns True if pin is valid ZenML pin, else False.
 
     Args:
-        pin (str): potential ZenML pin like 'zenml_0.1.1'
+        pin: potential ZenML pin like 'zenml_0.1.1'
     """
     if pin.startswith(f"{APP_NAME}_"):
         return True
     return False
 
 
-def create_zenml_pin():
+def create_zenml_pin() -> str:
     """Creates a ZenML pin for source pinning from release version."""
     return f"{APP_NAME}_{__version__}"
 
 
-def resolve_standard_source(source: Text) -> Text:
+def resolve_standard_source(source: str) -> str:
     """
     Creates a ZenML pin for source pinning from release version.
 
     Args:
-        source (str): class_source e.g. this.module.Class.
+        source: class_source e.g. this.module.Class.
     """
     if "@" in source:
         raise AssertionError(f"source {source} is already pinned.")
@@ -66,7 +66,7 @@ def resolve_standard_source(source: Text) -> Text:
     return f"{source}@{pin}"
 
 
-def is_standard_source(source: Text) -> bool:
+def is_standard_source(source: str) -> bool:
     """
     Returns True if source is a standard ZenML source.
 
@@ -78,24 +78,24 @@ def is_standard_source(source: Text) -> bool:
     return False
 
 
-def get_path_from_source(source):
+def get_path_from_source(source: str) -> str:
     """
     Get file path from source
 
     Args:
-        source (str): class_source e.g. this.module.Class.
+        source: class_source e.g. this.module.Class.
     """
     # TODO: [MEDIUM] Make sure this is an absolute path rather than naive split
     file_path = "/".join(source.split(".")[:-1]) + ".py"
     return file_path
 
 
-def get_pin_from_source(source: Text) -> Optional[Text]:
+def get_pin_from_source(source: str) -> Optional[str]:
     """
     Gets pin from source, i.e. module.path@pin, returns pin.
 
     Args:
-        source (str): class_source e.g. this.module.Class[@pin].
+        source: class_source e.g. this.module.Class[@pin].
     """
     if "@" in source:
         pin = source.split("@")[-1]
@@ -103,7 +103,7 @@ def get_pin_from_source(source: Text) -> Optional[Text]:
     return "unpinned"
 
 
-def get_class_source_from_source(source: Text) -> Optional[Text]:
+def get_class_source_from_source(source: str) -> Optional[str]:
     """
     Gets class source from source, i.e. module.path@version, returns version.
 
@@ -114,7 +114,7 @@ def get_class_source_from_source(source: Text) -> Optional[Text]:
     return source.split("@")[0]
 
 
-def get_module_source_from_source(source: Text) -> Text:
+def get_module_source_from_source(source: str) -> str:
     """
     Gets module source from source. E.g. `some.module.file.class@version`,
     returns `some.module`.
@@ -126,7 +126,7 @@ def get_module_source_from_source(source: Text) -> Text:
     return ".".join(class_source.split(".")[:-2])
 
 
-def get_module_source_from_file_path(file_path):
+def get_module_source_from_file_path(file_path: str) -> str:
     """
     Gets module_source from a file_path. E.g. `/home/myrepo/step/trainer.py`
     returns `myrepo.step.trainer` if `myrepo` is the root of the repo.
@@ -147,32 +147,32 @@ def get_module_source_from_file_path(file_path):
     return module_source
 
 
-def get_relative_path_from_module_source(module_source: Text):
+def get_relative_path_from_module_source(module_source: str) -> str:
     """
     Get a directory path from module, relative to root of repository.
 
     E.g. zenml.core.step will return zenml/core/step.
 
     Args:
-        module_source (str): A module e.g. zenml.core.step
+        module_source: A module e.g. zenml.core.step
     """
     return module_source.replace(".", "/")
 
 
-def get_absolute_path_from_module_source(module: Text):
+def get_absolute_path_from_module_source(module: str) -> str:
     """
     Get a directory path from module source.
 
     E.g. `zenml.core.step` will return `full/path/to/zenml/core/step`.
 
     Args:
-        module (str): A module e.g. `zenml.core.step`.
+        module: A module e.g. `zenml.core.step`.
     """
     mod = importlib.import_module(module)
     return mod.__path__[0]
 
 
-def get_module_source_from_class(class_: Union[Type, Text]) -> Optional[Text]:
+def get_module_source_from_class(class_: Union[Type, str]) -> Optional[str]:
     """
     Takes class input and returns module_source. If class is already string
     then returns the same.
@@ -190,7 +190,7 @@ def get_module_source_from_class(class_: Union[Type, Text]) -> Optional[Text]:
     return module_source
 
 
-def resolve_class(class_: Type) -> Text:
+def resolve_class(class_: Type) -> str:
     """
     Resolves a a class into a serializable source string.
 
@@ -211,7 +211,7 @@ def resolve_class(class_: Type) -> Text:
     return class_source
 
 
-def load_source_path_class(source: Text) -> Type:
+def load_source_path_class(source: str) -> Type:
     """
     Loads a Python class from the source.
 

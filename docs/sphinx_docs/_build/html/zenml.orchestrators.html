@@ -154,6 +154,7 @@
 <dt class="sig sig-object py" id="zenml.orchestrators.base_orchestrator.BaseOrchestrator">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.orchestrators.base_orchestrator.</span></span><span class="sig-name descname"><span class="pre">BaseOrchestrator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uuid</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">uuid.UUID</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="zenml.core.html#zenml.core.base_component.BaseComponent" title="zenml.core.base_component.BaseComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.core.base_component.BaseComponent</span></code></a></p>
+<p>Base Orchestrator class to orchestrate ZenML pipelines.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="zenml.orchestrators.base_orchestrator.BaseOrchestrator.Config">
 <em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Config</span></span><a class="headerlink" href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator.Config" title="Permalink to this definition">¶</a></dt>
@@ -168,14 +169,25 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="zenml.orchestrators.base_orchestrator.BaseOrchestrator.get_serialization_dir">
-<span class="sig-name descname"><span class="pre">get_serialization_dir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator.get_serialization_dir" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_serialization_dir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator.get_serialization_dir" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets the local path where artifacts are stored.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="zenml.orchestrators.base_orchestrator.BaseOrchestrator.run">
-<em class="property"><span class="pre">abstract</span> </em><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zenml_pipeline</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator.run" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<em class="property"><span class="pre">abstract</span> </em><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zenml_pipeline</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">BasePipeline</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract method to run a pipeline. Overwrite this in subclasses
+with a concrete implementation on how to run the given pipeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>zenml_pipeline</strong> – The pipeline to run.</p></li>
+<li><p><strong>**kwargs</strong> – Potential additional parameters used in subclass
+implementations.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 </dd></dl>
 

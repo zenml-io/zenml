@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import os
 from abc import abstractmethod
-from typing import Any, Optional, Text
+from typing import Any, Optional
 from uuid import UUID, uuid4
 
 from pydantic import BaseSettings, Field
@@ -80,10 +80,10 @@ class BaseComponent(BaseSettings):
             path_utils.create_file_if_not_exists(str(f))
 
     @abstractmethod
-    def get_serialization_dir(self) -> Text:
+    def get_serialization_dir(self) -> str:
         """Return the dir where object is serialized."""
 
-    def get_serialization_file_name(self) -> Text:
+    def get_serialization_file_name(self) -> str:
         """Return the name of the file where object is serialized. This
         has a sane default in cases where uuid is not passed externally, and
         therefore reading from a serialize file is not an option for the table.
@@ -94,7 +94,7 @@ class BaseComponent(BaseSettings):
         else:
             return f"DEFAULT{self._file_suffix}"
 
-    def get_serialization_full_path(self) -> Text:
+    def get_serialization_full_path(self) -> str:
         """Returns the full path of the serialization file."""
         return os.path.join(
             self.get_serialization_dir(), self.get_serialization_file_name()

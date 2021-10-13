@@ -12,22 +12,22 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from tensorflow import keras
+
 from zenml.materializers.base_materializer import BaseMaterializer
 
 DEFAULT_FILENAME = "model.hdf5"
 
 
 class KerasMaterializer(BaseMaterializer):
-    """Materializer to read Keras model."""
+    """Materializer to read/write Keras models."""
 
     TYPE_NAME = "keras"
 
     def read_model(self):
-        """ """
-        from tensorflow import keras
-
+        """Reads and returns a Keras model."""
         return keras.models.load_model(self.artifact.uri)
 
-    def write_model(self, model):
-        """ """
+    def write_model(self, model: keras.Model):
+        """Writes a keras model."""
         model.save(self.artifact.uri)

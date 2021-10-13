@@ -15,7 +15,7 @@
 # TODO [MEDIUM]: Add logic via direct GitHub repo pulling
 
 # import os
-# from typing import List, Text
+# from typing import List
 #
 # import click
 #
@@ -23,7 +23,7 @@
 # from zenml.utils import path_utils
 #
 #
-# def get_examples_dir() -> Text:
+# def get_examples_dir() -> str:
 #     """Return the examples dir."""
 #     cli_dir = os.path.dirname(__file__)
 #     package_dir = os.path.dirname(os.path.dirname(cli_dir))
@@ -31,7 +31,7 @@
 #     return examples_dir
 #
 #
-# def get_all_examples() -> List[Text]:
+# def get_all_examples() -> List[str]:
 #     """Get all the examples"""
 #     examples = []
 #     for name in sorted(os.listdir(get_examples_dir())):
@@ -45,7 +45,7 @@
 #     return examples
 #
 #
-# def get_example_readme(example_path) -> Text:
+# def get_example_readme(example_path) -> str:
 #     """Get the example README file contents."""
 #     with open(os.path.join(example_path, "README.md")) as readme:
 #         readme_content = readme.read()

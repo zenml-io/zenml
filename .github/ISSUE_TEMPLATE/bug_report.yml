@@ -1,0 +1,92 @@
+name: Bug Report
+description: File a bug report
+title: "[BUG]: "
+labels: ["bug"]
+assignees:
+  - htahir1
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+
+  - type: input
+    id: contact
+    attributes:
+      label: Contact Details [Optional]
+      description: How can we get in touch with you if we need more info?
+      placeholder: your@awesome.com
+    validations:
+      required: false
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us, what did you expect to happen?
+      placeholder: A clear and concise description of what the bug is.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      description: "How do you trigger this bug? Please walk us through it step by step."
+      value: |
+        1.
+        2.
+        3.
+        ...
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: ZenML Version
+      description: "What version of ZenML are you using?"
+      placeholder: "e.g. 0.5.0rc2"
+      value: 0.5.0rc2
+    validations:
+      required: true
+
+  - type: dropdown
+    id: python
+    attributes:
+      label: Python Version
+      description: Please specify minor version in the above description if relevant.
+      multiple: false
+      options:
+        - 3.6
+        - 3.7
+        - 3.8
+        - 3.9
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS Type
+      description: Please specify exact version in the above description if relevant.
+      multiple: false
+      options:
+        - Windows
+        - Mac OS
+        - Ubuntu (or other Linux Flavor)
+        - Other
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      render: shell
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://example.com)
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true

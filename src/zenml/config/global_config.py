@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Global config for the ZenML installation."""
-from typing import Any, Dict, Optional, Text
+from typing import Any, Dict, Optional
 from uuid import UUID, uuid4
 
 import click
@@ -36,7 +36,7 @@ class GlobalConfig(BaseComponent):
 
     user_id: UUID = Field(default_factory=uuid4)
     analytics_opt_in: bool = True
-    repo_active_stacks: Optional[Dict[Text, Text]] = {}
+    repo_active_stacks: Optional[Dict[str, str]] = {}
 
     def __init__(self, **data: Any):
         """We persist the attributes in the config file. For the global
@@ -50,15 +50,16 @@ class GlobalConfig(BaseComponent):
         if not path_utils.file_exists(str(f)):
             self._dump()
 
-    def get_serialization_dir(self) -> Text:
+    def get_serialization_dir(self) -> str:
         """Gets the global config dir for installed package."""
         # using a version-pinned folder avoids conflicts when
         #  upgrading zenml versions.
         return click.get_app_dir(constants.APP_NAME)
 
-    def get_serialization_file_name(self) -> Text:
+    def get_serialization_file_name(self) -> str:
         """Gets the global config dir for installed package."""
         return GLOBAL_CONFIG_NAME
 
-    def set_stack_for_repo(self, repo_path: Text, stack_key: Text):
+    def set_stack_for_repo(self, repo_path: str, stack_key: str):
+        """Sets the active stack for a specific repository."""
         self.repo_active_stacks[repo_path] = stack_key

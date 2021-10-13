@@ -12,13 +12,21 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from zenml.artifacts.base_artifact import BaseArtifact
+
 from zenml.materializers.materializer_factory import MaterializerFactory
 
 
 class BaseMaterializerMeta(type):
-    def __new__(mcs, name, bases, dct):
-        """ """
+    """Metaclass responsible for registering different BaseMaterializer
+    subclasses for reading/writing artifacts."""
 
+    def __new__(mcs, name, bases, dct):
+        """Creates a Materializer class and registers it at
+        the `MaterializerFactory`."""
         cls = super().__new__(mcs, name, bases, dct)
         if name != "BaseMaterializer":
             assert cls.TYPE_NAME != "base", (
@@ -36,5 +44,6 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
 
     TYPE_NAME = "base"
 
-    def __init__(self, artifact):
+    def __init__(self, artifact: "BaseArtifact"):
+        """Initializes a materializer with the given artifact."""
         self.artifact = artifact

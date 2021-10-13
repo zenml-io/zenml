@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from tfx.dsl.components.common.importer import Importer
 from tfx.orchestration import pipeline as tfx_pipeline
 from tfx.orchestration.local.local_dag_runner import LocalDagRunner
@@ -6,10 +8,21 @@ from zenml.core.component_factory import orchestrator_store_factory
 from zenml.enums import OrchestratorTypes
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 
+if TYPE_CHECKING:
+    from zenml.pipelines.base_pipeline import BasePipeline
+
 
 @orchestrator_store_factory.register(OrchestratorTypes.local)
 class LocalOrchestrator(BaseOrchestrator):
-    def run(self, zenml_pipeline, **pipeline_args):
+    """Orchestrator responsible for running pipelines locally."""
+
+    def run(self, zenml_pipeline: "BasePipeline", **pipeline_args):
+        """Runs a pipeline locally.
+
+        Args:
+            zenml_pipeline: The pipeline to run.
+            **pipeline_args: Unused kwargs to conform with base signature.
+        """
         runner = LocalDagRunner()
 
         # Resolve the importers for external artifact inputs
