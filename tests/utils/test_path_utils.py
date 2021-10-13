@@ -86,6 +86,7 @@ def test_find_files_when_file_absent():
     with TemporaryDirectory() as temp_dir:
         temp_file_name = "qqq.txt"
         temp_file_path = os.path.join(temp_dir, temp_file_name)
+        # TODO: [HIGH] replace with the tempfile paradigm
         open(temp_file_path, "x")
         assert path_utils.find_files(temp_dir, "abc*.*")
 
@@ -120,7 +121,7 @@ def test_gcs_path_when_false(filesystem):
 
 
 def test_list_dir_returns_a_list_of_file_names():
-    """list_dir should return a list of files inside the queried directory"""
+    """list_dir should return a list of file names inside the queried directory"""
     with TemporaryDirectory() as temp_dir:
         with NamedTemporaryFile(dir=temp_dir) as temp_file:
             assert path_utils.list_dir(temp_dir) == [temp_file.name]
