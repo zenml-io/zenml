@@ -146,7 +146,6 @@ class BaseStep(metaclass=BaseStepMeta):
     def __call__(self, **artifacts):
         """Generates a component when called."""
         # TODO [MEDIUM]: Support *args as well.
-
         # register defaults
         if check_dict_keys_match(self.INPUT_SIGNATURE, self.OUTPUT_SIGNATURE):
             raise StepInterfaceError(

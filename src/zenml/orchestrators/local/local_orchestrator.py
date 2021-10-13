@@ -6,6 +6,7 @@ from tfx.orchestration.local.local_dag_runner import LocalDagRunner
 from zenml.core.component_factory import orchestrator_store_factory
 from zenml.enums import OrchestratorTypes
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+from zenml.steps.base_step import BaseStep
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
@@ -25,6 +26,12 @@ class LocalOrchestrator(BaseOrchestrator):
         runner = LocalDagRunner()
 
         # Establish the connections between the components
+        assert all(
+            issubclass(type(s), BaseStep) for s in zenml_pipeline.steps
+        ), (
+            "When you are designing a pipeline, you can only pass in @step "
+            "like annotated objects."
+        )
         zenml_pipeline.connect(**zenml_pipeline.steps)
 
         # Create the final step list and the corresponding pipeline

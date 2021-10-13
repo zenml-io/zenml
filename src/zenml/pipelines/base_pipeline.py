@@ -18,7 +18,6 @@ from typing import Dict
 from zenml.core.repo import Repository
 from zenml.exceptions import PipelineInterfaceError
 from zenml.stacks.base_stack import BaseStack
-from zenml.steps.base_step import BaseStep
 
 PIPELINE_INNER_FUNC_NAME: str = "connect"
 
@@ -43,13 +42,7 @@ class BasePipelineMeta(type):
 
         for arg in connect_args:
             arg_type = connect_spec.annotations.get(arg, None)
-            if issubclass(arg_type, BaseStep):
-                cls.STEP_SPEC.update({arg: arg_type})
-            else:
-                raise PipelineInterfaceError(
-                    "When you are designing a pipeline, you can only pass in "
-                    "@step like annotated objects."
-                )
+            cls.STEP_SPEC.update({arg: arg_type})
         return cls
 
 
@@ -69,13 +62,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         for k, v in kwargs.items():
             if k in self.STEP_SPEC:
-                if issubclass(type(v), self.STEP_SPEC[k]):  # noqa
-                    self.__steps.update({k: v})
-                else:
-                    raise PipelineInterfaceError(
-                        f"Type {type(v)} does not match type specified in "
-                        f"pipeline: {self.STEP_SPEC[k]}"
-                    )
+                self.__steps.update({k: v})
             else:
                 raise PipelineInterfaceError(
                     f"The argument {k} is an unknown argument. Needs to be "
