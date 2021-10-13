@@ -110,8 +110,7 @@ def test_gcs_path_when_true(filename):
     assert path_utils.is_gcs_path(sample_file_path)
 
 
-@pytest.mark.parametrize("filesystem", BAD_REMOTE_PREFIXES)
-# TODO: [MEDIUM] replace this pattern with Hypothesis pattern
+@given(text())
 def test_gcs_path_when_false(filesystem):
     """is_gcs checks that false is returned when file has no `gs` prefix"""
     sample_file_path = filesystem + "test_file.txt"
