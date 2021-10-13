@@ -84,14 +84,22 @@ class BaseStepMeta(type):
                         return_tuple[1]
                     ):
                         cls.OUTPUT_SPEC.update({return_tuple[0]: BaseArtifact})
+                    else:
+                        raise StepInterfaceError(
+                            f"In a ZenML step, you can only return  an arg "
+                            f"type with a default materializer. You passed in "
+                            f"{return_tuple[0]}, which does not have a "
+                            f"default materializer."
+                        )
             elif default_materializer_factory.is_registered(return_spec):
                 # If its one output, then give it a single return name.
                 cls.OUTPUT_SPEC.update({SINGLE_RETURN_OUT_NAME: BaseArtifact})
             else:
                 raise StepInterfaceError(
                     f"In a ZenML step, you can only return  an arg type with "
-                    f"a default materializer. You passed in {return_spec}, "
-                    f"which does not have a default materializer."
+                    f"a default materializer. You passed in "
+                    f"{return_spec}, which does not have a default "
+                    f"materializer."
                 )
         return cls
 
