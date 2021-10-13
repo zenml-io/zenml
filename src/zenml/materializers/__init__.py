@@ -16,6 +16,7 @@ from zenml.logger import get_logger
 
 # from zenml.materializers.beam_materializer import BeamMaterializer  # noqa
 from zenml.materializers.json_materializer import JsonMaterializer  # noqa
+from zenml.materializers.numpy_materializer import NumpyMaterializer  # noqa
 from zenml.materializers.pandas_materializer import PandasMaterializer  # noqa
 
 logger = get_logger(__name__)

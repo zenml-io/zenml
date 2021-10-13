@@ -14,43 +14,42 @@
 
 import os
 
-import pandas as pd
+import numpy as np
+import pyarrow as pa
+import pyarrow.parquet as pq
 
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.utils import path_utils
+from zenml.utils import yaml_utils
 
-DEFAULT_FILENAME = "data.csv"
+DATA_FILENAME = "data.parquet"
+SHAPE_FILENAME = "shape.json"
+DATA_VAR = "data_var"
 
 
-class PandasMaterializer(BaseMaterializer):
+class NumpyMaterializer(BaseMaterializer):
     """Materializer to read data to and from pandas."""
 
-    ASSOCIATED_TYPES = [pd.DataFrame]
+    ASSOCIATED_TYPES = [np.ndarray]
 
-    def handle_input(self) -> pd.DataFrame:
-        """Reads all files inside the artifact directory and concatenates
-        them to a pandas dataframe."""
+    def handle_input(self) -> np.ndarray:
+        """Reads numpy array from pickle."""
+        shape_dict = yaml_utils.read_json(
+            os.path.join(self.artifact.uri, SHAPE_FILENAME)
+        )
+        shape_tuple = tuple(shape_dict.values())
+        data = pq.read_table(os.path.join(self.artifact.uri, DATA_FILENAME))
+        print(data)
+        return data.reshape(shape_tuple)
 
-        filenames = path_utils.list_dir(self.artifact.uri, only_file_names=True)
-
-        valid_filenames = [
-            os.path.join(self.artifact.uri, f)
-            for f in filenames
-            if DEFAULT_FILENAME in f
-        ]
-
-        li = []
-        for filename in valid_filenames:
-            df = pd.read_csv(filename, index_col=None, header=0)
-            li.append(df)
-        frame = pd.concat(li, axis=0, ignore_index=True)
-        return frame
-
-    def handle_return(self, df: pd.DataFrame):
-        """Writes a pandas dataframe to the specified filename.
+    def handle_return(self, arr: np.ndarray):
+        """Writes a np.ndarray to the artifact store.
 
         Args:
             df: The pandas dataframe to write.
         """
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
-        df.to_csv(filepath)
+        yaml_utils.write_json(
+            os.path.join(self.artifact.uri, SHAPE_FILENAME),
+            {i: x for i, x in enumerate(arr.shape)},
+        )
+        pa_table = pa.table({DATA_VAR: arr.flatten()})
+        pq.write_table(pa_table, os.path.join(self.artifact.uri, DATA_FILENAME))
