@@ -28,7 +28,7 @@ from __future__ import absolute_import, division, print_function
 import inspect
 import json
 import sys
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Type
 
 from tfx import types as tfx_types
 from tfx.dsl.component.experimental.decorators import _SimpleComponent
@@ -45,6 +45,7 @@ from zenml.materializers.spec_materializer_registry import (
 )
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
+from zenml.utils import source_utils
 
 STEP_INNER_FUNC_NAME: str = "process"
 SINGLE_RETURN_OUT_NAME: str = "output"
@@ -127,9 +128,9 @@ class _FunctionExecutor(BaseExecutor):
     _FUNCTION = staticmethod(lambda: None)
     spec_materializer_registry: SpecMaterializerRegistry = None
 
-    def resolve_materializer(
+    def resolve_materializer_with_registry(
         self, param_name: str, artifact: BaseArtifact
-    ) -> BaseMaterializer:
+    ) -> Type[BaseMaterializer]:
         """Resolves the materializer for the given obj_type.
 
         Args:
@@ -145,22 +146,21 @@ class _FunctionExecutor(BaseExecutor):
                 param_name
             )
         )
-        return materializer_class(artifact)
+        return materializer_class
 
-    def resolve_input_artifact(
-        self, param_name: str, artifact: BaseArtifact
-    ) -> Any:
+    def resolve_input_artifact(self, artifact: BaseArtifact) -> Any:
         """Resolves an input artifact, i.e., reading it from the Artifact Store
         to a pythonic object.
 
         Args:
-            param_name: Name of input param.
             artifact: A TFX artifact type.
 
         Returns:
             Return the output of `handle_input()` of selected materializer.
         """
-        materializer = self.resolve_materializer(param_name, artifact)
+        materializer = source_utils.load_source_path_class(
+            artifact.materializers
+        )(artifact)
         # The materializer now returns a resolved input
         return materializer.handle_input()
 
@@ -175,8 +175,11 @@ class _FunctionExecutor(BaseExecutor):
             artifact: A TFX artifact type.
             data: The object to be passed to `handle_return()`.
         """
-        materializer = self.resolve_materializer(param_name, artifact)
-        materializer.handle_return(data)
+        materializer_class = self.resolve_materializer_with_registry(
+            param_name, artifact
+        )
+        artifact.materializers = source_utils.resolve_class(materializer_class)
+        materializer_class(artifact).handle_return(data)
 
     def Do(
         self,
@@ -210,7 +213,7 @@ class _FunctionExecutor(BaseExecutor):
             else:
                 # At this point, it has to be an artifact, so we resolve
                 function_params[arg] = self.resolve_input_artifact(
-                    arg, input_dict[arg][0]
+                    input_dict[arg][0]
                 )
 
         return_values = self._FUNCTION(**function_params)

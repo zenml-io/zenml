@@ -152,15 +152,9 @@ class BaseStep(metaclass=BaseStepMeta):
             )
 
         # Construct INPUT_SPEC from INPUT_SIGNATURE
-        self.resolve_signature_materializers(self.INPUT_SIGNATURE)
+        self.resolve_signature_materializers(self.INPUT_SIGNATURE, True)
         # Construct OUTPUT_SPEC from OUTPUT_SIGNATURE
-        self.resolve_signature_materializers(self.OUTPUT_SIGNATURE)
-
-        # For now, all artifacts are BaseArtifacts
-        self.INPUT_SPEC = {k: BaseArtifact for k in self.INPUT_SIGNATURE.keys()}
-        self.OUTPUT_SPEC = {
-            k: BaseArtifact for k in self.OUTPUT_SIGNATURE.keys()
-        }
+        self.resolve_signature_materializers(self.OUTPUT_SIGNATURE, False)
 
         # Basic checks
         for artifact in artifacts.keys():
@@ -237,13 +231,14 @@ class BaseStep(metaclass=BaseStepMeta):
         return self
 
     def resolve_signature_materializers(
-        self, signature: Dict[str, Type]
+        self, signature: Dict[str, Type], is_input: bool = True
     ) -> None:
         """Takes either the INPUT_SIGNATURE and OUTPUT_SIGNATURE and resolves
         the materializers for them in the `spec_materializer_registry`.
 
         Args:
             signature: Either self.INPUT_SIGNATURE or self.OUTPUT_SIGNATURE.
+            is_input: If True, then self.INPUT_SPEC used, else self.OUTPUT_SPEC.
         """
         for arg, arg_type in signature.items():
             if arg in self.materializers:
@@ -267,3 +262,8 @@ class BaseStep(metaclass=BaseStepMeta):
                     f"materializer either. Please do so and re-run the "
                     f"pipeline."
                 )
+
+        spec = self.INPUT_SPEC if is_input else self.OUTPUT_SPEC
+        # For now, all artifacts are BaseArtifacts
+        for k in signature.keys():
+            spec[k] = BaseArtifact
