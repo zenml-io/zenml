@@ -32,20 +32,20 @@ class NumpyMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = [np.ndarray]
 
     def handle_input(self) -> np.ndarray:
-        """Reads numpy array from pickle."""
+        """Reads numpy array from parquet file."""
         shape_dict = yaml_utils.read_json(
             os.path.join(self.artifact.uri, SHAPE_FILENAME)
         )
         shape_tuple = tuple(shape_dict.values())
         data = pq.read_table(os.path.join(self.artifact.uri, DATA_FILENAME))
-        print(data)
-        return data.reshape(shape_tuple)
+        vals = getattr(data.to_pandas(), DATA_VAR).values
+        return np.reshape(vals, shape_tuple)
 
     def handle_return(self, arr: np.ndarray):
-        """Writes a np.ndarray to the artifact store.
+        """Writes a np.ndarray to the artifact store as a parquet file.
 
         Args:
-            df: The pandas dataframe to write.
+            arr: The numpy array to write.
         """
         yaml_utils.write_json(
             os.path.join(self.artifact.uri, SHAPE_FILENAME),

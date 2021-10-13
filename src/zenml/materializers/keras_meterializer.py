@@ -24,10 +24,18 @@ class KerasMaterializer(BaseMaterializer):
 
     ASSOCIATED_TYPES = [keras.Model]
 
-    def read_model(self):
-        """Reads and returns a Keras model."""
+    def handle_input(self) -> keras.Model:
+        """Reads and returns a Keras model.
+
+        Returns:
+            A tf.keras.Model model.
+        """
         return keras.models.load_model(self.artifact.uri)
 
-    def write_model(self, model: keras.Model):
-        """Writes a keras model."""
+    def handle_return(self, model: keras.Model):
+        """Writes a keras model.
+
+        Args:
+            model: A tf.keras.Model model.
+        """
         model.save(self.artifact.uri)
