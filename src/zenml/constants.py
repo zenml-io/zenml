@@ -70,3 +70,7 @@ K8S_ENTRYPOINT = "zenml.backends.orchestrator.entrypoint"
 SEGMENT_ANALYTICS_ID = "sezE77zEoxHPFDXuyFfILx6fBnJFZ4p7"
 SEGMENT_DEV_ANALYTICS_ID = "mDBYI0m7GcCj59EZ4f9d016L1T3rh8J5"
 VALID_OPERATING_SYSTEMS = ["Windows", "Darwin", "Linux"]
+
+# Path utilities constants
+
+REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
