@@ -28,6 +28,7 @@ logger = get_logger(__name__)
 BAD_REMOTE_PREFIXES = ["http://", "12345", "----"]
 SAMPLE_FILE_NAMES = ["12345", "important_file.txt", "main.py"]
 TEMPORARY_FILE_NAME = "a_file.txt"
+TEMPORARY_FILE_SEARCH_PREFIX = "a_f*.*"
 
 
 def test_walk_function_returns_a_generator_object(tmp_path):
@@ -63,19 +64,16 @@ def test_find_files_returns_generator_object_when_file_present(tmp_path):
     temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
     with open(temp_file, "w"):
         assert isinstance(
-            path_utils.find_files(tmp_path, "a_f*.*"), GeneratorType
+            path_utils.find_files(tmp_path, TEMPORARY_FILE_SEARCH_PREFIX),
+            GeneratorType,
         )
 
 
-def test_find_files_when_file_present():
+def test_find_files_when_file_present(tmp_path):
     """find_files locates a file within a temporary directory"""
-    # TODO: [LOW] replace TemporaryDirectory with pytest's tmp_path
-    with TemporaryDirectory() as temp_dir:
-        temp_file_name = "abcdefg.txt"
-        temp_file_path = os.path.join(temp_dir, temp_file_name)
-        # TODO: [HIGH] replace with the tempfile paradigm
-        open(temp_file_path, "x")
-        assert path_utils.find_files(temp_dir, "abc*.*")
+    temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
+    with open(temp_file, "w"):
+        assert path_utils.find_files(tmp_path, TEMPORARY_FILE_SEARCH_PREFIX)
 
 
 def test_find_files_when_file_absent():
