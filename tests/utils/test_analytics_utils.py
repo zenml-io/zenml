@@ -12,24 +12,27 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.utils.analytics_utils import get_segment_key, get_system_info
+import os
 
-# TODO: [LOW] shift these constants into our constants file
-SEGMENT_ANALYTICS_ID = "1VW1bQMu9ifpYbDFkEZFnpqODduiE1Xm"
-SEGMENT_DEV_ANALYTICS_ID = "Syrnr1ajPS49tgUQTzPdYNA6C48zGOL0"
-VALID_OPERATING_SYSTEMS = ["Windows", "Darwin", "Linux"]
+from zenml.constants import (
+    SEGMENT_ANALYTICS_ID,
+    SEGMENT_DEV_ANALYTICS_ID,
+    VALID_OPERATING_SYSTEMS,
+)
+from zenml.utils.analytics_utils import get_segment_key, get_system_info
 
 
 def test_get_segment_key_for_normal_environment():
     """Checks that the get_segment_key method returns the right id value"""
-    assert get_segment_key() == SEGMENT_ANALYTICS_ID
+    if os.environ["ZENML_DEBUG"] is None:
+        assert get_segment_key() == SEGMENT_ANALYTICS_ID
 
 
-# def test_get_segment_key_for_dev_environment():
-#     # TODO: [LOW] Figure out how to test for the debug environment
-#     """A simple test to check that the get_segment_key method"""
-#     """returns the right id value for a development environment"""
-#     assert get_segment_key() == SEGMENT_DEV_ANALYTICS_ID
+def test_get_segment_key_for_dev_environment():
+    """A simple test to check that the get_segment_key method"""
+    """returns the right id value for a development environment"""
+    if os.environ["ZENML_DEBUG"] is True:
+        assert get_segment_key() == SEGMENT_DEV_ANALYTICS_ID
 
 
 def test_get_system_info_type():
