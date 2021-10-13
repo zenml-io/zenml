@@ -26,20 +26,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      # Commit and push to gitbook
-      - name: Sync latest GitBook changes
-        run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git pull
-          git merge gitbook -m "Synced GitBook [ci skip]"
-
       - name: Install poetry
         run: |
           sudo apt-get update && sudo apt-get install -y make && sudo apt install python3-sphinx
           python -m pip install --upgrade pip
           python -m pip install "poetry"
-
       - name: Install Dependencies
         run: python -m poetry install
 
@@ -55,7 +46,6 @@ jobs:
         run: |
           cd docs/
           python generate_api_docs.py
-
       # Commit and push to gitbook
       - name: Commit and push to gitbook
         run: |
@@ -65,10 +55,7 @@ jobs:
           git add docs/book/toc.md
           git add docs/interrogate.svg
           git commit -m 'Generated docs [ci skip]'
-          git checkout gitbook
-          git merge main  -m 'Synced to GitBook [ci skip]'
           git push
-
       # Build the book
       - name: Print output
         run: |
