@@ -15,6 +15,7 @@
 import os
 import platform
 
+# TODO: [MEDIUM] consider whether to hardcode the values
 from zenml.constants import (
     SEGMENT_ANALYTICS_ID,
     SEGMENT_DEV_ANALYTICS_ID,
