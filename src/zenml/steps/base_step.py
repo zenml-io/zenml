@@ -82,16 +82,6 @@ class BaseStepMeta(type):
             else:
                 cls.INPUT_SIGNATURE.update({arg: arg_type})
 
-            # elif default_materializer_registry.is_registered(arg_type):
-            #     cls.INPUT_SPEC.update({arg: BaseArtifact})
-            # else:
-            #     raise StepInterfaceError(
-            #         f"In a ZenML step, you can only pass in a "
-            #         f"`BaseStepConfig` or an arg type with a default "
-            #         f"materializer. You passed in {arg_type} for paramaeter "
-            #         f"{arg}, which does not have a registered materializer."
-            #     )
-
         # Infer the returned values
         return_spec = process_spec.annotations.get("return", None)
         if return_spec is not None:
@@ -102,32 +92,10 @@ class BaseStepMeta(type):
                     cls.OUTPUT_SIGNATURE.update(
                         {return_tuple[0]: return_tuple[1]}
                     )
-
-                    # if default_materializer_registry.is_registered(
-                    #     return_tuple[1]
-                    # ):
-                    #     cls.OUTPUT_SPEC.update({return_tuple[0]: BaseArtifact})
-                    # else:
-                    #     raise StepInterfaceError(
-                    #         f"In a ZenML step, you can only return  an arg "
-                    #         f"type with a default materializer. You returned "
-                    #         f"{return_tuple[1]} as {return_tuple[0]}, a type "
-                    #         f"which does not have a default materializer."
-                    #     )
             else:
                 # If its one output, then give it a single return name.
                 cls.OUTPUT_SIGNATURE.update({SINGLE_RETURN_OUT_NAME: arg_type})
 
-            # elif default_materializer_registry.is_registered(return_spec):
-            #     # If its one output, then give it a single return name.
-            #     cls.OUTPUT_SPEC.update({SINGLE_RETURN_OUT_NAME: BaseArtifact})
-            # else:
-            #     raise StepInterfaceError(
-            #         f"In a ZenML step, you can only return  an arg type with "
-            #         f"a default materializer. You returned a "
-            #         f"{return_spec}, a type which does not have a default "
-            #         f"materializer."
-            #     )
         return cls
 
 
@@ -136,7 +104,7 @@ class BaseStep(metaclass=BaseStepMeta):
     the other step implementations"""
 
     def __init__(self, *args, **kwargs):
-        self.materializers = None
+        self.materializers = {}
         self.__component = None
         self.PARAM_SPEC = dict()
         self.INPUT_SPEC = dict()
@@ -184,34 +152,15 @@ class BaseStep(metaclass=BaseStepMeta):
             )
 
         # Construct INPUT_SPEC from INPUT_SIGNATURE
-        for arg, arg_type in self.INPUT_SIGNATURE.items():
-            if default_materializer_registry.is_registered(arg_type):
-                self.spec_materializer_registry.register_materializer_type(
-                    arg,
-                    default_materializer_registry.get_single_materializer_type(
-                        arg_type
-                    ),
-                )
-            else:
-                pass
-
-            # For now, all artifacts are BaseArtifacts
-            self.INPUT_SPEC[arg] = BaseArtifact
-
+        self.resolve_signature_materializers(self.INPUT_SIGNATURE)
         # Construct OUTPUT_SPEC from OUTPUT_SIGNATURE
-        for arg, arg_type in self.OUTPUT_SIGNATURE.items():
-            if default_materializer_registry.is_registered(arg_type):
-                self.spec_materializer_registry.register_materializer_type(
-                    arg,
-                    default_materializer_registry.get_single_materializer_type(
-                        arg_type
-                    ),
-                )
-            else:
-                pass
+        self.resolve_signature_materializers(self.OUTPUT_SIGNATURE)
 
-            # For now, all artifacts are BaseArtifacts
-            self.OUTPUT_SPEC[arg] = BaseArtifact
+        # For now, all artifacts are BaseArtifacts
+        self.INPUT_SPEC = {k: BaseArtifact for k in self.INPUT_SIGNATURE.keys()}
+        self.OUTPUT_SPEC = {
+            k: BaseArtifact for k in self.OUTPUT_SIGNATURE.keys()
+        }
 
         # Basic checks
         for artifact in artifacts.keys():
@@ -258,3 +207,35 @@ class BaseStep(metaclass=BaseStepMeta):
         """Inject materializers from the outside."""
         self.materializers = materializers
         return self
+
+    def resolve_signature_materializers(
+        self, signature: Dict[str, Type]
+    ) -> None:
+        """Takes either the INPUT_SIGNATURE and OUTPUT_SIGNATURE and resolves
+        the materializers for them in the `spec_materializer_registry`.
+
+        Args:
+            signature: Either self.INPUT_SIGNATURE or self.OUTPUT_SIGNATURE.
+        """
+        for arg, arg_type in signature.items():
+            if arg in self.materializers:
+                self.spec_materializer_registry.register_materializer_type(
+                    arg, self.materializers[arg]
+                )
+            elif default_materializer_registry.is_registered(arg_type):
+                self.spec_materializer_registry.register_materializer_type(
+                    arg,
+                    default_materializer_registry.get_single_materializer_type(
+                        arg_type
+                    ),
+                )
+            else:
+                raise StepInterfaceError(
+                    f"Argument `{arg}` of type `{arg_type}` does not have an "
+                    f"associated materializer. ZenML steps can only take input "
+                    f"and output artifacts with an associated materializer. It "
+                    f"looks like we do not have a default materializer for "
+                    f"`{arg_type}`, and you have not provided a custom "
+                    f"materializer either. Please do so and re-run the "
+                    f"pipeline."
+                )

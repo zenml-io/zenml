@@ -25,11 +25,14 @@ if TYPE_CHECKING:
 class SpecMaterializerRegistry(object):
     """Matches spec of a step to a materializer."""
 
-    materializer_types: ClassVar[Dict[str, Type["BaseMaterializer"]]] = {}
+    def __init__(self):
+        """Materializer types registry."""
+        self.materializer_types: ClassVar[
+            Dict[str, Type["BaseMaterializer"]]
+        ] = {}
 
-    @classmethod
     def register_materializer_type(
-        cls, key: str, type_: Type["BaseMaterializer"]
+        self, key: str, type_: Type["BaseMaterializer"]
     ):
         """Registers a new materializer.
 
@@ -37,7 +40,7 @@ class SpecMaterializerRegistry(object):
             key: Name of input or output parameter.
             type_: A BaseMaterializer subclass.
         """
-        cls.materializer_types[key] = type_
+        self.materializer_types[key] = type_
         logger.debug(f"Registered materializer {type_} for {key}")
 
     def get_materializer_types(
