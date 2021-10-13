@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
-from tempfile import NamedTemporaryFile, TemporaryDirectory
+from tempfile import NamedTemporaryFile
 from types import GeneratorType
 
 import pytest
@@ -132,13 +132,10 @@ def test_list_dir_returns_a_list_of_file_paths(tmp_path):
         ]
 
 
-def test_list_dir_returns_one_result_for_one_file():
+def test_list_dir_returns_one_result_for_one_file(tmp_path):
     """list_dir should return only one result, when there is only one file created"""
-    # TODO: [LOW] replace TemporaryDirectory with pytest's tmp_path
-    with TemporaryDirectory() as temp_dir:
-        # TODO: [HIGH] replace with the tempfile paradigm
-        with NamedTemporaryFile(dir=temp_dir) as _:
-            assert len(path_utils.list_dir(temp_dir)) == 1
+    with NamedTemporaryFile(dir=tmp_path) as _:
+        assert len(path_utils.list_dir(str(tmp_path))) == 1
 
 
 @pytest.mark.parametrize("sample_file", SAMPLE_FILE_NAMES)
