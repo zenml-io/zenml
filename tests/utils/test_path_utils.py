@@ -73,7 +73,7 @@ def test_find_files_returns_generator_object_when_file_present():
 
 
 def test_find_files_when_file_present():
-    """find_files locates finds a file within a temporary directory"""
+    """find_files locates a file within a temporary directory"""
     with TemporaryDirectory() as temp_dir:
         temp_file_name = "abcdefg.txt"
         temp_file_path = os.path.join(temp_dir, temp_file_name)
