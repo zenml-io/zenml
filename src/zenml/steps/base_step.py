@@ -94,7 +94,9 @@ class BaseStepMeta(type):
                     )
             else:
                 # If its one output, then give it a single return name.
-                cls.OUTPUT_SIGNATURE.update({SINGLE_RETURN_OUT_NAME: arg_type})
+                cls.OUTPUT_SIGNATURE.update(
+                    {SINGLE_RETURN_OUT_NAME: return_spec}
+                )
 
         return cls
 
