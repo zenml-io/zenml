@@ -27,6 +27,7 @@ logger = get_logger(__name__)
 # TODO: [MEDIUM] replace this pattern with Hypothesis pattern
 BAD_REMOTE_PREFIXES = ["http://", "12345", "----"]
 SAMPLE_FILE_NAMES = ["12345", "important_file.txt", "main.py"]
+TEMPORARY_FILE_NAME = "a_file.txt"
 
 
 def test_walk_function_returns_a_generator_object(tmp_path):
@@ -49,23 +50,20 @@ def test_is_dir_when_true(tmp_path):
     assert path_utils.is_dir(str(tmp_path))
 
 
-def test_is_dir_when_false():
+def test_is_dir_when_false(tmp_path):
     """is_dir returns false when path doesn't refer to a directory"""
-    # TODO: [HIGH] replace with the tempfile paradigm
-    with NamedTemporaryFile() as temp_file:
-        assert path_utils.is_dir(temp_file.name) is False
+    assert (
+        path_utils.is_dir(os.path.join(str(tmp_path) + TEMPORARY_FILE_NAME))
+        is False
+    )
 
 
-def test_find_files_returns_generator_object_when_file_present():
+def test_find_files_returns_generator_object_when_file_present(tmp_path):
     """find_files returns a generator object when it finds a file"""
-    # TODO: [LOW] replace TemporaryDirectory with pytest's tmp_path
-    with TemporaryDirectory() as temp_dir:
-        temp_file_name = "abcdefg.txt"
-        temp_file_path = os.path.join(temp_dir, temp_file_name)
-        # TODO: [HIGH] replace with the tempfile paradigm
-        open(temp_file_path, "x")
+    temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
+    with open(temp_file, "w"):
         assert isinstance(
-            path_utils.find_files(temp_dir, "abc*.*"), GeneratorType
+            path_utils.find_files(tmp_path, "a_f*.*"), GeneratorType
         )
 
 
