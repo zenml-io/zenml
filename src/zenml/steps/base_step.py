@@ -1,7 +1,7 @@
 import inspect
 import json
 from abc import abstractmethod
-from typing import Any, Dict, Optional, Type
+from typing import Dict, Optional, Type
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.exceptions import StepInterfaceError
@@ -187,7 +187,7 @@ class BaseStep(metaclass=BaseStepMeta):
         """Abstract method for core step logic."""
 
     def with_materializers(
-        self, materializers: Dict[Type[Any], Type[BaseMaterializer]]
+        self, materializers: Dict[str, Type[BaseMaterializer]]
     ):
         """Inject materializers from the outside."""
         self.materializers = materializers

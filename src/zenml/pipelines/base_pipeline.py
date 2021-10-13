@@ -13,11 +13,10 @@
 #  permissions and limitations under the License.
 import inspect
 from abc import abstractmethod
-from typing import Any, Dict, Type
+from typing import Dict
 
 from zenml.core.repo import Repository
 from zenml.exceptions import PipelineInterfaceError
-from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.stacks.base_stack import BaseStack
 from zenml.steps.base_step import BaseStep
 
@@ -58,7 +57,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
     """Base ZenML pipeline."""
 
     def __init__(self, *args, **kwargs):
-        self.materializers = None
         self.__stack = Repository().get_active_stack()
 
         self.__steps = dict()
@@ -123,10 +121,3 @@ class BasePipeline(metaclass=BasePipelineMeta):
     def run(self):
         """Runs the pipeline using the orchestrator of the pipeline stack."""
         return self.stack.orchestrator.run(self)
-
-    def with_materializers(
-        self, materializers: Dict[Type[Any], Type[BaseMaterializer]]
-    ):
-        """Inject materializers from the outside."""
-        self.materializers = materializers
-        return self
