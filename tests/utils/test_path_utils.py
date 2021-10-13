@@ -71,20 +71,18 @@ def test_find_files_returns_generator_object_when_file_present(tmp_path):
 
 def test_find_files_when_file_present(tmp_path):
     """find_files locates a file within a temporary directory"""
+    # TODO: [HIGH] actually test something here
     temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
     with open(temp_file, "w"):
         assert path_utils.find_files(tmp_path, TEMPORARY_FILE_SEARCH_PREFIX)
 
 
-def test_find_files_when_file_absent():
+def test_find_files_when_file_absent(tmp_path):
     """find_files returns None when it doesn't find a file"""
-    # TODO: [LOW] replace TemporaryDirectory with pytest's tmp_path
-    with TemporaryDirectory() as temp_dir:
-        temp_file_name = "qqq.txt"
-        temp_file_path = os.path.join(temp_dir, temp_file_name)
-        # TODO: [HIGH] replace with the tempfile paradigm
-        open(temp_file_path, "x")
-        assert path_utils.find_files(temp_dir, "abc*.*")
+    # TODO: [HIGH] actually test something here
+    temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
+    with open(temp_file, "w"):
+        assert path_utils.find_files(tmp_path, "abc*.*")
 
 
 @pytest.mark.parametrize("filesystem", REMOTE_FS_PREFIX)
