@@ -75,11 +75,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
     def connect(self, *args, **kwargs):
         """Function that connects inputs and outputs of the pipeline steps."""
 
-    @classmethod
-    def get_executable(cls):
-        """Returns the `connect` function."""
-        return cls.connect
-
     @property
     def name(self) -> str:
         """Name of pipeline is always equal to self.NAME"""
