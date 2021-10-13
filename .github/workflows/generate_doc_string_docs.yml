@@ -58,6 +58,9 @@ jobs:
           git add docs/interrogate.svg
           git commit -m 'Generated docs [ci skip]'
           git push
+          git checkout gitbook
+          git merge main
+          git push
 
       # Build the book
       - name: Print output
