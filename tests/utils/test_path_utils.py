@@ -17,6 +17,8 @@ from tempfile import NamedTemporaryFile
 from types import GeneratorType
 
 import pytest
+from hypothesis import given
+from hypothesis.strategies import text
 
 from zenml.constants import REMOTE_FS_PREFIX
 from zenml.logger import get_logger
@@ -101,12 +103,11 @@ def test_is_remote_when_using_non_remote_prefix(filesystem):
     assert path_utils.is_remote(some_random_path) is False
 
 
-@pytest.mark.parametrize("sample_file", SAMPLE_FILE_NAMES)
-# TODO: [MEDIUM] replace this pattern with Hypothesis pattern
-def test_gcs_path_when_true(sample_file):
+@given(text())
+def test_gcs_path_when_true(filename):
     """is_gcs checks if a file begins with the prefix `gs`"""
     gs_prefix = "gs://"
-    sample_file_path = gs_prefix + sample_file
+    sample_file_path = gs_prefix + filename
     assert path_utils.is_gcs_path(sample_file_path)
 
 
