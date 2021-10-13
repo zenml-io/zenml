@@ -151,9 +151,10 @@ def test_list_dir_returns_empty_list_when_dir_doesnt_exist(sample_file):
         assert isinstance(path_utils.list_dir(not_a_real_dir), list)
 
 
-# def test_logging_takes_place_on_fail_of_list_dir(caplog):
-#     """logger should output a debug statement on failure to find directory"""
-#     not_a_real_dir = "./not_a_dir"
-#     caplog.set_level(logging.DEBUG)
-#     path_utils.list_dir(not_a_real_dir)
-#     assert f"Dir {not_a_real_dir} not found." in caplog.text
+@pytest.mark.xfail()
+def test_logging_takes_place_on_fail_of_list_dir(caplog):
+    """logger should output a debug statement on failure to find directory"""
+    not_a_real_dir = "./not_a_dir"
+    caplog.set_level(logger.DEBUG)
+    path_utils.list_dir(not_a_real_dir)
+    assert f"Dir {not_a_real_dir} not found." in caplog.text
