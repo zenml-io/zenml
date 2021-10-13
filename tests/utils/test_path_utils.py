@@ -118,24 +118,18 @@ def test_gcs_path_when_false(filesystem):
     assert path_utils.is_gcs_path(sample_file_path) is False
 
 
-def test_list_dir_returns_a_list_of_file_names():
+def test_list_dir_returns_a_list_of_file_names(tmp_path):
     """list_dir should return a list of file names inside the queried directory"""
-    # TODO: [LOW] replace TemporaryDirectory with pytest's tmp_path
-    with TemporaryDirectory() as temp_dir:
-        # TODO: [HIGH] replace with the tempfile paradigm
-        with NamedTemporaryFile(dir=temp_dir) as temp_file:
-            assert path_utils.list_dir(temp_dir) == [temp_file.name]
+    with NamedTemporaryFile(dir=tmp_path) as temp_file:
+        assert path_utils.list_dir(str(tmp_path)) == [temp_file.name]
 
 
-def test_list_dir_returns_a_list_of_file_paths():
+def test_list_dir_returns_a_list_of_file_paths(tmp_path):
     """list_dir should return a list of file paths inside the queried directory"""
-    # TODO: [LOW] replace TemporaryDirectory with pytest's tmp_path
-    with TemporaryDirectory() as temp_dir:
-        # TODO: [HIGH] replace with the tempfile paradigm
-        with NamedTemporaryFile(dir=temp_dir) as temp_file:
-            assert path_utils.list_dir(temp_dir) == [
-                os.path.join(temp_dir, temp_file.name)
-            ]
+    with NamedTemporaryFile(dir=tmp_path) as temp_file:
+        assert path_utils.list_dir(str(tmp_path)) == [
+            os.path.join(tmp_path, temp_file.name)
+        ]
 
 
 def test_list_dir_returns_one_result_for_one_file():
