@@ -29,11 +29,9 @@ BAD_REMOTE_PREFIXES = ["http://", "12345", "----"]
 SAMPLE_FILE_NAMES = ["12345", "important_file.txt", "main.py"]
 
 
-def test_walk_function_returns_a_generator_object():
+def test_walk_function_returns_a_generator_object(tmp_path):
     """Check walk function returns a generator object"""
-    # TODO: [LOW] replace TemporaryDirectory with pytest's tmp_path
-    with TemporaryDirectory() as temp_dir:
-        assert isinstance(path_utils.walk(temp_dir), GeneratorType)
+    assert isinstance(path_utils.walk(str(tmp_path)), GeneratorType)
 
 
 def test_is_root_when_true():
