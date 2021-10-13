@@ -44,11 +44,9 @@ def test_is_root_when_false(tmp_path):
     assert path_utils.is_root(tmp_path) is False
 
 
-def test_is_dir_when_true():
+def test_is_dir_when_true(tmp_path):
     """is_dir returns true when path refers to a directory"""
-    # TODO: [LOW] replace TemporaryDirectory with pytest's tmp_path
-    with TemporaryDirectory() as temp_dir:
-        assert path_utils.is_dir(temp_dir)
+    assert path_utils.is_dir(str(tmp_path))
 
 
 def test_is_dir_when_false():
