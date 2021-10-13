@@ -86,6 +86,7 @@ def test_find_files_when_file_absent(tmp_path):
 
 
 @pytest.mark.parametrize("filesystem", REMOTE_FS_PREFIX)
+# TODO: [MEDIUM] replace this pattern with Hypothesis pattern
 def test_is_remote_when_using_remote_prefix(filesystem):
     """is_remote returns True when path starts with one of the TFX remote file prefixes"""
     some_random_path = os.path.join(filesystem + "some_directory")
@@ -93,6 +94,7 @@ def test_is_remote_when_using_remote_prefix(filesystem):
 
 
 @pytest.mark.parametrize("filesystem", BAD_REMOTE_PREFIXES)
+# TODO: [MEDIUM] replace this pattern with Hypothesis pattern
 def test_is_remote_when_using_non_remote_prefix(filesystem):
     """is_remote returns False when path doesn't start with a remote prefix"""
     some_random_path = os.path.join(filesystem + "some_directory")
@@ -100,6 +102,7 @@ def test_is_remote_when_using_non_remote_prefix(filesystem):
 
 
 @pytest.mark.parametrize("sample_file", SAMPLE_FILE_NAMES)
+# TODO: [MEDIUM] replace this pattern with Hypothesis pattern
 def test_gcs_path_when_true(sample_file):
     """is_gcs checks if a file begins with the prefix `gs`"""
     gs_prefix = "gs://"
@@ -108,6 +111,7 @@ def test_gcs_path_when_true(sample_file):
 
 
 @pytest.mark.parametrize("filesystem", BAD_REMOTE_PREFIXES)
+# TODO: [MEDIUM] replace this pattern with Hypothesis pattern
 def test_gcs_path_when_false(filesystem):
     """is_gcs checks that false is returned when file has no `gs` prefix"""
     sample_file_path = filesystem + "test_file.txt"
@@ -144,13 +148,14 @@ def test_list_dir_returns_one_result_for_one_file():
 
 
 @pytest.mark.parametrize("sample_file", SAMPLE_FILE_NAMES)
-def test_list_dir_returns_empty_list_when_dir_doesnt_exist(sample_file):
+# TODO: [MEDIUM] replace this pattern with Hypothesis pattern
+def test_list_dir_returns_empty_list_when_dir_doesnt_exist(
+    sample_file, tmp_path
+):
     """list_dir should return an empty list when the directory"""
     """doesn't exist"""
-    # TODO: [LOW] replace TemporaryDirectory with pytest's tmp_path
-    with TemporaryDirectory() as temp_dir:
-        not_a_real_dir = os.path.join(temp_dir, sample_file)
-        assert isinstance(path_utils.list_dir(not_a_real_dir), list)
+    not_a_real_dir = os.path.join(tmp_path, sample_file)
+    assert isinstance(path_utils.list_dir(not_a_real_dir), list)
 
 
 @pytest.mark.xfail()
