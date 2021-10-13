@@ -95,8 +95,7 @@ def test_is_remote_when_using_remote_prefix(filesystem):
     assert path_utils.is_remote(some_random_path)
 
 
-@pytest.mark.parametrize("filesystem", BAD_REMOTE_PREFIXES)
-# TODO: [MEDIUM] replace this pattern with Hypothesis pattern
+@given(text())
 def test_is_remote_when_using_non_remote_prefix(filesystem):
     """is_remote returns False when path doesn't start with a remote prefix"""
     some_random_path = os.path.join(filesystem + "some_directory")
