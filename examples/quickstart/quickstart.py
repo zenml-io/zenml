@@ -9,11 +9,13 @@ from zenml.steps.step_output import Output
 
 
 class TrainerConfig(BaseStepConfig):
+    """Trainer params"""
+
     epochs: int = 1
 
 
 @step
-def importer() -> Output(
+def importer_mnist() -> Output(
     X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
 ):
     """Download the MNIST data store it as an artifact"""
@@ -83,26 +85,24 @@ def evaluator(
 
 @pipeline
 def mnist_pipeline(
-    importer_step: importer,
-    preprocesser_step: normalizer,
-    trainer_step: trainer,
-    evaluator_step: evaluator,
+    importer,
+    normalizer: normalizer,
+    trainer,
+    evaluator,
 ):
     # Link all the steps artifacts together
-    X_train, y_train, X_test, y_test = importer_step()
-    X_trained_normed, X_test_normed = preprocesser_step(
-        X_train=X_train, X_test=X_test
-    )
-    model = trainer_step(X_train=X_trained_normed, y_train=y_train)
-    evaluator_step(X_test=X_test_normed, y_test=y_test, model=model)
+    X_train, y_train, X_test, y_test = importer()
+    X_trained_normed, X_test_normed = normalizer(X_train=X_train, X_test=X_test)
+    model = trainer(X_train=X_trained_normed, y_train=y_train)
+    evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 
 
 # Initialise the pipeline
 p = mnist_pipeline(
-    importer_step=importer(),
-    preprocesser_step=normalizer(),
-    trainer_step=trainer(config=TrainerConfig(epochs=1)),
-    evaluator_step=evaluator(),
+    importer=importer_mnist(),
+    normalizer=normalizer(),
+    trainer=trainer(config=TrainerConfig(epochs=1)),
+    evaluator=evaluator(),
 )
 
 # Run the pipeline
@@ -111,7 +111,7 @@ p.run()
 
 # Define a new modified import data step to download the Fashion MNIST model
 @step
-def import_fashion() -> Output(
+def importer_fashion_mnist() -> Output(
     X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
 ):
     """Download the MNIST data store it as an artifact"""
@@ -124,10 +124,10 @@ def import_fashion() -> Output(
 
 # Initialise a new pipeline
 fashion_p = mnist_pipeline(
-    importer_step=import_fashion(),
-    preprocesser_step=normalizer(),
-    trainer_step=trainer(config=TrainerConfig(epochs=1)),
-    evaluator_step=evaluator(),
+    importer=importer_fashion_mnist(),
+    normalizer=normalizer(),
+    trainer=trainer(config=TrainerConfig(epochs=1)),
+    evaluator=evaluator(),
 )
 
 # Run the new pipeline
