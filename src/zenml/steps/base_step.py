@@ -189,5 +189,6 @@ class BaseStep(metaclass=BaseStepMeta):
     def with_materializers(
         self, materializers: Dict[Type[Any], Type[BaseMaterializer]]
     ):
+        """Inject materializers from the outside."""
         self.materializers = materializers
         return self
