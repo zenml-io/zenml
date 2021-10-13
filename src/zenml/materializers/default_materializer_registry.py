@@ -27,6 +27,37 @@ class DefaultMaterializerRegistry(object):
 
     materializer_types: ClassVar[Dict[Type[Any], Type["BaseMaterializer"]]] = {}
 
+    @classmethod
+    def register_materializer_type(
+        cls, key: Type[Any], type_: Type["BaseMaterializer"]
+    ):
+        """Registers a new materializer.
+
+        Args:
+            key: Indicates the type of an object.
+            type_: A BaseMaterializer subclass.
+        """
+        if key not in cls.materializer_types:
+            cls.materializer_types[key] = type_
+            logger.debug(f"Registered materializer {type_} for {key}")
+        else:
+            logger.debug(
+                f"{key} already registered with "
+                f"{cls.materializer_types[key]}. Cannot register {type_}."
+            )
+
+    def register_and_overwrite_type(
+        self, key: Type[Any], type_: Type["BaseMaterializer"]
+    ):
+        """Registers a new materializer and also overwrites a default if set.
+
+        Args:
+            key: Indicates the type of an object.
+            type_: A BaseMaterializer subclass.
+        """
+        self.materializer_types[key] = type_
+        logger.debug(f"Registered materializer {type_} for {key}")
+
     def get_single_materializer_type(
         self, key: Type[Any]
     ) -> "BaseMaterializer":
@@ -58,25 +89,6 @@ class DefaultMaterializerRegistry(object):
         if key in self.materializer_types:
             return True
         return False
-
-    @classmethod
-    def register_materializer_type(
-        cls, key: Type[Any], type_: Type["BaseMaterializer"]
-    ):
-        """Registers a new materializer.
-
-        Args:
-            key: Indicates the type of an object.
-            type_: A BaseMaterializer subclass.
-        """
-        if key not in cls.materializer_types:
-            cls.materializer_types[key] = type_
-            logger.debug(f"Registered materializer {type_} for {key}")
-        else:
-            logger.debug(
-                f"{key} already registered with "
-                f"{cls.materializer_types[key]}. Cannot register {type_}."
-            )
 
 
 default_materializer_registry = DefaultMaterializerRegistry()
