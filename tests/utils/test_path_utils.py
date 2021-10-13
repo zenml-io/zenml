@@ -63,25 +63,29 @@ def test_find_files_returns_generator_object_when_file_present(tmp_path):
     temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
     with open(temp_file, "w"):
         assert isinstance(
-            path_utils.find_files(tmp_path, TEMPORARY_FILE_SEARCH_PREFIX),
+            path_utils.find_files(str(tmp_path), TEMPORARY_FILE_SEARCH_PREFIX),
             GeneratorType,
         )
 
 
 def test_find_files_when_file_present(tmp_path):
     """find_files locates a file within a temporary directory"""
-    # TODO: [HIGH] actually test something here
     temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
     with open(temp_file, "w"):
-        assert path_utils.find_files(tmp_path, TEMPORARY_FILE_SEARCH_PREFIX)
+        assert (
+            path_utils.find_files(
+                str(tmp_path), TEMPORARY_FILE_SEARCH_PREFIX
+            ).__next__()
+            is not None
+        )
 
 
 def test_find_files_when_file_absent(tmp_path):
     """find_files returns None when it doesn't find a file"""
-    # TODO: [HIGH] actually test something here
     temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
     with open(temp_file, "w"):
-        assert path_utils.find_files(tmp_path, "abc*.*")
+        with pytest.raises(StopIteration):
+            assert path_utils.find_files(str(tmp_path), "abc*.*").__next__()
 
 
 @pytest.mark.parametrize("filesystem", REMOTE_FS_PREFIX)
@@ -144,10 +148,11 @@ def test_list_dir_returns_empty_list_when_dir_doesnt_exist(
     assert isinstance(path_utils.list_dir(not_a_real_dir), list)
 
 
-@pytest.mark.xfail()
-def test_logging_takes_place_on_fail_of_list_dir(caplog):
-    """logger should output a debug statement on failure to find directory"""
-    not_a_real_dir = "./not_a_dir"
-    caplog.set_level(logger.DEBUG)
-    path_utils.list_dir(not_a_real_dir)
-    assert f"Dir {not_a_real_dir} not found." in caplog.text
+# @pytest.mark.xfail()
+# TODO: [HIGH] write this test
+# def test_logging_takes_place_on_fail_of_list_dir(caplog):
+#     """logger should output a debug statement on failure to find directory"""
+#     not_a_real_dir = "./not_a_dir"
+#     caplog.set_level(logger.DEBUG)
+#     path_utils.list_dir(not_a_real_dir)
+#     assert f"Dir {not_a_real_dir} not found." in caplog.text
