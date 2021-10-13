@@ -73,9 +73,11 @@ def test_find_files_when_file_present(tmp_path):
     temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
     with open(temp_file, "w"):
         assert (
-            path_utils.find_files(
-                str(tmp_path), TEMPORARY_FILE_SEARCH_PREFIX
-            ).__next__()
+            next(
+                path_utils.find_files(
+                    str(tmp_path), TEMPORARY_FILE_SEARCH_PREFIX
+                )
+            )
             is not None
         )
 
@@ -85,7 +87,7 @@ def test_find_files_when_file_absent(tmp_path):
     temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
     with open(temp_file, "w"):
         with pytest.raises(StopIteration):
-            assert path_utils.find_files(str(tmp_path), "abc*.*").__next__()
+            assert next(path_utils.find_files(str(tmp_path), "abc*.*"))
 
 
 @pytest.mark.parametrize("filesystem", REMOTE_FS_PREFIX)
