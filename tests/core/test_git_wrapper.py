@@ -12,9 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+
 import pytest
-from git.exc import InvalidGitRepositoryError
+from git.exc import InvalidGitRepositoryError, NoSuchPathError
 from git.repo.base import Repo
+from hypothesis import given
+from hypothesis.strategies import text
 
 import zenml.core.git_wrapper
 
@@ -42,7 +45,14 @@ def test_exception_raised_if_repo_is_not_a_git_repository(tmp_path):
         assert isinstance(e, InvalidGitRepositoryError)
 
 
-@pytest.mark.xfail
-def test_exception_raised_if_repo_path_does_not_exist():
+@pytest.fixture(scope="module")
+@given(non_path=text(min_size=1))
+def test_exception_raised_if_repo_path_does_not_exist(tmp_path, non_path):
     """Initialization of GitWrapper class should raise an exception
     if the repository path does not exist"""
+    not_a_path = tmp_path / non_path
+    try:
+        zenml.core.git_wrapper.GitWrapper(not_a_path)
+    except Exception as e:
+        assert True, f"Exception raised: {e}"
+        assert isinstance(e, NoSuchPathError)
