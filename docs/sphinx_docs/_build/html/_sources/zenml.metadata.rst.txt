@@ -12,14 +12,6 @@ zenml.metadata.base\_metadata\_store module
    :undoc-members:
    :show-inheritance:
 
-zenml.metadata.base\_metadata\_wrapper\_test module
----------------------------------------------------
-
-.. automodule:: zenml.metadata.base_metadata_wrapper_test
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 zenml.metadata.mock\_metadata\_wrapper module
 ---------------------------------------------
 
