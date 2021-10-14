@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from zenml.annotations import artifact_annotations  # noqa
+
 
 def test_me():
     """A simple test to check a functionality"""
