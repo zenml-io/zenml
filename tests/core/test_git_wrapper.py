@@ -17,9 +17,11 @@ import pytest
 from git.exc import InvalidGitRepositoryError, NoSuchPathError
 from git.repo.base import Repo
 from hypothesis import given
-from hypothesis.strategies import text
+from hypothesis.strategies import lists, text
 
 import zenml.core.git_wrapper
+
+GITIGNORE_FILENAME = ".gitignore"
 
 
 def test_no_exception_raised_if_repository_is_valid_git_repository(tmp_path):
@@ -58,18 +60,33 @@ def test_exception_raised_if_repo_path_does_not_exist(tmp_path, non_path):
         assert isinstance(e, NoSuchPathError)
 
 
-@pytest.mark.xfail
-def test_creating_gitignore_with_items_when_none_exists(tmp_path):
-    # TODO: [LOW] Implement test
-    """Test whether creating a gitignore file with items works when no gitignore file exists"""
-
-
-@pytest.mark.xfail
-def test_appending_items_to_gitignore_when_it_already_exists_returns_no_exceptions(
-    tmp_path,
+@pytest.fixture(scope="module")
+@given(sample_items=lists(text()))
+def test_creating_gitignore_with_items_when_none_exists(
+    tmp_path, sample_items
 ):
-    # TODO: [LOW] Implement test
+    """Test whether creating a gitignore file with items works when no gitignore file exists"""
+    Repo.init(tmp_path)
+    git_instance = zenml.core.git_wrapper.GitWrapper(tmp_path)
+    try:
+        git_instance.add_gitignore(sample_items())
+    except Exception as e:
+        assert False, f"Exception raised: {e}"
+
+
+@pytest.fixture(scope="module")
+@given(sample_items=lists(text()))
+def test_appending_items_to_gitignore_when_it_already_exists_returns_no_exceptions(
+    tmp_path, sample_items
+):
     """Test whether appending items to gitignore file works when gitignore file already exists"""
+    git_instance = zenml.core.git_wrapper.GitWrapper(tmp_path)
+    with open(tmp_path / GITIGNORE_FILENAME, "w") as gitignore_file:
+        gitignore_file.write(text())
+        try:
+            git_instance.add_gitignore(sample_items())
+        except Exception as e:
+            assert False, f"Exception raised: {e}"
 
 
 @pytest.mark.xfail
