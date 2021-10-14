@@ -14,8 +14,6 @@
 
 import os
 
-import requests
-
 from zenml import __version__
 
 
@@ -69,12 +67,6 @@ AWS_ENTRYPOINT = "zenml.backends.orchestrator.entrypoint"
 K8S_ENTRYPOINT = "zenml.backends.orchestrator.entrypoint"
 
 # Analytics constants
-SEGMENT_ANALYTICS_ID = requests.get("https://zenml.io/analytics.json").json()[
-    "id"
-]
-SEGMENT_DEV_ANALYTICS_ID = requests.get(
-    "https://zenml.io/dev.analytics.json"
-).json()["id"]
 VALID_OPERATING_SYSTEMS = ["Windows", "Darwin", "Linux"]
 
 # Path utilities constants
