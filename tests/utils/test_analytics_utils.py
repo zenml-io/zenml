@@ -12,6 +12,33 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import platform
 
-def test_me():
-    """A simple test to check a functionality"""
+from zenml.constants import VALID_OPERATING_SYSTEMS
+from zenml.utils.analytics_utils import get_segment_key, get_system_info
+
+
+def test_get_segment_key():
+    """Checks the get_segment_key method returns a value"""
+    try:
+        get_segment_key()
+    except Exception as e:
+        assert False, f"Exception raised: {e}"
+
+
+def test_get_system_info_type():
+    """Checks that the return value is a dictionary"""
+    assert isinstance(get_system_info(), dict)
+
+
+def test_platform_info_correctness():
+    """Checks that the method returns the correct platform"""
+    system_id = platform.system()
+
+    if system_id == "Darwin":
+        system_id = "mac"
+    elif system_id not in VALID_OPERATING_SYSTEMS:
+        system_id = "unknown"
+
+    system_info = get_system_info()
+    assert system_id.lower() == system_info["os"]
