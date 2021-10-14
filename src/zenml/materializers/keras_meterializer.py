@@ -26,7 +26,7 @@ class KerasMaterializer(BaseMaterializer):
 
     ASSOCIATED_TYPES = [keras.Model]
 
-    def handle_input(self, data: Type) -> keras.Model:
+    def handle_input(self, data_type: Type) -> keras.Model:
         """Reads and returns a Keras model.
 
         Returns:

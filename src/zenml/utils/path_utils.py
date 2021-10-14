@@ -265,20 +265,17 @@ def rm_file(file_path: str):
     return fileio.remove(file_path)
 
 
-def read_file_contents(file_path: str):
+def read_file_contents_as_string(file_path: str):
     """Reads contents of file.
 
     Args:
         file_path: Path to file.
     """
-    # if not file_exists(file_path):
-    #     raise Exception(f'{file_path} does not exist!')
-    # return file_io.read_file_to_string(file_path)
-    # TODO: Check for proper implementation
-    raise NotImplementedError
+    if file_exists(file_path):
+        return fileio.open(file_path).read()
 
 
-def write_file_contents(file_path: str, content: str):
+def write_file_contents_as_string(file_path: str, content: str):
     """Writes contents of file.
 
     Args:

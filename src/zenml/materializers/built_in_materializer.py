@@ -14,9 +14,11 @@
 import os
 from typing import Any, Dict, List, Set, Text, Tuple, Type
 
+from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import yaml_utils
 
+logger = get_logger(__name__)
 DEFAULT_FILENAME = "data.json"
 
 
@@ -38,10 +40,17 @@ class BuiltInMaterializer(BaseMaterializer):
         Tuple,
     ]
 
-    def handle_input(self, data_type: Type) -> dict:
+    def handle_input(self, data_type: Type) -> Any:
         """Reads basic primitive types from json."""
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
-        return yaml_utils.read_json(filepath)
+        contents = yaml_utils.read_json(filepath)
+        if type(contents) != data_type:
+            # TODO [LOW]: Raise error or try to coerce
+            logger.debug(
+                f"Contents {contents} was type {type(contents)} but expected "
+                f"{data_type}"
+            )
+        return contents
 
     def handle_return(self, data: Any):
         """Handles basic built-in types and stores them as json"""
