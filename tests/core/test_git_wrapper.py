@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import pytest
+from git.exc import InvalidGitRepositoryError
 from git.repo.base import Repo
 
 import zenml.core.git_wrapper
@@ -31,10 +32,14 @@ def test_no_exception_raised_if_repository_is_valid_git_repository(tmp_path):
     assert isinstance(git_instance.git_repo, Repo)
 
 
-@pytest.mark.xfail
-def test_exception_raised_if_repo_is_not_a_git_repository():
+def test_exception_raised_if_repo_is_not_a_git_repository(tmp_path):
     """Initialization of GitWrapper class should raise an exception
     if directory is not a git repository"""
+    try:
+        zenml.core.git_wrapper.GitWrapper(tmp_path)
+    except Exception as e:
+        assert True, f"Exception raised: {e}"
+        assert isinstance(e, InvalidGitRepositoryError)
 
 
 @pytest.mark.xfail
