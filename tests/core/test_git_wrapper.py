@@ -12,6 +12,32 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import pytest
+from git.repo.base import Repo
 
-def test_me():
-    """A simple test to check a functionality"""
+import zenml.core.git_wrapper
+
+
+def test_no_exception_raised_if_repository_is_valid_git_repository(tmp_path):
+    """Test whether class instantiation works when valid git repository present"""
+    Repo.init(tmp_path)
+    git_instance = zenml.core.git_wrapper.GitWrapper(tmp_path)
+    assert git_instance.repo_path == tmp_path
+    assert git_instance.repo_path.exists()
+    assert git_instance.repo_path.is_dir()
+    assert git_instance.git_root_path == str(
+        tmp_path / zenml.core.git_wrapper.GIT_FOLDER_NAME
+    )
+    assert isinstance(git_instance.git_repo, Repo)
+
+
+@pytest.mark.xfail
+def test_exception_raised_if_repo_is_not_a_git_repository():
+    """Initialization of GitWrapper class should raise an exception
+    if directory is not a git repository"""
+
+
+@pytest.mark.xfail
+def test_exception_raised_if_repo_path_does_not_exist():
+    """Initialization of GitWrapper class should raise an exception
+    if the repository path does not exist"""
