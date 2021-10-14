@@ -133,9 +133,11 @@ def test_list_dir_returns_a_list_of_file_paths(tmp_path):
         ]
 
 
-def test_list_dir_returns_one_result_for_one_file(tmp_path):
+@pytest.fixture(scope="module")
+@given(sample_file=text())
+def test_list_dir_returns_one_result_for_one_file(tmp_path, sample_file):
     """list_dir should return only one result, when there is only one file created"""
-    with NamedTemporaryFile(dir=tmp_path) as _:
+    with open(sample_file, "w"):
         assert len(path_utils.list_dir(str(tmp_path))) == 1
 
 
