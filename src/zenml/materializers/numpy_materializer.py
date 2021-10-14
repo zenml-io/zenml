@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+from typing import Type
 
 import numpy as np
 import pyarrow as pa
@@ -31,7 +32,7 @@ class NumpyMaterializer(BaseMaterializer):
 
     ASSOCIATED_TYPES = [np.ndarray]
 
-    def handle_input(self) -> np.ndarray:
+    def handle_input(self, data_type: Type) -> np.ndarray:
         """Reads numpy array from parquet file."""
         shape_dict = yaml_utils.read_json(
             os.path.join(self.artifact.uri, SHAPE_FILENAME)

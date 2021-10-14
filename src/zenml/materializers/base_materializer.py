@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Type
 
 if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
@@ -53,9 +53,11 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         self.artifact = artifact
 
     @abstractmethod
-    def handle_input(self) -> Any:
+    def handle_input(self, data_type: Type) -> Any:
         """Write logic here to handle input of the step function.
 
+        Args:
+            data_type: What type the input should be materialized as.
         Returns:
             Any object that is to be passed into the relevant artifact in the
             step.

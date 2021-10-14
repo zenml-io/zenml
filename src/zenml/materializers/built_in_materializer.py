@@ -11,9 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
 import os
-from typing import Union
+from typing import Any, Dict, List, Set, Text, Tuple, Type
 
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import yaml_utils
@@ -21,20 +20,31 @@ from zenml.utils import yaml_utils
 DEFAULT_FILENAME = "data.json"
 
 
-# TODO [MEDIUM]: Make this more extensive.
-class JsonMaterializer(BaseMaterializer):
+class BuiltInMaterializer(BaseMaterializer):
     """Read/Write JSON files."""
 
-    ASSOCIATED_TYPES = [int, str, bytes, dict, float, list, tuple]
+    ASSOCIATED_TYPES = [
+        int,
+        str,
+        bytes,
+        dict,
+        float,
+        list,
+        tuple,
+        Text,
+        List,
+        Dict,
+        Set,
+        Tuple,
+    ]
 
-    def handle_input(self) -> dict:
-        """TBD"""
+    def handle_input(self, data_type: Type) -> dict:
+        """Reads basic primitive types from json."""
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         return yaml_utils.read_json(filepath)
 
-    def handle_return(
-        self, data: Union[int, str, bytes, dict, float, list, tuple]
-    ):
-        """TBD"""
+    def handle_return(self, data: Any):
+        """Handles basic built-in types and stores them as json"""
+        assert type(data) in self.ASSOCIATED_TYPES
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         yaml_utils.write_json(filepath, data)

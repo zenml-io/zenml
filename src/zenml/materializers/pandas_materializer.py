@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+from typing import Type
 
 import pandas as pd
 
@@ -27,7 +28,7 @@ class PandasMaterializer(BaseMaterializer):
 
     ASSOCIATED_TYPES = [pd.DataFrame]
 
-    def handle_input(self) -> pd.DataFrame:
+    def handle_input(self, data_type: Type) -> pd.DataFrame:
         """Reads all files inside the artifact directory and concatenates
         them to a pandas dataframe."""
 
