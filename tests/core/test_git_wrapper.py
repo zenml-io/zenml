@@ -56,3 +56,23 @@ def test_exception_raised_if_repo_path_does_not_exist(tmp_path, non_path):
     except Exception as e:
         assert True, f"Exception raised: {e}"
         assert isinstance(e, NoSuchPathError)
+
+
+@pytest.mark.xfail
+def test_creating_gitignore_with_items_when_none_exists(tmp_path):
+    # TODO: [LOW] Implement test
+    """Test whether creating a gitignore file with items works when no gitignore file exists"""
+
+
+@pytest.mark.xfail
+def test_appending_items_to_gitignore_when_it_already_exists_returns_no_exceptions(
+    tmp_path,
+):
+    # TODO: [LOW] Implement test
+    """Test whether appending items to gitignore file works when gitignore file already exists"""
+
+
+@pytest.mark.xfail
+def test_items_appended_correctly_to_gitignore_file(tmp_path):
+    # TODO: [LOW] Implement test
+    """Test items are correctly to gitignore file"""
