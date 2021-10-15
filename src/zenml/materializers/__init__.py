@@ -28,8 +28,15 @@ except ImportError:
     logger.debug("Tensorflow not installed.")
 
 try:
-    from zenml.materializers.tf_dataset_materializer import (
+    from zenml.materializers.tf_dataset_materializer import (  # noqa
         TensorflowDatasetMaterializer,
     )
 except ImportError:
     logger.debug("Tensorflow not installed.")
+
+try:
+    from zenml.materializers.pytorch_materializer import (  # noqa
+        PyTorchMaterializer,
+    )
+except ImportError:
+    logger.debug("PyTorch not installed.")
