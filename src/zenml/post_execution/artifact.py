@@ -60,13 +60,17 @@ class ArtifactView:
         """Returns the URI where the artifact data is stored."""
         return self._uri
 
-    # TODO [HIGH]: Pass in data_type once we figure out materializer interface
+    # TODO [MEDIUM]: can we store a default datatype inside the metadata store
     def read(
-        self, materializer_class: Optional[Type[BaseMaterializer]] = None
+        self,
+        output_data_type: Type,
+        materializer_class: Optional[Type[BaseMaterializer]] = None,
     ) -> Any:
         """Materializes the data stored in this artifact.
 
         Args:
+            output_data_type: The datatype to which the materializer should
+                read, will be passed to the materializers `handle_input` method.
             materializer_class: The class of the materializer that should be
                 used to read the artifact data. If no materializer class is
                 given, we use the materializer that was used to write the
@@ -90,7 +94,7 @@ class ArtifactView:
         # TODO [MEDIUM]: passing in `self` to initialize the materializer only
         #  works because materializers only require a `.uri` property at the
         #  moment.
-        return materializer_class(self).handle_input()
+        return materializer_class(self).handle_input(output_data_type)
 
     def __repr__(self) -> str:
         """Returns a string representation of this artifact."""
