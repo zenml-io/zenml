@@ -89,7 +89,9 @@ def test_appending_items_to_gitignore_when_it_already_exists_returns_no_exceptio
             assert False, f"Exception raised: {e}"
 
 
-def test_items_appended_correctly_to_gitignore_file(tmp_path):
+def test_items_appended_correctly_to_gitignore_file_when_no_file_exists(
+    tmp_path,
+):
     """Test items are correctly to gitignore file"""
     test_items = ["an item", "another item"]
     file_contents = """
@@ -103,3 +105,18 @@ another item"""
     git_instance.add_gitignore(test_items)
     with open(tmp_path / GITIGNORE_FILENAME, "r") as gitignore_file:
         assert gitignore_file.read() == file_contents
+
+
+def test_items_appended_correctly_to_gitignore_file_when_file_already_exists(
+    tmp_path,
+):
+    """NotImplementError is thrown when append_file method is called"""
+    test_items = ["an item", "another item"]
+    Repo.init(tmp_path)
+    git_instance = zenml.core.git_wrapper.GitWrapper(tmp_path)
+    with open(tmp_path / GITIGNORE_FILENAME, "w") as _:
+        try:
+            git_instance.add_gitignore(test_items)
+        except Exception as e:
+            assert True, f"Exception raised: {e}"
+            assert isinstance(e, NotImplementedError)
