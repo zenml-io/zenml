@@ -19,9 +19,21 @@ from zenml.cli.base import init
 
 
 @pytest.mark.xfail()
+def test_init_fails_when_repo_path_is_not_git_repo_already(tmp_path):
+    """Check that init command raises an InvalidGitRepositoryError
+    when executed outside a valid Git repository"""
+    runner = CliRunner()
+    result = runner.invoke(init, ["--repo_path", str(tmp_path)])
+    assert f"Initializing at {tmp_path}" in result.output
+    assert result.exit_code == 1
+    assert f"{tmp_path} is not a valid git repository!" in result.output
+
+
+@pytest.mark.xfail()
 def test_init(tmp_path):
     """Check that init command works as expected inside temporary directory"""
     runner = CliRunner()
+    # TODO: [HIGH] add a step that initializes a git repository in the tmp_path dir
     result = runner.invoke(init, ["--repo_path", str(tmp_path)])
     assert result.exit_code == 0
     assert f"Initializing at {tmp_path}" in result.output
