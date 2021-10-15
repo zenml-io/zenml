@@ -15,6 +15,7 @@
 * [Artifacts](core/artifacts.md)
 * [Stacks](core/stacks.md)
 * [Post Execution Workflow](core/post-execution-workflow.md)
+* [Materializers](core/materializers.md)
 
 ## Support
 
@@ -27,19 +28,19 @@
 
 ## API Reference
 
-* [Zenml](../sphinx_docs/_build/html/zenml.html)
-  * [Annotations](../sphinx_docs/_build/html/zenml.annotations.html)
-  * [Artifact stores](../sphinx_docs/_build/html/zenml.artifact_stores.html)
-  * [Artifacts](../sphinx_docs/_build/html/zenml.artifacts.html)
-  * [Cli](../sphinx_docs/_build/html/zenml.cli.html)
-  * [Config](../sphinx_docs/_build/html/zenml.config.html)
-  * [Core](../sphinx_docs/_build/html/zenml.core.html)
-  * [Io](../sphinx_docs/_build/html/zenml.io.html)
-  * [Materializers](../sphinx_docs/_build/html/zenml.materializers.html)
-  * [Metadata](../sphinx_docs/_build/html/zenml.metadata.html)
-  * [Orchestrators](../sphinx_docs/_build/html/zenml.orchestrators.html)
-    * [Local](../sphinx_docs/_build/html/zenml.orchestrators.local.html)
-  * [Pipelines](../sphinx_docs/_build/html/zenml.pipelines.html)
-  * [Stacks](../sphinx_docs/_build/html/zenml.stacks.html)
-  * [Steps](../sphinx_docs/_build/html/zenml.steps.html)
-  * [Utils](../sphinx_docs/_build/html/zenml.utils.html)
+* [Zenml](api-reference/zenml/README.md)
+  * [Annotations](api-reference/zenml/annotations.md)
+  * [Artifact stores](api-reference/zenml/artifact-stores.md)
+  * [Artifacts](api-reference/zenml/artifacts.md)
+  * [Cli](api-reference/zenml/cli.md)
+  * [Config](api-reference/zenml/config.md)
+  * [Core](api-reference/zenml/core.md)
+  * [Io](api-reference/zenml/io.md)
+  * [Materializers](api-reference/zenml/materializers.md)
+  * [Metadata](api-reference/zenml/metadata.md)
+  * [Orchestrators](api-reference/zenml/orchestrators/README.md)
+    * [Local](api-reference/zenml/orchestrators/local.md)
+  * [Pipelines](api-reference/zenml/pipelines.md)
+  * [Stacks](api-reference/zenml/stacks.md)
+  * [Steps](api-reference/zenml/steps.md)
+  * [Utils](api-reference/zenml/utils.md)
