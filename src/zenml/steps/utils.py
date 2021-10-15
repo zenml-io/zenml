@@ -51,6 +51,77 @@ STEP_INNER_FUNC_NAME: str = "process"
 SINGLE_RETURN_OUT_NAME: str = "output"
 
 
+def do_types_match(type_a: Type, type_b: Type) -> bool:
+    """Check whether type_a and type_b match.
+
+    Args:
+        type_a: First Type to check.
+        type_b: Second Type to check.
+
+    Returns:
+        True if types match, otherwise False.
+    """
+    # TODO [LOW]: Check more complicated cases where type_a can be a sub-type
+    #  of type_b
+    return type_a == type_b
+
+
+def generate_component(step) -> Callable[..., Any]:
+    """Utility function which converts a ZenML step into a TFX Component
+
+    Args:
+        step: a ZenML step instance
+
+    Returns:
+        component: the class of the corresponding TFX component
+    """
+
+    # Managing the parameters for component spec creation
+    spec_inputs, spec_outputs, spec_params = {}, {}, {}
+    for key, artifact_type in step.INPUT_SPEC.items():
+        spec_inputs[key] = component_spec.ChannelParameter(type=artifact_type)
+    for key, artifact_type in step.OUTPUT_SPEC.items():
+        spec_outputs[key] = component_spec.ChannelParameter(type=artifact_type)
+    for key, prim_type in step.PARAM_SPEC.items():
+        spec_params[key] = component_spec.ExecutionParameter(type=str)
+
+    component_spec_class = type(
+        "%s_Spec" % step.__class__.__name__,
+        (tfx_types.ComponentSpec,),
+        {
+            "INPUTS": spec_inputs,
+            "OUTPUTS": spec_outputs,
+            "PARAMETERS": spec_params,
+        },
+    )
+
+    # Defining a executor class bu utilizing the process function
+    executor_class = type(
+        "%s_Executor" % step.__class__.__name__,
+        (_FunctionExecutor,),
+        {
+            "_FUNCTION": staticmethod(getattr(step, STEP_INNER_FUNC_NAME)),
+            "__module__": step.__module__,
+            "spec_materializer_registry": step.spec_materializer_registry,
+        },
+    )
+
+    module = sys.modules[step.__module__]
+    setattr(module, "%s_Executor" % step.__class__.__name__, executor_class)
+    executor_spec_instance = ExecutorClassSpec(executor_class=executor_class)
+
+    # Defining the component with the corresponding executor and spec
+    return type(
+        step.__class__.__name__,
+        (_ZenMLSimpleComponent,),
+        {
+            "SPEC_CLASS": component_spec_class,
+            "EXECUTOR_SPEC": executor_spec_instance,
+            "__module__": step.__module__,
+        },
+    )
+
+
 class _PropertyDictWrapper(json_utils.Jsonable):
     """Helper class to wrap inputs/outputs from TFX nodes.
     Currently, this class is read-only (setting properties is not implemented).
@@ -184,6 +255,25 @@ class _FunctionExecutor(BaseExecutor):
         artifact.materializers = source_utils.resolve_class(materializer_class)
         materializer_class(artifact).handle_return(data)
 
+    def check_output_types_match(
+        self, output_value: Any, specified_type: Type
+    ) -> None:
+        """Raise error if types don't match.
+
+        Args:
+            output_value: Value of output.
+            specified_type: What the type of output should be as defined in the
+            signature.
+
+        Raises:
+            ValueError if types dont match.
+        """
+        if not do_types_match(type(output_value), specified_type):
+            raise ValueError(
+                f"Output `{output_value}` of type {type(output_value)} does "
+                f"not match specified return type {specified_type}"
+            )
+
     def Do(
         self,
         input_dict: Dict[str, List[BaseArtifact]],
@@ -221,11 +311,14 @@ class _FunctionExecutor(BaseExecutor):
 
         return_values = self._FUNCTION(**function_params)
         spec = inspect.getfullargspec(self._FUNCTION)
-        return_type = spec.annotations.get("return", None)
+        return_type: Type = spec.annotations.get("return", None)
         if return_type is not None:
             if isinstance(return_type, Output):
                 # Resolve named (and multi-) outputs.
                 for i, output_tuple in enumerate(return_type.items()):
+                    self.check_output_types_match(
+                        return_values[i], output_tuple[1]
+                    )
                     self.resolve_output_artifact(
                         output_tuple[0],
                         output_dict[output_tuple[0]][0],
@@ -233,64 +326,9 @@ class _FunctionExecutor(BaseExecutor):
                     )
             else:
                 # Resolve single output
+                self.check_output_types_match(return_values, return_type)
                 self.resolve_output_artifact(
                     SINGLE_RETURN_OUT_NAME,
                     output_dict[SINGLE_RETURN_OUT_NAME][0],
                     return_values,
                 )
-
-
-def generate_component(step) -> Callable[..., Any]:
-    """Utility function which converts a ZenML step into a TFX Component
-
-    Args:
-        step: a ZenML step instance
-
-    Returns:
-        component: the class of the corresponding TFX component
-    """
-
-    # Managing the parameters for component spec creation
-    spec_inputs, spec_outputs, spec_params = {}, {}, {}
-    for key, artifact_type in step.INPUT_SPEC.items():
-        spec_inputs[key] = component_spec.ChannelParameter(type=artifact_type)
-    for key, artifact_type in step.OUTPUT_SPEC.items():
-        spec_outputs[key] = component_spec.ChannelParameter(type=artifact_type)
-    for key, prim_type in step.PARAM_SPEC.items():
-        spec_params[key] = component_spec.ExecutionParameter(type=str)
-
-    component_spec_class = type(
-        "%s_Spec" % step.__class__.__name__,
-        (tfx_types.ComponentSpec,),
-        {
-            "INPUTS": spec_inputs,
-            "OUTPUTS": spec_outputs,
-            "PARAMETERS": spec_params,
-        },
-    )
-
-    # Defining a executor class bu utilizing the process function
-    executor_class = type(
-        "%s_Executor" % step.__class__.__name__,
-        (_FunctionExecutor,),
-        {
-            "_FUNCTION": staticmethod(getattr(step, STEP_INNER_FUNC_NAME)),
-            "__module__": step.__module__,
-            "spec_materializer_registry": step.spec_materializer_registry,
-        },
-    )
-
-    module = sys.modules[step.__module__]
-    setattr(module, "%s_Executor" % step.__class__.__name__, executor_class)
-    executor_spec_instance = ExecutorClassSpec(executor_class=executor_class)
-
-    # Defining the component with the corresponding executor and spec
-    return type(
-        step.__class__.__name__,
-        (_ZenMLSimpleComponent,),
-        {
-            "SPEC_CLASS": component_spec_class,
-            "EXECUTOR_SPEC": executor_spec_instance,
-            "__module__": step.__module__,
-        },
-    )

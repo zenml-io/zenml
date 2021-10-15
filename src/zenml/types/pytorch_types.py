@@ -12,15 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import NamedTuple, Tuple, Type
+
+from typing import Dict
 
 
-class Output(object):
-    """A named tuple with a default name that cannot be overriden."""
-
-    def __init__(self, **kwargs):
-        self.outputs = NamedTuple("ZenOutput", **kwargs)
-
-    def items(self) -> Tuple[str, Type]:
-        """Yields a tuple of type (output_name, output_type)."""
-        yield from self.outputs.__annotations__.items()
+class TorchDict(Dict):
+    """A type of dict that represents saving a model."""
