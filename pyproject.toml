@@ -88,7 +88,6 @@ tox = "^3.24.3"
 hypothesis = "^6.23.0"
 Sphinx = "^4.2.0"
 sphinx-bootstrap-theme = "^0.8.0"
-pytest-cov = "^3.0.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -119,6 +118,7 @@ filterwarnings = [
 ]
 log_cli = true
 log_cli_level = "INFO"
+testpaths = "tests"
 
 [tool.coverage.run]
 parallel = true

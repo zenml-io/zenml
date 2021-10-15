@@ -69,6 +69,7 @@ def is_dir(dir_path: str) -> bool:
 
 
 def find_files(dir_path, pattern) -> List[str]:
+    # TODO [LOW]: correct docstring since 'None' is never returned
     """Find files in a directory that match pattern.
 
     Args:

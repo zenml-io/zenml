@@ -80,3 +80,10 @@ TRAINER_FN = "zenml.components.trainer.trainer_module.run_fn"
 GCP_ENTRYPOINT = "zenml.backends.orchestrator.entrypoint"
 AWS_ENTRYPOINT = "zenml.backends.orchestrator.entrypoint"
 K8S_ENTRYPOINT = "zenml.backends.orchestrator.entrypoint"
+
+# Analytics constants
+VALID_OPERATING_SYSTEMS = ["Windows", "Darwin", "Linux"]
+
+# Path utilities constants
+
+REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]

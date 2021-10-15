@@ -44,10 +44,6 @@ def test_service_crud(tmp_path):
     ls.register_metadata_store(METADATA_KEY, local_metadata_store)
     ls.register_stack(STACK_KEY, local_stack)
 
-    assert ls.get_metadata_store(METADATA_KEY) == local_metadata_store
-    assert ls.get_artifact_store(ARTIFACT_KEY) == local_artifact_store
-    assert ls.get_stack(STACK_KEY) == local_stack
-
     ls.delete_artifact_store(ARTIFACT_KEY)
     ls.delete_metadata_store(METADATA_KEY)
     ls.delete_stack(STACK_KEY)

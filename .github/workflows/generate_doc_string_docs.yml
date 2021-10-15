@@ -31,7 +31,6 @@ jobs:
           sudo apt-get update && sudo apt-get install -y make && sudo apt install python3-sphinx
           python -m pip install --upgrade pip
           python -m pip install "poetry"
-
       - name: Install Dependencies
         run: python -m poetry install
 
@@ -47,7 +46,6 @@ jobs:
         run: |
           cd docs/
           python generate_api_docs.py
-
       # Commit and push to gitbook
       - name: Commit and push to gitbook
         run: |
@@ -58,7 +56,6 @@ jobs:
           git add docs/interrogate.svg
           git commit -m 'Generated docs [ci skip]'
           git push
-
       # Build the book
       - name: Print output
         run: |
