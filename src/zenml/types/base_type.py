@@ -12,17 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+
 from zenml.logger import get_logger
-from zenml.materializers.beam_materializer import BeamMaterializer  # noqa
-from zenml.materializers.built_in_materializer import (  # noqa
-    BuiltInMaterializer,
-)
-from zenml.materializers.numpy_materializer import NumpyMaterializer  # noqa
-from zenml.materializers.pandas_materializer import PandasMaterializer  # noqa
 
 logger = get_logger(__name__)
 
-try:
-    from zenml.materializers.keras_meterializer import KerasMaterializer  # noqa
-except ImportError:
-    logger.debug("Tensorflow not installed.")
+
+class BaseType(type):
+    pass
