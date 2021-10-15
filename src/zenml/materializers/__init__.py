@@ -26,3 +26,10 @@ try:
     from zenml.materializers.keras_meterializer import KerasMaterializer  # noqa
 except ImportError:
     logger.debug("Tensorflow not installed.")
+
+try:
+    from zenml.materializers.tf_dataset_materializer import (
+        TensorflowDatasetMaterializer,
+    )
+except ImportError:
+    logger.debug("Tensorflow not installed.")

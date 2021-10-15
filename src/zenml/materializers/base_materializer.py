@@ -60,11 +60,11 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             Any object that is to be passed into the relevant artifact in the
             step.
         """
-        if data_type not in self.ASSOCIATED_TYPES:
-            raise ValueError(
-                f"Data type {data_type} not supported by materializer "
-                f"{self.__name__}. Supported types: {self.ASSOCIATED_TYPES}"
-            )
+        # if data_type not in self.ASSOCIATED_TYPES:
+        #     raise ValueError(
+        #         f"Data type {data_type} not supported by materializer "
+        #         f"{self.__name__}. Supported types: {self.ASSOCIATED_TYPES}"
+        #     )
 
     def handle_return(self, data: Any) -> None:
         """Write logic here to handle return of the step function.
@@ -72,9 +72,11 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         Args:
             Any object that is specified as an input artifact of the step.
         """
-        data_type = type(data)
-        if data_type not in self.ASSOCIATED_TYPES:
-            raise ValueError(
-                f"Data type {data_type} not supported by materializer "
-                f"{self.__name__}. Supported types: {self.ASSOCIATED_TYPES}"
-            )
+        type(data)
+        # TODO [MEDIUM]: Put proper type checking
+        # if data_type not in self.ASSOCIATED_TYPES:
+        #     raise ValueError(
+        #         f"Data type {data_type} not supported by materializer "
+        #         f"{self.__class__.__name__}. Supported types: "
+        #         f"{self.ASSOCIATED_TYPES}"
+        #     )
