@@ -71,7 +71,10 @@ class BaseComponent(BaseSettings):
         """Dumps all current values to the serialization file."""
         self._create_serialization_file_if_not_exists()
         f = self.get_serialization_full_path()
-        path_utils.write_file_contents(f, self.json(indent=2, sort_keys=True))
+
+        path_utils.write_file_contents_as_string(
+            f, self.json(indent=2, sort_keys=True)
+        )
 
     def _create_serialization_file_if_not_exists(self):
         """Creates the serialization file if it does not exist."""

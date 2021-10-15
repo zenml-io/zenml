@@ -11,12 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Dict, NoReturn
+from typing import Dict
 
-from tfx.types.artifact import Artifact, Property
+from tfx.types.artifact import Artifact, Property, PropertyType
 
-from zenml.materializers.materializer_factory import MaterializerFactory
-from zenml.utils.exceptions import ArtifactInterfaceError
+MATERIALIZERS_PROPERTY_KEY = "materializers"
+MATERIALIZERS_PROPERTY = Property(type=PropertyType.STRING)
 
 
 class BaseArtifact(Artifact):
@@ -33,23 +33,6 @@ class BaseArtifact(Artifact):
     """
 
     TYPE_NAME: str = "BaseArtifact"  # type: ignore
-    PROPERTIES: Dict[str, Property] = {}  # type: ignore
-
-    @property
-    def materializers(self) -> MaterializerFactory:
-        """Returns a MaterializerFactory which provides access
-        to all registered materializers."""
-        return MaterializerFactory(self)
-
-    @materializers.setter
-    def materializers(self, materializers: MaterializerFactory) -> NoReturn:
-        """Setting the materializers property is not allowed.
-        This method always raises an ArtifactInterfaceError
-        with an explanation how to use materializers.
-        """
-        raise ArtifactInterfaceError(
-            "Setting the materializers property on an artifact is not allowed. "
-            "To add a custom materializer to read/write artifacts, make sure "
-            "to subclass `BaseMaterializer` which will automatically register "
-            "it and make it accessible via the MaterializerFactory."
-        )
+    PROPERTIES: Dict[str, Property] = {  # type: ignore
+        MATERIALIZERS_PROPERTY_KEY: MATERIALIZERS_PROPERTY,
+    }

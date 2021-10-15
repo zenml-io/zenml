@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Optional
+from typing import Type
 
 from tensorflow import keras
 
@@ -23,12 +23,22 @@ DEFAULT_FILENAME = "model.hdf5"
 class KerasMaterializer(BaseMaterializer):
     """Materializer to read/write Keras models."""
 
-    TYPE_NAME = "keras"
+    ASSOCIATED_TYPES = [keras.Model]
 
-    def read_model(self) -> Optional[keras.Model]:
-        """Reads and returns a Keras model."""
+    def handle_input(self, data_type: Type) -> keras.Model:
+        """Reads and returns a Keras model.
+
+        Returns:
+            A tf.keras.Model model.
+        """
+        super().handle_input(data_type)
         return keras.models.load_model(self.artifact.uri)
 
-    def write_model(self, model: keras.Model) -> None:
-        """Writes a keras model."""
+    def handle_return(self, model: keras.Model) -> None:
+        """Writes a keras model.
+
+        Args:
+            model: A tf.keras.Model model.
+        """
+        super().handle_return(model)
         model.save(self.artifact.uri)

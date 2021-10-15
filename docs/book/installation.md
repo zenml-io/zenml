@@ -9,7 +9,7 @@ description: 'TL;DR: Do *pip install zenml* to install.'
 Your first step is to install **ZenML**, which comes bundled as a good old `pip` package.
 
 {% hint style="warning" %}
-Please note that we only support Python &gt;= 3.6 &lt;3.9, so please adjust your pip accordingly.
+Please note that we only support Python >= 3.6 <3.9, so please adjust your pip accordingly.
 {% endhint %}
 
 ## Virtual Environment
@@ -21,7 +21,7 @@ We highly encourage you to install **ZenML** in a virtual environment. We like t
 When you're set with your environment, run:
 
 ```bash
-pip install zenml==0.5.0rc2
+pip install zenml
 ```
 
 Alternatively, if you’re feeling brave, feel free to install the bleeding edge: **NOTE:** Do so at your own risk; no guarantees given!
@@ -66,4 +66,3 @@ For Fish, add this to `~/.config/fish/completions/foo-bar.fish`:
 ```bash
 eval (env _ZENML_COMPLETE=source_fish zenml)
 ```
-

@@ -28,7 +28,6 @@
 ## API Reference
 
 * [Zenml](../sphinx_docs/_build/html/zenml.html)
-  * [Annotations](../sphinx_docs/_build/html/zenml.annotations.html)
   * [Artifact stores](../sphinx_docs/_build/html/zenml.artifact_stores.html)
   * [Artifacts](../sphinx_docs/_build/html/zenml.artifacts.html)
   * [Cli](../sphinx_docs/_build/html/zenml.cli.html)
@@ -40,6 +39,9 @@
   * [Orchestrators](../sphinx_docs/_build/html/zenml.orchestrators.html)
     * [Local](../sphinx_docs/_build/html/zenml.orchestrators.local.html)
   * [Pipelines](../sphinx_docs/_build/html/zenml.pipelines.html)
+  * [Post execution](../sphinx_docs/_build/html/zenml.post_execution.html)
   * [Stacks](../sphinx_docs/_build/html/zenml.stacks.html)
   * [Steps](../sphinx_docs/_build/html/zenml.steps.html)
+    * [Step interfaces](../sphinx_docs/_build/html/zenml.steps.step_interfaces.html)
+  * [Types](../sphinx_docs/_build/html/zenml.types.html)
   * [Utils](../sphinx_docs/_build/html/zenml.utils.html)

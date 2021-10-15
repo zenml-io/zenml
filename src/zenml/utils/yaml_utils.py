@@ -35,7 +35,7 @@ def write_yaml(file_path: str, contents: Dict):
         dir_ = str(Path(file_path).parent)
         if not path_utils.is_dir(dir_):
             raise FileNotFoundError(f"Directory {dir_} does not exist.")
-    path_utils.write_file_contents(file_path, yaml.dump(contents))
+    path_utils.write_file_contents_as_string(file_path, yaml.dump(contents))
 
 
 def read_yaml(file_path: str) -> Dict:
@@ -51,8 +51,8 @@ def read_yaml(file_path: str) -> Dict:
         FileNotFoundError if file does not exist.
     """
     if path_utils.file_exists(file_path):
-        with open(file_path, "r") as f:
-            return yaml.load(f.read(), Loader=yaml.FullLoader)
+        contents = path_utils.read_file_contents_as_string(file_path)
+        return yaml.load(contents, Loader=yaml.FullLoader)
     else:
         raise FileNotFoundError(f"{file_path} does not exist.")
 
@@ -89,7 +89,7 @@ def write_json(file_path: str, contents: Dict):
         if not path_utils.is_dir(dir_):
             # If it is a local path and it doesnt exist, raise Exception.
             raise FileNotFoundError(f"Directory {dir_} does not exist.")
-    path_utils.write_file_contents(file_path, json.dumps(contents))
+    path_utils.write_file_contents_as_string(file_path, json.dumps(contents))
 
 
 def read_json(file_path: str) -> Any:
@@ -99,7 +99,7 @@ def read_json(file_path: str) -> Any:
         file_path: Path to JSON file.
     """
     if path_utils.file_exists(file_path):
-        with open(file_path, "r") as f:
-            return json.loads(f.read())
+        contents = path_utils.read_file_contents_as_string(file_path)
+        return json.loads(contents)
     else:
         raise FileNotFoundError(f"{file_path} does not exist.")

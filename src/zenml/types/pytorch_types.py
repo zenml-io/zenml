@@ -12,5 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.annotations.artifact_annotations import Input, Output  # noqa
-from zenml.annotations.step_annotations import Step  # noqa
+
+from typing import Dict
+
+
+class TorchDict(Dict):
+    """A type of dict that represents saving a model."""

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.5.0rc2"
+version = "0.5.0"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -50,7 +50,7 @@ zenml = "zenml.cli.cli:cli"
 
 [tool.poetry.dependencies]
 python = ">=3.6.2,<3.9"
-ml-pipelines-sdk = "^1.2.0"
+ml-pipelines-sdk = "^1.3.0"
 panel = "^0.11.3"
 pandas = "^1.1.5"
 apache-beam = "^2.30.0"
@@ -118,6 +118,7 @@ filterwarnings = [
 ]
 log_cli = true
 log_cli_level = "INFO"
+testpaths = "tests"
 
 [tool.coverage.run]
 parallel = true
@@ -136,7 +137,7 @@ exclude_lines = [
 profile = "black"
 known_third_party = []
 skip_glob = []
-line_length = 79
+line_length = 80
 
 [tool.mypy]
 # --strict
@@ -156,7 +157,7 @@ strict_equality = true
 # --strict end
 
 [tool.black]
-line-length = 79
+line-length = 80
 include = '\.pyi?$'
 exclude = '''
 /(

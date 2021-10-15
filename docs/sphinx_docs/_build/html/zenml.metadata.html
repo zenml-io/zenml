@@ -71,7 +71,6 @@
 <li><a class="reference internal" href="#">zenml.metadata package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
 <li><a class="reference internal" href="#module-zenml.metadata.base_metadata_store">zenml.metadata.base_metadata_store module</a></li>
-<li><a class="reference internal" href="#zenml-metadata-base-metadata-wrapper-test-module">zenml.metadata.base_metadata_wrapper_test module</a></li>
 <li><a class="reference internal" href="#module-zenml.metadata.mock_metadata_wrapper">zenml.metadata.mock_metadata_wrapper module</a></li>
 <li><a class="reference internal" href="#module-zenml.metadata.mysql_metadata_wrapper">zenml.metadata.mysql_metadata_wrapper module</a></li>
 <li><a class="reference internal" href="#module-zenml.metadata.sqlite_metadata_wrapper">zenml.metadata.sqlite_metadata_wrapper module</a></li>
@@ -151,68 +150,27 @@ citizens.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="zenml.metadata.base_metadata_store.BaseMetadataStore.get_artifacts_by_component">
-<span class="sig-name descname"><span class="pre">get_artifacts_by_component</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pipeline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.metadata.base_metadata_store.BaseMetadataStore.get_artifacts_by_component" title="Permalink to this definition">¶</a></dt>
-<dd><p>Gets artifacts by component name.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>pipeline</strong> (<a class="reference internal" href="zenml.pipelines.html#zenml.pipelines.base_pipeline.BasePipeline" title="zenml.pipelines.base_pipeline.BasePipeline"><em>BasePipeline</em></a>) – a ZenML pipeline object</p></li>
-<li><p><strong>component_name</strong> – </p></li>
-<li><p><strong>component_name</strong> – str:</p></li>
-</ul>
-</dd>
-</dl>
-<p>Returns:</p>
+<dt class="sig sig-object py" id="zenml.metadata.base_metadata_store.BaseMetadataStore.get_pipeline">
+<span class="sig-name descname"><span class="pre">get_pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pipeline_name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="zenml.post_execution.html#zenml.post_execution.pipeline.PipelineView" title="zenml.post_execution.pipeline.PipelineView"><span class="pre">zenml.post_execution.pipeline.PipelineView</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.metadata.base_metadata_store.BaseMetadataStore.get_pipeline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a pipeline for the given name.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="zenml.metadata.base_metadata_store.BaseMetadataStore.get_components_status">
-<span class="sig-name descname"><span class="pre">get_components_status</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pipeline</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.metadata.base_metadata_store.BaseMetadataStore.get_components_status" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns status of components in pipeline.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>pipeline</strong> (<a class="reference internal" href="zenml.pipelines.html#zenml.pipelines.base_pipeline.BasePipeline" title="zenml.pipelines.base_pipeline.BasePipeline"><em>BasePipeline</em></a>) – a ZenML pipeline object</p>
-</dd>
-</dl>
-<p>Returns: dict of type { component_name : component_status }</p>
-<p>Returns:</p>
+<dt class="sig sig-object py" id="zenml.metadata.base_metadata_store.BaseMetadataStore.get_pipeline_run_steps">
+<span class="sig-name descname"><span class="pre">get_pipeline_run_steps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pipeline_run</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="zenml.post_execution.html#zenml.post_execution.pipeline_run.PipelineRunView" title="zenml.post_execution.pipeline_run.PipelineRunView"><span class="pre">zenml.post_execution.pipeline_run.PipelineRunView</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="zenml.post_execution.html#zenml.post_execution.step.StepView" title="zenml.post_execution.step.StepView"><span class="pre">zenml.post_execution.step.StepView</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.metadata.base_metadata_store.BaseMetadataStore.get_pipeline_run_steps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets all steps for the given pipeline run.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="zenml.metadata.base_metadata_store.BaseMetadataStore.get_pipeline_context">
-<span class="sig-name descname"><span class="pre">get_pipeline_context</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pipeline</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.metadata.base_metadata_store.BaseMetadataStore.get_pipeline_context" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get pipeline context.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>pipeline</strong> – </p>
-</dd>
-</dl>
-<p>Returns:</p>
+<dt class="sig sig-object py" id="zenml.metadata.base_metadata_store.BaseMetadataStore.get_pipeline_runs">
+<span class="sig-name descname"><span class="pre">get_pipeline_runs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pipeline</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="zenml.post_execution.html#zenml.post_execution.pipeline.PipelineView" title="zenml.post_execution.pipeline.PipelineView"><span class="pre">zenml.post_execution.pipeline.PipelineView</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="zenml.post_execution.html#zenml.post_execution.pipeline_run.PipelineRunView" title="zenml.post_execution.pipeline_run.PipelineRunView"><span class="pre">zenml.post_execution.pipeline_run.PipelineRunView</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.metadata.base_metadata_store.BaseMetadataStore.get_pipeline_runs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets all runs for the given pipeline.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="zenml.metadata.base_metadata_store.BaseMetadataStore.get_pipeline_executions">
-<span class="sig-name descname"><span class="pre">get_pipeline_executions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pipeline</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.metadata.base_metadata_store.BaseMetadataStore.get_pipeline_executions" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get executions of pipeline.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>pipeline</strong> (<a class="reference internal" href="zenml.pipelines.html#zenml.pipelines.base_pipeline.BasePipeline" title="zenml.pipelines.base_pipeline.BasePipeline"><em>BasePipeline</em></a>) – a ZenML pipeline object</p>
-</dd>
-</dl>
-<p>Returns:</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="zenml.metadata.base_metadata_store.BaseMetadataStore.get_pipeline_status">
-<span class="sig-name descname"><span class="pre">get_pipeline_status</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pipeline</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#zenml.metadata.base_metadata_store.BaseMetadataStore.get_pipeline_status" title="Permalink to this definition">¶</a></dt>
-<dd><p>Query metadata store to find status of pipeline.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>pipeline</strong> (<a class="reference internal" href="zenml.pipelines.html#zenml.pipelines.base_pipeline.BasePipeline" title="zenml.pipelines.base_pipeline.BasePipeline"><em>BasePipeline</em></a>) – a ZenML pipeline object</p>
-</dd>
-</dl>
-<p>Returns:</p>
+<dt class="sig sig-object py" id="zenml.metadata.base_metadata_store.BaseMetadataStore.get_pipelines">
+<span class="sig-name descname"><span class="pre">get_pipelines</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="zenml.post_execution.html#zenml.post_execution.pipeline.PipelineView" title="zenml.post_execution.pipeline.PipelineView"><span class="pre">zenml.post_execution.pipeline.PipelineView</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.metadata.base_metadata_store.BaseMetadataStore.get_pipelines" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of all pipelines stored in this metadata store.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -220,6 +178,27 @@ citizens.</p>
 <span class="sig-name descname"><span class="pre">get_serialization_dir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#zenml.metadata.base_metadata_store.BaseMetadataStore.get_serialization_dir" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets the local path where artifacts are stored.</p>
 </dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.metadata.base_metadata_store.BaseMetadataStore.get_step_artifacts">
+<span class="sig-name descname"><span class="pre">get_step_artifacts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="zenml.post_execution.html#zenml.post_execution.step.StepView" title="zenml.post_execution.step.StepView"><span class="pre">zenml.post_execution.step.StepView</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="zenml.post_execution.html#zenml.post_execution.artifact.ArtifactView" title="zenml.post_execution.artifact.ArtifactView"><span class="pre">zenml.post_execution.artifact.ArtifactView</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="zenml.post_execution.html#zenml.post_execution.artifact.ArtifactView" title="zenml.post_execution.artifact.ArtifactView"><span class="pre">zenml.post_execution.artifact.ArtifactView</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.metadata.base_metadata_store.BaseMetadataStore.get_step_artifacts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns input and output artifacts for the given step.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>step</strong> – The step for which to get the artifacts.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A tuple (inputs, outputs) where inputs and outputs
+are both OrderedDicts mapping artifact names
+to the input and output artifacts respectively.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.metadata.base_metadata_store.BaseMetadataStore.get_step_status">
+<span class="sig-name descname"><span class="pre">get_step_status</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="zenml.post_execution.html#zenml.post_execution.step.StepView" title="zenml.post_execution.step.StepView"><span class="pre">zenml.post_execution.step.StepView</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="zenml.html#zenml.enums.ExecutionStatus" title="zenml.enums.ExecutionStatus"><span class="pre">zenml.enums.ExecutionStatus</span></a></span></span><a class="headerlink" href="#zenml.metadata.base_metadata_store.BaseMetadataStore.get_step_status" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="zenml.metadata.base_metadata_store.BaseMetadataStore.get_tfx_metadata_config">
@@ -235,9 +214,6 @@ citizens.</p>
 
 </dd></dl>
 
-</div>
-<div class="section" id="zenml-metadata-base-metadata-wrapper-test-module">
-<h2>zenml.metadata.base_metadata_wrapper_test module<a class="headerlink" href="#zenml-metadata-base-metadata-wrapper-test-module" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="module-zenml.metadata.mock_metadata_wrapper">
 <span id="zenml-metadata-mock-metadata-wrapper-module"></span><h2>zenml.metadata.mock_metadata_wrapper module<a class="headerlink" href="#module-zenml.metadata.mock_metadata_wrapper" title="Permalink to this headline">¶</a></h2>

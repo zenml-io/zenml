@@ -13,8 +13,10 @@
 #  permissions and limitations under the License.
 
 
-from zenml.annotations.base_annotations import BaseAnnotation
-from zenml.steps.base_step import BaseStep
+from zenml.logger import get_logger
 
-# The base step annotation to be extended
-Step = type("Step", (BaseAnnotation,), {"VALID_TYPES": [BaseStep]})
+logger = get_logger(__name__)
+
+
+class BaseType(type):
+    pass

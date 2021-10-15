@@ -3,11 +3,10 @@
 <img src="https://zenml.io/assets/social/github.svg">
 
 <p align="center">
-  <a href="https://zenml.io">zenml.io</a> •
-  <a href="https://docs.zenml.io">docs.zenml.io</a> •
-  <a href="#quickstart">Quickstart</a> •
-  <a href="#community">Community</a> •
+  <a href="https://zenml.io">Website</a> •
+  <a href="https://docs.zenml.io">Docs</a> •
   <a href="https://zenml.io/roadmap">Roadmap</a> •
+  <a href="https://zenml.io/discussion">Vote For Features</a> •
   <a href="https://zenml.io/slack-invite/">Join Slack</a>
 </p>
 
@@ -29,6 +28,9 @@
 <div align="center"> Give us a 
     <img width="25" src="https://cdn.iconscout.com/icon/free/png-256/github-153-675523.png" alt="Slack"/>
 <b>GitHub star</b> to show your love
+</div>
+<div align="center"> 
+    <b>NEW: </b> <a href="https://zenml.io/discussion" target="_blank"><img width="25" src="https://cdn1.iconfinder.com/data/icons/social-17/48/like-512.png" alt="Vote"/><b> Vote</b></a> on the next ZenML features 
 </div>
 
 ## What is ZenML?
@@ -87,6 +89,32 @@ be included in the non-RC version of this release.
 
 However, bare with us: Adding those features back in should be relatively faster as we now have a solid foundation to build on. Look out for the next email!
 
+
+## Roadmap and Community
+ZenML is being built in public. The [roadmap](https://zenml.io/roadmap) is a regularly updated source of truth for the ZenML community to understand where the product is going in the short, medium, and long term.
+
+ZenML is managed by a [core team](https://zenml.io/team) of developers that are responsible for making key decisions and incorporating feedback from the community. The team oversee's feedback via various channels, but you can directly influence the roadmap as follows:
+
+- Vote on your most wanted feature on the [Discussion board](https://zenml.io/discussion).
+- Create a [Feature Issue](https://github.com/zenml-io/zenml/issues/new?assignees=&labels=&template=enhancement_request.md&title=%5BFEATURE%5D) in the [GitHub board](https://github.com/zenml-io/zenml/issues).
+- Start a thread in the [Slack channel](https://zenml.io/slack-invite).
+
+## Contributing
+
+We would love to receive your contributions! Check our [Contributing Guide](CONTRIBUTING.md) for more details on how best to contribute.
+
+## Copyright
+
+ZenML is distributed under the terms of the Apache License Version 2.0. A complete version of the license is available in the [LICENSE.md](LICENSE.md) in this repository.
+
+Any contribution made to this project will be licensed under the Apache License Version 2.0.
+
+## Credit
+
+ZenML is built on the shoulders of giants: we leverage, and would like to give credit to, existing open-source libraries like [TFX](https://github.com/tensorflow/tfx/). The goal of our framework is neither to replace these libraries, nor to diminish their usage. ZenML is simply an opinionated, higher-level interface with the focus being purely on easy-of-use and coherent intuitive design.
+You can read more about why we actually started building ZenML at our [blog](https://blog.zenml.io/why-zenml/).
+
+## Legacy [Updated Soon Q4 2021]
 From this point onwards, the README is intended to give a glimpse as to what lies ahead. We have redesigned our [public roadmap](https://zenml.io/roadmap) 
 to showcase better the timeline in which these features will be complete.
 
@@ -240,28 +268,3 @@ pipeline.add_deployment(
 ```
 
 The best part is that ZenML is extensible easily, and can be molded to your use-case. You can create your own custom logic or create a PR and contribute to the ZenML community, so that everyone can benefit.
-
-## Roadmap
-Missing a feature/integration? Our roadmap is public, and hosted on Notion. 
-Check it out [here](https://zenml.io/roadmap).
-
-## Community
-
-Our community is the backbone of making ZenML a success! We are currently actively maintaining two main channels for community discussions:
-
-- Our Slack Channel: Chat with us [here](https://zenml.io/slack-invite/).
-
-## Contributing
-
-We would love to receive your contributions! Check our [Contributing Guide](CONTRIBUTING.md) for more details on how best to contribute.
-
-## Copyright
-
-ZenML is distributed under the terms of the Apache License Version 2.0. A complete version of the license is available in the [LICENSE.md](LICENSE.md) in this repository.
-
-Any contribution made to this project will be licensed under the Apache License Version 2.0.
-
-## Credit
-
-ZenML is built on the shoulders of giants: we leverage, and would like to give credit to, existing open-source libraries like [TFX](https://github.com/tensorflow/tfx/). The goal of our framework is neither to replace these libraries, nor to diminish their usage. ZenML is simply an opinionated, higher-level interface with the focus being purely on easy-of-use and coherent intuitive design.
-You can read more about why we actually started building ZenML at our [blog](https://blog.zenml.io/why-zenml/).

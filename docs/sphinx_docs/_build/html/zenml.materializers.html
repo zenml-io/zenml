@@ -72,10 +72,15 @@
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
 <li><a class="reference internal" href="#module-zenml.materializers.base_materializer">zenml.materializers.base_materializer module</a></li>
 <li><a class="reference internal" href="#module-zenml.materializers.beam_materializer">zenml.materializers.beam_materializer module</a></li>
-<li><a class="reference internal" href="#module-zenml.materializers.json_materializer">zenml.materializers.json_materializer module</a></li>
+<li><a class="reference internal" href="#module-zenml.materializers.built_in_materializer">zenml.materializers.built_in_materializer module</a></li>
+<li><a class="reference internal" href="#module-zenml.materializers.default_materializer_registry">zenml.materializers.default_materializer_registry module</a></li>
 <li><a class="reference internal" href="#zenml-materializers-keras-meterializer-module">zenml.materializers.keras_meterializer module</a></li>
-<li><a class="reference internal" href="#module-zenml.materializers.materializer_factory">zenml.materializers.materializer_factory module</a></li>
+<li><a class="reference internal" href="#module-zenml.materializers.numpy_materializer">zenml.materializers.numpy_materializer module</a></li>
 <li><a class="reference internal" href="#module-zenml.materializers.pandas_materializer">zenml.materializers.pandas_materializer module</a></li>
+<li><a class="reference internal" href="#zenml-materializers-pytorch-lightning-materializer-module">zenml.materializers.pytorch_lightning_materializer module</a></li>
+<li><a class="reference internal" href="#zenml-materializers-pytorch-materializer-module">zenml.materializers.pytorch_materializer module</a></li>
+<li><a class="reference internal" href="#module-zenml.materializers.spec_materializer_registry">zenml.materializers.spec_materializer_registry module</a></li>
+<li><a class="reference internal" href="#zenml-materializers-tf-dataset-materializer-module">zenml.materializers.tf_dataset_materializer module</a></li>
 <li><a class="reference internal" href="#module-zenml.materializers">Module contents</a></li>
 </ul>
 </li>
@@ -139,9 +144,35 @@
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Base Materializer to realize artifact data.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="zenml.materializers.base_materializer.BaseMaterializer.TYPE_NAME">
-<span class="sig-name descname"><span class="pre">TYPE_NAME</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'base'</span></em><a class="headerlink" href="#zenml.materializers.base_materializer.BaseMaterializer.TYPE_NAME" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="zenml.materializers.base_materializer.BaseMaterializer.ASSOCIATED_TYPES">
+<span class="sig-name descname"><span class="pre">ASSOCIATED_TYPES</span></span><em class="property"> <span class="pre">=</span> <span class="pre">None</span></em><a class="headerlink" href="#zenml.materializers.base_materializer.BaseMaterializer.ASSOCIATED_TYPES" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.materializers.base_materializer.BaseMaterializer.handle_input">
+<span class="sig-name descname"><span class="pre">handle_input</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_type</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Type</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#zenml.materializers.base_materializer.BaseMaterializer.handle_input" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write logic here to handle input of the step function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>data_type</strong> – What type the input should be materialized as.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Any object that is to be passed into the relevant artifact in the
+step.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.materializers.base_materializer.BaseMaterializer.handle_return">
+<span class="sig-name descname"><span class="pre">handle_return</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#zenml.materializers.base_materializer.BaseMaterializer.handle_return" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write logic here to handle return of the step function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>step.</strong> (<em>Any object that is specified as an input artifact of the</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
 
 </dd></dl>
 
@@ -160,48 +191,27 @@ subclasses for reading/writing artifacts.</p>
 <dt class="sig sig-object py" id="zenml.materializers.beam_materializer.BeamMaterializer">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.materializers.beam_materializer.</span></span><span class="sig-name descname"><span class="pre">BeamMaterializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">BaseArtifact</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.materializers.beam_materializer.BeamMaterializer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#zenml.materializers.base_materializer.BaseMaterializer" title="zenml.materializers.base_materializer.BaseMaterializer"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.materializers.base_materializer.BaseMaterializer</span></code></a></p>
-<p>Read/Write Apache Beam artifacts.</p>
+<p>Materializer to read data to and from beam.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="zenml.materializers.beam_materializer.BeamMaterializer.TYPE_NAME">
-<span class="sig-name descname"><span class="pre">TYPE_NAME</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'beam'</span></em><a class="headerlink" href="#zenml.materializers.beam_materializer.BeamMaterializer.TYPE_NAME" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="zenml.materializers.beam_materializer.BeamMaterializer.ASSOCIATED_TYPES">
+<span class="sig-name descname"><span class="pre">ASSOCIATED_TYPES</span></span><em class="property"> <span class="pre">=</span> <span class="pre">[&lt;class</span> <span class="pre">'apache_beam.pipeline.Pipeline'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'apache_beam.pvalue.PCollection'&gt;]</span></em><a class="headerlink" href="#zenml.materializers.beam_materializer.BeamMaterializer.ASSOCIATED_TYPES" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="zenml.materializers.beam_materializer.BeamMaterializer.read_text">
-<span class="sig-name descname"><span class="pre">read_text</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pipeline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read_header</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">apache_beam.pipeline.Pipeline</span><span class="p"><span class="pre">,</span> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">apache_beam.pipeline.Pipeline</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.materializers.beam_materializer.BeamMaterializer.read_text" title="Permalink to this definition">¶</a></dt>
-<dd><p>Appends a text reading step to an existing beam pipeline.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>pipeline</strong> – The pipeline to which the reading step will be added.</p></li>
-<li><p><strong>read_header</strong> – Indicates if the header should be read and
-returned in addition to the pipeline.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><p>If <cite>read_header</cite> is False, returns just the modified pipeline.
-If <cite>read_header</cite> is True, returns the header as a comma-separated</p>
-<blockquote>
-<div><p>string as well as the modified pipeline.</p>
-</div></blockquote>
-</p>
-</dd>
-</dl>
+<dt class="sig sig-object py" id="zenml.materializers.beam_materializer.BeamMaterializer.handle_input">
+<span class="sig-name descname"><span class="pre">handle_input</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_type</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Type</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#zenml.materializers.beam_materializer.BeamMaterializer.handle_input" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads all files inside the artifact directory and materializes them
+as a beam compatible output.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="zenml.materializers.beam_materializer.BeamMaterializer.write_text">
-<span class="sig-name descname"><span class="pre">write_text</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pipeline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shard_name_template</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.materializers.beam_materializer.BeamMaterializer.write_text" title="Permalink to this definition">¶</a></dt>
-<dd><p>Appends a text writing step to an existing beam pipeline.</p>
+<dt class="sig sig-object py" id="zenml.materializers.beam_materializer.BeamMaterializer.handle_return">
+<span class="sig-name descname"><span class="pre">handle_return</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pipeline</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">apache_beam.pipeline.Pipeline</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.materializers.beam_materializer.BeamMaterializer.handle_return" title="Permalink to this definition">¶</a></dt>
+<dd><p>Appends a beam.io.WriteToParquet at the end of a beam pipeline
+and therefore persists the results.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>pipeline</strong> – The pipeline to which the reading step will be added.</p></li>
-<li><p><strong>shard_name_template</strong> – A template string containing placeholders
-for the shard number and shard count. See <cite>beam.io.WriteToText</cite>
-for more information.</p></li>
-<li><p><strong>header</strong> – String to write at beginning of file as a header.</p></li>
-</ul>
+<dd class="field-odd"><p><strong>pipeline</strong> – A beam.pipeline object.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -209,28 +219,98 @@ for more information.</p></li>
 </dd></dl>
 
 </div>
-<div class="section" id="module-zenml.materializers.json_materializer">
-<span id="zenml-materializers-json-materializer-module"></span><h2>zenml.materializers.json_materializer module<a class="headerlink" href="#module-zenml.materializers.json_materializer" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-zenml.materializers.built_in_materializer">
+<span id="zenml-materializers-built-in-materializer-module"></span><h2>zenml.materializers.built_in_materializer module<a class="headerlink" href="#module-zenml.materializers.built_in_materializer" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
-<dt class="sig sig-object py" id="zenml.materializers.json_materializer.JsonMaterializer">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.materializers.json_materializer.</span></span><span class="sig-name descname"><span class="pre">JsonMaterializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">BaseArtifact</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.materializers.json_materializer.JsonMaterializer" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="zenml.materializers.built_in_materializer.BuiltInMaterializer">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.materializers.built_in_materializer.</span></span><span class="sig-name descname"><span class="pre">BuiltInMaterializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">BaseArtifact</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.materializers.built_in_materializer.BuiltInMaterializer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#zenml.materializers.base_materializer.BaseMaterializer" title="zenml.materializers.base_materializer.BaseMaterializer"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.materializers.base_materializer.BaseMaterializer</span></code></a></p>
 <p>Read/Write JSON files.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="zenml.materializers.json_materializer.JsonMaterializer.TYPE_NAME">
-<span class="sig-name descname"><span class="pre">TYPE_NAME</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'json'</span></em><a class="headerlink" href="#zenml.materializers.json_materializer.JsonMaterializer.TYPE_NAME" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="zenml.materializers.built_in_materializer.BuiltInMaterializer.ASSOCIATED_TYPES">
+<span class="sig-name descname"><span class="pre">ASSOCIATED_TYPES</span></span><em class="property"> <span class="pre">=</span> <span class="pre">[&lt;class</span> <span class="pre">'int'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'bytes'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'dict'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'list'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'tuple'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;,</span> <span class="pre">typing.List,</span> <span class="pre">typing.Dict,</span> <span class="pre">typing.Set,</span> <span class="pre">typing.Tuple]</span></em><a class="headerlink" href="#zenml.materializers.built_in_materializer.BuiltInMaterializer.ASSOCIATED_TYPES" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="zenml.materializers.json_materializer.JsonMaterializer.read_file">
-<span class="sig-name descname"><span class="pre">read_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'data.json'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#zenml.materializers.json_materializer.JsonMaterializer.read_file" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read JSON from filename.</p>
+<dt class="sig sig-object py" id="zenml.materializers.built_in_materializer.BuiltInMaterializer.handle_input">
+<span class="sig-name descname"><span class="pre">handle_input</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_type</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Type</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#zenml.materializers.built_in_materializer.BuiltInMaterializer.handle_input" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads basic primitive types from json.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="zenml.materializers.json_materializer.JsonMaterializer.write_file">
-<span class="sig-name descname"><span class="pre">write_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'data.json'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.materializers.json_materializer.JsonMaterializer.write_file" title="Permalink to this definition">¶</a></dt>
-<dd><p>Write JSON data to filename.</p>
+<dt class="sig sig-object py" id="zenml.materializers.built_in_materializer.BuiltInMaterializer.handle_return">
+<span class="sig-name descname"><span class="pre">handle_return</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.materializers.built_in_materializer.BuiltInMaterializer.handle_return" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handles basic built-in types and stores them as json</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.materializers.default_materializer_registry">
+<span id="zenml-materializers-default-materializer-registry-module"></span><h2>zenml.materializers.default_materializer_registry module<a class="headerlink" href="#module-zenml.materializers.default_materializer_registry" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.materializers.default_materializer_registry.DefaultMaterializerRegistry">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.materializers.default_materializer_registry.</span></span><span class="sig-name descname"><span class="pre">DefaultMaterializerRegistry</span></span><a class="headerlink" href="#zenml.materializers.default_materializer_registry.DefaultMaterializerRegistry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Matches a python type to a default materializer.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.materializers.default_materializer_registry.DefaultMaterializerRegistry.get_materializer_types">
+<span class="sig-name descname"><span class="pre">get_materializer_types</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">BaseMaterializer</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.materializers.default_materializer_registry.DefaultMaterializerRegistry.get_materializer_types" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all registered materializers.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.materializers.default_materializer_registry.DefaultMaterializerRegistry.get_single_materializer_type">
+<span class="sig-name descname"><span class="pre">get_single_materializer_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">BaseMaterializer</span></span></span><a class="headerlink" href="#zenml.materializers.default_materializer_registry.DefaultMaterializerRegistry.get_single_materializer_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a single materializers based on the key.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>key</strong> – Indicates the type of an object.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instance of a <cite>BaseMaterializer</cite> subclass initialized with the
+artifact of this factory.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.materializers.default_materializer_registry.DefaultMaterializerRegistry.is_registered">
+<span class="sig-name descname"><span class="pre">is_registered</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#zenml.materializers.default_materializer_registry.DefaultMaterializerRegistry.is_registered" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns true if key type is registered, else returns False.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.materializers.default_materializer_registry.DefaultMaterializerRegistry.materializer_types">
+<span class="sig-name descname"><span class="pre">materializer_types</span></span><em class="property"><span class="pre">:</span> <span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">BaseMaterializer</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"> <span class="pre">=</span> <span class="pre">{&lt;class</span> <span class="pre">'apache_beam.pipeline.Pipeline'&gt;:</span> <span class="pre">&lt;class</span> <span class="pre">'zenml.materializers.beam_materializer.BeamMaterializer'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'apache_beam.pvalue.PCollection'&gt;:</span> <span class="pre">&lt;class</span> <span class="pre">'zenml.materializers.beam_materializer.BeamMaterializer'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'int'&gt;:</span> <span class="pre">&lt;class</span> <span class="pre">'zenml.materializers.built_in_materializer.BuiltInMaterializer'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;:</span> <span class="pre">&lt;class</span> <span class="pre">'zenml.materializers.built_in_materializer.BuiltInMaterializer'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'bytes'&gt;:</span> <span class="pre">&lt;class</span> <span class="pre">'zenml.materializers.built_in_materializer.BuiltInMaterializer'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'dict'&gt;:</span> <span class="pre">&lt;class</span> <span class="pre">'zenml.materializers.built_in_materializer.BuiltInMaterializer'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;:</span> <span class="pre">&lt;class</span> <span class="pre">'zenml.materializers.built_in_materializer.BuiltInMaterializer'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'list'&gt;:</span> <span class="pre">&lt;class</span> <span class="pre">'zenml.materializers.built_in_materializer.BuiltInMaterializer'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'tuple'&gt;:</span> <span class="pre">&lt;class</span> <span class="pre">'zenml.materializers.built_in_materializer.BuiltInMaterializer'&gt;,</span> <span class="pre">typing.List:</span> <span class="pre">&lt;class</span> <span class="pre">'zenml.materializers.built_in_materializer.BuiltInMaterializer'&gt;,</span> <span class="pre">typing.Dict:</span> <span class="pre">&lt;class</span> <span class="pre">'zenml.materializers.built_in_materializer.BuiltInMaterializer'&gt;,</span> <span class="pre">typing.Set:</span> <span class="pre">&lt;class</span> <span class="pre">'zenml.materializers.built_in_materializer.BuiltInMaterializer'&gt;,</span> <span class="pre">typing.Tuple:</span> <span class="pre">&lt;class</span> <span class="pre">'zenml.materializers.built_in_materializer.BuiltInMaterializer'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.ndarray'&gt;:</span> <span class="pre">&lt;class</span> <span class="pre">'zenml.materializers.numpy_materializer.NumpyMaterializer'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'pandas.core.frame.DataFrame'&gt;:</span> <span class="pre">&lt;class</span> <span class="pre">'zenml.materializers.pandas_materializer.PandasMaterializer'&gt;}</span></em><a class="headerlink" href="#zenml.materializers.default_materializer_registry.DefaultMaterializerRegistry.materializer_types" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.materializers.default_materializer_registry.DefaultMaterializerRegistry.register_and_overwrite_type">
+<span class="sig-name descname"><span class="pre">register_and_overwrite_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">BaseMaterializer</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.materializers.default_materializer_registry.DefaultMaterializerRegistry.register_and_overwrite_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registers a new materializer and also overwrites a default if set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> – Indicates the type of an object.</p></li>
+<li><p><strong>type</strong> – A BaseMaterializer subclass.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.materializers.default_materializer_registry.DefaultMaterializerRegistry.register_materializer_type">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">register_materializer_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">BaseMaterializer</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.materializers.default_materializer_registry.DefaultMaterializerRegistry.register_materializer_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registers a new materializer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> – Indicates the type of an object.</p></li>
+<li><p><strong>type</strong> – A BaseMaterializer subclass.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -239,35 +319,31 @@ for more information.</p></li>
 <div class="section" id="zenml-materializers-keras-meterializer-module">
 <h2>zenml.materializers.keras_meterializer module<a class="headerlink" href="#zenml-materializers-keras-meterializer-module" title="Permalink to this headline">¶</a></h2>
 </div>
-<div class="section" id="module-zenml.materializers.materializer_factory">
-<span id="zenml-materializers-materializer-factory-module"></span><h2>zenml.materializers.materializer_factory module<a class="headerlink" href="#module-zenml.materializers.materializer_factory" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-zenml.materializers.numpy_materializer">
+<span id="zenml-materializers-numpy-materializer-module"></span><h2>zenml.materializers.numpy_materializer module<a class="headerlink" href="#module-zenml.materializers.numpy_materializer" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
-<dt class="sig sig-object py" id="zenml.materializers.materializer_factory.MaterializerFactory">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.materializers.materializer_factory.</span></span><span class="sig-name descname"><span class="pre">MaterializerFactory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">BaseArtifact</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.materializers.materializer_factory.MaterializerFactory" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>A factory class which is used by the ZenML artifacts to keep track
-of different materializers</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="zenml.materializers.materializer_factory.MaterializerFactory.get_types">
-<span class="sig-name descname"><span class="pre">get_types</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">BaseMaterializer</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.materializers.materializer_factory.MaterializerFactory.get_types" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get all registered materializers.</p>
-</dd></dl>
-
+<dt class="sig sig-object py" id="zenml.materializers.numpy_materializer.NumpyMaterializer">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.materializers.numpy_materializer.</span></span><span class="sig-name descname"><span class="pre">NumpyMaterializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">BaseArtifact</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.materializers.numpy_materializer.NumpyMaterializer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zenml.materializers.base_materializer.BaseMaterializer" title="zenml.materializers.base_materializer.BaseMaterializer"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.materializers.base_materializer.BaseMaterializer</span></code></a></p>
+<p>Materializer to read data to and from pandas.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="zenml.materializers.materializer_factory.MaterializerFactory.materializer_types">
-<span class="sig-name descname"><span class="pre">materializer_types</span></span><em class="property"><span class="pre">:</span> <span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">BaseMaterializer</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"> <span class="pre">=</span> <span class="pre">{'beam':</span> <span class="pre">&lt;class</span> <span class="pre">'zenml.materializers.beam_materializer.BeamMaterializer'&gt;,</span> <span class="pre">'json':</span> <span class="pre">&lt;class</span> <span class="pre">'zenml.materializers.json_materializer.JsonMaterializer'&gt;,</span> <span class="pre">'pandas':</span> <span class="pre">&lt;class</span> <span class="pre">'zenml.materializers.pandas_materializer.PandasMaterializer'&gt;}</span></em><a class="headerlink" href="#zenml.materializers.materializer_factory.MaterializerFactory.materializer_types" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="zenml.materializers.numpy_materializer.NumpyMaterializer.ASSOCIATED_TYPES">
+<span class="sig-name descname"><span class="pre">ASSOCIATED_TYPES</span></span><em class="property"> <span class="pre">=</span> <span class="pre">[&lt;class</span> <span class="pre">'numpy.ndarray'&gt;]</span></em><a class="headerlink" href="#zenml.materializers.numpy_materializer.NumpyMaterializer.ASSOCIATED_TYPES" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="zenml.materializers.materializer_factory.MaterializerFactory.register_type">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">register_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">BaseMaterializer</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.materializers.materializer_factory.MaterializerFactory.register_type" title="Permalink to this definition">¶</a></dt>
-<dd><p>Registers a new materializer.</p>
+<dt class="sig sig-object py" id="zenml.materializers.numpy_materializer.NumpyMaterializer.handle_input">
+<span class="sig-name descname"><span class="pre">handle_input</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_type</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Type</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="headerlink" href="#zenml.materializers.numpy_materializer.NumpyMaterializer.handle_input" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads numpy array from parquet file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.materializers.numpy_materializer.NumpyMaterializer.handle_return">
+<span class="sig-name descname"><span class="pre">handle_return</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">numpy.ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.materializers.numpy_materializer.NumpyMaterializer.handle_return" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes a np.ndarray to the artifact store as a parquet file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>key</strong> – Name with which the materializer can be accessed.</p></li>
-<li><p><strong>type</strong> – A BaseMaterializer subclass.</p></li>
-</ul>
+<dd class="field-odd"><p><strong>arr</strong> – The numpy array to write.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -283,25 +359,70 @@ of different materializers</p>
 <dd><p>Bases: <a class="reference internal" href="#zenml.materializers.base_materializer.BaseMaterializer" title="zenml.materializers.base_materializer.BaseMaterializer"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.materializers.base_materializer.BaseMaterializer</span></code></a></p>
 <p>Materializer to read data to and from pandas.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="zenml.materializers.pandas_materializer.PandasMaterializer.TYPE_NAME">
-<span class="sig-name descname"><span class="pre">TYPE_NAME</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'pandas'</span></em><a class="headerlink" href="#zenml.materializers.pandas_materializer.PandasMaterializer.TYPE_NAME" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="zenml.materializers.pandas_materializer.PandasMaterializer.ASSOCIATED_TYPES">
+<span class="sig-name descname"><span class="pre">ASSOCIATED_TYPES</span></span><em class="property"> <span class="pre">=</span> <span class="pre">[&lt;class</span> <span class="pre">'pandas.core.frame.DataFrame'&gt;]</span></em><a class="headerlink" href="#zenml.materializers.pandas_materializer.PandasMaterializer.ASSOCIATED_TYPES" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="zenml.materializers.pandas_materializer.PandasMaterializer.read_dataframe">
-<span class="sig-name descname"><span class="pre">read_dataframe</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pandas.core.frame.DataFrame</span></span></span><a class="headerlink" href="#zenml.materializers.pandas_materializer.PandasMaterializer.read_dataframe" title="Permalink to this definition">¶</a></dt>
-<dd><p>Reads all files inside the artifact directory and concatenates them to a pandas dataframe.</p>
+<dt class="sig sig-object py" id="zenml.materializers.pandas_materializer.PandasMaterializer.handle_input">
+<span class="sig-name descname"><span class="pre">handle_input</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_type</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Type</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pandas.core.frame.DataFrame</span></span></span><a class="headerlink" href="#zenml.materializers.pandas_materializer.PandasMaterializer.handle_input" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads pd.Dataframe from a parquet file.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="zenml.materializers.pandas_materializer.PandasMaterializer.write_dataframe">
-<span class="sig-name descname"><span class="pre">write_dataframe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'data.csv'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.materializers.pandas_materializer.PandasMaterializer.write_dataframe" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="zenml.materializers.pandas_materializer.PandasMaterializer.handle_return">
+<span class="sig-name descname"><span class="pre">handle_return</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">pandas.core.frame.DataFrame</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.materializers.pandas_materializer.PandasMaterializer.handle_return" title="Permalink to this definition">¶</a></dt>
 <dd><p>Writes a pandas dataframe to the specified filename.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>df</strong> – The pandas dataframe to write.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="zenml-materializers-pytorch-lightning-materializer-module">
+<h2>zenml.materializers.pytorch_lightning_materializer module<a class="headerlink" href="#zenml-materializers-pytorch-lightning-materializer-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="zenml-materializers-pytorch-materializer-module">
+<h2>zenml.materializers.pytorch_materializer module<a class="headerlink" href="#zenml-materializers-pytorch-materializer-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.materializers.spec_materializer_registry">
+<span id="zenml-materializers-spec-materializer-registry-module"></span><h2>zenml.materializers.spec_materializer_registry module<a class="headerlink" href="#module-zenml.materializers.spec_materializer_registry" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.materializers.spec_materializer_registry.SpecMaterializerRegistry">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.materializers.spec_materializer_registry.</span></span><span class="sig-name descname"><span class="pre">SpecMaterializerRegistry</span></span><a class="headerlink" href="#zenml.materializers.spec_materializer_registry.SpecMaterializerRegistry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Matches spec of a step to a materializer.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.materializers.spec_materializer_registry.SpecMaterializerRegistry.get_materializer_types">
+<span class="sig-name descname"><span class="pre">get_materializer_types</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">BaseMaterializer</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.materializers.spec_materializer_registry.SpecMaterializerRegistry.get_materializer_types" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all registered materializers.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.materializers.spec_materializer_registry.SpecMaterializerRegistry.get_single_materializer_type">
+<span class="sig-name descname"><span class="pre">get_single_materializer_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">BaseMaterializer</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.materializers.spec_materializer_registry.SpecMaterializerRegistry.get_single_materializer_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets a single pre-registered materializer type based on <cite>key</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.materializers.spec_materializer_registry.SpecMaterializerRegistry.is_registered">
+<span class="sig-name descname"><span class="pre">is_registered</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#zenml.materializers.spec_materializer_registry.SpecMaterializerRegistry.is_registered" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns true if key type is registered, else returns False.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.materializers.spec_materializer_registry.SpecMaterializerRegistry.register_materializer_type">
+<span class="sig-name descname"><span class="pre">register_materializer_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">BaseMaterializer</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.materializers.spec_materializer_registry.SpecMaterializerRegistry.register_materializer_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registers a new materializer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>df</strong> – The pandas dataframe to write.</p></li>
-<li><p><strong>filename</strong> – The output filename.</p></li>
+<li><p><strong>key</strong> – Name of input or output parameter.</p></li>
+<li><p><strong>type</strong> – A BaseMaterializer subclass.</p></li>
 </ul>
 </dd>
 </dl>
@@ -309,6 +430,9 @@ of different materializers</p>
 
 </dd></dl>
 
+</div>
+<div class="section" id="zenml-materializers-tf-dataset-materializer-module">
+<h2>zenml.materializers.tf_dataset_materializer module<a class="headerlink" href="#zenml-materializers-tf-dataset-materializer-module" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="module-zenml.materializers">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.materializers" title="Permalink to this headline">¶</a></h2>

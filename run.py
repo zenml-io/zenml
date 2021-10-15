@@ -13,69 +13,103 @@
 #  permissions and limitations under the License.
 
 import os
+from typing import Type
 
-import apache_beam as beam
+os.environ["ZENML_DEBUG"] = "true"
 import pandas as pd
 
 from zenml import pipeline
-from zenml.annotations import Input, Output, Step
-from zenml.artifacts.data_artifact import DataArtifact
+from zenml.materializers.pandas_materializer import PandasMaterializer
 from zenml.steps import step
+from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps.step_output import Output
+import tensorflow as tf
 
 
-@step(name="SimplestStepEver")
-def SimplestStepEver(
-    basic_param_1: int,
-    basic_param_2: str,
-) -> int:
-    return basic_param_1 + int(basic_param_2)
+class StepConfig(BaseStepConfig):
+    basic_param_1: int = 1
+    basic_param_2: str = 2
 
 
-@step(name="data_ingest")
-def DataIngestionStep(
-    input_random_number: Input[int],
-    output_artifact: Output[DataArtifact],
-    uri: str,
+class PandasJSONMaterializer(PandasMaterializer):
+    DATA_FILENAME = "data.json"
+
+    def handle_input(self, data_type: Type) -> pd.DataFrame:
+        """Reads all files inside the artifact directory and concatenates
+        them to a pandas dataframe."""
+        return pd.read_json(os.path.join(self.artifact.uri, self.DATA_FILENAME))
+
+    def handle_return(self, df: pd.DataFrame):
+        """Writes a pandas dataframe to the specified filename.
+
+        Args:
+            df: The pandas dataframe to write.
+        """
+        filepath = os.path.join(self.artifact.uri, self.DATA_FILENAME)
+        df.to_json(filepath)
+
+
+@step
+def number_returner(
+    config: StepConfig,
+) -> Output(number=int, non_number=int):
+    return config.basic_param_1 + int(config.basic_param_2), "test"
+
+
+@step
+def import_dataframe_csv(sum: int) -> pd.DataFrame:
+    print(sum)
+    return pd.DataFrame({"sum": [sum]})
+
+
+@step
+def import_dataframe_json(sum: int) -> pd.DataFrame:
+    return pd.DataFrame({"sum": [sum]})
+
+
+@step
+def tf_dataset_step() -> tf.data.Dataset:
+    return tf.data.Dataset.from_tensor_slices([8, 3, 0, 8, 2, 1])
+
+
+@step
+def last_step_1(df: pd.DataFrame, dataset: tf.data.Dataset) -> pd.DataFrame:
+    for e in dataset:
+        print(e)
+    return df
+
+
+@step
+def last_step_2(df: pd.DataFrame) -> pd.DataFrame:
+    return df
+
+
+@pipeline
+def my_pipeline(
+    step_1,
+    step_2_1,
+    step_2_2,
+    step_3_1,
+    step_3_2,
+    tf_dataset,
 ):
-    df = pd.read_csv(uri)
-    output_artifact.materializers.pandas.write_dataframe(df)
+    number, non_number = step_1()
+    df_csv = step_2_1(sum=number)
+    df_json = step_2_2(sum=number)
 
-
-@step(name="split")
-def DistSplitStep(
-    input_artifact: Input[DataArtifact], output_artifact: Output[DataArtifact]
-):
-    with beam.Pipeline() as p:
-        header, data = input_artifact.materializers.beam.read_text(p)
-        output_artifact.materializers.beam.write_text(data, header=header)
-
-
-@step(name="preprocessing")
-def InMemPreprocesserStep(
-    input_artifact: Input[DataArtifact], output_artifact: Output[DataArtifact]
-):
-    data = input_artifact.materializers.pandas.read_dataframe()
-    output_artifact.materializers.pandas.write_dataframe(data)
-
-
-@pipeline(name="my_pipeline")
-def SplitPipeline(
-    simple_step: Step[SimplestStepEver],
-    data_step: Step[DataIngestionStep],
-    split_step: Step[DistSplitStep],
-    preprocesser_step: Step[InMemPreprocesserStep],
-):
-    data_step(input_random_number=simple_step.outputs.return_output)
-    split_step(input_artifact=data_step.outputs.output_artifact)
-    preprocesser_step(input_artifact=split_step.outputs.output_artifact)
+    dataset = tf_dataset()
+    step_3_1(df=df_csv, dataset=dataset)
+    step_3_2(df=df_json)
 
 
 # Pipeline
-split_pipeline = SplitPipeline(
-    simple_step=SimplestStepEver(basic_param_1=2, basic_param_2="3"),
-    data_step=DataIngestionStep(uri=os.getenv("test_data")),
-    split_step=DistSplitStep(),
-    preprocesser_step=InMemPreprocesserStep(),
+split_pipeline = my_pipeline(
+    step_1=number_returner(config=StepConfig(basic_param_2="2")),
+    step_2_1=import_dataframe_csv(),
+    step_2_2=import_dataframe_json(),
+    step_3_1=last_step_1(),
+    step_3_2=last_step_2(),
+    tf_dataset=tf_dataset_step(),
 )
 
 # needed for airflow

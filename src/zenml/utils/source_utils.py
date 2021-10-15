@@ -204,10 +204,12 @@ def resolve_class(class_: Type) -> str:
         return resolve_standard_source(initial_source)
 
     # Get the full module path relative to the repository
-    file_path = inspect.getfile(class_)
-    module_source = get_module_source_from_file_path(file_path)
-
-    class_source = module_source + "." + class_.__name__
+    if initial_source.startswith("__main__"):
+        class_source = initial_source
+    else:
+        file_path = inspect.getfile(class_)
+        module_source = get_module_source_from_file_path(file_path)
+        class_source = module_source + "." + class_.__name__
     return class_source
 
 
@@ -218,7 +220,8 @@ def load_source_path_class(source: str) -> Type:
     Args:
         source: class_source e.g. this.module.Class[@sha]
     """
-    source = source.split("@")[0]
+    if "@" in source:
+        source = source.split("@")[0]
     logger.debug(
         "Unpinned step found with no git sha. Attempting to "
         "load class from current repository state."

@@ -12,15 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.annotations.base_annotations import BaseAnnotation
-from zenml.artifacts.base_artifact import BaseArtifact
+from typing import NamedTuple, Tuple, Type
 
-# General Artifact Annotations
 
-Input = type(
-    "Input",
-    (BaseAnnotation,),
-    {"VALID_TYPES": [BaseArtifact, int, float, str]},
-)
+class Output(object):
+    """A named tuple with a default name that cannot be overriden."""
 
-Output = type("Output", (BaseAnnotation,), {"VALID_TYPES": [BaseArtifact]})
+    def __init__(self, **kwargs):
+        self.outputs = NamedTuple("ZenOutput", **kwargs)
+
+    def items(self) -> Tuple[str, Type]:
+        """Yields a tuple of type (output_name, output_type)."""
+        yield from self.outputs.__annotations__.items()

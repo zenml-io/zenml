@@ -12,14 +12,6 @@ zenml.utils.analytics\_utils module
    :undoc-members:
    :show-inheritance:
 
-zenml.utils.exceptions module
------------------------------
-
-.. automodule:: zenml.utils.exceptions
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 zenml.utils.path\_utils module
 ------------------------------
 

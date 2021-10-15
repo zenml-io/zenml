@@ -30,12 +30,6 @@ logger = get_logger(__name__)
 
 # EVENTS
 
-# Datasources
-
-GET_DATASOURCES = "Datasources listed"
-
-CREATE_DATASOURCE = "Datasource created"
-
 # Functions
 
 CREATE_STEP = "Step created"
@@ -47,8 +41,6 @@ GET_STEP_VERSION = "Step listed"
 # Pipelines
 
 CREATE_PIPELINE = "Pipeline created"
-
-REGISTER_PIPELINE = "Pipeline registered"
 
 RUN_PIPELINE = "Pipeline run"
 
@@ -86,7 +78,21 @@ def get_segment_key() -> str:
         logger.debug("Failed to get segment write key", exc_info=True)
 
 
-analytics.write_key = get_segment_key()
+def initialize_telemetry():
+    """Initializes telemetry with the right key"""
+    if analytics.write_key is None:
+        analytics.write_key = get_segment_key()
+
+
+def in_docker():
+    """Returns: True if running in a Docker container, else False"""
+    # TODO [MEDIUM]: Make this more reliable and add test.
+    try:
+        with open("/proc/1/cgroup", "rt") as ifh:
+            info = ifh.read()
+            return "docker" in info or "kubepod" in info
+    except (FileNotFoundError, Exception):
+        return False
 
 
 def get_system_info() -> Dict:
@@ -132,6 +138,10 @@ def track_event(event: str, metadata: Dict = None):
         metadata: Dict of metadata to track.
     """
     try:
+        assert (
+            analytics.write_key is not None
+        ), "Analytics key not set but trying to make telemetry call."
+
         gc = GlobalConfig()
         logger.debug(f"Analytics opt-in: {gc.analytics_opt_in}.")
 
@@ -143,7 +153,7 @@ def track_event(event: str, metadata: Dict = None):
 
         # add basics
         metadata.update(get_system_info())
-        metadata.update({"version": __version__})
+        metadata.update({"in_docker": in_docker(), "version": __version__})
 
         analytics.track(gc.user_id, event, metadata)
         logger.debug(
@@ -153,7 +163,6 @@ def track_event(event: str, metadata: Dict = None):
     except Exception as e:
         # We should never fail main thread
         logger.debug(f"Analytics failed due to: {e}")
-        return
 
 
 def parametrized(dec):

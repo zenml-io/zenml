@@ -13,7 +13,7 @@
     <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="zenml.stacks package" href="zenml.stacks.html" />
+    <link rel="next" title="zenml.post_execution package" href="zenml.post_execution.html" />
     <link rel="prev" title="zenml.orchestrators.local package" href="zenml.orchestrators.local.html" />
 <meta charset='utf-8'>
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
@@ -88,7 +88,7 @@
     </a>
   </li>
   <li>
-    <a href="zenml.stacks.html" title="Next Chapter: zenml.stacks package"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">zenml.stacks package &raquo;</span>
+    <a href="zenml.post_execution.html" title="Next Chapter: zenml.post_execution package"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">zenml.post_ex... &raquo;</span>
     </a>
   </li>
               
@@ -135,11 +135,6 @@
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Base ZenML pipeline.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipeline.INPUT_SPEC">
-<span class="sig-name descname"><span class="pre">INPUT_SPEC</span></span><em class="property"> <span class="pre">=</span> <span class="pre">{}</span></em><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.INPUT_SPEC" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
 <dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipeline.NAME">
 <span class="sig-name descname"><span class="pre">NAME</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'BasePipeline'</span></em><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.NAME" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -152,38 +147,32 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipeline.connect">
 <em class="property"><span class="pre">abstract</span> </em><span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.connect" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipeline.get_executable">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">get_executable</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.get_executable" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipeline.inputs">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">inputs</span></span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.inputs" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Function that connects inputs and outputs of the pipeline steps.</p>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipeline.name">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.name" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.name" title="Permalink to this definition">¶</a></dt>
 <dd><p>Name of pipeline is always equal to self.NAME</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipeline.run">
 <span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.run" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Runs the pipeline using the orchestrator of the pipeline stack.</p>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipeline.stack">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">stack</span></span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.stack" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">stack</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="zenml.stacks.html#zenml.stacks.base_stack.BaseStack" title="zenml.stacks.base_stack.BaseStack"><span class="pre">zenml.stacks.base_stack.BaseStack</span></a></em><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.stack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the stack for this pipeline.</p>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipeline.steps">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">steps</span></span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.steps" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">steps</span></span><em class="property"><span class="pre">:</span> <span class="pre">Dict</span></em><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.steps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dictionary of pipeline steps.</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -191,6 +180,7 @@
 <dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipelineMeta">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.pipelines.base_pipeline.</span></span><span class="sig-name descname"><span class="pre">BasePipelineMeta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bases</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dct</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipelineMeta" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></p>
+<p>Pipeline Metaclass responsible for validating the pipeline definition.</p>
 </dd></dl>
 
 </div>
@@ -198,13 +188,16 @@
 <span id="zenml-pipelines-pipeline-decorator-module"></span><h2>zenml.pipelines.pipeline_decorator module<a class="headerlink" href="#module-zenml.pipelines.pipeline_decorator" title="Permalink to this headline">¶</a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="zenml.pipelines.pipeline_decorator.pipeline">
-<span class="sig-prename descclassname"><span class="pre">zenml.pipelines.pipeline_decorator.</span></span><span class="sig-name descname"><span class="pre">pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.pipeline_decorator.pipeline" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">zenml.pipelines.pipeline_decorator.</span></span><span class="sig-name descname"><span class="pre">pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">_func</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">function</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#zenml.pipelines.base_pipeline.BasePipeline" title="zenml.pipelines.base_pipeline.BasePipeline"><span class="pre">zenml.pipelines.base_pipeline.BasePipeline</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.pipelines.pipeline_decorator.pipeline" title="Permalink to this definition">¶</a></dt>
 <dd><p>Outer decorator function for the creation of a ZenML pipeline</p>
 <p>In order to be able work with parameters such as “name”, it features a
 nested decorator structure.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>name</strong> – str, the given name for the pipeline</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>_func</strong> – Optional func from outside.</p></li>
+<li><p><strong>name</strong> – str, the given name for the pipeline</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>the inner decorator which creates the pipeline class based on the
