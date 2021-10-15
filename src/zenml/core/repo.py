@@ -14,10 +14,9 @@
 """Base ZenML repository"""
 
 import os
-from typing import List, Optional, Type, Union
+from typing import List
 
 from git import InvalidGitRepositoryError
-from tfx.dsl.compiler.constants import PIPELINE_CONTEXT_TYPE_NAME
 
 from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
 from zenml.config.global_config import GlobalConfig
@@ -31,13 +30,7 @@ from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.post_execution.pipeline import PipelineView
 from zenml.stacks.base_stack import BaseStack
 from zenml.utils import path_utils
-from zenml.utils.analytics_utils import (
-    CREATE_REPO,
-    GET_PIPELINES,
-    GET_STEP_VERSION,
-    GET_STEPS_VERSIONS,
-    track,
-)
+from zenml.utils.analytics_utils import CREATE_REPO, GET_PIPELINES, track
 
 logger = get_logger(__name__)
 
@@ -190,140 +183,10 @@ class Repository:
         return self.service.get_stack(self.get_active_stack_key())
 
     @track(event=GET_PIPELINES)
-    def get_pipelines(self):
+    def get_pipelines(self) -> List[PipelineView]:
         """Gets list of all pipelines."""
         metadata_store = self.get_active_stack().metadata_store
-
-        pipelines = []
-        for pipeline_context in metadata_store.store.get_contexts_by_type(
-            PIPELINE_CONTEXT_TYPE_NAME
-        ):
-            pipelines.append(
-                PipelineView(
-                    pipeline_context.id, pipeline_context.name, metadata_store
-                )
-            )
-
-        return pipelines
-
-    def get_pipeline_by_name(self, pipeline_name: str = None):
-        """
-        Loads a pipeline just by its name.
-
-        Args:
-            pipeline_name (str): Name of pipeline.
-        """
-        raise NotImplementedError
-        # from zenml.pipelines import BasePipeline
-        #
-        # yamls = self.get_pipeline_file_paths()
-        # for y in yamls:
-        #     n = BasePipeline.get_name_from_pipeline_name(os.path.basename(y))
-        #     if n == pipeline_name:
-        #         c = yaml_utils.read_yaml(y)
-        #         return BasePipeline.from_config(c)
-
-    def get_pipelines_by_type(self, type_filter: List[str]) -> List:
-        """
-        Gets list of pipelines filtered by type.
-
-        Args:
-            type_filter (list): list of types to filter by.
-        """
-        raise NotImplementedError
-        # pipelines = self.get_pipelines()
-        # return [p for p in pipelines if p.PIPELINE_TYPE in type_filter]
-
-    def get_pipeline_names(self) -> Optional[List[str]]:
-        """Gets list of pipeline (unique) names"""
-        raise NotImplementedError
-        # from zenml.pipelines import BasePipeline
-        #
-        # yamls = self.get_pipeline_file_paths(only_file_names=True)
-        # return [BasePipeline.get_name_from_pipeline_name(p) for p in yamls]
-
-    @track(event=GET_STEP_VERSION)
-    def get_step_by_version(self, step_type: Union[Type, str], version: str):
-        """
-        Gets a Step object by version. There might be many objects of a
-        particular Step registered in many pipelines. This function just
-        returns the first configuration that it matches.
-
-        Args:
-            step_type: either a string specifying full source of the step or a
-            python class type.
-            version: either sha pin or standard ZenML version pin.
-        """
-        raise NotImplementedError
-        # from zenml.steps.base_step import BaseStep
-        # from zenml.utils import source_utils
-        #
-        # type_str = source_utils.get_module_source_from_class(step_type)
-        #
-        # for file_path in self.get_pipeline_file_paths():
-        #     c = yaml_utils.read_yaml(file_path)
-        #     for step_name, step_config in c[keys.GlobalKeys.PIPELINE][
-        #         keys.PipelineKeys.STEPS
-        #     ].items():
-        #         # Get version from source
-        #         class_ = source_utils.get_class_source_from_source(
-        #             step_config[keys.StepKeys.SOURCE]
-        #         )
-        #         source_version = source_utils.get_pin_from_source(
-        #             step_config[keys.StepKeys.SOURCE]
-        #         )
-        #
-        #         if class_ == type_str and version == source_version:
-        #             return BaseStep.from_config(step_config)
-
-    def get_step_versions_by_type(self, step_type: Union[Type, str]):
-        """
-        List all registered steps in repository by step_type.
-
-        Args:
-            step_type: either a string specifying full source of the step or a
-            python class type.
-        """
-        raise NotImplementedError
-        # from zenml.utils import source_utils
-        #
-        # type_str = source_utils.get_module_source_from_class(step_type)
-        #
-        # steps_dict = self.get_step_versions()
-        # if type_str not in steps_dict:
-        #     logger.warning(
-        #         f"Type {type_str} not available. Available types: "
-        #         f"{list(steps_dict.keys())}"
-        #     )
-        #     return
-        # return steps_dict[type_str]
-
-    @track(event=GET_STEPS_VERSIONS)
-    def get_step_versions(self):
-        """List all registered steps in repository"""
-        raise NotImplementedError
-        # from zenml.utils import source_utils
-        #
-        # steps_dict = {}
-        # for file_path in self.get_pipeline_file_paths():
-        #     c = yaml_utils.read_yaml(file_path)
-        #     for step_name, step_config in c[keys.GlobalKeys.PIPELINE][
-        #         keys.PipelineKeys.STEPS
-        #     ].items():
-        #         # Get version from source
-        #         version = source_utils.get_pin_from_source(
-        #             step_config[keys.StepKeys.SOURCE]
-        #         )
-        #         class_ = source_utils.get_class_source_from_source(
-        #             step_config[keys.StepKeys.SOURCE]
-        #         )
-        #
-        #         # Add to set of versions
-        #         if class_ in steps_dict:
-        #             steps_dict[class_].add(version)
-        #         else:
-        #             steps_dict[class_] = {version}
-        # return steps_dict
+        return metadata_store.get_pipelines()
 
     def clean(self):
         """Deletes associated metadata store, pipelines dir and artifacts"""

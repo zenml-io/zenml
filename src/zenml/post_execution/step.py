@@ -1,15 +1,25 @@
+#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Dict, List
 
-from zenml.artifacts.base_artifact import MATERIALIZERS_PROPERTY_KEY
 from zenml.enums import ExecutionStatus
-from zenml.logger import get_logger
 from zenml.post_execution.artifact import ArtifactView
 
 if TYPE_CHECKING:
     from zenml.metadata.base_metadata_store import BaseMetadataStore
-
-logger = get_logger(__name__)
 
 
 class StepView:
@@ -70,15 +80,7 @@ class StepView:
     @property
     def status(self) -> ExecutionStatus:
         """Returns the current status of the step."""
-        proto = self._metadata_store.store.get_executions_by_id([self._id])[0]
-        state = proto.last_known_state
-
-        if state == proto.COMPLETE or state == proto.CACHED:
-            return ExecutionStatus.COMPLETED
-        elif state == proto.RUNNING:
-            return ExecutionStatus.RUNNING
-        else:
-            return ExecutionStatus.FAILED
+        return self._metadata_store.get_step_status(self)
 
     @property
     def inputs(self) -> List[ArtifactView]:
@@ -158,45 +160,11 @@ class StepView:
             # we already fetched inputs/outputs, no need to do anything
             return
 
-        # maps artifact types to their string representation
-        artifact_type_mapping = {
-            type_.id: type_.name
-            for type_ in self._metadata_store.store.get_artifact_types()
-        }
-
-        events = self._metadata_store.store.get_events_by_execution_ids(
-            [self._id]
-        )
-        artifacts = self._metadata_store.store.get_artifacts_by_id(
-            [event.artifact_id for event in events]
+        self._inputs, self._outputs = self._metadata_store.get_step_artifacts(
+            self
         )
 
-        for event_proto, artifact_proto in zip(events, artifacts):
-            artifact_type = artifact_type_mapping[artifact_proto.type_id]
-            artifact_name = event_proto.path.steps[0].key
-
-            materializer = artifact_proto.properties[
-                MATERIALIZERS_PROPERTY_KEY
-            ].string_value
-
-            artifact = ArtifactView(
-                id_=event_proto.artifact_id,
-                type_=artifact_type,
-                uri=artifact_proto.uri,
-                materializer=materializer,
-            )
-
-            if event_proto.type == event_proto.INPUT:
-                self._inputs[artifact_name] = artifact
-            elif event_proto.type == event_proto.OUTPUT:
-                self._outputs[artifact_name] = artifact
-
-        logger.debug(
-            "Fetched %d inputs and %d outputs for step '%s'.",
-            len(self._inputs),
-            len(self._outputs),
-            self._name,
-        )
+        # TODO: ordering
 
     def __repr__(self) -> str:
         """Returns a string representation of this step."""

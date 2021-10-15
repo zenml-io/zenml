@@ -1,3 +1,17 @@
+#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Dict, List
 
@@ -99,39 +113,7 @@ class PipelineRunView:
             # we already fetched the steps, no need to do anything
             return
 
-        # maps type_id's to step names
-        step_type_mapping: Dict[int, str] = {
-            type_.id: type_.name
-            for type_ in self._metadata_store.store.get_execution_types()
-        }
-
-        # reverse the executions as they get returned in reverse chronological
-        # order from the metadata store
-        for execution in reversed(self._executions):
-            step_name = step_type_mapping[execution.type_id]
-            # TODO [HIGH]: why is the name like this?
-            step_prefix = "zenml.steps.base_step."
-            if step_name.startswith(step_prefix):
-                step_name = step_name[len(step_prefix) :]  # TODO [LOW]: black
-
-            step_parameters = {
-                k: v.string_value  # TODO [LOW]: Can we get the actual type?
-                for k, v in execution.custom_properties.items()
-            }
-
-            step = StepView(
-                id_=execution.id,
-                name=step_name,
-                parameters=step_parameters,
-                metadata_store=self._metadata_store,
-            )
-            self._steps[step_name] = step
-
-        logger.debug(
-            "Fetched %d steps for pipeline run '%s'.",
-            len(self._steps),
-            self._name,
-        )
+        self._steps = self._metadata_store.get_pipeline_run_steps(self)
 
     def __repr__(self) -> str:
         """Returns a string representation of this pipeline run."""

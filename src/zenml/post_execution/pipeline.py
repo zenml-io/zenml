@@ -1,6 +1,18 @@
-from typing import TYPE_CHECKING, List
+#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
 
-from tfx.dsl.compiler.constants import PIPELINE_RUN_CONTEXT_TYPE_NAME
+from typing import TYPE_CHECKING, List
 
 from zenml.logger import get_logger
 from zenml.post_execution.pipeline_run import PipelineRunView
@@ -47,45 +59,10 @@ class PipelineView:
         The runs are returned in chronological order, so the latest
         run will be the last element in this list.
         """
-        self._ensure_runs_fetched()
+        if not self._runs:
+            self._runs = self._metadata_store.get_pipeline_runs(self)
+
         return self._runs
-
-    def _ensure_runs_fetched(self) -> None:
-        """Fetches all runs for this pipeline from the metadata store."""
-        if self._runs:
-            # we already fetched the runs, no need to do anything
-            return
-
-        all_pipeline_runs = self._metadata_store.store.get_contexts_by_type(
-            PIPELINE_RUN_CONTEXT_TYPE_NAME
-        )
-
-        for run in all_pipeline_runs:
-            run_executions = (
-                self._metadata_store.store.get_executions_by_context(run.id)
-            )
-            if run_executions:
-                associated_contexts = (
-                    self._metadata_store.store.get_contexts_by_execution(
-                        run_executions[0].id
-                    )
-                )
-                for context in associated_contexts:
-                    if context.id == self._id:
-                        # Run is of this pipeline
-                        self._runs.append(
-                            PipelineRunView(
-                                id_=run.id,
-                                name=run.name,
-                                executions=run_executions,
-                                metadata_store=self._metadata_store,
-                            )
-                        )
-                        break
-
-        logger.debug(
-            "Fetched %d pipeline runs for '%s'.", len(self._runs), self._name
-        )
 
     def __repr__(self) -> str:
         """Returns a string representation of this pipeline."""
