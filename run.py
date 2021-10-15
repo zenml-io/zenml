@@ -23,6 +23,7 @@ from zenml.materializers.pandas_materializer import PandasMaterializer
 from zenml.steps import step
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
+import tensorflow as tf
 
 
 class StepConfig(BaseStepConfig):
@@ -67,7 +68,14 @@ def import_dataframe_json(sum: int) -> pd.DataFrame:
 
 
 @step
-def last_step_1(df: pd.DataFrame) -> pd.DataFrame:
+def tf_dataset_step() -> tf.data.Dataset:
+    return tf.data.Dataset.from_tensor_slices([8, 3, 0, 8, 2, 1])
+
+
+@step
+def last_step_1(df: pd.DataFrame, dataset: tf.data.Dataset) -> pd.DataFrame:
+    for e in dataset:
+        print(e)
     return df
 
 
@@ -83,11 +91,14 @@ def my_pipeline(
     step_2_2,
     step_3_1,
     step_3_2,
+    tf_dataset,
 ):
     number, non_number = step_1()
     df_csv = step_2_1(sum=number)
     df_json = step_2_2(sum=number)
-    step_3_1(df=df_csv)
+
+    dataset = tf_dataset()
+    step_3_1(df=df_csv, dataset=dataset)
     step_3_2(df=df_json)
 
 
@@ -95,11 +106,10 @@ def my_pipeline(
 split_pipeline = my_pipeline(
     step_1=number_returner(config=StepConfig(basic_param_2="2")),
     step_2_1=import_dataframe_csv(),
-    step_2_2=import_dataframe_json().with_return_materializers(
-        PandasJSONMaterializer
-    ),
+    step_2_2=import_dataframe_json(),
     step_3_1=last_step_1(),
     step_3_2=last_step_2(),
+    tf_dataset=tf_dataset_step(),
 )
 
 # needed for airflow
