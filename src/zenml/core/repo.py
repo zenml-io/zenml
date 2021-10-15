@@ -17,6 +17,7 @@ import os
 from typing import List, Optional, Type, Union
 
 from git import InvalidGitRepositoryError
+from tfx.dsl.compiler.constants import PIPELINE_CONTEXT_TYPE_NAME
 
 from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
 from zenml.config.global_config import GlobalConfig
@@ -27,6 +28,7 @@ from zenml.exceptions import InitializationException
 from zenml.logger import get_logger
 from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
+from zenml.post_execution.pipeline import PEPipeline
 from zenml.stacks.base_stack import BaseStack
 from zenml.utils import path_utils
 from zenml.utils.analytics_utils import (
@@ -190,7 +192,19 @@ class Repository:
     @track(event=GET_PIPELINES)
     def get_pipelines(self):
         """Gets list of all pipelines."""
-        raise NotImplementedError
+        metadata_store = self.get_active_stack().metadata_store
+
+        pipelines = []
+        for pipeline_context in metadata_store.store.get_contexts_by_type(
+            PIPELINE_CONTEXT_TYPE_NAME
+        ):
+            pipelines.append(
+                PEPipeline(
+                    pipeline_context.id, pipeline_context.name, metadata_store
+                )
+            )
+
+        return pipelines
 
     def get_pipeline_by_name(self, pipeline_name: str = None):
         """
