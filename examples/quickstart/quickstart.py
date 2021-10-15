@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 
 
-import keras
 import numpy as np
 import tensorflow as tf
 
@@ -56,7 +55,7 @@ def trainer(
     config: TrainerConfig,
     X_train: np.ndarray,
     y_train: np.ndarray,
-) -> keras.Model:
+) -> tf.keras.Model:
     """Train a neural net from scratch to recognise MNIST digits return our
     model or the learner"""
     model = tf.keras.Sequential(
@@ -87,7 +86,7 @@ def trainer(
 def evaluator(
     X_test: np.ndarray,
     y_test: np.ndarray,
-    model: keras.Model,
+    model: tf.keras.Model,
 ) -> np.ndarray:
     """Calculate the loss for the model for each epoch in a graph"""
 
