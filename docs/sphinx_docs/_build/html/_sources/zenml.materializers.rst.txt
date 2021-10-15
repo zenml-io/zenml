@@ -20,10 +20,18 @@ zenml.materializers.beam\_materializer module
    :undoc-members:
    :show-inheritance:
 
-zenml.materializers.json\_materializer module
----------------------------------------------
+zenml.materializers.built\_in\_materializer module
+--------------------------------------------------
 
-.. automodule:: zenml.materializers.json_materializer
+.. automodule:: zenml.materializers.built_in_materializer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.materializers.default\_materializer\_registry module
+----------------------------------------------------------
+
+.. automodule:: zenml.materializers.default_materializer_registry
    :members:
    :undoc-members:
    :show-inheritance:
@@ -36,10 +44,10 @@ zenml.materializers.keras\_meterializer module
    :undoc-members:
    :show-inheritance:
 
-zenml.materializers.materializer\_factory module
-------------------------------------------------
+zenml.materializers.numpy\_materializer module
+----------------------------------------------
 
-.. automodule:: zenml.materializers.materializer_factory
+.. automodule:: zenml.materializers.numpy_materializer
    :members:
    :undoc-members:
    :show-inheritance:
@@ -48,6 +56,38 @@ zenml.materializers.pandas\_materializer module
 -----------------------------------------------
 
 .. automodule:: zenml.materializers.pandas_materializer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.materializers.pytorch\_lightning\_materializer module
+-----------------------------------------------------------
+
+.. automodule:: zenml.materializers.pytorch_lightning_materializer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.materializers.pytorch\_materializer module
+------------------------------------------------
+
+.. automodule:: zenml.materializers.pytorch_materializer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.materializers.spec\_materializer\_registry module
+-------------------------------------------------------
+
+.. automodule:: zenml.materializers.spec_materializer_registry
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zenml.materializers.tf\_dataset\_materializer module
+----------------------------------------------------
+
+.. automodule:: zenml.materializers.tf_dataset_materializer
    :members:
    :undoc-members:
    :show-inheritance:

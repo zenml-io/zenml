@@ -122,14 +122,6 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="zenml.html">zenml package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="zenml.html#subpackages">Subpackages</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="zenml.annotations.html">zenml.annotations package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="zenml.annotations.html#submodules">Submodules</a></li>
-<li class="toctree-l4"><a class="reference internal" href="zenml.annotations.html#module-zenml.annotations.artifact_annotations">zenml.annotations.artifact_annotations module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="zenml.annotations.html#module-zenml.annotations.base_annotations">zenml.annotations.base_annotations module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="zenml.annotations.html#module-zenml.annotations.step_annotations">zenml.annotations.step_annotations module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="zenml.annotations.html#module-zenml.annotations">Module contents</a></li>
-</ul>
-</li>
 <li class="toctree-l3"><a class="reference internal" href="zenml.artifact_stores.html">zenml.artifact_stores package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="zenml.artifact_stores.html#submodules">Submodules</a></li>
 <li class="toctree-l4"><a class="reference internal" href="zenml.artifact_stores.html#module-zenml.artifact_stores.base_artifact_store">zenml.artifact_stores.base_artifact_store module</a></li>
@@ -191,10 +183,15 @@
 <li class="toctree-l4"><a class="reference internal" href="zenml.materializers.html#submodules">Submodules</a></li>
 <li class="toctree-l4"><a class="reference internal" href="zenml.materializers.html#module-zenml.materializers.base_materializer">zenml.materializers.base_materializer module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="zenml.materializers.html#module-zenml.materializers.beam_materializer">zenml.materializers.beam_materializer module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="zenml.materializers.html#module-zenml.materializers.json_materializer">zenml.materializers.json_materializer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.materializers.html#module-zenml.materializers.built_in_materializer">zenml.materializers.built_in_materializer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.materializers.html#module-zenml.materializers.default_materializer_registry">zenml.materializers.default_materializer_registry module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="zenml.materializers.html#zenml-materializers-keras-meterializer-module">zenml.materializers.keras_meterializer module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="zenml.materializers.html#module-zenml.materializers.materializer_factory">zenml.materializers.materializer_factory module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.materializers.html#module-zenml.materializers.numpy_materializer">zenml.materializers.numpy_materializer module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="zenml.materializers.html#module-zenml.materializers.pandas_materializer">zenml.materializers.pandas_materializer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.materializers.html#zenml-materializers-pytorch-lightning-materializer-module">zenml.materializers.pytorch_lightning_materializer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.materializers.html#zenml-materializers-pytorch-materializer-module">zenml.materializers.pytorch_materializer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.materializers.html#module-zenml.materializers.spec_materializer_registry">zenml.materializers.spec_materializer_registry module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.materializers.html#zenml-materializers-tf-dataset-materializer-module">zenml.materializers.tf_dataset_materializer module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="zenml.materializers.html#module-zenml.materializers">Module contents</a></li>
 </ul>
 </li>
@@ -221,6 +218,15 @@
 <li class="toctree-l4"><a class="reference internal" href="zenml.pipelines.html#module-zenml.pipelines">Module contents</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="zenml.post_execution.html">zenml.post_execution package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="zenml.post_execution.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.post_execution.html#module-zenml.post_execution.artifact">zenml.post_execution.artifact module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.post_execution.html#module-zenml.post_execution.pipeline">zenml.post_execution.pipeline module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.post_execution.html#module-zenml.post_execution.pipeline_run">zenml.post_execution.pipeline_run module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.post_execution.html#module-zenml.post_execution.step">zenml.post_execution.step module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.post_execution.html#module-zenml.post_execution">Module contents</a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="zenml.stacks.html">zenml.stacks package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="zenml.stacks.html#submodules">Submodules</a></li>
 <li class="toctree-l4"><a class="reference internal" href="zenml.stacks.html#module-zenml.stacks.base_stack">zenml.stacks.base_stack module</a></li>
@@ -229,17 +235,26 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="zenml.steps.html">zenml.steps package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="zenml.steps.html#subpackages">Subpackages</a></li>
 <li class="toctree-l4"><a class="reference internal" href="zenml.steps.html#submodules">Submodules</a></li>
 <li class="toctree-l4"><a class="reference internal" href="zenml.steps.html#module-zenml.steps.base_step">zenml.steps.base_step module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.steps.html#module-zenml.steps.base_step_config">zenml.steps.base_step_config module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="zenml.steps.html#module-zenml.steps.step_decorator">zenml.steps.step_decorator module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.steps.html#module-zenml.steps.step_output">zenml.steps.step_output module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="zenml.steps.html#module-zenml.steps.utils">zenml.steps.utils module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="zenml.steps.html#module-zenml.steps">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="zenml.types.html">zenml.types package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="zenml.types.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.types.html#module-zenml.types.base_type">zenml.types.base_type module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.types.html#module-zenml.types.pytorch_types">zenml.types.pytorch_types module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.types.html#module-zenml.types">Module contents</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="zenml.utils.html">zenml.utils package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="zenml.utils.html#submodules">Submodules</a></li>
 <li class="toctree-l4"><a class="reference internal" href="zenml.utils.html#module-zenml.utils.analytics_utils">zenml.utils.analytics_utils module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="zenml.utils.html#module-zenml.utils.exceptions">zenml.utils.exceptions module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="zenml.utils.html#module-zenml.utils.path_utils">zenml.utils.path_utils module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="zenml.utils.html#module-zenml.utils.source_utils">zenml.utils.source_utils module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="zenml.utils.html#module-zenml.utils.yaml_utils">zenml.utils.yaml_utils module</a></li>

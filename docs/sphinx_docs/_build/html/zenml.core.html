@@ -753,20 +753,19 @@ about a git hash/tag. E.g. <a class="reference external" href="mailto:foo&#46;ba
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="zenml.core.repo.Repository.get_pipeline_by_name">
-<span class="sig-name descname"><span class="pre">get_pipeline_by_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pipeline_name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.core.repo.Repository.get_pipeline_by_name" title="Permalink to this definition">¶</a></dt>
-<dd><p>Loads a pipeline just by its name.</p>
+<dt class="sig sig-object py" id="zenml.core.repo.Repository.get_pipeline">
+<span class="sig-name descname"><span class="pre">get_pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pipeline_name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stack_key</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="zenml.post_execution.html#zenml.post_execution.pipeline.PipelineView" title="zenml.post_execution.pipeline.PipelineView"><span class="pre">zenml.post_execution.pipeline.PipelineView</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.core.repo.Repository.get_pipeline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a pipeline for the given name or <cite>None</cite> if it doesn’t exist.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>pipeline_name</strong> (<em>str</em>) – Name of pipeline.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pipeline_name</strong> – Name of the pipeline.</p></li>
+<li><p><strong>stack_key</strong> – If specified, pipelines in the metadata store of the
+given stack are returned. Otherwise pipelines in the metadata
+store of the currently active stack are returned.</p></li>
+</ul>
 </dd>
 </dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="zenml.core.repo.Repository.get_pipeline_names">
-<span class="sig-name descname"><span class="pre">get_pipeline_names</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.core.repo.Repository.get_pipeline_names" title="Permalink to this definition">¶</a></dt>
-<dd><p>Gets list of pipeline (unique) names</p>
 </dd></dl>
 
 <dl class="py method">
@@ -776,46 +775,9 @@ about a git hash/tag. E.g. <a class="reference external" href="mailto:foo&#46;ba
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="zenml.core.repo.Repository.get_pipelines_by_type">
-<span class="sig-name descname"><span class="pre">get_pipelines_by_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_filter</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span></span></span><a class="headerlink" href="#zenml.core.repo.Repository.get_pipelines_by_type" title="Permalink to this definition">¶</a></dt>
-<dd><p>Gets list of pipelines filtered by type.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>type_filter</strong> (<em>list</em>) – list of types to filter by.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="zenml.core.repo.Repository.get_service">
 <span class="sig-name descname"><span class="pre">get_service</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#zenml.core.local_service.LocalService" title="zenml.core.local_service.LocalService"><span class="pre">zenml.core.local_service.LocalService</span></a></span></span><a class="headerlink" href="#zenml.core.repo.Repository.get_service" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the active service. For now, always local.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="zenml.core.repo.Repository.get_step_by_version">
-<span class="sig-name descname"><span class="pre">get_step_by_version</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.core.repo.Repository.get_step_by_version" title="Permalink to this definition">¶</a></dt>
-<dd><p>Inner decorator function.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="zenml.core.repo.Repository.get_step_versions">
-<span class="sig-name descname"><span class="pre">get_step_versions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.core.repo.Repository.get_step_versions" title="Permalink to this definition">¶</a></dt>
-<dd><p>Inner decorator function.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="zenml.core.repo.Repository.get_step_versions_by_type">
-<span class="sig-name descname"><span class="pre">get_step_versions_by_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step_type</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Type</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.core.repo.Repository.get_step_versions_by_type" title="Permalink to this definition">¶</a></dt>
-<dd><p>List all registered steps in repository by step_type.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>step_type</strong> – either a string specifying full source of the step or a</p></li>
-<li><p><strong>type.</strong> (<em>python class</em>) – </p></li>
-</ul>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="py method">

@@ -13,7 +13,7 @@
     <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="zenml.steps package" href="zenml.steps.html" />
+    <link rel="prev" title="zenml.types package" href="zenml.types.html" />
 <meta charset='utf-8'>
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
@@ -70,7 +70,6 @@
 <li><a class="reference internal" href="#">zenml.utils package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
 <li><a class="reference internal" href="#module-zenml.utils.analytics_utils">zenml.utils.analytics_utils module</a></li>
-<li><a class="reference internal" href="#module-zenml.utils.exceptions">zenml.utils.exceptions module</a></li>
 <li><a class="reference internal" href="#module-zenml.utils.path_utils">zenml.utils.path_utils module</a></li>
 <li><a class="reference internal" href="#module-zenml.utils.source_utils">zenml.utils.source_utils module</a></li>
 <li><a class="reference internal" href="#module-zenml.utils.yaml_utils">zenml.utils.yaml_utils module</a></li>
@@ -86,7 +85,7 @@
               
                 
   <li>
-    <a href="zenml.steps.html" title="Previous Chapter: zenml.steps package"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; zenml.steps package</span>
+    <a href="zenml.types.html" title="Previous Chapter: zenml.types package"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; zenml.types package</span>
     </a>
   </li>
               
@@ -191,33 +190,6 @@ with arguments:</p>
 </ul>
 </dd>
 </dl>
-</dd></dl>
-
-</div>
-<div class="section" id="module-zenml.utils.exceptions">
-<span id="zenml-utils-exceptions-module"></span><h2>zenml.utils.exceptions module<a class="headerlink" href="#module-zenml.utils.exceptions" title="Permalink to this headline">¶</a></h2>
-<dl class="py exception">
-<dt class="sig sig-object py" id="zenml.utils.exceptions.ArtifactInterfaceError">
-<em class="property"><span class="pre">exception</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.utils.exceptions.</span></span><span class="sig-name descname"><span class="pre">ArtifactInterfaceError</span></span><a class="headerlink" href="#zenml.utils.exceptions.ArtifactInterfaceError" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
-<p>Raises exception when interacting with the Artifact interface
-in an unsupported way.</p>
-</dd></dl>
-
-<dl class="py exception">
-<dt class="sig sig-object py" id="zenml.utils.exceptions.PipelineInterfaceError">
-<em class="property"><span class="pre">exception</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.utils.exceptions.</span></span><span class="sig-name descname"><span class="pre">PipelineInterfaceError</span></span><a class="headerlink" href="#zenml.utils.exceptions.PipelineInterfaceError" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
-<p>Raises exception when interacting with the Pipeline interface
-in an unsupported way.</p>
-</dd></dl>
-
-<dl class="py exception">
-<dt class="sig sig-object py" id="zenml.utils.exceptions.StepInterfaceError">
-<em class="property"><span class="pre">exception</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.utils.exceptions.</span></span><span class="sig-name descname"><span class="pre">StepInterfaceError</span></span><a class="headerlink" href="#zenml.utils.exceptions.StepInterfaceError" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
-<p>Raises exception when interacting with the Step interface
-in an unsupported way.</p>
 </dd></dl>
 
 </div>
@@ -540,8 +512,8 @@ in an unsupported way.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="zenml.utils.path_utils.read_file_contents">
-<span class="sig-prename descclassname"><span class="pre">zenml.utils.path_utils.</span></span><span class="sig-name descname"><span class="pre">read_file_contents</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.path_utils.read_file_contents" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="zenml.utils.path_utils.read_file_contents_as_string">
+<span class="sig-prename descclassname"><span class="pre">zenml.utils.path_utils.</span></span><span class="sig-name descname"><span class="pre">read_file_contents_as_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.path_utils.read_file_contents_as_string" title="Permalink to this definition">¶</a></dt>
 <dd><p>Reads contents of file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -588,7 +560,7 @@ in an unsupported way.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="zenml.utils.path_utils.walk">
-<span class="sig-prename descclassname"><span class="pre">zenml.utils.path_utils.</span></span><span class="sig-name descname"><span class="pre">walk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dir_path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.utils.path_utils.walk" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">zenml.utils.path_utils.</span></span><span class="sig-name descname"><span class="pre">walk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dir_path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.utils.path_utils.walk" title="Permalink to this definition">¶</a></dt>
 <dd><p>Walks down the dir_path.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -601,8 +573,8 @@ in an unsupported way.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="zenml.utils.path_utils.write_file_contents">
-<span class="sig-prename descclassname"><span class="pre">zenml.utils.path_utils.</span></span><span class="sig-name descname"><span class="pre">write_file_contents</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">content</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.path_utils.write_file_contents" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="zenml.utils.path_utils.write_file_contents_as_string">
+<span class="sig-prename descclassname"><span class="pre">zenml.utils.path_utils.</span></span><span class="sig-name descname"><span class="pre">write_file_contents_as_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">content</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.utils.path_utils.write_file_contents_as_string" title="Permalink to this definition">¶</a></dt>
 <dd><p>Writes contents of file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>

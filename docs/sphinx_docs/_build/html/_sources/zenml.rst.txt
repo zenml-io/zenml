@@ -7,7 +7,6 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   zenml.annotations
    zenml.artifact_stores
    zenml.artifacts
    zenml.cli
@@ -18,8 +17,10 @@ Subpackages
    zenml.metadata
    zenml.orchestrators
    zenml.pipelines
+   zenml.post_execution
    zenml.stacks
    zenml.steps
+   zenml.types
    zenml.utils
 
 Submodules
