@@ -23,6 +23,7 @@ def model_artifact_fixture():
     return model_artifact.ModelArtifact()
 
 
-def test_modelartifact_has_its_own_type_name(model_artifact_fixture):
-    """Make sure the constant for TYPE_NAME gets overwritten"""
+def test_model_artifact_class_has_two_constants(model_artifact_fixture):
+    """Check two constants are defined on ModelArtifact class"""
     assert model_artifact_fixture.TYPE_NAME == "model_artifact"
+    assert isinstance(model_artifact_fixture.PROPERTIES, dict)

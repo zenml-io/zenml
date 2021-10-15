@@ -14,6 +14,7 @@
 
 from zenml.artifacts.base_artifact import BaseArtifact
 
+# TODO: [LOW] consider removing this constant if unused
 DEFAULT_FILENAME = "my_model"
 
 
