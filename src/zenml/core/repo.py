@@ -14,7 +14,7 @@
 """Base ZenML repository"""
 
 import os
-from typing import List
+from typing import List, Optional
 
 from git import InvalidGitRepositoryError
 
@@ -183,10 +183,34 @@ class Repository:
         return self.service.get_stack(self.get_active_stack_key())
 
     @track(event=GET_PIPELINES)
-    def get_pipelines(self) -> List[PipelineView]:
-        """Gets list of all pipelines."""
-        metadata_store = self.get_active_stack().metadata_store
+    def get_pipelines(
+        self, stack_key: Optional[str] = None
+    ) -> List[PipelineView]:
+        """Returns a list of all pipelines.
+
+        Args:
+            stack_key: If specified, pipelines in the metadata store of the
+                given stack are returned. Otherwise pipelines in the metadata
+                store of the currently active stack are returned.
+        """
+        stack_key = stack_key or self.get_active_stack_key()
+        metadata_store = self.service.get_stack(stack_key).metadata_store
         return metadata_store.get_pipelines()
+
+    def get_pipeline(
+        self, pipeline_name: str, stack_key: Optional[str] = None
+    ) -> Optional[PipelineView]:
+        """Returns a pipeline for the given name or `None` if it doesn't exist.
+
+        Args:
+            pipeline_name: Name of the pipeline.
+            stack_key: If specified, pipelines in the metadata store of the
+                given stack are returned. Otherwise pipelines in the metadata
+                store of the currently active stack are returned.
+        """
+        stack_key = stack_key or self.get_active_stack_key()
+        metadata_store = self.service.get_stack(stack_key).metadata_store
+        return metadata_store.get_pipeline(pipeline_name)
 
     def clean(self):
         """Deletes associated metadata store, pipelines dir and artifacts"""

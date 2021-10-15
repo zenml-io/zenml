@@ -15,7 +15,7 @@
 import os
 from abc import abstractmethod
 from collections import OrderedDict
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from ml_metadata.metadata_store import metadata_store
 from tfx.dsl.compiler.constants import (
@@ -64,6 +64,7 @@ class BaseMetadataStore(BaseComponent):
         )
 
     def get_pipelines(self) -> List[PipelineView]:
+        """Returns a list of all pipelines stored in this metadata store."""
         pipelines = []
         for pipeline_context in self.store.get_contexts_by_type(
             PIPELINE_CONTEXT_TYPE_NAME
@@ -75,11 +76,29 @@ class BaseMetadataStore(BaseComponent):
             )
             pipelines.append(pipeline)
 
+        logger.debug("Fetched %d pipelines.", len(pipelines))
         return pipelines
+
+    def get_pipeline(self, pipeline_name: str) -> Optional[PipelineView]:
+        """Returns a pipeline for the given name."""
+        pipeline_context = self.store.get_context_by_type_and_name(
+            PIPELINE_CONTEXT_TYPE_NAME, pipeline_name
+        )
+        if pipeline_context:
+            logger.debug("Fetched pipelines with name '%s'", pipeline_name)
+            return PipelineView(
+                id_=pipeline_context.id,
+                name=pipeline_context.name,
+                metadata_store=self,
+            )
+        else:
+            logger.info("No pipelines found for name '%s'", pipeline_name)
+            return None
 
     def get_pipeline_runs(
         self, pipeline: PipelineView
     ) -> List[PipelineRunView]:
+        """Gets all runs for the given pipeline."""
         all_pipeline_runs = self.store.get_contexts_by_type(
             PIPELINE_RUN_CONTEXT_TYPE_NAME
         )
@@ -92,7 +111,7 @@ class BaseMetadataStore(BaseComponent):
                     run_executions[0].id
                 )
                 for context in associated_contexts:
-                    if context.id == pipeline._id:
+                    if context.id == pipeline._id:  # noqa
                         # Run is of this pipeline
                         runs.append(
                             PipelineRunView(
@@ -115,6 +134,7 @@ class BaseMetadataStore(BaseComponent):
     def get_pipeline_run_steps(
         self, pipeline_run: PipelineRunView
     ) -> Dict[str, StepView]:
+        """Gets all steps for the given pipeline run."""
         # maps type_id's to step names
         step_type_mapping: Dict[int, str] = {
             type_.id: type_.name for type_ in self.store.get_execution_types()
@@ -123,7 +143,7 @@ class BaseMetadataStore(BaseComponent):
         steps: Dict[str, StepView] = OrderedDict()
         # reverse the executions as they get returned in reverse chronological
         # order from the metadata store
-        for execution in reversed(pipeline_run._executions):
+        for execution in reversed(pipeline_run._executions):  # noqa
             step_name = step_type_mapping[execution.type_id]
             # TODO [HIGH]: why is the name like this?
             step_prefix = "zenml.steps.base_step."
@@ -152,7 +172,7 @@ class BaseMetadataStore(BaseComponent):
         return steps
 
     def get_step_status(self, step: StepView) -> ExecutionStatus:
-        proto = self.store.get_executions_by_id([step._id])[0]
+        proto = self.store.get_executions_by_id([step._id])[0]  # noqa
         state = proto.last_known_state
 
         if state == proto.COMPLETE or state == proto.CACHED:
@@ -165,12 +185,22 @@ class BaseMetadataStore(BaseComponent):
     def get_step_artifacts(
         self, step: StepView
     ) -> Tuple[Dict[str, ArtifactView], Dict[str, ArtifactView]]:
+        """Returns input and output artifacts for the given step.
+
+        Args:
+            step: The step for which to get the artifacts.
+
+        Returns:
+            A tuple (inputs, outputs) where inputs and outputs
+            are both OrderedDicts mapping artifact names
+            to the input and output artifacts respectively.
+        """
         # maps artifact types to their string representation
         artifact_type_mapping = {
             type_.id: type_.name for type_ in self.store.get_artifact_types()
         }
 
-        events = self.store.get_events_by_execution_ids([step._id])
+        events = self.store.get_events_by_execution_ids([step._id])  # noqa
         artifacts = self.store.get_artifacts_by_id(
             [event.artifact_id for event in events]
         )
