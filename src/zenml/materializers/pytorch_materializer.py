@@ -16,7 +16,6 @@ import os
 from typing import Type, Union
 
 import torch
-from tensorflow import keras
 
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.types.pytorch_types import TorchDict
@@ -29,11 +28,13 @@ class PyTorchMaterializer(BaseMaterializer):
 
     ASSOCIATED_TYPES = [torch.nn.Module, TorchDict]
 
-    def handle_input(self, data_type: Type) -> keras.Model:
+    def handle_input(
+        self, data_type: Type
+    ) -> Union[torch.nn.Module, TorchDict]:
         """Reads and returns a PyTorch model.
 
         Returns:
-            A tf.keras.Model model.
+            A loaded pytorch model.
         """
         super().handle_input(data_type)
         return torch.load(os.path.join(self.artifact.uri, DEFAULT_FILENAME))
@@ -42,7 +43,7 @@ class PyTorchMaterializer(BaseMaterializer):
         """Writes a PyTorch model.
 
         Args:
-            model: A tf.keras.Model model or a dict to pass into model.save
+            model: A torch.nn.Module or a dict to pass into model.save
         """
         super().handle_return(model)
         model.save(os.path.join(self.artifact.uri, DEFAULT_FILENAME))

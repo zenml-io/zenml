@@ -40,3 +40,10 @@ try:
     )
 except ImportError:
     logger.debug("PyTorch not installed.")
+
+try:
+    from zenml.materializers.pytorch_lightning_materializer import (  # noqa
+        PyTorchLightningMaterializer,
+    )
+except ImportError:
+    logger.debug("PyTorch Lightning not installed.")
