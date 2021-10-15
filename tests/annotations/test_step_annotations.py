@@ -12,8 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.annotations import step_annotations  # noqa
+from zenml.annotations import base_annotations, step_annotations
 
 
-def test_me():
-    """A simple test to check a functionality"""
+def test_step_is_subclass_of_base_annotation():
+    """Check Step is a subclass of BaseAnnotation"""
+    assert issubclass(step_annotations.Step, base_annotations.BaseAnnotation)
+
+
+def test_step_has_valid_types_property():
+    """Check that Step has VALID_TYPES property"""
+    assert hasattr(step_annotations.Step, "VALID_TYPES")
+
+
+def test_step_is_named_step():
+    """Check that the Step annotation is named Step"""
+    assert step_annotations.Step.__name__ == "Step"
