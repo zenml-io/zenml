@@ -14,7 +14,7 @@
 
 from click.testing import CliRunner
 
-from zenml.cli.config import opt_in
+from zenml.cli.config import opt_in, opt_out
 
 
 def test_analytics_opt_in_amends_global_config():
@@ -24,5 +24,16 @@ def test_analytics_opt_in_amends_global_config():
         result = runner.invoke(opt_in)
         assert result.exit_code == 0
         assert "Opted in to analytics." in result.output
+        # TODO: [MEDIUM] Check that the config was updated
+        # find the global config file + read the value
+
+
+def test_analytics_opt_out_amends_global_config():
+    """Check to make sure that analytics opt-out amends global config"""
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(opt_out)
+        assert result.exit_code == 0
+        assert "Opted out of analytics." in result.output
         # TODO: [MEDIUM] Check that the config was updated
         # find the global config file + read the value
