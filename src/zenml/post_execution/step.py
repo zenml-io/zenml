@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 from zenml.artifacts.base_artifact import MATERIALIZERS_PROPERTY_KEY
 from zenml.logger import get_logger
 from zenml.metadata.base_metadata_store import BaseMetadataStore
-from zenml.post_execution.artifact import PEArtifact
+from zenml.post_execution.artifact import ArtifactView
 
 logger = get_logger(__name__)
 
@@ -17,7 +17,7 @@ class ExecutionStatus(Enum):
     Running = "Running"
 
 
-class PEStep:
+class StepView:
     """Post-execution step class which can be used to query
     artifact information associated with a pipeline step.
     """
@@ -31,8 +31,8 @@ class PEStep:
     ):
         """Initializes a post-execution step object.
 
-        In most cases `PEStep` objects should not be created manually
-        but retrieved from a `PEPipelineRun` object instead.
+        In most cases `StepView` objects should not be created manually
+        but retrieved from a `PipelineRunView` object instead.
 
         Args:
             id_: The execution id of this step.
@@ -46,8 +46,8 @@ class PEStep:
         self._parameters = parameters
         self._metadata_store = metadata_store
 
-        self._inputs: Dict[str, PEArtifact] = OrderedDict()
-        self._outputs: Dict[str, PEArtifact] = OrderedDict()
+        self._inputs: Dict[str, ArtifactView] = OrderedDict()
+        self._outputs: Dict[str, ArtifactView] = OrderedDict()
 
     @property
     def name(self) -> str:
@@ -86,7 +86,7 @@ class PEStep:
             return ExecutionStatus.Failed
 
     @property
-    def inputs(self) -> List[PEArtifact]:
+    def inputs(self) -> List[ArtifactView]:
         """Returns a list of input artifacts that were used to run this step.
 
         These artifacts are in the same order as defined in the signature of
@@ -100,8 +100,8 @@ class PEStep:
         self._ensure_inputs_outputs_fetched()
         return list(self._inputs.keys())
 
-    def get_input(self, name: str) -> PEArtifact:
-        """Returns a input artifact for the given name.
+    def get_input(self, name: str) -> ArtifactView:
+        """Returns an input artifact for the given name.
 
         Args:
             name: The name of the input artifact to return.
@@ -120,7 +120,7 @@ class PEStep:
             )
 
     @property
-    def outputs(self) -> List[PEArtifact]:
+    def outputs(self) -> List[ArtifactView]:
         """Returns a list of output artifacts that were written by this step.
 
         These artifacts are in the same order as defined in the signature of
@@ -138,8 +138,8 @@ class PEStep:
         self._ensure_inputs_outputs_fetched()
         return list(self._outputs.keys())
 
-    def get_output(self, name: str) -> PEArtifact:
-        """Returns a output artifact for the given name.
+    def get_output(self, name: str) -> ArtifactView:
+        """Returns an output artifact for the given name.
 
         Args:
             name: The name of the output artifact to return.
@@ -184,7 +184,7 @@ class PEStep:
                 MATERIALIZERS_PROPERTY_KEY
             ].string_value
 
-            artifact = PEArtifact(
+            artifact = ArtifactView(
                 id_=event_proto.artifact_id,
                 type_=artifact_type,
                 uri=artifact_proto.uri,

@@ -7,7 +7,7 @@ from zenml.utils import source_utils
 logger = get_logger(__name__)
 
 
-class PEArtifact:
+class ArtifactView:
     """Post-execution artifact class which can be used to read
     artifact data that was created during a pipeline execution.
     """
@@ -21,8 +21,8 @@ class PEArtifact:
     ):
         """Initializes a post-execution artifact object.
 
-        In most cases `PEArtifact` objects should not be created manually but
-        retrieved from a `PEStep` via the `inputs` or `outputs` properties.
+        In most cases `ArtifactView` objects should not be created manually but
+        retrieved from a `StepView` via the `inputs` or `outputs` properties.
 
         Args:
             id_: The artifact id.

@@ -5,12 +5,12 @@ from ml_metadata import proto
 
 from zenml.logger import get_logger
 from zenml.metadata.base_metadata_store import BaseMetadataStore
-from zenml.post_execution.step import ExecutionStatus, PEStep
+from zenml.post_execution.step import ExecutionStatus, StepView
 
 logger = get_logger(__name__)
 
 
-class PEPipelineRun:
+class PipelineRunView:
     """Post-execution pipeline run class which can be used to query
     steps and artifact information associated with a pipeline execution.
     """
@@ -24,8 +24,8 @@ class PEPipelineRun:
     ):
         """Initializes a post-execution pipeline run object.
 
-        In most cases `PEPipelineRun` objects should not be created manually
-        but retrieved from a `PEPipeline` object instead.
+        In most cases `PipelineRunView` objects should not be created manually
+        but retrieved from a `PipelineView` object instead.
 
         Args:
             id_: The context id of this pipeline run.
@@ -39,7 +39,7 @@ class PEPipelineRun:
         self._metadata_store = metadata_store
 
         self._executions = executions
-        self._steps: Dict[str, PEStep] = OrderedDict()
+        self._steps: Dict[str, StepView] = OrderedDict()
 
     @property
     def name(self) -> str:
@@ -61,7 +61,7 @@ class PEPipelineRun:
             return ExecutionStatus.Running
 
     @property
-    def steps(self) -> List[PEStep]:
+    def steps(self) -> List[StepView]:
         """Returns all steps that were executed as part of this pipeline run."""
         self._ensure_steps_fetched()
         return list(self._steps.values())
@@ -71,7 +71,7 @@ class PEPipelineRun:
         self._ensure_steps_fetched()
         return list(self._steps.keys())
 
-    def get_step(self, name: str) -> PEStep:
+    def get_step(self, name: str) -> StepView:
         """Returns a step for the given name.
 
         Args:
@@ -116,7 +116,7 @@ class PEPipelineRun:
                 for k, v in execution.custom_properties.items()
             }
 
-            step = PEStep(
+            step = StepView(
                 id_=execution.id,
                 name=step_name,
                 parameters=step_parameters,

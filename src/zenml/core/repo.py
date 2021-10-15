@@ -28,7 +28,7 @@ from zenml.exceptions import InitializationException
 from zenml.logger import get_logger
 from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
-from zenml.post_execution.pipeline import PEPipeline
+from zenml.post_execution.pipeline import PipelineView
 from zenml.stacks.base_stack import BaseStack
 from zenml.utils import path_utils
 from zenml.utils.analytics_utils import (
@@ -199,7 +199,7 @@ class Repository:
             PIPELINE_CONTEXT_TYPE_NAME
         ):
             pipelines.append(
-                PEPipeline(
+                PipelineView(
                     pipeline_context.id, pipeline_context.name, metadata_store
                 )
             )

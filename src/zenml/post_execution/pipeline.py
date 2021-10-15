@@ -4,12 +4,12 @@ from tfx.dsl.compiler.constants import PIPELINE_RUN_CONTEXT_TYPE_NAME
 
 from zenml.logger import get_logger
 from zenml.metadata.base_metadata_store import BaseMetadataStore
-from zenml.post_execution.pipeline_run import PEPipelineRun
+from zenml.post_execution.pipeline_run import PipelineRunView
 
 logger = get_logger(__name__)
 
 
-class PEPipeline:
+class PipelineView:
     """Post-execution pipeline class which can be used to query
     pipeline-related information from the metadata store.
     """
@@ -17,7 +17,7 @@ class PEPipeline:
     def __init__(self, id_: int, name: str, metadata_store: BaseMetadataStore):
         """Initializes a post-execution pipeline object.
 
-        In most cases `PEPipeline` objects should not be created manually
+        In most cases `PipelineView` objects should not be created manually
         but retrieved using the `get_pipelines()` method of a
         `zenml.core.repo.Repository` instead.
 
@@ -30,14 +30,14 @@ class PEPipeline:
         self._id = id_
         self._name = name
         self._metadata_store = metadata_store
-        self._runs: List[PEPipelineRun] = []
+        self._runs: List[PipelineRunView] = []
 
     @property
     def name(self) -> str:
         """Returns the name of the pipeline."""
         return self._name
 
-    def get_runs(self) -> List[PEPipelineRun]:
+    def get_runs(self) -> List[PipelineRunView]:
         """Returns all stored runs of this pipeline.
 
         The runs are returned in chronological order, so the latest
@@ -70,7 +70,7 @@ class PEPipeline:
                     if context.id == self._id:
                         # Run is of this pipeline
                         self._runs.append(
-                            PEPipelineRun(
+                            PipelineRunView(
                                 id_=run.id,
                                 name=run.name,
                                 executions=run_executions,
