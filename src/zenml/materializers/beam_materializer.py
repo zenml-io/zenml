@@ -27,7 +27,7 @@ class BeamMaterializer(BaseMaterializer):
     def handle_input(self, data_type: Type) -> Any:
         """Reads all files inside the artifact directory and materializes them
         as a beam compatible output."""
-        return
+        super().handle_input(data_type)
 
     def handle_return(self, pipeline: beam.Pipeline):
         """Appends a beam.io.WriteToParquet at the end of a beam pipeline
@@ -36,6 +36,7 @@ class BeamMaterializer(BaseMaterializer):
         Args:
             pipeline: A beam.pipeline object.
         """
+        super().handle_return(pipeline)
         pipeline | beam.ParDo()
         pipeline.run()
         # pipeline | beam.io.WriteToParquet(self.artifact.uri)

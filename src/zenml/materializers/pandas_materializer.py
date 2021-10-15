@@ -30,6 +30,7 @@ class PandasMaterializer(BaseMaterializer):
 
     def handle_input(self, data_type: Type) -> pd.DataFrame:
         """Reads pd.Dataframe from a parquet file."""
+        super().handle_input(data_type)
         return pd.read_parquet(
             os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         )
@@ -40,5 +41,6 @@ class PandasMaterializer(BaseMaterializer):
         Args:
             df: The pandas dataframe to write.
         """
+        super().handle_return(df)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         df.to_parquet(filepath, compression=COMPRESSION_TYPE)

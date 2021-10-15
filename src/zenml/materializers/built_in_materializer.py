@@ -42,6 +42,7 @@ class BuiltInMaterializer(BaseMaterializer):
 
     def handle_input(self, data_type: Type) -> Any:
         """Reads basic primitive types from json."""
+        super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         contents = yaml_utils.read_json(filepath)
         if type(contents) != data_type:
@@ -54,6 +55,6 @@ class BuiltInMaterializer(BaseMaterializer):
 
     def handle_return(self, data: Any):
         """Handles basic built-in types and stores them as json"""
-        assert type(data) in self.ASSOCIATED_TYPES
+        super().handle_return(data)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         yaml_utils.write_json(filepath, data)

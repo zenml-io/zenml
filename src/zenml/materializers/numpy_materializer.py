@@ -34,6 +34,7 @@ class NumpyMaterializer(BaseMaterializer):
 
     def handle_input(self, data_type: Type) -> np.ndarray:
         """Reads numpy array from parquet file."""
+        super().handle_input(data_type)
         shape_dict = yaml_utils.read_json(
             os.path.join(self.artifact.uri, SHAPE_FILENAME)
         )
@@ -48,6 +49,7 @@ class NumpyMaterializer(BaseMaterializer):
         Args:
             arr: The numpy array to write.
         """
+        super().handle_return(arr)
         yaml_utils.write_json(
             os.path.join(self.artifact.uri, SHAPE_FILENAME),
             {i: x for i, x in enumerate(arr.shape)},

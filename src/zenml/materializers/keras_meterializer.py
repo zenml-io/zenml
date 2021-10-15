@@ -32,6 +32,7 @@ class KerasMaterializer(BaseMaterializer):
         Returns:
             A tf.keras.Model model.
         """
+        super().handle_input(data_type)
         return keras.models.load_model(self.artifact.uri)
 
     def handle_return(self, model: keras.Model):
@@ -40,4 +41,5 @@ class KerasMaterializer(BaseMaterializer):
         Args:
             model: A tf.keras.Model model.
         """
+        super().handle_return(model)
         model.save(self.artifact.uri)

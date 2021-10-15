@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Type
 
 if TYPE_CHECKING:
@@ -52,7 +51,6 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         """Initializes a materializer with the given artifact."""
         self.artifact = artifact
 
-    @abstractmethod
     def handle_input(self, data_type: Type) -> Any:
         """Write logic here to handle input of the step function.
 
@@ -62,11 +60,21 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             Any object that is to be passed into the relevant artifact in the
             step.
         """
+        if data_type not in self.ASSOCIATED_TYPES:
+            raise ValueError(
+                f"Data type {data_type} not supported by materializer "
+                f"{self.__name__}. Supported types: {self.ASSOCIATED_TYPES}"
+            )
 
-    @abstractmethod
     def handle_return(self, data: Any) -> None:
         """Write logic here to handle return of the step function.
 
         Args:
             Any object that is specified as an input artifact of the step.
         """
+        data_type = type(data)
+        if data_type not in self.ASSOCIATED_TYPES:
+            raise ValueError(
+                f"Data type {data_type} not supported by materializer "
+                f"{self.__name__}. Supported types: {self.ASSOCIATED_TYPES}"
+            )
