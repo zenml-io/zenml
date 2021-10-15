@@ -49,7 +49,7 @@ def opt_in():
 def opt_out():
     """Opt-out to analytics"""
     GlobalConfig().analytics_opt_in = False
-    cli_utils.declare("Opted in to analytics.")
+    cli_utils.declare("Opted out of analytics.")
 
 
 # Metadata Store
