@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,17 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os  # noqa
+import os
 
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+from zenml.constants import handle_int_env_var
 
-with open(os.path.join(ROOT_DIR, "VERSION")) as version_file:
-    __version__ = version_file.read().strip()
 
-from zenml.logger import init_logging  # noqa
-from zenml.pipelines.pipeline_decorator import pipeline  # noqa
-from zenml.steps.step_decorator import step  # noqa
-from zenml.utils.analytics_utils import initialize_telemetry
+def test_handle_int_env_var():
+    """Check handle_int_env_var in all cases"""
+    env_var = "ZENML_TEST_HANDLE_INT_ENV_VAR"
 
-init_logging()
-initialize_telemetry()
+    # check value error (when it cant be converted to int)
+    os.environ[env_var] = "test"
+    assert 0 == handle_int_env_var(env_var, 0)
+
+    # check if it isnt there (in case it doesnt exist)
+    del os.environ[env_var]
+    assert 0 == handle_int_env_var(env_var, 0)

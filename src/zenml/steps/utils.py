@@ -268,6 +268,8 @@ class _FunctionExecutor(BaseExecutor):
         Raises:
             ValueError if types dont match.
         """
+        # TODO [LOW]: Include this check when we figure out the logic of
+        #  slightly different subclasses.
         if not do_types_match(type(output_value), specified_type):
             raise ValueError(
                 f"Output `{output_value}` of type {type(output_value)} does "
@@ -316,9 +318,6 @@ class _FunctionExecutor(BaseExecutor):
             if isinstance(return_type, Output):
                 # Resolve named (and multi-) outputs.
                 for i, output_tuple in enumerate(return_type.items()):
-                    self.check_output_types_match(
-                        return_values[i], output_tuple[1]
-                    )
                     self.resolve_output_artifact(
                         output_tuple[0],
                         output_dict[output_tuple[0]][0],
@@ -326,7 +325,6 @@ class _FunctionExecutor(BaseExecutor):
                     )
             else:
                 # Resolve single output
-                self.check_output_types_match(return_values, return_type)
                 self.resolve_output_artifact(
                     SINGLE_RETURN_OUT_NAME,
                     output_dict[SINGLE_RETURN_OUT_NAME][0],

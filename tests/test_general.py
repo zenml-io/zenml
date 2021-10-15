@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,17 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os  # noqa
+import os
 
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+from zenml.constants import ENV_ZENML_DEBUG
 
-with open(os.path.join(ROOT_DIR, "VERSION")) as version_file:
-    __version__ = version_file.read().strip()
 
-from zenml.logger import init_logging  # noqa
-from zenml.pipelines.pipeline_decorator import pipeline  # noqa
-from zenml.steps.step_decorator import step  # noqa
-from zenml.utils.analytics_utils import initialize_telemetry
-
-init_logging()
-initialize_telemetry()
+def test_handle_int_env_var():
+    """Checks that the ZENML_DEBUG is set in the tests."""
+    assert os.environ[ENV_ZENML_DEBUG] == "true"
