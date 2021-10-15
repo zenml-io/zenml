@@ -12,34 +12,38 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Type
+import os
+from typing import Type, Union
 
-from tensorflow import keras
+import torch
 
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.types.pytorch_types import TorchDict
 
-DEFAULT_FILENAME = "model.hdf5"
+DEFAULT_FILENAME = "entire_model.pt"
 
 
-class KerasMaterializer(BaseMaterializer):
-    """Materializer to read/write Keras models."""
+class PyTorchMaterializer(BaseMaterializer):
+    """Materializer to read/write Pytorch models."""
 
-    ASSOCIATED_TYPES = [keras.Model]
+    ASSOCIATED_TYPES = [torch.nn.Module, TorchDict]
 
-    def handle_input(self, data_type: Type) -> keras.Model:
-        """Reads and returns a Keras model.
+    def handle_input(
+        self, data_type: Type
+    ) -> Union[torch.nn.Module, TorchDict]:
+        """Reads and returns a PyTorch model.
 
         Returns:
-            A tf.keras.Model model.
+            A loaded pytorch model.
         """
         super().handle_input(data_type)
-        return keras.models.load_model(self.artifact.uri)
+        return torch.load(os.path.join(self.artifact.uri, DEFAULT_FILENAME))
 
-    def handle_return(self, model: keras.Model):
-        """Writes a keras model.
+    def handle_return(self, model: Union[torch.nn.Module, TorchDict]):
+        """Writes a PyTorch model.
 
         Args:
-            model: A tf.keras.Model model.
+            model: A torch.nn.Module or a dict to pass into model.save
         """
         super().handle_return(model)
-        model.save(self.artifact.uri)
+        model.save(os.path.join(self.artifact.uri, DEFAULT_FILENAME))

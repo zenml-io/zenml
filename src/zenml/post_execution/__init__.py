@@ -11,3 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
+from zenml.post_execution.artifact import ArtifactView
+from zenml.post_execution.pipeline import PipelineView
+from zenml.post_execution.pipeline_run import PipelineRunView
+from zenml.post_execution.step import StepView

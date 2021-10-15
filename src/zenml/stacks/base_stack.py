@@ -46,18 +46,14 @@ class BaseStack(BaseSettings):
         """Returns the artifact store of this stack."""
         from zenml.core.repo import Repository
 
-        return Repository().service.get_artifact_store(
-            self.artifact_store_name
-        )
+        return Repository().service.get_artifact_store(self.artifact_store_name)
 
     @property
     def metadata_store(self) -> BaseMetadataStore:
         """Returns the metadata store of this stack."""
         from zenml.core.repo import Repository
 
-        return Repository().service.get_metadata_store(
-            self.metadata_store_name
-        )
+        return Repository().service.get_metadata_store(self.metadata_store_name)
 
     class Config:
         """Configuration of settings."""

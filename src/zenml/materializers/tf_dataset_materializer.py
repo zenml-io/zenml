@@ -11,35 +11,31 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+import os
 from typing import Any, Type
 
-import apache_beam as beam
+import tensorflow as tf
 
 from zenml.materializers.base_materializer import BaseMaterializer
 
+DEFAULT_FILENAME = "saved_data"
 
-class BeamMaterializer(BaseMaterializer):
+
+class TensorflowDatasetMaterializer(BaseMaterializer):
     """Materializer to read data to and from beam."""
 
-    ASSOCIATED_TYPES = [beam.Pipeline, beam.PCollection]
+    ASSOCIATED_TYPES = [tf.data.Dataset]
 
     def handle_input(self, data_type: Type) -> Any:
-        """Reads all files inside the artifact directory and materializes them
-        as a beam compatible output."""
-        # TODO [MEDIUM]: Implement beam reading
+        """Reads data into tf.data.Dataset"""
         super().handle_input(data_type)
+        path = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        return tf.data.experimental.load(path)
 
-    def handle_return(self, pipeline: beam.Pipeline):
-        """Appends a beam.io.WriteToParquet at the end of a beam pipeline
-        and therefore persists the results.
-
-        Args:
-            pipeline: A beam.pipeline object.
-        """
-        # TODO [MEDIUM]: Implement beam writing
-        super().handle_return(pipeline)
-        pipeline | beam.ParDo()
-        pipeline.run()
-        # pipeline | beam.io.WriteToParquet(self.artifact.uri)
-        # pipeline.run()
+    def handle_return(self, dataset: tf.data.Dataset):
+        """Persists a tf.data.Dataset object."""
+        super().handle_return(dataset)
+        path = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        tf.data.experimental.save(
+            dataset, path, compression=None, shard_func=None
+        )

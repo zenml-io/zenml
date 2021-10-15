@@ -14,18 +14,21 @@
 
 
 import types
-from typing import Type
+from typing import Callable, Type
 
-from zenml.pipelines.base_pipeline import BasePipeline
+from zenml.pipelines.base_pipeline import PIPELINE_INNER_FUNC_NAME, BasePipeline
 
 
-def pipeline(name: str = None):
+def pipeline(
+    _func: types.FunctionType = None, *, name: str = None
+) -> Callable[..., BasePipeline]:
     """Outer decorator function for the creation of a ZenML pipeline
 
     In order to be able work with parameters such as "name", it features a
     nested decorator structure.
 
     Args:
+        _func: Optional func from outside.
         name: str, the given name for the pipeline
 
     Returns:
@@ -44,12 +47,13 @@ def pipeline(name: str = None):
             the class of a newly generated ZenML Pipeline
 
         """
-        pipeline_class = type(
+        return type(
             name if name else func.__name__,
             (BasePipeline,),
-            {"connect": staticmethod(func)},
+            {PIPELINE_INNER_FUNC_NAME: staticmethod(func)},
         )
 
-        return pipeline_class
-
-    return inner_decorator
+    if _func is None:
+        return inner_decorator
+    else:
+        return inner_decorator(_func)

@@ -13,47 +13,34 @@
 #  permissions and limitations under the License.
 
 import os
+from typing import Type
 
 import pandas as pd
 
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.utils import path_utils
 
-DEFAULT_FILENAME = "data.csv"
+DEFAULT_FILENAME = "df.parquet.gzip"
+COMPRESSION_TYPE = "gzip"
 
 
 class PandasMaterializer(BaseMaterializer):
     """Materializer to read data to and from pandas."""
 
-    TYPE_NAME = "pandas"
+    ASSOCIATED_TYPES = [pd.DataFrame]
 
-    def read_dataframe(self) -> pd.DataFrame:
-        """Reads all files inside the artifact directory and concatenates them to a pandas dataframe."""
-
-        filenames = path_utils.list_dir(
-            self.artifact.uri, only_file_names=True
+    def handle_input(self, data_type: Type) -> pd.DataFrame:
+        """Reads pd.Dataframe from a parquet file."""
+        super().handle_input(data_type)
+        return pd.read_parquet(
+            os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         )
 
-        valid_filenames = [
-            os.path.join(self.artifact.uri, f)
-            for f in filenames
-            if DEFAULT_FILENAME in f
-        ]
-
-        li = []
-        for filename in valid_filenames:
-            df = pd.read_csv(filename, index_col=None, header=0)
-            li.append(df)
-        frame = pd.concat(li, axis=0, ignore_index=True)
-
-        return frame
-
-    def write_dataframe(self, df: pd.DataFrame, filename=DEFAULT_FILENAME):
+    def handle_return(self, df: pd.DataFrame):
         """Writes a pandas dataframe to the specified filename.
 
         Args:
             df: The pandas dataframe to write.
-            filename: The output filename.
         """
-        filepath = os.path.join(self.artifact.uri, filename)
-        df.to_csv(filepath)
+        super().handle_return(df)
+        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        df.to_parquet(filepath, compression=COMPRESSION_TYPE)

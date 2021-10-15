@@ -14,14 +14,32 @@
 
 from zenml.logger import get_logger
 from zenml.materializers.beam_materializer import BeamMaterializer  # noqa
-from zenml.materializers.json_materializer import JsonMaterializer  # noqa
+from zenml.materializers.built_in_materializer import (  # noqa
+    BuiltInMaterializer,
+)
+from zenml.materializers.numpy_materializer import NumpyMaterializer  # noqa
 from zenml.materializers.pandas_materializer import PandasMaterializer  # noqa
 
 logger = get_logger(__name__)
 
 try:
-    from zenml.materializers.keras_meterializer import (  # noqa
-        KerasMaterializer,
+    from zenml.materializers.keras_meterializer import KerasMaterializer  # noqa
+    from zenml.materializers.tf_dataset_materializer import (  # noqa
+        TensorflowDatasetMaterializer,
     )
 except ImportError:
     logger.debug("Tensorflow not installed.")
+
+try:
+    from zenml.materializers.pytorch_materializer import (  # noqa
+        PyTorchMaterializer,
+    )
+except ImportError:
+    logger.debug("PyTorch not installed.")
+
+try:
+    from zenml.materializers.pytorch_lightning_materializer import (  # noqa
+        PyTorchLightningMaterializer,
+    )
+except ImportError:
+    logger.debug("PyTorch Lightning not installed.")
