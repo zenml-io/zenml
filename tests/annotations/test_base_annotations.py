@@ -14,15 +14,35 @@
 
 import pytest
 
-from zenml.annotations.base_annotations import (
-    BaseAnnotation,
-    BaseAnnotationMeta,
-)
+from zenml.annotations import base_annotations
 
 
 @pytest.fixture()
-def test_me():
-    """A simple test to check a functionality"""
-    base_annotation = BaseAnnotation()
-    base_annotation_meta = BaseAnnotationMeta()
-    assert base_annotation == base_annotation_meta
+def base_annotation_meta_fixture():
+    """Fixture for a BaseAnnotationMeta instance"""
+    return base_annotations.BaseAnnotationMeta("base", (object,), {})
+
+
+class TestBaseAnnotationMeta:
+    """Test the BaseAnnotationMeta class"""
+
+    def test_base_annotation_meta_instance_is_right_class(
+        self, base_annotation_meta_fixture
+    ):
+        """Check that our instance is BaseAnnotationMeta class"""
+        assert (
+            base_annotation_meta_fixture.__class__
+            == base_annotations.BaseAnnotationMeta
+        )
+
+    def test_base_annotation_meta_has_a___get_item_method(
+        self, base_annotation_meta_fixture
+    ):
+        """Check that our instance has a __get_item__ method"""
+        assert hasattr(base_annotation_meta_fixture, "__getitem__")
+
+    @pytest.mark.xfail()
+    def test_get_item_method_returns_instance_of_the_annotation(
+        self, base_annotation_meta_fixture
+    ):
+        """Check that the __get_item__ method returns an instance of the annotation"""
