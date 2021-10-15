@@ -6,7 +6,7 @@ design choices easier to grasp and use, and we welcome feedback on the [issues b
 
 ## Warning
 0.5.0 is a complete API change from the previous versions of ZenML, and is a *breaking* upgrade. Fundamental 
-concepts have been changed, and therefore backwards compatability is not maintained. Please use only this version 
+concepts have been changed, and therefore backwards compatibility is not maintained. Please use only this version 
 with fresh projects.
 
 With such significant changes, we expect this release to also be breaking. Please report any bugs in the issue board, and 
@@ -56,7 +56,7 @@ design choices easier to grasp and use, and we welcome feedback on the [issues b
 
 ## Warning
 0.5.0rc0 is a complete API change from the previous versions of ZenML, and is a *breaking* upgrade. Fundamental 
-concepts have been changed, and therefore backwards compatability is not maintained. Please use only this version 
+concepts have been changed, and therefore backwards compatibility is not maintained. Please use only this version 
 with fresh projects.
 
 With such significant changes, we expect this release to also be breaking. Please report any bugs in the issue board, and 
