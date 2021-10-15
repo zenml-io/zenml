@@ -23,6 +23,12 @@ def base_annotation_meta_fixture():
     return base_annotations.BaseAnnotationMeta("base", (object,), {})
 
 
+@pytest.fixture()
+def base_annotation_fixture():
+    """Fixture for a BaseAnnotation instance"""
+    return base_annotations.BaseAnnotation()
+
+
 class TestBaseAnnotationMeta:
     """Test the BaseAnnotationMeta class"""
 
@@ -47,3 +53,9 @@ class TestBaseAnnotationMeta:
     ):
         """Check that the __get_item__ method returns an instance of the annotation"""
         # TODO: [MEDIUM]
+
+
+class TestBaseAnnotation:
+    """Test the BaseAnnotation class"""
+
+    # TODO: [HIGH] Add tests for the BaseAnnotation class
