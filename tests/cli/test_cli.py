@@ -13,5 +13,9 @@
 #  permissions and limitations under the License.
 
 
-def test_me():
-    """A simple test to check a functionality"""
+def test_cli_command_defines_a_cli_group():
+    # TODO: [medium] implement this test
+    """Check that cli command defines a CLI group when invoked"""
+
+
+# TODO: [LOW] check that CLI command sets the logging verbosity
