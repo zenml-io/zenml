@@ -13,17 +13,27 @@
 #  permissions and limitations under the License.
 
 import os
+from typing import Text
 
 from zenml import __version__
 
 
-def handle_bool_env_var(var, default=False):
+def handle_bool_env_var(var: Text, default=False):
     """Converts normal env var to boolean"""
     var = os.getenv(var, None)
     for i in ["1", "y", "yes", "True", "true"]:
         if i == var:
             return True
     return default
+
+
+def handle_int_env_var(var: Text, default: int = 0):
+    """Converts normal env var to int"""
+    value = os.getenv(var, None)
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return default
 
 
 # Global constants
@@ -39,9 +49,14 @@ ENV_ABSL_LOGGING_VERBOSITY = "ZENML_ABSL_LOGGING_VERBOSITY"
 IS_DEBUG_ENV = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
 
 if IS_DEBUG_ENV:
-    ZENML_LOGGING_VERBOSITY = os.getenv(ENV_ZENML_LOGGING_VERBOSITY, 4)
+    ZENML_LOGGING_VERBOSITY = handle_int_env_var(
+        ENV_ZENML_LOGGING_VERBOSITY, default=4
+    )
 else:
-    ZENML_LOGGING_VERBOSITY = os.getenv(ENV_ZENML_LOGGING_VERBOSITY, 3)
+    ZENML_LOGGING_VERBOSITY = handle_int_env_var(
+        ENV_ZENML_LOGGING_VERBOSITY, default=3
+    )
+
 
 ABSL_LOGGING_VERBOSITY = os.getenv(ENV_ABSL_LOGGING_VERBOSITY, -100)
 

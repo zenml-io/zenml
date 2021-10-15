@@ -1,3 +1,17 @@
+#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+
 from typing import List
 
 import numpy as np
@@ -80,7 +94,9 @@ def EvaluateModelStep(
     model = model_artifact.materializers.keras.read_model()
     import_data = data.materializers.json.read_file()
 
-    test_loss, test_acc = model.evaluate(import_data[2], import_data[3], verbose=2)
+    test_loss, test_acc = model.evaluate(
+        import_data[2], import_data[3], verbose=2
+    )
     return [test_loss, test_acc]
 
 
@@ -112,32 +128,4 @@ mnist_pipeline = MNISTTrainingPipeline(
 )
 
 # Run the pipeline
-mnist_pipeline.run()
-
-
-# Define a new modified import data step to download the Fashion MNIST model
-@step(name="import_fashion_mnist")
-def ImportDataStep() -> List[float]:
-    """Download the Fashion MNIST data store it as an artifact"""
-    (X_train, y_train), (
-        X_test,
-        y_test,
-    ) = tf.keras.datasets.fashion_mnist.load_data()  # CHANGING to fashion
-    return [
-        X_train.tolist()[0:100],
-        y_train.tolist()[0:100],
-        X_test.tolist()[0:100],
-        y_test.tolist()[0:100],
-    ]
-
-
-# Initialise a new pipeline
-fashion_mnist_trainer = MNISTTrainingPipeline(
-    import_data=ImportDataStep(),
-    normalize_data=NormalizeDataStep(),
-    trainer=MNISTTrainModelStep(epochs=10),
-    evaluator=EvaluateModelStep(),
-)
-
-# Run the new pipeline as an airflow DAG
-fashion_mnist_trainer.run()
+DAG = mnist_pipeline.run()
