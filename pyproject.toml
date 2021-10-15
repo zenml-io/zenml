@@ -118,6 +118,7 @@ filterwarnings = [
 ]
 log_cli = true
 log_cli_level = "INFO"
+testpaths = "tests"
 
 [tool.coverage.run]
 parallel = true

@@ -152,38 +152,44 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipeline.connect">
 <em class="property"><span class="pre">abstract</span> </em><span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.connect" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Function that connects inputs and outputs of the pipeline steps.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipeline.get_executable">
 <em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">get_executable</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.get_executable" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Returns the <cite>connect</cite> function.</p>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipeline.inputs">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">inputs</span></span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.inputs" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">inputs</span></span><em class="property"><span class="pre">:</span> <span class="pre">Dict</span></em><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.inputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dictionary of pipeline inputs.</p>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipeline.name">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.name" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.name" title="Permalink to this definition">¶</a></dt>
 <dd><p>Name of pipeline is always equal to self.NAME</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipeline.run">
 <span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.run" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Runs the pipeline using the orchestrator of the pipeline stack.</p>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipeline.stack">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">stack</span></span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.stack" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">stack</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="zenml.stacks.html#zenml.stacks.base_stack.BaseStack" title="zenml.stacks.base_stack.BaseStack"><span class="pre">zenml.stacks.base_stack.BaseStack</span></a></em><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.stack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the stack for this pipeline.</p>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipeline.steps">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">steps</span></span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.steps" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">steps</span></span><em class="property"><span class="pre">:</span> <span class="pre">Dict</span></em><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipeline.steps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dictionary of pipeline steps.</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -191,6 +197,7 @@
 <dt class="sig sig-object py" id="zenml.pipelines.base_pipeline.BasePipelineMeta">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.pipelines.base_pipeline.</span></span><span class="sig-name descname"><span class="pre">BasePipelineMeta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bases</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dct</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.pipelines.base_pipeline.BasePipelineMeta" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></p>
+<p>Pipeline Metaclass responsible for validating the pipeline definition.</p>
 </dd></dl>
 
 </div>

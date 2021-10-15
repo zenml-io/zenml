@@ -148,12 +148,15 @@ class _FunctionExecutor(BaseExecutor):
         )
         return materializer_class
 
-    def resolve_input_artifact(self, artifact: BaseArtifact) -> Any:
+    def resolve_input_artifact(
+        self, artifact: BaseArtifact, data_type: Type
+    ) -> Any:
         """Resolves an input artifact, i.e., reading it from the Artifact Store
         to a pythonic object.
 
         Args:
             artifact: A TFX artifact type.
+            data_type: The type of data to be materialized.
 
         Returns:
             Return the output of `handle_input()` of selected materializer.
@@ -162,7 +165,7 @@ class _FunctionExecutor(BaseExecutor):
             artifact.materializers
         )(artifact)
         # The materializer now returns a resolved input
-        return materializer.handle_input()
+        return materializer.handle_input(data_type=data_type)
 
     def resolve_output_artifact(
         self, param_name: str, artifact: BaseArtifact, data: Any
@@ -213,7 +216,7 @@ class _FunctionExecutor(BaseExecutor):
             else:
                 # At this point, it has to be an artifact, so we resolve
                 function_params[arg] = self.resolve_input_artifact(
-                    input_dict[arg][0]
+                    input_dict[arg][0], arg_type
                 )
 
         return_values = self._FUNCTION(**function_params)

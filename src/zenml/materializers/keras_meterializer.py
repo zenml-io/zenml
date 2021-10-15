@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from typing import Type
+
 from tensorflow import keras
 
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -24,12 +26,13 @@ class KerasMaterializer(BaseMaterializer):
 
     ASSOCIATED_TYPES = [keras.Model]
 
-    def handle_input(self) -> keras.Model:
+    def handle_input(self, data_type: Type) -> keras.Model:
         """Reads and returns a Keras model.
 
         Returns:
             A tf.keras.Model model.
         """
+        super().handle_input(data_type)
         return keras.models.load_model(self.artifact.uri)
 
     def handle_return(self, model: keras.Model):
@@ -38,4 +41,5 @@ class KerasMaterializer(BaseMaterializer):
         Args:
             model: A tf.keras.Model model.
         """
+        super().handle_return(model)
         model.save(self.artifact.uri)

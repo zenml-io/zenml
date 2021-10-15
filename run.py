@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+from typing import Type
 
 os.environ["ZENML_DEBUG"] = "true"
 import pandas as pd
@@ -32,7 +33,7 @@ class StepConfig(BaseStepConfig):
 class PandasJSONMaterializer(PandasMaterializer):
     DATA_FILENAME = "data.json"
 
-    def handle_input(self) -> pd.DataFrame:
+    def handle_input(self, data_type: Type) -> pd.DataFrame:
         """Reads all files inside the artifact directory and concatenates
         them to a pandas dataframe."""
         return pd.read_json(os.path.join(self.artifact.uri, self.DATA_FILENAME))
@@ -56,6 +57,7 @@ def number_returner(
 
 @step
 def import_dataframe_csv(sum: int) -> pd.DataFrame:
+    print(sum)
     return pd.DataFrame({"sum": [sum]})
 
 
