@@ -14,6 +14,7 @@
 
 import pytest
 from click.testing import CliRunner
+from git.repo import Repo
 
 from zenml.cli.base import clean, init
 from zenml.exceptions import InitializationException
@@ -35,11 +36,13 @@ def test_init_fails_when_repo_path_is_not_git_repo_already(tmp_path):
 def test_init(tmp_path):
     """Check that init command works as expected inside temporary directory"""
     runner = CliRunner()
-    # TODO: [HIGH] add a step that initializes a git repository in the tmp_path dir
-    result = runner.invoke(init, ["--repo_path", str(tmp_path)])
-    assert result.exit_code == 0
-    assert f"Initializing at {tmp_path}" in result.output
-    assert f"ZenML repo initialized at {tmp_path}" in result.output
+    with runner.isolated_filesystem():
+        # TODO: [HIGH] add a step that initializes a git repository in the tmp_path dir
+        Repo.init(str(tmp_path))
+        result = runner.invoke(init, ["--repo_path", str(tmp_path)])
+        # assert result.exit_code == 0
+        assert f"Initializing at {tmp_path}" in result.output
+        assert f"ZenML repo initialized at {tmp_path}" in result.output
 
 
 @pytest.mark.xfail()
