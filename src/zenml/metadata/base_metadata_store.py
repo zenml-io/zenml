@@ -12,17 +12,28 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-
 import os
 from abc import abstractmethod
+from collections import OrderedDict
+from typing import Dict, List, Optional, Tuple
 
 from ml_metadata.metadata_store import metadata_store
+from tfx.dsl.compiler.constants import (
+    PIPELINE_CONTEXT_TYPE_NAME,
+    PIPELINE_RUN_CONTEXT_TYPE_NAME,
+)
 
+from zenml.artifacts.base_artifact import MATERIALIZERS_PROPERTY_KEY
 from zenml.core.base_component import BaseComponent
 from zenml.core.component_factory import metadata_store_factory
-from zenml.enums import MLMetadataTypes, PipelineStatusTypes
-from zenml.exceptions import DoesNotExistException
+from zenml.enums import ExecutionStatus, MLMetadataTypes
 from zenml.logger import get_logger
+from zenml.post_execution import (
+    ArtifactView,
+    PipelineRunView,
+    PipelineView,
+    StepView,
+)
 from zenml.utils.path_utils import get_zenml_config_dir
 
 logger = get_logger(__name__)
@@ -52,124 +63,179 @@ class BaseMetadataStore(BaseComponent):
             get_zenml_config_dir(), self._METADATA_STORE_DIR_NAME
         )
 
-    def get_pipeline_status(self, pipeline) -> str:
-        """Query metadata store to find status of pipeline.
-
-        Args:
-          pipeline(BasePipeline): a ZenML pipeline object
-
-        Returns:
-
-        """
-        try:
-            components_status = self.get_components_status(pipeline)
-        except Exception:
-            return PipelineStatusTypes.NotStarted.name
-
-        for status in components_status.values():
-            if status != "complete" and status != "cached":
-                return PipelineStatusTypes.Running.name
-        return PipelineStatusTypes.Succeeded.name
-
-    def get_pipeline_executions(self, pipeline):
-        """Get executions of pipeline.
-
-        Args:
-          pipeline(BasePipeline): a ZenML pipeline object
-
-        Returns:
-
-        """
-        c = self.get_pipeline_context(pipeline)
-        return self.store.get_executions_by_context(c.id)
-
-    def get_components_status(self, pipeline):
-        """Returns status of components in pipeline.
-
-        Args:
-          pipeline(BasePipeline): a ZenML pipeline object
-        Returns: dict of type { component_name : component_status }
-
-        Returns:
-
-        """
-        state_mapping = {
-            0: "unknown",
-            1: "new",
-            2: "running",
-            3: "complete",
-            4: "failed",
-            5: "cached",
-            6: "cancelled",
-        }
-        result = {}
-        pipeline_executions = self.get_pipeline_executions(pipeline)
-        for e in pipeline_executions:
-            contexts = self.store.get_contexts_by_execution(e.id)
-            node_contexts = [c for c in contexts if c.type_id == 3]
-            if node_contexts:
-                component_name = node_contexts[0].name.split(".")[-1]
-                result[component_name] = state_mapping[e.last_known_state]
-
-        return result
-
-    def get_artifacts_by_component(self, pipeline, component_name: str):
-        """Gets artifacts by component name.
-
-        Args:
-          pipeline(BasePipeline): a ZenML pipeline object
-          component_name:
-          component_name: str:
-
-        Returns:
-
-        """
-        # First get the context of the component and its artifacts
-        component_context = [
-            c
-            for c in self.store.get_contexts_by_type(self._node_type_name)
-            if c.name.endswith(component_name)
-        ][0]
-        component_artifacts = self.store.get_artifacts_by_context(
-            component_context.id
-        )
-
-        # Second, get the context of the particular pipeline and its artifacts
-        pipeline_context = self.store.get_context_by_type_and_name(
-            self._run_type_name, pipeline.pipeline_name
-        )
-        pipeline_artifacts = self.store.get_artifacts_by_context(
-            pipeline_context.id
-        )
-
-        # Figure out the matching ids
-        return [
-            a
-            for a in component_artifacts
-            if a.id in [p.id for p in pipeline_artifacts]
-        ]
-
-    def get_pipeline_context(self, pipeline):
-        """Get pipeline context.
-
-        Args:
-          pipeline:
-
-        Returns:
-
-        """
-        # We rebuild context for ml metadata here.
-        run_context = self.store.get_context_by_type_and_name(
-            type_name=self._run_type_name, context_name=pipeline.pipeline_name
-        )
-        if run_context is None:
-            raise DoesNotExistException(
-                name=pipeline.pipeline_name,
-                reason="The pipeline does not exist in metadata store "
-                "because it has not been run yet. Please run the "
-                "pipeline before trying to fetch artifacts.",
+    def get_pipelines(self) -> List[PipelineView]:
+        """Returns a list of all pipelines stored in this metadata store."""
+        pipelines = []
+        for pipeline_context in self.store.get_contexts_by_type(
+            PIPELINE_CONTEXT_TYPE_NAME
+        ):
+            pipeline = PipelineView(
+                id_=pipeline_context.id,
+                name=pipeline_context.name,
+                metadata_store=self,
             )
-        return run_context
+            pipelines.append(pipeline)
+
+        logger.debug("Fetched %d pipelines.", len(pipelines))
+        return pipelines
+
+    def get_pipeline(self, pipeline_name: str) -> Optional[PipelineView]:
+        """Returns a pipeline for the given name."""
+        pipeline_context = self.store.get_context_by_type_and_name(
+            PIPELINE_CONTEXT_TYPE_NAME, pipeline_name
+        )
+        if pipeline_context:
+            logger.debug("Fetched pipelines with name '%s'", pipeline_name)
+            return PipelineView(
+                id_=pipeline_context.id,
+                name=pipeline_context.name,
+                metadata_store=self,
+            )
+        else:
+            logger.info("No pipelines found for name '%s'", pipeline_name)
+            return None
+
+    def get_pipeline_runs(
+        self, pipeline: PipelineView
+    ) -> List[PipelineRunView]:
+        """Gets all runs for the given pipeline."""
+        all_pipeline_runs = self.store.get_contexts_by_type(
+            PIPELINE_RUN_CONTEXT_TYPE_NAME
+        )
+        runs = []
+
+        for run in all_pipeline_runs:
+            run_executions = self.store.get_executions_by_context(run.id)
+            if run_executions:
+                associated_contexts = self.store.get_contexts_by_execution(
+                    run_executions[0].id
+                )
+                for context in associated_contexts:
+                    if context.id == pipeline._id:  # noqa
+                        # Run is of this pipeline
+                        runs.append(
+                            PipelineRunView(
+                                id_=run.id,
+                                name=run.name,
+                                executions=run_executions,
+                                metadata_store=self,
+                            )
+                        )
+                        break
+
+        logger.debug(
+            "Fetched %d pipeline runs for pipeline named '%s'.",
+            len(runs),
+            pipeline.name,
+        )
+
+        return runs
+
+    def get_pipeline_run_steps(
+        self, pipeline_run: PipelineRunView
+    ) -> Dict[str, StepView]:
+        """Gets all steps for the given pipeline run."""
+        # maps type_id's to step names
+        step_type_mapping: Dict[int, str] = {
+            type_.id: type_.name for type_ in self.store.get_execution_types()
+        }
+
+        steps: Dict[str, StepView] = OrderedDict()
+        # reverse the executions as they get returned in reverse chronological
+        # order from the metadata store
+        for execution in reversed(pipeline_run._executions):  # noqa
+            step_name = step_type_mapping[execution.type_id]
+            # TODO [HIGH]: why is the name like this?
+            step_prefix = "zenml.steps.base_step."
+            if step_name.startswith(step_prefix):
+                step_name = step_name[len(step_prefix) :]  # TODO [LOW]: black
+
+            step_parameters = {
+                k: v.string_value  # TODO [LOW]: Can we get the actual type?
+                for k, v in execution.custom_properties.items()
+            }
+
+            step = StepView(
+                id_=execution.id,
+                name=step_name,
+                parameters=step_parameters,
+                metadata_store=self,
+            )
+            steps[step_name] = step
+
+        logger.debug(
+            "Fetched %d steps for pipeline run '%s'.",
+            len(steps),
+            pipeline_run.name,
+        )
+
+        return steps
+
+    def get_step_status(self, step: StepView) -> ExecutionStatus:
+        proto = self.store.get_executions_by_id([step._id])[0]  # noqa
+        state = proto.last_known_state
+
+        if state == proto.COMPLETE or state == proto.CACHED:
+            return ExecutionStatus.COMPLETED
+        elif state == proto.RUNNING:
+            return ExecutionStatus.RUNNING
+        else:
+            return ExecutionStatus.FAILED
+
+    def get_step_artifacts(
+        self, step: StepView
+    ) -> Tuple[Dict[str, ArtifactView], Dict[str, ArtifactView]]:
+        """Returns input and output artifacts for the given step.
+
+        Args:
+            step: The step for which to get the artifacts.
+
+        Returns:
+            A tuple (inputs, outputs) where inputs and outputs
+            are both OrderedDicts mapping artifact names
+            to the input and output artifacts respectively.
+        """
+        # maps artifact types to their string representation
+        artifact_type_mapping = {
+            type_.id: type_.name for type_ in self.store.get_artifact_types()
+        }
+
+        events = self.store.get_events_by_execution_ids([step._id])  # noqa
+        artifacts = self.store.get_artifacts_by_id(
+            [event.artifact_id for event in events]
+        )
+
+        inputs: Dict[str, ArtifactView] = OrderedDict()
+        outputs: Dict[str, ArtifactView] = OrderedDict()
+
+        for event_proto, artifact_proto in zip(events, artifacts):
+            artifact_type = artifact_type_mapping[artifact_proto.type_id]
+            artifact_name = event_proto.path.steps[0].key
+
+            materializer = artifact_proto.properties[
+                MATERIALIZERS_PROPERTY_KEY
+            ].string_value
+
+            artifact = ArtifactView(
+                id_=event_proto.artifact_id,
+                type_=artifact_type,
+                uri=artifact_proto.uri,
+                materializer=materializer,
+            )
+
+            if event_proto.type == event_proto.INPUT:
+                inputs[artifact_name] = artifact
+            elif event_proto.type == event_proto.OUTPUT:
+                outputs[artifact_name] = artifact
+
+        logger.debug(
+            "Fetched %d inputs and %d outputs for step '%s'.",
+            len(inputs),
+            len(outputs),
+            step.name,
+        )
+
+        return inputs, outputs
 
     class Config:
         """Configuration of settings."""
