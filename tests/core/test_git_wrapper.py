@@ -89,7 +89,17 @@ def test_appending_items_to_gitignore_when_it_already_exists_returns_no_exceptio
             assert False, f"Exception raised: {e}"
 
 
-@pytest.mark.xfail
 def test_items_appended_correctly_to_gitignore_file(tmp_path):
-    # TODO: [LOW] Implement test
     """Test items are correctly to gitignore file"""
+    test_items = ["an item", "another item"]
+    file_contents = """
+
+# ZenML
+an item
+another item"""
+
+    Repo.init(tmp_path)
+    git_instance = zenml.core.git_wrapper.GitWrapper(tmp_path)
+    git_instance.add_gitignore(test_items)
+    with open(tmp_path / GITIGNORE_FILENAME, "r") as gitignore_file:
+        assert gitignore_file.read() == file_contents
