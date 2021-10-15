@@ -46,10 +46,9 @@ class StackTypes(str, Enum):
     base = "base"
 
 
-class PipelineStatusTypes(str, Enum):
-    """All supported Pipeline status types."""
+class ExecutionStatus(Enum):
+    """Enum that represents the current status of a step or pipeline run."""
 
-    NotStarted = "NotStarted"
-    Failed = "Failed"
-    Succeeded = "Succeeded"
-    Running = "Running"
+    FAILED = "failed"
+    COMPLETED = "completed"
+    RUNNING = "running"

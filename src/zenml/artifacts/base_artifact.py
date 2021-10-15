@@ -14,7 +14,8 @@
 from tfx.types import Artifact
 from tfx.types.artifact import Property, PropertyType
 
-MATERIALIZERS = Property(type=PropertyType.STRING)
+MATERIALIZERS_PROPERTY_KEY = "materializers"
+MATERIALIZERS_PROPERTY = Property(type=PropertyType.STRING)
 
 
 class BaseArtifact(Artifact):
@@ -32,5 +33,5 @@ class BaseArtifact(Artifact):
 
     TYPE_NAME = "BaseArtifact"
     PROPERTIES = {
-        "materializers": MATERIALIZERS,
+        MATERIALIZERS_PROPERTY_KEY: MATERIALIZERS_PROPERTY,
     }
