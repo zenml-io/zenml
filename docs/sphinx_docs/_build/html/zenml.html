@@ -185,6 +185,7 @@
 <li class="toctree-l2"><a class="reference internal" href="zenml.core.html#module-zenml.core.local_service">zenml.core.local_service module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="zenml.core.html#module-zenml.core.mapping_utils">zenml.core.mapping_utils module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="zenml.core.html#module-zenml.core.repo">zenml.core.repo module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.core.html#module-zenml.core.repo_test">zenml.core.repo_test module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="zenml.core.html#module-zenml.core.utils">zenml.core.utils module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="zenml.core.html#module-zenml.core">Module contents</a></li>
 </ul>
@@ -220,8 +221,8 @@
 <li class="toctree-l3"><a class="reference internal" href="zenml.orchestrators.airflow.html">zenml.orchestrators.airflow package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.airflow.html#submodules">Submodules</a></li>
 <li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.airflow.html#zenml-orchestrators-airflow-airflow-component-module">zenml.orchestrators.airflow.airflow_component module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.airflow.html#zenml-orchestrators-airflow-airflow-dag-runner-module">zenml.orchestrators.airflow.airflow_dag_runner module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.airflow.html#zenml-orchestrators-airflow-airflow-orchestrator-module">zenml.orchestrators.airflow.airflow_orchestrator module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.airflow.html#module-zenml.orchestrators.airflow.airflow_dag_runner">zenml.orchestrators.airflow.airflow_dag_runner module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.airflow.html#module-zenml.orchestrators.airflow.airflow_orchestrator">zenml.orchestrators.airflow.airflow_orchestrator module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.airflow.html#module-zenml.orchestrators.airflow">Module contents</a></li>
 </ul>
 </li>
@@ -280,8 +281,14 @@
 <span id="zenml-constants-module"></span><h2>zenml.constants module<a class="headerlink" href="#module-zenml.constants" title="Permalink to this headline">¶</a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="zenml.constants.handle_bool_env_var">
-<span class="sig-prename descclassname"><span class="pre">zenml.constants.</span></span><span class="sig-name descname"><span class="pre">handle_bool_env_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.constants.handle_bool_env_var" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">zenml.constants.</span></span><span class="sig-name descname"><span class="pre">handle_bool_env_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.constants.handle_bool_env_var" title="Permalink to this definition">¶</a></dt>
 <dd><p>Converts normal env var to boolean</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="zenml.constants.handle_int_env_var">
+<span class="sig-prename descclassname"><span class="pre">zenml.constants.</span></span><span class="sig-name descname"><span class="pre">handle_int_env_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.constants.handle_int_env_var" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts normal env var to int</p>
 </dd></dl>
 
 </div>
