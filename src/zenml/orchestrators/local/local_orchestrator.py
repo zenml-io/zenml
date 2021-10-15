@@ -43,7 +43,7 @@ class LocalOrchestrator(BaseOrchestrator):
         metadata_store = zenml_pipeline.stack.metadata_store
 
         created_pipeline = tfx_pipeline.Pipeline(
-            pipeline_name="pipeline_name",
+            pipeline_name=zenml_pipeline.name,
             components=steps,
             pipeline_root=artifact_store.path,
             metadata_connection_config=metadata_store.get_tfx_metadata_config(),
