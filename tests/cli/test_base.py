@@ -16,18 +16,18 @@ import pytest
 from click.testing import CliRunner
 
 from zenml.cli.base import clean, init
+from zenml.exceptions import InitializationException
 
 
-@pytest.mark.xfail()
-# TODO: [HIGH] fix failing test
 def test_init_fails_when_repo_path_is_not_git_repo_already(tmp_path):
     """Check that init command raises an InvalidGitRepositoryError
     when executed outside a valid Git repository"""
     runner = CliRunner()
-    result = runner.invoke(init, ["--repo_path", str(tmp_path)])
-    assert f"Initializing at {tmp_path}" in result.output
-    assert result.exit_code == 1
-    assert f"{tmp_path} is not a valid git repository!" in result.output
+    with runner.isolated_filesystem():
+        result = runner.invoke(init, ["--repo_path", str(tmp_path)])
+        assert isinstance(result.exception, InitializationException)
+        assert f"Initializing at {tmp_path}" in result.output
+        assert result.exit_code == 1
 
 
 @pytest.mark.xfail()
