@@ -1,10 +1,12 @@
-from typing import List
+from typing import TYPE_CHECKING, List
 
 from tfx.dsl.compiler.constants import PIPELINE_RUN_CONTEXT_TYPE_NAME
 
 from zenml.logger import get_logger
-from zenml.metadata.base_metadata_store import BaseMetadataStore
 from zenml.post_execution.pipeline_run import PipelineRunView
+
+if TYPE_CHECKING:
+    from zenml.metadata.base_metadata_store import BaseMetadataStore
 
 logger = get_logger(__name__)
 
@@ -14,7 +16,9 @@ class PipelineView:
     pipeline-related information from the metadata store.
     """
 
-    def __init__(self, id_: int, name: str, metadata_store: BaseMetadataStore):
+    def __init__(
+        self, id_: int, name: str, metadata_store: "BaseMetadataStore"
+    ):
         """Initializes a post-execution pipeline object.
 
         In most cases `PipelineView` objects should not be created manually

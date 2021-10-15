@@ -1,12 +1,14 @@
 from collections import OrderedDict
-from typing import Dict, List
+from typing import TYPE_CHECKING, Dict, List
 
 from ml_metadata import proto
 
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
-from zenml.metadata.base_metadata_store import BaseMetadataStore
 from zenml.post_execution.step import StepView
+
+if TYPE_CHECKING:
+    from zenml.metadata.base_metadata_store import BaseMetadataStore
 
 logger = get_logger(__name__)
 
@@ -21,7 +23,7 @@ class PipelineRunView:
         id_: int,
         name: str,
         executions: List[proto.Execution],
-        metadata_store: BaseMetadataStore,
+        metadata_store: "BaseMetadataStore",
     ):
         """Initializes a post-execution pipeline run object.
 

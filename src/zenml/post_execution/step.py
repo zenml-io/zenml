@@ -1,11 +1,13 @@
 from collections import OrderedDict
-from typing import Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from zenml.artifacts.base_artifact import MATERIALIZERS_PROPERTY_KEY
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
-from zenml.metadata.base_metadata_store import BaseMetadataStore
 from zenml.post_execution.artifact import ArtifactView
+
+if TYPE_CHECKING:
+    from zenml.metadata.base_metadata_store import BaseMetadataStore
 
 logger = get_logger(__name__)
 
@@ -20,7 +22,7 @@ class StepView:
         id_: int,
         name: str,
         parameters: Dict[str, Any],
-        metadata_store: BaseMetadataStore,
+        metadata_store: "BaseMetadataStore",
     ):
         """Initializes a post-execution step object.
 
