@@ -15,7 +15,7 @@
 import pytest
 from click.testing import CliRunner
 
-from zenml.cli.base import init
+from zenml.cli.base import clean, init
 
 
 @pytest.mark.xfail()
@@ -38,3 +38,20 @@ def test_init(tmp_path):
     assert result.exit_code == 0
     assert f"Initializing at {tmp_path}" in result.output
     assert f"ZenML repo initialized at {tmp_path}" in result.output
+
+
+def test_clean_only_returns_a_message():
+    """Check to make sure that CLI clean invocation only outputs a message"""
+    runner = CliRunner()
+    result = runner.invoke(clean, ["--yes", "True"])
+    assert result.exit_code == 0
+    assert "Not implemented for this version" in result.output
+
+
+def test_clean_checks_before_proceeding_without_explicit_flag():
+    """Check to make sure that clean invocation checks before running
+    if no explicit flag is passed in"""
+    runner = CliRunner()
+    result = runner.invoke(clean)
+    assert result.exit_code == 0
+    assert "Are you sure you want to proceed?" in result.output
