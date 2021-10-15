@@ -44,14 +44,6 @@ zenml.core.local\_service module
    :undoc-members:
    :show-inheritance:
 
-zenml.core.local\_service\_test module
---------------------------------------
-
-.. automodule:: zenml.core.local_service_test
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 zenml.core.mapping\_utils module
 --------------------------------
 
@@ -64,14 +56,6 @@ zenml.core.repo module
 ----------------------
 
 .. automodule:: zenml.core.repo
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-zenml.core.repo\_test module
-----------------------------
-
-.. automodule:: zenml.core.repo_test
    :members:
    :undoc-members:
    :show-inheritance:
