@@ -53,3 +53,11 @@ class PipelineStatusTypes(str, Enum):
     Failed = "Failed"
     Succeeded = "Succeeded"
     Running = "Running"
+
+
+class ExecutionStatus(Enum):
+    """Enum that represents the current status of a step or pipeline run."""
+
+    FAILED = "failed"
+    COMPLETED = "completed"
+    RUNNING = "running"

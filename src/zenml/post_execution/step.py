@@ -1,20 +1,13 @@
 from collections import OrderedDict
-from enum import Enum
 from typing import Any, Dict, List
 
 from zenml.artifacts.base_artifact import MATERIALIZERS_PROPERTY_KEY
+from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.metadata.base_metadata_store import BaseMetadataStore
 from zenml.post_execution.artifact import ArtifactView
 
 logger = get_logger(__name__)
-
-
-# TODO: docs
-class ExecutionStatus(Enum):
-    Failed = "Failed"
-    Completed = "Succeeded"
-    Running = "Running"
 
 
 class StepView:
@@ -79,11 +72,11 @@ class StepView:
         state = proto.last_known_state
 
         if state == proto.COMPLETE or state == proto.CACHED:
-            return ExecutionStatus.Completed
+            return ExecutionStatus.COMPLETED
         elif state == proto.RUNNING:
-            return ExecutionStatus.Running
+            return ExecutionStatus.RUNNING
         else:
-            return ExecutionStatus.Failed
+            return ExecutionStatus.FAILED
 
     @property
     def inputs(self) -> List[ArtifactView]:

@@ -3,9 +3,10 @@ from typing import Dict, List
 
 from ml_metadata import proto
 
+from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.metadata.base_metadata_store import BaseMetadataStore
-from zenml.post_execution.step import ExecutionStatus, StepView
+from zenml.post_execution.step import StepView
 
 logger = get_logger(__name__)
 
@@ -51,14 +52,14 @@ class PipelineRunView:
         """Returns the current status of the pipeline run."""
         step_statuses = (step.status for step in self.steps)
 
-        if any(status == ExecutionStatus.Failed for status in step_statuses):
-            return ExecutionStatus.Failed
+        if any(status == ExecutionStatus.FAILED for status in step_statuses):
+            return ExecutionStatus.FAILED
         elif all(
-            status == ExecutionStatus.Completed for status in step_statuses
+            status == ExecutionStatus.COMPLETED for status in step_statuses
         ):
-            return ExecutionStatus.Completed
+            return ExecutionStatus.COMPLETED
         else:
-            return ExecutionStatus.Running
+            return ExecutionStatus.RUNNING
 
     @property
     def steps(self) -> List[StepView]:
