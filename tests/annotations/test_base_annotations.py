@@ -12,6 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import pytest
 
+from zenml.annotations.base_annotations import (
+    BaseAnnotation,
+    BaseAnnotationMeta,
+)
+
+
+@pytest.fixture()
 def test_me():
     """A simple test to check a functionality"""
+    base_annotation = BaseAnnotation()
+    base_annotation_meta = BaseAnnotationMeta()
+    assert base_annotation == base_annotation_meta

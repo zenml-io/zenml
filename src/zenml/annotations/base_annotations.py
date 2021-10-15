@@ -36,7 +36,7 @@ from six import with_metaclass
 
 class BaseAnnotationMeta(type):
     """The Metaclass for the annotations in ZenML. It defines a __get_item__
-    method which in return class the __generic_getitem of the main class
+    method which in return class the _generic_getitem of the main class
     with the same param
     """
 
