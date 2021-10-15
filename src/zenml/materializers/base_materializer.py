@@ -60,6 +60,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             Any object that is to be passed into the relevant artifact in the
             step.
         """
+        # TODO [MEDIUM]: Type checking
         # if data_type not in self.ASSOCIATED_TYPES:
         #     raise ValueError(
         #         f"Data type {data_type} not supported by materializer "
@@ -72,7 +73,6 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         Args:
             Any object that is specified as an input artifact of the step.
         """
-        type(data)
         # TODO [MEDIUM]: Put proper type checking
         # if data_type not in self.ASSOCIATED_TYPES:
         #     raise ValueError(

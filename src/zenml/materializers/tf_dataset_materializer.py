@@ -12,10 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
-from typing import Any, Type, Union
+from typing import Any, Type
 
 import tensorflow as tf
-from tensorflow.python.data.ops.dataset_ops import PrefetchDataset
 
 from zenml.materializers.base_materializer import BaseMaterializer
 
@@ -25,7 +24,7 @@ DEFAULT_FILENAME = "saved_data"
 class TensorflowDatasetMaterializer(BaseMaterializer):
     """Materializer to read data to and from beam."""
 
-    ASSOCIATED_TYPES = [tf.data.Dataset, PrefetchDataset]
+    ASSOCIATED_TYPES = [tf.data.Dataset]
 
     def handle_input(self, data_type: Type) -> Any:
         """Reads data into tf.data.Dataset"""
@@ -33,7 +32,7 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
         path = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         return tf.data.experimental.load(path)
 
-    def handle_return(self, dataset: Union[tf.data.Dataset, PrefetchDataset]):
+    def handle_return(self, dataset: tf.data.Dataset):
         """Persists a tf.data.Dataset object."""
         super().handle_return(dataset)
         path = os.path.join(self.artifact.uri, DEFAULT_FILENAME)

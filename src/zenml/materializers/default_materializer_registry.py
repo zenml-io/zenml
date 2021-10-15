@@ -73,7 +73,7 @@ class DefaultMaterializerRegistry(object):
         if key in self.materializer_types:
             return self.materializer_types[key]
         else:
-            raise AttributeError(
+            raise KeyError(
                 f"Type {key} does not have a default `Materializer`! Please "
                 f"specify your own `Materializer`."
             )
