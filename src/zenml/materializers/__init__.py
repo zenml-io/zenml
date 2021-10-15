@@ -24,10 +24,6 @@ logger = get_logger(__name__)
 
 try:
     from zenml.materializers.keras_meterializer import KerasMaterializer  # noqa
-except ImportError:
-    logger.debug("Tensorflow not installed.")
-
-try:
     from zenml.materializers.tf_dataset_materializer import (  # noqa
         TensorflowDatasetMaterializer,
     )
