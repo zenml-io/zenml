@@ -46,3 +46,4 @@ class TestBaseAnnotationMeta:
         self, base_annotation_meta_fixture
     ):
         """Check that the __get_item__ method returns an instance of the annotation"""
+        # TODO: [MEDIUM]
