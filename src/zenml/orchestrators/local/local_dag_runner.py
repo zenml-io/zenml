@@ -32,10 +32,11 @@
 by Google at: https://github.com/tensorflow/tfx/blob/master/tfx/orchestration
 /local/local_dag_runner.py"""
 
-import datetime
 import time
+from datetime import datetime
 
-from tfx.dsl.compiler import compiler, constants
+from tfx.dsl.compiler import compiler
+from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
 from tfx.dsl.components.base import base_component
 from tfx.orchestration import metadata
 from tfx.orchestration import pipeline as pipeline_py
@@ -99,7 +100,7 @@ class LocalDagRunner(tfx_runner.TfxRunner):
         runtime_parameter_utils.substitute_runtime_parameter(
             pipeline,
             {
-                constants.PIPELINE_RUN_ID_PARAMETER_NAME: datetime.datetime.now().isoformat(),
+                PIPELINE_RUN_ID_PARAMETER_NAME: datetime.now().isoformat(),
             },
         )
 
@@ -132,10 +133,10 @@ class LocalDagRunner(tfx_runner.TfxRunner):
                 custom_driver_spec=custom_driver_spec,
             )
             start = time.time()
-            logger.info(f"Step {node_id} has started.")
+            logger.info(f"Step `{node_id}` has started.")
             component_launcher.launch()
             end = time.time()
             logger.info(
-                f"Step {node_id} has finished"
+                f"Step `{node_id}` has finished"
                 f" in {format_timedelta_pretty(end - start)}."
             )

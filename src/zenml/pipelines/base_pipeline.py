@@ -17,9 +17,12 @@ from typing import Dict
 
 from zenml.core.repo import Repository
 from zenml.exceptions import PipelineInterfaceError
+from zenml.logger import get_logger
 from zenml.stacks.base_stack import BaseStack
 
+logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
+PARAM_ENABLE_CACHE: str = "enable_cache"
 
 
 class BasePipelineMeta(type):
@@ -51,8 +54,14 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
     def __init__(self, *args, **kwargs):
         self.__stack = Repository().get_active_stack()
-
+        self.enable_cache = getattr(self, PARAM_ENABLE_CACHE)
+        self.pipeline_name = self.__class__.__name__
         self.__steps = dict()
+        logger.info(f"Creating pipeline: {self.pipeline_name}")
+        logger.info(
+            f'Cache {"enabled" if self.enable_cache else "disabled"} for '
+            f"pipeline `{self.pipeline_name}`"
+        )
 
         if args:
             raise PipelineInterfaceError(
@@ -107,4 +116,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
     def run(self):
         """Runs the pipeline using the orchestrator of the pipeline stack."""
+        logger.info(
+            f"Using orchestrator `{self.stack.orchestrator_name}` for "
+            f"pipeline `{self.pipeline_name}`. Running pipeline.."
+        )
         return self.stack.orchestrator.run(self)
