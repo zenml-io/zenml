@@ -30,7 +30,12 @@ from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.post_execution.pipeline import PipelineView
 from zenml.stacks.base_stack import BaseStack
 from zenml.utils import path_utils
-from zenml.utils.analytics_utils import CREATE_REPO, GET_PIPELINES, track
+from zenml.utils.analytics_utils import (
+    FETCHED_STACK,
+    GET_PIPELINES,
+    SET_STACK,
+    track,
+)
 
 logger = get_logger(__name__)
 
@@ -71,7 +76,6 @@ class Repository:
             self.git_wrapper = None
 
     @staticmethod
-    @track(event=CREATE_REPO)
     def init_repo(
         repo_path: str = os.getcwd(),
         stack: BaseStack = None,
@@ -151,6 +155,7 @@ class Repository:
         """Returns the active service. For now, always local."""
         return self.service
 
+    @track(event=SET_STACK)
     def set_active_stack(self, stack_key: str):
         """Set the active stack for the repo. This change is local for the
         machine.
@@ -163,6 +168,7 @@ class Repository:
         gc.set_stack_for_repo(self.path, stack_key)
         gc.update()
 
+    @track(event=FETCHED_STACK)
     def get_active_stack_key(self) -> str:
         """Get the active stack key from global config.
 

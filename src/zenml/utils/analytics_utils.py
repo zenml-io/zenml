@@ -30,29 +30,25 @@ logger = get_logger(__name__)
 
 # EVENTS
 
-# Functions
-
-CREATE_STEP = "Step created"
-
-GET_STEPS_VERSIONS = "Step Versions listed"
-
-GET_STEP_VERSION = "Step listed"
-
 # Pipelines
-
-CREATE_PIPELINE = "Pipeline created"
 
 RUN_PIPELINE = "Pipeline run"
 
 GET_PIPELINES = "Pipelines fetched"
 
-GET_PIPELINE_ARTIFACTS = "Pipeline Artifacts fetched"
-
 # Repo
 
-CREATE_REPO = "Repository created"
+INITIALIZE_REPO = "ZenML initialized"
 
-INITIALIZE = "ZenML initialized"
+# Components
+REGISTERED_METADATA_STORE = "Metadata Store registered"
+REGISTERED_ARTIFACT_STORE = "Artifact Store registered"
+REGISTERED_ORCHESTRATOR = "Orchestrator registered"
+
+# Stack
+REGISTERED_STACK = "Stack registered"
+SET_STACK = "Stack set"
+FETCHED_STACK = "Stack fetched"
 
 
 def get_segment_key() -> str:
@@ -145,7 +141,7 @@ def track_event(event: str, metadata: Dict = None):
         gc = GlobalConfig()
         logger.debug(f"Analytics opt-in: {gc.analytics_opt_in}.")
 
-        if gc.analytics_opt_in is False and event is not INITIALIZE:
+        if gc.analytics_opt_in is False and event is not INITIALIZE_REPO:
             return
 
         if metadata is None:

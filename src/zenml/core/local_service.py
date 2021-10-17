@@ -10,6 +10,13 @@ from zenml.metadata.base_metadata_store import BaseMetadataStore
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.stacks.base_stack import BaseStack
 from zenml.utils import path_utils, source_utils
+from zenml.utils.analytics_utils import (
+    REGISTERED_ARTIFACT_STORE,
+    REGISTERED_METADATA_STORE,
+    REGISTERED_ORCHESTRATOR,
+    REGISTERED_STACK,
+    track,
+)
 
 logger = get_logger(__name__)
 
@@ -73,6 +80,7 @@ class LocalService(BaseComponent):
             )
         return self.stacks[key]
 
+    @track(event=REGISTERED_STACK)
     def register_stack(self, key: str, stack: BaseStack):
         """Register a stack.
 
@@ -123,6 +131,7 @@ class LocalService(BaseComponent):
             key, self.artifact_store_map
         )
 
+    @track(event=REGISTERED_ARTIFACT_STORE)
     def register_artifact_store(
         self, key: str, artifact_store: BaseArtifactStore
     ):
@@ -180,6 +189,7 @@ class LocalService(BaseComponent):
             key, self.metadata_store_map
         )
 
+    @track(event=REGISTERED_METADATA_STORE)
     def register_metadata_store(
         self, key: str, metadata_store: BaseMetadataStore
     ):
@@ -235,6 +245,7 @@ class LocalService(BaseComponent):
             )
         return mapping_utils.get_component_from_key(key, self.orchestrator_map)
 
+    @track(event=REGISTERED_ORCHESTRATOR)
     def register_orchestrator(self, key: str, orchestrator: BaseOrchestrator):
         """Register an orchestrator.
 
