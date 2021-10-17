@@ -30,6 +30,7 @@ from zenml.materializers.spec_materializer_registry import (
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
 from zenml.steps.utils import (
+    PARAM_STEP_NAME,
     SINGLE_RETURN_OUT_NAME,
     STEP_INNER_FUNC_NAME,
     generate_component,
@@ -122,6 +123,7 @@ class BaseStep(metaclass=BaseStepMeta):
     def __init__(self, *args, **kwargs):
         self.materializers = {}
         self.__component = None
+        self.step_name = getattr(self, PARAM_STEP_NAME)
         self.PARAM_SPEC = dict()
         self.INPUT_SPEC = dict()
         self.OUTPUT_SPEC = dict()

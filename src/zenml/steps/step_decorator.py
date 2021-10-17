@@ -15,7 +15,11 @@
 import types
 from typing import Callable, Type
 
-from zenml.steps.base_step import STEP_INNER_FUNC_NAME, BaseStep
+from zenml.steps.base_step import (
+    PARAM_STEP_NAME,
+    STEP_INNER_FUNC_NAME,
+    BaseStep,
+)
 
 
 def step(
@@ -45,10 +49,14 @@ def step(
         Returns:
             The class of a newly generated ZenML Step.
         """
+        step_name = name if name else func.__name__
         return type(
-            name if name else func.__name__,
+            step_name,
             (BaseStep,),
-            {STEP_INNER_FUNC_NAME: staticmethod(func)},
+            {
+                STEP_INNER_FUNC_NAME: staticmethod(func),
+                PARAM_STEP_NAME: step_name,
+            },
         )
 
     if _func is None:
