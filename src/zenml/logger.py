@@ -20,6 +20,7 @@ from typing import Any
 
 from absl import logging as absl_logging
 
+from zenml.constants import ZENML_LOGGING_VERBOSITY
 from zenml.enums import LoggingLevels
 
 from zenml.constants import (  # isort: skip
@@ -33,12 +34,12 @@ LOG_FILE = f"{APP_NAME}_logs.log"
 
 
 def get_logging_level() -> LoggingLevels:
-    """Get logging level from the config"""
-    # GC also needs logging so we need to import locally.
-    # from zenml.config.global_config import GlobalConfig
-
-    # return GlobalConfig().logging_verbosity
-    return LoggingLevels.INFO
+    """Get logging level from the env variable."""
+    if ZENML_LOGGING_VERBOSITY not in LoggingLevels.__members__:
+        raise KeyError(
+            f"Verbosity must be one of {LoggingLevels.__members__.keys()}"
+        )
+    return LoggingLevels[ZENML_LOGGING_VERBOSITY]
 
 
 def set_root_verbosity():
