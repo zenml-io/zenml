@@ -26,6 +26,7 @@ from zenml.core.component_factory import (
     orchestrator_store_factory,
 )
 from zenml.core.repo import Repository
+from zenml.enums import LoggingLevels
 
 
 # Analytics
@@ -37,7 +38,9 @@ def analytics():
 @analytics.command("opt-in", context_settings=dict(ignore_unknown_options=True))
 def opt_in():
     """Opt-in to analytics"""
-    GlobalConfig().analytics_opt_in = True
+    gc = GlobalConfig()
+    gc.analytics_opt_in = True
+    gc.update()
     cli_utils.declare("Opted in to analytics.")
 
 
@@ -46,8 +49,34 @@ def opt_in():
 )
 def opt_out():
     """Opt-out to analytics"""
-    GlobalConfig().analytics_opt_in = False
+    gc = GlobalConfig()
+    gc.analytics_opt_in = False
+    gc.update()
     cli_utils.declare("Opted out of analytics.")
+
+
+# Logging
+@cli.group()
+def logging():
+    """Configuration of logging for ZenML pipelines."""
+
+
+# Setting logging
+@logging.command("set-verbosity")
+@click.argument(
+    "verbosity",
+    type=click.Choice(
+        list(map(lambda x: x.name, LoggingLevels)), case_sensitive=False
+    ),
+)
+def set_logging_verbosity(verbosity: str):
+    """Set logging level"""
+    verbosity = verbosity.upper()
+    if verbosity not in LoggingLevels.__members__:
+        raise KeyError(
+            f"Verbosity must be one of {LoggingLevels.__members__.keys()}"
+        )
+    cli_utils.declare(f"Set verbosity to: {verbosity}")
 
 
 # Metadata Store

@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import logging
 from enum import Enum
 
 
@@ -52,3 +53,11 @@ class ExecutionStatus(Enum):
     FAILED = "failed"
     COMPLETED = "completed"
     RUNNING = "running"
+
+
+class LoggingLevels(Enum):
+    NOTSET = logging.NOTSET
+    ERROR = logging.ERROR
+    WARN = logging.WARN
+    INFO = logging.INFO
+    DEBUG = logging.DEBUG
