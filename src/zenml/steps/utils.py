@@ -107,7 +107,7 @@ def generate_component(step) -> Callable[..., Any]:
             "_FUNCTION": staticmethod(getattr(step, STEP_INNER_FUNC_NAME)),
             "__module__": step.__module__,
             "spec_materializer_registry": step.spec_materializer_registry,
-            PARAM_STEP_NAME: getattr(step, PARAM_STEP_NAME),
+            PARAM_STEP_NAME: step.step_name,
         },
     )
 
