@@ -29,9 +29,11 @@
 #  permissions and limitations under the License.
 
 """Definition of Beam TFX runner. Inspired by local dag runner implementation
-by Google at: https://github.com/tensorflow/tfx/blob/master/tfx/orchestration/local/local_dag_runner.py"""
+by Google at: https://github.com/tensorflow/tfx/blob/master/tfx/orchestration
+/local/local_dag_runner.py"""
 
 import datetime
+import time
 
 from tfx.dsl.compiler import compiler, constants
 from tfx.dsl.components.base import base_component
@@ -47,6 +49,29 @@ from tfx.orchestration.portable import (
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+def format_timedelta_pretty(seconds: float) -> str:
+    """Format a float representing seconds into a string.
+
+    Args:
+      seconds: result of a time.time() - time.time().
+
+    Returns:
+        Pretty formatted string according to specification.
+    """
+    int_seconds = int(seconds)
+    days, int_seconds = divmod(int_seconds, 86400)
+    hours, int_seconds = divmod(int_seconds, 3600)
+    minutes, int_seconds = divmod(int_seconds, 60)
+    if days > 0:
+        return "%dd%dh%dm%ds" % (days, hours, minutes, int_seconds)
+    elif hours > 0:
+        return "%dh%dm%ds" % (hours, minutes, int_seconds)
+    elif minutes > 0:
+        return "%dm%ds" % (minutes, int_seconds)
+    else:
+        return f"{seconds:.3f}s"
 
 
 class LocalDagRunner(tfx_runner.TfxRunner):
@@ -106,6 +131,11 @@ class LocalDagRunner(tfx_runner.TfxRunner):
                 executor_spec=executor_spec,
                 custom_driver_spec=custom_driver_spec,
             )
+            start = time.time()
             logger.info(f"Step {node_id} has started.")
             component_launcher.launch()
-            logger.info(f"Step {node_id} has finished.")
+            end = time.time()
+            logger.info(
+                f"Step {node_id} has finished"
+                f" in {format_timedelta_pretty(end - start)}."
+            )
