@@ -35,11 +35,12 @@ LOG_FILE = f"{APP_NAME}_logs.log"
 
 def get_logging_level() -> LoggingLevels:
     """Get logging level from the env variable."""
-    if ZENML_LOGGING_VERBOSITY not in LoggingLevels.__members__:
+    verbosity = ZENML_LOGGING_VERBOSITY.upper()
+    if verbosity not in LoggingLevels.__members__:
         raise KeyError(
             f"Verbosity must be one of {LoggingLevels.__members__.keys()}"
         )
-    return LoggingLevels[ZENML_LOGGING_VERBOSITY]
+    return LoggingLevels[verbosity]
 
 
 def set_root_verbosity():
