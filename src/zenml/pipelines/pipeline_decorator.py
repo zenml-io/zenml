@@ -28,7 +28,7 @@ def pipeline(
     *,
     name: str = None,
     enable_cache: bool = True
-) -> Callable[..., BasePipeline]:
+) -> Callable[..., Type[BasePipeline]]:
     """Outer decorator function for the creation of a ZenML pipeline
 
     In order to be able work with parameters such as "name", it features a
