@@ -40,11 +40,8 @@ def test_no_exception_raised_if_repository_is_valid_git_repository(tmp_path):
 def test_exception_raised_if_repo_is_not_a_git_repository(tmp_path):
     """Initialization of GitWrapper class should raise an exception
     if directory is not a git repository"""
-    try:
+    with pytest.raises(InvalidGitRepositoryError):
         zenml.core.git_wrapper.GitWrapper(tmp_path)
-    except Exception as e:
-        assert True, f"Exception raised: {e}"
-        assert isinstance(e, InvalidGitRepositoryError)
 
 
 @pytest.fixture(scope="module")
@@ -53,11 +50,8 @@ def test_exception_raised_if_repo_path_does_not_exist(tmp_path, non_path):
     """Initialization of GitWrapper class should raise an exception
     if the repository path does not exist"""
     not_a_path = tmp_path / non_path
-    try:
+    with pytest.raises(NoSuchPathError):
         zenml.core.git_wrapper.GitWrapper(not_a_path)
-    except Exception as e:
-        assert True, f"Exception raised: {e}"
-        assert isinstance(e, NoSuchPathError)
 
 
 @pytest.fixture(scope="module")
@@ -113,8 +107,5 @@ def test_items_appended_correctly_to_gitignore_file_when_file_already_exists(
     Repo.init(tmp_path)
     git_instance = zenml.core.git_wrapper.GitWrapper(tmp_path)
     with open(tmp_path / GITIGNORE_FILENAME, "w") as _:
-        try:
+        with pytest.raises(NotImplementedError):
             git_instance.add_gitignore(test_items)
-        except Exception as e:
-            assert True, f"Exception raised: {e}"
-            assert isinstance(e, NotImplementedError)
