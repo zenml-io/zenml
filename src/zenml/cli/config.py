@@ -34,9 +34,7 @@ def analytics():
     """Analytics for opt-in and opt-out"""
 
 
-@analytics.command(
-    "opt-in", context_settings=dict(ignore_unknown_options=True)
-)
+@analytics.command("opt-in", context_settings=dict(ignore_unknown_options=True))
 def opt_in():
     """Opt-in to analytics"""
     GlobalConfig().analytics_opt_in = True

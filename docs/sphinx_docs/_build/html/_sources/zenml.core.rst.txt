@@ -60,6 +60,14 @@ zenml.core.repo module
    :undoc-members:
    :show-inheritance:
 
+zenml.core.repo\_test module
+----------------------------
+
+.. automodule:: zenml.core.repo_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 zenml.core.utils module
 -----------------------
 

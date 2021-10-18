@@ -76,7 +76,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             components=steps,
             pipeline_root=artifact_store.path,
             metadata_connection_config=metadata_store.get_tfx_metadata_config(),
-            enable_cache=False,
+            enable_cache=True,
         )
 
         return runner.run(created_pipeline)

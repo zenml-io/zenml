@@ -13,28 +13,27 @@
 #  permissions and limitations under the License.
 
 import types
-from typing import Type
+from typing import Callable, Type
 
-from zenml.steps.base_step import BaseStep
-from zenml.utils.exceptions import StepInterfaceError
+from zenml.steps.base_step import STEP_INNER_FUNC_NAME, BaseStep
 
 
-def step(name: str = None):
+def step(
+    _func: types.FunctionType = None, *, name: str = None
+) -> Callable[..., BaseStep]:
     """Outer decorator function for the creation of a ZenML step
 
     In order to be able work with parameters such as `name`, it features a
     nested decorator structure.
 
     Args:
+        _func: Optional func from outside.
         name (required) the given name for the step.
 
     Returns:
         the inner decorator which creates the step class based on the
         ZenML BaseStep
     """
-
-    if not isinstance(name, str):
-        raise StepInterfaceError("Please give your step a unique name!")
 
     def inner_decorator(func: types.FunctionType) -> Type:
         """Inner decorator function for the creation of a ZenML Step
@@ -46,11 +45,13 @@ def step(name: str = None):
         Returns:
             The class of a newly generated ZenML Step.
         """
-        step_class = type(
+        return type(
             name if name else func.__name__,
             (BaseStep,),
-            {"process": staticmethod(func)},
+            {STEP_INNER_FUNC_NAME: staticmethod(func)},
         )
-        return step_class
 
-    return inner_decorator
+    if _func is None:
+        return inner_decorator
+    else:
+        return inner_decorator(_func)

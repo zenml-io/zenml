@@ -1,4 +1,54 @@
-# 0.5.0rc0
+# 0.5.0
+This long-awaited ZenML release marks a seminal moment in the project's history. We present to you a complete 
+revamp of the internals of ZenML, with a fresh new design and API. While these changes are significant, and have been months 
+in the making, the original vision of ZenML has not wavered. We hope that the ZenML community finds the new 
+design choices easier to grasp and use, and we welcome feedback on the [issues board](https://github.com/zenml-io/zenml/issues).
+
+## Warning
+0.5.0 is a complete API change from the previous versions of ZenML, and is a *breaking* upgrade. Fundamental 
+concepts have been changed, and therefore backwards compatibility is not maintained. Please use only this version 
+with fresh projects.
+
+With such significant changes, we expect this release to also be breaking. Please report any bugs in the issue board, and 
+they should be addressed in upcoming releases.
+
+## Overview
+
+* Introducing a new functional API for creating pipelines and steps. This is now the default mechanism for building ZenML pipelines. [read more](https://docs.zenml.io/quickstart-guide)
+* Steps now use Materializers to handle artifact serialization/deserialization between steps. This is a powerful change, and will be expanded upon in the future. [read more](https://docs.zenml.io/core/materializers)
+* Introducing the new `Stack` paradigm: Easily transition from one MLOps stack to the next with a few CLI commands [read more](https://docs.zenml.io/core/stacks)
+* Introducing a new `Artifact`, `Typing`, and `Annotation` system, with `pydantic` (and `dataclasses`) support [read more](https://docs.zenml.io/core/artifacts)
+* Deprecating the `pipelines_dir`: Now individual pipelines will be stored in their metadata stores, making the metadata store a single source of truth. [read more](https://docs.zenml.io/core/stacks)
+* Deprecating the YAML config file: ZenML no longer natively compiles to an intermediate YAML-based representation. Instead, it compiles and deploys directly into the selected orchestrator's 
+representation. While we do plan to support running pipelines directly through YAML in the future, it will no longer be
+the default route through which pipelines are run. [read more about orchestrators here](https://docs.zenml.io/core/stacks)
+
+## Technical Improvements
+* A completely new system design, please refer to the [docs](https://docs.zenml.io/core/core-concepts).
+* Better type hints and docstrings.
+* Auto-completion support.
+* Numerous performance improvements and bug fixes, including a smaller dependency footprint.
+
+## What to expect in the next weeks and the new ZenML
+Currently, this release is bare bones. We are missing some basic features which used to be part of ZenML 0.3.8 (the previous release):
+
+* Standard interfaces for `TrainingPipeline`.
+* Individual step interfaces like `PreprocesserStep`, `TrainerStep`, `DeployerStep` etc. need to be rewritten from within the new paradigm. They should
+be included in the non-RC version of this release.
+* A proper production setup with an orchestrator like Airflow.
+* A post-execution workflow to analyze and inspect pipeline runs.
+* The concept of `Backends` will evolve into a simple mechanism of transitioning individual steps into different runners.
+* Support for `KubernetesOrchestrator`, `KubeflowOrchestrator`, `GCPOrchestrator` and `AWSOrchestrator` are also planned.
+* Dependency management including Docker support is planned.
+
+[Our roadmap](https://docs.zenml.io/support/roadmap) goes into further detail on the timeline.
+
+We encourage every user (old or new) to start afresh with this release. Please go over our latest [docs](https://docs.zenml.io) 
+and [examples](examples) to get a hang of the new system.
+
+Onwards and upwards to 1.0.0!
+
+# 0.5.0rc2
 This long-awaited ZenML release marks a seminal moment in the project's history. We present to you a complete 
 revamp of the internals of ZenML, with a fresh new design and API. While these changes are significant, and have been months 
 in the making, the original vision of ZenML has not wavered. We hope that the ZenML community finds the new 
@@ -6,7 +56,7 @@ design choices easier to grasp and use, and we welcome feedback on the [issues b
 
 ## Warning
 0.5.0rc0 is a complete API change from the previous versions of ZenML, and is a *breaking* upgrade. Fundamental 
-concepts have been changed, and therefore backwards compatability is not maintained. Please use only this version 
+concepts have been changed, and therefore backwards compatibility is not maintained. Please use only this version 
 with fresh projects.
 
 With such significant changes, we expect this release to also be breaking. Please report any bugs in the issue board, and 
