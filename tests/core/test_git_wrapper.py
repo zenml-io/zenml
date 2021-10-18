@@ -62,9 +62,7 @@ def test_exception_raised_if_repo_path_does_not_exist(tmp_path, non_path):
 
 @pytest.fixture(scope="module")
 @given(sample_items=lists(text()))
-def test_creating_gitignore_with_items_when_none_exists(
-    tmp_path, sample_items
-):
+def test_creating_gitignore_with_items_when_none_exists(tmp_path, sample_items):
     """Test whether creating a gitignore file with items works when no gitignore file exists"""
     Repo.init(tmp_path)
     git_instance = zenml.core.git_wrapper.GitWrapper(tmp_path)

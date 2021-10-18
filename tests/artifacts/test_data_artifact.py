@@ -37,6 +37,4 @@ def test_properties_dict_has_a_split_names_property(data_artifact_fixture):
 
 def test_split_names_property_is_a_property_type(data_artifact_fixture):
     """Check the split_names property is a property type"""
-    assert isinstance(
-        data_artifact_fixture.PROPERTIES["split_names"], Property
-    )
+    assert isinstance(data_artifact_fixture.PROPERTIES["split_names"], Property)
