@@ -21,7 +21,7 @@ import yaml
 from zenml.utils import path_utils
 
 
-def write_yaml(file_path: str, contents: Dict):
+def write_yaml(file_path: str, contents: Dict) -> None:
     """Write contents as YAML format to file_path.
 
     Args:
@@ -71,7 +71,7 @@ def is_yaml(file_path: str) -> bool:
     return False
 
 
-def write_json(file_path: str, contents: Dict):
+def write_json(file_path: str, contents: Dict) -> None:
     """Write contents as JSON format to file_path.
 
     Args:

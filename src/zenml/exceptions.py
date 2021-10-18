@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """ZenML specific exception definitions"""
 
+from typing import Optional
+
 
 class InitializationException(Exception):
     """Raises exception when a function is run before zenml initialization."""
@@ -56,7 +58,10 @@ class AlreadyExistsException(Exception):
     action is trying to create a resource with the same name."""
 
     def __init__(
-        self, message: str = None, name: str = "", resource_type: str = ""
+        self,
+        message: Optional[str] = None,
+        name: str = "",
+        resource_type: str = "",
     ):
         if message is None:
             message = f"{resource_type} `{name}` already exists!"
