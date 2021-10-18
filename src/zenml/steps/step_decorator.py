@@ -45,10 +45,13 @@ def step(
         Returns:
             The class of a newly generated ZenML Step.
         """
+        step_name = name if name else func.__name__
         return type(
-            name if name else func.__name__,
+            step_name,
             (BaseStep,),
-            {STEP_INNER_FUNC_NAME: staticmethod(func)},
+            {
+                STEP_INNER_FUNC_NAME: staticmethod(func),
+            },
         )
 
     if _func is None:

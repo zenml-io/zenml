@@ -122,6 +122,7 @@ class BaseStep(metaclass=BaseStepMeta):
     def __init__(self, *args, **kwargs):
         self.materializers = {}
         self.__component = None
+        self.step_name = self.__class__.__name__
         self.PARAM_SPEC = dict()
         self.INPUT_SPEC = dict()
         self.OUTPUT_SPEC = dict()

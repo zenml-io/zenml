@@ -47,7 +47,7 @@ solve these individual problems. Rather, it integrates natively with many popula
 _**Ichi Wa Zen, Zen Wa Ichi.**_
 
 We built ZenML because we could not find an easy framework that translates the patterns observed in the research phase with Jupyter notebooks into a production-ready ML environment.
-ZenML follows the paradigm of [`Pipelines As Experiments` (PaE)](https://docs.zenml.io/why/why-zenml#pipelines-as-experiments-pae), meaning ZenML pipelines are designed to be written early on the development lifecycle, where the users can explore their 
+ZenML follows the paradigm of [`Pipelines As Experiments` (PaE)](https://docs.zenml.io/why/why-zenml), meaning ZenML pipelines are designed to be written early on the development lifecycle, where the users can explore their 
 pipelines as they develop towards production.
 
 By using ZenML at the early stages of development, you get the following features:

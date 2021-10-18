@@ -12,12 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os
-
 from zenml.logger import init_logging
 
 init_logging()
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 from .base import *  # noqa
 from .config import *  # noqa

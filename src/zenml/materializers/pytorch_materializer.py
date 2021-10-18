@@ -46,4 +46,4 @@ class PyTorchMaterializer(BaseMaterializer):
             model: A torch.nn.Module or a dict to pass into model.save
         """
         super().handle_return(model)
-        model.save(os.path.join(self.artifact.uri, DEFAULT_FILENAME))
+        torch.save(model, os.path.join(self.artifact.uri, DEFAULT_FILENAME))
