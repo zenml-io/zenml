@@ -3,7 +3,7 @@ Our goal here is to help you to get the first practical experience with our tool
 
 The quickest way to get started is to create a simple pipeline. We'll be using the [MNIST](http://yann.lecun.com/exdb/mnist/) dataset (originally developed by Yann LeCun and others) digits, and then later the [Fashion MNIST](https://github.com/zalandoresearch/fashion-mnist) dataset developed by Zalando.
 
-If you want to run this notebook in an interactive environment, feel free to run it in a [Google Colab version](https://colab.research.google.com/drive/1evoEqzKPLQwCss4LtDVKoIda8fJb3B1O?usp=sharing).
+If you want to run this notebook in an interactive environment, feel free to run it in a [Google Colab version](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb).
 
 ### Pre-requisites
 In order to run this example, you need to install and initialize ZenML:
@@ -35,7 +35,7 @@ Or just a jupyter notebook
 jupyter notebook  # jupyter must be installed
 ```
 
-Or check out a [Google Colab version](https://colab.research.google.com/drive/1evoEqzKPLQwCss4LtDVKoIda8fJb3B1O?usp=sharing) to test it out immediately.
+Or check out a [Google Colab version](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb) to test it out immediately.
 
 ### Clean up
 In order to clean up, in the root of your repo, delete the remaining zenml references.

@@ -10,71 +10,76 @@ description: A good place to start before diving further into the docs.
 
 ![ZenML Architectural Overview](<../.gitbook/assets/architecture_diagram (1) (2) (1).png>)
 
-\*\*\*\*[**CLI**](../support/cli-command-reference.md)\*\*\*\*
+[**CLI**](../support/cli-command-reference.md)
 
 Our command-line tool is your entry point into ZenML. You install this tool and use it to setup and configure your repository to work with ZenML. A simple `init` command serves to get you started, and then you can provision the infrastructure that you wish to work with easily using a simple `stack register` command with the relevant arguments passed in.
 
-\*\*\*\*[**Repository**](repository.md)\*\*\*\*
+[**Repository**](repository.md)
 
 A repository is at the core of all ZenML activity. Every action that can be executed within ZenML must take place within a ZenML repository. ZenML repositories are inextricably tied to `git`. ZenML creates a `.zen` folder at the root of your repository to manage your assets and metadata.
 
-\*\*\*\*[**Pipeline**](pipelines.md)\*\*\*\*
+[**Pipeline**](pipelines.md)
 
-Within your repository, you will have one or more pipelines as part of your experimentation workflow. A ZenML pipeline is a sequence of tasks that execute in a specific order and yield artifacts. The artifacts are stored within the artifact store and indexed via the metadata store. Each individual task within a pipeline is known as a step. The standard pipelines (like `SimplePipeline`) within ZenML are designed to have easy interfaces to add pre-decided steps, with the order also pre-decided. Other sorts of pipelines can be created as well from scratch.
+Within your repository, you will have one or more pipelines as part of your experimentation workflow. A ZenML pipeline is a sequence of tasks that execute in a specific order and yield artifacts. The artifacts are stored within the artifact store and indexed via the metadata store. Each individual task within a pipeline is known as a step. The standard pipelines within ZenML are designed to have easy interfaces to add pre-decided steps, with the order also pre-decided. Other sorts of pipelines can be created as well from scratch.
 
-Pipelines are functions. They are created by using decorators appropriate to the specific use case you have. The moment it is `run`, a pipeline is compiled and passed directly to the orchestrator.
+Pipelines can be written as simple functions. They are created by using decorators appropriate to the specific use case you have. The moment it is `run`, a pipeline is compiled and passed directly to the orchestrator.
 
-\*\*\*\*[**Step**](steps.md)\*\*\*\*
+[**Step**](steps.md)
 
-A step is a single piece or stage of a ZenML pipeline. Think of each step as being one of the nodes of the DAG. Steps are responsible for one aspect of processing or interacting with the data / artifacts in the pipeline. ZenML currently implements a `SimpleStep` interface, but there will be other more customized interfaces (layered in a hierarchy) for specialized implementations. For example, broad steps like `SplitStep`, `PreprocesserStep,` `TrainerStep` and so on.
+A step is a single piece or stage of a ZenML pipeline. Think of each step as being one of the nodes of the DAG. Steps are responsible for one aspect of processing or interacting with the data / artifacts in the pipeline. ZenML currently implements a basic `step` interface, but there will be other more customized interfaces (layered in a hierarchy) for specialized implementations. For example, broad steps like `@trainer`, `@split` and and so on.
 
-In this way, steps can be thought of as hierarchical. In a later release, you can see how the `TrainerStep` might look like:
-
-```
-BaseTrainerStep
-│
-└───TensorflowBaseTrainer
-│   │
-│   └───TensorflowFeedForwardTrainer
-│
-└───PyTorchBaseTrainer
-    │
-    └───PyTorchFeedForwardTrainer
-```
-
-Each layer defines its own special interface that is essentially placeholder functions to override. So, someone looking to create a custom trainer step would subclass the appropriate class based on the user's requirements.
-
-\*\*\*\*[**Artifact**](artifacts.md)\*\*\*\*
-
-Artifacts are the data that power your experimentation and model training. It is actually steps that produce artifacts, which are then stored in the artifact store.
-
-Artifacts can be of many different types like `TFRecord`s or saved model pickles, depending on what the step produces.
-
-\*\*\*\*[**Parameter**](steps.md#step-input-and-output)\*\*\*\*
-
-When we think about steps as functions, we know they receive input in the form of artifacts. We also know that they produce output (also in the form of artifacts, stored in the artifact store). But steps also take parameters. The parameters that you pass into the steps are also (helpfully!) stored in the metadata store. This helps freeze the iterations of your experimentation workflow in time so you can return to them exactly as you ran them.
-
-\*\*\*\*[**Artifact Store**](stacks.md#artifact-stores)
+[**Artifact Store**](stacks.md#artifact-stores)
 
 An artifact store is a place where artifacts are stored. These artifacts may have been produced by the pipeline steps, or they may be the data first ingested into a pipeline via an ingestion step.
 
-\*\*\*\*[**Metadata**](stacks.md#metadata-stores)\*\*\*\*
+[**Artifact**](artifacts.md)
 
-Metadata are the pieces of information tracked about the pipelines, experiments and configurations that you are are running with ZenML. Metadata are stored inside the metadata store.
+Artifacts are the data that power your experimentation and model training. It is actually steps that produce artifacts, which are then stored in the artifact store. Artifacts are written in the signature of a step like so:
 
-****[**Materializers**](materializers.md)****
+```python
+// Some code
+def my_step(first_artifact: int, second_artifact: torch.nn.Module -> int:
+    # first_artifact is an integer
+    # second_artifact is a torch.nn.Module
+    return 1
+```
+
+Artifacts can be serialized and deserialized (i.e. written and read from the Artifact Store) in many different ways like `TFRecord`s or saved model pickles, depending on what the step produces.The serialization and deserialization logic of artifacts is defined by  [materializers.md](../api-reference/zenml/materializers.md "mention").
+
+****[**Materializers**](../api-reference/zenml/materializers.md)****
 
 A materializer defines how and where Artifacts live in between steps.
 
-\*\*\*\*[**Metadata Store**](stacks.md#metadata-stores)
+[**Parameter**](steps.md#step-input-and-output)
+
+When we think about steps as functions, we know they receive input in the form of artifacts. We also know that they produce output (also in the form of artifacts, stored in the artifact store). But steps also take parameters. The parameters that you pass into the steps are also (helpfully!) stored in the metadata store. This helps freeze the iterations of your experimentation workflow in time so you can return to them exactly as you ran them. Parameters can be passed in as a subclass of `BaseStepConfig` like so:
+
+```python
+from zenml.steps.base_step_config import BaseStepConfig
+
+class MyStepConfig(BaseStepConfig):
+    basic_param_1: int = 1
+    basic_param_2: str = 2
+    
+@step
+def my_step(params: MyStepConfig):
+    # user params here
+    pass
+```
+
+[**Metadata Store**](stacks.md#metadata-stores)
 
 The configuration of each pipeline, step, backend, and produced artifacts are all tracked within the metadata store. The metadata store is an SQL database, and can be `sqlite` or `mysql`.
 
-\*\*\*\*[**Orchestrator**](stacks.md#orchestrator)
+[**Metadata**](stacks.md#metadata-stores)
+
+Metadata are the pieces of information tracked about the pipelines, experiments and configurations that you are are running with ZenML. Metadata are stored inside the metadata store.
+
+[**Orchestrator**](stacks.md#orchestrator)
 
 An orchestrator is a special kind of backend that manages the running of each step of the pipeline. Orchestrators administer the actual pipeline runs. You can think of it as the 'root' of any pipeline job that you run during your experimentation.
 
-\*\*\*\*[**Stack**](stacks.md)\*\*\*\*
+[**Stack**](stacks.md)
 
 A stack is made up of the following three core components:
 
@@ -82,7 +87,7 @@ A stack is made up of the following three core components:
 * A Metadata Store
 * An Orchestrator (backend)
 
-A ZenML stack also happens to be a Pydantic `BaseSettings` class, which means that there are multiple ways to use it.
+A ZenML stack also happens to be a Pydantic `BaseSettings` class, which means that there are multiple ways to set it (via env variables or config files).
 
 **Backend (Executors)**
 

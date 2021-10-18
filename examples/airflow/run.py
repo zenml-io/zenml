@@ -12,56 +12,51 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import List
-
 import numpy as np
 import tensorflow as tf
 
-from zenml.annotations import Input, Output, Step
-from zenml.artifacts import DataArtifact, ModelArtifact
 from zenml.pipelines import pipeline
 from zenml.steps import step
+from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps.step_output import Output
 
 
-@step(name="import_basic_mnist")
-def ImportDataStep() -> List[float]:
+class TrainerConfig(BaseStepConfig):
+    """Trainer params"""
+
+    epochs: int = 1
+
+
+@step
+def importer_mnist() -> Output(
+    X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
+):
     """Download the MNIST data store it as an artifact"""
     (X_train, y_train), (
         X_test,
         y_test,
     ) = tf.keras.datasets.mnist.load_data()
-    return [
-        X_train.tolist()[0:100],
-        y_train.tolist()[0:100],
-        X_test.tolist()[0:100],
-        y_test.tolist()[0:100],
-    ]
+    return X_train, y_train, X_test, y_test
 
 
-@step(name="normalize")
-def NormalizeDataStep(data: Input[DataArtifact]) -> List[float]:
+@step
+def normalizer(
+    X_train: np.ndarray, X_test: np.ndarray
+) -> Output(X_train_normed=np.ndarray, X_test_normed=np.ndarray):
     """Normalize the values for all the images so they are between 0 and 1"""
-    import_data = data.materializers.json.read_file()
-    X_train_normed = np.array(import_data[0]) / 255.0
-    X_test_normed = np.array(import_data[2]) / 255.0
-    return [
-        X_train_normed.tolist(),
-        import_data[1],
-        X_test_normed.tolist(),
-        import_data[3],
-    ]
+    X_train_normed = X_train / 255.0
+    X_test_normed = X_test / 255.0
+    return X_train_normed, X_test_normed
 
 
-@step(name="trainer")
-def MNISTTrainModelStep(
-    data: Input[DataArtifact],
-    model_artifact: Output[ModelArtifact],
-    epochs: int,
-):
+@step
+def trainer(
+    config: TrainerConfig,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+) -> tf.keras.Model:
     """Train a neural net from scratch to recognise MNIST digits return our
     model or the learner"""
-    import_data = data.materializers.json.read_file()
-
     model = tf.keras.Sequential(
         [
             tf.keras.layers.Flatten(input_shape=(28, 28)),
@@ -77,55 +72,51 @@ def MNISTTrainModelStep(
     )
 
     model.fit(
-        import_data[0],
-        import_data[1],
-        epochs=epochs,
+        X_train,
+        y_train,
+        epochs=config.epochs,
     )
 
     # write model
-    model_artifact.materializers.keras.write_model(model)
+    return model
 
 
-@step(name="evaluate")
-def EvaluateModelStep(
-    data: Input[DataArtifact], model_artifact: Input[ModelArtifact]
-) -> List[float]:
+@step
+def evaluator(
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    model: tf.keras.Model,
+) -> np.ndarray:
     """Calculate the loss for the model for each epoch in a graph"""
-    model = model_artifact.materializers.keras.read_model()
-    import_data = data.materializers.json.read_file()
 
-    test_loss, test_acc = model.evaluate(
-        import_data[2], import_data[3], verbose=2
-    )
-    return [test_loss, test_acc]
+    test_loss, test_acc = model.evaluate(X_test, y_test, verbose=2)
+    return np.array([test_loss, test_acc])
 
 
 # Define the pipeline
 
 
-@pipeline(name="mnist")
-def MNISTTrainingPipeline(
-    import_data: Step[ImportDataStep],
-    normalize_data: Step[NormalizeDataStep],
-    trainer: Step[MNISTTrainModelStep],
-    evaluator: Step[EvaluateModelStep],
+@pipeline
+def mnist_pipeline(
+    importer,
+    normalizer: normalizer,
+    trainer,
+    evaluator,
 ):
     # Link all the steps artifacts together
-    normalize_data(data=import_data.outputs.return_output)
-    trainer(data=normalize_data.outputs.return_output)
-    evaluator(
-        data=normalize_data.outputs.return_output,
-        model_artifact=trainer.outputs.model_artifact,
-    )
+    X_train, y_train, X_test, y_test = importer()
+    X_trained_normed, X_test_normed = normalizer(X_train=X_train, X_test=X_test)
+    model = trainer(X_train=X_trained_normed, y_train=y_train)
+    evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 
 
 # Initialise the pipeline
-mnist_pipeline = MNISTTrainingPipeline(
-    import_data=ImportDataStep(),
-    normalize_data=NormalizeDataStep(),
-    trainer=MNISTTrainModelStep(epochs=10),
-    evaluator=EvaluateModelStep(),
+p = mnist_pipeline(
+    importer=importer_mnist(),
+    normalizer=normalizer(),
+    trainer=trainer(config=TrainerConfig(epochs=1)),
+    evaluator=evaluator(),
 )
 
-# Run the pipeline
-DAG = mnist_pipeline.run()
+# Run the pipeline on airflow
+DAG = p.run()
