@@ -20,14 +20,14 @@ import git
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation
 from zenml.core.repo import Repository
-from zenml.utils.analytics_utils import INITIALIZE, track
+from zenml.utils.analytics_utils import INITIALIZE_REPO, track
 
 
 @cli.command("init", help="Initialize zenml on a given path.")
 @click.option("--repo_path", type=click.Path(exists=True))
 @click.option("--pipelines_dir", type=click.Path(exists=True))
 @click.option("--analytics_opt_in", "-a", type=click.BOOL)
-@track(event=INITIALIZE)
+@track(event=INITIALIZE_REPO)
 def init(
     repo_path: str, pipelines_dir: str = None, analytics_opt_in: bool = True
 ):

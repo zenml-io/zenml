@@ -60,7 +60,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             Any object that is to be passed into the relevant artifact in the
             step.
         """
-        # TODO [MEDIUM]: Type checking
+        # TODO [MEDIUM]: Add type checking for materializer handle_input
         # if data_type not in self.ASSOCIATED_TYPES:
         #     raise ValueError(
         #         f"Data type {data_type} not supported by materializer "

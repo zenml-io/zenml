@@ -39,6 +39,7 @@ from tfx.types.channel import Channel
 from tfx.utils import json_utils
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.spec_materializer_registry import (
     SpecMaterializerRegistry,
@@ -47,8 +48,11 @@ from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
 from zenml.utils import source_utils
 
+logger = get_logger(__name__)
+
 STEP_INNER_FUNC_NAME: str = "process"
 SINGLE_RETURN_OUT_NAME: str = "output"
+PARAM_STEP_NAME: str = "step_name"
 
 
 def do_types_match(type_a: Type, type_b: Type) -> bool:
@@ -103,6 +107,7 @@ def generate_component(step) -> Callable[..., Any]:
             "_FUNCTION": staticmethod(getattr(step, STEP_INNER_FUNC_NAME)),
             "__module__": step.__module__,
             "spec_materializer_registry": step.spec_materializer_registry,
+            PARAM_STEP_NAME: step.step_name,
         },
     )
 
@@ -273,7 +278,8 @@ class _FunctionExecutor(BaseExecutor):
         if not do_types_match(type(output_value), specified_type):
             raise ValueError(
                 f"Output `{output_value}` of type {type(output_value)} does "
-                f"not match specified return type {specified_type}"
+                f"not match specified return type {specified_type} in step "
+                f"{getattr(self, PARAM_STEP_NAME)}"
             )
 
     def Do(
@@ -289,7 +295,6 @@ class _FunctionExecutor(BaseExecutor):
             output_dict: dictionary containing the output artifacts
             exec_properties: dictionary containing the execution parameters
         """
-
         # Building the args for the process function
         function_params = {}
 

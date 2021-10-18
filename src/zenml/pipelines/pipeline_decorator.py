@@ -16,12 +16,19 @@
 import types
 from typing import Callable, Optional, Type
 
-from zenml.pipelines.base_pipeline import PIPELINE_INNER_FUNC_NAME, BasePipeline
+from zenml.pipelines.base_pipeline import (
+    PARAM_ENABLE_CACHE,
+    PIPELINE_INNER_FUNC_NAME,
+    BasePipeline,
+)
 
 
 def pipeline(
-    _func: Optional[types.FunctionType] = None, *, name: Optional[str] = None
-) -> Callable[..., BasePipeline]:
+    _func: Optional[types.FunctionType] = None,
+    *,
+    name: Optional[str] = None,
+    enable_cache: bool = True
+) -> Callable[..., Type[BasePipeline]]:
     """Outer decorator function for the creation of a ZenML pipeline
 
     In order to be able work with parameters such as "name", it features a
@@ -30,6 +37,7 @@ def pipeline(
     Args:
         _func: Optional func from outside.
         name: str, the given name for the pipeline
+        enable_cache: Whether to use cache or not.
 
     Returns:
         the inner decorator which creates the pipeline class based on the
@@ -50,7 +58,10 @@ def pipeline(
         return type(
             name if name else func.__name__,
             (BasePipeline,),
-            {PIPELINE_INNER_FUNC_NAME: staticmethod(func)},
+            {
+                PIPELINE_INNER_FUNC_NAME: staticmethod(func),
+                PARAM_ENABLE_CACHE: enable_cache,
+            },
         )
 
     if _func is None:

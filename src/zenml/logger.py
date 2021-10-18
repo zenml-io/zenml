@@ -20,48 +20,36 @@ from typing import Any
 
 from absl import logging as absl_logging
 
+from zenml.constants import ZENML_LOGGING_VERBOSITY
+from zenml.enums import LoggingLevels
+
 from zenml.constants import (  # isort: skip
     ABSL_LOGGING_VERBOSITY,
     APP_NAME,
-    ZENML_LOGGING_VERBOSITY,
 )
-
-# Mute tensorflow cuda warnings
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-
-LOGGING_LEVELS = {
-    0: logging.NOTSET,
-    1: logging.ERROR,
-    2: logging.WARN,
-    3: logging.INFO,
-    4: logging.DEBUG,
-}
 
 FORMATTING_STRING = "%(asctime)s — %(name)s — %(levelname)s — %(message)s"
 FORMATTER = logging.Formatter(FORMATTING_STRING)
 LOG_FILE = f"{APP_NAME}_logs.log"
 
 
-def resolve_logging_level():
-    """Resolve the logging level from the env variable."""
-    if ZENML_LOGGING_VERBOSITY > 0:
-        level = (
-            LOGGING_LEVELS[ZENML_LOGGING_VERBOSITY]
-            if ZENML_LOGGING_VERBOSITY in LOGGING_LEVELS
-            else logging.DEBUG
+def get_logging_level() -> LoggingLevels:
+    """Get logging level from the env variable."""
+    verbosity = ZENML_LOGGING_VERBOSITY.upper()
+    if verbosity not in LoggingLevels.__members__:
+        raise KeyError(
+            f"Verbosity must be one of {list(LoggingLevels.__members__.keys())}"
         )
-    else:
-        level = logging.NOTSET
-    return level
+    return LoggingLevels[verbosity]
 
 
 def set_root_verbosity():
     """Set the root verbosity."""
-    level = resolve_logging_level()
-    if level > logging.NOTSET:
-        logging.basicConfig(level=level)
+    level = get_logging_level()
+    if level != LoggingLevels.NOTSET:
+        logging.basicConfig(level=level.value)
         get_logger(__name__).debug(
-            f"Logging set to level: " f"{logging.getLevelName(level)}"
+            f"Logging set to level: " f"{logging.getLevelName(level.value)}"
         )
     else:
         logging.disable(sys.maxsize)
@@ -94,7 +82,7 @@ def get_logger(logger_name) -> Any:
 
     """
     logger = logging.getLogger(logger_name)
-    logger.setLevel(resolve_logging_level())
+    logger.setLevel(get_logging_level().value)
     logger.addHandler(get_console_handler())
 
     # TODO: [LOW] Add a file handler for persistent handling
@@ -107,6 +95,8 @@ def get_logger(logger_name) -> Any:
 
 def init_logging():
     """Initialize logging with default levels."""
+    # Mute tensorflow cuda warnings
+    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
     logging.basicConfig(format=FORMATTING_STRING)
     set_root_verbosity()
 

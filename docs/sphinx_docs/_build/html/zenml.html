@@ -225,6 +225,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="zenml.orchestrators.local.html">zenml.orchestrators.local package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.local.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.local.html#module-zenml.orchestrators.local.local_dag_runner">zenml.orchestrators.local.local_dag_runner module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.local.html#module-zenml.orchestrators.local.local_orchestrator">zenml.orchestrators.local.local_orchestrator module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.local.html#module-zenml.orchestrators.local">Module contents</a></li>
 </ul>
@@ -357,6 +358,38 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="zenml.enums.ExecutionStatus.RUNNING">
 <span class="sig-name descname"><span class="pre">RUNNING</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'running'</span></em><a class="headerlink" href="#zenml.enums.ExecutionStatus.RUNNING" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.enums.LoggingLevels">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.enums.</span></span><span class="sig-name descname"><span class="pre">LoggingLevels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.enums.LoggingLevels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.LoggingLevels.DEBUG">
+<span class="sig-name descname"><span class="pre">DEBUG</span></span><em class="property"> <span class="pre">=</span> <span class="pre">10</span></em><a class="headerlink" href="#zenml.enums.LoggingLevels.DEBUG" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.LoggingLevels.ERROR">
+<span class="sig-name descname"><span class="pre">ERROR</span></span><em class="property"> <span class="pre">=</span> <span class="pre">40</span></em><a class="headerlink" href="#zenml.enums.LoggingLevels.ERROR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.LoggingLevels.INFO">
+<span class="sig-name descname"><span class="pre">INFO</span></span><em class="property"> <span class="pre">=</span> <span class="pre">20</span></em><a class="headerlink" href="#zenml.enums.LoggingLevels.INFO" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.LoggingLevels.NOTSET">
+<span class="sig-name descname"><span class="pre">NOTSET</span></span><em class="property"> <span class="pre">=</span> <span class="pre">0</span></em><a class="headerlink" href="#zenml.enums.LoggingLevels.NOTSET" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.LoggingLevels.WARN">
+<span class="sig-name descname"><span class="pre">WARN</span></span><em class="property"> <span class="pre">=</span> <span class="pre">30</span></em><a class="headerlink" href="#zenml.enums.LoggingLevels.WARN" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -526,15 +559,15 @@ in an unsupported way.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="zenml.logger.init_logging">
-<span class="sig-prename descclassname"><span class="pre">zenml.logger.</span></span><span class="sig-name descname"><span class="pre">init_logging</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.logger.init_logging" title="Permalink to this definition">¶</a></dt>
-<dd><p>Initialize logging with default levels.</p>
+<dt class="sig sig-object py" id="zenml.logger.get_logging_level">
+<span class="sig-prename descclassname"><span class="pre">zenml.logger.</span></span><span class="sig-name descname"><span class="pre">get_logging_level</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#zenml.enums.LoggingLevels" title="zenml.enums.LoggingLevels"><span class="pre">zenml.enums.LoggingLevels</span></a></span></span><a class="headerlink" href="#zenml.logger.get_logging_level" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get logging level from the env variable.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="zenml.logger.resolve_logging_level">
-<span class="sig-prename descclassname"><span class="pre">zenml.logger.</span></span><span class="sig-name descname"><span class="pre">resolve_logging_level</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.logger.resolve_logging_level" title="Permalink to this definition">¶</a></dt>
-<dd><p>Resolve the logging level from the env variable.</p>
+<dt class="sig sig-object py" id="zenml.logger.init_logging">
+<span class="sig-prename descclassname"><span class="pre">zenml.logger.</span></span><span class="sig-name descname"><span class="pre">init_logging</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.logger.init_logging" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize logging with default levels.</p>
 </dd></dl>
 
 <dl class="py function">
