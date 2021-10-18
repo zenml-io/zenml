@@ -23,7 +23,6 @@ def base_artifact_fixture():
     return base_artifact.BaseArtifact()
 
 
-def test_baseartifact_class_has_two_constants(base_artifact_fixture):
-    """Check two constants are defined on BaseArtifact class"""
-    assert base_artifact_fixture.TYPE_NAME == "BaseArtifact"
+def test_baseartifact_class_has_properties_dict(base_artifact_fixture):
+    """Check PROPERTIES constant is defined on BaseArtifact class"""
     assert isinstance(base_artifact_fixture.PROPERTIES, dict)
