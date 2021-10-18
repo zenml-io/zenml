@@ -13,6 +13,7 @@
 * [Pipelines](core/pipelines.md)
 * [Steps](core/steps.md)
 * [Artifacts](core/artifacts.md)
+* [Materializers](core/materializers.md)
 * [Stacks](core/stacks.md)
 * [Post Execution Workflow](core/post-execution-workflow.md)
 
