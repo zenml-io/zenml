@@ -1,0 +1,5 @@
+run_prefix: local_fashion_mnist_run
+
+steps:
+  trainer:
+    epochs: 1

@@ -12,6 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """ZenML specific exception definitions"""
+import textwrap
+from typing import TYPE_CHECKING, List, Type
+
+if TYPE_CHECKING:
+    from zenml.steps.base_step_config import BaseStepConfig
 
 
 class InitializationException(Exception):
@@ -100,3 +105,45 @@ class PipelineInterfaceError(Exception):
 class ArtifactInterfaceError(Exception):
     """Raises exception when interacting with the Artifact interface
     in an unsupported way."""
+
+
+class PipelineConfigurationError(Exception):
+    """Raises exceptions when a pipeline configuration containns
+    invalid values."""
+
+
+class MissingStepParameterError(Exception):
+    """Raises exceptions when a step parameter is missing when running a
+    pipeline."""
+
+    def __init__(
+        self,
+        step_name: str,
+        missing_parameters: List[str],
+        config_class: Type["BaseStepConfig"],
+    ):
+        """
+        Initializes a MissingStepParameterError object.
+
+        Args:
+            step_name: Name of the step for which one or more parameters
+                are missing.
+            missing_parameters: Names of all parameters which are missing.
+            config_class: Class of the configuration object for which
+                the parameters are missing.
+        """
+        message = textwrap.fill(
+            textwrap.dedent(
+                f"""
+            Missing parameters {missing_parameters} for '{step_name}' step.
+            There are three ways to solve this issue:
+            (1) Specify a default value in the configuration class
+            `{config_class.__name__}`
+            (2) Specify the parameters in code when creating the pipeline:
+            `my_pipeline({step_name}(config={config_class.__name__}(...))`
+            (3) Specify the parameters in a yaml configuration file and pass
+            it to the pipeline: `my_pipeline(...).with_config('path_to_yaml')`
+            """
+            )
+        )
+        super().__init__(message)

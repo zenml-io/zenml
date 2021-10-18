@@ -34,6 +34,7 @@ by Google at: https://github.com/tensorflow/tfx/blob/master/tfx/orchestration
 
 import time
 from datetime import datetime
+from typing import Optional
 
 from tfx.dsl.compiler import compiler
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
@@ -81,11 +82,17 @@ class LocalDagRunner(tfx_runner.TfxRunner):
     def __init__(self):
         """Initializes LocalDagRunner as a TFX orchestrator."""
 
-    def run(self, pipeline: pipeline_py.Pipeline) -> None:
+    def run(
+        self,
+        pipeline: pipeline_py.Pipeline,
+        run_name_prefix: Optional[str] = None,
+    ) -> None:
+
         """Runs given logical pipeline locally.
 
         Args:
           pipeline: Logical pipeline containing pipeline args and components.
+          run_name_prefix: Optional string to use as prefix for the run name.
         """
         for component in pipeline.components:
             if isinstance(component, base_component.BaseComponent):
@@ -96,12 +103,17 @@ class LocalDagRunner(tfx_runner.TfxRunner):
         c = compiler.Compiler()
         pipeline = c.compile(pipeline)
 
+        date_string = datetime.now().isoformat()
+        run_name = (
+            f"{run_name_prefix}_{date_string}"
+            if run_name_prefix
+            else date_string
+        )
+
         # Substitute the runtime parameter to be a concrete run_id
         runtime_parameter_utils.substitute_runtime_parameter(
             pipeline,
-            {
-                PIPELINE_RUN_ID_PARAMETER_NAME: datetime.now().isoformat(),
-            },
+            {PIPELINE_RUN_ID_PARAMETER_NAME: run_name},
         )
 
         deployment_config = runner_utils.extract_local_deployment_config(

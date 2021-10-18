@@ -30,6 +30,7 @@ import json
 import sys
 from typing import Any, Callable, Dict, List, Optional, Type
 
+import pydantic
 from tfx import types as tfx_types
 from tfx.dsl.component.experimental.decorators import _SimpleComponent
 from tfx.dsl.components.base.base_executor import BaseExecutor
@@ -39,6 +40,7 @@ from tfx.types.channel import Channel
 from tfx.utils import json_utils
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.exceptions import MissingStepParameterError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.spec_materializer_registry import (
@@ -308,7 +310,19 @@ class _FunctionExecutor(BaseExecutor):
                 new_exec = {
                     k: json.loads(v) for k, v in exec_properties.items()
                 }
-                config_object = arg_type.parse_obj(new_exec)
+
+                try:
+                    config_object = arg_type.parse_obj(new_exec)
+                except pydantic.ValidationError as e:
+                    missing_fields = [
+                        field
+                        for error_dict in e.errors()
+                        for field in error_dict["loc"]
+                    ]
+
+                    raise MissingStepParameterError(
+                        self.step_name, missing_fields, arg_type
+                    ) from None
                 function_params[arg] = config_object
             else:
                 # At this point, it has to be an artifact, so we resolve

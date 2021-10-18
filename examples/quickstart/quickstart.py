@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
 
 import numpy as np
 import tensorflow as tf
@@ -136,13 +137,16 @@ def importer_fashion_mnist() -> Output(
     return X_train, y_train, X_test, y_test
 
 
+# Load configuration options for the pipeline from a yaml file
+mnist_config_file = os.path.join(os.path.dirname(__file__), "mnist_config.yaml")
+
 # Initialise a new pipeline
 fashion_p = mnist_pipeline(
     importer=importer_fashion_mnist(),
     normalizer=normalizer(),
-    trainer=trainer(config=TrainerConfig(epochs=1)),
+    trainer=trainer(),
     evaluator=evaluator(),
-)
+).with_config(mnist_config_file)
 
 # Run the new pipeline
 fashion_p.run()
