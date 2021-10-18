@@ -8,7 +8,7 @@ Our goal here is to help you to get the first practical experience with our tool
 
 The quickest way to get started is to create a simple pipeline. We'll be using the [MNIST](http://yann.lecun.com/exdb/mnist/) dataset (originally developed by Yann LeCun and others) digits, and then later the [Fashion MNIST](https://github.com/zalandoresearch/fashion-mnist) dataset developed by Zalando.
 
-If you want to run this notebook in an interactive environment, feel free to run it in a Google Colab.
+If you want to run this notebook in an interactive environment, feel free to run it in a [Google Colab](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb).
 
 ## Purpose
 
@@ -41,9 +41,9 @@ Once the installation is completed, you can go ahead and create your first ZenML
 
 Now, the setup is completed. For the next steps, just make sure that you are executing the code within your ZenML repository.
 
-## Import relevant packages
+## Define ZenML Steps
 
-We will use pipelines and steps in to train our model.
+In the code that follows, you can see that we are defining the various steps of our pipeline. Each step is decorated with `@step`, the main abstraction that is currently available for creating pipeline steps.
 
 ```python
 import numpy as np
@@ -53,13 +53,7 @@ from zenml.pipelines import pipeline
 from zenml.steps import step
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
-```
 
-## Define ZenML Steps
-
-In the code that follows, you can see that we are defining the various steps of our pipeline. Each step is decorated with `@step`, the main abstraction that is currently available for creating pipeline steps.
-
-```python
 class TrainerConfig(BaseStepConfig):
     """Trainer params"""
 
