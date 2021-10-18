@@ -68,17 +68,15 @@ def test_creating_gitignore_with_items_when_none_exists(tmp_path, sample_items):
 
 @pytest.fixture(scope="module")
 @given(sample_items=lists(text()))
-def test_appending_items_to_gitignore_when_it_already_exists_returns_no_exceptions(
+def test_appending_items_to_gitignore_when_it_already_exists_returns_error(
     tmp_path, sample_items
 ):
     """Test whether appending items to gitignore file works when gitignore file already exists"""
     git_instance = zenml.core.git_wrapper.GitWrapper(tmp_path)
     with open(tmp_path / GITIGNORE_FILENAME, "w") as gitignore_file:
         gitignore_file.write(text())
-        try:
+        with pytest.raises(NotImplementedError):
             git_instance.add_gitignore(sample_items())
-        except Exception as e:
-            assert False, f"Exception raised: {e}"
 
 
 def test_items_appended_correctly_to_gitignore_file_when_no_file_exists(
