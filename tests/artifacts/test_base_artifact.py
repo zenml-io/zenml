@@ -15,8 +15,6 @@
 import pytest
 
 from zenml.artifacts import base_artifact
-from zenml.materializers.materializer_factory import MaterializerFactory
-from zenml.utils.exceptions import ArtifactInterfaceError
 
 
 @pytest.fixture()
@@ -29,16 +27,3 @@ def test_baseartifact_class_has_two_constants(base_artifact_fixture):
     """Check two constants are defined on BaseArtifact class"""
     assert base_artifact_fixture.TYPE_NAME == "BaseArtifact"
     assert isinstance(base_artifact_fixture.PROPERTIES, dict)
-
-
-def test_reading_materializers_property_returns_a_materializer_factory(
-    base_artifact_fixture,
-):
-    """Test a MaterializerFactor is returned when reading from base_artifact"""
-    assert isinstance(base_artifact_fixture.materializers, MaterializerFactory)
-
-
-def test_baseartifact_materializer_cannot_be_set(base_artifact_fixture):
-    """Check that setting the materializer isn't possible"""
-    with pytest.raises(ArtifactInterfaceError):
-        base_artifact_fixture.materializers = None
