@@ -74,7 +74,7 @@ def set_logging_verbosity(verbosity: str):
     verbosity = verbosity.upper()
     if verbosity not in LoggingLevels.__members__:
         raise KeyError(
-            f"Verbosity must be one of {LoggingLevels.__members__.keys()}"
+            f"Verbosity must be one of {list(LoggingLevels.__members__.keys())}"
         )
     cli_utils.declare(f"Set verbosity to: {verbosity}")
 

@@ -141,7 +141,7 @@ def track_event(event: str, metadata: Dict = None):
         gc = GlobalConfig()
         logger.debug(f"Analytics opt-in: {gc.analytics_opt_in}.")
 
-        if gc.analytics_opt_in is False and event is not INITIALIZE_REPO:
+        if not gc.analytics_opt_in and event != INITIALIZE_REPO:
             return
 
         if metadata is None:

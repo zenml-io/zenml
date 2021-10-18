@@ -38,7 +38,7 @@ def get_logging_level() -> LoggingLevels:
     verbosity = ZENML_LOGGING_VERBOSITY.upper()
     if verbosity not in LoggingLevels.__members__:
         raise KeyError(
-            f"Verbosity must be one of {LoggingLevels.__members__.keys()}"
+            f"Verbosity must be one of {list(LoggingLevels.__members__.keys())}"
         )
     return LoggingLevels[verbosity]
 
