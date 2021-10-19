@@ -39,6 +39,7 @@ def handle_int_env_var(var: Text, default: int = 0):
 # Global constants
 APP_NAME = "zenml"
 CONFIG_VERSION = "1"
+GIT_REPO_URL = "https://github.com/zenml-io/zenml.git"
 
 # Environment variables
 ENV_ZENML_DEBUG = "ZENML_DEBUG"
