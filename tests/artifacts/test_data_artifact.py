@@ -11,24 +11,3 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
-import pytest
-from tfx.types.artifact import Property
-
-from zenml.artifacts import data_artifact
-
-
-@pytest.fixture()
-def data_artifact_fixture():
-    """Fixture for creating a model_artifact instance"""
-    return data_artifact.DataArtifact()
-
-
-def test_properties_dict_has_a_split_names_property(data_artifact_fixture):
-    """Check the properties dict has a split_names property"""
-    assert "split_names" in data_artifact_fixture.PROPERTIES
-
-
-def test_split_names_property_is_a_property_type(data_artifact_fixture):
-    """Check the split_names property is a property type"""
-    assert isinstance(data_artifact_fixture.PROPERTIES["split_names"], Property)
