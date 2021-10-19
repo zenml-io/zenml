@@ -35,7 +35,6 @@ def test_analytics_opt_in_amends_global_config():
     with runner.isolated_filesystem():
         result = runner.invoke(opt_in)
         assert result.exit_code == 0
-        assert "Opted in to analytics." in result.output
         # TODO: [LOW] create a test environment to test this
         # assert read_global_config()["analytics_opt_in"] is True
 
@@ -46,6 +45,5 @@ def test_analytics_opt_out_amends_global_config():
     with runner.isolated_filesystem():
         result = runner.invoke(opt_out)
         assert result.exit_code == 0
-        assert "Opted out of analytics." in result.output
         # TODO: [LOW] create a test environment to test this
         # assert read_global_config()["analytics_opt_in"] is False
