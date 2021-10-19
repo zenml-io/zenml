@@ -57,20 +57,3 @@ def test_init_fails_when_repo_path_is_not_git_repo_already(tmp_path):
 #     result = runner.invoke(init, ["--repo_path", str(tmp_path)])
 #     assert result.exit_code == 0
 #     assert f"{tmp_path} is already initialized!" in result.output
-
-
-def test_clean_only_returns_a_message():
-    """Check to make sure that CLI clean invocation only outputs a message"""
-    runner = CliRunner()
-    result = runner.invoke(clean, ["--yes", "True"])
-    assert result.exit_code == 0
-    assert "Not implemented for this version" in result.output
-
-
-def test_clean_checks_before_proceeding_without_explicit_flag():
-    """Check to make sure that clean invocation checks before running
-    if no explicit flag is passed in"""
-    runner = CliRunner()
-    result = runner.invoke(clean)
-    assert result.exit_code == 0
-    assert "Are you sure you want to proceed?" in result.output
