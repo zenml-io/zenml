@@ -25,7 +25,7 @@ or the version of zenml as a string.
 """
 import importlib
 import inspect
-from typing import Optional, Type, Union
+from typing import Any, Optional, Type, Union
 
 from tfx.utils.import_utils import import_class_by_path
 
@@ -103,7 +103,7 @@ def get_pin_from_source(source: str) -> Optional[str]:
     return "unpinned"
 
 
-def get_class_source_from_source(source: str) -> Optional[str]:
+def get_class_source_from_source(source: str) -> str:
     """
     Gets class source from source, i.e. module.path@version, returns version.
 
@@ -169,10 +169,12 @@ def get_absolute_path_from_module_source(module: str) -> str:
         module: A module e.g. `zenml.core.step`.
     """
     mod = importlib.import_module(module)
-    return mod.__path__[0]
+    return mod.__path__[0]  # type: ignore
 
 
-def get_module_source_from_class(class_: Union[Type, str]) -> Optional[str]:
+def get_module_source_from_class(
+    class_: Union[Type[Any], str]
+) -> Optional[str]:
     """
     Takes class input and returns module_source. If class is already string
     then returns the same.
@@ -180,7 +182,7 @@ def get_module_source_from_class(class_: Union[Type, str]) -> Optional[str]:
     Args:
         class_: object of type class.
     """
-    if type(class_) == str:
+    if isinstance(class_, str):
         module_source = class_
     else:
         # Infer it from the class provided
@@ -190,7 +192,7 @@ def get_module_source_from_class(class_: Union[Type, str]) -> Optional[str]:
     return module_source
 
 
-def resolve_class(class_: Type) -> str:
+def resolve_class(class_: Type[Any]) -> str:
     """
     Resolves a a class into a serializable source string.
 
@@ -213,7 +215,7 @@ def resolve_class(class_: Type) -> str:
     return class_source
 
 
-def load_source_path_class(source: str) -> Type:
+def load_source_path_class(source: str) -> Type[Any]:
     """
     Loads a Python class from the source.
 

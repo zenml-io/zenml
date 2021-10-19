@@ -21,7 +21,7 @@ import yaml
 from zenml.utils import path_utils
 
 
-def write_yaml(file_path: str, contents: Dict) -> None:
+def write_yaml(file_path: str, contents: Dict[Any, Any]) -> None:
     """Write contents as YAML format to file_path.
 
     Args:
@@ -38,11 +38,11 @@ def write_yaml(file_path: str, contents: Dict) -> None:
     path_utils.write_file_contents_as_string(file_path, yaml.dump(contents))
 
 
-def read_yaml(file_path: str) -> Dict:
+def read_yaml(file_path: str) -> Any:
     """Read YAML on file path and returns contents as dict.
 
     Args:
-        file_path(str): Path to YAML file.
+        file_path: Path to YAML file.
 
     Returns:
         Contents of the file in a dict.
@@ -71,7 +71,7 @@ def is_yaml(file_path: str) -> bool:
     return False
 
 
-def write_json(file_path: str, contents: Dict) -> None:
+def write_json(file_path: str, contents: Dict[str, Any]) -> None:
     """Write contents as JSON format to file_path.
 
     Args:

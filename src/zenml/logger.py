@@ -71,7 +71,7 @@ def get_file_handler() -> Any:
     return file_handler
 
 
-def get_logger(logger_name) -> Any:
+def get_logger(logger_name: str) -> logging.Logger:
     """Main function to get logger name,.
 
     Args:
