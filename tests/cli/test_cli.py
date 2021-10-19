@@ -14,7 +14,7 @@
 
 
 def test_cli_command_defines_a_cli_group():
-    # TODO: [medium] implement this test
+    # TODO: [Medium] implement this test
     """Check that cli command defines a CLI group when invoked"""
 
 
