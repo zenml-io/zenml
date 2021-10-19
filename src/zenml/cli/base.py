@@ -27,9 +27,7 @@ from zenml.utils.analytics_utils import INITIALIZE, track
 @click.option("--repo_path", type=click.Path(exists=True))
 @click.option("--analytics_opt_in", "-a", type=click.BOOL)
 @track(event=INITIALIZE)
-def init(
-    repo_path: str, analytics_opt_in: bool = True
-):
+def init(repo_path: str, analytics_opt_in: bool = True):
     """Initialize ZenML on given path.
 
     Args:
