@@ -31,39 +31,39 @@ from typing import List
 import click
 from git import Repo
 
+from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
 from zenml.constants import APP_NAME, GIT_REPO_URL
 from zenml.utils import path_utils
 
 
 def clone_zenml_repository(repo_dir: str) -> None:
-    """Clone the zenml repository to a specific directory"""
+    """Clone the zenml repository to a specific directory
+    and checkout branch corresponding to the version
+    of ZenML installed"""
     config_directory_files = os.listdir(repo_dir)
+
     if APP_NAME not in config_directory_files:
-        Repo.clone_from(GIT_REPO_URL, repo_dir)
+        installed_version = zenml_version_installed
+        Repo.clone_from(GIT_REPO_URL, repo_dir, branch=installed_version)
 
 
 def get_examples_dir() -> str:
     """Return the examples dir."""
-    cli_dir = os.path.dirname(__file__)
-    package_dir = os.path.dirname(os.path.dirname(cli_dir))
-    return os.path.join(package_dir, "examples")
+    return os.path.join(click.get_app_dir(APP_NAME), APP_NAME, "examples")
 
 
 def get_all_examples() -> List[str]:
     """Get all the examples"""
-    clone_zenml_repository(click.get_app_dir(APP_NAME))
-
-    examples = []
-    for name in sorted(os.listdir(get_examples_dir())):
-        # Skip hidden files (like .gitignore)
+    return [
+        name
+        for name in sorted(os.listdir(get_examples_dir()))
         if (
             not name.startswith(".")
             and not name.startswith("__")
             and not name.startswith("README")
-        ):
-            examples.append(name)
-    return examples
+        )
+    ]
 
 
 def get_example_readme(example_path) -> str:
