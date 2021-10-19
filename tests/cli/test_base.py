@@ -30,13 +30,12 @@ ZENML_INIT_FILENAMES = [
 ]
 
 
-@pytest.mark.xfail()
 def test_assertion_error_raised_when_trying_to_init_when_already_initialized():
     """Check that an assertion error is raised when trying to initialize
     a repo that is already initialized"""
     runner = CliRunner()
     with runner.isolated_filesystem():
-        Repo.init("test_repo")
+        Repo.init("test_repo", mkdir=True)
         repository_path = os.path.join(os.getcwd(), "test_repo")
         runner.invoke(init, ["--repo_path", str(repository_path)])
         with pytest.raises(AssertionError):
@@ -58,7 +57,7 @@ def test_init(tmp_path, zenml_init_filenames):
     """Check that init command works as expected inside temporary directory"""
     runner = CliRunner()
     with runner.isolated_filesystem():
-        Repo.init("test_repo")
+        Repo.init("test_repo", mkdir=True)
         repository_path = os.path.join(os.getcwd(), "test_repo")
         runner.invoke(init, ["--repo_path", str(repository_path)])
         dir_files = os.listdir(repository_path)
