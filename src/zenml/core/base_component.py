@@ -103,7 +103,7 @@ class BaseComponent(BaseSettings):
             self.get_serialization_dir(), self.get_serialization_file_name()
         )
 
-    def update(self):
+    def update(self) -> None:
         """Persist the current state of the component.
 
         Calling this will result in a persistent, stateful change in the
