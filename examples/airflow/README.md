@@ -37,9 +37,10 @@ zenml init
 ```
 
 ### Create a new Airflow Stack
+```bash
 zenml orchestrator register airflow_orchestrator airflow
 zenml stack set airflow_stack
-
+```
 
 ### Copy the runner script to the Airflow dag folder:
 ```bash
