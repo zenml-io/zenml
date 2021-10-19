@@ -13,23 +13,21 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import Text
 
 from zenml import __version__
 
 
-def handle_bool_env_var(var: Text, default=False):
+def handle_bool_env_var(var: str, default: bool = False) -> bool:
     """Converts normal env var to boolean"""
-    var = os.getenv(var, None)
-    for i in ["1", "y", "yes", "True", "true"]:
-        if i == var:
-            return True
+    value = os.getenv(var)
+    if value in ["1", "y", "yes", "True", "true"]:
+        return True
     return default
 
 
-def handle_int_env_var(var: Text, default: int = 0):
+def handle_int_env_var(var: str, default: int = 0) -> int:
     """Converts normal env var to int"""
-    value = os.getenv(var, None)
+    value = os.getenv(var, "")
     try:
         return int(value)
     except (ValueError, TypeError):
