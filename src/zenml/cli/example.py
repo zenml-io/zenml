@@ -31,6 +31,7 @@ class GitExamplesHandler(object):
 
         if APP_NAME not in config_directory_files:
             installed_version = zenml_version_installed
+            # TODO: [Medium] make this an asynchronous function
             Repo.clone_from(GIT_REPO_URL, repo_dir, branch=installed_version)
 
 
