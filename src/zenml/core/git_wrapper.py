@@ -14,7 +14,7 @@
 """Wrapper class to handle Git integration"""
 import inspect
 import os
-from typing import List, Type
+from typing import Type
 
 from git import BadName
 from git import Repo as GitRepo
@@ -59,23 +59,6 @@ class GitWrapper:
         self.repo_path: str = repo_path
         self.git_root_path: str = os.path.join(repo_path, GIT_FOLDER_NAME)
         self.git_repo: GitRepo = GitRepo(self.repo_path)
-
-    def add_gitignore(self, items: List[str]):
-        """
-        Adds `items` to .gitignore, if .gitignore exists. Otherwise creates
-        and adds.
-
-        Args:
-            items (list[str]): Items to add.
-        """
-        str_items = "\n".join(items)
-        str_items = "\n\n# ZenML\n" + str_items
-
-        gitignore_path = os.path.join(self.repo_path, ".gitignore")
-        if not path_utils.file_exists(gitignore_path):
-            path_utils.create_file_if_not_exists(gitignore_path, str_items)
-        else:
-            path_utils.append_file(gitignore_path, str_items)
 
     def check_file_committed(self, file_path: str) -> bool:
         """
