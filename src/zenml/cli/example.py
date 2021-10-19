@@ -32,13 +32,15 @@ import click
 from git import Repo
 
 from zenml.cli.cli import cli
-from zenml.constants import GIT_REPO_URL
+from zenml.constants import APP_NAME, GIT_REPO_URL
 from zenml.utils import path_utils
 
 
 def clone_zenml_repository(repo_dir: str) -> None:
     """Clone the zenml repository to a specific directory"""
-    Repo.clone_from(GIT_REPO_URL, repo_dir)
+    config_directory_files = os.listdir(repo_dir)
+    if APP_NAME not in config_directory_files:
+        Repo.clone_from(GIT_REPO_URL, repo_dir)
 
 
 def get_examples_dir() -> str:
@@ -50,6 +52,8 @@ def get_examples_dir() -> str:
 
 def get_all_examples() -> List[str]:
     """Get all the examples"""
+    clone_zenml_repository(click.get_app_dir(APP_NAME))
+
     examples = []
     for name in sorted(os.listdir(get_examples_dir())):
         # Skip hidden files (like .gitignore)
