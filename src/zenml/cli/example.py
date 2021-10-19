@@ -55,6 +55,8 @@ def get_examples_dir() -> str:
 
 def get_all_examples() -> List[str]:
     """Get all the examples"""
+    clone_zenml_repository(click.get_app_dir(APP_NAME))
+
     return [
         name
         for name in sorted(os.listdir(get_examples_dir()))
