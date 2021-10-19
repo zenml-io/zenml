@@ -37,7 +37,7 @@ from zenml.constants import APP_NAME, GIT_REPO_URL
 from zenml.utils import path_utils
 
 
-def clone_zenml_repository(repo_dir: str) -> None:
+async def clone_zenml_repository(repo_dir: str) -> None:
     """Clone the zenml repository to a specific directory
     and checkout branch corresponding to the version
     of ZenML installed"""
@@ -53,9 +53,9 @@ def get_examples_dir() -> str:
     return os.path.join(click.get_app_dir(APP_NAME), APP_NAME, "examples")
 
 
-def get_all_examples() -> List[str]:
+async def get_all_examples() -> List[str]:
     """Get all the examples"""
-    clone_zenml_repository(click.get_app_dir(APP_NAME))
+    await clone_zenml_repository(click.get_app_dir(APP_NAME))
 
     return [
         name
