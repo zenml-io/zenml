@@ -13,14 +13,32 @@
 #  permissions and limitations under the License.
 
 # TODO [MEDIUM]: Add logic via direct GitHub repo pulling
+"""
+- clone the repository inside the `click.get_app_dir(constants.APP_NAME)` directory (where .zenglobal is)
+- cloning happens just once
+- after cloning the repo, checkout the tag that corresponds to the zenml.__version__ they have installed
+
+COMMANDS:
+- list
+- info + name of a specific example
+- pull + name of a specific example
+
+"""
 
 import os
 from typing import List
 
 import click
+from git import Repo
 
 from zenml.cli.cli import cli
+from zenml.constants import GIT_REPO_URL
 from zenml.utils import path_utils
+
+
+def clone_zenml_repository(repo_dir: str) -> None:
+    """Clone the zenml repository to a specific directory"""
+    Repo.clone_from(GIT_REPO_URL, repo_dir)
 
 
 def get_examples_dir() -> str:
