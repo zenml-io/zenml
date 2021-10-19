@@ -17,7 +17,7 @@ import pytest
 from git.exc import InvalidGitRepositoryError, NoSuchPathError
 from git.repo.base import Repo
 from hypothesis import given
-from hypothesis.strategies import lists, text
+from hypothesis.strategies import text
 
 import zenml.core.git_wrapper
 
@@ -52,58 +52,3 @@ def test_exception_raised_if_repo_path_does_not_exist(tmp_path, non_path):
     not_a_path = tmp_path / non_path
     with pytest.raises(NoSuchPathError):
         zenml.core.git_wrapper.GitWrapper(not_a_path)
-
-
-@pytest.fixture(scope="module")
-@given(sample_items=lists(text()))
-def test_creating_gitignore_with_items_when_none_exists(tmp_path, sample_items):
-    """Test whether creating a gitignore file with items works when no gitignore file exists"""
-    Repo.init(tmp_path)
-    git_instance = zenml.core.git_wrapper.GitWrapper(tmp_path)
-    try:
-        git_instance.add_gitignore(sample_items())
-    except Exception as e:
-        assert False, f"Exception raised: {e}"
-
-
-@pytest.fixture(scope="module")
-@given(sample_items=lists(text()))
-def test_appending_items_to_gitignore_when_it_already_exists_returns_error(
-    tmp_path, sample_items
-):
-    """Test whether appending items to gitignore file works when gitignore file already exists"""
-    git_instance = zenml.core.git_wrapper.GitWrapper(tmp_path)
-    with open(tmp_path / GITIGNORE_FILENAME, "w") as gitignore_file:
-        gitignore_file.write(text())
-        with pytest.raises(NotImplementedError):
-            git_instance.add_gitignore(sample_items())
-
-
-def test_items_appended_correctly_to_gitignore_file_when_no_file_exists(
-    tmp_path,
-):
-    """Test items are correctly to gitignore file"""
-    test_items = ["an item", "another item"]
-    file_contents = """
-
-# ZenML
-an item
-another item"""
-
-    Repo.init(tmp_path)
-    git_instance = zenml.core.git_wrapper.GitWrapper(tmp_path)
-    git_instance.add_gitignore(test_items)
-    with open(tmp_path / GITIGNORE_FILENAME, "r") as gitignore_file:
-        assert gitignore_file.read() == file_contents
-
-
-def test_items_appended_correctly_to_gitignore_file_when_file_already_exists(
-    tmp_path,
-):
-    """NotImplementError is thrown when append_file method is called"""
-    test_items = ["an item", "another item"]
-    Repo.init(tmp_path)
-    git_instance = zenml.core.git_wrapper.GitWrapper(tmp_path)
-    with open(tmp_path / GITIGNORE_FILENAME, "w") as _:
-        with pytest.raises(NotImplementedError):
-            git_instance.add_gitignore(test_items)
