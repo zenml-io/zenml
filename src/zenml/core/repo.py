@@ -16,7 +16,7 @@
 import os
 from typing import List, Optional
 
-from git import InvalidGitRepositoryError
+from git import InvalidGitRepositoryError  # type: ignore[attr-defined]
 
 from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
 from zenml.config.global_config import GlobalConfig
@@ -46,7 +46,7 @@ class Repository:
     Every ZenML project exists inside a ZenML repository.
     """
 
-    def __init__(self, path: str = None):
+    def __init__(self, path: Optional[str] = None):
         """
         Construct reference a ZenML repository.
 
@@ -73,14 +73,14 @@ class Repository:
             # We only need to raise exception in the `init_repo`, not in the
             #  constructor here. This makes it more relaxed in remote
             #  orchestration scenarios. We might want to revisit this.
-            self.git_wrapper = None
+            self.git_wrapper = None  # type: ignore[assignment]
 
     @staticmethod
     def init_repo(
         repo_path: str = os.getcwd(),
-        stack: BaseStack = None,
-        analytics_opt_in: bool = None,
-    ):
+        stack: Optional[BaseStack] = None,
+        analytics_opt_in: Optional[bool] = None,
+    ) -> None:
         """
         Initializes a git repo with zenml.
 
@@ -156,7 +156,7 @@ class Repository:
         return self.service
 
     @track(event=SET_STACK)
-    def set_active_stack(self, stack_key: str):
+    def set_active_stack(self, stack_key: str) -> None:
         """Set the active stack for the repo. This change is local for the
         machine.
 
@@ -218,6 +218,6 @@ class Repository:
         metadata_store = self.service.get_stack(stack_key).metadata_store
         return metadata_store.get_pipeline(pipeline_name)
 
-    def clean(self):
+    def clean(self) -> None:
         """Deletes associated metadata store, pipelines dir and artifacts"""
         raise NotImplementedError

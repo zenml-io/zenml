@@ -1,7 +1,8 @@
 from pathlib import Path
-from typing import Any, Callable, Dict, cast
+from typing import Any, Callable, Dict, Tuple, Type, cast
 
 from pydantic import BaseSettings
+from pydantic.env_settings import SettingsSourceCallable
 
 from zenml.logger import get_logger
 from zenml.utils import path_utils, yaml_utils
@@ -11,7 +12,7 @@ logger = get_logger(__name__)
 
 def define_json_config_settings_source(
     config_dir: str, config_name: str
-) -> Callable[[BaseSettings], Dict[str, Any]]:
+) -> SettingsSourceCallable:
     """
     Define a function to essentially deserialize a model from a serialized
     json config.
@@ -47,7 +48,17 @@ def define_json_config_settings_source(
     return json_config_settings_source
 
 
-def generate_customise_sources(file_dir: str, file_name: str) -> Callable:
+def generate_customise_sources(
+    file_dir: str, file_name: str
+) -> Callable[
+    [
+        Type[BaseSettings.Config],
+        SettingsSourceCallable,
+        SettingsSourceCallable,
+        SettingsSourceCallable,
+    ],
+    Tuple[SettingsSourceCallable, ...],
+]:
     """Generate a customise_sources function as defined here:
     https://pydantic-docs.helpmanual.io/usage/settings/. This function
     generates a function that configures the priorities of the sources through
@@ -66,11 +77,11 @@ def generate_customise_sources(file_dir: str, file_name: str) -> Callable:
     """
 
     def customise_sources(
-        cls,
-        init_settings,
-        env_settings,
-        file_secret_settings,
-    ):
+        cls: Type[BaseSettings.Config],
+        init_settings: SettingsSourceCallable,
+        env_settings: SettingsSourceCallable,
+        file_secret_settings: SettingsSourceCallable,
+    ) -> Tuple[SettingsSourceCallable, ...]:
         """Defines precedence of sources to read/write settings from."""
         return (
             init_settings,
@@ -82,4 +93,4 @@ def generate_customise_sources(file_dir: str, file_name: str) -> Callable:
             file_secret_settings,
         )
 
-    return classmethod(customise_sources)
+    return classmethod(customise_sources)  # type: ignore[return-value]
