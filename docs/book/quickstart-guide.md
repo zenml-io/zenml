@@ -12,7 +12,7 @@ If you want to run this notebook in an interactive environment, feel free to run
 
 ## Purpose
 
-This quickstart guide is designed to provide a practical introduction to some of the main concepts and paradigms used by the ZenML framework. If you want more detail, our [full documentation](https://docs.zenml.io) provides more on the concepts and how to implement them.
+This quickstart guide is designed to provide a practical introduction to some of the main concepts and paradigms used by the ZenML framework.&#x20;
 
 ## Using Google Colab
 
@@ -193,10 +193,10 @@ fashion_p = mnist_pipeline(
 fashion_p.run()
 ```
 
-… and that's it for the quickstart. If you came here without a hiccup, you must have successly installed ZenML, set up a ZenML repo, configured a training pipeline, executed it and evaluated the results. And, this is just the tip of the iceberg on the capabilities of ZenML.
+… and that's it for the quickstart. If you came here without a hiccup, you must have successfully installed ZenML, set up a ZenML repo, configured a training pipeline, executed it and evaluated the results. And, this is just the tip of the iceberg on the capabilities of ZenML.
 
-However, if you had a hiccup or you have some suggestions/questions regarding our framework, you can always check [our docs](https://docs.zenml.io) or [our github](https://github.com/zenml-io/zenml) or even better join us on [our Slack channel](https://zenml.io/slack-invite).
+However, if you had a hiccup or you have some suggestions/questions regarding our framework, you can always check [our github](https://github.com/zenml-io/zenml) or even better join us on [our Slack channel](https://zenml.io/slack-invite).
 
-For more detailed information on all the components and steps that went into this short example, please continue reading [our more detailed documentation pages](https://docs.zenml.io).
+For more detailed information on all the components and steps that went into this short example, please continue reading our more detailed documentation pages.
 
 Cheers!
