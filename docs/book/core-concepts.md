@@ -26,7 +26,7 @@ Pipelines are functions. They are created by using decorators appropriate to the
 
 **Step**
 
-A step is a single piece or stage of a ZenML pipeline. Think of each step as being one of the nodes of the DAG. Steps are responsible for one aspect of processing or interacting with the data / artifacts in the pipeline. ZenML currently implements a `SimpleStep` interface, but there will be other more customised interfaces \(layered in a hierarchy\) for specialized implementations. For example, broad steps like `SplitStep`, `PreprocesserStep,` `TrainerStep` and so on.
+A step is a single piece or stage of a ZenML pipeline. Think of each step as being one of the nodes of the DAG. Steps are responsible for one aspect of processing or interacting with the data / artifacts in the pipeline. ZenML currently implements a `SimpleStep` interface, but there will be other more customised interfaces \(layered in a hierarchy\) for specialized implementations. For example, broad steps like `SplitStep`, `PreprocessorStep,` `TrainerStep` and so on.
 
 In this way, steps can be thought of as hierarchical. In a later release, you can see how the `TrainerStep` might look like:
 
@@ -74,13 +74,13 @@ An orchestrator is a special kind of backend that manages the running of each st
 
 A stack is made up of the following three core components:
 
-* An Artifact Store
-* A Metadata Store
-* An Orchestrator \(backend\)
+- An Artifact Store
+- A Metadata Store
+- An Orchestrator \(backend\)
 
 A ZenML stack also happens to be a Pydantic `BaseSettings` class, which means that there are multiple ways to use it.
 
-**Tying Things All Together**
+**Tying Everything Together**
 
 ZenML's core abstractions are either close to or replicate completely the commonly-found abstractions found in the industry for pipeline-style workflows. As a data scientist, it perhaps isn't natural to think of your work from within this 'pipeline' abstraction, but we think you'll see the benefits if you try it out with some examples. Check out our Get Started guide to see an example of what ZenML will add to your current workflow!
 
@@ -92,9 +92,9 @@ On a high level, when data is read from an **artifact** the results are persiste
 
 A few rules apply:
 
-* Every **orchestrator** \(local, Google Cloud VMs, etc\) can run all **pipeline steps**, including training.
-* **Orchestrators** have a selection of compatible **processing backends**.
-* **Pipelines** can be configured to utilize more powerful **processing** \(e.g. distributed\) and **training** \(e.g. Google AI Platform\) **executors**.
+- Every **orchestrator** \(local, Google Cloud VMs, etc\) can run all **pipeline steps**, including training.
+- **Orchestrators** have a selection of compatible **processing backends**.
+- **Pipelines** can be configured to utilize more powerful **processing** \(e.g. distributed\) and **training** \(e.g. Google AI Platform\) **executors**.
 
 A quick example for large datasets makes this clearer. By default, your experiments will run locally. Pipelines that load large datasets would be severely bottlenecked, so you can configure [Google Dataflow](https://cloud.google.com/dataflow) as a **processing executor** for distributed computation, and [Google AI Platform](https://cloud.google.com/ai-platform) as a **training executor**.
 
@@ -104,12 +104,11 @@ The design choices in **ZenML** follow the understanding that production-ready m
 
 In different words, **ZenML** runs your **ML** code while taking care of the "**Op**eration**s**" for you. It takes care of:
 
-* Interfacing between the individual processing **steps** \(splitting, transform, training\).
-* Tracking of intermediate results and metadata
-* Caching your processing artifacts.
-* Parallelization of computing tasks.
-* Ensuring the immutability of your pipelines from data sourcing to model artifacts.
-* No matter where - cloud, on-prem, or locally.
+- Interfacing between the individual processing **steps** \(splitting, transform, training\).
+- Tracking of intermediate results and metadata
+- Caching your processing artifacts.
+- Parallelization of computing tasks.
+- Ensuring the immutability of your pipelines from data sourcing to model artifacts.
+- No matter where - cloud, on-prem, or locally.
 
 Since production scenarios often look complex, **ZenML** is built with integrations in mind. **ZenML** will support a range of integrations for processing, training, and serving, and you can always add custom integrations via our extensible interfaces.
-

@@ -46,7 +46,7 @@ step = steps[0] || steps.step_name
 outputs = step.outputs # all outputs of a step: these are all Artifacts
 output = outputs.text_artifact_name  # artifact output
 
->>> output.type_ 
+>>> output.type_
 TextArtifact
 >> output.materializers
 
@@ -62,7 +62,7 @@ int
 
 ### Materializing outputs \(or inputs\)
 
-Once an output\_artifact is acquired from history, one can visualize it with any chosen `Materializer`.
+Once an `output_artifact` is acquired from history, one can visualize it with any chosen `Materializer`.
 
 ```python
 df = output.materializers.pandas.read() # can Read TextArtifact into Pandas DF
@@ -87,4 +87,3 @@ model  # visualize facet
 ```
 
 ## Comparing Runs \[In Progress\]
-
