@@ -47,8 +47,9 @@ def test_init_fails_when_repo_path_is_not_git_repo_already(tmp_path):
     """Check that init command raises an InvalidGitRepositoryError
     when executed outside a valid Git repository"""
     runner = CliRunner()
-    result = runner.invoke(init, ["--repo_path", str(tmp_path)])
-    assert isinstance(result.exception, InitializationException)
+    with runner.isolated_filesystem():
+        result = runner.invoke(init)
+        assert isinstance(result.exception, InitializationException)
 
 
 @pytest.mark.xfail()
