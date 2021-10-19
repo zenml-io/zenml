@@ -30,7 +30,9 @@ class GitExamplesHandler(object):
         config_directory_files = os.listdir(repo_dir)
 
         if APP_NAME not in config_directory_files:
+            # TODO: [HIGH] add current version instead of hardcoded version
             installed_version = zenml_version_installed
+            # installed_version = "0.5.0" # for testing only
             Repo.clone_from(GIT_REPO_URL, repo_dir, branch=installed_version)
 
 
