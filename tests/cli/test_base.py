@@ -12,48 +12,53 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from click.testing import CliRunner
+import os
 
-from zenml.cli.base import clean, init
+import pytest
+from click.testing import CliRunner
+from git import Repo
+
+from zenml.cli.base import init
+from zenml.core.constants import ZENML_DIR_NAME
 from zenml.exceptions import InitializationException
+
+ZENML_INIT_FILENAMES = [
+    "zenservice.json",
+    "artifact_stores",
+    "metadata_stores",
+    "orchestrators",
+]
+
+
+@pytest.mark.xfail()
+def test_assertion_error_raised_when_trying_to_init_when_already_initialized(
+    tmp_path,
+):
+    """Check that an assertion error is raised when trying to initialize
+    a repo that is already initialized"""
+    runner = CliRunner()
+    Repo.init(path=str(tmp_path))
+    runner.invoke(init, ["--repo_path", str(tmp_path)])
+    with pytest.raises(AssertionError):
+        runner.invoke(init, ["--repo_path", str(tmp_path)])
 
 
 def test_init_fails_when_repo_path_is_not_git_repo_already(tmp_path):
     """Check that init command raises an InvalidGitRepositoryError
     when executed outside a valid Git repository"""
     runner = CliRunner()
-    with runner.isolated_filesystem():
-        result = runner.invoke(init, ["--repo_path", str(tmp_path)])
-        assert isinstance(result.exception, InitializationException)
-        assert f"Initializing at {tmp_path}" in result.output
-        assert result.exit_code == 1
+    result = runner.invoke(init, ["--repo_path", str(tmp_path)])
+    assert isinstance(result.exception, InitializationException)
 
 
-# @pytest.mark.xfail()
-# # TODO: [HIGH] fix failing test
-# def test_init(tmp_path):
-#     """Check that init command works as expected inside temporary directory"""
-#     runner = CliRunner()
-#     with runner.isolated_filesystem():
-#         # TODO: [HIGH] add a step that initializes a git repository in the tmp_path dir
-#         Repo.init(str(tmp_path))
-#         result = runner.invoke(init, ["--repo_path", str(tmp_path)])
-#         # assert result.exit_code == 0
-#         assert f"Initializing at {tmp_path}" in result.output
-#         assert f"ZenML repo initialized at {tmp_path}" in result.output
-
-
-# @pytest.mark.xfail()
-# # TODO: [HIGH] fix failing test
-# def test_assertion_error_raised_when_trying_to_init_when_already_initialized(
-#     tmp_path,
-# ):
-#     """Check that an assertion error is raised when trying to initialize
-#     a repo that is already initialized"""
-#     runner = CliRunner()
-#     # initialize the zenml repository
-#     runner.invoke(init, ["--repo_path", str(tmp_path)])
-#     # run the command a second time in the same directory
-#     result = runner.invoke(init, ["--repo_path", str(tmp_path)])
-#     assert result.exit_code == 0
-#     assert f"{tmp_path} is already initialized!" in result.output
+@pytest.mark.xfail()
+@pytest.mark.parametrize("zenml_init_filenames", ZENML_INIT_FILENAMES)
+def test_init(tmp_path, zenml_init_filenames):
+    """Check that init command works as expected inside temporary directory"""
+    runner = CliRunner()
+    Repo.init(path=str(tmp_path))
+    runner.invoke(init, ["--repo_path", str(tmp_path)])
+    dir_files = os.listdir(tmp_path)
+    assert ZENML_DIR_NAME in dir_files
+    zen_files = os.listdir(os.path.join(tmp_path, ZENML_DIR_NAME))
+    assert zenml_init_filenames in zen_files
