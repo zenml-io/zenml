@@ -14,12 +14,12 @@ def SplitPipeline(
     simple_step: Step[SimplestStepEver],
     data_step: Step[DataIngestionStep],
     split_step: Step[DistSplitStep],
-    preprocesser_step: Step[InMemPreprocesserStep]
+    preprocessor_step: Step[InMemPreprocessorStep]
 ):
 
     data_step(input_random_number=simple_step.outputs["return_output"])
     split_step(input_artifact=data_step.outputs["output_artifact"])
-    preprocesser_step(input_artifact=split_step.outputs["output_artifact"])
+    preprocessor_step(input_artifact=split_step.outputs["output_artifact"])
 
 
 # Pipeline
@@ -27,11 +27,10 @@ pipeline = SplitPipeline(
     simple_step=SimplestStepEver(basic_param_1=2, basic_param_2="3"),
     data_step=DataIngestionStep(uri=os.getenv("test_data")),
     split_step=DistSplitStep(),
-    preprocesser_step=InMemPreprocesserStep(),
+    preprocessor_step=InMemPreprocessorStep(),
 )
 
 pipeline_run = split_pipeline.run()
 ```
 
 Pipelines consist of many [steps](steps.md#how-to-create-steps)..
-
