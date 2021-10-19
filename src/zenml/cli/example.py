@@ -12,18 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-# TODO [MEDIUM]: Add logic via direct GitHub repo pulling
-"""
-- clone the repository inside the `click.get_app_dir(constants.APP_NAME)` directory (where .zenglobal is)
-- cloning happens just once
-- after cloning the repo, checkout the tag that corresponds to the zenml.__version__ they have installed
-
-COMMANDS:
-- list
-- info + name of a specific example
-- pull + name of a specific example
-
-"""
 
 import os
 from typing import List
