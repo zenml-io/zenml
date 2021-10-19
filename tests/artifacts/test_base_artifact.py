@@ -21,8 +21,3 @@ from zenml.artifacts import base_artifact
 def base_artifact_fixture():
     """Fixture for a base_artifact"""
     return base_artifact.BaseArtifact()
-
-
-def test_baseartifact_class_has_properties_dict(base_artifact_fixture):
-    """Check PROPERTIES constant is defined on BaseArtifact class"""
-    assert isinstance(base_artifact_fixture.PROPERTIES, dict)

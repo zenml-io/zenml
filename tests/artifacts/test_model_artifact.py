@@ -21,9 +21,3 @@ from zenml.artifacts import model_artifact
 def model_artifact_fixture():
     """Fixture for creating a model_artifact instance"""
     return model_artifact.ModelArtifact()
-
-
-def test_model_artifact_class_has_two_constants(model_artifact_fixture):
-    """Check two constants are defined on ModelArtifact class"""
-    assert model_artifact_fixture.TYPE_NAME == "model_artifact"
-    assert isinstance(model_artifact_fixture.PROPERTIES, dict)
