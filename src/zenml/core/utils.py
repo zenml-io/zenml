@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, cast
 
 from pydantic import BaseSettings
 
@@ -11,7 +11,7 @@ logger = get_logger(__name__)
 
 def define_json_config_settings_source(
     config_dir: str, config_name: str
-) -> Callable:
+) -> Callable[[BaseSettings], Dict[str, Any]]:
     """
     Define a function to essentially deserialize a model from a serialized
     json config.
@@ -41,18 +41,18 @@ def define_json_config_settings_source(
         full_path = Path(config_dir) / config_name
         logger.debug(f"Parsing file: {full_path}")
         if path_utils.file_exists(str(full_path)):
-            return yaml_utils.read_json(str(full_path))
+            return cast(Dict[str, Any], yaml_utils.read_json(str(full_path)))
         return {}
 
     return json_config_settings_source
 
 
-def generate_customise_sources(file_dir: str, file_name: str):
+def generate_customise_sources(file_dir: str, file_name: str) -> Callable:
     """Generate a customise_sources function as defined here:
     https://pydantic-docs.helpmanual.io/usage/settings/. This function
     generates a function that configures the priorities of the sources through
     which the model is loaded. The important thing to note here is that the
-    `define_json_config_settings_source` is dynamically generates with the
+    `define_json_config_settings_source` is dynamically generated with the
     provided file_dir and file_name. This allows us to dynamically generate
     a file name for the serialization and deserialization of the model.
 

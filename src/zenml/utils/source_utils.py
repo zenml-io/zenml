@@ -37,8 +37,7 @@ logger = get_logger(__name__)
 
 
 def is_standard_pin(pin: str) -> bool:
-    """
-    Returns True if pin is valid ZenML pin, else False.
+    """Returns `True` if pin is valid ZenML pin, else False.
 
     Args:
         pin: potential ZenML pin like 'zenml_0.1.1'
@@ -54,8 +53,7 @@ def create_zenml_pin() -> str:
 
 
 def resolve_standard_source(source: str) -> str:
-    """
-    Creates a ZenML pin for source pinning from release version.
+    """Creates a ZenML pin for source pinning from release version.
 
     Args:
         source: class_source e.g. this.module.Class.
@@ -67,11 +65,10 @@ def resolve_standard_source(source: str) -> str:
 
 
 def is_standard_source(source: str) -> bool:
-    """
-    Returns True if source is a standard ZenML source.
+    """Returns `True` if source is a standard ZenML source.
 
     Args:
-        source (str): class_source e.g. this.module.Class[@pin].
+        source: class_source e.g. this.module.Class[@pin].
     """
     if source.split(".")[0] == "zenml":
         return True
@@ -79,8 +76,7 @@ def is_standard_source(source: str) -> bool:
 
 
 def get_path_from_source(source: str) -> str:
-    """
-    Get file path from source
+    """Get file path from a source string.
 
     Args:
         source: class_source e.g. this.module.Class.
@@ -91,8 +87,7 @@ def get_path_from_source(source: str) -> str:
 
 
 def get_pin_from_source(source: str) -> Optional[str]:
-    """
-    Gets pin from source, i.e. module.path@pin, returns pin.
+    """Gets pin from source, i.e. module.path@pin, returns pin.
 
     Args:
         source: class_source e.g. this.module.Class[@pin].
@@ -104,8 +99,7 @@ def get_pin_from_source(source: str) -> Optional[str]:
 
 
 def get_class_source_from_source(source: str) -> str:
-    """
-    Gets class source from source, i.e. module.path@version, returns version.
+    """Gets class source from source, i.e. module.path@version, returns version.
 
     Args:
         source: source pointing to potentially pinned sha.
@@ -115,8 +109,7 @@ def get_class_source_from_source(source: str) -> str:
 
 
 def get_module_source_from_source(source: str) -> str:
-    """
-    Gets module source from source. E.g. `some.module.file.class@version`,
+    """Gets module source from source. E.g. `some.module.file.class@version`,
     returns `some.module`.
 
     Args:
@@ -127,8 +120,7 @@ def get_module_source_from_source(source: str) -> str:
 
 
 def get_module_source_from_file_path(file_path: str) -> str:
-    """
-    Gets module_source from a file_path. E.g. `/home/myrepo/step/trainer.py`
+    """Gets module_source from a file_path. E.g. `/home/myrepo/step/trainer.py`
     returns `myrepo.step.trainer` if `myrepo` is the root of the repo.
 
     Args:
@@ -148,8 +140,7 @@ def get_module_source_from_file_path(file_path: str) -> str:
 
 
 def get_relative_path_from_module_source(module_source: str) -> str:
-    """
-    Get a directory path from module, relative to root of repository.
+    """Get a directory path from module, relative to root of repository.
 
     E.g. zenml.core.step will return zenml/core/step.
 
@@ -160,8 +151,7 @@ def get_relative_path_from_module_source(module_source: str) -> str:
 
 
 def get_absolute_path_from_module_source(module: str) -> str:
-    """
-    Get a directory path from module source.
+    """Get a directory path from module source.
 
     E.g. `zenml.core.step` will return `full/path/to/zenml/core/step`.
 
@@ -175,8 +165,7 @@ def get_absolute_path_from_module_source(module: str) -> str:
 def get_module_source_from_class(
     class_: Union[Type[Any], str]
 ) -> Optional[str]:
-    """
-    Takes class input and returns module_source. If class is already string
+    """Takes class input and returns module_source. If class is already string
     then returns the same.
 
     Args:
@@ -193,8 +182,7 @@ def get_module_source_from_class(
 
 
 def resolve_class(class_: Type[Any]) -> str:
-    """
-    Resolves a a class into a serializable source string.
+    """Resolves a class into a serializable source string.
 
     Args:
         class_: A Python Class reference.
@@ -216,8 +204,7 @@ def resolve_class(class_: Type[Any]) -> str:
 
 
 def load_source_path_class(source: str) -> Type[Any]:
-    """
-    Loads a Python class from the source.
+    """Loads a Python class from the source.
 
     Args:
         source: class_source e.g. this.module.Class[@sha]
