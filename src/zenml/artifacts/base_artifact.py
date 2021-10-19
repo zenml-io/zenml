@@ -16,7 +16,7 @@ from typing import Dict
 from tfx.types.artifact import Artifact, Property, PropertyType
 
 MATERIALIZERS_PROPERTY_KEY = "materializers"
-MATERIALIZERS_PROPERTY = Property(type=PropertyType.STRING)
+MATERIALIZERS_PROPERTY = Property(type=PropertyType.STRING)  # type: ignore[no-untyped-call] # noqa
 
 
 class BaseArtifact(Artifact):

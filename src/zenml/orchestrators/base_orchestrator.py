@@ -27,6 +27,7 @@ class BaseOrchestrator(BaseComponent):
             **kwargs: Potential additional parameters used in subclass
                 implementations.
         """
+        raise NotImplementedError
 
     def get_serialization_dir(self) -> str:
         """Gets the local path where artifacts are stored."""

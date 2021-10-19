@@ -12,7 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from tfx.orchestration import metadata
+from ml_metadata.proto import metadata_store_pb2
+from tfx.orchestration import metadata  # type: ignore[attr-defined]
 
 from zenml.core.component_factory import metadata_store_factory
 from zenml.enums import MLMetadataTypes
@@ -29,7 +30,7 @@ class MySQLMetadataStore(BaseMetadataStore):
     username: str
     password: str
 
-    def get_tfx_metadata_config(self):
+    def get_tfx_metadata_config(self) -> metadata_store_pb2.ConnectionConfig:
         """Return tfx metadata config for mysql metadata store."""
         return metadata.mysql_metadata_connection_config(
             host=self.host,

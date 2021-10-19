@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 from typing import Any
 
+from ml_metadata.proto import metadata_store_pb2
 from pydantic import validator
-from tfx.orchestration import metadata
+from tfx.orchestration import metadata  # type: ignore[attr-defined]
 
 from zenml.core.component_factory import metadata_store_factory
 from zenml.enums import MLMetadataTypes
@@ -42,12 +43,12 @@ class SQLiteMetadataStore(BaseMetadataStore):
         # Resolve URI if relative URI provided
         # self.uri = path_utils.resolve_relative_path(uri)
 
-    def get_tfx_metadata_config(self):
+    def get_tfx_metadata_config(self) -> metadata_store_pb2.ConnectionConfig:
         """Return tfx metadata config for sqlite metadata store."""
         return metadata.sqlite_metadata_connection_config(self.uri)
 
     @validator("uri")
-    def uri_must_be_local(cls, v):
+    def uri_must_be_local(cls, v: str) -> str:
         """Validator to ensure uri is local"""
         if path_utils.is_remote(v):
             raise ValueError(

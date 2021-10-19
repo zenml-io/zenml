@@ -75,7 +75,7 @@ class ZenGCS(filesystem.Filesystem):
     @staticmethod
     def exists(path: PathType) -> bool:
         """Check whether a path exists."""
-        return ZenGCS.fs.exists(path=path)
+        return ZenGCS.fs.exists(path=path)  # type: ignore[no-any-return]
 
     @staticmethod
     def glob(pattern: PathType) -> List[PathType]:
@@ -89,17 +89,17 @@ class ZenGCS(filesystem.Filesystem):
                 - '**' as the full name of a path component to match to search
                   in subdirectories of any depth (e.g. '/some_dir/**/some_file)
         """
-        return ZenGCS.fs.glob(path=pattern)
+        return ZenGCS.fs.glob(path=pattern)  # type: ignore[no-any-return]
 
     @staticmethod
     def isdir(path: PathType) -> bool:
         """Check whether a path is a directory."""
-        return ZenGCS.fs.isdir(path=path)
+        return ZenGCS.fs.isdir(path=path)  # type: ignore[no-any-return]
 
     @staticmethod
     def listdir(path: PathType) -> List[PathType]:
         """Return a list of files in a directory."""
-        return ZenGCS.fs.listdir(path=path)
+        return ZenGCS.fs.listdir(path=path)  # type: ignore[no-any-return]
 
     @staticmethod
     def makedirs(path: PathType) -> None:
@@ -170,7 +170,7 @@ class ZenGCS(filesystem.Filesystem):
             onerror: Unused argument to conform to interface.
         """
         # TODO: [LOW] Additional params
-        return ZenGCS.fs.walk(path=top)
+        return ZenGCS.fs.walk(path=top)  # type: ignore[no-any-return]
 
 
 # TODO: [LOW] The registration of the filesystem should happen probably at an
