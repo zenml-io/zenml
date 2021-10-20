@@ -21,12 +21,16 @@ from git import Repo
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
 from zenml.constants import APP_NAME, GIT_REPO_URL
+from zenml.logger import get_logger
 from zenml.utils import path_utils
 
 # TODO: [MEDIUM] Add an example-run command to run an example.
 # TODO: [HIGH] rename the base folder
 
 EXAMPLES_GITHUB_REPO = "zenml_examples"
+
+
+logit = get_logger(__name__)
 
 
 class GitExamplesHandler(object):
@@ -109,9 +113,11 @@ def list(git_examples_handler):
 
 
 @example.command(help="Find out more about an example.")
+@pass_git_examples_handler
 @click.argument("example_name")
-def info(example_name, git_examples_handler):
+def info(git_examples_handler, example_name):
     """Find out more about an example."""
+    # TODO: [MEDIUM] format the output so that it looks nicer (not a pure .md dump)
     example_dir = os.path.join(
         git_examples_handler.get_examples_dir(), example_name
     )
@@ -120,11 +126,13 @@ def info(example_name, git_examples_handler):
 
 
 @example.command(
-    help="Pull examples straight " "into your current working directory."
+    help="Pull examples straight into your current working directory."
 )
+@pass_git_examples_handler
 @click.argument("example_name", required=False, default=None)
-def pull(example_name, git_examples_handler):
+def pull(git_examples_handler, example_name):
     """Pull examples straight " "into your current working directory."""
+    logit.debug("testing")
     examples_dir = git_examples_handler.get_examples_dir()
     examples = (
         git_examples_handler.get_all_examples()
