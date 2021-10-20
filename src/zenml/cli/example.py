@@ -48,7 +48,7 @@ class GitExamplesHandler(object):
                     GIT_REPO_URL, examples_dir, branch=installed_version
                 )
             except KeyboardInterrupt:
-                shutil.rmtree(examples_dir, ignore_errors=True)
+                self.delete_example_source_dir(examples_dir)
                 # always want to give the option to clean the repo + redownload it (with a flag?)
                 # clean + initiate function etc
                 # ALSO: someone who wants to use a version of zenml which isn't their installed version
@@ -79,6 +79,10 @@ class GitExamplesHandler(object):
             readme_content = readme.read()
         return readme_content
 
+    def delete_example_source_dir(self, source_path: str) -> None:
+        """Clean the example directory"""
+        shutil.rmtree(source_path, ignore_errors=True)
+
 
 pass_git_examples_handler = click.make_pass_decorator(
     GitExamplesHandler, ensure=True
@@ -92,9 +96,15 @@ def example():
 
 @example.command(help="Test examples.")
 @pass_git_examples_handler
-def test(git_examples_handler):
+@click.option(
+    "--force-redownload",
+    default=zenml_version_installed,
+    help="Pass in a version number to redownload the examples folder for that specific version. Defaults to your current installed version.",
+)
+def test(git_examples_handler, force_redownload):
     """Testing function"""
     click.echo("Testing examples: \n")
+    click.echo(f"{force_redownload}\n")
 
 
 @example.command(help="List the available examples.")
@@ -127,6 +137,11 @@ def info(git_examples_handler, example_name):
 )
 @pass_git_examples_handler
 @click.argument("example_name", required=False, default=None)
+@click.option(
+    "--force-redownload",
+    default=zenml_version_installed,
+    help="Pass in a version number to redownload the examples folder for that specific version. Defaults to your current installed version.",
+)
 def pull(git_examples_handler, example_name):
     """Pull examples straight " "into your current working directory."""
     examples_dir = git_examples_handler.get_examples_dir()
