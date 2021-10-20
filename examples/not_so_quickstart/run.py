@@ -20,6 +20,7 @@ from steps.sklearn_trainer import sklearn_evaluator, sklearn_trainer
 from steps.tf_steps import tf_evaluator, tf_trainer
 from steps.torch_steps import torch_evaluator, torch_trainer
 
+from zenml.core.repo import Repository
 from zenml.pipelines import pipeline
 from zenml.steps import step
 from zenml.steps.step_output import Output
@@ -96,3 +97,10 @@ scikit_p = mnist_pipeline(
 
 # Run the new pipeline
 scikit_p.run()
+
+# Post execution flow
+repo = Repository()
+pipeline = repo.get_pipelines()[0]
+for r in pipeline.get_runs():
+    eval_step = r.steps[3]
+    print(f"For r {r}, the accuracy is: {eval_step.outputs[0].read(None)}")

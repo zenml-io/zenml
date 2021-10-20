@@ -14,10 +14,10 @@
 
 
 import numpy as np
-
-# Import datasets, classifiers and performance metrics
 from sklearn import svm
 from sklearn.base import ClassifierMixin
+
+from zenml.steps import step
 
 from .params import TrainerConfig
 
@@ -29,8 +29,9 @@ def sklearn_trainer(
     y_train: np.ndarray,
 ) -> ClassifierMixin:
     """Train SVC from sklearn"""
+    print(X_train.shape, y_train.shape)
     clf = svm.SVC(gamma=config.gamma)
-    clf.fit(X_train, y_train)
+    clf.fit(X_train.reshape((X_train.shape[0], -1)), y_train)
     return clf
 
 
