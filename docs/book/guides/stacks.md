@@ -2,13 +2,13 @@
 description: Stacks define where and how your pipelines run
 ---
 
-# Stacks
+# Airflow?
 
 A stack is made up of the following three core components:
 
 * An Artifact Store
 * A Metadata Store
-* An Orchestrator \(backend\)
+* An Orchestrator (backend)
 
 A ZenML stack also happens to be a Pydantic `BaseSettings` class, which means that there are multiple ways to use it.
 
@@ -20,7 +20,7 @@ zenml stack register MY_NEW_STACK
 ```
 
 {% hint style="info" %}
-See [CLI reference](../support/cli-command-reference.md) for more help.
+See [CLI reference](../reference/cli-command-reference.md) for more help.
 {% endhint %}
 
 ## Metadata Stores
@@ -29,22 +29,22 @@ ZenML puts a lot of emphasis on guaranteed tracking of inputs across pipeline st
 
 You have the following options to configure your Metadata Store:
 
-* SQLite \(Default\)
+* SQLite (Default)
 * MySQL
 
 But this will be extended in the future to include MLFlow, wandb etc.
 
-### SQLite \(Default\)
+### SQLite (Default)
 
 By default, your pipelines will be tracked in a local SQLite database within your `.zen` folder. There is not much configuration to it - it just works out of the box.
 
 ### MySQL
 
-Using MySQL as a Metadata Store is where ZenML can become really powerful, especially in highly dynamic environments \(read: running experiments locally, in the Cloud, and across team members\). Some of the ZenML integrations even require a dedicated MySQL-based Metadata Store to unfold their true potential.
+Using MySQL as a Metadata Store is where ZenML can become really powerful, especially in highly dynamic environments (read: running experiments locally, in the Cloud, and across team members). Some of the ZenML integrations even require a dedicated MySQL-based Metadata Store to unfold their true potential.
 
-The Metadata Store can be simply configured to use any MySQL server \(=&gt;5.6\):
+The Metadata Store can be simply configured to use any MySQL server (=>5.6):
 
-```text
+```
 zenml config metadata set mysql \
     --host 127.0.0.1 \ 
     --port 3306 \
@@ -61,23 +61,23 @@ Closely related to the [Metadata Store](https://github.com/zenml-io/zenml/blob/1
 
 You have the following options to configure the Artifact Store:
 
-* Local \(Default\)
-* Remote \(Google Cloud Storage\)
+* Local (Default)
+* Remote (Google Cloud Storage)
   * **Soon**: S3 compatible backends
 
-### Local \(Default\)
+### Local (Default)
 
 By default, ZenML will use the `.zen` directory created when you run `zenml init` at the very beginning. All artifacts and inputs will be persisted there.
 
 Using the default Artifact Store can be a limitation to the integrations you might want to use. Please check the documentation of the individual integrations to make sure they are compatible.
 
-### Remote \(GCS/S3\)
+### Remote (GCS/S3)
 
 Many experiments and many ZenML integrations require a remote Artifact Store to reliable retrieve and persist pipeline step artifacts. Especially dynamic scenarios with heterogeneous environments will be only possible when using a remote Artifact Store.
 
 Configuring a remote Artifact Store for ZenML is a one-liner using the CLI:
 
-```text
+```
 zenml config artifacts set gs://your-bucket/sub/dir
 ```
 
@@ -132,4 +132,3 @@ Coming soon!
 The API to create custom orchestrators is still under active development. Please see this space for updates.
 
 If you would like to see this functionality earlier, please let us know via our [Slack Channel](https://zenml.io/slack-invite/) or create an issue on GitHub.
-

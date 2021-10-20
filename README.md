@@ -35,11 +35,11 @@
 
 ## What is ZenML?
 
-**ZenML** is an extensible, open-source MLOps framework to create production-ready machine learning pipelines. It has a simple, flexible syntax, 
+**ZenML** is an extensible, open-source MLOps framework to create production-ready machine learning pipelines. It has a simple, flexible syntax,
 is cloud and tool agnostic, and has interfaces/abstractions that are catered towards ML workflows.
 
-At its core, ZenML  pipelines execute ML-specific workflows from sourcing data to splitting, preprocessing, training, all the way to the evaluation of 
-results and even serving. There are many built-in batteries as things progress in ML development. ZenML is not here to replace the great tools that 
+At its core, ZenML pipelines execute ML-specific workflows from sourcing data to splitting, preprocessing, training, all the way to the evaluation of
+results and even serving. There are many built-in batteries as things progress in ML development. ZenML is not here to replace the great tools that
 solve these individual problems. Rather, it integrates natively with many popular ML tooling, and gives standard abstraction to write your workflows.
 
 ## Why do I need it?
@@ -47,50 +47,50 @@ solve these individual problems. Rather, it integrates natively with many popula
 _**Ichi Wa Zen, Zen Wa Ichi.**_
 
 We built ZenML because we could not find an easy framework that translates the patterns observed in the research phase with Jupyter notebooks into a production-ready ML environment.
-ZenML follows the paradigm of [`Pipelines As Experiments` (PaE)](https://docs.zenml.io/why/why-zenml), meaning ZenML pipelines are designed to be written early on the development lifecycle, where the users can explore their 
+ZenML follows the paradigm of [`Pipelines As Experiments` (PaE)](https://docs.zenml.io/why/why-zenml), meaning ZenML pipelines are designed to be written early on the development lifecycle, where the users can explore their
 pipelines as they develop towards production.
 
 By using ZenML at the early stages of development, you get the following features:
 
-* **Reproducibility** of training and inference workflows.
-* Managing ML **metadata**, including versioning data, code, and models.
-* Getting an **overview** of your ML development, with a reliable link between training and deployment.
-* Maintaining **comparability** between ML models.
-* **Scaling** ML training/inference to large datasets.
-* Retaining code **quality** alongside development velocity. 
-* **Reusing** code/data and reducing waste.
-* Keeping up with the **ML tooling landscape** with standard abstractions and interfaces.
-
+- **Reproducibility** of training and inference workflows.
+- Managing ML **metadata**, including versioning data, code, and models.
+- Getting an **overview** of your ML development, with a reliable link between training and deployment.
+- Maintaining **comparability** between ML models.
+- **Scaling** ML training/inference to large datasets.
+- Retaining code **quality** alongside development velocity.
+- **Reusing** code/data and reducing waste.
+- Keeping up with the **ML tooling landscape** with standard abstractions and interfaces.
 
 ## Who is it for?
-ZenML is built for ML practitioners who are ramping up their ML workflows towards production. 
+
+ZenML is built for ML practitioners who are ramping up their ML workflows towards production.
 It is created for data science / machine learning teams that are engaged in not only training models, but also putting them out in production. Production can mean many things, but examples would be:
 
-* If you are using a model to generate analysis periodically for any business process.
-* If you are using models as a software service to serve predictions and are consistently improving the model over time.
-* If you are trying to understand patterns using machine learning for any business process.
+- If you are using a model to generate analysis periodically for any business process.
+- If you are using models as a software service to serve predictions and are consistently improving the model over time.
+- If you are trying to understand patterns using machine learning for any business process.
 
-* In all of the above, there will be team that is engaged with creating, deploying, managing and improving the entire process. You always want the best results, the best models, and the most robust and reliable results. This is where ZenML can help.
-In terms of user persona, ZenML is created for producers of the models. This role is classically known as 'data scientist' in the industry and can range from research-minded individuals to more engineering-driven people. The goal of ZenML is to enable these practitioners to own their models until deployment and beyond.
-
+- In all of the above, there will be team that is engaged with creating, deploying, managing and improving the entire process. You always want the best results, the best models, and the most robust and reliable results. This is where ZenML can help.
+  In terms of user persona, ZenML is created for producers of the models. This role is classically known as 'data scientist' in the industry and can range from research-minded individuals to more engineering-driven people. The goal of ZenML is to enable these practitioners to own their models until deployment and beyond.
 
 ## Release 0.5.0 and what lies ahead
+
 The current release is bare bones (as it is a complete rewrite).
 We are missing some basic features which used to be part of ZenML 0.3.8 (the previous release):
 
-* Standard interfaces for `TrainingPipeline`.
-* Individual step interfaces like `PreprocesserStep`, `TrainerStep`, `DeployerStep` etc. need to be rewritten from within the new paradigm. They should
-be included in the non-RC version of this release.
-* A proper production setup with an orchestrator like Airflow.
-* A post-execution workflow to analyze and inspect pipeline runs.
-* The concept of `Backends` will evolve into a simple mechanism of transitioning individual steps into different runners.
-* Support for `KubernetesOrchestrator`, `KubeflowOrchestrator`, `GCPOrchestrator` and `AWSOrchestrator` are also planned.
-* Dependency management including Docker support is planned.
+- Standard interfaces for `TrainingPipeline`.
+- Individual step interfaces like `PreprocessorStep`, `TrainerStep`, `DeployerStep` etc. need to be rewritten from within the new paradigm. They should
+  be included in the non-RC version of this release.
+- A proper production setup with an orchestrator like Airflow.
+- A post-execution workflow to analyze and inspect pipeline runs.
+- The concept of `Backends` will evolve into a simple mechanism of transitioning individual steps into different runners.
+- Support for `KubernetesOrchestrator`, `KubeflowOrchestrator`, `GCPOrchestrator` and `AWSOrchestrator` are also planned.
+- Dependency management including Docker support is planned.
 
 However, bare with us: Adding those features back in should be relatively faster as we now have a solid foundation to build on. Look out for the next email!
 
-
 ## Roadmap and Community
+
 ZenML is being built in public. The [roadmap](https://zenml.io/roadmap) is a regularly updated source of truth for the ZenML community to understand where the product is going in the short, medium, and long term.
 
 ZenML is managed by a [core team](https://zenml.io/team) of developers that are responsible for making key decisions and incorporating feedback from the community. The team oversee's feedback via various channels, but you can directly influence the roadmap as follows:
@@ -115,7 +115,8 @@ ZenML is built on the shoulders of giants: we leverage, and would like to give c
 You can read more about why we actually started building ZenML at our [blog](https://blog.zenml.io/why-zenml/).
 
 ## Legacy [Updated Soon Q4 2021]
-From this point onwards, the README is intended to give a glimpse as to what lies ahead. We have redesigned our [public roadmap](https://zenml.io/roadmap) 
+
+From this point onwards, the README is intended to give a glimpse as to what lies ahead. We have redesigned our [public roadmap](https://zenml.io/roadmap)
 to showcase better the timeline in which these features will be complete.
 
 ## Quickstart
@@ -150,7 +151,7 @@ zenml init
 from zenml.pipelines import TrainingPipeline
 from zenml.steps.evaluator import TFMAEvaluator
 from zenml.steps.split import RandomSplit
-from zenml.steps.preprocesser import StandardPreprocesser
+from zenml.steps.preprocessor import StandardPreprocessor
 from zenml.steps.trainer import TFFeedForwardTrainer
 
 
@@ -162,16 +163,16 @@ def TFFeedForwardTrainer():
 def SplitPipeline(simple_step: Step[SimplestStepEver],
                   data_step: Step[DataIngestionStep],
                   split_step: Step[DistSplitStep],
-                  preprocesser_step: Step[InMemPreprocesserStep]):
+                  preprocessor_step: Step[InMemPreprocessorStep]):
     data_step(input_random_number=simple_step.outputs["return_output"])
     split_step(input_artifact=data_step.outputs["output_artifact"])
-    preprocesser_step(input_artifact=split_step.outputs["output_artifact"])
+    preprocessor_step(input_artifact=split_step.outputs["output_artifact"])
 
 
 pipeline = TrainingPipeline(
     data_step=ImportDataStep(uri='gs://zenml_quickstart/diabetes.csv'),
     split_step=RandomSplit(split_map={'train': 0.7, 'test': 0.3}),
-    preprocesser_step=StandardPreprocesser(),
+    preprocessor_step=StandardPreprocessor(),
     trainer_step=TFFeedForwardTrainer(),
     evaluator_step=TFMAEvaluator()
 )
@@ -182,7 +183,7 @@ pipeline.run()
 
 ## Leverage powerful integrations
 
-Once code is organized into a ZenML pipeline, you can supercharge your ML development with powerful integrations and 
+Once code is organized into a ZenML pipeline, you can supercharge your ML development with powerful integrations and
 on multiple [MLOps stacks].
 
 ### Work locally but switch seamlessly to the cloud
@@ -243,8 +244,8 @@ repo.compare_training_runs()
 Leverage distributed compute powered by [Apache Beam](https://beam.apache.org/):
 
 ```python
-training_pipeline.add_preprocesser(
-    StandardPreprocesser(...).with_backend(
+training_pipeline.add_preprocessor(
+    StandardPreprocessor(...).with_backend(
       ProcessingDataFlowBackend(
         project=GCP_PROJECT,
         num_workers=10,
