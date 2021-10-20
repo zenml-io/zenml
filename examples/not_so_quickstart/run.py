@@ -15,17 +15,14 @@
 
 import numpy as np
 import tensorflow as tf
+from steps.params import TrainerConfig
+from steps.sklearn_trainer import sklearn_evaluator, sklearn_trainer
+from steps.tf_steps import tf_evaluator, tf_trainer
+from steps.torch_steps import torch_evaluator, torch_trainer
 
 from zenml.pipelines import pipeline
 from zenml.steps import step
-from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
-
-
-class TrainerConfig(BaseStepConfig):
-    """Trainer params"""
-
-    epochs: int = 1
 
 
 @step
@@ -50,53 +47,7 @@ def normalizer(
     return X_train_normed, X_test_normed
 
 
-@step
-def trainer(
-    config: TrainerConfig,
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-) -> tf.keras.Model:
-    """Train a neural net from scratch to recognise MNIST digits return our
-    model or the learner"""
-    model = tf.keras.Sequential(
-        [
-            tf.keras.layers.Flatten(input_shape=(28, 28)),
-            tf.keras.layers.Dense(10, activation="relu"),
-            tf.keras.layers.Dense(10),
-        ]
-    )
-
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(0.001),
-        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-        metrics=["accuracy"],
-    )
-
-    model.fit(
-        X_train,
-        y_train,
-        epochs=config.epochs,
-    )
-
-    # write model
-    return model
-
-
-@step
-def evaluator(
-    X_test: np.ndarray,
-    y_test: np.ndarray,
-    model: tf.keras.Model,
-) -> np.ndarray:
-    """Calculate the loss for the model for each epoch in a graph"""
-
-    test_loss, test_acc = model.evaluate(X_test, y_test, verbose=2)
-    return np.array([test_loss, test_acc])
-
-
 # Define the pipeline
-
-
 @pipeline
 def mnist_pipeline(
     importer,
@@ -111,38 +62,37 @@ def mnist_pipeline(
     evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 
 
-# Initialise the pipeline
-p = mnist_pipeline(
+# Initialise a pipeline run
+tf_p = mnist_pipeline(
     importer=importer_mnist(),
     normalizer=normalizer(),
-    trainer=trainer(config=TrainerConfig(epochs=1)),
-    evaluator=evaluator(),
+    trainer=tf_trainer(config=TrainerConfig(epochs=1)),
+    evaluator=tf_evaluator(),
 )
 
 # Run the pipeline
-p.run()
+tf_p.run()
 
 
-# Define a new modified import data step to download the Fashion MNIST model
-@step
-def importer_fashion_mnist() -> Output(
-    X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
-):
-    """Download the MNIST data store it as an artifact"""
-    (X_train, y_train), (
-        X_test,
-        y_test,
-    ) = tf.keras.datasets.fashion_mnist.load_data()
-    return X_train, y_train, X_test, y_test
-
-
-# Initialise a new pipeline
-fashion_p = mnist_pipeline(
-    importer=importer_fashion_mnist(),
+# Initialise a new pipeline run
+torch_p = mnist_pipeline(
+    importer=importer_mnist(),
     normalizer=normalizer(),
-    trainer=trainer(config=TrainerConfig(epochs=1)),
-    evaluator=evaluator(),
+    trainer=torch_trainer(config=TrainerConfig(epochs=1)),
+    evaluator=torch_evaluator(),
 )
 
 # Run the new pipeline
-fashion_p.run()
+torch_p.run()
+
+
+# Initialise a new pipeline run
+scikit_p = mnist_pipeline(
+    importer=importer_mnist(),
+    normalizer=normalizer(),
+    trainer=sklearn_trainer(config=TrainerConfig()),
+    evaluator=sklearn_evaluator(),
+)
+
+# Run the new pipeline
+scikit_p.run()
