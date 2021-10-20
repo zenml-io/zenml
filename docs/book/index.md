@@ -44,7 +44,7 @@ A good place to go from this point is to:
 * Understand what is so special about [ZenML](why-zenml.md).
 * Take a look at some of the [key decisions that we made while building ZenML.](why/framework-design.md)
 * Get up and running with your [first pipeline](https://github.com/zenml-io/zenml/tree/f912d2d512477e6ed84e839259d42cb73eeedf2b/docs/book/starter-guide/quickstart.md).
-* Read more about [core concepts](core/core-concepts.md) to inform your decision about using **ZenML.**
+* Read more about [core concepts](core-concepts.md) to inform your decision about using **ZenML.**
 
 ## Get involved!
 

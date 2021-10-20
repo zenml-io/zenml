@@ -8,63 +8,134 @@ description: A good place to start before diving further into the docs.
 
 **ZenML** consists of the following key components:
 
-![ZenML Architectural Overview](.gitbook/assets/architecture_diagram%20%281%29%20%282%29%20%281%29.png)
+![ZenML Architectural Overview](<.gitbook/assets/architecture\_diagram (1) (2) (1).png>)
 
-**CLI**
-
-Our command-line tool is your entry point into ZenML. You install this tool and use it to setup and configure your repository to work with ZenML. A simple `init` command serves to get you started, and then you can provision the infrastructure that you wish to work with easily using a simple `stack register` command with the relevant arguments passed in.
+****
 
 **Repository**
 
 A repository is at the core of all ZenML activity. Every action that can be executed within ZenML must take place within a ZenML repository. ZenML repositories are inextricably tied to `git`. ZenML creates a `.zen` folder at the root of your repository to manage your assets and metadata.
 
+Every ZenML project starts inside a ZenML repository. Think of it just like a normal Git repository, except that there are some added bonuses on top! A repository is at the core of all ZenML activity. Every action that can be executed within ZenML must take place within a ZenML repository. ZenML repositories are inextricably tied to `git`. ZenML creates a `.zen` folder at the root of your repository to manage your assets and metadata.
+
+To create a ZenML repository, do the following after having installed ZenML:
+
+```
+zenml init
+```
+
+{% hint style="warning" %}
+Please make sure to be inside a valid git repository before executing the above!
+{% endhint %}
+
+The initialization creates a local `.zen` folder where various information about your local configuration lives, e.g., the active [Stack](guides/stacks.md) that you are using to run pipelines.
+
 **Pipeline**
 
-Within your repository, you will have one or more pipelines as part of your experimentation workflow. A ZenML pipeline is a sequence of tasks that execute in a specific order and yield artifacts. The artifacts are stored within the artifact store and indexed via the metadata store. Each individual task within a pipeline is known as a step. The standard pipelines \(like `SimplePipeline`\) within ZenML are designed to have easy interfaces to add pre-decided steps, with the order also pre-decided. Other sorts of pipelines can be created as well from scratch.
+Within your repository, you will have one or more pipelines as part of your experimentation workflow. A ZenML pipeline is a sequence of tasks that execute in a specific order and yield artifacts. The artifacts are stored within the artifact store and indexed via the metadata store. Each individual task within a pipeline is known as a step. The standard pipelines within ZenML are designed to have easy interfaces to add pre-decided steps, with the order also pre-decided. Other sorts of pipelines can be created as well from scratch.
 
-Pipelines are functions. They are created by using decorators appropriate to the specific use case you have. The moment it is `run`, a pipeline is compiled and passed directly to the orchestrator.
+Pipelines can be written as simple functions. They are created by using decorators appropriate to the specific use case you have. The moment it is `run`, a pipeline is compiled and passed directly to the orchestrator.
+
+Pipelines are designed as simple functions. They are created by using decorators appropriate to the specific use case you have. The moment it is `run`, a pipeline is compiled and passed directly to the orchestrator, to be run in the orchestrator environment.
+
+Within your repository, you will have one or more pipelines as part of your experimentation workflow. A ZenML pipeline is a sequence of tasks that execute in a specific order and yield artifacts. The artifacts are stored within the artifact store and indexed via the metadata store. Each individual task within a pipeline is known as a step. The standard pipelines (like `TrainingPipeline`) within ZenML are designed to have easy interfaces to add pre-decided steps, with the order also pre-decided. Other sorts of pipelines can be created as well from scratch.
+
+```python
+@pipeline
+def mnist_pipeline(
+    importer,
+    normalizer: normalizer,
+    trainer,
+    evaluator,
+):
+    # Link all the steps artifacts together
+    X_train, y_train, X_test, y_test = importer()
+    X_trained_normed, X_test_normed = normalizer(X_train=X_train, X_test=X_test)
+    model = trainer(X_train=X_trained_normed, y_train=y_train)
+    evaluator(X_test=X_test_normed, y_test=y_test, model=model)
+
+
+# Initialise the pipeline
+p = mnist_pipeline(
+    importer=importer_mnist(),
+    normalizer=normalizer(),
+    trainer=trainer(config=TrainerConfig(epochs=1)),
+    evaluator=evaluator(),
+)
+
+# Run the pipeline
+p.run()
+```
+
+Pipelines consist of many [steps](broken-reference) that define what actually happens to the data flowing through the pipelines.
 
 **Step**
 
-A step is a single piece or stage of a ZenML pipeline. Think of each step as being one of the nodes of the DAG. Steps are responsible for one aspect of processing or interacting with the data / artifacts in the pipeline. ZenML currently implements a `SimpleStep` interface, but there will be other more customised interfaces \(layered in a hierarchy\) for specialized implementations. For example, broad steps like `SplitStep`, `PreprocessorStep,` `TrainerStep` and so on.
+A step is a single piece or stage of a ZenML pipeline. Think of each step as being one of the nodes of the DAG. Steps are responsible for one aspect of processing or interacting with the data / artifacts in the pipeline. ZenML currently implements a basic `step` interface, but there will be other more customized interfaces (layered in a hierarchy) for specialized implementations. For example, broad steps like `@trainer`, `@split` and and so on.Conceptually, a `Step` is a discrete and independent part of a pipeline that is responsible for one particular aspect of data manipulation inside a [ZenML pipeline](https://github.com/zenml-io/zenml/tree/711f49d6653bf121f04e60e02202a23afad8e933/docs/book/pipelines/what-is-a-pipeline.md).
 
-In this way, steps can be thought of as hierarchical. In a later release, you can see how the `TrainerStep` might look like:
+A ZenML installation already comes with many `standard` steps found in `zenml.core.steps.*` for users to get started. For example, a `SplitStep` is responsible for splitting the data into various split's like `train` and `eval` for downstream steps to then use. However, in essence, virtually any Python function can be a ZenML step as well.
 
-```text
-BaseTrainerStep
-│
-└───TensorflowBaseTrainer
-│   │
-│   └───TensorflowFeedForwardTrainer
-│
-└───PyTorchBaseTrainer
-    │
-    └───PyTorchFeedForwardTrainer
+```python
+from zenml.steps import step
+
+@step  # this is where the magic happens
+def simplest_step_ever(basic_param_1: int, basic_param_2: str) -> int:
+    return basic_param_1 + int(basic_param_2)
 ```
 
-Each layer defines its own special interface that is essentially placeholder functions to override. So, someone looking to create a custom trainer step would subclass the appropriate class based on the user's requirements.
+There are only a few considerations for the parameters and return types.
 
-**Parameter**
+* All parameters passed into the signature must be [typed](https://docs.python.org/3/library/typing.html). Similarly, if you're returning something, it must be also be typed with the return operator (`->`)
+* ZenML uses [Pydantic](https://pydantic-docs.helpmanual.io/usage/types/) for type checking and serialization under-the-hood, so all [Pydantic types](https://pydantic-docs.helpmanual.io/usage/types/) are supported \[full list available soon].
 
-When we think about steps as functions, we know they receive input in the form of artifacts. We also know that they produce output \(also in the form of artifacts, stored in the artifact store\). But steps also take parameters. The parameters that you pass into the steps are also \(helpfully!\) stored in the metadata store. This helps freeze the iterations of your experimentation workflow in time so you can return to them exactly as you ran them.
-
-**Artifact**
-
-Artifacts are the data that power your experimentation and model training. It is actually steps that produce artifacts, which are then stored in the artifact store.
-
-Artifacts can be of many different types like `TFRecord`s or saved model pickles, depending on what the step produces.
+While this is just a function with a decorator, it is not super useful. ZenML steps really get powerful when you put them together with [data artifacts](broken-reference). Read about more of that here!
 
 **Artifact Store**
 
 An artifact store is a place where artifacts are stored. These artifacts may have been produced by the pipeline steps, or they may be the data first ingested into a pipeline via an ingestion step.
 
-**Metadata**
+**Artifact**
 
-Metadata are the pieces of information tracked about the pipelines, experiments and configurations that you are are running with ZenML. Metadata are stored inside the metadata store.
+Artifacts are the data that power your experimentation and model training. It is actually steps that produce artifacts, which are then stored in the artifact store. Artifacts are written in the signature of a step like so:
+
+```python
+// Some code
+def my_step(first_artifact: int, second_artifact: torch.nn.Module -> int:
+    # first_artifact is an integer
+    # second_artifact is a torch.nn.Module
+    return 1
+```
+
+Artifacts can be serialized and deserialized (i.e. written and read from the Artifact Store) in many different ways like `TFRecord`s or saved model pickles, depending on what the step produces.The serialization and deserialization logic of artifacts is defined by  [materializers.md](reference/zenml/materializers.md "mention").
+
+**Materializers**
+
+A materializer defines how and where Artifacts live in between steps.
+
+**Parameter**
+
+When we think about steps as functions, we know they receive input in the form of artifacts. We also know that they produce output (also in the form of artifacts, stored in the artifact store). But steps also take parameters. The parameters that you pass into the steps are also (helpfully!) stored in the metadata store. This helps freeze the iterations of your experimentation workflow in time so you can return to them exactly as you ran them. Parameters can be passed in as a subclass of `BaseStepConfig` like so:
+
+```python
+from zenml.steps.base_step_config import BaseStepConfig
+
+class MyStepConfig(BaseStepConfig):
+    basic_param_1: int = 1
+    basic_param_2: str = 2
+    
+@step
+def my_step(params: MyStepConfig):
+    # user params here
+    pass
+```
 
 **Metadata Store**
 
 The configuration of each pipeline, step, backend, and produced artifacts are all tracked within the metadata store. The metadata store is an SQL database, and can be `sqlite` or `mysql`.
+
+**Metadata**
+
+Metadata are the pieces of information tracked about the pipelines, experiments and configurations that you are are running with ZenML. Metadata are stored inside the metadata store.
 
 **Orchestrator**
 
@@ -74,13 +145,24 @@ An orchestrator is a special kind of backend that manages the running of each st
 
 A stack is made up of the following three core components:
 
-- An Artifact Store
-- A Metadata Store
-- An Orchestrator \(backend\)
+* An Artifact Store
+* A Metadata Store
+* An Orchestrator (backend)
 
 A ZenML stack also happens to be a Pydantic `BaseSettings` class, which means that there are multiple ways to use it.
 
-**Tying Everything Together**
+```bash
+zenml stack register MY_NEW_STACK
+    --metadata_store my-new-metadata-store \
+    --artifact_store my-new-artifact-store \ 
+    --orchestrator my-new-orchestrator
+```
+
+**Backend (Executors)**
+
+Backends are the infrastructure and environments on which your steps run. There are different kinds of backends depending on the particular use case. COMING SOON
+
+**Tying Things All Together**
 
 ZenML's core abstractions are either close to or replicate completely the commonly-found abstractions found in the industry for pipeline-style workflows. As a data scientist, it perhaps isn't natural to think of your work from within this 'pipeline' abstraction, but we think you'll see the benefits if you try it out with some examples. Check out our Get Started guide to see an example of what ZenML will add to your current workflow!
 
@@ -92,9 +174,9 @@ On a high level, when data is read from an **artifact** the results are persiste
 
 A few rules apply:
 
-- Every **orchestrator** \(local, Google Cloud VMs, etc\) can run all **pipeline steps**, including training.
-- **Orchestrators** have a selection of compatible **processing backends**.
-- **Pipelines** can be configured to utilize more powerful **processing** \(e.g. distributed\) and **training** \(e.g. Google AI Platform\) **executors**.
+* Every **orchestrator** (local, Google Cloud VMs, etc) can run all **pipeline steps**, including training.
+* **Orchestrators** have a selection of compatible **processing backends**.
+* **Pipelines** can be configured to utilize more powerful **processing** (e.g. distributed) and **training** (e.g. Google AI Platform) **executors**.
 
 A quick example for large datasets makes this clearer. By default, your experiments will run locally. Pipelines that load large datasets would be severely bottlenecked, so you can configure [Google Dataflow](https://cloud.google.com/dataflow) as a **processing executor** for distributed computation, and [Google AI Platform](https://cloud.google.com/ai-platform) as a **training executor**.
 
@@ -104,11 +186,11 @@ The design choices in **ZenML** follow the understanding that production-ready m
 
 In different words, **ZenML** runs your **ML** code while taking care of the "**Op**eration**s**" for you. It takes care of:
 
-- Interfacing between the individual processing **steps** \(splitting, transform, training\).
-- Tracking of intermediate results and metadata
-- Caching your processing artifacts.
-- Parallelization of computing tasks.
-- Ensuring the immutability of your pipelines from data sourcing to model artifacts.
-- No matter where - cloud, on-prem, or locally.
+* Interfacing between the individual processing **steps** (splitting, transform, training).
+* Tracking of intermediate results and metadata
+* Caching your processing artifacts.
+* Parallelization of computing tasks.
+* Ensuring the immutability of your pipelines from data sourcing to model artifacts.
+* No matter where - cloud, on-prem, or locally.
 
 Since production scenarios often look complex, **ZenML** is built with integrations in mind. **ZenML** will support a range of integrations for processing, training, and serving, and you can always add custom integrations via our extensible interfaces.
