@@ -151,7 +151,7 @@ def track_event(event: str, metadata: Dict = None):
         metadata.update(get_system_info())
         metadata.update({"in_docker": in_docker(), "version": __version__})
 
-        analytics.track(gc.user_id, event, metadata)
+        analytics.track(str(gc.user_id), event, metadata)
         logger.debug(
             f"Analytics sent: User: {gc.user_id}, Event: {event}, Metadata: "
             f"{metadata}"
