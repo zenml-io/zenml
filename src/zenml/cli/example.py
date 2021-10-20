@@ -26,21 +26,27 @@ from zenml.utils import path_utils
 # TODO: [MEDIUM] Add an example-run command to run an example.
 # TODO: [HIGH] rename the base folder
 
+EXAMPLES_GITHUB_REPO = "zenml_examples"
+
 
 class GitExamplesHandler(object):
     def __init__(self) -> None:
         self.clone_repo()
 
     def clone_repo(self) -> None:
-        """Clone ZenML git repo if not already cloned"""
+        """Clone ZenML git repo into global config directory if not already cloned"""
         repo_dir = click.get_app_dir(APP_NAME)
+        examples_dir = os.path.join(repo_dir, EXAMPLES_GITHUB_REPO)
+        # get the files inside the global config directory
         config_directory_files = os.listdir(repo_dir)
 
         # check out the branch of the installed version even if we do have a local copy (minimal check)
-        if APP_NAME not in config_directory_files:
+        if EXAMPLES_GITHUB_REPO not in config_directory_files:
             installed_version = zenml_version_installed
             # TODO: [Medium] make this an asynchronous function
-            Repo.clone_from(GIT_REPO_URL, repo_dir, branch=installed_version)
+            Repo.clone_from(
+                GIT_REPO_URL, examples_dir, branch=installed_version
+            )
         # if cloning cancels in the middle, try, but if keyboard interrupt, clean the directory
         # always want to give the option to clean the repo + redownload it (with a flag?)
         # clean + initiate function etc
@@ -79,6 +85,13 @@ pass_git_examples_handler = click.make_pass_decorator(
 @cli.group(help="Access all ZenML examples.")
 def example():
     """Examples group"""
+
+
+@example.command(help="Test examples.")
+@pass_git_examples_handler
+def test(git_examples_handler):
+    """Testing function"""
+    click.echo("Testing examples: \n")
 
 
 @example.command(help="List the available examples.")
