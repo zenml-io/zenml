@@ -227,8 +227,12 @@ def copy_dir(source_dir: str, destination_dir: str, overwrite: bool = False):
         source_file_path = Path(source_file)
         destination_name = os.path.join(destination_dir, source_file_path.name)
         if is_dir(source_file):
+            logger.debug(f"COPYING DIRECTORY: {destination_name}")
             copy_dir(source_file, destination_name, overwrite)
         else:
+            logger.debug(
+                f"ATTEMPTING RECURSIVE COPY: {source_file_path}, {destination_name}"
+            )
             create_dir_recursive_if_not_exists(
                 str(Path(destination_name).parent)
             )
