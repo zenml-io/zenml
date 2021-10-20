@@ -23,11 +23,16 @@ from zenml.cli.cli import cli
 from zenml.constants import APP_NAME, GIT_REPO_URL
 from zenml.utils import path_utils
 
+# TODO: [MEDIUM] Add an example-run command to run an example.
 # TODO: [HIGH] rename the base folder
 
 
 class GitExamplesHandler(object):
     def __init__(self) -> None:
+        self.clone_repo()
+
+    def clone_repo(self) -> None:
+        """Clone ZenML git repo if not already cloned"""
         repo_dir = click.get_app_dir(APP_NAME)
         config_directory_files = os.listdir(repo_dir)
 
@@ -41,37 +46,34 @@ class GitExamplesHandler(object):
         # clean + initiate function etc
         # ALSO: someone who wants to use a version of zenml which isn't their installed version
 
+    def get_examples_dir(self) -> str:
+        # TODO: [HIGH] move these functions into the GitExamplesHandler class
+        # consider adding run-example command
+        """Return the examples dir"""
+        return os.path.join(click.get_app_dir(APP_NAME), APP_NAME, "examples")
+
+    def get_all_examples(self) -> List[str]:
+        """Get all the examples"""
+        return [
+            name
+            for name in sorted(os.listdir(self.get_examples_dir()))
+            if (
+                not name.startswith(".")
+                and not name.startswith("__")
+                and not name.startswith("README")
+            )
+        ]
+
+    def get_example_readme(self, example_path) -> str:
+        """Get the example README file contents."""
+        with open(os.path.join(example_path, "README.md")) as readme:
+            readme_content = readme.read()
+        return readme_content
+
 
 pass_git_examples_handler = click.make_pass_decorator(
     GitExamplesHandler, ensure=True
 )
-
-
-def get_examples_dir() -> str:
-    # TODO: [HIGH] move these functions into the GitExamplesHandler class
-    # consider adding run-example command
-    """Return the examples dir."""
-    return os.path.join(click.get_app_dir(APP_NAME), APP_NAME, "examples")
-
-
-def get_all_examples() -> List[str]:
-    """Get all the examples"""
-    return [
-        name
-        for name in sorted(os.listdir(get_examples_dir()))
-        if (
-            not name.startswith(".")
-            and not name.startswith("__")
-            and not name.startswith("README")
-        )
-    ]
-
-
-def get_example_readme(example_path) -> str:
-    """Get the example README file contents."""
-    with open(os.path.join(example_path, "README.md")) as readme:
-        readme_content = readme.read()
-    return readme_content
 
 
 @cli.group(help="Access all ZenML examples.")
@@ -85,7 +87,7 @@ def list(git_examples_handler):
     """List all available examples."""
     click.echo("Listing examples: \n")
     # git_examples_handler.get_all_examples()
-    for name in get_all_examples():
+    for name in git_examples_handler.get_all_examples():
         click.echo(f"{name}")
     click.echo("\nTo pull the examples, type: ")
     click.echo("zenml example pull EXAMPLE_NAME")
@@ -93,10 +95,12 @@ def list(git_examples_handler):
 
 @example.command(help="Find out more about an example.")
 @click.argument("example_name")
-def info(example_name):
+def info(example_name, git_examples_handler):
     """Find out more about an example."""
-    example_dir = os.path.join(get_examples_dir(), example_name)
-    readme_content = get_example_readme(example_dir)
+    example_dir = os.path.join(
+        git_examples_handler.get_examples_dir(), example_name
+    )
+    readme_content = git_examples_handler.get_example_readme(example_dir)
     click.echo(readme_content)
 
 
@@ -104,10 +108,14 @@ def info(example_name):
     help="Pull examples straight " "into your current working directory."
 )
 @click.argument("example_name", required=False, default=None)
-def pull(example_name):
+def pull(example_name, git_examples_handler):
     """Pull examples straight " "into your current working directory."""
-    examples_dir = get_examples_dir()
-    examples = get_all_examples() if not example_name else [example_name]
+    examples_dir = git_examples_handler.get_examples_dir()
+    examples = (
+        git_examples_handler.get_all_examples()
+        if not example_name
+        else [example_name]
+    )
     # Create destination dir.
     dst = os.path.join(os.getcwd(), "zenml_examples")
     path_utils.create_dir_if_not_exists(dst)
