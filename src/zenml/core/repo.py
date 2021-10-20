@@ -79,7 +79,7 @@ class Repository:
     def init_repo(
         repo_path: str = os.getcwd(),
         stack: BaseStack = None,
-        analytics_opt_in: bool = None,
+        analytics_opt_in: bool = True,
     ):
         """
         Initializes a git repo with zenml.
@@ -98,8 +98,8 @@ class Repository:
             raise AssertionError(f"{repo_path} is already initialized!")
 
         # Edit global config
-        gc = GlobalConfig()
         if analytics_opt_in is not None:
+            gc = GlobalConfig()
             gc.analytics_opt_in = analytics_opt_in
             gc.update()
 
@@ -142,10 +142,8 @@ class Repository:
                     orchestrator_name="local_orchestrator",
                 ),
             )
-
             gc = GlobalConfig()
             gc.set_stack_for_repo(repo_path, "local_stack")
-            gc.update()
 
     def get_git_wrapper(self) -> GitWrapper:
         """Returns the git wrapper for the repo."""
