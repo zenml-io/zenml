@@ -74,7 +74,6 @@ tf_p = mnist_pipeline(
 # Run the pipeline
 tf_p.run()
 
-
 # Initialise a new pipeline run
 torch_p = mnist_pipeline(
     importer=importer_mnist(),
@@ -85,7 +84,6 @@ torch_p = mnist_pipeline(
 
 # Run the new pipeline
 torch_p.run()
-
 
 # Initialise a new pipeline run
 scikit_p = mnist_pipeline(
@@ -101,6 +99,10 @@ scikit_p.run()
 # Post execution flow
 repo = Repository()
 pipeline = repo.get_pipelines()[0]
-for r in pipeline.get_runs():
+print("***********************OUTPUT************************")
+for r in pipeline.get_runs()[0:3]:
     eval_step = r.steps[3]
-    print(f"For r {r}, the accuracy is: {eval_step.outputs[0].read(None)}")
+    print(
+        f"For {eval_step.name}, the accuracy is: "
+        f"{eval_step.outputs[0].read(None):.2f}"
+    )

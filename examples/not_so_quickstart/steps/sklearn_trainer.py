@@ -14,8 +14,8 @@
 
 
 import numpy as np
-from sklearn import svm
 from sklearn.base import ClassifierMixin
+from sklearn.linear_model import LogisticRegression
 
 from zenml.steps import step
 
@@ -29,7 +29,7 @@ def sklearn_trainer(
     y_train: np.ndarray,
 ) -> ClassifierMixin:
     """Train SVC from sklearn"""
-    clf = svm.SVC(gamma=config.gamma)
+    clf = LogisticRegression(penalty="l1", solver="saga", tol=0.1)
     clf.fit(X_train.reshape((X_train.shape[0], -1)), y_train)
     return clf
 
@@ -42,5 +42,5 @@ def sklearn_evaluator(
 ) -> float:
     """Calculate the loss for the model for each epoch in a graph"""
 
-    test_acc = model.score(X_test, y_test)
+    test_acc = model.score(X_test.reshape((X_test.shape[0], -1)), y_test)
     return test_acc

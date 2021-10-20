@@ -118,4 +118,4 @@ def torch_evaluator(
             100.0 * correct / len(test_loader.dataset),
         )
     )
-    return 100.0 * correct / len(test_loader.dataset)
+    return correct / len(test_loader.dataset)
