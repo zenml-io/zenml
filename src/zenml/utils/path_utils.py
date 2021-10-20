@@ -221,7 +221,7 @@ def copy_dir(source_dir: str, destination_dir: str, overwrite: bool = False):
     Args:
         source_dir: Path to copy from.
         destination_dir: Path to copy to.
-        overwrite: Boolean, if false, then throws an error before overwrite.
+        overwrite: Boolean. If false, function throws an error before overwrite.
     """
     for f in list_dir(source_dir):
         p = Path(f)
