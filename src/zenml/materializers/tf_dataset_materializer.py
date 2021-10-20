@@ -26,13 +26,13 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
 
     ASSOCIATED_TYPES = [tf.data.Dataset]
 
-    def handle_input(self, data_type: Type) -> Any:
+    def handle_input(self, data_type: Type[Any]) -> Any:
         """Reads data into tf.data.Dataset"""
         super().handle_input(data_type)
         path = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         return tf.data.experimental.load(path)
 
-    def handle_return(self, dataset: tf.data.Dataset):
+    def handle_return(self, dataset: tf.data.Dataset) -> None:
         """Persists a tf.data.Dataset object."""
         super().handle_return(dataset)
         path = os.path.join(self.artifact.uri, DEFAULT_FILENAME)

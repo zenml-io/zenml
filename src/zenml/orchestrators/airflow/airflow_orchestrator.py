@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 
 import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from tfx.orchestration import pipeline as tfx_pipeline
+import tfx.orchestration.pipeline as tfx_pipeline
 
 from zenml.core.component_factory import orchestrator_store_factory
 from zenml.enums import OrchestratorTypes
@@ -26,6 +26,8 @@ from zenml.orchestrators.airflow.airflow_dag_runner import (
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 
 if TYPE_CHECKING:
+    import airflow
+
     from zenml.pipelines.base_pipeline import BasePipeline
 
 
@@ -33,7 +35,9 @@ if TYPE_CHECKING:
 class AirflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
 
-    def run(self, zenml_pipeline: "BasePipeline", **kwargs):
+    def run(
+        self, zenml_pipeline: "BasePipeline", **kwargs: Any
+    ) -> "airflow.DAG":
         """Prepares the pipeline so it can be run in Airflow.
 
         Args:
@@ -59,7 +63,7 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         created_pipeline = tfx_pipeline.Pipeline(
             pipeline_name=zenml_pipeline.name,
-            components=steps,
+            components=steps,  # type: ignore[arg-type]
             pipeline_root=artifact_store.path,
             metadata_connection_config=metadata_store.get_tfx_metadata_config(),
             enable_cache=True,

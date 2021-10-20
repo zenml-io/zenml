@@ -30,7 +30,7 @@ class DefaultMaterializerRegistry(object):
     @classmethod
     def register_materializer_type(
         cls, key: Type[Any], type_: Type["BaseMaterializer"]
-    ):
+    ) -> None:
         """Registers a new materializer.
 
         Args:
@@ -48,7 +48,7 @@ class DefaultMaterializerRegistry(object):
 
     def register_and_overwrite_type(
         self, key: Type[Any], type_: Type["BaseMaterializer"]
-    ):
+    ) -> None:
         """Registers a new materializer and also overwrites a default if set.
 
         Args:
@@ -60,7 +60,7 @@ class DefaultMaterializerRegistry(object):
 
     def get_single_materializer_type(
         self, key: Type[Any]
-    ) -> "BaseMaterializer":
+    ) -> Type["BaseMaterializer"]:
         """Get a single materializers based on the key.
 
         Args:

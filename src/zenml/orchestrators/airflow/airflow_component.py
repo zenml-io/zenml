@@ -16,8 +16,8 @@
 import functools
 from typing import Any, Dict, List, Type
 
-from airflow import models
-from airflow.operators import python_operator
+import airflow
+from airflow.operators import python
 from ml_metadata.proto import metadata_store_pb2
 from tfx.dsl.components.base import base_node
 from tfx.orchestration import data_types, metadata
@@ -38,7 +38,7 @@ def _airflow_component_launcher(
     additional_pipeline_args: Dict[str, Any],
     component_config: base_component_config.BaseComponentConfig,
     exec_properties: Dict[str, Any],
-    **kwargs
+    **kwargs: Any
 ) -> None:
     """Helper function to launch TFX component execution.
     This helper function will be called with Airflow env objects which contains
@@ -80,7 +80,7 @@ def _airflow_component_launcher(
         launcher.launch()
 
 
-class AirflowComponent(python_operator.PythonOperator):
+class AirflowComponent(python.PythonOperator):
     """Airflow-specific TFX Component.
     This class wrap a component run into its own PythonOperator in Airflow.
     """
@@ -88,7 +88,7 @@ class AirflowComponent(python_operator.PythonOperator):
     def __init__(
         self,
         *,
-        parent_dag: models.DAG,
+        parent_dag: airflow.DAG,
         component: base_node.BaseNode,
         component_launcher_class: Type[
             base_component_launcher.BaseComponentLauncher

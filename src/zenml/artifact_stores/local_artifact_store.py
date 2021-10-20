@@ -25,10 +25,8 @@ class LocalArtifactStore(BaseArtifactStore):
     """Artifact Store for local artifacts."""
 
     @validator("path")
-    def must_be_local_path(cls, v: str):
-        """Validates that the path is a valid gcs path."""
+    def must_be_local_path(cls, v: str) -> str:
+        """Validates that the path is a local path."""
         if any([v.startswith(prefix) for prefix in _REMOTE_FS_PREFIX]):
-            raise ValueError(
-                "Must be a valid gcs path, i.e., starting with `gs://`"
-            )
+            raise ValueError("Must be a local path.")
         return v
