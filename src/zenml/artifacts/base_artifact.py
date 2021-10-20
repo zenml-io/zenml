@@ -32,7 +32,7 @@ class BaseArtifact(Artifact):
     - TODO [MEDIUM]: Write about the materializers
     """
 
-    TYPE_NAME: str = "BaseArtifact"  # type: ignore
-    PROPERTIES: Dict[str, Property] = {  # type: ignore
+    TYPE_NAME: str = "BaseArtifact"  # type: ignore[assignment]
+    PROPERTIES: Dict[str, Property] = {  # type: ignore[assignment]
         MATERIALIZERS_PROPERTY_KEY: MATERIALIZERS_PROPERTY,
     }

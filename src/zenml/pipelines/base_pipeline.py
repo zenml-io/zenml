@@ -58,7 +58,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
     """Base ZenML pipeline."""
 
     NAME: ClassVar[str] = ""
-    STEP_SPEC: ClassVar[Dict[str, Any]] = None  # type: ignore
+    STEP_SPEC: ClassVar[Dict[str, Any]] = None  # type: ignore[assignment]
 
     def __init__(self, *args: BaseStep, **kwargs: BaseStep) -> None:
         self.__stack = Repository().get_active_stack()

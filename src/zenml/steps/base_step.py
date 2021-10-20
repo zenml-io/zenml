@@ -138,8 +138,8 @@ class BaseStep(metaclass=BaseStepMeta):
     the other step implementations"""
 
     # TODO [MEDIUM]: Ensure these are ordered
-    INPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore
-    OUTPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore
+    INPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
+    OUTPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
     CONFIG: ClassVar[Optional[Type[BaseStepConfig]]] = None
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:

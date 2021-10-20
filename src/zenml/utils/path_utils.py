@@ -283,7 +283,7 @@ def read_file_contents_as_string(file_path: str) -> str:
     """
     if not file_exists(file_path):
         raise FileNotFoundError(f"{file_path} does not exist!")
-    return fileio.open(file_path).read()  # type: ignore
+    return fileio.open(file_path).read()  # type: ignore[no-any-return]
 
 
 def write_file_contents_as_string(file_path: str, content: str) -> None:
