@@ -13,10 +13,12 @@
 #  permissions and limitations under the License.
 
 import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from tfx.dsl.components.common.importer import Importer
-from tfx.orchestration import pipeline as tfx_pipeline
+from tfx.orchestration import (  # type: ignore[attr-defined] # noqa
+    pipeline as tfx_pipeline,
+)
 
 from zenml.core.component_factory import orchestrator_store_factory
 from zenml.enums import OrchestratorTypes
@@ -27,6 +29,8 @@ from zenml.orchestrators.airflow.airflow_dag_runner import (
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 
 if TYPE_CHECKING:
+    import airflow
+
     from zenml.pipelines.base_pipeline import BasePipeline
 
 
@@ -34,7 +38,9 @@ if TYPE_CHECKING:
 class AirflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
 
-    def run(self, zenml_pipeline: "BasePipeline", **kwargs):
+    def run(
+        self, zenml_pipeline: "BasePipeline", **kwargs: Any
+    ) -> "airflow.DAG":
         """Prepares the pipeline so it can be run in Airflow.
 
         Args:

@@ -38,10 +38,12 @@ from datetime import datetime
 from tfx.dsl.compiler import compiler
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
 from tfx.dsl.components.base import base_component
-from tfx.orchestration import metadata
-from tfx.orchestration import pipeline as pipeline_py
-from tfx.orchestration.local import runner_utils
-from tfx.orchestration.portable import (
+from tfx.orchestration import metadata  # type: ignore[attr-defined]
+from tfx.orchestration import (  # type: ignore[attr-defined] # noqa
+    pipeline as pipeline_py,
+)
+from tfx.orchestration.local import runner_utils  # type: ignore[attr-defined]
+from tfx.orchestration.portable import (  # type: ignore[attr-defined]
     launcher,
     runtime_parameter_utils,
     tfx_runner,
@@ -75,10 +77,10 @@ def format_timedelta_pretty(seconds: float) -> str:
         return f"{seconds:.3f}s"
 
 
-class LocalDagRunner(tfx_runner.TfxRunner):
+class LocalDagRunner(tfx_runner.TfxRunner):  # type: ignore[misc]
     """Local TFX DAG runner."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initializes LocalDagRunner as a TFX orchestrator."""
 
     def run(self, pipeline: pipeline_py.Pipeline) -> None:

@@ -17,20 +17,31 @@ source code (outside of superficial, stylistic changes)"""
 import os
 import typing
 import warnings
-from typing import Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
-from tfx.dsl.components.base import base_component
-from tfx.orchestration import pipeline, tfx_runner
-from tfx.orchestration.config import config_utils, pipeline_config
+from tfx.dsl.components.base import base_component, base_node
+from tfx.orchestration import (  # type: ignore[attr-defined] # noqa
+    pipeline,
+    tfx_runner,
+)
+from tfx.orchestration.config import (  # type: ignore[attr-defined] # noqa
+    config_utils,
+    pipeline_config,
+)
 from tfx.orchestration.data_types import RuntimeParameter
-from tfx.utils.json_utils import json
+from tfx.utils.json_utils import json  # type: ignore[attr-defined] # noqa
+
+if TYPE_CHECKING:
+    import airflow
 
 
-class AirflowPipelineConfig(pipeline_config.PipelineConfig):
+class AirflowPipelineConfig(
+    pipeline_config.PipelineConfig
+):  # type:ignore[misc] # noqa
     """Pipeline config for AirflowDagRunner."""
 
     def __init__(
-        self, airflow_dag_config: Optional[Dict[str, Any]] = None, **kwargs
+        self, airflow_dag_config: Optional[Dict[str, Any]] = None, **kwargs: Any
     ):
         """Creates an instance of AirflowPipelineConfig.
         Args:
@@ -44,7 +55,7 @@ class AirflowPipelineConfig(pipeline_config.PipelineConfig):
         self.airflow_dag_config = airflow_dag_config or {}
 
 
-class AirflowDagRunner(tfx_runner.TfxRunner):
+class AirflowDagRunner(tfx_runner.TfxRunner):  # type: ignore[misc]
     """Tfx runner on Airflow."""
 
     def __init__(
@@ -66,7 +77,7 @@ class AirflowDagRunner(tfx_runner.TfxRunner):
             config = AirflowPipelineConfig(airflow_dag_config=config)
         super().__init__(config)
 
-    def run(self, tfx_pipeline: pipeline.Pipeline):
+    def run(self, tfx_pipeline: pipeline.Pipeline) -> "airflow.DAG":
         """Deploys given logical pipeline on Airflow.
 
         Args:
@@ -76,13 +87,13 @@ class AirflowDagRunner(tfx_runner.TfxRunner):
           An Airflow DAG.
         """
         # Only import these when needed.
-        from airflow import models  # noqa
+        import airflow  # noqa
 
         from zenml.orchestrators.airflow import airflow_component  # noqa
 
         # Merge airflow-specific configs with pipeline args
 
-        airflow_dag = models.DAG(
+        airflow_dag = airflow.DAG(
             dag_id=tfx_pipeline.pipeline_info.pipeline_name,
             **(
                 typing.cast(
@@ -133,7 +144,9 @@ class AirflowDagRunner(tfx_runner.TfxRunner):
 
         return airflow_dag
 
-    def _replace_runtime_params(self, comp):
+    def _replace_runtime_params(
+        self, comp: base_node.BaseNode
+    ) -> base_node.BaseNode:
         """Replaces runtime params for dynamic Airflow parameter execution.
 
         Args:

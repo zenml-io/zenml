@@ -82,9 +82,9 @@ def find_files(dir_path: PathType, pattern: str) -> Iterable[str]:
     """
     for root, dirs, files in walk(dir_path):
         for basename in files:
-            if fnmatch.fnmatch(_convert_to_str(basename), pattern):
+            if fnmatch.fnmatch(convert_to_str(basename), pattern):
                 filename = os.path.join(
-                    _convert_to_str(root), _convert_to_str(basename)
+                    convert_to_str(root), convert_to_str(basename)
                 )
                 yield filename
 
@@ -125,9 +125,9 @@ def list_dir(dir_path: str, only_file_names: bool = False) -> List[str]:
     """
     try:
         return [
-            os.path.join(dir_path, _convert_to_str(f))
+            os.path.join(dir_path, convert_to_str(f))
             if not only_file_names
-            else _convert_to_str(f)
+            else convert_to_str(f)
             for f in fileio.listdir(dir_path)
         ]
     except fileio.NotFoundError:
@@ -440,7 +440,7 @@ def get_zenml_config_dir(path: str = os.getcwd()) -> str:
     return os.path.join(get_zenml_dir(str(Path(path))), ZENML_DIR_NAME)
 
 
-def _convert_to_str(path: PathType) -> str:
+def convert_to_str(path: PathType) -> str:
     """Converts a PathType to a str using UTF-8."""
     if isinstance(path, str):
         return path

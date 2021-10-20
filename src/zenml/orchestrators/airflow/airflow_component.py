@@ -16,13 +16,17 @@
 import functools
 from typing import Any, Dict, List, Type
 
-from airflow import models
+import airflow
 from airflow.operators import python_operator
 from ml_metadata.proto import metadata_store_pb2
 from tfx.dsl.components.base import base_node
-from tfx.orchestration import data_types, metadata
-from tfx.orchestration.config import base_component_config
-from tfx.orchestration.launcher import base_component_launcher
+from tfx.orchestration import data_types, metadata  # type: ignore[attr-defined]
+from tfx.orchestration.config import (  # type: ignore[attr-defined] # noqa
+    base_component_config,
+)
+from tfx.orchestration.launcher import (  # type: ignore[attr-defined] # noqa
+    base_component_launcher,
+)
 from tfx.utils import telemetry_utils
 
 
@@ -38,7 +42,7 @@ def _airflow_component_launcher(
     additional_pipeline_args: Dict[str, Any],
     component_config: base_component_config.BaseComponentConfig,
     exec_properties: Dict[str, Any],
-    **kwargs
+    **kwargs: Any
 ) -> None:
     """Helper function to launch TFX component execution.
     This helper function will be called with Airflow env objects which contains
@@ -80,7 +84,7 @@ def _airflow_component_launcher(
         launcher.launch()
 
 
-class AirflowComponent(python_operator.PythonOperator):
+class AirflowComponent(python_operator.PythonOperator):  # type: ignore
     """Airflow-specific TFX Component.
     This class wrap a component run into its own PythonOperator in Airflow.
     """
@@ -88,7 +92,7 @@ class AirflowComponent(python_operator.PythonOperator):
     def __init__(
         self,
         *,
-        parent_dag: models.DAG,
+        parent_dag: airflow.DAG,
         component: base_node.BaseNode,
         component_launcher_class: Type[
             base_component_launcher.BaseComponentLauncher

@@ -13,9 +13,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from tfx.orchestration import pipeline as tfx_pipeline
+from tfx.orchestration import (  # type: ignore[attr-defined] # noqa
+    pipeline as tfx_pipeline,
+)
 
 from zenml.core.component_factory import orchestrator_store_factory
 from zenml.enums import OrchestratorTypes
@@ -31,7 +33,7 @@ if TYPE_CHECKING:
 class LocalOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines locally."""
 
-    def run(self, zenml_pipeline: "BasePipeline", **pipeline_args):
+    def run(self, zenml_pipeline: "BasePipeline", **pipeline_args: Any) -> None:
         """Runs a pipeline locally.
 
         Args:

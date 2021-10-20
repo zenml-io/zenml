@@ -21,11 +21,13 @@ Finally, the plugin is registered in the filesystem registry.
 """
 
 from builtins import FileNotFoundError
-from typing import Any, Callable, Iterable, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 import gcsfs
 from tfx.dsl.io import filesystem, filesystem_registry
 from tfx.dsl.io.filesystem import PathType
+
+from zenml.utils.path_utils import convert_to_str
 
 
 class ZenGCS(filesystem.Filesystem):
@@ -63,9 +65,8 @@ class ZenGCS(filesystem.Filesystem):
         """
         if not overwrite and ZenGCS.fs.exists(dst):
             raise FileExistsError(
-                f"Unable to copy to destination '{dst}', "
-                f"file already exists. Set `overwrite=True`"
-                f"to copy anyway."
+                f"Unable to copy to destination '{convert_to_str(dst)}', "
+                f"file already exists. Set `overwrite=True` to copy anyway."
             )
 
         # TODO: [LOW] Check if it works with overwrite=True or if we need to
@@ -134,9 +135,8 @@ class ZenGCS(filesystem.Filesystem):
         """
         if not overwrite and ZenGCS.fs.exists(dst):
             raise FileExistsError(
-                f"Unable to rename file to '{dst}', "
-                f"file already exists. Set `overwrite=True`"
-                f"to rename anyway."
+                f"Unable to rename file to '{convert_to_str(dst)}', "
+                f"file already exists. Set `overwrite=True` to rename anyway."
             )
 
         # TODO: [LOW] Check if it works with overwrite=True or if we need
@@ -152,9 +152,9 @@ class ZenGCS(filesystem.Filesystem):
             raise filesystem.NotFoundError() from e
 
     @staticmethod
-    def stat(path: PathType) -> Any:
+    def stat(path: PathType) -> Dict[str, Any]:
         """Return stat info for the given path."""
-        ZenGCS.fs.stat(path=path)
+        return ZenGCS.fs.stat(path=path)  # type: ignore[no-any-return]
 
     @staticmethod
     def walk(
@@ -168,6 +168,10 @@ class ZenGCS(filesystem.Filesystem):
             top: Path of directory to walk.
             topdown: Unused argument to conform to interface.
             onerror: Unused argument to conform to interface.
+        Returns:
+            An Iterable of Tuples, each of which contain the path of the current
+            directory path, a list of directories inside the current directory
+            and a list of files inside the current directory.
         """
         # TODO: [LOW] Additional params
         return ZenGCS.fs.walk(path=top)  # type: ignore[no-any-return]
