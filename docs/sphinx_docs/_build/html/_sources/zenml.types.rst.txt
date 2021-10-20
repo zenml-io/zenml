@@ -4,14 +4,6 @@ zenml.types package
 Submodules
 ----------
 
-zenml.types.base\_type module
------------------------------
-
-.. automodule:: zenml.types.base_type
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 zenml.types.pytorch\_types module
 ---------------------------------
 

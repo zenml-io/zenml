@@ -158,14 +158,14 @@
 <dd class="field-odd"><p><strong>artifact_uri</strong> – URI to artifact.</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Name of the component (str).</p>
+<dd class="field-even"><p>Name of the component.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="zenml.artifact_stores.base_artifact_store.BaseArtifactStore.get_serialization_dir">
-<span class="sig-name descname"><span class="pre">get_serialization_dir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.artifact_stores.base_artifact_store.BaseArtifactStore.get_serialization_dir" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_serialization_dir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#zenml.artifact_stores.base_artifact_store.BaseArtifactStore.get_serialization_dir" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets the local path where artifacts are stored.</p>
 </dd></dl>
 
@@ -187,7 +187,7 @@ URI locally, then returns local URI.</p>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Locally resolved uri (str).</p>
+<dd class="field-even"><p>Locally resolved uri.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -204,7 +204,7 @@ URI locally, then returns local URI.</p>
 <p>Artifact Store for Google Cloud Storage based artifacts.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="zenml.artifact_stores.gcp_artifact_store.GCPArtifactStore.must_be_gcs_path">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">must_be_gcs_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.artifact_stores.gcp_artifact_store.GCPArtifactStore.must_be_gcs_path" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">must_be_gcs_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#zenml.artifact_stores.gcp_artifact_store.GCPArtifactStore.must_be_gcs_path" title="Permalink to this definition">¶</a></dt>
 <dd><p>Validates that the path is a valid gcs path.</p>
 </dd></dl>
 
@@ -230,8 +230,8 @@ URI locally, then returns local URI.</p>
 <p>Artifact Store for local artifacts.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="zenml.artifact_stores.local_artifact_store.LocalArtifactStore.must_be_local_path">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">must_be_local_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.artifact_stores.local_artifact_store.LocalArtifactStore.must_be_local_path" title="Permalink to this definition">¶</a></dt>
-<dd><p>Validates that the path is a valid gcs path.</p>
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">must_be_local_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#zenml.artifact_stores.local_artifact_store.LocalArtifactStore.must_be_local_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validates that the path is a local path.</p>
 </dd></dl>
 
 <dl class="py attribute">
