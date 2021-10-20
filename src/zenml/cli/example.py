@@ -56,7 +56,9 @@ class GitExamplesHandler(object):
         # TODO: [HIGH] move these functions into the GitExamplesHandler class
         # consider adding run-example command
         """Return the examples dir"""
-        return os.path.join(click.get_app_dir(APP_NAME), APP_NAME, "examples")
+        return os.path.join(
+            click.get_app_dir(APP_NAME), EXAMPLES_GITHUB_REPO, "examples"
+        )
 
     def get_all_examples(self) -> List[str]:
         """Get all the examples"""
