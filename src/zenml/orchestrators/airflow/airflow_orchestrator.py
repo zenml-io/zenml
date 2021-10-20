@@ -63,7 +63,7 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         created_pipeline = tfx_pipeline.Pipeline(
             pipeline_name=zenml_pipeline.name,
-            components=steps,
+            components=steps,  # type: ignore[arg-type]
             pipeline_root=artifact_store.path,
             metadata_connection_config=metadata_store.get_tfx_metadata_config(),
             enable_cache=True,

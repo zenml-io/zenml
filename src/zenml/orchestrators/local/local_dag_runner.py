@@ -105,7 +105,7 @@ class LocalDagRunner(tfx_runner.TfxRunner):
         deployment_config = runner_utils.extract_local_deployment_config(
             pipeline
         )
-        connection_config = deployment_config.metadata_connection_config
+        connection_config = deployment_config.metadata_connection_config  # type: ignore[attr-defined] # noqa
 
         logger.debug(f"Using deployment config:\n {deployment_config}")
         logger.debug(f"Using connection config:\n {connection_config}")
