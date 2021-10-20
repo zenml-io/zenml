@@ -17,13 +17,12 @@ import functools
 from typing import Any, Dict, List, Type
 
 import airflow
-import tfx.orchestration.config.base_component_config as base_component_config
-import tfx.orchestration.data_types as data_types
-import tfx.orchestration.launcher.base_component_launcher as base_component_launcher  # noqa
-import tfx.orchestration.metadata as metadata
 from airflow.operators import python
 from ml_metadata.proto import metadata_store_pb2
 from tfx.dsl.components.base import base_node
+from tfx.orchestration import data_types, metadata
+from tfx.orchestration.config import base_component_config
+from tfx.orchestration.launcher import base_component_launcher
 from tfx.utils import telemetry_utils
 
 

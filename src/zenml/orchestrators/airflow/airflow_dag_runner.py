@@ -19,11 +19,10 @@ import typing
 import warnings
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union, cast
 
-import tfx.orchestration.config.config_utils as config_utils
-import tfx.orchestration.config.pipeline_config as pipeline_config
 import tfx.orchestration.pipeline as tfx_pipeline
-import tfx.orchestration.tfx_runner as tfx_runner
 from tfx.dsl.components.base import base_component, base_node
+from tfx.orchestration import tfx_runner
+from tfx.orchestration.config import config_utils, pipeline_config
 from tfx.orchestration.data_types import RuntimeParameter
 from tfx.utils.json_utils import json  # type: ignore[attr-defined]
 
