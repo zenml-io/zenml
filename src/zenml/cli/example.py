@@ -21,16 +21,14 @@ from git import Repo
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
 from zenml.constants import APP_NAME, GIT_REPO_URL
-from zenml.logger import get_logger
 from zenml.utils import path_utils
 
 # TODO: [MEDIUM] Add an example-run command to run an example.
-# TODO: [HIGH] rename the base folder
 
 EXAMPLES_GITHUB_REPO = "zenml_examples"
 
 
-logit = get_logger(__name__)
+# logit = get_logger(__name__)
 
 
 class GitExamplesHandler(object):
@@ -47,7 +45,6 @@ class GitExamplesHandler(object):
         # check out the branch of the installed version even if we do have a local copy (minimal check)
         if EXAMPLES_GITHUB_REPO not in config_directory_files:
             installed_version = zenml_version_installed
-            # TODO: [Medium] make this an asynchronous function
             Repo.clone_from(
                 GIT_REPO_URL, examples_dir, branch=installed_version
             )
@@ -138,7 +135,6 @@ def pull(git_examples_handler, example_name):
         if not example_name
         else [example_name]
     )
-    logit.debug(examples)
     # Create destination dir.
     dst = os.path.join(os.getcwd(), "zenml_examples")
     path_utils.create_dir_if_not_exists(dst)
