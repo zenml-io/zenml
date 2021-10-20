@@ -29,7 +29,6 @@ def sklearn_trainer(
     y_train: np.ndarray,
 ) -> ClassifierMixin:
     """Train SVC from sklearn"""
-    print(X_train.shape, y_train.shape)
     clf = svm.SVC(gamma=config.gamma)
     clf.fit(X_train.reshape((X_train.shape[0], -1)), y_train)
     return clf
