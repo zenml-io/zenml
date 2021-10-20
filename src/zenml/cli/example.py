@@ -23,27 +23,37 @@ from zenml.cli.cli import cli
 from zenml.constants import APP_NAME, GIT_REPO_URL
 from zenml.utils import path_utils
 
+# TODO: [HIGH] rename the base folder
+
 
 class GitExamplesHandler(object):
     def __init__(self) -> None:
         repo_dir = click.get_app_dir(APP_NAME)
         config_directory_files = os.listdir(repo_dir)
 
+        # check out the branch of the installed version even if we do have a local copy (minimal check)
         if APP_NAME not in config_directory_files:
             installed_version = zenml_version_installed
             # TODO: [Medium] make this an asynchronous function
             Repo.clone_from(GIT_REPO_URL, repo_dir, branch=installed_version)
+        # if cloning cancels in the middle, try, but if keyboard interrupt, clean the directory
+        # always want to give the option to clean the repo + redownload it (with a flag?)
+        # clean + initiate function etc
+        # ALSO: someone who wants to use a version of zenml which isn't their installed version
 
 
-pass_git_examples_handler = click.make_pass_decorator(GitExamplesHandler)
+pass_git_examples_handler = click.make_pass_decorator(
+    GitExamplesHandler, ensure=True
+)
 
 
 def get_examples_dir() -> str:
+    # TODO: [HIGH] move these functions into the GitExamplesHandler class
+    # consider adding run-example command
     """Return the examples dir."""
     return os.path.join(click.get_app_dir(APP_NAME), APP_NAME, "examples")
 
 
-@pass_git_examples_handler
 def get_all_examples() -> List[str]:
     """Get all the examples"""
     return [
@@ -70,9 +80,11 @@ def example():
 
 
 @example.command(help="List the available examples.")
-def list():
+@pass_git_examples_handler
+def list(git_examples_handler):
     """List all available examples."""
     click.echo("Listing examples: \n")
+    # git_examples_handler.get_all_examples()
     for name in get_all_examples():
         click.echo(f"{name}")
     click.echo("\nTo pull the examples, type: ")
