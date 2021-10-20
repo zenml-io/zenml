@@ -18,7 +18,6 @@ init_logging()
 
 from .base import *  # noqa
 from .config import *  # noqa
-
-# from .example import *  # noqa
+from .example import *  # noqa
 from .stack import *  # noqa
 from .version import *  # noqa
