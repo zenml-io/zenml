@@ -88,6 +88,7 @@ tox = "^3.24.3"
 hypothesis = "^6.23.0"
 Sphinx = "^4.2.0"
 sphinx-bootstrap-theme = "^0.8.0"
+typing-extensions = ">=3.7.4"
 
 [build-system]
 requires = ["poetry-core"]
