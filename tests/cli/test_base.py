@@ -14,56 +14,18 @@
 
 import os
 
-import pytest
 from click.testing import CliRunner
 from git import Repo
 
 from zenml.cli.base import init
 from zenml.core.constants import ZENML_DIR_NAME
-from zenml.exceptions import InitializationException
-
-ZENML_INIT_FILENAMES = [
-    "zenservice.json",
-    "artifact_stores",
-    "metadata_stores",
-    "orchestrators",
-]
 
 
-@pytest.mark.xfail()
-# TODO: [MEDIUM] fix failing test
-def test_assertion_error_raised_when_trying_to_init_when_already_initialized():
-    """Check that an assertion error is raised when trying to initialize
-    a repo that is already initialized"""
+def test_init_creates_zen_folder(tmp_path):
+    """Check that init command creates a .zen folder inside temporary directory"""
     runner = CliRunner()
-    with runner.isolated_filesystem():
-        Repo.init("test_repo", mkdir=True)
-        assert "test_repo" in os.listdir(os.getcwd())
-        repository_path = os.path.join(os.getcwd(), "test_repo")
-        runner.invoke(init, ["--repo_path", str(repository_path)])
-        with pytest.raises(AssertionError):
-            runner.invoke(init, ["--repo_path", str(repository_path)])
-
-
-def test_init_fails_when_repo_path_is_not_git_repo_already(tmp_path):
-    """Check that init command raises an InvalidGitRepositoryError
-    when executed outside a valid Git repository"""
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        result = runner.invoke(init)
-        assert isinstance(result.exception, InitializationException)
-
-
-@pytest.mark.xfail()
-@pytest.mark.parametrize("zenml_init_filenames", ZENML_INIT_FILENAMES)
-def test_init(tmp_path, zenml_init_filenames):
-    """Check that init command works as expected inside temporary directory"""
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        Repo.init("test_repo", mkdir=True)
-        repository_path = os.path.join(os.getcwd(), "test_repo")
-        runner.invoke(init, ["--repo_path", str(repository_path)])
-        dir_files = os.listdir(repository_path)
-        assert ZENML_DIR_NAME in dir_files
-        zen_files = os.listdir(os.path.join(repository_path, ".zen"))
-        assert zenml_init_filenames in zen_files
+    Repo.init(tmp_path, mkdir=True)
+    repository_path = tmp_path
+    runner.invoke(init, ["--repo_path", str(repository_path)])
+    dir_files = os.listdir(repository_path)
+    assert ZENML_DIR_NAME in dir_files
