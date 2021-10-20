@@ -142,6 +142,7 @@ line_length = 80
 [tool.mypy]
 strict = true
 namespace_packages = true
+show_error_codes = true
 
 [[tool.mypy.overrides]]
 module = [
