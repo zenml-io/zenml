@@ -139,7 +139,6 @@ def track_event(event: str, metadata: Dict = None):
         ), "Analytics key not set but trying to make telemetry call."
 
         gc = GlobalConfig()
-        logger.debug(f"Analytics opt-in: {gc.analytics_opt_in}.")
 
         if not gc.analytics_opt_in and event != INITIALIZE_REPO:
             return
@@ -188,14 +187,7 @@ def track(func: Callable, event: str = None) -> Callable:
     """
     if event is None:
         event = func.__name__  # default to name of function
-
     metadata = {}
-
-    # TODO: [LOW] See if we can get anonymized data from func
-    # if func.__name__:
-    #     metadata['function'] = func.__name__
-    # if func.__module__:
-    #     metadata['module'] = func.__module__
 
     def inner_func(*args, **kwargs):
         """Inner decorator function."""
