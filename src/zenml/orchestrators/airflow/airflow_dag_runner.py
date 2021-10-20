@@ -19,25 +19,19 @@ import typing
 import warnings
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
+import tfx.orchestration.config.config_utils as config_utils
+import tfx.orchestration.config.pipeline_config as pipeline_config
+import tfx.orchestration.pipeline as tfx_pipeline
+import tfx.orchestration.tfx_runner as tfx_runner
 from tfx.dsl.components.base import base_component, base_node
-from tfx.orchestration import (  # type: ignore[attr-defined] # noqa
-    pipeline,
-    tfx_runner,
-)
-from tfx.orchestration.config import (  # type: ignore[attr-defined] # noqa
-    config_utils,
-    pipeline_config,
-)
 from tfx.orchestration.data_types import RuntimeParameter
-from tfx.utils.json_utils import json  # type: ignore[attr-defined] # noqa
+from tfx.utils.json_utils import json  # type: ignore[attr-defined]
 
 if TYPE_CHECKING:
     import airflow
 
 
-class AirflowPipelineConfig(
-    pipeline_config.PipelineConfig  # type:ignore[misc]
-):
+class AirflowPipelineConfig(pipeline_config.PipelineConfig):
     """Pipeline config for AirflowDagRunner."""
 
     def __init__(
@@ -55,7 +49,7 @@ class AirflowPipelineConfig(
         self.airflow_dag_config = airflow_dag_config or {}
 
 
-class AirflowDagRunner(tfx_runner.TfxRunner):  # type: ignore[misc]
+class AirflowDagRunner(tfx_runner.TfxRunner):
     """Tfx runner on Airflow."""
 
     def __init__(
@@ -77,7 +71,7 @@ class AirflowDagRunner(tfx_runner.TfxRunner):  # type: ignore[misc]
             config = AirflowPipelineConfig(airflow_dag_config=config)
         super().__init__(config)
 
-    def run(self, tfx_pipeline: pipeline.Pipeline) -> "airflow.DAG":
+    def run(self, tfx_pipeline: tfx_pipeline.Pipeline) -> "airflow.DAG":
         """Deploys given logical pipeline on Airflow.
 
         Args:

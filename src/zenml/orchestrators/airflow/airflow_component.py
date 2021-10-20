@@ -17,16 +17,13 @@ import functools
 from typing import Any, Dict, List, Type
 
 import airflow
-from airflow.operators import python_operator
+import tfx.orchestration.config.base_component_config as base_component_config
+import tfx.orchestration.data_types as data_types
+import tfx.orchestration.launcher.base_component_launcher as base_component_launcher  # noqa
+import tfx.orchestration.metadata as metadata
+from airflow.operators import python
 from ml_metadata.proto import metadata_store_pb2
 from tfx.dsl.components.base import base_node
-from tfx.orchestration import data_types, metadata  # type: ignore[attr-defined]
-from tfx.orchestration.config import (  # type: ignore[attr-defined]
-    base_component_config,
-)
-from tfx.orchestration.launcher import (  # type: ignore[attr-defined]
-    base_component_launcher,
-)
 from tfx.utils import telemetry_utils
 
 
@@ -84,7 +81,7 @@ def _airflow_component_launcher(
         launcher.launch()
 
 
-class AirflowComponent(python_operator.PythonOperator):  # type: ignore
+class AirflowComponent(python.PythonOperator):
     """Airflow-specific TFX Component.
     This class wrap a component run into its own PythonOperator in Airflow.
     """

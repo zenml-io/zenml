@@ -85,6 +85,8 @@ class ComponentFactory:
         return inner_wrapper
 
 
-artifact_store_factory = ComponentFactory(name="artifact")
-metadata_store_factory = ComponentFactory(name="metadata")
-orchestrator_store_factory = ComponentFactory(name="orchestrator")
+artifact_store_factory: ComponentFactory = ComponentFactory(name="artifact")
+metadata_store_factory: ComponentFactory = ComponentFactory(name="metadata")
+orchestrator_store_factory: ComponentFactory = ComponentFactory(
+    name="orchestrator"
+)

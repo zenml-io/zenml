@@ -15,9 +15,7 @@
 
 from typing import TYPE_CHECKING, Any
 
-from tfx.orchestration import (  # type: ignore[attr-defined] # noqa
-    pipeline as tfx_pipeline,
-)
+import tfx.orchestration.pipeline as tfx_pipeline
 
 from zenml.core.component_factory import orchestrator_store_factory
 from zenml.enums import OrchestratorTypes
@@ -48,7 +46,7 @@ class LocalOrchestrator(BaseOrchestrator):
                 raise TypeError(
                     f"When you are designing a pipeline, you can only pass in "
                     f"@step like annotated objects. You passed in "
-                    f"{s.__name__}: {s} which is of type {type(s)}"
+                    f"`{s}` which is of type `{type(s)}`"
                 )
 
         zenml_pipeline.connect(**zenml_pipeline.steps)

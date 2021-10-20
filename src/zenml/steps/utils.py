@@ -43,7 +43,6 @@ from typing import (
     ValuesView,
 )
 
-from tfx import types as tfx_types
 from tfx.dsl.component.experimental.decorators import _SimpleComponent
 from tfx.dsl.components.base.base_executor import BaseExecutor
 from tfx.dsl.components.base.executor_spec import ExecutorClassSpec
@@ -107,7 +106,7 @@ def generate_component(step: "BaseStep") -> Callable[..., Any]:
 
     component_spec_class = type(
         "%s_Spec" % step.__class__.__name__,
-        (tfx_types.ComponentSpec,),  # type: ignore[attr-defined]
+        (component_spec.ComponentSpec,),
         {
             "INPUTS": spec_inputs,
             "OUTPUTS": spec_outputs,

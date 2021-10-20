@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 from typing import Any
 
+import tfx.orchestration.metadata as metadata
 from ml_metadata.proto import metadata_store_pb2
 from pydantic import validator
-from tfx.orchestration import metadata  # type: ignore[attr-defined]
 
 from zenml.core.component_factory import metadata_store_factory
 from zenml.enums import MLMetadataTypes

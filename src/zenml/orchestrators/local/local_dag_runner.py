@@ -35,19 +35,15 @@ by Google at: https://github.com/tensorflow/tfx/blob/master/tfx/orchestration
 import time
 from datetime import datetime
 
+import tfx.orchestration.local.runner_utils as runner_utils
+import tfx.orchestration.metadata as metadata
+import tfx.orchestration.pipeline as tfx_pipeline
+import tfx.orchestration.portable.launcher as launcher
+import tfx.orchestration.portable.runtime_parameter_utils as runtime_parameter_utils  # noqa
+import tfx.orchestration.portable.tfx_runner as tfx_runner
 from tfx.dsl.compiler import compiler
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
 from tfx.dsl.components.base import base_component
-from tfx.orchestration import metadata  # type: ignore[attr-defined]
-from tfx.orchestration import (  # type: ignore[attr-defined] # noqa
-    pipeline as pipeline_py,
-)
-from tfx.orchestration.local import runner_utils  # type: ignore[attr-defined]
-from tfx.orchestration.portable import (  # type: ignore[attr-defined]
-    launcher,
-    runtime_parameter_utils,
-    tfx_runner,
-)
 
 from zenml.logger import get_logger
 
@@ -77,13 +73,13 @@ def format_timedelta_pretty(seconds: float) -> str:
         return f"{seconds:.3f}s"
 
 
-class LocalDagRunner(tfx_runner.TfxRunner):  # type: ignore[misc]
+class LocalDagRunner(tfx_runner.TfxRunner):
     """Local TFX DAG runner."""
 
     def __init__(self) -> None:
         """Initializes LocalDagRunner as a TFX orchestrator."""
 
-    def run(self, pipeline: pipeline_py.Pipeline) -> None:
+    def run(self, pipeline: tfx_pipeline.Pipeline) -> None:
         """Runs given logical pipeline locally.
 
         Args:

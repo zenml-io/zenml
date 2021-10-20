@@ -41,7 +41,7 @@ logger = get_logger(__name__)
 
 
 # TODO [HIGH]: can we remove this registration?
-@metadata_store_factory.register(MLMetadataTypes.base)
+@metadata_store_factory.register(MLMetadataTypes.base)  # type: ignore[misc]
 class BaseMetadataStore(BaseComponent):
     """Metadata store base class to track metadata of zenml first class
     citizens."""

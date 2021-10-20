@@ -15,9 +15,7 @@
 import datetime
 from typing import TYPE_CHECKING, Any
 
-from tfx.orchestration import (
-    pipeline as tfx_pipeline,  # type: ignore[attr-defined]
-)
+import tfx.orchestration.pipeline as tfx_pipeline
 
 from zenml.core.component_factory import orchestrator_store_factory
 from zenml.enums import OrchestratorTypes
