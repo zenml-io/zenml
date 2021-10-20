@@ -60,7 +60,7 @@ int
 
 ## Visuals
 
-### Materializing outputs \(or inputs\)
+### Materializing outputs (or inputs)
 
 Once an `output_artifact` is acquired from history, one can visualize it with any chosen `Materializer`.
 
@@ -85,5 +85,3 @@ schema # visualize schema
 model = output.materializers.keras.read()
 model  # visualize facet
 ```
-
-## Comparing Runs \[In Progress\]
