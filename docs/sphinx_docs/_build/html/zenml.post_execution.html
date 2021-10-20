@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zenml.post_execution package &#8212; ZenML  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/bootstrap-sphinx.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="zenml.stacks package" href="zenml.stacks.html" />
+    <link rel="prev" title="zenml.pipelines package" href="zenml.pipelines.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="_static/js/jquery-1.12.4.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.4.1/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          ZenML</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">zenml.post_execution package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-zenml.post_execution.artifact">zenml.post_execution.artifact module</a></li>
+<li><a class="reference internal" href="#module-zenml.post_execution.pipeline">zenml.post_execution.pipeline module</a></li>
+<li><a class="reference internal" href="#module-zenml.post_execution.pipeline_run">zenml.post_execution.pipeline_run module</a></li>
+<li><a class="reference internal" href="#module-zenml.post_execution.step">zenml.post_execution.step module</a></li>
+<li><a class="reference internal" href="#module-zenml.post_execution">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="zenml.pipelines.html" title="Previous Chapter: zenml.pipelines package"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; zenml.pipelin...</span>
+    </a>
+  </li>
+  <li>
+    <a href="zenml.stacks.html" title="Next Chapter: zenml.stacks package"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">zenml.stacks package &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/zenml.post_execution.rst.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="section" id="zenml-post-execution-package">
+<h1>zenml.post_execution package<a class="headerlink" href="#zenml-post-execution-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.post_execution.artifact">
+<span id="zenml-post-execution-artifact-module"></span><h2>zenml.post_execution.artifact module<a class="headerlink" href="#module-zenml.post_execution.artifact" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.post_execution.artifact.ArtifactView">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.post_execution.artifact.</span></span><span class="sig-name descname"><span class="pre">ArtifactView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uri</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">materializer</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.post_execution.artifact.ArtifactView" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Post-execution artifact class which can be used to read
+artifact data that was created during a pipeline execution.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.post_execution.artifact.ArtifactView.read">
+<span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_data_type</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">materializer_class</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="zenml.materializers.html#zenml.materializers.base_materializer.BaseMaterializer" title="zenml.materializers.base_materializer.BaseMaterializer"><span class="pre">zenml.materializers.base_materializer.BaseMaterializer</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#zenml.post_execution.artifact.ArtifactView.read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Materializes the data stored in this artifact.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>output_data_type</strong> – The datatype to which the materializer should
+read, will be passed to the materializers <cite>handle_input</cite> method.</p></li>
+<li><p><strong>materializer_class</strong> – The class of the materializer that should be
+used to read the artifact data. If no materializer class is
+given, we use the materializer that was used to write the
+artifact during execution of the pipeline.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The materialized data.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.post_execution.artifact.ArtifactView.type">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#zenml.post_execution.artifact.ArtifactView.type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the artifact type.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.post_execution.artifact.ArtifactView.uri">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">uri</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#zenml.post_execution.artifact.ArtifactView.uri" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the URI where the artifact data is stored.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.post_execution.pipeline">
+<span id="zenml-post-execution-pipeline-module"></span><h2>zenml.post_execution.pipeline module<a class="headerlink" href="#module-zenml.post_execution.pipeline" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.post_execution.pipeline.PipelineView">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.post_execution.pipeline.</span></span><span class="sig-name descname"><span class="pre">PipelineView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata_store</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">BaseMetadataStore</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.post_execution.pipeline.PipelineView" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Post-execution pipeline class which can be used to query
+pipeline-related information from the metadata store.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.post_execution.pipeline.PipelineView.get_runs">
+<span class="sig-name descname"><span class="pre">get_runs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#zenml.post_execution.pipeline_run.PipelineRunView" title="zenml.post_execution.pipeline_run.PipelineRunView"><span class="pre">zenml.post_execution.pipeline_run.PipelineRunView</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.post_execution.pipeline.PipelineView.get_runs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns all stored runs of this pipeline.</p>
+<p>The runs are returned in chronological order, so the latest
+run will be the last element in this list.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.post_execution.pipeline.PipelineView.name">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#zenml.post_execution.pipeline.PipelineView.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the name of the pipeline.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.post_execution.pipeline_run">
+<span id="zenml-post-execution-pipeline-run-module"></span><h2>zenml.post_execution.pipeline_run module<a class="headerlink" href="#module-zenml.post_execution.pipeline_run" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.post_execution.pipeline_run.PipelineRunView">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.post_execution.pipeline_run.</span></span><span class="sig-name descname"><span class="pre">PipelineRunView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">executions</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ml_metadata.proto.metadata_store_pb2.Execution</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata_store</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">BaseMetadataStore</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.post_execution.pipeline_run.PipelineRunView" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Post-execution pipeline run class which can be used to query
+steps and artifact information associated with a pipeline execution.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.post_execution.pipeline_run.PipelineRunView.get_step">
+<span class="sig-name descname"><span class="pre">get_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#zenml.post_execution.step.StepView" title="zenml.post_execution.step.StepView"><span class="pre">zenml.post_execution.step.StepView</span></a></span></span><a class="headerlink" href="#zenml.post_execution.pipeline_run.PipelineRunView.get_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a step for the given name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> – The name of the step to return.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>KeyError</strong> – If there is no step with the given name.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.post_execution.pipeline_run.PipelineRunView.get_step_names">
+<span class="sig-name descname"><span class="pre">get_step_names</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.post_execution.pipeline_run.PipelineRunView.get_step_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of all step names.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.post_execution.pipeline_run.PipelineRunView.name">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#zenml.post_execution.pipeline_run.PipelineRunView.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the name of the pipeline run.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.post_execution.pipeline_run.PipelineRunView.status">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">status</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="zenml.html#zenml.enums.ExecutionStatus" title="zenml.enums.ExecutionStatus"><span class="pre">zenml.enums.ExecutionStatus</span></a></em><a class="headerlink" href="#zenml.post_execution.pipeline_run.PipelineRunView.status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the current status of the pipeline run.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.post_execution.pipeline_run.PipelineRunView.steps">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">steps</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#zenml.post_execution.step.StepView" title="zenml.post_execution.step.StepView"><span class="pre">zenml.post_execution.step.StepView</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#zenml.post_execution.pipeline_run.PipelineRunView.steps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns all steps that were executed as part of this pipeline run.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.post_execution.step">
+<span id="zenml-post-execution-step-module"></span><h2>zenml.post_execution.step module<a class="headerlink" href="#module-zenml.post_execution.step" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.post_execution.step.StepView">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.post_execution.step.</span></span><span class="sig-name descname"><span class="pre">StepView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata_store</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">BaseMetadataStore</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.post_execution.step.StepView" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Post-execution step class which can be used to query
+artifact information associated with a pipeline step.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.post_execution.step.StepView.get_input">
+<span class="sig-name descname"><span class="pre">get_input</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#zenml.post_execution.artifact.ArtifactView" title="zenml.post_execution.artifact.ArtifactView"><span class="pre">zenml.post_execution.artifact.ArtifactView</span></a></span></span><a class="headerlink" href="#zenml.post_execution.step.StepView.get_input" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an input artifact for the given name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> – The name of the input artifact to return.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>KeyError</strong> – If there is no input artifact with the given name.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.post_execution.step.StepView.get_input_names">
+<span class="sig-name descname"><span class="pre">get_input_names</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.post_execution.step.StepView.get_input_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of all input artifact names.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.post_execution.step.StepView.get_output">
+<span class="sig-name descname"><span class="pre">get_output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#zenml.post_execution.artifact.ArtifactView" title="zenml.post_execution.artifact.ArtifactView"><span class="pre">zenml.post_execution.artifact.ArtifactView</span></a></span></span><a class="headerlink" href="#zenml.post_execution.step.StepView.get_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an output artifact for the given name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> – The name of the output artifact to return.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>KeyError</strong> – If there is no output artifact with the given name.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.post_execution.step.StepView.get_output_names">
+<span class="sig-name descname"><span class="pre">get_output_names</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.post_execution.step.StepView.get_output_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of all output artifact names.</p>
+<p>If a step only has a single output, it will have the
+default name <cite>output</cite>.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.post_execution.step.StepView.inputs">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">inputs</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#zenml.post_execution.artifact.ArtifactView" title="zenml.post_execution.artifact.ArtifactView"><span class="pre">zenml.post_execution.artifact.ArtifactView</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#zenml.post_execution.step.StepView.inputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of input artifacts that were used to run this step.</p>
+<p>These artifacts are in the same order as defined in the signature of
+the step function.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.post_execution.step.StepView.name">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#zenml.post_execution.step.StepView.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the step name.</p>
+<p>This name is equal to the name argument passed to the &#64;step decorator
+or the actual function name if no explicit name was given.</p>
+<p class="rubric">Examples</p>
+<p># the step name will be “my_step”
+&#64;step(name=”my_step”)
+def my_step_function(…)</p>
+<p># the step name will be “my_step_function”
+&#64;step
+def my_step_function(…)</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.post_execution.step.StepView.outputs">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">outputs</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#zenml.post_execution.artifact.ArtifactView" title="zenml.post_execution.artifact.ArtifactView"><span class="pre">zenml.post_execution.artifact.ArtifactView</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#zenml.post_execution.step.StepView.outputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of output artifacts that were written by this step.</p>
+<p>These artifacts are in the same order as defined in the signature of
+the step function.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.post_execution.step.StepView.parameters">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">parameters</span></span><em class="property"><span class="pre">:</span> <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#zenml.post_execution.step.StepView.parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>The parameters used to run this step.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.post_execution.step.StepView.status">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">status</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="zenml.html#zenml.enums.ExecutionStatus" title="zenml.enums.ExecutionStatus"><span class="pre">zenml.enums.ExecutionStatus</span></a></em><a class="headerlink" href="#zenml.post_execution.step.StepView.status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the current status of the step.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.post_execution">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.post_execution" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.post_execution.ArtifactView">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.post_execution.</span></span><span class="sig-name descname"><span class="pre">ArtifactView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uri</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">materializer</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.post_execution.ArtifactView" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Post-execution artifact class which can be used to read
+artifact data that was created during a pipeline execution.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.post_execution.ArtifactView.read">
+<span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_data_type</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">materializer_class</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="zenml.materializers.html#zenml.materializers.base_materializer.BaseMaterializer" title="zenml.materializers.base_materializer.BaseMaterializer"><span class="pre">zenml.materializers.base_materializer.BaseMaterializer</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#zenml.post_execution.ArtifactView.read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Materializes the data stored in this artifact.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>output_data_type</strong> – The datatype to which the materializer should
+read, will be passed to the materializers <cite>handle_input</cite> method.</p></li>
+<li><p><strong>materializer_class</strong> – The class of the materializer that should be
+used to read the artifact data. If no materializer class is
+given, we use the materializer that was used to write the
+artifact during execution of the pipeline.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The materialized data.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.post_execution.ArtifactView.type">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#zenml.post_execution.ArtifactView.type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the artifact type.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.post_execution.ArtifactView.uri">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">uri</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#zenml.post_execution.ArtifactView.uri" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the URI where the artifact data is stored.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.post_execution.PipelineRunView">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.post_execution.</span></span><span class="sig-name descname"><span class="pre">PipelineRunView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">executions</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ml_metadata.proto.metadata_store_pb2.Execution</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata_store</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">BaseMetadataStore</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.post_execution.PipelineRunView" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Post-execution pipeline run class which can be used to query
+steps and artifact information associated with a pipeline execution.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.post_execution.PipelineRunView.get_step">
+<span class="sig-name descname"><span class="pre">get_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#zenml.post_execution.step.StepView" title="zenml.post_execution.step.StepView"><span class="pre">zenml.post_execution.step.StepView</span></a></span></span><a class="headerlink" href="#zenml.post_execution.PipelineRunView.get_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a step for the given name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> – The name of the step to return.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>KeyError</strong> – If there is no step with the given name.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.post_execution.PipelineRunView.get_step_names">
+<span class="sig-name descname"><span class="pre">get_step_names</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.post_execution.PipelineRunView.get_step_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of all step names.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.post_execution.PipelineRunView.name">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#zenml.post_execution.PipelineRunView.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the name of the pipeline run.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.post_execution.PipelineRunView.status">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">status</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="zenml.html#zenml.enums.ExecutionStatus" title="zenml.enums.ExecutionStatus"><span class="pre">zenml.enums.ExecutionStatus</span></a></em><a class="headerlink" href="#zenml.post_execution.PipelineRunView.status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the current status of the pipeline run.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.post_execution.PipelineRunView.steps">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">steps</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#zenml.post_execution.step.StepView" title="zenml.post_execution.step.StepView"><span class="pre">zenml.post_execution.step.StepView</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#zenml.post_execution.PipelineRunView.steps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns all steps that were executed as part of this pipeline run.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.post_execution.PipelineView">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.post_execution.</span></span><span class="sig-name descname"><span class="pre">PipelineView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata_store</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">BaseMetadataStore</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.post_execution.PipelineView" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Post-execution pipeline class which can be used to query
+pipeline-related information from the metadata store.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.post_execution.PipelineView.get_runs">
+<span class="sig-name descname"><span class="pre">get_runs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#zenml.post_execution.pipeline_run.PipelineRunView" title="zenml.post_execution.pipeline_run.PipelineRunView"><span class="pre">zenml.post_execution.pipeline_run.PipelineRunView</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.post_execution.PipelineView.get_runs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns all stored runs of this pipeline.</p>
+<p>The runs are returned in chronological order, so the latest
+run will be the last element in this list.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.post_execution.PipelineView.name">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#zenml.post_execution.PipelineView.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the name of the pipeline.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.post_execution.StepView">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.post_execution.</span></span><span class="sig-name descname"><span class="pre">StepView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata_store</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">BaseMetadataStore</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.post_execution.StepView" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Post-execution step class which can be used to query
+artifact information associated with a pipeline step.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.post_execution.StepView.get_input">
+<span class="sig-name descname"><span class="pre">get_input</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#zenml.post_execution.artifact.ArtifactView" title="zenml.post_execution.artifact.ArtifactView"><span class="pre">zenml.post_execution.artifact.ArtifactView</span></a></span></span><a class="headerlink" href="#zenml.post_execution.StepView.get_input" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an input artifact for the given name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> – The name of the input artifact to return.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>KeyError</strong> – If there is no input artifact with the given name.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.post_execution.StepView.get_input_names">
+<span class="sig-name descname"><span class="pre">get_input_names</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.post_execution.StepView.get_input_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of all input artifact names.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.post_execution.StepView.get_output">
+<span class="sig-name descname"><span class="pre">get_output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#zenml.post_execution.artifact.ArtifactView" title="zenml.post_execution.artifact.ArtifactView"><span class="pre">zenml.post_execution.artifact.ArtifactView</span></a></span></span><a class="headerlink" href="#zenml.post_execution.StepView.get_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an output artifact for the given name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> – The name of the output artifact to return.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>KeyError</strong> – If there is no output artifact with the given name.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.post_execution.StepView.get_output_names">
+<span class="sig-name descname"><span class="pre">get_output_names</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#zenml.post_execution.StepView.get_output_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of all output artifact names.</p>
+<p>If a step only has a single output, it will have the
+default name <cite>output</cite>.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.post_execution.StepView.inputs">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">inputs</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#zenml.post_execution.artifact.ArtifactView" title="zenml.post_execution.artifact.ArtifactView"><span class="pre">zenml.post_execution.artifact.ArtifactView</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#zenml.post_execution.StepView.inputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of input artifacts that were used to run this step.</p>
+<p>These artifacts are in the same order as defined in the signature of
+the step function.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.post_execution.StepView.name">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#zenml.post_execution.StepView.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the step name.</p>
+<p>This name is equal to the name argument passed to the &#64;step decorator
+or the actual function name if no explicit name was given.</p>
+<p class="rubric">Examples</p>
+<p># the step name will be “my_step”
+&#64;step(name=”my_step”)
+def my_step_function(…)</p>
+<p># the step name will be “my_step_function”
+&#64;step
+def my_step_function(…)</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.post_execution.StepView.outputs">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">outputs</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#zenml.post_execution.artifact.ArtifactView" title="zenml.post_execution.artifact.ArtifactView"><span class="pre">zenml.post_execution.artifact.ArtifactView</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#zenml.post_execution.StepView.outputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of output artifacts that were written by this step.</p>
+<p>These artifacts are in the same order as defined in the signature of
+the step function.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.post_execution.StepView.parameters">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">parameters</span></span><em class="property"><span class="pre">:</span> <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#zenml.post_execution.StepView.parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>The parameters used to run this step.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="zenml.post_execution.StepView.status">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">status</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="zenml.html#zenml.enums.ExecutionStatus" title="zenml.enums.ExecutionStatus"><span class="pre">zenml.enums.ExecutionStatus</span></a></em><a class="headerlink" href="#zenml.post_execution.StepView.status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the current status of the step.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2021, ZenML GmbH.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

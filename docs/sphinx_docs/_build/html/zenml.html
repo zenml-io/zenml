@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zenml package &#8212; ZenML  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/bootstrap-sphinx.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="zenml.artifact_stores package" href="zenml.artifact_stores.html" />
+    <link rel="prev" title="zenml" href="modules.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="_static/js/jquery-1.12.4.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.4.1/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          ZenML</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">zenml package</a><ul>
+<li><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-zenml.constants">zenml.constants module</a></li>
+<li><a class="reference internal" href="#module-zenml.enums">zenml.enums module</a></li>
+<li><a class="reference internal" href="#module-zenml.exceptions">zenml.exceptions module</a></li>
+<li><a class="reference internal" href="#module-zenml.logger">zenml.logger module</a></li>
+<li><a class="reference internal" href="#module-zenml">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="modules.html" title="Previous Chapter: zenml"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; zenml</span>
+    </a>
+  </li>
+  <li>
+    <a href="zenml.artifact_stores.html" title="Next Chapter: zenml.artifact_stores package"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">zenml.artifac... &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/zenml.rst.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="section" id="zenml-package">
+<h1>zenml package<a class="headerlink" href="#zenml-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="zenml.artifact_stores.html">zenml.artifact_stores package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="zenml.artifact_stores.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.artifact_stores.html#module-zenml.artifact_stores.base_artifact_store">zenml.artifact_stores.base_artifact_store module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.artifact_stores.html#module-zenml.artifact_stores.gcp_artifact_store">zenml.artifact_stores.gcp_artifact_store module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.artifact_stores.html#module-zenml.artifact_stores.local_artifact_store">zenml.artifact_stores.local_artifact_store module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.artifact_stores.html#module-zenml.artifact_stores">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="zenml.artifacts.html">zenml.artifacts package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="zenml.artifacts.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.artifacts.html#module-zenml.artifacts.base_artifact">zenml.artifacts.base_artifact module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.artifacts.html#module-zenml.artifacts.data_artifact">zenml.artifacts.data_artifact module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.artifacts.html#module-zenml.artifacts.model_artifact">zenml.artifacts.model_artifact module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.artifacts.html#module-zenml.artifacts">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="zenml.cli.html">zenml.cli package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="zenml.cli.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.cli.html#module-zenml.cli.base">zenml.cli.base module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.cli.html#module-zenml.cli.cli">zenml.cli.cli module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.cli.html#module-zenml.cli.config">zenml.cli.config module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.cli.html#module-zenml.cli.example">zenml.cli.example module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.cli.html#module-zenml.cli.pipeline">zenml.cli.pipeline module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.cli.html#module-zenml.cli.stack">zenml.cli.stack module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.cli.html#module-zenml.cli.step">zenml.cli.step module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.cli.html#module-zenml.cli.utils">zenml.cli.utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.cli.html#module-zenml.cli.version">zenml.cli.version module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.cli.html#module-zenml.cli">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="zenml.config.html">zenml.config package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="zenml.config.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.config.html#module-zenml.config.constants">zenml.config.constants module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.config.html#module-zenml.config.global_config">zenml.config.global_config module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.config.html#module-zenml.config">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="zenml.core.html">zenml.core package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="zenml.core.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.core.html#module-zenml.core.base_component">zenml.core.base_component module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.core.html#module-zenml.core.component_factory">zenml.core.component_factory module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.core.html#module-zenml.core.constants">zenml.core.constants module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.core.html#module-zenml.core.git_wrapper">zenml.core.git_wrapper module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.core.html#module-zenml.core.local_service">zenml.core.local_service module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.core.html#module-zenml.core.mapping_utils">zenml.core.mapping_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.core.html#module-zenml.core.repo">zenml.core.repo module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.core.html#module-zenml.core.repo_test">zenml.core.repo_test module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.core.html#module-zenml.core.utils">zenml.core.utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.core.html#module-zenml.core">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="zenml.io.html">zenml.io package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="zenml.io.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.io.html#zenml-io-gcs-plugin-module">zenml.io.gcs_plugin module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.io.html#module-zenml.io">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="zenml.materializers.html">zenml.materializers package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="zenml.materializers.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.materializers.html#module-zenml.materializers.base_materializer">zenml.materializers.base_materializer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.materializers.html#module-zenml.materializers.beam_materializer">zenml.materializers.beam_materializer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.materializers.html#module-zenml.materializers.built_in_materializer">zenml.materializers.built_in_materializer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.materializers.html#module-zenml.materializers.default_materializer_registry">zenml.materializers.default_materializer_registry module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.materializers.html#zenml-materializers-keras-meterializer-module">zenml.materializers.keras_meterializer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.materializers.html#module-zenml.materializers.numpy_materializer">zenml.materializers.numpy_materializer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.materializers.html#module-zenml.materializers.pandas_materializer">zenml.materializers.pandas_materializer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.materializers.html#zenml-materializers-pytorch-lightning-materializer-module">zenml.materializers.pytorch_lightning_materializer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.materializers.html#zenml-materializers-pytorch-materializer-module">zenml.materializers.pytorch_materializer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.materializers.html#module-zenml.materializers.spec_materializer_registry">zenml.materializers.spec_materializer_registry module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.materializers.html#zenml-materializers-tf-dataset-materializer-module">zenml.materializers.tf_dataset_materializer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.materializers.html#module-zenml.materializers">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="zenml.metadata.html">zenml.metadata package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="zenml.metadata.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.metadata.html#module-zenml.metadata.base_metadata_store">zenml.metadata.base_metadata_store module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.metadata.html#module-zenml.metadata.mock_metadata_wrapper">zenml.metadata.mock_metadata_wrapper module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.metadata.html#module-zenml.metadata.mysql_metadata_wrapper">zenml.metadata.mysql_metadata_wrapper module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.metadata.html#module-zenml.metadata.sqlite_metadata_wrapper">zenml.metadata.sqlite_metadata_wrapper module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.metadata.html#module-zenml.metadata">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="zenml.orchestrators.html">zenml.orchestrators package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="zenml.orchestrators.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="zenml.orchestrators.airflow.html">zenml.orchestrators.airflow package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.airflow.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.airflow.html#zenml-orchestrators-airflow-airflow-component-module">zenml.orchestrators.airflow.airflow_component module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.airflow.html#module-zenml.orchestrators.airflow.airflow_dag_runner">zenml.orchestrators.airflow.airflow_dag_runner module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.airflow.html#module-zenml.orchestrators.airflow.airflow_orchestrator">zenml.orchestrators.airflow.airflow_orchestrator module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.airflow.html#module-zenml.orchestrators.airflow">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="zenml.orchestrators.local.html">zenml.orchestrators.local package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.local.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.local.html#module-zenml.orchestrators.local.local_dag_runner">zenml.orchestrators.local.local_dag_runner module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.local.html#module-zenml.orchestrators.local.local_orchestrator">zenml.orchestrators.local.local_orchestrator module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.local.html#module-zenml.orchestrators.local">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.orchestrators.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.orchestrators.html#module-zenml.orchestrators.base_orchestrator">zenml.orchestrators.base_orchestrator module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.orchestrators.html#module-zenml.orchestrators">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="zenml.pipelines.html">zenml.pipelines package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="zenml.pipelines.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.pipelines.html#module-zenml.pipelines.base_pipeline">zenml.pipelines.base_pipeline module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.pipelines.html#module-zenml.pipelines.pipeline_decorator">zenml.pipelines.pipeline_decorator module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.pipelines.html#module-zenml.pipelines">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="zenml.post_execution.html">zenml.post_execution package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="zenml.post_execution.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.post_execution.html#module-zenml.post_execution.artifact">zenml.post_execution.artifact module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.post_execution.html#module-zenml.post_execution.pipeline">zenml.post_execution.pipeline module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.post_execution.html#module-zenml.post_execution.pipeline_run">zenml.post_execution.pipeline_run module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.post_execution.html#module-zenml.post_execution.step">zenml.post_execution.step module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.post_execution.html#module-zenml.post_execution">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="zenml.stacks.html">zenml.stacks package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="zenml.stacks.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.stacks.html#module-zenml.stacks.base_stack">zenml.stacks.base_stack module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.stacks.html#module-zenml.stacks.constants">zenml.stacks.constants module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.stacks.html#module-zenml.stacks">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="zenml.steps.html">zenml.steps package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="zenml.steps.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="zenml.steps.step_interfaces.html">zenml.steps.step_interfaces package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="zenml.steps.step_interfaces.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.steps.step_interfaces.html#module-zenml.steps.step_interfaces.base_interface">zenml.steps.step_interfaces.base_interface module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.steps.step_interfaces.html#module-zenml.steps.step_interfaces">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.steps.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.steps.html#module-zenml.steps.base_step">zenml.steps.base_step module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.steps.html#module-zenml.steps.base_step_config">zenml.steps.base_step_config module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.steps.html#module-zenml.steps.step_decorator">zenml.steps.step_decorator module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.steps.html#module-zenml.steps.step_output">zenml.steps.step_output module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.steps.html#module-zenml.steps.utils">zenml.steps.utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.steps.html#module-zenml.steps">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="zenml.types.html">zenml.types package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="zenml.types.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.types.html#module-zenml.types.pytorch_types">zenml.types.pytorch_types module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.types.html#module-zenml.types">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="zenml.utils.html">zenml.utils package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="zenml.utils.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.utils.html#module-zenml.utils.analytics_utils">zenml.utils.analytics_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.utils.html#module-zenml.utils.path_utils">zenml.utils.path_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.utils.html#module-zenml.utils.source_utils">zenml.utils.source_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.utils.html#module-zenml.utils.yaml_utils">zenml.utils.yaml_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zenml.utils.html#module-zenml.utils">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.constants">
+<span id="zenml-constants-module"></span><h2>zenml.constants module<a class="headerlink" href="#module-zenml.constants" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="zenml.constants.handle_bool_env_var">
+<span class="sig-prename descclassname"><span class="pre">zenml.constants.</span></span><span class="sig-name descname"><span class="pre">handle_bool_env_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#zenml.constants.handle_bool_env_var" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts normal env var to boolean</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="zenml.constants.handle_int_env_var">
+<span class="sig-prename descclassname"><span class="pre">zenml.constants.</span></span><span class="sig-name descname"><span class="pre">handle_int_env_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#zenml.constants.handle_int_env_var" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts normal env var to int</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.enums">
+<span id="zenml-enums-module"></span><h2>zenml.enums module<a class="headerlink" href="#module-zenml.enums" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.enums.ArtifactStoreTypes">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.enums.</span></span><span class="sig-name descname"><span class="pre">ArtifactStoreTypes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.enums.ArtifactStoreTypes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>All supported Artifact Store types.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.ArtifactStoreTypes.base">
+<span class="sig-name descname"><span class="pre">base</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'base'</span></em><a class="headerlink" href="#zenml.enums.ArtifactStoreTypes.base" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.ArtifactStoreTypes.gcp">
+<span class="sig-name descname"><span class="pre">gcp</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'gcp'</span></em><a class="headerlink" href="#zenml.enums.ArtifactStoreTypes.gcp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.ArtifactStoreTypes.local">
+<span class="sig-name descname"><span class="pre">local</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'local'</span></em><a class="headerlink" href="#zenml.enums.ArtifactStoreTypes.local" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.enums.ExecutionStatus">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.enums.</span></span><span class="sig-name descname"><span class="pre">ExecutionStatus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.enums.ExecutionStatus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>Enum that represents the current status of a step or pipeline run.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.ExecutionStatus.COMPLETED">
+<span class="sig-name descname"><span class="pre">COMPLETED</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'completed'</span></em><a class="headerlink" href="#zenml.enums.ExecutionStatus.COMPLETED" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.ExecutionStatus.FAILED">
+<span class="sig-name descname"><span class="pre">FAILED</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'failed'</span></em><a class="headerlink" href="#zenml.enums.ExecutionStatus.FAILED" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.ExecutionStatus.RUNNING">
+<span class="sig-name descname"><span class="pre">RUNNING</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'running'</span></em><a class="headerlink" href="#zenml.enums.ExecutionStatus.RUNNING" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.enums.LoggingLevels">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.enums.</span></span><span class="sig-name descname"><span class="pre">LoggingLevels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.enums.LoggingLevels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.LoggingLevels.DEBUG">
+<span class="sig-name descname"><span class="pre">DEBUG</span></span><em class="property"> <span class="pre">=</span> <span class="pre">10</span></em><a class="headerlink" href="#zenml.enums.LoggingLevels.DEBUG" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.LoggingLevels.ERROR">
+<span class="sig-name descname"><span class="pre">ERROR</span></span><em class="property"> <span class="pre">=</span> <span class="pre">40</span></em><a class="headerlink" href="#zenml.enums.LoggingLevels.ERROR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.LoggingLevels.INFO">
+<span class="sig-name descname"><span class="pre">INFO</span></span><em class="property"> <span class="pre">=</span> <span class="pre">20</span></em><a class="headerlink" href="#zenml.enums.LoggingLevels.INFO" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.LoggingLevels.NOTSET">
+<span class="sig-name descname"><span class="pre">NOTSET</span></span><em class="property"> <span class="pre">=</span> <span class="pre">0</span></em><a class="headerlink" href="#zenml.enums.LoggingLevels.NOTSET" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.LoggingLevels.WARN">
+<span class="sig-name descname"><span class="pre">WARN</span></span><em class="property"> <span class="pre">=</span> <span class="pre">30</span></em><a class="headerlink" href="#zenml.enums.LoggingLevels.WARN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.enums.MLMetadataTypes">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.enums.</span></span><span class="sig-name descname"><span class="pre">MLMetadataTypes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.enums.MLMetadataTypes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>All supported ML Metadata types.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.MLMetadataTypes.base">
+<span class="sig-name descname"><span class="pre">base</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'base'</span></em><a class="headerlink" href="#zenml.enums.MLMetadataTypes.base" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.MLMetadataTypes.mock">
+<span class="sig-name descname"><span class="pre">mock</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'mock'</span></em><a class="headerlink" href="#zenml.enums.MLMetadataTypes.mock" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.MLMetadataTypes.mysql">
+<span class="sig-name descname"><span class="pre">mysql</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'mysql'</span></em><a class="headerlink" href="#zenml.enums.MLMetadataTypes.mysql" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.MLMetadataTypes.sqlite">
+<span class="sig-name descname"><span class="pre">sqlite</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'sqlite'</span></em><a class="headerlink" href="#zenml.enums.MLMetadataTypes.sqlite" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.enums.OrchestratorTypes">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.enums.</span></span><span class="sig-name descname"><span class="pre">OrchestratorTypes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.enums.OrchestratorTypes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>All supported Orchestrator types</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.OrchestratorTypes.airflow">
+<span class="sig-name descname"><span class="pre">airflow</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'airflow'</span></em><a class="headerlink" href="#zenml.enums.OrchestratorTypes.airflow" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.OrchestratorTypes.base">
+<span class="sig-name descname"><span class="pre">base</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'base'</span></em><a class="headerlink" href="#zenml.enums.OrchestratorTypes.base" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.OrchestratorTypes.local">
+<span class="sig-name descname"><span class="pre">local</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'local'</span></em><a class="headerlink" href="#zenml.enums.OrchestratorTypes.local" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.enums.StackTypes">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.enums.</span></span><span class="sig-name descname"><span class="pre">StackTypes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.enums.StackTypes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>All supported Stack types.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.StackTypes.base">
+<span class="sig-name descname"><span class="pre">base</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'base'</span></em><a class="headerlink" href="#zenml.enums.StackTypes.base" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.exceptions">
+<span id="zenml-exceptions-module"></span><h2>zenml.exceptions module<a class="headerlink" href="#module-zenml.exceptions" title="Permalink to this headline">¶</a></h2>
+<p>ZenML specific exception definitions</p>
+<dl class="py exception">
+<dt class="sig sig-object py" id="zenml.exceptions.AlreadyExistsException">
+<em class="property"><span class="pre">exception</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.exceptions.</span></span><span class="sig-name descname"><span class="pre">AlreadyExistsException</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resource_type</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.exceptions.AlreadyExistsException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raises exception when the <cite>name</cite> already exist in the system but an
+action is trying to create a resource with the same name.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="zenml.exceptions.ArtifactInterfaceError">
+<em class="property"><span class="pre">exception</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.exceptions.</span></span><span class="sig-name descname"><span class="pre">ArtifactInterfaceError</span></span><a class="headerlink" href="#zenml.exceptions.ArtifactInterfaceError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raises exception when interacting with the Artifact interface
+in an unsupported way.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="zenml.exceptions.DoesNotExistException">
+<em class="property"><span class="pre">exception</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.exceptions.</span></span><span class="sig-name descname"><span class="pre">DoesNotExistException</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'{}</span> <span class="pre">does</span> <span class="pre">not</span> <span class="pre">exist!</span> <span class="pre">This</span> <span class="pre">might</span> <span class="pre">be</span> <span class="pre">due</span> <span class="pre">to:</span> <span class="pre">{}'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.exceptions.DoesNotExistException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raises exception when the <cite>name</cite> does not exist in the system but an
+action is being done that requires it to be present.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="zenml.exceptions.EmptyDatasourceException">
+<em class="property"><span class="pre">exception</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.exceptions.</span></span><span class="sig-name descname"><span class="pre">EmptyDatasourceException</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'This</span> <span class="pre">datasource</span> <span class="pre">has</span> <span class="pre">not</span> <span class="pre">been</span> <span class="pre">used</span> <span class="pre">in</span> <span class="pre">any</span> <span class="pre">pipelines,</span> <span class="pre">therefore</span> <span class="pre">the</span> <span class="pre">associated</span> <span class="pre">data</span> <span class="pre">has</span> <span class="pre">no</span> <span class="pre">versions.</span> <span class="pre">Please</span> <span class="pre">use</span> <span class="pre">this</span> <span class="pre">datasouce</span> <span class="pre">in</span> <span class="pre">any</span> <span class="pre">ZenML</span> <span class="pre">pipeline</span> <span class="pre">with</span> <span class="pre">`pipeline.add_datasource(datasource)`'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.exceptions.EmptyDatasourceException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raises exception when a datasource data is accessed without running
+an associated pipeline.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="zenml.exceptions.GitException">
+<em class="property"><span class="pre">exception</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.exceptions.</span></span><span class="sig-name descname"><span class="pre">GitException</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'There</span> <span class="pre">is</span> <span class="pre">a</span> <span class="pre">problem</span> <span class="pre">with</span> <span class="pre">git</span> <span class="pre">resolution.</span> <span class="pre">Please</span> <span class="pre">make</span> <span class="pre">sure</span> <span class="pre">that</span> <span class="pre">all</span> <span class="pre">relevant</span> <span class="pre">files</span> <span class="pre">are</span> <span class="pre">committed.'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.exceptions.GitException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raises exception when a problem occurs in git resolution.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="zenml.exceptions.InitializationException">
+<em class="property"><span class="pre">exception</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.exceptions.</span></span><span class="sig-name descname"><span class="pre">InitializationException</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'ZenML</span> <span class="pre">config</span> <span class="pre">is</span> <span class="pre">none.</span> <span class="pre">Did</span> <span class="pre">you</span> <span class="pre">do</span> <span class="pre">`zenml</span> <span class="pre">init`?'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.exceptions.InitializationException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raises exception when a function is run before zenml initialization.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="zenml.exceptions.PipelineInterfaceError">
+<em class="property"><span class="pre">exception</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.exceptions.</span></span><span class="sig-name descname"><span class="pre">PipelineInterfaceError</span></span><a class="headerlink" href="#zenml.exceptions.PipelineInterfaceError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raises exception when interacting with the Pipeline interface
+in an unsupported way.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="zenml.exceptions.PipelineNotSucceededException">
+<em class="property"><span class="pre">exception</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.exceptions.</span></span><span class="sig-name descname"><span class="pre">PipelineNotSucceededException</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'{}</span> <span class="pre">is</span> <span class="pre">not</span> <span class="pre">yet</span> <span class="pre">completed</span> <span class="pre">successfully.'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.exceptions.PipelineNotSucceededException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raises exception when trying to fetch artifacts from a not succeeded
+pipeline.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="zenml.exceptions.StepInterfaceError">
+<em class="property"><span class="pre">exception</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.exceptions.</span></span><span class="sig-name descname"><span class="pre">StepInterfaceError</span></span><a class="headerlink" href="#zenml.exceptions.StepInterfaceError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Raises exception when interacting with the Step interface
+in an unsupported way.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.logger">
+<span id="zenml-logger-module"></span><h2>zenml.logger module<a class="headerlink" href="#module-zenml.logger" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="zenml.logger.get_console_handler">
+<span class="sig-prename descclassname"><span class="pre">zenml.logger.</span></span><span class="sig-name descname"><span class="pre">get_console_handler</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#zenml.logger.get_console_handler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get console handler for logging.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="zenml.logger.get_file_handler">
+<span class="sig-prename descclassname"><span class="pre">zenml.logger.</span></span><span class="sig-name descname"><span class="pre">get_file_handler</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#zenml.logger.get_file_handler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a file handler for logging.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="zenml.logger.get_logger">
+<span class="sig-prename descclassname"><span class="pre">zenml.logger.</span></span><span class="sig-name descname"><span class="pre">get_logger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logger_name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">logging.Logger</span></span></span><a class="headerlink" href="#zenml.logger.get_logger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main function to get logger name,.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>logger_name</strong> – Name of logger to initialize.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A logger object.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="zenml.logger.get_logging_level">
+<span class="sig-prename descclassname"><span class="pre">zenml.logger.</span></span><span class="sig-name descname"><span class="pre">get_logging_level</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#zenml.enums.LoggingLevels" title="zenml.enums.LoggingLevels"><span class="pre">zenml.enums.LoggingLevels</span></a></span></span><a class="headerlink" href="#zenml.logger.get_logging_level" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get logging level from the env variable.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="zenml.logger.init_logging">
+<span class="sig-prename descclassname"><span class="pre">zenml.logger.</span></span><span class="sig-name descname"><span class="pre">init_logging</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#zenml.logger.init_logging" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize logging with default levels.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="zenml.logger.set_root_verbosity">
+<span class="sig-prename descclassname"><span class="pre">zenml.logger.</span></span><span class="sig-name descname"><span class="pre">set_root_verbosity</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#zenml.logger.set_root_verbosity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the root verbosity.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2021, ZenML GmbH.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zenml.orchestrators.airflow package &#8212; ZenML  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/bootstrap-sphinx.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="zenml.orchestrators.local package" href="zenml.orchestrators.local.html" />
+    <link rel="prev" title="zenml.orchestrators package" href="zenml.orchestrators.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="_static/js/jquery-1.12.4.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.4.1/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          ZenML</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">zenml</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">zenml.orchestrators.airflow package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#zenml-orchestrators-airflow-airflow-component-module">zenml.orchestrators.airflow.airflow_component module</a></li>
+<li><a class="reference internal" href="#module-zenml.orchestrators.airflow.airflow_dag_runner">zenml.orchestrators.airflow.airflow_dag_runner module</a></li>
+<li><a class="reference internal" href="#module-zenml.orchestrators.airflow.airflow_orchestrator">zenml.orchestrators.airflow.airflow_orchestrator module</a></li>
+<li><a class="reference internal" href="#module-zenml.orchestrators.airflow">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="zenml.orchestrators.html" title="Previous Chapter: zenml.orchestrators package"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm hidden-tablet">&laquo; zenml.orchest...</span>
+    </a>
+  </li>
+  <li>
+    <a href="zenml.orchestrators.local.html" title="Next Chapter: zenml.orchestrators.local package"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">zenml.orchest... &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/zenml.orchestrators.airflow.rst.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="section" id="zenml-orchestrators-airflow-package">
+<h1>zenml.orchestrators.airflow package<a class="headerlink" href="#zenml-orchestrators-airflow-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="zenml-orchestrators-airflow-airflow-component-module">
+<h2>zenml.orchestrators.airflow.airflow_component module<a class="headerlink" href="#zenml-orchestrators-airflow-airflow-component-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zenml.orchestrators.airflow.airflow_dag_runner">
+<span id="zenml-orchestrators-airflow-airflow-dag-runner-module"></span><h2>zenml.orchestrators.airflow.airflow_dag_runner module<a class="headerlink" href="#module-zenml.orchestrators.airflow.airflow_dag_runner" title="Permalink to this headline">¶</a></h2>
+<p>Definition of Airflow TFX runner. This is an unmodified  copy from the TFX
+source code (outside of superficial, stylistic changes)</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.orchestrators.airflow.airflow_dag_runner.AirflowDagRunner">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.orchestrators.airflow.airflow_dag_runner.</span></span><span class="sig-name descname"><span class="pre">AirflowDagRunner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#zenml.orchestrators.airflow.airflow_dag_runner.AirflowPipelineConfig" title="zenml.orchestrators.airflow.airflow_dag_runner.AirflowPipelineConfig"><span class="pre">zenml.orchestrators.airflow.airflow_dag_runner.AirflowPipelineConfig</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.orchestrators.airflow.airflow_dag_runner.AirflowDagRunner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tfx.orchestration.tfx_runner.TfxRunner</span></code></p>
+<p>Tfx runner on Airflow.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.orchestrators.airflow.airflow_dag_runner.AirflowDagRunner.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pipeline</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">tfx.orchestration.pipeline.Pipeline</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">airflow.DAG</span></span></span><a class="headerlink" href="#zenml.orchestrators.airflow.airflow_dag_runner.AirflowDagRunner.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deploys given logical pipeline on Airflow.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>pipeline</strong> – Logical pipeline containing pipeline args and comps.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An Airflow DAG.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.orchestrators.airflow.airflow_dag_runner.AirflowPipelineConfig">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.orchestrators.airflow.airflow_dag_runner.</span></span><span class="sig-name descname"><span class="pre">AirflowPipelineConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">airflow_dag_config</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.orchestrators.airflow.airflow_dag_runner.AirflowPipelineConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tfx.orchestration.config.pipeline_config.PipelineConfig</span></code></p>
+<p>Pipeline config for AirflowDagRunner.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.orchestrators.airflow.airflow_orchestrator">
+<span id="zenml-orchestrators-airflow-airflow-orchestrator-module"></span><h2>zenml.orchestrators.airflow.airflow_orchestrator module<a class="headerlink" href="#module-zenml.orchestrators.airflow.airflow_orchestrator" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.orchestrators.airflow.airflow_orchestrator.AirflowOrchestrator">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.orchestrators.airflow.airflow_orchestrator.</span></span><span class="sig-name descname"><span class="pre">AirflowOrchestrator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uuid</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">uuid.UUID</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.orchestrators.airflow.airflow_orchestrator.AirflowOrchestrator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="zenml.orchestrators.html#zenml.orchestrators.base_orchestrator.BaseOrchestrator" title="zenml.orchestrators.base_orchestrator.BaseOrchestrator"><code class="xref py py-class docutils literal notranslate"><span class="pre">zenml.orchestrators.base_orchestrator.BaseOrchestrator</span></code></a></p>
+<p>Orchestrator responsible for running pipelines using Airflow.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zenml.orchestrators.airflow.airflow_orchestrator.AirflowOrchestrator.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zenml_pipeline</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">BasePipeline</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">airflow.DAG</span></span></span><a class="headerlink" href="#zenml.orchestrators.airflow.airflow_orchestrator.AirflowOrchestrator.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepares the pipeline so it can be run in Airflow.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>zenml_pipeline</strong> – The pipeline to run.</p></li>
+<li><p><strong>**kwargs</strong> – Unused argument to conform with base class signature.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zenml.orchestrators.airflow">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zenml.orchestrators.airflow" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2021, ZenML GmbH.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

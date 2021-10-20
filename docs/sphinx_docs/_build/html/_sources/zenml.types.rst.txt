@@ -1,0 +1,21 @@
+zenml.types package
+===================
+
+Submodules
+----------
+
+zenml.types.pytorch\_types module
+---------------------------------
+
+.. automodule:: zenml.types.pytorch_types
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: zenml.types
+   :members:
+   :undoc-members:
+   :show-inheritance:
