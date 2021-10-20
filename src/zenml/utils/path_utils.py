@@ -223,16 +223,16 @@ def copy_dir(source_dir: str, destination_dir: str, overwrite: bool = False):
         destination_dir: Path to copy to.
         overwrite: Boolean. If false, function throws an error before overwrite.
     """
-    for f in list_dir(source_dir):
-        p = Path(f)
+    for source_file in list_dir(source_dir):
+        p = Path(source_file)
         destination_name = os.path.join(destination_dir, p.name)
-        if is_dir(f):
-            copy_dir(f, destination_name, overwrite)
+        if is_dir(source_file):
+            copy_dir(source_file, destination_name, overwrite)
         else:
             create_dir_recursive_if_not_exists(
                 str(Path(destination_name).parent)
             )
-            copy(f, destination_name, overwrite)
+            copy(source_file, destination_name, overwrite)
 
 
 def move(source: str, destination: str, overwrite: bool = False):
