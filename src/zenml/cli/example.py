@@ -132,13 +132,13 @@ def info(git_examples_handler, example_name):
 @click.argument("example_name", required=False, default=None)
 def pull(git_examples_handler, example_name):
     """Pull examples straight " "into your current working directory."""
-    logit.debug("testing")
     examples_dir = git_examples_handler.get_examples_dir()
     examples = (
         git_examples_handler.get_all_examples()
         if not example_name
         else [example_name]
     )
+    logit.debug(examples)
     # Create destination dir.
     dst = os.path.join(os.getcwd(), "zenml_examples")
     path_utils.create_dir_if_not_exists(dst)
