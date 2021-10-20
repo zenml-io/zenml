@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+import shutil
 from typing import List
 
 import click
@@ -26,9 +27,6 @@ from zenml.utils import path_utils
 # TODO: [MEDIUM] Add an example-run command to run an example.
 
 EXAMPLES_GITHUB_REPO = "zenml_examples"
-
-
-# logit = get_logger(__name__)
 
 
 class GitExamplesHandler(object):
@@ -45,13 +43,15 @@ class GitExamplesHandler(object):
         # check out the branch of the installed version even if we do have a local copy (minimal check)
         if EXAMPLES_GITHUB_REPO not in config_directory_files:
             installed_version = zenml_version_installed
-            Repo.clone_from(
-                GIT_REPO_URL, examples_dir, branch=installed_version
-            )
-        # if cloning cancels in the middle, try, but if keyboard interrupt, clean the directory
-        # always want to give the option to clean the repo + redownload it (with a flag?)
-        # clean + initiate function etc
-        # ALSO: someone who wants to use a version of zenml which isn't their installed version
+            try:
+                Repo.clone_from(
+                    GIT_REPO_URL, examples_dir, branch=installed_version
+                )
+            except KeyboardInterrupt:
+                shutil.rmtree(examples_dir, ignore_errors=True)
+                # always want to give the option to clean the repo + redownload it (with a flag?)
+                # clean + initiate function etc
+                # ALSO: someone who wants to use a version of zenml which isn't their installed version
 
     def get_examples_dir(self) -> str:
         # TODO: [HIGH] move these functions into the GitExamplesHandler class
