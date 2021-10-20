@@ -1,8 +1,10 @@
 ---
-description: Stacks define where and how your pipelines run
+description: Swap out local stack for Airflow stack to get to a production pipeline.
 ---
 
-# Airflow?
+# Deploy Pipelines to Production
+
+## Stack
 
 A stack is made up of the following three core components:
 

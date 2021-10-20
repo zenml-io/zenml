@@ -9,10 +9,10 @@
 
 ## Guides
 
-* [Bottom Up](guides/bottom-up.md)
-* [Top Down](guides/top-down.md)
+* [Low Level API](guides/low-level-api.md)
+* [High Level API](guides/high-level-api.md)
 * [Post Execution Workflow](guides/post-execution-workflow.md)
-* [Airflow?](guides/stacks.md)
+* [Deploy Pipelines to Production](guides/stacks.md)
 
 ## Support
 
