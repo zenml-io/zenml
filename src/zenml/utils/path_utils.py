@@ -131,7 +131,7 @@ def list_dir(dir_path: str, only_file_names: bool = False) -> List[str]:
 
 
 def create_file_if_not_exists(file_path: str, file_contents: str = "{}"):
-    """Creates directory if it does not exist.
+    """Creates file if it does not exist.
 
     Args:
         file_path: Local path in filesystem.
