@@ -15,6 +15,7 @@
 
 import os
 import shutil
+from pathlib import Path
 from typing import List
 
 import click
@@ -35,22 +36,22 @@ logger = logger.get_logger(__name__)
 
 
 class GitExamplesHandler(object):
-    def __init__(self, redownload=False) -> None:
+    def __init__(self, redownload="False") -> None:
         self.clone_repo(redownload)
 
-    def clone_repo(self, redownload=False) -> None:
+    def clone_repo(self, redownload="False") -> None:
         """Clone ZenML git repo into global config directory if not already cloned"""
+        installed_version = zenml_version_installed
         repo_dir = click.get_app_dir(APP_NAME)
         examples_dir = os.path.join(repo_dir, EXAMPLES_GITHUB_REPO)
-        # get the files inside the global config directory
-        config_directory_files = os.listdir(repo_dir)
-        installed_version = zenml_version_installed
 
         # delete source directory if force redownload is set
-        if redownload:
+        if redownload != "False":
             logger.debug(f"DELETING SOURCE REPO: {redownload}")
             self.delete_example_source_dir(examples_dir)
             installed_version = redownload
+
+        config_directory_files = os.listdir(repo_dir)
 
         # check out the branch of the installed version even if we do have a local copy (minimal check)
         if EXAMPLES_GITHUB_REPO not in config_directory_files:
@@ -61,7 +62,7 @@ class GitExamplesHandler(object):
             except KeyboardInterrupt:
                 self.delete_example_source_dir(examples_dir)
         else:
-            repo = Repo(examples_dir)
+            repo = Repo(Path(examples_dir))
             repo.git.checkout(installed_version)
 
     def get_examples_dir(self) -> str:
@@ -107,14 +108,12 @@ def example():
 @pass_git_examples_handler
 @click.option(
     "--force-redownload",
-    default=None,
+    default="False",
     help="Pass in a version number to redownload the examples folder for that specific version. Defaults to your current installed version.",
 )
 def test(git_examples_handler, force_redownload):
     """Testing function"""
-    click.echo("Testing examples: \n")
-    click.echo(f"{force_redownload}\n")
-    # logger.debug(force_redownload)
+    logger.debug(force_redownload)
     if force_redownload:
         GitExamplesHandler(redownload=force_redownload)
 
