@@ -20,7 +20,7 @@ from zenml.exceptions import PipelineInterfaceError
 from zenml.logger import get_logger
 from zenml.stacks.base_stack import BaseStack
 from zenml.steps.base_step import BaseStep
-from zenml.utils.analytics_utils import RUN_PIPELINE, track
+from zenml.utils import analytics_utils
 
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
@@ -123,9 +123,17 @@ class BasePipeline(metaclass=BasePipelineMeta):
         """
         raise PipelineInterfaceError("Cannot set steps manually!")
 
-    @track(event=RUN_PIPELINE)
     def run(self) -> Any:
         """Runs the pipeline using the orchestrator of the pipeline stack."""
+        analytics_utils.track_event(
+            event=analytics_utils.RUN_PIPELINE,
+            metadata={
+                "pipeline_type": self.__class__.__name__,
+                "stack_type": self.stack.stack_type,
+                "total_steps": len(self.steps),
+            },
+        )
+
         logger.info(
             f"Using orchestrator `{self.stack.orchestrator_name}` for "
             f"pipeline `{self.pipeline_name}`. Running pipeline.."

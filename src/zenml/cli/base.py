@@ -53,7 +53,7 @@ def init(
     try:
         Repository.init_repo(
             repo_path=repo_path,
-            analytics_opt_in=False,
+            analytics_opt_in=analytics_opt_in,
         )
         click.echo(f"ZenML repo initialized at {repo_path}")
     except git.InvalidGitRepositoryError:  # type: ignore[attr-defined]
