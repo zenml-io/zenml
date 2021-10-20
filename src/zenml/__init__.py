@@ -15,8 +15,6 @@
 
 import os  # noqa
 
-from zenml.utils.analytics_utils import initialize_telemetry
-
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 with open(os.path.join(ROOT_DIR, "VERSION")) as version_file:
@@ -25,6 +23,7 @@ with open(os.path.join(ROOT_DIR, "VERSION")) as version_file:
 from zenml.logger import init_logging  # noqa
 from zenml.pipelines.pipeline_decorator import pipeline  # noqa
 from zenml.steps.step_decorator import step  # noqa
+from zenml.utils.analytics_utils import initialize_telemetry  # noqa
 
 init_logging()
 initialize_telemetry()
