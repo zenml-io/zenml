@@ -36,17 +36,17 @@ logger = logger.get_logger(__name__)
 
 
 class GitExamplesHandler(object):
-    def __init__(self, redownload="False") -> None:
+    def __init__(self, redownload=None) -> None:
         self.clone_repo(redownload)
 
-    def clone_repo(self, redownload="False") -> None:
+    def clone_repo(self, redownload=None) -> None:
         """Clone ZenML git repo into global config directory if not already cloned"""
         installed_version = zenml_version_installed
         repo_dir = click.get_app_dir(APP_NAME)
         examples_dir = os.path.join(repo_dir, EXAMPLES_GITHUB_REPO)
 
         # delete source directory if force redownload is set
-        if redownload != "False":
+        if redownload:
             logger.debug(f"DELETING SOURCE REPO: {redownload}")
             self.delete_example_source_dir(examples_dir)
             installed_version = redownload
@@ -108,7 +108,6 @@ def example():
 @pass_git_examples_handler
 @click.option(
     "--force-redownload",
-    default="False",
     help="Pass in a version number to redownload the examples folder for that specific version. Defaults to your current installed version.",
 )
 def test(git_examples_handler, force_redownload):
@@ -150,11 +149,14 @@ def info(git_examples_handler, example_name):
 @click.argument("example_name", required=False, default=None)
 @click.option(
     "--force-redownload",
-    default=zenml_version_installed,
     help="Pass in a version number to redownload the examples folder for that specific version. Defaults to your current installed version.",
 )
-def pull(git_examples_handler, example_name):
+def pull(git_examples_handler, example_name, force_redownload):
     """Pull examples straight " "into your current working directory."""
+    if force_redownload:
+        GitExamplesHandler(redownload=force_redownload)
+        # TODO: [HIGH] decide whether user's CwD examples are deleted or not
+
     examples_dir = git_examples_handler.get_examples_dir()
     examples = (
         git_examples_handler.get_all_examples()
