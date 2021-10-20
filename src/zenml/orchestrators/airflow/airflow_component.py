@@ -21,10 +21,10 @@ from airflow.operators import python_operator
 from ml_metadata.proto import metadata_store_pb2
 from tfx.dsl.components.base import base_node
 from tfx.orchestration import data_types, metadata  # type: ignore[attr-defined]
-from tfx.orchestration.config import (  # type: ignore[attr-defined] # noqa
+from tfx.orchestration.config import (  # type: ignore[attr-defined]
     base_component_config,
 )
-from tfx.orchestration.launcher import (  # type: ignore[attr-defined] # noqa
+from tfx.orchestration.launcher import (  # type: ignore[attr-defined]
     base_component_launcher,
 )
 from tfx.utils import telemetry_utils

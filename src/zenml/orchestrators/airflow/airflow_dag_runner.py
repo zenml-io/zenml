@@ -36,8 +36,8 @@ if TYPE_CHECKING:
 
 
 class AirflowPipelineConfig(
-    pipeline_config.PipelineConfig
-):  # type:ignore[misc] # noqa
+    pipeline_config.PipelineConfig  # type:ignore[misc]
+):
     """Pipeline config for AirflowDagRunner."""
 
     def __init__(

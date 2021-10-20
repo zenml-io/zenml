@@ -11,10 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
-
-import types
-from typing import Callable, Optional, Type
+from typing import Callable, Optional, Type, TypeVar, Union
 
 from zenml.pipelines.base_pipeline import (
     PARAM_ENABLE_CACHE,
@@ -22,13 +19,15 @@ from zenml.pipelines.base_pipeline import (
     BasePipeline,
 )
 
+F = TypeVar("F", bound=Callable[..., None])
+
 
 def pipeline(
-    _func: Optional[types.FunctionType] = None,
+    _func: Optional[F] = None,
     *,
     name: Optional[str] = None,
     enable_cache: bool = True
-) -> Callable[..., Type[BasePipeline]]:
+) -> Union[Type[BasePipeline], Callable[[F], Type[BasePipeline]]]:
     """Outer decorator function for the creation of a ZenML pipeline
 
     In order to be able work with parameters such as "name", it features a
@@ -44,7 +43,7 @@ def pipeline(
         ZenML BasePipeline
     """
 
-    def inner_decorator(func: types.FunctionType) -> Type[BasePipeline]:
+    def inner_decorator(func: F) -> Type[BasePipeline]:
         """Inner decorator function for the creation of a ZenML Pipeline
 
         Args:
@@ -55,7 +54,7 @@ def pipeline(
             the class of a newly generated ZenML Pipeline
 
         """
-        return type(
+        return type(  # noqa
             name if name else func.__name__,
             (BasePipeline,),
             {

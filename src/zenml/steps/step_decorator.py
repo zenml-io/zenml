@@ -11,16 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import Any, Callable, Optional, Type, TypeVar, Union
 
-import types
-from typing import Callable, Type
+from zenml.steps.base_step import BaseStep
+from zenml.steps.utils import STEP_INNER_FUNC_NAME
 
-from zenml.steps.base_step import STEP_INNER_FUNC_NAME, BaseStep
+F = TypeVar("F", bound=Callable[..., Any])
 
 
 def step(
-    _func: types.FunctionType = None, *, name: str = None
-) -> Callable[..., BaseStep]:
+    _func: Optional[F] = None, *, name: Optional[str] = None
+) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
     """Outer decorator function for the creation of a ZenML step
 
     In order to be able work with parameters such as `name`, it features a
@@ -35,7 +36,7 @@ def step(
         ZenML BaseStep
     """
 
-    def inner_decorator(func: types.FunctionType) -> Type:
+    def inner_decorator(func: F) -> Type[BaseStep]:
         """Inner decorator function for the creation of a ZenML Step
 
         Args:
@@ -45,8 +46,8 @@ def step(
         Returns:
             The class of a newly generated ZenML Step.
         """
-        step_name = name if name else func.__name__
-        return type(
+        step_name = name or func.__name__
+        return type(  # noqa
             step_name,
             (BaseStep,),
             {
