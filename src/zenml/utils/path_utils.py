@@ -224,8 +224,8 @@ def copy_dir(source_dir: str, destination_dir: str, overwrite: bool = False):
         overwrite: Boolean. If false, function throws an error before overwrite.
     """
     for source_file in list_dir(source_dir):
-        p = Path(source_file)
-        destination_name = os.path.join(destination_dir, p.name)
+        source_file_path = Path(source_file)
+        destination_name = os.path.join(destination_dir, source_file_path.name)
         if is_dir(source_file):
             copy_dir(source_file, destination_name, overwrite)
         else:
