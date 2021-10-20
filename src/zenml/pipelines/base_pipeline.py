@@ -13,12 +13,13 @@
 #  permissions and limitations under the License.
 import inspect
 from abc import abstractmethod
-from typing import Dict
+from typing import Any, ClassVar, Dict, NoReturn, Tuple, Type, cast
 
 from zenml.core.repo import Repository
 from zenml.exceptions import PipelineInterfaceError
 from zenml.logger import get_logger
 from zenml.stacks.base_stack import BaseStack
+from zenml.steps.base_step import BaseStep
 from zenml.utils import analytics_utils
 
 logger = get_logger(__name__)
@@ -29,12 +30,15 @@ PARAM_ENABLE_CACHE: str = "enable_cache"
 class BasePipelineMeta(type):
     """Pipeline Metaclass responsible for validating the pipeline definition."""
 
-    def __new__(mcs, name, bases, dct):
+    def __new__(
+        mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
+    ) -> "BasePipelineMeta":
         """Ensures that all function arguments are either a `Step`
         or an `Input`."""
-        cls = super().__new__(mcs, name, bases, dct)
+        cls = cast(Type["BasePipeline"], super().__new__(mcs, name, bases, dct))
+
         cls.NAME = name
-        cls.STEP_SPEC = dict()
+        cls.STEP_SPEC = {}
 
         connect_spec = inspect.getfullargspec(
             getattr(cls, PIPELINE_INNER_FUNC_NAME)
@@ -53,7 +57,10 @@ class BasePipelineMeta(type):
 class BasePipeline(metaclass=BasePipelineMeta):
     """Base ZenML pipeline."""
 
-    def __init__(self, *args, **kwargs):
+    NAME: ClassVar[str] = ""
+    STEP_SPEC: ClassVar[Dict[str, Any]] = None  # type: ignore[assignment]
+
+    def __init__(self, *args: BaseStep, **kwargs: BaseStep) -> None:
         self.__stack = Repository().get_active_stack()
         self.enable_cache = getattr(self, PARAM_ENABLE_CACHE)
         self.pipeline_name = self.__class__.__name__
@@ -80,8 +87,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 )
 
     @abstractmethod
-    def connect(self, *args, **kwargs):
+    def connect(self, *args: BaseStep, **kwargs: BaseStep) -> None:
         """Function that connects inputs and outputs of the pipeline steps."""
+        raise NotImplementedError
 
     @property
     def name(self) -> str:
@@ -94,7 +102,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         return self.__stack
 
     @stack.setter
-    def stack(self, stack: BaseStack):
+    def stack(self, stack: BaseStack) -> NoReturn:
         """Setting the stack property is not allowed. This method always
         raises a PipelineInterfaceError.
         """
@@ -104,18 +112,18 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
 
     @property
-    def steps(self) -> Dict:
+    def steps(self) -> Dict[str, BaseStep]:
         """Returns a dictionary of pipeline steps."""
         return self.__steps
 
     @steps.setter
-    def steps(self, steps: Dict):
+    def steps(self, steps: Dict[str, BaseStep]) -> NoReturn:
         """Setting the steps property is not allowed. This method always
         raises a PipelineInterfaceError.
         """
         raise PipelineInterfaceError("Cannot set steps manually!")
 
-    def run(self):
+    def run(self) -> Any:
         """Runs the pipeline using the orchestrator of the pipeline stack."""
         analytics_utils.track_event(
             event=analytics_utils.RUN_PIPELINE,

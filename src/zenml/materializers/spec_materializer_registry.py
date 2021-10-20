@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Type
+from typing import TYPE_CHECKING, Dict, Type
 
 from zenml.logger import get_logger
 
@@ -22,18 +22,16 @@ if TYPE_CHECKING:
     from zenml.materializers.base_materializer import BaseMaterializer
 
 
-class SpecMaterializerRegistry(object):
+class SpecMaterializerRegistry:
     """Matches spec of a step to a materializer."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Materializer types registry."""
-        self.materializer_types: ClassVar[
-            Dict[str, Type["BaseMaterializer"]]
-        ] = {}
+        self.materializer_types: Dict[str, Type["BaseMaterializer"]] = {}
 
     def register_materializer_type(
         self, key: str, type_: Type["BaseMaterializer"]
-    ):
+    ) -> None:
         """Registers a new materializer.
 
         Args:
@@ -56,11 +54,15 @@ class SpecMaterializerRegistry(object):
         if key in self.materializer_types:
             return self.materializer_types[key]
         logger.debug(
-            f"Tried to fetch {key} but its not registered. Available keys: "
-            f"{self.materializer_types.keys()}"
+            "Tried to fetch %s but its not registered. Available keys: %s",
+            key,
+            self.materializer_types.keys(),
+        )
+        raise KeyError(
+            f"Key '{key}' does not have a registered `Materializer`!"
         )
 
-    def is_registered(self, key: Type[Any]) -> bool:
+    def is_registered(self, key: str) -> bool:
         """Returns true if key type is registered, else returns False."""
         if key in self.materializer_types:
             return True

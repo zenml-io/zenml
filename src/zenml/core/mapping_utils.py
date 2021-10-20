@@ -51,6 +51,8 @@ def get_component_from_key(
     """
     tuple_ = mapping[key]
     class_ = source_utils.load_source_path_class(tuple_.source)
+    if not issubclass(class_, BaseComponent):
+        raise TypeError("")
     return class_(uuid=tuple_.uuid)
 
 

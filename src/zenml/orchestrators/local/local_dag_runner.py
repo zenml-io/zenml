@@ -35,11 +35,11 @@ by Google at: https://github.com/tensorflow/tfx/blob/master/tfx/orchestration
 import time
 from datetime import datetime
 
+import tfx.orchestration.pipeline as tfx_pipeline
 from tfx.dsl.compiler import compiler
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
 from tfx.dsl.components.base import base_component
 from tfx.orchestration import metadata
-from tfx.orchestration import pipeline as pipeline_py
 from tfx.orchestration.local import runner_utils
 from tfx.orchestration.portable import (
     launcher,
@@ -78,10 +78,10 @@ def format_timedelta_pretty(seconds: float) -> str:
 class LocalDagRunner(tfx_runner.TfxRunner):
     """Local TFX DAG runner."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initializes LocalDagRunner as a TFX orchestrator."""
 
-    def run(self, pipeline: pipeline_py.Pipeline) -> None:
+    def run(self, pipeline: tfx_pipeline.Pipeline) -> None:
         """Runs given logical pipeline locally.
 
         Args:
@@ -107,7 +107,7 @@ class LocalDagRunner(tfx_runner.TfxRunner):
         deployment_config = runner_utils.extract_local_deployment_config(
             pipeline
         )
-        connection_config = deployment_config.metadata_connection_config
+        connection_config = deployment_config.metadata_connection_config  # type: ignore[attr-defined] # noqa
 
         logger.debug(f"Using deployment config:\n {deployment_config}")
         logger.debug(f"Using connection config:\n {connection_config}")

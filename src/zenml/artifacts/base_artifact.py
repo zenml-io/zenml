@@ -11,11 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from tfx.types import Artifact
-from tfx.types.artifact import Property, PropertyType
+from typing import Dict
+
+from tfx.types.artifact import Artifact, Property, PropertyType
 
 MATERIALIZERS_PROPERTY_KEY = "materializers"
-MATERIALIZERS_PROPERTY = Property(type=PropertyType.STRING)
+MATERIALIZERS_PROPERTY = Property(type=PropertyType.STRING)  # type: ignore[no-untyped-call] # noqa
 
 
 class BaseArtifact(Artifact):
@@ -31,7 +32,7 @@ class BaseArtifact(Artifact):
     - TODO [MEDIUM]: Write about the materializers
     """
 
-    TYPE_NAME = "BaseArtifact"
-    PROPERTIES = {
+    TYPE_NAME: str = "BaseArtifact"  # type: ignore[assignment]
+    PROPERTIES: Dict[str, Property] = {  # type: ignore[assignment]
         MATERIALIZERS_PROPERTY_KEY: MATERIALIZERS_PROPERTY,
     }

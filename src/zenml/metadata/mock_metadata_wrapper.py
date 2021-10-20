@@ -23,7 +23,7 @@ from zenml.metadata.base_metadata_store import BaseMetadataStore
 class MockMetadataStore(BaseMetadataStore):
     """Mock metadata store."""
 
-    def get_tfx_metadata_config(self):
+    def get_tfx_metadata_config(self) -> metadata_store_pb2.ConnectionConfig:
         """Return tfx metadata config for mock metadata store."""
         config = metadata_store_pb2.ConnectionConfig()
         config.fake_database.SetInParent()  # Sets an empty fake

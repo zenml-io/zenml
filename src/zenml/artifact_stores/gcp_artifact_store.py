@@ -24,7 +24,7 @@ class GCPArtifactStore(BaseArtifactStore):
     """Artifact Store for Google Cloud Storage based artifacts."""
 
     @validator("path")
-    def must_be_gcs_path(cls, v: str):
+    def must_be_gcs_path(cls, v: str) -> str:
         """Validates that the path is a valid gcs path."""
         if not v.startswith("gs://"):
             raise ValueError(

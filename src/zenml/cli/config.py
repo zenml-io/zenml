@@ -31,12 +31,12 @@ from zenml.enums import LoggingLevels
 
 # Analytics
 @cli.group()
-def analytics():
+def analytics() -> None:
     """Analytics for opt-in and opt-out"""
 
 
 @analytics.command("opt-in", context_settings=dict(ignore_unknown_options=True))
-def opt_in():
+def opt_in() -> None:
     """Opt-in to analytics"""
     gc = GlobalConfig()
     gc.analytics_opt_in = True
@@ -47,7 +47,7 @@ def opt_in():
 @analytics.command(
     "opt-out", context_settings=dict(ignore_unknown_options=True)
 )
-def opt_out():
+def opt_out() -> None:
     """Opt-out to analytics"""
     gc = GlobalConfig()
     gc.analytics_opt_in = False
@@ -57,7 +57,7 @@ def opt_out():
 
 # Logging
 @cli.group()
-def logging():
+def logging() -> None:
     """Configuration of logging for ZenML pipelines."""
 
 
@@ -69,7 +69,7 @@ def logging():
         list(map(lambda x: x.name, LoggingLevels)), case_sensitive=False
     ),
 )
-def set_logging_verbosity(verbosity: str):
+def set_logging_verbosity(verbosity: str) -> None:
     """Set logging level"""
     verbosity = verbosity.upper()
     if verbosity not in LoggingLevels.__members__:
@@ -81,7 +81,7 @@ def set_logging_verbosity(verbosity: str):
 
 # Metadata Store
 @cli.group()
-def metadata():
+def metadata() -> None:
     """Utilities for metadata store"""
 
 
@@ -93,7 +93,7 @@ def metadata():
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def register_metadata_store(
     metadata_store_name: str, metadata_store_type: str, args: List[str]
-):
+) -> None:
     """Register a metadata store."""
 
     try:
@@ -115,7 +115,7 @@ def register_metadata_store(
 
 
 @metadata.command("list")
-def list_metadata_stores():
+def list_metadata_stores() -> None:
     """List all available metadata stores from service."""
     service = Repository().get_service()
     cli_utils.title("Metadata Stores:")
@@ -124,7 +124,7 @@ def list_metadata_stores():
 
 @metadata.command("delete")
 @click.argument("metadata_store_name", type=str)
-def delete_metadata_store(metadata_store_name: str):
+def delete_metadata_store(metadata_store_name: str) -> None:
     """Delete a metadata store."""
     service = Repository().get_service()
     cli_utils.declare(f"Deleting metadata store: {metadata_store_name}")
@@ -134,7 +134,7 @@ def delete_metadata_store(metadata_store_name: str):
 
 # Artifact Store
 @cli.group()
-def artifact():
+def artifact() -> None:
     """Utilities for artifact store"""
 
 
@@ -146,7 +146,7 @@ def artifact():
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def register_artifact_store(
     artifact_store_name: str, artifact_store_type: str, args: List[str]
-):
+) -> None:
     """Register an artifact store."""
 
     try:
@@ -163,7 +163,7 @@ def register_artifact_store(
 
 
 @artifact.command("list")
-def list_artifact_stores():
+def list_artifact_stores() -> None:
     """List all available artifact stores from service."""
     service = Repository().get_service()
     cli_utils.title("Artifact Stores:")
@@ -172,7 +172,7 @@ def list_artifact_stores():
 
 @artifact.command("delete")
 @click.argument("artifact_store_name", type=str)
-def delete_artifact_store(artifact_store_name: str):
+def delete_artifact_store(artifact_store_name: str) -> None:
     """Delete a artifact store."""
     service = Repository().get_service()
     cli_utils.declare(f"Deleting artifact store: {artifact_store_name}")
@@ -182,7 +182,7 @@ def delete_artifact_store(artifact_store_name: str):
 
 # Orchestrator
 @cli.group()
-def orchestrator():
+def orchestrator() -> None:
     """Utilities for orchestrator"""
 
 
@@ -194,7 +194,7 @@ def orchestrator():
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def register_orchestrator(
     orchestrator_name: str, orchestrator_type: str, args: List[str]
-):
+) -> None:
     """Register a orchestrator."""
 
     try:
@@ -211,7 +211,7 @@ def register_orchestrator(
 
 
 @orchestrator.command("list")
-def list_orchestrators():
+def list_orchestrators() -> None:
     """List all available orchestrators from service."""
     service = Repository().get_service()
     cli_utils.title("Orchestrators:")
@@ -220,7 +220,7 @@ def list_orchestrators():
 
 @orchestrator.command("delete")
 @click.argument("orchestrator_name", type=str)
-def delete_orchestrator(orchestrator_name: str):
+def delete_orchestrator(orchestrator_name: str) -> None:
     """Delete a orchestrator."""
     service = Repository().get_service()
     cli_utils.declare(f"Deleting orchestrator: {orchestrator_name}")
