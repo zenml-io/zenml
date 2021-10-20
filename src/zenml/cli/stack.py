@@ -54,7 +54,9 @@ def list_stacks() -> None:
     """List all available stacks from service."""
     service = Repository().get_service()
     cli_utils.title("Stacks:")
-    cli_utils.echo_component_list(service.stacks)
+    # TODO: once there is a common superclass for Stack/ArtifactStore etc.,
+    #  remove the mypy ignore
+    cli_utils.echo_component_list(service.stacks)  # type: ignore[arg-type]
 
 
 @stack.command("delete")

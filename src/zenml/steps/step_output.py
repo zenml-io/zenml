@@ -19,7 +19,9 @@ class Output(object):
     """A named tuple with a default name that cannot be overriden."""
 
     def __init__(self, **kwargs: Type[Any]):
-        self.outputs = NamedTuple("ZenOutput", **kwargs)
+        # TODO [MEDIUM]: do we even need the named tuple here or is
+        #  a list of tuples (name, Type) sufficient?
+        self.outputs = NamedTuple("ZenOutput", **kwargs)  # type: ignore[misc]
 
     def items(self) -> Iterator[Tuple[str, Type[Any]]]:
         """Yields a tuple of type (output_name, output_type)."""
