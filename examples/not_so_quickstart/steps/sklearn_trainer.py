@@ -28,7 +28,7 @@ def sklearn_trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
-    """Train SVC from sklearn"""
+    """Train SVC from sklearn."""
     clf = LogisticRegression(penalty="l1", solver="saga", tol=0.1)
     clf.fit(X_train.reshape((X_train.shape[0], -1)), y_train)
     return clf
@@ -40,7 +40,7 @@ def sklearn_evaluator(
     y_test: np.ndarray,
     model: ClassifierMixin,
 ) -> float:
-    """Calculate the loss for the model for each epoch in a graph"""
+    """Calculate accuracy score with classifier."""
 
     test_acc = model.score(X_test.reshape((X_test.shape[0], -1)), y_test)
     return test_acc
