@@ -21,8 +21,6 @@ from hypothesis.strategies import text
 
 import zenml.core.git_wrapper
 
-GITIGNORE_FILENAME = ".gitignore"
-
 
 def test_no_exception_raised_if_repository_is_valid_git_repository(tmp_path):
     """Test whether class instantiation works when valid git repository present"""
