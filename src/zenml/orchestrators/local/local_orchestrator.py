@@ -64,6 +64,4 @@ class LocalOrchestrator(BaseOrchestrator):
             metadata_connection_config=metadata_store.get_tfx_metadata_config(),
             enable_cache=zenml_pipeline.enable_cache,
         )
-        return runner.run(
-            created_pipeline, run_name_prefix=zenml_pipeline.run_prefix
-        )
+        return runner.run(created_pipeline)

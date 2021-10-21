@@ -65,7 +65,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self.__stack = Repository().get_active_stack()
         self.enable_cache = getattr(self, PARAM_ENABLE_CACHE)
         self.pipeline_name = self.__class__.__name__
-        self.run_prefix = None
         self.__steps = dict()
         logger.info(f"Creating pipeline: {self.pipeline_name}")
         logger.info(
@@ -159,9 +158,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
             The pipeline object that this method was called on.
         """
         config_yaml = yaml_utils.read_yaml(config_file)
-
-        if "run_prefix" in config_yaml:
-            self.run_prefix = config_yaml["run_prefix"]
 
         if "steps" in config_yaml:
             self._read_config_steps(
