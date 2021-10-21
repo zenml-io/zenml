@@ -49,7 +49,7 @@ def load_and_normalize_pipeline(
     normalizer,
 ):
     """Pipeline now has two steps"""
-    # We just need to call the function
+    # We just need to connect the inputs and outputs of the steps
     X_train, y_train, X_test, y_test = importer()
     normalizer(X_train=X_train, X_test=X_test)
 
