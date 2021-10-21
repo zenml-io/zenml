@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-# TODO [MEDIUM]: Create a standard way of doing this.
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)

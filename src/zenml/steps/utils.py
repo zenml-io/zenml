@@ -28,9 +28,21 @@ from __future__ import absolute_import, division, print_function
 import inspect
 import json
 import sys
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    ItemsView,
+    Iterator,
+    KeysView,
+    List,
+    Optional,
+    Type,
+    ValuesView,
+)
 
-from tfx import types as tfx_types
 from tfx.dsl.component.experimental.decorators import _SimpleComponent
 from tfx.dsl.components.base.base_executor import BaseExecutor
 from tfx.dsl.components.base.executor_spec import ExecutorClassSpec
@@ -39,6 +51,7 @@ from tfx.types.channel import Channel
 from tfx.utils import json_utils
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.spec_materializer_registry import (
     SpecMaterializerRegistry,
@@ -47,11 +60,17 @@ from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
 from zenml.utils import source_utils
 
+if TYPE_CHECKING:
+    from zenml.steps.base_step import BaseStep
+
+logger = get_logger(__name__)
+
 STEP_INNER_FUNC_NAME: str = "process"
 SINGLE_RETURN_OUT_NAME: str = "output"
+PARAM_STEP_NAME: str = "step_name"
 
 
-def do_types_match(type_a: Type, type_b: Type) -> bool:
+def do_types_match(type_a: Type[Any], type_b: Type[Any]) -> bool:
     """Check whether type_a and type_b match.
 
     Args:
@@ -66,7 +85,7 @@ def do_types_match(type_a: Type, type_b: Type) -> bool:
     return type_a == type_b
 
 
-def generate_component(step) -> Callable[..., Any]:
+def generate_component(step: "BaseStep") -> Callable[..., Any]:
     """Utility function which converts a ZenML step into a TFX Component
 
     Args:
@@ -83,11 +102,11 @@ def generate_component(step) -> Callable[..., Any]:
     for key, artifact_type in step.OUTPUT_SPEC.items():
         spec_outputs[key] = component_spec.ChannelParameter(type=artifact_type)
     for key, prim_type in step.PARAM_SPEC.items():
-        spec_params[key] = component_spec.ExecutionParameter(type=str)
+        spec_params[key] = component_spec.ExecutionParameter(type=str)  # type: ignore[no-untyped-call] # noqa
 
     component_spec_class = type(
         "%s_Spec" % step.__class__.__name__,
-        (tfx_types.ComponentSpec,),
+        (component_spec.ComponentSpec,),
         {
             "INPUTS": spec_inputs,
             "OUTPUTS": spec_outputs,
@@ -103,6 +122,7 @@ def generate_component(step) -> Callable[..., Any]:
             "_FUNCTION": staticmethod(getattr(step, STEP_INNER_FUNC_NAME)),
             "__module__": step.__module__,
             "spec_materializer_registry": step.spec_materializer_registry,
+            PARAM_STEP_NAME: step.step_name,
         },
     )
 
@@ -144,17 +164,17 @@ class _PropertyDictWrapper(json_utils.Jsonable):
         self._data = data
         self._compat_aliases = compat_aliases or {}
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         """Returns a generator that yields keys of the wrapped dictionary."""
         yield from self._data
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> Channel:
         """Returns the dictionary value for the specified key."""
         if key in self._compat_aliases:
             key = self._compat_aliases[key]
         return self._data[key]
 
-    def __getattr__(self, key):
+    def __getattr__(self, key: str) -> Channel:
         """Returns the dictionary value for the specified key."""
         if key in self._compat_aliases:
             key = self._compat_aliases[key]
@@ -171,15 +191,15 @@ class _PropertyDictWrapper(json_utils.Jsonable):
         """Returns the wrapped dictionary."""
         return self._data
 
-    def keys(self):
+    def keys(self) -> KeysView[str]:
         """Returns the keys of the wrapped dictionary."""
         return self._data.keys()
 
-    def values(self):
+    def values(self) -> ValuesView[Channel]:
         """Returns the values of the wrapped dictionary."""
         return self._data.values()
 
-    def items(self):
+    def items(self) -> ItemsView[str, Channel]:
         """Returns the items of the wrapped dictionary."""
         return self._data.items()
 
@@ -188,7 +208,7 @@ class _ZenMLSimpleComponent(_SimpleComponent):
     """Simple ZenML TFX component with outputs overridden."""
 
     @property
-    def outputs(self) -> _PropertyDictWrapper:
+    def outputs(self) -> _PropertyDictWrapper:  # type: ignore[override]
         """Returns the wrapped spec outputs."""
         return _PropertyDictWrapper(self.spec.outputs)
 
@@ -197,7 +217,10 @@ class _FunctionExecutor(BaseExecutor):
     """Base TFX Executor class which is compatible with ZenML steps"""
 
     _FUNCTION = staticmethod(lambda: None)
-    spec_materializer_registry: SpecMaterializerRegistry = None
+    # TODO[HIGH]: should this be an instance variable?
+    spec_materializer_registry: ClassVar[
+        Optional[SpecMaterializerRegistry]
+    ] = None
 
     def resolve_materializer_with_registry(
         self, param_name: str, artifact: BaseArtifact
@@ -212,6 +235,9 @@ class _FunctionExecutor(BaseExecutor):
             The right materializer based on the defaults or optionally the one
             set by the user.
         """
+        if not self.spec_materializer_registry:
+            raise ValueError("Spec Materializer Registry is not set!")
+
         materializer_class = (
             self.spec_materializer_registry.get_single_materializer_type(
                 param_name
@@ -220,7 +246,7 @@ class _FunctionExecutor(BaseExecutor):
         return materializer_class
 
     def resolve_input_artifact(
-        self, artifact: BaseArtifact, data_type: Type
+        self, artifact: BaseArtifact, data_type: Type[Any]
     ) -> Any:
         """Resolves an input artifact, i.e., reading it from the Artifact Store
         to a pythonic object.
@@ -256,7 +282,7 @@ class _FunctionExecutor(BaseExecutor):
         materializer_class(artifact).handle_return(data)
 
     def check_output_types_match(
-        self, output_value: Any, specified_type: Type
+        self, output_value: Any, specified_type: Type[Any]
     ) -> None:
         """Raise error if types don't match.
 
@@ -273,7 +299,8 @@ class _FunctionExecutor(BaseExecutor):
         if not do_types_match(type(output_value), specified_type):
             raise ValueError(
                 f"Output `{output_value}` of type {type(output_value)} does "
-                f"not match specified return type {specified_type}"
+                f"not match specified return type {specified_type} in step "
+                f"{getattr(self, PARAM_STEP_NAME)}"
             )
 
     def Do(
@@ -281,7 +308,7 @@ class _FunctionExecutor(BaseExecutor):
         input_dict: Dict[str, List[BaseArtifact]],
         output_dict: Dict[str, List[BaseArtifact]],
         exec_properties: Dict[str, Any],
-    ):
+    ) -> None:
         """Main block for the execution of the step
 
         Args:
@@ -289,7 +316,6 @@ class _FunctionExecutor(BaseExecutor):
             output_dict: dictionary containing the output artifacts
             exec_properties: dictionary containing the execution parameters
         """
-
         # Building the args for the process function
         function_params = {}
 
@@ -313,7 +339,7 @@ class _FunctionExecutor(BaseExecutor):
 
         return_values = self._FUNCTION(**function_params)
         spec = inspect.getfullargspec(self._FUNCTION)
-        return_type: Type = spec.annotations.get("return", None)
+        return_type: Type[Any] = spec.annotations.get("return", None)
         if return_type is not None:
             if isinstance(return_type, Output):
                 # Resolve named (and multi-) outputs.

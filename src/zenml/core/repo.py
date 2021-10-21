@@ -16,7 +16,7 @@
 import os
 from typing import List, Optional
 
-from git import InvalidGitRepositoryError
+from git import InvalidGitRepositoryError  # type: ignore[attr-defined]
 
 from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
 from zenml.config.global_config import GlobalConfig
@@ -30,7 +30,12 @@ from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.post_execution.pipeline import PipelineView
 from zenml.stacks.base_stack import BaseStack
 from zenml.utils import path_utils
-from zenml.utils.analytics_utils import CREATE_REPO, GET_PIPELINES, track
+from zenml.utils.analytics_utils import (
+    FETCHED_STACK,
+    GET_PIPELINES,
+    SET_STACK,
+    track,
+)
 
 logger = get_logger(__name__)
 
@@ -41,7 +46,7 @@ class Repository:
     Every ZenML project exists inside a ZenML repository.
     """
 
-    def __init__(self, path: str = None):
+    def __init__(self, path: Optional[str] = None):
         """
         Construct reference a ZenML repository.
 
@@ -68,15 +73,14 @@ class Repository:
             # We only need to raise exception in the `init_repo`, not in the
             #  constructor here. This makes it more relaxed in remote
             #  orchestration scenarios. We might want to revisit this.
-            self.git_wrapper = None
+            self.git_wrapper = None  # type: ignore[assignment]
 
     @staticmethod
-    @track(event=CREATE_REPO)
     def init_repo(
         repo_path: str = os.getcwd(),
-        stack: BaseStack = None,
-        analytics_opt_in: bool = None,
-    ):
+        stack: Optional[BaseStack] = None,
+        analytics_opt_in: bool = True,
+    ) -> None:
         """
         Initializes a git repo with zenml.
 
@@ -94,8 +98,8 @@ class Repository:
             raise AssertionError(f"{repo_path} is already initialized!")
 
         # Edit global config
-        gc = GlobalConfig()
         if analytics_opt_in is not None:
+            gc = GlobalConfig()
             gc.analytics_opt_in = analytics_opt_in
             gc.update()
 
@@ -138,10 +142,8 @@ class Repository:
                     orchestrator_name="local_orchestrator",
                 ),
             )
-
             gc = GlobalConfig()
             gc.set_stack_for_repo(repo_path, "local_stack")
-            gc.update()
 
     def get_git_wrapper(self) -> GitWrapper:
         """Returns the git wrapper for the repo."""
@@ -151,7 +153,8 @@ class Repository:
         """Returns the active service. For now, always local."""
         return self.service
 
-    def set_active_stack(self, stack_key: str):
+    @track(event=SET_STACK)
+    def set_active_stack(self, stack_key: str) -> None:
         """Set the active stack for the repo. This change is local for the
         machine.
 
@@ -163,6 +166,7 @@ class Repository:
         gc.set_stack_for_repo(self.path, stack_key)
         gc.update()
 
+    @track(event=FETCHED_STACK)
     def get_active_stack_key(self) -> str:
         """Get the active stack key from global config.
 
@@ -212,6 +216,6 @@ class Repository:
         metadata_store = self.service.get_stack(stack_key).metadata_store
         return metadata_store.get_pipeline(pipeline_name)
 
-    def clean(self):
+    def clean(self) -> None:
         """Deletes associated metadata store, pipelines dir and artifacts"""
         raise NotImplementedError

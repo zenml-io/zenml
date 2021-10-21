@@ -11,17 +11,23 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import Callable, Optional, Type, TypeVar, Union
 
+from zenml.pipelines.base_pipeline import (
+    PARAM_ENABLE_CACHE,
+    PIPELINE_INNER_FUNC_NAME,
+    BasePipeline,
+)
 
-import types
-from typing import Callable, Type
-
-from zenml.pipelines.base_pipeline import PIPELINE_INNER_FUNC_NAME, BasePipeline
+F = TypeVar("F", bound=Callable[..., None])
 
 
 def pipeline(
-    _func: types.FunctionType = None, *, name: str = None
-) -> Callable[..., BasePipeline]:
+    _func: Optional[F] = None,
+    *,
+    name: Optional[str] = None,
+    enable_cache: bool = True
+) -> Union[Type[BasePipeline], Callable[[F], Type[BasePipeline]]]:
     """Outer decorator function for the creation of a ZenML pipeline
 
     In order to be able work with parameters such as "name", it features a
@@ -30,13 +36,14 @@ def pipeline(
     Args:
         _func: Optional func from outside.
         name: str, the given name for the pipeline
+        enable_cache: Whether to use cache or not.
 
     Returns:
         the inner decorator which creates the pipeline class based on the
         ZenML BasePipeline
     """
 
-    def inner_decorator(func: types.FunctionType) -> Type:
+    def inner_decorator(func: F) -> Type[BasePipeline]:
         """Inner decorator function for the creation of a ZenML Pipeline
 
         Args:
@@ -47,10 +54,13 @@ def pipeline(
             the class of a newly generated ZenML Pipeline
 
         """
-        return type(
+        return type(  # noqa
             name if name else func.__name__,
             (BasePipeline,),
-            {PIPELINE_INNER_FUNC_NAME: staticmethod(func)},
+            {
+                PIPELINE_INNER_FUNC_NAME: staticmethod(func),
+                PARAM_ENABLE_CACHE: enable_cache,
+            },
         )
 
     if _func is None:

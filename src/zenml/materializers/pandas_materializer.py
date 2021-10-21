@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import Type
+from typing import Any, Type
 
 import pandas as pd
 
@@ -28,14 +28,14 @@ class PandasMaterializer(BaseMaterializer):
 
     ASSOCIATED_TYPES = [pd.DataFrame]
 
-    def handle_input(self, data_type: Type) -> pd.DataFrame:
+    def handle_input(self, data_type: Type[Any]) -> pd.DataFrame:
         """Reads pd.Dataframe from a parquet file."""
         super().handle_input(data_type)
         return pd.read_parquet(
             os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         )
 
-    def handle_return(self, df: pd.DataFrame):
+    def handle_return(self, df: pd.DataFrame) -> None:
         """Writes a pandas dataframe to the specified filename.
 
         Args:

@@ -225,6 +225,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="zenml.orchestrators.local.html">zenml.orchestrators.local package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.local.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.local.html#module-zenml.orchestrators.local.local_dag_runner">zenml.orchestrators.local.local_dag_runner module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.local.html#module-zenml.orchestrators.local.local_orchestrator">zenml.orchestrators.local.local_orchestrator module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="zenml.orchestrators.local.html#module-zenml.orchestrators.local">Module contents</a></li>
 </ul>
@@ -280,7 +281,6 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="zenml.types.html">zenml.types package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="zenml.types.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zenml.types.html#module-zenml.types.base_type">zenml.types.base_type module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="zenml.types.html#module-zenml.types.pytorch_types">zenml.types.pytorch_types module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="zenml.types.html#module-zenml.types">Module contents</a></li>
 </ul>
@@ -304,13 +304,13 @@
 <span id="zenml-constants-module"></span><h2>zenml.constants module<a class="headerlink" href="#module-zenml.constants" title="Permalink to this headline">¶</a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="zenml.constants.handle_bool_env_var">
-<span class="sig-prename descclassname"><span class="pre">zenml.constants.</span></span><span class="sig-name descname"><span class="pre">handle_bool_env_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.constants.handle_bool_env_var" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">zenml.constants.</span></span><span class="sig-name descname"><span class="pre">handle_bool_env_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#zenml.constants.handle_bool_env_var" title="Permalink to this definition">¶</a></dt>
 <dd><p>Converts normal env var to boolean</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="zenml.constants.handle_int_env_var">
-<span class="sig-prename descclassname"><span class="pre">zenml.constants.</span></span><span class="sig-name descname"><span class="pre">handle_int_env_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.constants.handle_int_env_var" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">zenml.constants.</span></span><span class="sig-name descname"><span class="pre">handle_int_env_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#zenml.constants.handle_int_env_var" title="Permalink to this definition">¶</a></dt>
 <dd><p>Converts normal env var to int</p>
 </dd></dl>
 
@@ -357,6 +357,38 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="zenml.enums.ExecutionStatus.RUNNING">
 <span class="sig-name descname"><span class="pre">RUNNING</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'running'</span></em><a class="headerlink" href="#zenml.enums.ExecutionStatus.RUNNING" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="zenml.enums.LoggingLevels">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.enums.</span></span><span class="sig-name descname"><span class="pre">LoggingLevels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.enums.LoggingLevels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.LoggingLevels.DEBUG">
+<span class="sig-name descname"><span class="pre">DEBUG</span></span><em class="property"> <span class="pre">=</span> <span class="pre">10</span></em><a class="headerlink" href="#zenml.enums.LoggingLevels.DEBUG" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.LoggingLevels.ERROR">
+<span class="sig-name descname"><span class="pre">ERROR</span></span><em class="property"> <span class="pre">=</span> <span class="pre">40</span></em><a class="headerlink" href="#zenml.enums.LoggingLevels.ERROR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.LoggingLevels.INFO">
+<span class="sig-name descname"><span class="pre">INFO</span></span><em class="property"> <span class="pre">=</span> <span class="pre">20</span></em><a class="headerlink" href="#zenml.enums.LoggingLevels.INFO" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.LoggingLevels.NOTSET">
+<span class="sig-name descname"><span class="pre">NOTSET</span></span><em class="property"> <span class="pre">=</span> <span class="pre">0</span></em><a class="headerlink" href="#zenml.enums.LoggingLevels.NOTSET" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zenml.enums.LoggingLevels.WARN">
+<span class="sig-name descname"><span class="pre">WARN</span></span><em class="property"> <span class="pre">=</span> <span class="pre">30</span></em><a class="headerlink" href="#zenml.enums.LoggingLevels.WARN" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -444,7 +476,7 @@ in an unsupported way.</p>
 
 <dl class="py exception">
 <dt class="sig sig-object py" id="zenml.exceptions.DoesNotExistException">
-<em class="property"><span class="pre">exception</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.exceptions.</span></span><span class="sig-name descname"><span class="pre">DoesNotExistException</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'{}</span> <span class="pre">does</span> <span class="pre">not</span> <span class="pre">exist!</span> <span class="pre">This</span> <span class="pre">might</span> <span class="pre">be</span> <span class="pre">due</span> <span class="pre">to:</span> <span class="pre">{}'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.exceptions.DoesNotExistException" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">exception</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.exceptions.</span></span><span class="sig-name descname"><span class="pre">DoesNotExistException</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'{}</span> <span class="pre">does</span> <span class="pre">not</span> <span class="pre">exist!</span> <span class="pre">This</span> <span class="pre">might</span> <span class="pre">be</span> <span class="pre">due</span> <span class="pre">to:</span> <span class="pre">{}'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.exceptions.DoesNotExistException" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
 <p>Raises exception when the <cite>name</cite> does not exist in the system but an
 action is being done that requires it to be present.</p>
@@ -452,7 +484,7 @@ action is being done that requires it to be present.</p>
 
 <dl class="py exception">
 <dt class="sig sig-object py" id="zenml.exceptions.EmptyDatasourceException">
-<em class="property"><span class="pre">exception</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.exceptions.</span></span><span class="sig-name descname"><span class="pre">EmptyDatasourceException</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'This</span> <span class="pre">datasource</span> <span class="pre">has</span> <span class="pre">not</span> <span class="pre">been</span> <span class="pre">used</span> <span class="pre">in</span> <span class="pre">any</span> <span class="pre">pipelines,</span> <span class="pre">therefore</span> <span class="pre">the</span> <span class="pre">associated</span> <span class="pre">data</span> <span class="pre">has</span> <span class="pre">no</span> <span class="pre">versions.</span> <span class="pre">Please</span> <span class="pre">use</span> <span class="pre">this</span> <span class="pre">datasouce</span> <span class="pre">in</span> <span class="pre">any</span> <span class="pre">ZenML</span> <span class="pre">pipeline</span> <span class="pre">with</span> <span class="pre">`pipeline.add_datasource(datasource)`'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.exceptions.EmptyDatasourceException" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">exception</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.exceptions.</span></span><span class="sig-name descname"><span class="pre">EmptyDatasourceException</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'This</span> <span class="pre">datasource</span> <span class="pre">has</span> <span class="pre">not</span> <span class="pre">been</span> <span class="pre">used</span> <span class="pre">in</span> <span class="pre">any</span> <span class="pre">pipelines,</span> <span class="pre">therefore</span> <span class="pre">the</span> <span class="pre">associated</span> <span class="pre">data</span> <span class="pre">has</span> <span class="pre">no</span> <span class="pre">versions.</span> <span class="pre">Please</span> <span class="pre">use</span> <span class="pre">this</span> <span class="pre">datasouce</span> <span class="pre">in</span> <span class="pre">any</span> <span class="pre">ZenML</span> <span class="pre">pipeline</span> <span class="pre">with</span> <span class="pre">`pipeline.add_datasource(datasource)`'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.exceptions.EmptyDatasourceException" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
 <p>Raises exception when a datasource data is accessed without running
 an associated pipeline.</p>
@@ -467,7 +499,7 @@ an associated pipeline.</p>
 
 <dl class="py exception">
 <dt class="sig sig-object py" id="zenml.exceptions.InitializationException">
-<em class="property"><span class="pre">exception</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.exceptions.</span></span><span class="sig-name descname"><span class="pre">InitializationException</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ZenML</span> <span class="pre">config</span> <span class="pre">is</span> <span class="pre">none.</span> <span class="pre">Did</span> <span class="pre">you</span> <span class="pre">do</span> <span class="pre">`zenml</span> <span class="pre">init`?'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.exceptions.InitializationException" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">exception</span> </em><span class="sig-prename descclassname"><span class="pre">zenml.exceptions.</span></span><span class="sig-name descname"><span class="pre">InitializationException</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'ZenML</span> <span class="pre">config</span> <span class="pre">is</span> <span class="pre">none.</span> <span class="pre">Did</span> <span class="pre">you</span> <span class="pre">do</span> <span class="pre">`zenml</span> <span class="pre">init`?'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.exceptions.InitializationException" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
 <p>Raises exception when a function is run before zenml initialization.</p>
 </dd></dl>
@@ -513,7 +545,7 @@ in an unsupported way.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="zenml.logger.get_logger">
-<span class="sig-prename descclassname"><span class="pre">zenml.logger.</span></span><span class="sig-name descname"><span class="pre">get_logger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logger_name</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#zenml.logger.get_logger" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">zenml.logger.</span></span><span class="sig-name descname"><span class="pre">get_logger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logger_name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">logging.Logger</span></span></span><a class="headerlink" href="#zenml.logger.get_logger" title="Permalink to this definition">¶</a></dt>
 <dd><p>Main function to get logger name,.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -526,20 +558,20 @@ in an unsupported way.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="zenml.logger.get_logging_level">
+<span class="sig-prename descclassname"><span class="pre">zenml.logger.</span></span><span class="sig-name descname"><span class="pre">get_logging_level</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#zenml.enums.LoggingLevels" title="zenml.enums.LoggingLevels"><span class="pre">zenml.enums.LoggingLevels</span></a></span></span><a class="headerlink" href="#zenml.logger.get_logging_level" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get logging level from the env variable.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="zenml.logger.init_logging">
-<span class="sig-prename descclassname"><span class="pre">zenml.logger.</span></span><span class="sig-name descname"><span class="pre">init_logging</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.logger.init_logging" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">zenml.logger.</span></span><span class="sig-name descname"><span class="pre">init_logging</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#zenml.logger.init_logging" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialize logging with default levels.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="zenml.logger.resolve_logging_level">
-<span class="sig-prename descclassname"><span class="pre">zenml.logger.</span></span><span class="sig-name descname"><span class="pre">resolve_logging_level</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.logger.resolve_logging_level" title="Permalink to this definition">¶</a></dt>
-<dd><p>Resolve the logging level from the env variable.</p>
-</dd></dl>
-
-<dl class="py function">
 <dt class="sig sig-object py" id="zenml.logger.set_root_verbosity">
-<span class="sig-prename descclassname"><span class="pre">zenml.logger.</span></span><span class="sig-name descname"><span class="pre">set_root_verbosity</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.logger.set_root_verbosity" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">zenml.logger.</span></span><span class="sig-name descname"><span class="pre">set_root_verbosity</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#zenml.logger.set_root_verbosity" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the root verbosity.</p>
 </dd></dl>
 

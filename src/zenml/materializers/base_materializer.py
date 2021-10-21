@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, Any, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Tuple, Type, cast
 
 if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
@@ -26,32 +26,36 @@ class BaseMaterializerMeta(type):
     """Metaclass responsible for registering different BaseMaterializer
     subclasses for reading/writing artifacts."""
 
-    def __new__(mcs, name, bases, dct):
+    def __new__(
+        mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
+    ) -> "BaseMaterializerMeta":
         """Creates a Materializer class and registers it at
-        the `MaterializerFactory`."""
-        cls = super().__new__(mcs, name, bases, dct)
+        the `MaterializerRegistry`."""
+        cls = cast(
+            Type["BaseMaterializer"], super().__new__(mcs, name, bases, dct)
+        )
         if name != "BaseMaterializer":
-            assert cls.ASSOCIATED_TYPES is not None, (  # noqa
+            assert cls.ASSOCIATED_TYPES, (
                 "You should specify a list of ASSOCIATED_TYPES when creating a "
                 "Materializer!"
             )
             [
                 default_materializer_registry.register_materializer_type(x, cls)
-                for x in cls.ASSOCIATED_TYPES  # noqa
-            ]  # noqa
+                for x in cls.ASSOCIATED_TYPES
+            ]
         return cls
 
 
 class BaseMaterializer(metaclass=BaseMaterializerMeta):
     """Base Materializer to realize artifact data."""
 
-    ASSOCIATED_TYPES = None
+    ASSOCIATED_TYPES: ClassVar[List[Type[Any]]] = []
 
     def __init__(self, artifact: "BaseArtifact"):
         """Initializes a materializer with the given artifact."""
         self.artifact = artifact
 
-    def handle_input(self, data_type: Type) -> Any:
+    def handle_input(self, data_type: Type[Any]) -> Any:
         """Write logic here to handle input of the step function.
 
         Args:
@@ -60,7 +64,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             Any object that is to be passed into the relevant artifact in the
             step.
         """
-        # TODO [MEDIUM]: Type checking
+        # TODO [MEDIUM]: Add type checking for materializer handle_input
         # if data_type not in self.ASSOCIATED_TYPES:
         #     raise ValueError(
         #         f"Data type {data_type} not supported by materializer "

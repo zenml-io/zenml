@@ -1,7 +1,8 @@
 from pathlib import Path
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Tuple, Type, cast
 
 from pydantic import BaseSettings
+from pydantic.env_settings import SettingsSourceCallable
 
 from zenml.logger import get_logger
 from zenml.utils import path_utils, yaml_utils
@@ -11,7 +12,7 @@ logger = get_logger(__name__)
 
 def define_json_config_settings_source(
     config_dir: str, config_name: str
-) -> Callable:
+) -> SettingsSourceCallable:
     """
     Define a function to essentially deserialize a model from a serialized
     json config.
@@ -41,18 +42,28 @@ def define_json_config_settings_source(
         full_path = Path(config_dir) / config_name
         logger.debug(f"Parsing file: {full_path}")
         if path_utils.file_exists(str(full_path)):
-            return yaml_utils.read_json(str(full_path))
+            return cast(Dict[str, Any], yaml_utils.read_json(str(full_path)))
         return {}
 
     return json_config_settings_source
 
 
-def generate_customise_sources(file_dir: str, file_name: str):
+def generate_customise_sources(
+    file_dir: str, file_name: str
+) -> Callable[
+    [
+        Type[BaseSettings.Config],
+        SettingsSourceCallable,
+        SettingsSourceCallable,
+        SettingsSourceCallable,
+    ],
+    Tuple[SettingsSourceCallable, ...],
+]:
     """Generate a customise_sources function as defined here:
     https://pydantic-docs.helpmanual.io/usage/settings/. This function
     generates a function that configures the priorities of the sources through
     which the model is loaded. The important thing to note here is that the
-    `define_json_config_settings_source` is dynamically generates with the
+    `define_json_config_settings_source` is dynamically generated with the
     provided file_dir and file_name. This allows us to dynamically generate
     a file name for the serialization and deserialization of the model.
 
@@ -66,11 +77,11 @@ def generate_customise_sources(file_dir: str, file_name: str):
     """
 
     def customise_sources(
-        cls,
-        init_settings,
-        env_settings,
-        file_secret_settings,
-    ):
+        cls: Type[BaseSettings.Config],
+        init_settings: SettingsSourceCallable,
+        env_settings: SettingsSourceCallable,
+        file_secret_settings: SettingsSourceCallable,
+    ) -> Tuple[SettingsSourceCallable, ...]:
         """Defines precedence of sources to read/write settings from."""
         return (
             init_settings,
@@ -82,4 +93,4 @@ def generate_customise_sources(file_dir: str, file_name: str):
             file_secret_settings,
         )
 
-    return classmethod(customise_sources)
+    return classmethod(customise_sources)  # type: ignore[return-value]

@@ -20,14 +20,17 @@ import git
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation
 from zenml.core.repo import Repository
-from zenml.utils.analytics_utils import INITIALIZE, track
+from zenml.utils.analytics_utils import INITIALIZE_REPO, track
 
 
 @cli.command("init", help="Initialize zenml on a given path.")
 @click.option("--repo_path", type=click.Path(exists=True))
 @click.option("--analytics_opt_in", "-a", type=click.BOOL)
-@track(event=INITIALIZE)
-def init(repo_path: str, analytics_opt_in: bool = True):
+@track(event=INITIALIZE_REPO)
+def init(
+    repo_path: str,
+    analytics_opt_in: bool = True,
+) -> None:
     """Initialize ZenML on given path.
 
     Args:
@@ -47,10 +50,10 @@ def init(repo_path: str, analytics_opt_in: bool = True):
     try:
         Repository.init_repo(
             repo_path=repo_path,
-            analytics_opt_in=False,
+            analytics_opt_in=analytics_opt_in,
         )
         click.echo(f"ZenML repo initialized at {repo_path}")
-    except git.InvalidGitRepositoryError:
+    except git.InvalidGitRepositoryError:  # type: ignore[attr-defined]
         click.echo(
             f"{repo_path} is not a valid git repository! Please "
             f"initialize ZenML within a git repository using "
@@ -62,7 +65,7 @@ def init(repo_path: str, analytics_opt_in: bool = True):
 
 @cli.command("clean")
 @click.option("--yes", "-y", type=click.BOOL, default=False)
-def clean(yes: bool = False):
+def clean(yes: bool = False) -> None:
     """Clean everything in repository.
 
     Args:

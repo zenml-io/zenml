@@ -23,7 +23,7 @@ from zenml.stacks.base_stack import BaseStack
 
 # Stacks
 @cli.group()
-def stack():
+def stack() -> None:
     """Stacks to define various environments."""
 
 
@@ -37,7 +37,7 @@ def register_stack(
     metadata_store: str,
     artifact_store: str,
     orchestrator: str,
-):
+) -> None:
     """Register a stack."""
 
     service = Repository().get_service()
@@ -50,16 +50,18 @@ def register_stack(
 
 
 @stack.command("list")
-def list_stacks():
+def list_stacks() -> None:
     """List all available stacks from service."""
     service = Repository().get_service()
     cli_utils.title("Stacks:")
-    cli_utils.echo_component_list(service.stacks)
+    # TODO: once there is a common superclass for Stack/ArtifactStore etc.,
+    #  remove the mypy ignore
+    cli_utils.echo_component_list(service.stacks)  # type: ignore[arg-type]
 
 
 @stack.command("delete")
 @click.argument("stack_name", type=str)
-def delete_stack(stack_name: str):
+def delete_stack(stack_name: str) -> None:
     """Delete a stack."""
     service = Repository().get_service()
     cli_utils.declare(f"Deleting stack: {stack_name}")
@@ -69,7 +71,7 @@ def delete_stack(stack_name: str):
 
 @stack.command("set")
 @click.argument("stack_name", type=str)
-def set_active_stack(stack_name: str):
+def set_active_stack(stack_name: str) -> None:
     """Sets a stack active."""
     repo = Repository()
     repo.set_active_stack(stack_name)
@@ -77,7 +79,7 @@ def set_active_stack(stack_name: str):
 
 
 @stack.command("get")
-def get_active_stack():
+def get_active_stack() -> None:
     """Gets the active stack."""
     repo = Repository()
     key = repo.get_active_stack_key()

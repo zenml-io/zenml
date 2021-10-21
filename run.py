@@ -23,6 +23,7 @@ from zenml.materializers.pandas_materializer import PandasMaterializer
 from zenml.steps import step
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
+
 import tensorflow as tf
 
 
@@ -58,7 +59,6 @@ def number_returner(
 
 @step
 def import_dataframe_csv(sum: int) -> pd.DataFrame:
-    print(sum)
     return pd.DataFrame({"sum": [sum]})
 
 
@@ -74,8 +74,6 @@ def tf_dataset_step() -> tf.data.Dataset:
 
 @step
 def last_step_1(df: pd.DataFrame, dataset: tf.data.Dataset) -> pd.DataFrame:
-    for e in dataset:
-        print(e)
     return df
 
 
@@ -84,7 +82,7 @@ def last_step_2(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-@pipeline
+@pipeline(enable_cache=False)
 def my_pipeline(
     step_1,
     step_2_1,

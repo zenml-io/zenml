@@ -15,7 +15,20 @@
 import inspect
 import json
 from abc import abstractmethod
-from typing import Dict, Optional, Type, Union
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
+
+from tfx.types.channel import Channel
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.exceptions import StepInterfaceError
@@ -32,13 +45,14 @@ from zenml.steps.step_output import Output
 from zenml.steps.utils import (
     SINGLE_RETURN_OUT_NAME,
     STEP_INNER_FUNC_NAME,
+    _ZenMLSimpleComponent,
     generate_component,
 )
 
 logger = get_logger(__name__)
 
 
-def check_dict_keys_match(x: Dict, y: Dict) -> bool:
+def check_dict_keys_match(x: Dict[Any, Any], y: Dict[Any, Any]) -> bool:
     """Checks whether there is even one key shared between two dicts.
 
     Returns:
@@ -59,15 +73,16 @@ class BaseStepMeta(type):
     * Is a subclass of the Config class
     """
 
-    def __new__(mcs, name, bases, dct):
+    def __new__(
+        mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
+    ) -> "BaseStepMeta":
         """Set up a new class with a qualified spec."""
         logger.debug(f"Registering class {name}, bases: {bases}, dct: {dct}")
-        cls = super().__new__(mcs, name, bases, dct)
+        cls = cast(Type["BaseStep"], super().__new__(mcs, name, bases, dct))
 
-        cls.INPUT_SIGNATURE = dict()  # all input params
-        # TODO [MEDIUM]: Ensure that this is an OrderedDict
-        cls.OUTPUT_SIGNATURE = dict()  # all output params
-        cls.CONFIG: Optional[Type[BaseStepConfig]] = None  # noqa all params
+        cls.INPUT_SIGNATURE = {}
+        cls.OUTPUT_SIGNATURE = {}
+        cls.CONFIG = None
 
         # Looking into the signature of the provided process function
         process_spec = inspect.getfullargspec(
@@ -115,16 +130,25 @@ class BaseStepMeta(type):
         return cls
 
 
+T = TypeVar("T", bound="BaseStep")
+
+
 class BaseStep(metaclass=BaseStepMeta):
     """The base implementation of a ZenML Step which will be inherited by all
     the other step implementations"""
 
-    def __init__(self, *args, **kwargs):
-        self.materializers = {}
+    # TODO [MEDIUM]: Ensure these are ordered
+    INPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
+    OUTPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
+    CONFIG: ClassVar[Optional[Type[BaseStepConfig]]] = None
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.materializers: Dict[str, Type[BaseMaterializer]] = {}
         self.__component = None
-        self.PARAM_SPEC = dict()
-        self.INPUT_SPEC = dict()
-        self.OUTPUT_SPEC = dict()
+        self.step_name = self.__class__.__name__
+        self.PARAM_SPEC: Dict[str, Any] = {}
+        self.INPUT_SPEC: Dict[str, Type[BaseArtifact]] = {}
+        self.OUTPUT_SPEC: Dict[str, Type[BaseArtifact]] = {}
         self.spec_materializer_registry = SpecMaterializerRegistry()
 
         # TODO [LOW]: Support args
@@ -157,7 +181,9 @@ class BaseStep(metaclass=BaseStepMeta):
                     "though specified in signature."
                 )
 
-    def __call__(self, **artifacts):
+    def __call__(
+        self, **artifacts: BaseArtifact
+    ) -> Union[Channel, List[Channel]]:
         """Generates a component when called."""
         # TODO [MEDIUM]: Support *args as well.
         # register defaults
@@ -202,20 +228,25 @@ class BaseStep(metaclass=BaseStepMeta):
         return returns
 
     @property
-    def component(self):
+    def component(self) -> _ZenMLSimpleComponent:
         """Returns a TFX component."""
+        if not self.__component:
+            raise StepInterfaceError(
+                "Trying to access the step component "
+                "before creating it via calling the step."
+            )
         return self.__component
 
     @abstractmethod
-    def process(self, *args, **kwargs):
+    def process(self, *args: Any, **kwargs: Any) -> Any:
         """Abstract method for core step logic."""
 
     def with_return_materializers(
-        self,
+        self: T,
         materializers: Union[
             Type[BaseMaterializer], Dict[str, Type[BaseMaterializer]]
         ],
-    ):
+    ) -> T:
         """Inject materializers from the outside. If one materializer is passed
         in then all outputs are assigned that materializer. If a dict is passed
         in then we make sure the output names match.
@@ -246,7 +277,7 @@ class BaseStep(metaclass=BaseStepMeta):
         return self
 
     def resolve_signature_materializers(
-        self, signature: Dict[str, Type], is_input: bool = True
+        self, signature: Dict[str, Type[Any]], is_input: bool = True
     ) -> None:
         """Takes either the INPUT_SIGNATURE and OUTPUT_SIGNATURE and resolves
         the materializers for them in the `spec_materializer_registry`.

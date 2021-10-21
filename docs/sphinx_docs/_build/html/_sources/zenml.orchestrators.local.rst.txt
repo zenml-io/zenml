@@ -4,6 +4,14 @@ zenml.orchestrators.local package
 Submodules
 ----------
 
+zenml.orchestrators.local.local\_dag\_runner module
+---------------------------------------------------
+
+.. automodule:: zenml.orchestrators.local.local_dag_runner
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 zenml.orchestrators.local.local\_orchestrator module
 ----------------------------------------------------
 

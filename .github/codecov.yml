@@ -1,0 +1,17 @@
+codecov:
+  branch: main
+
+comment: false          # don't comment on PRs
+
+coverage:
+  status:
+    project:
+      default:
+        threshold: 1%   # allow coverage to drop by 1% before failing the PR
+
+    patch:
+      default:
+        threshold: 1%   # allow coverage to drop by 1% before failing the PR
+
+    # do not run coverage on changes
+    changes: off

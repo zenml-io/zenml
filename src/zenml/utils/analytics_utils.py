@@ -15,7 +15,7 @@
 
 import platform
 import sys
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Optional, cast
 
 import analytics
 import distro
@@ -30,29 +30,25 @@ logger = get_logger(__name__)
 
 # EVENTS
 
-# Functions
-
-CREATE_STEP = "Step created"
-
-GET_STEPS_VERSIONS = "Step Versions listed"
-
-GET_STEP_VERSION = "Step listed"
-
 # Pipelines
-
-CREATE_PIPELINE = "Pipeline created"
 
 RUN_PIPELINE = "Pipeline run"
 
 GET_PIPELINES = "Pipelines fetched"
 
-GET_PIPELINE_ARTIFACTS = "Pipeline Artifacts fetched"
-
 # Repo
 
-CREATE_REPO = "Repository created"
+INITIALIZE_REPO = "ZenML initialized"
 
-INITIALIZE = "ZenML initialized"
+# Components
+REGISTERED_METADATA_STORE = "Metadata Store registered"
+REGISTERED_ARTIFACT_STORE = "Artifact Store registered"
+REGISTERED_ORCHESTRATOR = "Orchestrator registered"
+
+# Stack
+REGISTERED_STACK = "Stack registered"
+SET_STACK = "Stack set"
+FETCHED_STACK = "Stack fetched"
 
 
 def get_segment_key() -> str:
@@ -73,18 +69,19 @@ def get_segment_key() -> str:
 
     try:
         r = requests.get(url, headers=headers, timeout=5)
-        return r.json()["id"]
+        return cast(str, r.json()["id"])
     except requests.exceptions.RequestException:
         logger.debug("Failed to get segment write key", exc_info=True)
+        raise
 
 
-def initialize_telemetry():
+def initialize_telemetry() -> None:
     """Initializes telemetry with the right key"""
     if analytics.write_key is None:
         analytics.write_key = get_segment_key()
 
 
-def in_docker():
+def in_docker() -> bool:
     """Returns: True if running in a Docker container, else False"""
     # TODO [MEDIUM]: Make this more reliable and add test.
     try:
@@ -95,7 +92,7 @@ def in_docker():
         return False
 
 
-def get_system_info() -> Dict:
+def get_system_info() -> Dict[str, Any]:
     """Returns system info as a dict.
 
     Returns:
@@ -104,7 +101,7 @@ def get_system_info() -> Dict:
     system = platform.system()
 
     if system == "Windows":
-        version = sys.getwindowsversion()
+        version = sys.getwindowsversion()  # type: ignore[attr-defined]
 
         return {
             "os": "windows",
@@ -129,7 +126,7 @@ def get_system_info() -> Dict:
     return {"os": "unknown"}
 
 
-def track_event(event: str, metadata: Dict = None):
+def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> None:
     """
     Track segment event if user opted-in.
 
@@ -143,9 +140,8 @@ def track_event(event: str, metadata: Dict = None):
         ), "Analytics key not set but trying to make telemetry call."
 
         gc = GlobalConfig()
-        logger.debug(f"Analytics opt-in: {gc.analytics_opt_in}.")
 
-        if gc.analytics_opt_in is False and event is not INITIALIZE:
+        if not gc.analytics_opt_in and event != INITIALIZE_REPO:
             return
 
         if metadata is None:
@@ -155,7 +151,7 @@ def track_event(event: str, metadata: Dict = None):
         metadata.update(get_system_info())
         metadata.update({"in_docker": in_docker(), "version": __version__})
 
-        analytics.track(gc.user_id, event, metadata)
+        analytics.track(str(gc.user_id), event, metadata)
         logger.debug(
             f"Analytics sent: User: {gc.user_id}, Event: {event}, Metadata: "
             f"{metadata}"
@@ -165,15 +161,19 @@ def track_event(event: str, metadata: Dict = None):
         logger.debug(f"Analytics failed due to: {e}")
 
 
-def parametrized(dec):
+def parametrized(
+    dec: Callable[..., Callable[..., Any]]
+) -> Callable[..., Callable[[Callable[..., Any]], Callable[..., Any]]]:
     """This is a meta-decorator, that is, a decorator for decorators.
     As a decorator is a function, it actually works as a regular decorator
     with arguments:"""
 
-    def layer(*args: Any, **kwargs: Any):
+    def layer(
+        *args: Any, **kwargs: Any
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """Internal layer"""
 
-        def repl(f: Any):
+        def repl(f: Callable[..., Any]) -> Callable[..., Any]:
             """Internal repl"""
             return dec(f, *args, **kwargs)
 
@@ -183,27 +183,24 @@ def parametrized(dec):
 
 
 @parametrized
-def track(func: Callable, event: str = None) -> Callable:
+def track(
+    func: Callable[..., Any], event: Optional[str] = None
+) -> Callable[..., Any]:
     """Decorator to track event.
 
     Args:
         func: Function that is decorated.
         event: Event string to stamp with.
     """
-    if event is None:
-        event = func.__name__  # default to name of function
+    # Need to redefine the name for the event here in order for mypy
+    # to recognize it's not an optional string anymore
+    # TODO[MEDIUM]: open bug ticket and link here
+    event_name = event or func.__name__  # default to name of function
+    metadata: Dict[str, Any] = {}
 
-    metadata = {}
-
-    # TODO: [LOW] See if we can get anonymized data from func
-    # if func.__name__:
-    #     metadata['function'] = func.__name__
-    # if func.__module__:
-    #     metadata['module'] = func.__module__
-
-    def inner_func(*args, **kwargs):
+    def inner_func(*args: Any, **kwargs: Any) -> Any:
         """Inner decorator function."""
-        track_event(event, metadata=metadata)
+        track_event(event_name, metadata=metadata)
         result = func(*args, **kwargs)
         return result
 
