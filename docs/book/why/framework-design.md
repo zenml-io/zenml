@@ -75,7 +75,7 @@ run = pipeline(
 While the above looks nice, it has two assumptions:
 
 * The function signatures take `Data Artifacts`, so what happens if I want to parameterize it when im running the pipeline. I don't want to be able to just pass data between steps, but also inject it at run time with some configuration.
-* ZenML is 'taking over' how to store these `Data Artifacts` between steps. While its easy for `int` variables in this toy example, that means ZenML also needs to handle all sorts of complex artifacts like `tf.keras.Model` or `torch.nn.Module`!
+* ZenML is 'taking over' how to store these `Data Artifacts` between steps. While it's easy to handle storing `int` variables in this toy example, it also means ZenML needs to handle all sorts of complex artifacts like `tf.keras.Model` or `torch.nn.Module`!
 
 Let's see how we decided to solve each of the above:
 
