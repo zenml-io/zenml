@@ -85,7 +85,7 @@ Let's say we wanted to introduce a parameter into the `add` function that allows
 ```python
 @step
 def adds(some_num: int, add_amount: int) -> int:
-    return some_num + add_amount  # we can whatever we want!
+    return some_num + add_amount  # we can do whatever we want!
 ```
 
 Now you would expect the following to work:
