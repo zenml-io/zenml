@@ -158,6 +158,7 @@ module = [
     "gcsfs.*",
     "torch.*",
     "pytorch_lightning.*",
+    "sklearn.*",
 ]
 ignore_missing_imports = true
 
