@@ -15,40 +15,35 @@ One of the biggest questions often left unasked when designing a new framework i
 
 When designing a framework as broad as ZenML, the team is probably making hundreds of micro-decisions weekly. While all of these are impossible to capture, we have decided to capture the most key decisions here, and hopefully illuminate why we built ZenML this way.
 
-## Pipelines
-
-### Separating Configuration (Connections) From Runs
+## Pipelines and Pipeline runs: Separating Configuration From Implementation
 
 We decided early on that we wanted to clearly define what a Pipeline and a Pipeline Run were. Here is the key:
 
-* Pipelines define the (data) **dependencies** between steps.
+* Pipelines define the **data dependencies** between steps.
 * Pipeline runs define the **parameters** of each step.
 
-The advantage of this is that the user need only define a pipeline once, but can reuse that pipeline with different parameters. So then I can do the following:
+The advantage of this is that the user needs to only define a pipeline once, but can reuse that pipeline with different parameters. So then I can do the following:
 
 ```python
 def my_pipeline(
-    step_1: Step[SimplestStepEver],
-    step_2: Step[AnotherStep]
+    step_1,
+    step_2
 )
     # connect the two together
-
+    step_2(step_1())
+    
 run_1 = my_pipeline(
-    step_1=SimplestStepEver(param=2)
-    step_2=AnotherStep(param=2)
+    step_1=first_step_first_version()
+    step_2=second_step(Params(my_param=2))
 
-run_1 = my_pipeline(
-    step_1=SimplestStepEver(param=3)
-    step_2=AnotherStep(param=3)
+run_2 = my_pipeline(
+    step_1=first_step_second_version(param=3)
+    step_2=second_step(Params(my_param=1))
 
-# compare
+# compare them
 ```
 
-The above design also lends itself to swapping in and out different step logic if the INTERFACE of the steps remain consistent. For an example of this, see the [Quickstart](../quickstart-guide.md).
-
-## Stacks and the Ops part MLOps
-
-Stacks are an important concept in ZenML and they have an implicit relationship to pipelines. Stacks define where a pipelines steps are storing data, metadata, and where the pipeline is orchestrated.
+The above design also lends itself to swapping in and out different step logic if the **INTERFACE** of the steps remains consistent.
 
 ## Steps
 
@@ -56,140 +51,103 @@ One small step for data scientist..
 
 ### Simple Functions
 
-We wanted to make a simple Python function be a ZenML step with one decorator:
+We wanted to make simple Python functions be ZenML steps with just one decorator:
 
 ```python
 @step
-def SimplestStepEver(basic_param_1: int, basic_param_2: str) -> int:
-    return basic_param_1 + int(basic_param_2)
-```
-
-However, what happens if we want to pass persisted **data** (like a model object) as a parameter or return value? Let's say a Keras model. One would expect this to work:
-
-```python
-# this won't work
-@step
-def ASlightComplexStep() -> tf.keras.model:
-    # create model
-    return model
-```
-
-But it won't. The reason is that while in the previous example, it is easy enough to store an integer and pass it between steps, ZenML cannot (and probably **SHOULD** not) know how to store and pass around a Keras model. See, there are infinite ways in how you might want to store it, depending on your use case and requirements.
-
-### Passing Data Between Steps
-
-ZenML solves this with the `Artifact` Input/Output paradigm:
-
-```python
-@step
-def ASlightComplexStep(output_artifact: Output[ModelArtifact]):
-    # defines where ZenML wants you to store the model
-    output_artifact.uri
-
-    # now you can write the model in a custom function
-    write_model(output_artifact)
+def returns_one() -> int:
+    return 1
 
 @step
-def AnotherSlightComplexStep(input_artifact: Output[ModelArtifact]):
-    # defines where you stored the model in the prev step
-    input_artifact.uri
+def add(some_num: int) -> int:
+    return some_num + 1  # we can only add one :-(
 
-    # now you can write the model in a custom function
-    model = read_model(input_artifact)
+@pipeline
+def pipeline(first, second):
+    second(first())
 
-# connect these together and run
+# Tie interface to implementation
+run = pipeline(
+  first=returns_one(),
+  second=add()
+)
 ```
+While the above looks nice, it has two assumptions:
 
-By passing an artifact in as an **annotated and typed parameter** of the function rather than as a return type hint, we can **decouple** the writing logic of the model by providing a simple location to the user to write to. Now, one can simply do with the model whatever they'd like.
+* The function signatures take `Data Artifacts`, so what happens if I want to parameterize it when I'm running the pipeline. I don't want to be able to just pass data between steps, but also inject it at run time with some configuration.
+* ZenML is 'taking over' how to store these `Data Artifacts` between steps. While it's easy to handle storing `int` variables in this toy example, it also means ZenML needs to handle all sorts of complex artifacts like `tf.keras.Model` or `torch.nn.Module`!
 
-{% hint style="success" %}
-A good mental model to help with choosing between using simple types and Artifact types in a ZenML step is that Artifacts should be used when you want the represented data to be written in a special way to the artifact store. e.g.
+Let's see how we decided to solve each of the above:
 
-* A model written as JSON.
-* Data written in flat files like CSV.
-* A complex object containing statistics or schema.
-{% endhint %}
-
-### The reason for annotations and type-hints
-
-In Python, this is an annotated parameter with a type hint: `output: Output[ModelArtifact]`. In this case, it tells ZenML that the `output` variable is a `ModelArtifact` and is intended to be the output of this step.
-
-Why is this important?
-
-* When ZenML knows its a `ModelArtifact` it can now recognize you are writing a model and help you with ML-specific tasks like registering it in model registries and comparing multiple models later.
-* By specifying an artifact is `Input` or `Output` we can tie steps together with `data dependencies` rather than `task dependencies`. This means that you don't need to say "**Call Step B before Step A**". Instead you can say: "**Step B is to receive a ModelArtifact, and this MAY come from Step A because Step A outputs a ModelArtifact.**" This is superior because data is more important than tasks in machine learning, and you want to able to decouple task dependencies.
-* By telling ZenML its an `Output` artifact, you ensure that you have access to it later with `step.outputs`. This is useful when experimenting with pipeline runs.
-* We can type check inputs and outputs and make the pipeline robust.
-
-### Can we make this better? Yes, let's introduce Materializers:
-
-Because reading and writing is such a common pattern, we can introduce another abstraction known as `Materializers` to encapsulate this logic. Each `Materializer` can implement a standard `read` and `write` function, and we can thus separate the writing/reading logic from the step itself.
+### Parameterizing with the `BaseStepConfig` class
+Let's say we wanted to introduce a parameter into the `add` function that allows us to add anything we want rather than just `1`.
 
 ```python
 @step
-def ASlightComplexStep(output_artifact: Output[ModelArtifact]):
-    m = output_artifact.materializers.keras
-    # or m = output_artifact.materializers['keras']
-    m.write(model, output_artifact)
+def adds(some_num: int, add_amount: int) -> int:
+    return some_num + add_amount  # we can do whatever we want!
 ```
 
-Each artifact can therefore support as many Materializers as required. Think of them as views of the data the artifacts are pointing to. The advantage here is that one can now theoretically parameterize the `key` of the Materializers (`keras` in this case) and completely separate the business logic from the writing logic.
+Now you would expect the following to work:
+```python
+@pipeline
+def pipeline(first, second):
+    second(some_num=first(), add_amount=2)  # this won't work!
+```
 
-The disadvantage of this design is that one needs to know all the implemented Materializers and adding more Materializers and combining with artifacts is a bit non-intuitive at first.
-
-#### Rejected Alternative 1: Artifacts own the Materializer:
-
-There are some alternative ways of implementing Materializers. The first is to create Materializers as separate entities that are not coupled with artifacts.
+Or this:
 
 ```python
-@step
-def ASlightComplexStep(output_artifact: Output[ModelArtifact]):
-    # defines where ZenML wants you to store the model
-    output_artifact.uri
-
-    # materializers control the logic of writing the model
-    m = KerasMaterializer()
-    m.write(model, output_artifact)
-
-@step
-def AnotherSlightComplexStep(input_artifact: Output[ModelArtifact]):
-    # defines where you stored the model in the prev step
-    m = KerasMaterializer()  # you can change this in the future
-    model = m.read(input_artifact)
-
-    # now you can write the model in a custom function
-    model = read_model(input_artifact)
-
-# connect these together and run
+run = pipeline(
+  first=returns_one(),
+  second=add(add_amount=2)  # this won't work either!
+)
 ```
 
-The advantage of this is there is a separation of concerns: The relationship between an Artifact and a Materializer is only implicit, and adding a new Materializer is simple. However, now we have tied the step business logic even further with the step, so to change a Materializer one needs to change the step and cannot simply parameterize it.
+The reason is that ZenML needs to distinguish between `Artifacts` (i.e. data output from an upstream step) and `Parameters` (i.e. data input at run time). 
 
-#### Rejected Alternative 2: Using special signals to indicate data written
-
-Another way to solve this is to invert the relationship between a artifacts and steps. Rather than the steps being aware of artifacts, one can simply "emit" an event that indicates that a step yields a specific artifact.
+The way ZenML solves this is by bundling the params in a special class and passing them in like so:
 
 ```python
+from zenml.steps.base_step_config import BaseStepConfig
+
+class Config(BaseStepConfig):
+  add_amount: int = 1  # set a default
+  
 @step
-def my_asset_solid(param: int):
-    df = get_some_data()
-    write_model(model)
-    yield OutputEvent(
-        key="output_artifact"
-    )
+def adds(some_num: int, config: Config) -> int:
+    return some_num + config.add_amount  # we can whatever we want!
+
+@pipeline
+def pipeline(first, second):
+    second(first())
+
+# Tie interface to implementation
+run = pipeline(
+  first=returns_one(),
+  second=add(Config(add_amount=3))  # this works!
+)
 ```
 
-Pros:
+A ZenML step recognizes that the `config: Config` variable is a sub-class of `BaseStepConfig` and therefore treats it in a special way, so you can pass it in when you create a run of the pipeline! You can also pass it in via CLI or YAML.
 
-* Clean function signatures, with a consistent param-only interface.
+### Using Materializers to abstract away serialization and deserialization logic
 
-Cons:
+So we need a way to write (serialize) and read (deserialize) data in between steps. For this, we introduced another abstraction known as `Materializers` to encapsulate this logic. Each `Materializer` is tied to an Artifact data type, and encodes how to read and write this data in a persistent manner across artifact stores.
 
-* One cannot link steps together through data dependencies any more as ZenML has no idea what is happening inside the step before it is run.
-* Couples the writing logic to step.
-* The user needs to remember the key and it is hard for these to be dynamic.
+An artifact data type of course can have many Materializers. Think of them as different views of the data. For example you might want to read in a `pandas` dataframe as a `pandas` dataframe, but maybe you want to read in a PyTorch Dataloader or a Tensorflow dataset. That's where the power of Materializers kicks in.
+
+The disadvantage of this design is that one needs to implement Materializers for all different data types, which is hard. Luckily, ZenML comes built-in with many standard Materializers and allows you to easily add your own Materializers for custom workflows.
+
+## Materializers and their role in the Post Execution Workflow
+As said, artifact data types can have many `Materializers`. 
+
+## Stacks and the Ops part MLOps
+Stacks are an important concept in ZenML and they have an implicit relationship to pipelines. Stacks define where a pipeline's steps are storing data, metadata, and where the pipeline is orchestrated.
+
 
 ## Integration with Git
+ZenML repositories build on top of Git repositories. Here is why.
 
 ### Versioning custom code
 
@@ -227,6 +185,4 @@ In order to ensure this is not a destructive operation, ZenML does not allow the
 #### Organizing code
 
 It is important to understand that when a pipeline is run, all custom classes used under-go a so-called `git-resolution` process. This means that wherever there is a custom class referenced in a Pipeline, all files within the module are checked to see if they are committed or not. If they are committed, then the class is successfully pinned with the relevant sha. If they are not, then a warning is thrown but the class is not pinned in the corresponding config. Therefore, it is important to consider not only the file where custom logic resides, but the entire module. This is also the reason that `upwards` relative imports are not permitted within these class files.
-
-## Materializers and their role in the Post Execution Workflow
 

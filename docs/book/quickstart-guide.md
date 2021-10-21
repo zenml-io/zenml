@@ -12,7 +12,7 @@ If you want to run this notebook in an interactive environment, feel free to run
 
 ```python
 # Install the dependencies for the quickstart
-pip install zenml
+pip install zenml tensorflow
 ```
 
 {% hint style="success" %}
