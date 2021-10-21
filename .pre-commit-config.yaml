@@ -33,3 +33,11 @@ repos:
     hooks:
       - id: interrogate
         args: [  ]
+  - repo: local
+    hooks:
+      - id: dependency_update_warning
+        name: dependency_update_warning
+        entry: python -c "print('***WARNING***\nIf any dependency was added/removed/updated, make sure to mirror those changes in .pre-commit-config.yaml!\n')"
+        language: system
+        verbose: true
+        files: pyproject.toml
