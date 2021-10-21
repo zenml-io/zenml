@@ -51,7 +51,7 @@ One small step for data scientist..
 
 ### Simple Functions
 
-We wanted to make a simple Python functions be ZenML steps with one decorator:
+We wanted to make simple Python functions be ZenML steps with just one decorator:
 
 ```python
 @step
@@ -75,7 +75,7 @@ run = pipeline(
 While the above looks nice, it has two assumptions:
 
 * The function signatures take `Data Artifacts`, so what happens if I want to parameterize it when im running the pipeline. I don't want to be able to just pass data between steps, but also inject it at run time with some configuration.
-* ZenML is 'taking over' how to store these `Data Artifacts` between steps. While its easy for `int` variables in this toy example, that means ZenML also needs to handle all sorts of complex artifacts like `tf.keras.Model` or `torch.nn.Module`!
+* ZenML is 'taking over' how to store these `Data Artifacts` between steps. While it's easy to handle storing `int` variables in this toy example, it also means ZenML needs to handle all sorts of complex artifacts like `tf.keras.Model` or `torch.nn.Module`!
 
 Let's see how we decided to solve each of the above:
 
@@ -85,7 +85,7 @@ Let's say we wanted to introduce a parameter into the `add` function that allows
 ```python
 @step
 def adds(some_num: int, add_amount: int) -> int:
-    return some_num + add_amount  # we can whatever we want!
+    return some_num + add_amount  # we can do whatever we want!
 ```
 
 Now you would expect the following to work:
@@ -135,7 +135,7 @@ A ZenML step recognizes that the `config: Config` variable is a sub-class of `Ba
 
 So we need a way to write (serialize) and read (deserialize) data in between steps. For this, we introduced another abstraction known as `Materializers` to encapsulate this logic. Each `Materializer` is tied to an Artifact data type, and encodes how to read and write this data in a persistent manner across artifact stores.
 
-An artifact data type of course can have many Materializers. Think of them as different views of the data. For example you might want to read in a pandas dataframe as a panda dataframe, but maybe you want to read in a PyTorch Dataloader or a Tensorflow dataset. Thats where the power of Materializers kicks in.
+An artifact data type of course can have many Materializers. Think of them as different views of the data. For example you might want to read in a `pandas` dataframe as a `pandas` dataframe, but maybe you want to read in a PyTorch Dataloader or a Tensorflow dataset. Thats where the power of Materializers kicks in.
 
 The disadvantage of this design is that one needs to implement Materializers for all different data types, which is hard. Luckily, ZenML comes built-in with many standard Materializers and allows you to easily add your own Materializers for custom workflows.
 

@@ -38,7 +38,7 @@ python run.py
 ```
 
 ### Clean up
-In order to clean up, in the root of your repo, delete the remaining zenml references.
+In order to clean up, in the root of your repo, delete the remaining `zenml` references.
 
 ```python
 rm -rf ~/zenml_examples
