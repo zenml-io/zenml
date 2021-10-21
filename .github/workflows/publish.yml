@@ -35,11 +35,13 @@ jobs:
           python -m pip install "poetry"
 
       - name: Install Dependencies
-        run: python -m poetry install
+        run: python -m poetry install --extras all
 
       # This should be unnecessary, but good to run it.
       - name: Lint
-        run: python -m poetry run bash scripts/lint.sh
+        run: |
+          python -m poetry run bash scripts/lint.sh
+          python -m poetry run bash scripts/type_checker.sh --install-types
 
       # Runs a set of commands using the runners shell
       - name: publish

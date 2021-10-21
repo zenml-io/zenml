@@ -26,10 +26,12 @@ jobs:
           python -m pip install "poetry"
 
       - name: Install Dependencies
-        run: python -m poetry install
+        run: python -m poetry install --extras all
 
       - name: Lint
-        run: python -m poetry run bash scripts/lint.sh
+        run: |
+          python -m poetry run bash scripts/lint.sh
+          python -m poetry run bash scripts/type_checker.sh --install-types
 
       - name: Test
         run: python -m poetry run bash scripts/test-coverage-xml.sh

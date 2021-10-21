@@ -10,9 +10,14 @@
 ## Guides
 
 * [Low Level API](guides/low-level-api/README.md)
-  * [Create a step](guides/low-level-api/create-a-step.md)
+  * [Chapter 1](guides/low-level-api/chapter-1.md)
+  * [Chapter 2](guides/low-level-api/chapter-2.md)
+  * [Chapter 3](guides/low-level-api/chapter-3.md)
+  * [Chapter 4](guides/low-level-api/chapter-4.md)
+  * [Chapter 5](guides/low-level-api/chapter-5.md)
+
 * [High Level API](guides/high-level-api/README.md)
-  * [Use the training pipeline](guides/high-level-api/use-the-training-pipeline.md)
+  * [Chapter 1](guides/high-level-api/chapter-1.md)
 * [Post Execution Workflow](guides/post-execution-workflow.md)
 * [Deploy Pipelines to Production](guides/stacks.md)
 
