@@ -20,7 +20,7 @@ from zenml.steps.step_output import Output
 def importer_mnist() -> Output(
     X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
 ):
-    """Download the MNIST data store it as an artifact"""
+    """Download the MNIST data and store it as an artifact"""
     (X_train, y_train), (
         X_test,
         y_test,
