@@ -71,7 +71,7 @@ tabulate = "^0.8.9"
 airflow = ["apache-airflow"]
 gcp = ["gcsfs"]
 # This should contain ALL of the above
-all = ["apache-airflow"]
+all = ["apache-airflow", "gcsfs"]
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"
