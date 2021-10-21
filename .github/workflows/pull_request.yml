@@ -31,7 +31,7 @@ jobs:
       - name: Lint
         run: |
           python -m poetry run bash scripts/lint.sh
-          python -m poetry run bash scripts/mypy.sh --install-types
+          python -m poetry run bash scripts/type_checker.sh --install-types
 
       - name: Test
         run: python -m poetry run bash scripts/test-coverage-xml.sh
