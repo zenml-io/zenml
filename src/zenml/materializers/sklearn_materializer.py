@@ -14,7 +14,7 @@
 
 import os
 import pickle
-from typing import Type, Union
+from typing import Any, Type, Union
 
 from sklearn.base import (
     BaseEstimator,
