@@ -1,3 +1,10 @@
+"""
+Generate ZenML API documentation.
+
+This script will:
+- generate pydoc3 docstring documentation
+- generate and merge jupyter-book table of contents
+"""
 import os
 import shutil
 from pathlib import Path

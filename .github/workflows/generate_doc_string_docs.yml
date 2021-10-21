@@ -4,7 +4,7 @@ on:
   # Trigger the workflow on push to main branch
   push:
     branches:
-      - main
+      - tbd  # change back to main eventually
 
 # This job installs dependencies, build the book, and pushes it to `gh-pages`
 jobs:
@@ -34,29 +34,27 @@ jobs:
       - name: Install Dependencies
         run: python -m poetry install
 
-      - name: Generate Interrogate Badge
-        run: python -m poetry run bash scripts/interrogate.sh
+      # TODO [HIGH]: Add API generation here
+#      # Generate docstring documentation
+#      - name: Generate docstring documentation
+#        run: python -m poetry run bash scripts/generate-docs.sh
 
       # Generate docstring documentation
-      - name: Generate docstring documentation
-        run: python -m poetry run bash scripts/generate-docs.sh
-
-      # Generate docstring documentation
-      - name: Appending to toc
-        run: |
-          cd docs/
-          python generate_api_docs.py
-      # Commit and push to gitbook
-      - name: Commit and push to gitbook
-        run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git add docs/sphinx_docs/_build/
-          git add docs/book/toc.md
-          git add docs/interrogate.svg
-          git commit -m 'Generated docs [ci skip]'
-          git push
-      # Build the book
-      - name: Print output
-        run: |
-          ls docs/sphinx_docs/_build/html
+#      - name: Appending to toc
+#        run: |
+#          cd docs/
+#          python generate_api_docs.py
+#      # Commit and push to gitbook
+#      - name: Commit and push to gitbook
+#        run: |
+#          git config user.name github-actions
+#          git config user.email github-actions@github.com
+#          git add docs/sphinx_docs/_build/
+#          git add docs/book/toc.md
+#          git add docs/interrogate.svg
+#          git commit -m 'Generated docs [ci skip]'
+#          git push
+#      # Build the book
+#      - name: Print output
+#        run: |
+#          ls docs/sphinx_docs/_build/html
