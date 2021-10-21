@@ -3,6 +3,11 @@ Our goal here is to help you to get the first practical experience with our tool
 
 If you want to run this notebook in an interactive environment, feel free to run it in a [Google Colab](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb) or view it on [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/quickstart) directly.
 
+## Overview
+Here we train a simple `tensorflow.keras` classifier on the MNIST dataset.
+
+## Run it locally
+
 ### Pre-requisites
 In order to run this example, you need to install and initialize ZenML:
 
