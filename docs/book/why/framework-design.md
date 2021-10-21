@@ -51,7 +51,7 @@ One small step for data scientist..
 
 ### Simple Functions
 
-We wanted to make a simple Python functiosn be ZenML steps with one decorator:
+We wanted to make a simple Python functions be ZenML steps with one decorator:
 
 ```python
 @step
@@ -59,8 +59,8 @@ def returns_one() -> int:
     return 1
 
 @step
-def adds(x: int) -> int:
-    return x + 2  # we can only add two :-(
+def add(some_num: int) -> int:
+    return some_num + 1  # we can only add one :-(
 
 @pipeline
 def pipeline(first, second):
@@ -69,7 +69,7 @@ def pipeline(first, second):
 # Tie interface to implementation
 run = pipeline(
   first=returns_one(),
-  second=adds()
+  second=add()
 )
 ```
 While the above looks nice, it has two assumptions:
@@ -80,27 +80,67 @@ While the above looks nice, it has two assumptions:
 Let's see how we decided to solve each of the above:
 
 ### Parameterizing with the `BaseStepConfig` class
-
-
-### Using Materializers to abstract away serialization and deserialization logic
-
-Because reading and writing is such a common pattern, we can introduce another abstraction known as `Materializers` to encapsulate this logic. Each `Materializer` can implement a standard `read` and `write` function, and we can thus separate the writing/reading logic from the step itself.
+Let's say we wanted to introduce a parameter into the `add` function that allows us to add anything we want rather than just `1`.
 
 ```python
 @step
-def ASlightComplexStep(output_artifact: Output[ModelArtifact]):
-    m = output_artifact.materializers.keras
-    # or m = output_artifact.materializers['keras']
-    m.write(model, output_artifact)
+def adds(some_num: int, add_amount: int) -> int:
+    return some_num + add_amount  # we can whatever we want!
 ```
 
-Each artifact can therefore support as many Materializers as required. Think of them as views of the data the artifacts are pointing to. The advantage here is that one can now theoretically parameterize the `key` of the Materializers (`keras` in this case) and completely separate the business logic from the writing logic.
+Now you would expect the following to work:
+```python
+@pipeline
+def pipeline(first, second):
+    second(some_num=first(), add_amount=2)  # this won't work!
+```
 
-The disadvantage of this design is that one needs to know all the implemented Materializers and adding more Materializers and combining with artifacts is a bit non-intuitive at first.
+Or this:
 
+```python
+run = pipeline(
+  first=returns_one(),
+  second=add(add_amount=2)  # this won't work either!
+)
+```
+
+The reason is that ZenML needs to distinguish between `Artifacts` (i.e. data output from an upstream step) and `Parameters` (i.e. data input at run time). 
+
+The way ZenML solves this is by bundling the params in a special class and passing them in like so:
+
+```python
+from zenml.steps.base_step_config import BaseStepConfig
+
+class Config(BaseStepConfig):
+  add_amount: int = 1  # set a default
+  
+@step
+def adds(some_num: int, config: Config) -> int:
+    return some_num + config.add_amount  # we can whatever we want!
+
+@pipeline
+def pipeline(first, second):
+    second(first())
+
+# Tie interface to implementation
+run = pipeline(
+  first=returns_one(),
+  second=add(Config(add_amount=3))  # this works!
+)
+```
+
+A ZenML step recognizes that the `config: Config` variable is a sub-class of `BaseStepConfig` and therefore treats it in a special way, so you can pass it in when you create a run of the pipeline! You can also pass it in via CLI or YAML.
+
+### Using Materializers to abstract away serialization and deserialization logic
+
+So we need a way to write (serialize) and read (deserialize) data in between steps. For this, we introduced another abstraction known as `Materializers` to encapsulate this logic. Each `Materializer` is tied to an Artifact data type, and encodes how to read and write this data in a persistent manner across artifact stores.
+
+An artifact data type of course can have many Materializers. Think of them as different views of the data. For example you might want to read in a pandas dataframe as a panda dataframe, but maybe you want to read in a PyTorch Dataloader or a Tensorflow dataset. Thats where the power of Materializers kicks in.
+
+The disadvantage of this design is that one needs to implement Materializers for all different data types, which is hard. Luckily, ZenML comes built-in with many standard Materializers and allows you to easily add your own Materializers for custom workflows.
 
 ## Materializers and their role in the Post Execution Workflow
-With `Materializers` above, 
+As said, artifact data types can have many `Materializers`. 
 
 ## Stacks and the Ops part MLOps
 Stacks are an important concept in ZenML and they have an implicit relationship to pipelines. Stacks define where a pipelines steps are storing data, metadata, and where the pipeline is orchestrated.
