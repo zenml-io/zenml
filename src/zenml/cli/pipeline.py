@@ -11,24 +11,20 @@
 # #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 # #  or implied. See the License for the specific language governing
 # #  permissions and limitations under the License.
-# """CLI for pipelines."""
-#
-# import click
-# from tabulate import tabulate
-#
-# from zenml.cli.cli import cli
-# from zenml.cli.utils import error, pretty_print, pass_repo
-# from zenml.pipelines import TrainingPipeline
-# from zenml.core import Repository
-# from zenml.utils.yaml_utils import read_yaml
-#
-#
-# @cli.group()
-# def pipeline():
-#     """Pipeline group"""
-#     pass
-#
-#
+"""CLI to interact with pipelines."""
+
+from types import ModuleType
+
+import click
+
+from zenml.cli.cli import cli
+
+
+@cli.group()
+def pipeline():
+    """Pipeline group"""
+
+
 # @pipeline.command('compare')
 # @pass_repo
 # def compare_training_runs(repo: Repository):
@@ -76,22 +72,79 @@
 #     pretty_print(p)
 #
 #
-# @pipeline.command('run')
-# @click.argument('path_to_config')
-# def run_pipeline(path_to_config: str):
-#     """
-#     Runs pipeline specified by the given config YAML object.
-#
-#     Args:
-#         path_to_config: Path to config of the designated pipeline.
-#          Has to be matching the YAML file name.
-#     """
-#     # config has metadata store, backends and artifact store,
-#     # so no need to specify them
-#     print(path_to_config)
-#     try:
-#         config = read_yaml(path_to_config)
-#         p: TrainingPipeline = TrainingPipeline.from_config(config)
-#         p.run()
-#     except Exception as e:
-#         error(e)
+
+
+@pipeline.command("run", help="Run a pipeline with the given configuration.")
+@click.option(
+    "--config",
+    "-c",
+    "config_path",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+)
+@click.argument("python_file")
+def run_pipeline(python_file: str, config_path: str):
+    """
+    Runs pipeline specified by the given config YAML object.
+
+    Args:
+        python_file: Path to the python file that defines the pipeline.
+        config_path: Path to configuration YAML file.
+    """
+    import os
+
+    from zenml.utils import yaml_utils
+
+    python_file = os.path.abspath(python_file)
+
+    config = yaml_utils.read_yaml(config_path)
+    pipeline_module = _load_source(python_file)
+
+    pipeline_name = config["name"]
+    pipeline_class = getattr(pipeline_module, pipeline_name)
+
+    steps = {}
+    for step_name, step_config in config["steps"].items():
+        step_class = getattr(pipeline_module, step_config["source"])
+        step_instance = step_class()
+        materializers_config = step_config.get("materializers", None)
+        if isinstance(materializers_config, str):
+            # Single materializer
+            materializer = getattr(pipeline_module, materializers_config)
+            step_instance = step_instance.with_return_materializers(
+                materializer
+            )
+        elif isinstance(materializers_config, dict):
+            materializers = {}
+            for (
+                output_name,
+                materializer_source,
+            ) in materializers_config.items():
+                materializers[output_name] = getattr(
+                    pipeline_module, materializer_source
+                )
+            step_instance = step_instance.with_return_materializers(
+                materializers
+            )
+
+        steps[step_name] = step_instance
+
+    pipeline_instance = pipeline_class(**steps).with_config(
+        config_path, overwrite_step_parameters=True
+    )
+    pipeline_instance.run()
+
+
+def _load_source(path: str) -> ModuleType:
+    import importlib.machinery
+    import importlib.util
+    import os
+
+    module_name = os.path.splitext(os.path.basename(path))[0].replace("-", "_")
+
+    spec = importlib.util.spec_from_loader(
+        module_name, importlib.machinery.SourceFileLoader(module_name, path)
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module

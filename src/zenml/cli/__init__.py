@@ -16,9 +16,10 @@ from zenml.logger import init_logging
 
 init_logging()
 
-from .base import *  # noqa
-from .config import *  # noqa
+from zenml.cli.base import *  # noqa
+from zenml.cli.config import *  # noqa
+from zenml.cli.pipeline import *  # noqa
 
 # from .example import *  # noqa
-from .stack import *  # noqa
-from .version import *  # noqa
+from zenml.cli.stack import *  # noqa
+from zenml.cli.version import *  # noqa

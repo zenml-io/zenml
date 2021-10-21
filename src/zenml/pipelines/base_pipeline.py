@@ -84,8 +84,17 @@ class BasePipeline(metaclass=BasePipelineMeta):
             else:
                 raise PipelineInterfaceError(
                     f"The argument {k} is an unknown argument. Needs to be "
-                    f"one of {self.STEP_SPEC.keys()}"
+                    f"one of {list(self.STEP_SPEC.keys())}"
                 )
+
+        spec_keys = set(self.STEP_SPEC.keys())
+        actual_keys = set(self.steps.keys())
+        missing_keys = spec_keys - actual_keys
+        if missing_keys:
+            raise PipelineInterfaceError(
+                f"Trying to initialize pipeline but missing"
+                f" one or more steps: {missing_keys}"
+            )
 
     @abstractmethod
     def connect(self, *args: BaseStep, **kwargs: BaseStep) -> None:
@@ -175,7 +184,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             steps: Maps step names to dicts of parameter names and values.
             overwrite: If `True`, overwrite previously set step parameters.
         """
-        for step_name, parameters in steps.items():
+        for step_name, step_dict in steps.items():
             if step_name not in self.__steps:
                 raise PipelineConfigurationError(
                     f"Found '{step_name}' step in configuration yaml but it "
@@ -184,6 +193,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 )
 
             step = self.__steps[step_name]
+            parameters = step_dict.get("parameters", {})
             for parameter, value in parameters.items():
                 if parameter not in step.CONFIG.__fields__:
                     raise PipelineConfigurationError(
