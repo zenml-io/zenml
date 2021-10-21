@@ -71,7 +71,7 @@ tabulate = "^0.8.9"
 airflow = ["apache-airflow"]
 gcp = ["gcsfs"]
 # This should contain ALL of the above
-all = ["apache-airflow"]
+all = ["apache-airflow", "gcsfs"]
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"
@@ -111,6 +111,7 @@ whitelist_externals = poetry
 commands =
     poetry install -v --extras all
     poetry run pytest tests
+    poetry run bash scripts/mypy.sh --install-types
 """
 
 [tool.pytest.ini_options]
@@ -158,6 +159,8 @@ module = [
     "gcsfs.*",
     "torch.*",
     "pytorch_lightning.*",
+    "sklearn.*",
+    "numpy.*",
 ]
 ignore_missing_imports = true
 
