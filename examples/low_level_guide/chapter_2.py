@@ -44,7 +44,7 @@ def normalize_mnist(
 
 
 @pipeline
-def load_and_import_pipeline(
+def load_and_normalize_pipeline(
     importer,
     normalizer,
 ):
@@ -55,16 +55,16 @@ def load_and_import_pipeline(
 
 
 # Run the pipeline
-load_and_import_pipeline(
+load_and_normalize_pipeline(
     importer=importer_mnist(), normalizer=normalize_mnist()
 ).run()
 
 
 # Post-execution
 repo = Repository()
-p = repo.get_pipeline(pipeline_name="load_and_import_pipeline")
+p = repo.get_pipeline(pipeline_name="load_and_normalize_pipeline")
 runs = p.get_runs()
-print(f"Pipeline `load_and_import_pipeline` has {len(runs)} run(s)")
+print(f"Pipeline `load_and_normalize_pipeline` has {len(runs)} run(s)")
 run = runs[0]
 print(f"The first run has {len(run.steps)} steps.")
 step = run.steps[1]

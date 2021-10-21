@@ -40,7 +40,7 @@ And now our pipeline looks like this:
 
 ```python
 @pipeline
-def load_and_import_pipeline(
+def load_and_normalize_pipeline(
     importer,
     normalizer,
 ):
@@ -60,13 +60,13 @@ python chapter_2.py
 And see the output as follows:
 
 ```bash
-Creating pipeline: load_mnist_pipeline
-Cache enabled for pipeline `load_mnist_pipeline`
-Using orchestrator `local_orchestrator` for pipeline `load_mnist_pipeline`. Running pipeline..
+Creating pipeline: load_and_normalize_pipeline
+Cache enabled for pipeline `load_and_normalize_pipeline`
+Using orchestrator `local_orchestrator` for pipeline `load_and_normalize_pipeline`. Running pipeline..
 Step `importer_mnist` has started.
-Step `importer_mnist` has finished in 3.363s.
+Step `importer_mnist` has finished in 1.751s.
 Step `normalize_mnist` has started.
-Step `normalize_mnist` has finished in 4.028s.
+Step `normalize_mnist` has finished in 1.848s.
 ```
 
 ## Inspect 
@@ -74,10 +74,12 @@ Step `normalize_mnist` has finished in 4.028s.
 If you add the following code to fetch the pipeline:
 
 ```python
+from zenml.core.repo import Repository
+
 repo = Repository()
-p = repo.get_pipeline(pipeline_name="load_and_import_pipeline")
+p = repo.get_pipeline(pipeline_name="load_and_normalize_pipeline")
 runs = p.get_runs()
-print(f"Pipeline `load_and_import_pipeline` has {len(runs)} run(s)")
+print(f"Pipeline `load_and_normalize_pipeline` has {len(runs)} run(s)")
 run = runs[0]
 print(f"The first run has {len(run.steps)} steps.")
 step = run.steps[1]
@@ -90,11 +92,11 @@ for i, o in enumerate(step.outputs):
 You get the following output:
 
 ```bash
-Pipeline `load_and_import_pipeline` has 1 run(s)
+Pipeline `load_and_normalize_pipeline` has 1 run(s)
 The first run has 2 steps.
 The `normalizer` step has 2 output artifacts.
-Output 0 is an array with shape: (10000, 28, 28)
-Output 1 is an array with shape: (60000, 28, 28)
+Output 0 is an array with shape: (60000, 28, 28)
+Output 1 is an array with shape: (10000, 28, 28)
 ```
 
 Which confirms again that the data is stored properly! Now we are ready to create some trainers..

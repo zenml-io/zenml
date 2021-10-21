@@ -52,7 +52,7 @@ p = repo.get_pipeline(pipeline_name="load_mnist_pipeline")
 runs = p.get_runs()
 print(f"Pipeline `load_mnist_pipeline` has {len(runs)} run(s)")
 run = runs[0]
-print(f"The first run has {len(run.steps)} steps.")
+print(f"The first run has {len(run.steps)} step(s).")
 step = run.steps[0]
 print(f"That step has {len(step.outputs)} output artifacts.")
 for i, o in enumerate(step.outputs):

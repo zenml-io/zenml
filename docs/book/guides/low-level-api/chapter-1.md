@@ -75,7 +75,7 @@ Creating pipeline: load_mnist_pipeline
 Cache enabled for pipeline `load_mnist_pipeline`
 Using orchestrator `local_orchestrator` for pipeline `load_mnist_pipeline`. Running pipeline..
 Step `importer_mnist` has started.
-Step `importer_mnist` has finished in 3.363s.
+Step `importer_mnist` has finished in 1.726s.
 ```
 
 ## Inspect 
@@ -83,6 +83,8 @@ Step `importer_mnist` has finished in 3.363s.
 If you add the following code to fetch the pipeline:
 
 ```python
+from zenml.core.repo import Repository
+
 repo = Repository()
 p = repo.get_pipeline(pipeline_name="load_mnist_pipeline")
 runs = p.get_runs()
@@ -100,7 +102,7 @@ You get the following output:
 
 ```bash
 Pipeline `load_mnist_pipeline` has 1 run(s).
-The first run has 1 steps.
+The first run has 1 step(s).
 That step has 4 output artifacts.
 Output 0 is an array with shape: (60000,)
 Output 1 is an array with shape: (10000,)
