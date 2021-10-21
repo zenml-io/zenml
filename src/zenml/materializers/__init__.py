@@ -43,3 +43,10 @@ try:
     )
 except ImportError:
     logger.debug("PyTorch Lightning not installed.")
+
+try:
+    from zenml.materializers.sklearn_materializer import (  # noqa
+        SklearnMaterializer,
+    )
+except ImportError:
+    logger.debug("sklearn not installed.")
