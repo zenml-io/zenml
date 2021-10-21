@@ -6,7 +6,7 @@ If you want to see the code for this chapter of the guide, head over to the [Git
 
 # Chapter 5: Materialize artifacts the way you want to consume them.
 
-At this point, how the data passing between the steps has been mystery to us. There is of course a mechanism to serialize and deserialize stuff flowing between steps. We can now take control of this mechanism if we required further control.
+At this point, the precise way that data passes between the steps has been a bit of a mystery to us. There is, of course, a mechanism to serialize and deserialize stuff flowing between steps. We can now take control of this mechanism if we require further control.
 
 ## Create custom materializer
 Data that flows through steps is stored in `Artifact Stores`. The logic that governs the reading and writing of data to and from the `Artifact Stores` lives in the `Materializers`. 
