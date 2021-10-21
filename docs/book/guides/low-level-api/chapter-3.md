@@ -151,7 +151,7 @@ Step `tf_trainer` has finished in 4.723s.
 Step `tf_evaluator` has started.
 I1021 13:24:34.296284  4468 rdbms_metadata_access_object.cc:686] No property is defined for the Type
 313/313 - 0s - loss: 0.3106 - accuracy: 0.9100
-`tf_evaluator` has finished in 0.742s.```
+`tf_evaluator` has finished in 0.742s.
 ```
 
 ## Inspect 

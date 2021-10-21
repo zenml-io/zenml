@@ -13,7 +13,7 @@ In order to illustrate how the Low Level API functions, we'll do a simple exerci
 Here is what we'll do in this guide:
 
 * Create a MNIST pipeline that trains using [Tensorflow (Keras)](https://www.tensorflow.org/) (similar to the [Quickstart](../../quickstart-guide.md)).
-* Swap out implementations of the `trainer` and `evaluator` steps with [PyTorch](https://pytorch.org/) and [scikit-learn](https://scikit-learn.org/).
+* Swap out implementations of the `trainer` and `evaluator` steps with [scikit-learn](https://scikit-learn.org/).
 * Deploy the pipeline on [Airflow](https://airflow.apache.org/).
 
 If you just want to see the code for the guide, head over to the [GitHub version](https://github.com/zenml-io/zenml/tree/main/examples/not_so_quickstart)
