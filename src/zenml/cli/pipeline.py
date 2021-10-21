@@ -21,7 +21,7 @@ from zenml.cli.cli import cli
 
 
 @cli.group()
-def pipeline():
+def pipeline() -> None:
     """Pipeline group"""
 
 
@@ -83,9 +83,8 @@ def pipeline():
     required=True,
 )
 @click.argument("python_file")
-def run_pipeline(python_file: str, config_path: str):
-    """
-    Runs pipeline specified by the given config YAML object.
+def run_pipeline(python_file: str, config_path: str) -> None:
+    """Runs pipeline specified by the given config YAML object.
 
     Args:
         python_file: Path to the python file that defines the pipeline.
@@ -145,6 +144,6 @@ def _load_source(path: str) -> ModuleType:
     spec = importlib.util.spec_from_loader(
         module_name, importlib.machinery.SourceFileLoader(module_name, path)
     )
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    module = importlib.util.module_from_spec(spec)  # type: ignore
+    spec.loader.exec_module(module)  # type: ignore
     return module

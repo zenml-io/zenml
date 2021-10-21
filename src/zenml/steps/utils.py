@@ -342,7 +342,7 @@ class _FunctionExecutor(BaseExecutor):
                     ]
 
                     raise MissingStepParameterError(
-                        self.step_name, missing_fields, arg_type
+                        getattr(self, PARAM_STEP_NAME), missing_fields, arg_type
                     ) from None
                 function_params[arg] = config_object
             else:

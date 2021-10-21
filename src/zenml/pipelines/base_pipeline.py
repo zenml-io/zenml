@@ -87,9 +87,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"one of {list(self.STEP_SPEC.keys())}"
                 )
 
-        spec_keys = set(self.STEP_SPEC.keys())
-        actual_keys = set(self.steps.keys())
-        missing_keys = spec_keys - actual_keys
+        missing_keys = set(self.STEP_SPEC.keys()) - set(self.steps.keys())
         if missing_keys:
             raise PipelineInterfaceError(
                 f"Trying to initialize pipeline but missing"
@@ -193,15 +191,18 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 )
 
             step = self.__steps[step_name]
+            step_parameters = (
+                step.CONFIG.__fields__.keys() if step.CONFIG else {}
+            )
             parameters = step_dict.get("parameters", {})
             for parameter, value in parameters.items():
-                if parameter not in step.CONFIG.__fields__:
+                if parameter not in step_parameters:
                     raise PipelineConfigurationError(
                         f"Found parameter '{parameter}' for '{step_name}' step "
                         f"in configuration yaml but it doesn't exist in the "
                         f"configuration class `{step.CONFIG}`. Available "
                         f"parameters for this step: "
-                        f"{list(step.CONFIG.__fields__.keys())}."
+                        f"{list(step_parameters)}."
                     )
 
                 # make sure the value gets serialized to a string
