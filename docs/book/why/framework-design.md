@@ -143,7 +143,7 @@ The disadvantage of this design is that one needs to implement Materializers for
 As said, artifact data types can have many `Materializers`. 
 
 ## Stacks and the Ops part MLOps
-Stacks are an important concept in ZenML and they have an implicit relationship to pipelines. Stacks define where a pipelines steps are storing data, metadata, and where the pipeline is orchestrated.
+Stacks are an important concept in ZenML and they have an implicit relationship to pipelines. Stacks define where a pipeline's steps are storing data, metadata, and where the pipeline is orchestrated.
 
 
 ## Integration with Git
