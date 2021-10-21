@@ -51,7 +51,7 @@ class SklearnMaterializer(BaseMaterializer):
     ]
 
     def handle_input(
-        self, data_type: Type
+        self, data_type: Type[Any]
     ) -> Union[
         BaseEstimator,
         ClassifierMixin,
