@@ -80,7 +80,7 @@ def tf_evaluator(
     return test_acc
 ```
 
-This gets the model and test data, and calculate simple model accuracy over the test set.
+This gets the model and test data, and calculates simple model accuracy over the test set.
 
 ### Pipeline
 
