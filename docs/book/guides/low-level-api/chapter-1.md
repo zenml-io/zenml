@@ -86,7 +86,7 @@ for i, o in enumerate(step.outputs):
     print(f"Output {i} is an array with shape: {arr.shape}")
 ```
 
-You get the following output:
+You will get the following output:
 
 ```bash
 Pipeline `load_mnist_pipeline` has 1 run(s).
