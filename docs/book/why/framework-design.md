@@ -43,7 +43,7 @@ run_2 = my_pipeline(
 # compare them
 ```
 
-The above design also lends itself to swapping in and out different step logic if the INTERFACE of the steps remain consistent.
+The above design also lends itself to swapping in and out different step logic if the **INTERFACE** of the steps remains consistent.
 
 ## Steps
 
