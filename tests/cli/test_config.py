@@ -31,18 +31,16 @@ def read_global_config():
 def test_analytics_opt_in_amends_global_config():
     """Check to make sure that analytics opt-in amends global config"""
     runner = CliRunner()
-    with runner.isolated_filesystem():
-        result = runner.invoke(opt_in)
-        assert result.exit_code == 0
-        # TODO: [LOW] create a test environment to test this
-        # assert read_global_config()["analytics_opt_in"]
+    result = runner.invoke(opt_in)
+    assert result.exit_code == 0
+    # TODO: [LOW] create a test environment to test this
+    # assert read_global_config()["analytics_opt_in"]
 
 
 def test_analytics_opt_out_amends_global_config():
     """Check to make sure that analytics opt-out amends global config"""
     runner = CliRunner()
-    with runner.isolated_filesystem():
-        result = runner.invoke(opt_out)
-        assert result.exit_code == 0
-        # TODO: [LOW] create a test environment to test this
-        # assert not read_global_config()["analytics_opt_in"]
+    result = runner.invoke(opt_out)
+    assert result.exit_code == 0
+    # TODO: [LOW] create a test environment to test this
+    # assert not read_global_config()["analytics_opt_in"]
