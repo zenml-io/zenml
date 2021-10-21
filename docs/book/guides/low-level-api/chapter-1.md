@@ -20,6 +20,8 @@ If you just want to see the code for each chapter the guide, head over to the [G
 
 The first thing to do is to load our data. We create a step that can load data from an external source (in this case a [Keras Dataset](https://keras.io/api/datasets/)). This can be done by creating a simple function and decorating it with the `@step` decorator.
 
+## Create steps
+
 ```python
 import numpy as np
 import tensorflow as tf
@@ -60,12 +62,12 @@ def load_mnist_pipeline(
 load_mnist_pipeline(importer=importer_mnist()).run()
 ```
 
+## Run
 You can run this as follows:
 
 ```python
 python chapter_1.py
 ```
-
 And see the output as follows:
 
 ```bash
@@ -74,8 +76,30 @@ Cache enabled for pipeline `load_mnist_pipeline`
 Using orchestrator `local_orchestrator` for pipeline `load_mnist_pipeline`. Running pipeline..
 Step `importer_mnist` has started.
 Step `importer_mnist` has finished in 3.363s.
+```
 
-Pipeline `load_mnist_pipeline` has 3 runs
+## Inspect 
+
+If you add the following code to fetch the pipeline:
+
+```python
+repo = Repository()
+p = repo.get_pipeline(pipeline_name="load_mnist_pipeline")
+runs = p.get_runs()
+print(f"Pipeline `load_mnist_pipeline` has {len(runs)} runs")
+run = runs[0]
+print(f"The first run has {len(run.steps)} steps.")
+step = run.steps[0]
+print(f"That step has {len(step.outputs)} output artifacts.")
+for i, o in enumerate(step.outputs):
+    arr = o.read(None)
+    print(f"Output {i} is an array with shape: {arr.shape}")
+```
+
+You get the following output:
+
+```bash
+Pipeline `load_mnist_pipeline` has 1 run(s).
 The first run has 1 steps.
 That step has 4 output artifacts.
 Output 0 is an array with shape: (60000,)

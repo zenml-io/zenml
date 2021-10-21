@@ -50,7 +50,7 @@ load_mnist_pipeline(importer=importer_mnist()).run()
 repo = Repository()
 p = repo.get_pipeline(pipeline_name="load_mnist_pipeline")
 runs = p.get_runs()
-print(f"Pipeline `load_mnist_pipeline` has {len(runs)} runs")
+print(f"Pipeline `load_mnist_pipeline` has {len(runs)} run(s)")
 run = runs[0]
 print(f"The first run has {len(run.steps)} steps.")
 step = run.steps[0]
