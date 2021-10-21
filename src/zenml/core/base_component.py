@@ -49,17 +49,17 @@ class BaseComponent(BaseSettings):
         #  file path and name.
 
         if hasattr(self, "uuid"):
-            self.__config__.customise_sources = generate_customise_sources(
+            self.__config__.customise_sources = generate_customise_sources(  # type: ignore[assignment] # noqa
                 self.get_serialization_dir(),
                 self.get_serialization_file_name(),
             )
         elif "uuid" in values:
-            self.__config__.customise_sources = generate_customise_sources(
+            self.__config__.customise_sources = generate_customise_sources(  # type: ignore[assignment] # noqa
                 self.get_serialization_dir(),
                 f"{str(values['uuid'])}{self._file_suffix}",
             )
         else:
-            self.__config__.customise_sources = generate_customise_sources(
+            self.__config__.customise_sources = generate_customise_sources(  # type: ignore[assignment] # noqa
                 self.get_serialization_dir(),
                 self.get_serialization_file_name(),
             )
@@ -67,7 +67,7 @@ class BaseComponent(BaseSettings):
         # Initialize values from the above sources.
         super().__init__(**values)
 
-    def _dump(self):
+    def _dump(self) -> None:
         """Dumps all current values to the serialization file."""
         self._create_serialization_file_if_not_exists()
         f = self.get_serialization_full_path()
@@ -76,7 +76,7 @@ class BaseComponent(BaseSettings):
             f, self.json(indent=2, sort_keys=True)
         )
 
-    def _create_serialization_file_if_not_exists(self):
+    def _create_serialization_file_if_not_exists(self) -> None:
         """Creates the serialization file if it does not exist."""
         f = self.get_serialization_full_path()
         if not path_utils.file_exists(str(f)):
@@ -103,7 +103,7 @@ class BaseComponent(BaseSettings):
             self.get_serialization_dir(), self.get_serialization_file_name()
         )
 
-    def update(self):
+    def update(self) -> None:
         """Persist the current state of the component.
 
         Calling this will result in a persistent, stateful change in the
@@ -111,7 +111,7 @@ class BaseComponent(BaseSettings):
         """
         self._dump()
 
-    def delete(self):
+    def delete(self) -> None:
         """Deletes the persisted state of this object."""
         path_utils.rm_file(self.get_serialization_full_path())
 

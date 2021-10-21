@@ -11,8 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
-from typing import Type
+from typing import Any, Type
 
 from tensorflow import keras
 
@@ -26,7 +25,7 @@ class KerasMaterializer(BaseMaterializer):
 
     ASSOCIATED_TYPES = [keras.Model]
 
-    def handle_input(self, data_type: Type) -> keras.Model:
+    def handle_input(self, data_type: Type[Any]) -> keras.Model:
         """Reads and returns a Keras model.
 
         Returns:
@@ -35,7 +34,7 @@ class KerasMaterializer(BaseMaterializer):
         super().handle_input(data_type)
         return keras.models.load_model(self.artifact.uri)
 
-    def handle_return(self, model: keras.Model):
+    def handle_return(self, model: keras.Model) -> None:
         """Writes a keras model.
 
         Args:

@@ -24,13 +24,13 @@ class BeamMaterializer(BaseMaterializer):
 
     ASSOCIATED_TYPES = [beam.Pipeline, beam.PCollection]
 
-    def handle_input(self, data_type: Type) -> Any:
+    def handle_input(self, data_type: Type[Any]) -> Any:
         """Reads all files inside the artifact directory and materializes them
         as a beam compatible output."""
         # TODO [MEDIUM]: Implement beam reading
         super().handle_input(data_type)
 
-    def handle_return(self, pipeline: beam.Pipeline):
+    def handle_return(self, pipeline: beam.Pipeline) -> None:
         """Appends a beam.io.WriteToParquet at the end of a beam pipeline
         and therefore persists the results.
 

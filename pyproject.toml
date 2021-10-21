@@ -10,7 +10,7 @@ readme = "README.md"
 homepage = "https://zenml.io"
 documentation = "https://docs.zenml.io"
 repository = "https://github.com/zenml-io/zenml"
-license = 'Apache-2.0'
+license = "Apache-2.0"
 keywords = [
     "machine learning", "production", "pipeline", "mlops", "devops"
 ]
@@ -46,7 +46,7 @@ include = [
 ]
 
 [tool.poetry.scripts]
-zenml = 'zenml.cli.cli:cli'
+zenml = "zenml.cli.cli:cli"
 
 [tool.poetry.dependencies]
 python = ">=3.6.2,<3.9"
@@ -75,7 +75,7 @@ all = ["apache-airflow"]
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"
-mypy = "^0.812"
+mypy = "^0.910"
 flake8 = "^3.9.2"
 black = "^21.7b0"
 interrogate = "^1.4.0"
@@ -140,21 +140,25 @@ skip_glob = []
 line_length = 80
 
 [tool.mypy]
-# --strict
-disallow_any_generics = true
-disallow_subclassing_any = true
-disallow_untyped_calls = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_return_any = true
-implicit_reexport = false
-strict_equality = true
-# --strict end
+strict = true
+namespace_packages = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = [
+    "tensorflow.*",
+    "apache_beam.*",
+    "pyarrow.*",
+    "pandas.*",
+    "ml_metadata.*",
+    "distro.*",
+    "analytics.*",
+    "absl.*",
+    "gcsfs.*",
+    "torch.*",
+    "pytorch_lightning.*",
+]
+ignore_missing_imports = true
 
 [tool.black]
 line-length = 80

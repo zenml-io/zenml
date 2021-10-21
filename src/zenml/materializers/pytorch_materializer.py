@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import Type, Union
+from typing import Any, Type, Union
 
 import torch
 
@@ -29,7 +29,7 @@ class PyTorchMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = [torch.nn.Module, TorchDict]
 
     def handle_input(
-        self, data_type: Type
+        self, data_type: Type[Any]
     ) -> Union[torch.nn.Module, TorchDict]:
         """Reads and returns a PyTorch model.
 
@@ -39,7 +39,7 @@ class PyTorchMaterializer(BaseMaterializer):
         super().handle_input(data_type)
         return torch.load(os.path.join(self.artifact.uri, DEFAULT_FILENAME))
 
-    def handle_return(self, model: Union[torch.nn.Module, TorchDict]):
+    def handle_return(self, model: Union[torch.nn.Module, TorchDict]) -> None:
         """Writes a PyTorch model.
 
         Args:

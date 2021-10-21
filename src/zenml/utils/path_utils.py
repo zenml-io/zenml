@@ -18,10 +18,11 @@ import fnmatch
 import os
 import tarfile
 from pathlib import Path
-from typing import Any, Callable, Iterable, List, Tuple
+from typing import Callable, Iterable, List, Optional, Tuple
 
 from tfx.dsl.io.filesystem import PathType
-from tfx.utils.io_utils import _REMOTE_FS_PREFIX, fileio, load_csv_column_names
+from tfx.utils.io_utils import _REMOTE_FS_PREFIX as _REMOTE_FS_PREFIX
+from tfx.utils.io_utils import fileio, load_csv_column_names
 
 from zenml.core.constants import ZENML_DIR_NAME
 from zenml.exceptions import InitializationException
@@ -31,7 +32,7 @@ logger = get_logger(__name__)
 
 
 def walk(
-    dir_path,
+    dir_path: PathType,
 ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
     """Walks down the dir_path.
 
@@ -68,7 +69,7 @@ def is_dir(dir_path: str) -> bool:
     return fileio.isdir(dir_path)
 
 
-def find_files(dir_path, pattern) -> List[str]:
+def find_files(dir_path: PathType, pattern: str) -> Iterable[str]:
     # TODO [LOW]: correct docstring since 'None' is never returned
     """Find files in a directory that match pattern.
 
@@ -81,8 +82,10 @@ def find_files(dir_path, pattern) -> List[str]:
     """
     for root, dirs, files in walk(dir_path):
         for basename in files:
-            if fnmatch.fnmatch(basename, pattern):
-                filename = os.path.join(root, basename)
+            if fnmatch.fnmatch(convert_to_str(basename), pattern):
+                filename = os.path.join(
+                    convert_to_str(root), convert_to_str(basename)
+                )
                 yield filename
 
 
@@ -122,7 +125,9 @@ def list_dir(dir_path: str, only_file_names: bool = False) -> List[str]:
     """
     try:
         return [
-            os.path.join(dir_path, f) if not only_file_names else f
+            os.path.join(dir_path, convert_to_str(f))
+            if not only_file_names
+            else convert_to_str(f)
             for f in fileio.listdir(dir_path)
         ]
     except fileio.NotFoundError:
@@ -130,7 +135,9 @@ def list_dir(dir_path: str, only_file_names: bool = False) -> List[str]:
         return []
 
 
-def create_file_if_not_exists(file_path: str, file_contents: str = "{}"):
+def create_file_if_not_exists(
+    file_path: str, file_contents: str = "{}"
+) -> None:
     """Creates file if it does not exist.
 
     Args:
@@ -146,7 +153,7 @@ def create_file_if_not_exists(file_path: str, file_contents: str = "{}"):
         f.write(file_contents)
 
 
-def append_file(file_path: str, file_contents: str):
+def append_file(file_path: str, file_contents: str) -> None:
     """Appends file_contents to file.
 
     Args:
@@ -158,7 +165,7 @@ def append_file(file_path: str, file_contents: str):
     raise NotImplementedError
 
 
-def create_dir_if_not_exists(dir_path: str):
+def create_dir_if_not_exists(dir_path: str) -> None:
     """Creates directory if it does not exist.
 
     Args:
@@ -168,7 +175,7 @@ def create_dir_if_not_exists(dir_path: str):
         fileio.mkdir(dir_path)
 
 
-def create_dir_recursive_if_not_exists(dir_path: str):
+def create_dir_recursive_if_not_exists(dir_path: str) -> None:
     """Creates directory recursively if it does not exist.
 
     Args:
@@ -204,7 +211,7 @@ def file_exists(path: str) -> bool:
     return fileio.exists(path)
 
 
-def copy(source: str, destination: str, overwrite: bool = False):
+def copy(source: str, destination: str, overwrite: bool = False) -> None:
     """Copies dir from source to destination.
 
     Args:
@@ -212,10 +219,12 @@ def copy(source: str, destination: str, overwrite: bool = False):
         destination(str): Path to copy to.
         overwrite: boolean, if false, then throws an error before overwrite.
     """
-    return fileio.copy(source, destination, overwrite)
+    fileio.copy(source, destination, overwrite)
 
 
-def copy_dir(source_dir: str, destination_dir: str, overwrite: bool = False):
+def copy_dir(
+    source_dir: str, destination_dir: str, overwrite: bool = False
+) -> None:
     """Copies dir from source to destination.
 
     Args:
@@ -235,7 +244,7 @@ def copy_dir(source_dir: str, destination_dir: str, overwrite: bool = False):
             copy(source_file, destination_name, overwrite)
 
 
-def move(source: str, destination: str, overwrite: bool = False):
+def move(source: str, destination: str, overwrite: bool = False) -> None:
     """Moves dir from source to destination. Can be used to rename.
 
     Args:
@@ -243,10 +252,10 @@ def move(source: str, destination: str, overwrite: bool = False):
         destination: Local path to copy to.
         overwrite: boolean, if false, then throws an error before overwrite.
     """
-    return fileio.rename(source, destination, overwrite)
+    fileio.rename(source, destination, overwrite)
 
 
-def rm_dir(dir_path: str):
+def rm_dir(dir_path: str) -> None:
     """Deletes dir recursively. Dangerous operation.
 
     Args:
@@ -255,7 +264,7 @@ def rm_dir(dir_path: str):
     fileio.rmtree(dir_path)
 
 
-def rm_file(file_path: str):
+def rm_file(file_path: str) -> None:
     """Deletes file. Dangerous operation.
 
     Args:
@@ -263,20 +272,21 @@ def rm_file(file_path: str):
     """
     if not file_exists(file_path):
         raise FileNotFoundError(f"{file_path} does not exist!")
-    return fileio.remove(file_path)
+    fileio.remove(file_path)
 
 
-def read_file_contents_as_string(file_path: str):
+def read_file_contents_as_string(file_path: str) -> str:
     """Reads contents of file.
 
     Args:
         file_path: Path to file.
     """
-    if file_exists(file_path):
-        return fileio.open(file_path).read()
+    if not file_exists(file_path):
+        raise FileNotFoundError(f"{file_path} does not exist!")
+    return fileio.open(file_path).read()  # type: ignore[no-any-return]
 
 
-def write_file_contents_as_string(file_path: str, content: str):
+def write_file_contents_as_string(file_path: str, content: str) -> None:
     """Writes contents of file.
 
     Args:
@@ -326,8 +336,10 @@ def load_csv_header(csv_path: str) -> List[str]:
 def create_tarfile(
     source_dir: str,
     output_filename: str = "zipped.tar.gz",
-    exclude_function: Callable = None,
-):
+    exclude_function: Optional[
+        Callable[[tarfile.TarInfo], Optional[tarfile.TarInfo]]
+    ] = None,
+) -> None:
     """Create a compressed representation of source_dir.
 
     Args:
@@ -337,7 +349,9 @@ def create_tarfile(
     """
     if exclude_function is None:
         # default is to exclude the .zenml directory
-        def exclude_function(tarinfo: Any):
+        def exclude_function(
+            tarinfo: tarfile.TarInfo,
+        ) -> Optional[tarfile.TarInfo]:
             """Exclude files from tar.
 
             Args:
@@ -358,7 +372,7 @@ def create_tarfile(
         tar.add(source_dir, arcname="", filter=exclude_function)
 
 
-def extract_tarfile(source_tar: str, output_dir: str):
+def extract_tarfile(source_tar: str, output_dir: str) -> None:
     """Untars a compressed tar file to output_dir.
 
     Args:
@@ -424,3 +438,11 @@ def get_zenml_config_dir(path: str = os.getcwd()) -> str:
         InitializationException if directory not found until root of OS.
     """
     return os.path.join(get_zenml_dir(str(Path(path))), ZENML_DIR_NAME)
+
+
+def convert_to_str(path: PathType) -> str:
+    """Converts a PathType to a str using UTF-8."""
+    if isinstance(path, str):
+        return path
+    else:
+        return path.decode("utf-8")

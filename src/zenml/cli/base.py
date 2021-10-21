@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+from typing import Optional
 
 import click
 import git
@@ -29,8 +30,10 @@ from zenml.utils.analytics_utils import INITIALIZE_REPO, track
 @click.option("--analytics_opt_in", "-a", type=click.BOOL)
 @track(event=INITIALIZE_REPO)
 def init(
-    repo_path: str, pipelines_dir: str = None, analytics_opt_in: bool = True
-):
+    repo_path: str,
+    pipelines_dir: Optional[str] = None,
+    analytics_opt_in: bool = True,
+) -> None:
     """Initialize ZenML on given path.
 
     Args:
@@ -53,7 +56,7 @@ def init(
             analytics_opt_in=analytics_opt_in,
         )
         click.echo(f"ZenML repo initialized at {repo_path}")
-    except git.InvalidGitRepositoryError:
+    except git.InvalidGitRepositoryError:  # type: ignore[attr-defined]
         click.echo(
             f"{repo_path} is not a valid git repository! Please "
             f"initialize ZenML within a git repository using "
@@ -65,7 +68,7 @@ def init(
 
 @cli.command("clean")
 @click.option("--yes", "-y", type=click.BOOL, default=False)
-def clean(yes: bool = False):
+def clean(yes: bool = False) -> None:
     """Clean everything in repository.
 
     Args:

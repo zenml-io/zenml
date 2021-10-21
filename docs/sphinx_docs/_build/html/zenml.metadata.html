@@ -202,13 +202,13 @@ to the input and output artifacts respectively.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="zenml.metadata.base_metadata_store.BaseMetadataStore.get_tfx_metadata_config">
-<em class="property"><span class="pre">abstract</span> </em><span class="sig-name descname"><span class="pre">get_tfx_metadata_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.metadata.base_metadata_store.BaseMetadataStore.get_tfx_metadata_config" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">abstract</span> </em><span class="sig-name descname"><span class="pre">get_tfx_metadata_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ml_metadata.proto.metadata_store_pb2.ConnectionConfig</span></span></span><a class="headerlink" href="#zenml.metadata.base_metadata_store.BaseMetadataStore.get_tfx_metadata_config" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return tfx metadata config.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="zenml.metadata.base_metadata_store.BaseMetadataStore.store">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">store</span></span><a class="headerlink" href="#zenml.metadata.base_metadata_store.BaseMetadataStore.store" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">store</span></span><em class="property"><span class="pre">:</span> <span class="pre">ml_metadata.metadata_store.metadata_store.MetadataStore</span></em><a class="headerlink" href="#zenml.metadata.base_metadata_store.BaseMetadataStore.store" title="Permalink to this definition">¶</a></dt>
 <dd><p>General property that hooks into TFX metadata store.</p>
 </dd></dl>
 
@@ -224,7 +224,7 @@ to the input and output artifacts respectively.</p>
 <p>Mock metadata store.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="zenml.metadata.mock_metadata_wrapper.MockMetadataStore.get_tfx_metadata_config">
-<span class="sig-name descname"><span class="pre">get_tfx_metadata_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.metadata.mock_metadata_wrapper.MockMetadataStore.get_tfx_metadata_config" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_tfx_metadata_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ml_metadata.proto.metadata_store_pb2.ConnectionConfig</span></span></span><a class="headerlink" href="#zenml.metadata.mock_metadata_wrapper.MockMetadataStore.get_tfx_metadata_config" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return tfx metadata config for mock metadata store.</p>
 </dd></dl>
 
@@ -245,7 +245,7 @@ to the input and output artifacts respectively.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="zenml.metadata.mysql_metadata_wrapper.MySQLMetadataStore.get_tfx_metadata_config">
-<span class="sig-name descname"><span class="pre">get_tfx_metadata_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.metadata.mysql_metadata_wrapper.MySQLMetadataStore.get_tfx_metadata_config" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_tfx_metadata_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ml_metadata.proto.metadata_store_pb2.ConnectionConfig</span></span></span><a class="headerlink" href="#zenml.metadata.mysql_metadata_wrapper.MySQLMetadataStore.get_tfx_metadata_config" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return tfx metadata config for mysql metadata store.</p>
 </dd></dl>
 
@@ -281,7 +281,7 @@ to the input and output artifacts respectively.</p>
 <p>SQLite backend for ZenML metadata store.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="zenml.metadata.sqlite_metadata_wrapper.SQLiteMetadataStore.get_tfx_metadata_config">
-<span class="sig-name descname"><span class="pre">get_tfx_metadata_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#zenml.metadata.sqlite_metadata_wrapper.SQLiteMetadataStore.get_tfx_metadata_config" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_tfx_metadata_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ml_metadata.proto.metadata_store_pb2.ConnectionConfig</span></span></span><a class="headerlink" href="#zenml.metadata.sqlite_metadata_wrapper.SQLiteMetadataStore.get_tfx_metadata_config" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return tfx metadata config for sqlite metadata store.</p>
 </dd></dl>
 
@@ -292,7 +292,7 @@ to the input and output artifacts respectively.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="zenml.metadata.sqlite_metadata_wrapper.SQLiteMetadataStore.uri_must_be_local">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">uri_must_be_local</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#zenml.metadata.sqlite_metadata_wrapper.SQLiteMetadataStore.uri_must_be_local" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">uri_must_be_local</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#zenml.metadata.sqlite_metadata_wrapper.SQLiteMetadataStore.uri_must_be_local" title="Permalink to this definition">¶</a></dt>
 <dd><p>Validator to ensure uri is local</p>
 </dd></dl>
 

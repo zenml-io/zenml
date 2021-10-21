@@ -43,7 +43,7 @@ def get_logging_level() -> LoggingLevels:
     return LoggingLevels[verbosity]
 
 
-def set_root_verbosity():
+def set_root_verbosity() -> None:
     """Set the root verbosity."""
     level = get_logging_level()
     if level != LoggingLevels.NOTSET:
@@ -71,7 +71,7 @@ def get_file_handler() -> Any:
     return file_handler
 
 
-def get_logger(logger_name) -> Any:
+def get_logger(logger_name: str) -> logging.Logger:
     """Main function to get logger name,.
 
     Args:
@@ -93,7 +93,7 @@ def get_logger(logger_name) -> Any:
     return logger
 
 
-def init_logging():
+def init_logging() -> None:
     """Initialize logging with default levels."""
     # Mute tensorflow cuda warnings
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"

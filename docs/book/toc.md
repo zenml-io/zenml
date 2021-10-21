@@ -9,10 +9,12 @@
 
 ## Guides
 
-* [Bottom Up](guides/bottom-up.md)
-* [Top Down](guides/top-down.md)
+* [Low Level API](guides/low-level-api/README.md)
+  * [Create a step](guides/low-level-api/create-a-step.md)
+* [High Level API](guides/high-level-api/README.md)
+  * [Use the TrainingPipeline](guides/high-level-api/use-the-training-pipeline.md)
 * [Post Execution Workflow](guides/post-execution-workflow.md)
-* [Airflow?](guides/stacks.md)
+* [Deploy Pipelines to Production](guides/stacks.md)
 
 ## Support
 
@@ -42,3 +44,24 @@
     * [Step interfaces](reference/zenml/steps/step-interfaces.md)
   * [Types](reference/zenml/types.md)
   * [Utils](reference/zenml/utils.md)
+
+## API Reference
+
+* [Zenml](api-reference/zenml/README.md)
+  * [Artifact stores](api-reference/zenml/artifact-stores.md)
+  * [Artifacts](api-reference/zenml/artifacts.md)
+  * [Cli](api-reference/zenml/cli.md)
+  * [Config](api-reference/zenml/config.md)
+  * [Core](api-reference/zenml/core.md)
+  * [Io](api-reference/zenml/io.md)
+  * [Materializers](api-reference/zenml/materializers.md)
+  * [Metadata](api-reference/zenml/metadata.md)
+  * [Orchestrators](api-reference/zenml/orchestrators/README.md)
+    * [Local](api-reference/zenml/orchestrators/local.md)
+  * [Pipelines](api-reference/zenml/pipelines.md)
+  * [Post execution](api-reference/zenml/post-execution.md)
+  * [Stacks](api-reference/zenml/stacks.md)
+  * [Steps](api-reference/zenml/steps/README.md)
+    * [Step interfaces](api-reference/zenml/steps/step-interfaces.md)
+  * [Types](api-reference/zenml/types.md)
+  * [Utils](api-reference/zenml/utils.md)

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import Type
+from typing import Any, Type
 
 import numpy as np
 import pyarrow as pa
@@ -32,7 +32,7 @@ class NumpyMaterializer(BaseMaterializer):
 
     ASSOCIATED_TYPES = [np.ndarray]
 
-    def handle_input(self, data_type: Type) -> np.ndarray:
+    def handle_input(self, data_type: Type[Any]) -> np.ndarray:
         """Reads numpy array from parquet file."""
         super().handle_input(data_type)
         shape_dict = yaml_utils.read_json(
@@ -43,7 +43,7 @@ class NumpyMaterializer(BaseMaterializer):
         vals = getattr(data.to_pandas(), DATA_VAR).values
         return np.reshape(vals, shape_tuple)
 
-    def handle_return(self, arr: np.ndarray):
+    def handle_return(self, arr: np.ndarray) -> None:
         """Writes a np.ndarray to the artifact store as a parquet file.
 
         Args:
@@ -52,7 +52,7 @@ class NumpyMaterializer(BaseMaterializer):
         super().handle_return(arr)
         yaml_utils.write_json(
             os.path.join(self.artifact.uri, SHAPE_FILENAME),
-            {i: x for i, x in enumerate(arr.shape)},
+            {str(i): x for i, x in enumerate(arr.shape)},
         )
         pa_table = pa.table({DATA_VAR: arr.flatten()})
         pq.write_table(pa_table, os.path.join(self.artifact.uri, DATA_FILENAME))
