@@ -135,7 +135,7 @@ A ZenML step recognizes that the `config: Config` variable is a sub-class of `Ba
 
 So we need a way to write (serialize) and read (deserialize) data in between steps. For this, we introduced another abstraction known as `Materializers` to encapsulate this logic. Each `Materializer` is tied to an Artifact data type, and encodes how to read and write this data in a persistent manner across artifact stores.
 
-An artifact data type of course can have many Materializers. Think of them as different views of the data. For example you might want to read in a `pandas` dataframe as a `pandas` dataframe, but maybe you want to read in a PyTorch Dataloader or a Tensorflow dataset. Thats where the power of Materializers kicks in.
+An artifact data type of course can have many Materializers. Think of them as different views of the data. For example you might want to read in a `pandas` dataframe as a `pandas` dataframe, but maybe you want to read in a PyTorch Dataloader or a Tensorflow dataset. That's where the power of Materializers kicks in.
 
 The disadvantage of this design is that one needs to implement Materializers for all different data types, which is hard. Luckily, ZenML comes built-in with many standard Materializers and allows you to easily add your own Materializers for custom workflows.
 
