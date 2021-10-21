@@ -81,7 +81,7 @@ def evaluator(
     y_test: np.ndarray,
     model: tf.keras.Model,
 ) -> float:
-    """Calculate the accuracy and store it in the metadata store"""
+    """Calculate the accuracy on the test set"""
     test_acc = model.evaluate(X_test, y_test, verbose=2)
     return test_acc
 
@@ -125,10 +125,12 @@ The above code looks like its yet another standard pipeline framework that added
 
 With just a little more work, one can:
 
-* Deploy this pipeline 'in production' on the cloud with a production ready orchestrator like Airflow (or on a chosen Stack).
+* Deploy this pipeline 'in production' on the cloud with a production ready orchestrator like Airflow.
 * Useful metadata like statistics, schema's, drifts can be inferred from model and data flowing through these steps.
 * Convert these steps to run distributed processing to handle large volumes of data.
 * Models trained this way can be set up to be easily deployed, run batch inference on, or set up in continuous training loops with automatic deployments.
+
+Best of all: We let you and your infra/ops team decide what the underlying tools are to achieve all this.
 
 Keep reading to learn how all of the above can be achieved.
 

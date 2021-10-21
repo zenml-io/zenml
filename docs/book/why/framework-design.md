@@ -46,7 +46,7 @@ run_1 = my_pipeline(
 
 The above design also lends itself to swapping in and out different step logic if the INTERFACE of the steps remain consistent. For an example of this, see the [Quickstart](../quickstart-guide.md).
 
-### Relation To Stacks
+## Stacks and the Ops part MLOps
 
 Stacks are an important concept in ZenML and they have an implicit relationship to pipelines. Stacks define where a pipelines steps are storing data, metadata, and where the pipeline is orchestrated.
 
@@ -227,3 +227,6 @@ In order to ensure this is not a destructive operation, ZenML does not allow the
 #### Organizing code
 
 It is important to understand that when a pipeline is run, all custom classes used under-go a so-called `git-resolution` process. This means that wherever there is a custom class referenced in a Pipeline, all files within the module are checked to see if they are committed or not. If they are committed, then the class is successfully pinned with the relevant sha. If they are not, then a warning is thrown but the class is not pinned in the corresponding config. Therefore, it is important to consider not only the file where custom logic resides, but the entire module. This is also the reason that `upwards` relative imports are not permitted within these class files.
+
+## Materializers and their role in the Post Execution Workflow
+
