@@ -4,7 +4,7 @@ The Low Level ZenML API is defined by the primitive `@step` and `@pipeline` deco
 
 A user may also mix-and-match the Low Level API with the High Level API: All standard data types and steps that are applicable in the High Level API can be used with the Low Level API as well!
 
-In order to illustrate how the Low Level API functions, we'll do a simple exercise to create a training pipeline from scratch (without any High Level components)  and take it all the way to deployment.
+In order to illustrate how the Low Level API functions, we'll do a simple exercise to create a training pipeline from scratch (without any High Level components) and take it all the way to deployment.
 
 Here is what we'll do in this guide:
 
