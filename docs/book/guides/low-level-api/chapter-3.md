@@ -2,18 +2,7 @@
 description: Train some models.
 ---
 
-To follow along with the guide, best is to copy the code you see into your own local env and play along. To get started:
-
-```bash
-mkdir zenml_low_level_guide
-cd zenml_low_level_guide
-git init
-zenml init
-```
-
-You can then put subsequent code in the right files.
-
-If you just want to see the code for each chapter the guide, head over to the [GitHub version](https://github.com/zenml-io/zenml/tree/main/examples/low_level_guide/).
+If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low_level_guide/).
 
 # Chapter 3: Train and evaluate the model.
 

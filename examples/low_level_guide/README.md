@@ -1,8 +1,4 @@
----
-description: Build production ML pipelines from the simple step interface.
----
-
-# Low Level API
+# Low Level API Guide
 
 The Low Level ZenML API is defined by the primitive `@step` and `@pipeline` decorators. These should be used when the [High Level API](../high-level-api) is too inflexible for the use-case at hand, and one requires more control over individual steps and connecting them in pipelines.
 
@@ -17,6 +13,44 @@ Here is what we'll do in this guide:
 * Persist our interim data artifacts in SQL tables rather than on files.
 * Deploy the pipeline on [Airflow](https://airflow.apache.org/).
 
-If you just want to see the code for the guide, head over to the [GitHub version](https://github.com/zenml-io/zenml/tree/main/examples/low_level_guide)
 
-If not, then press next and let's go through it together!
+## Run it locally
+
+### Pre-requisites
+In order to run the chapters of the guide, you need to install and initialize ZenML:
+
+```bash
+# install CLI
+pip install zenml tensorflow sklearn sqlalchemy
+
+# initialize CLI
+cd ~
+mkdir zenml_examples
+git clone https://github.com/zenml-io/zenml.git
+cp -r zenml/examples/low_level_guide zenml_examples
+cd zenml_examples/low_level_guide
+git init
+zenml init
+```
+
+### Run the project
+Now we're ready. Execute:
+
+```bash
+python chapter_*.py
+```
+
+Note before executing each chapter, make sure to clean the old chapter artifact and metadata store:
+
+```bash
+rm -rf ~/zenml_examples/low_level_guide/.zen
+zenml init  # start again
+```
+
+### Clean up
+In order to clean up, in the root of your repo, delete the remaining `zenml` references.
+
+```python
+rm -rf ~/zenml_examples
+rm -rf ~/zenml
+```
