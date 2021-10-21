@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import json
 
 from click import get_app_dir
 from click.testing import CliRunner
@@ -20,13 +19,13 @@ from click.testing import CliRunner
 from zenml.cli.config import opt_in, opt_out
 from zenml.config.constants import GLOBAL_CONFIG_NAME
 from zenml.constants import APP_NAME
+from zenml.utils.yaml_utils import read_json
 
 
 def read_global_config():
     """Read the global config file"""
     config_file = get_app_dir(APP_NAME) + "/" + GLOBAL_CONFIG_NAME
-    with open(config_file, "r") as f:
-        return json.load(f)
+    read_json(config_file)
 
 
 def test_analytics_opt_in_amends_global_config():
