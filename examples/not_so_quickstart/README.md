@@ -1,5 +1,5 @@
 # Get up and running quickly
-Our goal here is to help you to get the first practical experience with our tool and give you a brief overview on some basic functionalities of ZenML.
+Our goal here is to help you to get your first practical experience with our tool and give you a brief overview of some of the basic functionalities of ZenML.
 
 The quickest way to get started is to create a simple pipeline. We'll be using the [MNIST](http://yann.lecun.com/exdb/mnist/) dataset (originally developed by Yann LeCun and others) digits, and then later the [Fashion MNIST](https://github.com/zalandoresearch/fashion-mnist) dataset developed by Zalando.
 
