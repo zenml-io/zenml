@@ -30,7 +30,7 @@ def importer_mnist() -> Output(
 
 There are some things to note:
 
-* As this step has multiple outputs, we need to use the `zenml.steps.step_output.Output` class to indicate the names of each output. If there was only one, we would not have to do this.
+* As this step has multiple outputs, we need to use the `zenml.steps.step_output.Output` class to indicate the names of each output. If there was only one, we would not need to do this.
 * We could have returned the `tf.keras.datasets.mnist` directly but we wanted to persist the actual data (for caching purposes), rather than the dataset object.
 
 Now we can go ahead and create a pipeline with one step to make sure this step works:
@@ -56,7 +56,7 @@ You can run this as follows:
 ```python
 python chapter_1.py
 ```
-And see the output as follows:
+The output will look as follows (note: this is filtered to highlight the most important logs)
 
 ```bash
 Creating pipeline: load_mnist_pipeline
@@ -76,10 +76,10 @@ from zenml.core.repo import Repository
 repo = Repository()
 p = repo.get_pipeline(pipeline_name="load_mnist_pipeline")
 runs = p.get_runs()
-print(f"Pipeline `load_mnist_pipeline` has {len(runs)} runs")
-run = runs[0]
-print(f"The first run has {len(run.steps)} steps.")
-step = run.steps[0]
+print(f"Pipeline `load_mnist_pipeline` has {len(runs)} run(s)")
+run = runs[-1]
+print(f"The run you just made has {len(run.steps)} step(s).")
+step = run.get_step('importer_mnist')
 print(f"That step has {len(step.outputs)} output artifacts.")
 for i, o in enumerate(step.outputs):
     arr = o.read(None)
@@ -90,11 +90,11 @@ You will get the following output:
 
 ```bash
 Pipeline `load_mnist_pipeline` has 1 run(s).
-The first run has 1 step(s).
+The run you just made has 1 step(s).
 That step has 4 output artifacts.
-Output 0 is an array with shape: (60000,)
+Output 0 is an array with shape: (10000, 28, 28)
 Output 1 is an array with shape: (10000,)
-Output 2 is an array with shape: (10000, 28, 28)
+Output 2 is an array with shape: (60000,)
 Output 3 is an array with shape: (60000, 28, 28)
 ```
 

@@ -124,9 +124,9 @@ repo = Repository()
 p = repo.get_pipeline(pipeline_name="mnist_pipeline")
 runs = p.get_runs()
 print(f"Pipeline `mnist_pipeline` has {len(runs)} run(s)")
-run = runs[0]
-print(f"The first run has {len(run.steps)} steps.")
-step = run.steps[3]
+run = runs[-1]
+print(f"The run you just made has {len(run.steps)} steps.")
+step = run.get_step("tf_evaluator")
 print(
-    f"The step has an evaluator step with accuracy: {step.outputs[0].read(None)}"
+    f"The `tf_evaluator` step returned an accuracy: {step.outputs[0].read(None)}"
 )

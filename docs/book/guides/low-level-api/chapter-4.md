@@ -6,7 +6,7 @@ If you want to see the code for this chapter of the guide, head over to the [Git
 
 # Chapter 4: Swap out implementations of individual steps and see caching in action
 
-What if we don't want to use Tensorflow but rather a [scikit-learn](https://scikit-learn.org/) model? This is easy to do.
+What if we don't want to use TensorFlow but rather a [scikit-learn](https://scikit-learn.org/) model? This is easy to do.
 
 ## Create steps
 
@@ -35,7 +35,7 @@ def sklearn_trainer(
 A simple enough step using a sklearn `ClassifierMixin` model. ZenML also knows how to store all primitive sklearn model types.
 
 ### Evaluator
-We also add a a simple evaluator:
+We also add a simple evaluator:
 
 ```python
 @step
@@ -70,7 +70,8 @@ You can run this as follows:
 ```python
 python chapter_4.py
 ```
-And see the output as follows:
+
+The output will look as follows (note: this is filtered to highlight the most important logs)
 
 ```bash
 ...
@@ -86,7 +87,7 @@ Step `sklearn_evaluator` has started.
 Step `sklearn_evaluator` has finished in 0.191s.
 ```
 
-Note that the `importer` and `mnist` steps are now a **100x** faster. This is because we have not changed the pipeline at all, and just made another run with different functions. So ZenML caches these steps and skips straight to the new trainer and evaluator.
+Note that the `importer` and `mnist` steps are now **100x** faster. This is because we have not changed the pipeline at all, and just made another run with different functions. So ZenML caches these steps and skips straight to the new trainer and evaluator.
 
 ## Inspect 
 
@@ -114,6 +115,6 @@ For tf_evaluator, the accuracy is: 0.91
 For sklearn_evaluator, the accuracy is: 0.92
 ```
 
-Looks like sklearn narrowly beat tensorflow in this one. If we want we can keep extending this and add a PyTorch example (we have done with the `not_so_quickstart` [example](https://github.com/zenml-io/zenml/tree/main/examples/not_so_quickstart)). 
+Looks like sklearn narrowly beat TensorFlow in this one. If we want we can keep extending this and add a PyTorch example (we have done with the `not_so_quickstart` [example](https://github.com/zenml-io/zenml/tree/main/examples/not_so_quickstart)). 
 
 Combining different complex steps with standard pipeline interfaces is a powerful tool in any MLOps setup. You can now organize, track, and manage your codebase as it grows with your use-cases.

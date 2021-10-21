@@ -15,10 +15,10 @@
 import numpy as np
 import tensorflow as tf
 
+from zenml.core.repo import Repository
 from zenml.pipelines import pipeline
 from zenml.steps import step
 from zenml.steps.step_output import Output
-from zenml.core.repo import Repository
 
 
 @step
@@ -51,9 +51,9 @@ repo = Repository()
 p = repo.get_pipeline(pipeline_name="load_mnist_pipeline")
 runs = p.get_runs()
 print(f"Pipeline `load_mnist_pipeline` has {len(runs)} run(s)")
-run = runs[0]
-print(f"The first run has {len(run.steps)} step(s).")
-step = run.steps[0]
+run = runs[-1]
+print(f"The run you just made has {len(run.steps)} step(s).")
+step = run.get_step("importer_mnist")
 print(f"That step has {len(step.outputs)} output artifacts.")
 for i, o in enumerate(step.outputs):
     arr = o.read(None)

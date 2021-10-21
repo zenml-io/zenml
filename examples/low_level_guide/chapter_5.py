@@ -165,6 +165,6 @@ scikit_p.run()
 repo = Repository()
 p = repo.get_pipeline(pipeline_name="mnist_pipeline")
 print(f"Pipeline `mnist_pipeline` has {len(p.get_runs())} run(s)")
-eval_step = p.get_runs()[0].steps[3]
+eval_step = p.get_runs()[0].get_step("sklearn_evaluator")
 val = eval_step.outputs[0].read(float, SQLALchemyMaterializerForSQLite)
 print(f"The evaluator stored the value: {val} in a SQLite database!")

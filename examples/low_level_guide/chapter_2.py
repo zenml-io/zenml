@@ -15,10 +15,10 @@
 import numpy as np
 import tensorflow as tf
 
+from zenml.core.repo import Repository
 from zenml.pipelines import pipeline
 from zenml.steps import step
 from zenml.steps.step_output import Output
-from zenml.core.repo import Repository
 
 
 @step
@@ -48,8 +48,7 @@ def load_and_normalize_pipeline(
     importer,
     normalizer,
 ):
-    """Pipeline now has two steps"""
-    # We just need to connect the inputs and outputs of the steps
+    """Pipeline now has two steps we need to connect together"""
     X_train, y_train, X_test, y_test = importer()
     normalizer(X_train=X_train, X_test=X_test)
 
@@ -65,9 +64,9 @@ repo = Repository()
 p = repo.get_pipeline(pipeline_name="load_and_normalize_pipeline")
 runs = p.get_runs()
 print(f"Pipeline `load_and_normalize_pipeline` has {len(runs)} run(s)")
-run = runs[0]
-print(f"The first run has {len(run.steps)} steps.")
-step = run.steps[1]
+run = runs[-1]
+print(f"The run you just made has {len(run.steps)} steps.")
+step = run.get_step("normalize_mnist")
 print(f"The `normalizer` step has {len(step.outputs)} output artifacts.")
 for i, o in enumerate(step.outputs):
     arr = o.read(None)

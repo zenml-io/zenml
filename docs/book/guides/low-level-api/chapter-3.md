@@ -9,7 +9,7 @@ If you want to see the code for this chapter of the guide, head over to the [Git
 Finally we can train and evaluate our model. 
 ## Create steps
 
-For this we decide to add two steps, a `trainer` and an `evaluator` step. We also keep using Tensorflow to help with these.
+For this we decide to add two steps, a `trainer` and an `evaluator` step. We also keep using TensorFlow to help with these.
 
 ### Trainer
 
@@ -61,7 +61,7 @@ def tf_trainer(
 
 A few things of note:
 
-* This would be the first instance of `parameterizing` a step with a `BaseStepConfig`. This allows us to specify some parameters at run-time rather than via data artifacts between steps.
+* This is our first instance of `parameterizing` a step with a `BaseStepConfig`. This allows us to specify some parameters at run-time rather than via data artifacts between steps.
 * This time the trainer returns a `tf.keras.Model`, which ZenML takes care of storing in the artifact store. We will talk about how to 'take over' this storing via `Materializers` in a later chapter.
 
 ### Evaluator
@@ -121,7 +121,8 @@ You can run this as follows:
 ```python
 python chapter_3.py
 ```
-And see the output as follows:
+
+The output will look as follows (note: this is filtered to highlight the most important logs)
 
 ```bash
 Creating pipeline: mnist_pipeline
@@ -132,14 +133,8 @@ Step `importer_mnist` has finished in 1.819s.
 Step `normalize_mnist` has started.
 Step `normalize_mnist` has finished in 2.036s.
 Step `tf_trainer` has started.
-2021-10-21 13:24:30.842732: W tensorflow/core/framework/cpu_allocator_impl.cc:80] Allocation of 188160000 exceeds 10% of free system memory.
-2021-10-21 13:24:31.096714: I tensorflow/compiler/mlir/mlir_graph_optimization_pass.cc:185] None of the MLIR Optimization Passes are enabled (registered 2)
-1875/1875 [==============================] - 3s 1ms/step - loss: 0.5092 - accuracy: 0.8567
-2021-10-21 13:24:33.903987: W tensorflow/python/util/util.cc:348] Sets are not currently considered sequences, but this may change in the future, so consider avoiding using them.
 Step `tf_trainer` has finished in 4.723s.
 Step `tf_evaluator` has started.
-I1021 13:24:34.296284  4468 rdbms_metadata_access_object.cc:686] No property is defined for the Type
-313/313 - 0s - loss: 0.3106 - accuracy: 0.9100
 `tf_evaluator` has finished in 0.742s.
 ```
 
@@ -154,11 +149,11 @@ repo = Repository()
 p = repo.get_pipeline(pipeline_name="mnist_pipeline")
 runs = p.get_runs()
 print(f"Pipeline `mnist_pipeline` has {len(runs)} run(s)")
-run = runs[0]
-print(f"The first run has {len(run.steps)} steps.")
-step = run.steps[3]
+run = runs[-1]
+print(f"The run you just made has {len(run.steps)} steps.")
+step = run.get_step('tf_evaluator')
 print(
-    f"The step has an evaluator step with accuracy: {step.outputs[0].read(None)}"
+    f"The `tf_evaluator step` returned an accuracy: {step.outputs[0].read(None)}"
 )
 ```
 
@@ -167,7 +162,7 @@ You get the following output:
 ```bash
 Pipeline `mnist_pipeline` has 1 run(s)
 The first run has 4 steps.
-The step has an evaluator step with accuracy: 0.9100000262260437
+The `tf_evaluator step` returned an accuracy: 0.9100000262260437
 ```
 
-Wow, we just trained our first model! But have not stopped yet. What if did not want to use Tensorflow? Let's swap out our trainers and evaluators for different libraries.
+Wow, we just trained our first model! But have not stopped yet. What if did not want to use TensorFlow? Let's swap out our trainers and evaluators for different libraries.
