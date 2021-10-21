@@ -61,7 +61,7 @@ def tf_trainer(
 
 A few things of note:
 
-* This would be first instance of `parameterizing` a step with a `BaseStepConfig`. This allows us to specify some parameters at run-time rather than via data artifacts between steps.
+* This would be the first instance of `parameterizing` a step with a `BaseStepConfig`. This allows us to specify some parameters at run-time rather than via data artifacts between steps.
 * This time the trainer returns a `tf.keras.Model`, which ZenML takes care of storing in the artifact store. We will talk about how to 'take over' this storing via `Materializers` in a later chapter.
 
 ### Evaluator
