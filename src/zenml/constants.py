@@ -49,11 +49,11 @@ IS_DEBUG_ENV = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
 if IS_DEBUG_ENV:
     ZENML_LOGGING_VERBOSITY = os.getenv(
         ENV_ZENML_LOGGING_VERBOSITY, default="DEBUG"
-    )
+    ).upper()
 else:
     ZENML_LOGGING_VERBOSITY = os.getenv(
         ENV_ZENML_LOGGING_VERBOSITY, default="INFO"
-    )
+    ).upper()
 
 ABSL_LOGGING_VERBOSITY = os.getenv(ENV_ABSL_LOGGING_VERBOSITY, -100)
 

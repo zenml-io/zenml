@@ -61,3 +61,4 @@ class LoggingLevels(Enum):
     WARN = logging.WARN
     INFO = logging.INFO
     DEBUG = logging.DEBUG
+    CRITICAL = logging.CRITICAL
