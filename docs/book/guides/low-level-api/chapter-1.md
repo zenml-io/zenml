@@ -68,7 +68,7 @@ Step `importer_mnist` has finished in 1.726s.
 
 ## Inspect 
 
-If you add the following code to fetch the pipeline:
+You can add the following code to fetch the pipeline:
 
 ```python
 from zenml.core.repo import Repository
