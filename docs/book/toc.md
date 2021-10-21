@@ -12,7 +12,7 @@
 * [Low Level API](guides/low-level-api/README.md)
   * [Create a step](guides/low-level-api/create-a-step.md)
 * [High Level API](guides/high-level-api/README.md)
-  * [Use the training pipeline](guides/high-level-api/use-the-training-pipeline.md)
+  * [Use the TrainingPipeline](guides/high-level-api/use-the-training-pipeline.md)
 * [Post Execution Workflow](guides/post-execution-workflow.md)
 * [Deploy Pipelines to Production](guides/stacks.md)
 
