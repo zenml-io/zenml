@@ -14,8 +14,6 @@
 
 from zenml.artifacts.base_artifact import BaseArtifact
 
-DEFAULT_FILENAME = "my_model"
-
 
 class ModelArtifact(BaseArtifact):
     """Base class for any ZenML model artifact."""

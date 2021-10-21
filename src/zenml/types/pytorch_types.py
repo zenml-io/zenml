@@ -11,10 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import Any, Dict
 
 
-from typing import Dict
-
-
-class TorchDict(Dict):
+class TorchDict(Dict[str, Any]):
     """A type of dict that represents saving a model."""

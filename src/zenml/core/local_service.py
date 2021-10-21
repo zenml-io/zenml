@@ -44,21 +44,21 @@ class LocalService(BaseComponent):
     @property
     def metadata_stores(self) -> Dict[str, BaseMetadataStore]:
         """Returns all registered metadata stores."""
-        return mapping_utils.get_components_from_store(
+        return mapping_utils.get_components_from_store(  # type: ignore[return-value] # noqa
             BaseMetadataStore._METADATA_STORE_DIR_NAME, self.metadata_store_map
         )
 
     @property
     def artifact_stores(self) -> Dict[str, BaseArtifactStore]:
         """Returns all registered artifact stores."""
-        return mapping_utils.get_components_from_store(
+        return mapping_utils.get_components_from_store(  # type: ignore[return-value] # noqa
             BaseArtifactStore._ARTIFACT_STORE_DIR_NAME, self.artifact_store_map
         )
 
     @property
     def orchestrators(self) -> Dict[str, BaseOrchestrator]:
         """Returns all registered orchestrators."""
-        return mapping_utils.get_components_from_store(
+        return mapping_utils.get_components_from_store(  # type: ignore[return-value] # noqa
             BaseOrchestrator._ORCHESTRATOR_STORE_DIR_NAME,
             self.orchestrator_map,
         )
@@ -81,7 +81,7 @@ class LocalService(BaseComponent):
         return self.stacks[key]
 
     @track(event=REGISTERED_STACK)
-    def register_stack(self, key: str, stack: BaseStack):
+    def register_stack(self, key: str, stack: BaseStack) -> None:
         """Register a stack.
 
         Args:
@@ -101,7 +101,7 @@ class LocalService(BaseComponent):
         self.stacks[key] = stack
         self.update()
 
-    def delete_stack(self, key: str):
+    def delete_stack(self, key: str) -> None:
         """Delete a stack specified with a key.
 
         Args:
@@ -127,14 +127,14 @@ class LocalService(BaseComponent):
                 f"Stack of key `{key}` does not exist. "
                 f"Available keys: {self.artifact_store_map.keys()}"
             )
-        return mapping_utils.get_component_from_key(
+        return mapping_utils.get_component_from_key(  # type: ignore[return-value] # noqa
             key, self.artifact_store_map
         )
 
     @track(event=REGISTERED_ARTIFACT_STORE)
     def register_artifact_store(
         self, key: str, artifact_store: BaseArtifactStore
-    ):
+    ) -> None:
         """Register an artifact store.
 
         Args:
@@ -158,7 +158,7 @@ class LocalService(BaseComponent):
         )
         self.update()
 
-    def delete_artifact_store(self, key: str):
+    def delete_artifact_store(self, key: str) -> None:
         """Delete an artifact_store.
 
         Args:
@@ -185,14 +185,14 @@ class LocalService(BaseComponent):
                 f"Metadata store of key `{key}` does not exist. "
                 f"Available keys: {self.metadata_store_map.keys()}"
             )
-        return mapping_utils.get_component_from_key(
+        return mapping_utils.get_component_from_key(  # type: ignore[return-value] # noqa
             key, self.metadata_store_map
         )
 
     @track(event=REGISTERED_METADATA_STORE)
     def register_metadata_store(
         self, key: str, metadata_store: BaseMetadataStore
-    ):
+    ) -> None:
         """Register a metadata store.
 
         Args:
@@ -216,7 +216,7 @@ class LocalService(BaseComponent):
         )
         self.update()
 
-    def delete_metadata_store(self, key: str):
+    def delete_metadata_store(self, key: str) -> None:
         """Delete a metadata store.
 
         Args:
@@ -243,10 +243,14 @@ class LocalService(BaseComponent):
                 f"Orchestrator of key `{key}` does not exist. "
                 f"Available keys: {self.orchestrator_map.keys()}"
             )
-        return mapping_utils.get_component_from_key(key, self.orchestrator_map)
+        return mapping_utils.get_component_from_key(  # type: ignore[return-value] # noqa
+            key, self.orchestrator_map
+        )
 
     @track(event=REGISTERED_ORCHESTRATOR)
-    def register_orchestrator(self, key: str, orchestrator: BaseOrchestrator):
+    def register_orchestrator(
+        self, key: str, orchestrator: BaseOrchestrator
+    ) -> None:
         """Register an orchestrator.
 
         Args:
@@ -270,7 +274,7 @@ class LocalService(BaseComponent):
         )
         self.update()
 
-    def delete_orchestrator(self, key: str):
+    def delete_orchestrator(self, key: str) -> None:
         """Delete a orchestrator.
 
         Args:
@@ -282,7 +286,7 @@ class LocalService(BaseComponent):
         self.update()
         logger.debug(f"Deleted orchestrator with key: {key}.")
 
-    def delete(self):
+    def delete(self) -> None:
         """Deletes the entire service. Dangerous operation"""
         for m in self.metadata_stores.values():
             m.delete()

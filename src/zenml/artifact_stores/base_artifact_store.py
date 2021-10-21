@@ -14,6 +14,7 @@
 """Definition of an Artifact Store"""
 
 import os
+from typing import Optional
 
 from zenml.config.global_config import GlobalConfig
 from zenml.core.base_component import BaseComponent
@@ -41,17 +42,19 @@ class BaseArtifactStore(BaseComponent):
           artifact_uri: URI to artifact.
 
         Returns:
-            Name of the component (str).
+            Name of the component.
         """
         return path_utils.get_grandparent(artifact_uri)
 
-    def get_serialization_dir(self):
+    def get_serialization_dir(self) -> str:
         """Gets the local path where artifacts are stored."""
         return os.path.join(
             get_zenml_config_dir(), self._ARTIFACT_STORE_DIR_NAME
         )
 
-    def resolve_uri_locally(self, artifact_uri: str, path: str = None) -> str:
+    def resolve_uri_locally(
+        self, artifact_uri: str, path: Optional[str] = None
+    ) -> str:
         """Takes a URI that points within the artifact store, downloads the
         URI locally, then returns local URI.
 
@@ -60,7 +63,7 @@ class BaseArtifactStore(BaseComponent):
           path: optional path to download to. If None, is inferred.
 
         Returns:
-            Locally resolved uri (str).
+            Locally resolved uri.
         """
         if not path_utils.is_remote(artifact_uri):
             # Its already local

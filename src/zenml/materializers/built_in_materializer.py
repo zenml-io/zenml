@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
-from typing import Any, Dict, List, Set, Text, Tuple, Type
+from typing import Any, Type
 
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -33,14 +33,9 @@ class BuiltInMaterializer(BaseMaterializer):
         float,
         list,
         tuple,
-        Text,
-        List,
-        Dict,
-        Set,
-        Tuple,
     ]
 
-    def handle_input(self, data_type: Type) -> Any:
+    def handle_input(self, data_type: Type[Any]) -> Any:
         """Reads basic primitive types from json."""
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
@@ -53,7 +48,7 @@ class BuiltInMaterializer(BaseMaterializer):
             )
         return contents
 
-    def handle_return(self, data: Any):
+    def handle_return(self, data: Any) -> None:
         """Handles basic built-in types and stores them as json"""
         super().handle_return(data)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)

@@ -12,96 +12,137 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os
-from pathlib import Path
 
-import zenml
-from zenml.datasources import CSVDatasource
-from zenml.exceptions import AlreadyExistsException
-from zenml.logger import get_logger
-from zenml.pipelines import TrainingPipeline
-from zenml.repo import GlobalConfig, Repository
-from zenml.steps.preprocesser import StandardPreprocesser
-from zenml.steps.split import CategoricalDomainSplit
-from zenml.steps.trainer import TFFeedForwardTrainer
-from zenml.utils import path_utils
+import numpy as np
+import tensorflow as tf
 
-logger = get_logger(__name__)
+from zenml.pipelines import pipeline
+from zenml.steps import step
+from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps.step_output import Output
 
-# reset pipeline root to redirect to tests so that it writes the yamls there
-ZENML_ROOT = str(Path(zenml.__path__[0]).parent)
-TEST_ROOT = os.path.join(ZENML_ROOT, "tests")
 
-# Set analytics to false BEFORE init_repo
-global_config = GlobalConfig.get_instance()
-global_config.set_analytics_opt_in(False)
-Repository.init_repo(TEST_ROOT, analytics_opt_in=False)
+class TrainerConfig(BaseStepConfig):
+    """Trainer params"""
 
-pipeline_root = os.path.join(TEST_ROOT, "pipelines")
-csv_root = os.path.join(TEST_ROOT, "test_data")
-image_root = os.path.join(csv_root, "images")
+    epochs: int = 1
 
-repo: Repository = Repository.get_instance()
-if path_utils.is_dir(pipeline_root):
-    path_utils.rm_dir(pipeline_root)
-repo.zenml_config.set_pipelines_dir(pipeline_root)
 
-try:
-    for i in range(1, 6):
-        training_pipeline = TrainingPipeline(name="csvtest{0}".format(i))
+@step
+def importer_mnist() -> Output(
+    X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
+):
+    """Download the MNIST data store it as an artifact"""
+    (X_train, y_train), (
+        X_test,
+        y_test,
+    ) = tf.keras.datasets.mnist.load_data()
+    return X_train, y_train, X_test, y_test
 
-        try:
-            # Add a datasource. This will automatically track and version it.
-            ds = CSVDatasource(
-                name="my_csv_datasource",
-                path=os.path.join(csv_root, "my_dataframe.csv"),
-            )
-        except AlreadyExistsException:
-            ds = repo.get_datasource_by_name("my_csv_datasource")
 
-        training_pipeline.add_datasource(ds)
+@step
+def normalizer(
+    X_train: np.ndarray, X_test: np.ndarray
+) -> Output(X_train_normed=np.ndarray, X_test_normed=np.ndarray):
+    """Normalize the values for all the images so they are between 0 and 1"""
+    X_train_normed = X_train / 255.0
+    X_test_normed = X_test / 255.0
+    return X_train_normed, X_test_normed
 
-        # Add a split
-        training_pipeline.add_split(
-            CategoricalDomainSplit(
-                categorical_column="name",
-                split_map={
-                    "train": ["arnold"],
-                    "eval": ["lülük"],
-                    "test": ["nicholas"],
-                },
-            )
-        )
 
-        # Add a preprocessing unit
-        training_pipeline.add_preprocesser(
-            StandardPreprocesser(
-                features=["name", "age"],
-                labels=["gpa"],
-                overwrite={
-                    "gpa": {
-                        "transform": [
-                            {"method": "no_transform", "parameters": {}}
-                        ]
-                    }
-                },
-            )
-        )
+@step
+def trainer(
+    config: TrainerConfig,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+) -> tf.keras.Model:
+    """Train a neural net from scratch to recognise MNIST digits return our
+    model or the learner"""
+    model = tf.keras.Sequential(
+        [
+            tf.keras.layers.Flatten(input_shape=(28, 28)),
+            tf.keras.layers.Dense(10, activation="relu"),
+            tf.keras.layers.Dense(10),
+        ]
+    )
 
-        # Add a trainer
-        training_pipeline.add_trainer(
-            TFFeedForwardTrainer(
-                batch_size=1,
-                loss="binary_crossentropy",
-                last_activation="sigmoid",
-                output_units=1,
-                metrics=["accuracy"],
-                epochs=i,
-            )
-        )
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(0.001),
+        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+        metrics=["accuracy"],
+    )
 
-        # Run the pipeline locally
-        training_pipeline.run()
+    model.fit(
+        X_train,
+        y_train,
+        epochs=config.epochs,
+    )
 
-except Exception as e:
-    logger.error(e)
+    # write model
+    return model
+
+
+@step
+def evaluator(
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    model: tf.keras.Model,
+) -> np.ndarray:
+    """Calculate the loss for the model for each epoch in a graph"""
+
+    test_loss, test_acc = model.evaluate(X_test, y_test, verbose=2)
+    return np.array([test_loss, test_acc])
+
+
+# Define the pipeline
+
+
+@pipeline
+def mnist_pipeline(
+    importer,
+    normalizer: normalizer,
+    trainer,
+    evaluator,
+):
+    # Link all the steps artifacts together
+    X_train, y_train, X_test, y_test = importer()
+    X_trained_normed, X_test_normed = normalizer(X_train=X_train, X_test=X_test)
+    model = trainer(X_train=X_trained_normed, y_train=y_train)
+    evaluator(X_test=X_test_normed, y_test=y_test, model=model)
+
+
+# Initialise the pipeline
+p = mnist_pipeline(
+    importer=importer_mnist(),
+    normalizer=normalizer(),
+    trainer=trainer(config=TrainerConfig(epochs=1)),
+    evaluator=evaluator(),
+)
+
+# Run the pipeline
+p.run()
+
+
+# Define a new modified import data step to download the Fashion MNIST model
+@step
+def importer_fashion_mnist() -> Output(
+    X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
+):
+    """Download the MNIST data store it as an artifact"""
+    (X_train, y_train), (
+        X_test,
+        y_test,
+    ) = tf.keras.datasets.fashion_mnist.load_data()
+    return X_train, y_train, X_test, y_test
+
+
+# Initialise a new pipeline
+fashion_p = mnist_pipeline(
+    importer=importer_fashion_mnist(),
+    normalizer=normalizer(),
+    trainer=trainer(config=TrainerConfig(epochs=1)),
+    evaluator=evaluator(),
+)
+
+# Run the new pipeline
+fashion_p.run()

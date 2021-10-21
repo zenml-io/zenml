@@ -16,7 +16,7 @@ from tfx.types.artifact import Property, PropertyType
 
 from zenml.artifacts.base_artifact import BaseArtifact
 
-SPLIT_NAMES_PROPERTY = Property(type=PropertyType.STRING)
+SPLIT_NAMES_PROPERTY = Property(type=PropertyType.STRING)  # type: ignore[no-untyped-call] # noqa
 
 
 class DataArtifact(BaseArtifact):

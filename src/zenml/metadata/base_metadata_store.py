@@ -18,6 +18,7 @@ from collections import OrderedDict
 from typing import Dict, List, Optional, Tuple
 
 from ml_metadata.metadata_store import metadata_store
+from ml_metadata.proto import metadata_store_pb2
 from tfx.dsl.compiler.constants import (
     PIPELINE_CONTEXT_TYPE_NAME,
     PIPELINE_RUN_CONTEXT_TYPE_NAME,
@@ -39,7 +40,8 @@ from zenml.utils.path_utils import get_zenml_config_dir
 logger = get_logger(__name__)
 
 
-@metadata_store_factory.register(MLMetadataTypes.base)
+# TODO [HIGH]: can we remove this registration?
+@metadata_store_factory.register(MLMetadataTypes.base)  # type: ignore[misc]
 class BaseMetadataStore(BaseComponent):
     """Metadata store base class to track metadata of zenml first class
     citizens."""
@@ -49,13 +51,15 @@ class BaseMetadataStore(BaseComponent):
     _METADATA_STORE_DIR_NAME = "metadata_stores"
 
     @property
-    def store(self):
+    def store(self) -> metadata_store.MetadataStore:
         """General property that hooks into TFX metadata store."""
+        # TODO [MEDIUM]: this always gets recreated, is this intended?
         return metadata_store.MetadataStore(self.get_tfx_metadata_config())
 
     @abstractmethod
-    def get_tfx_metadata_config(self):
+    def get_tfx_metadata_config(self) -> metadata_store_pb2.ConnectionConfig:
         """Return tfx metadata config."""
+        raise NotImplementedError
 
     def get_serialization_dir(self) -> str:
         """Gets the local path where artifacts are stored."""

@@ -14,10 +14,10 @@
 """Wrapper class to handle Git integration"""
 import inspect
 import os
-from typing import List, Type
+from typing import Any, Optional, Type, cast
 
-from git import BadName
-from git import Repo as GitRepo
+from git import BadName  # type: ignore[attr-defined]
+from git import Repo as GitRepo  # type: ignore[attr-defined]
 from tfx.utils.import_utils import import_class_by_path
 
 from zenml.constants import APP_NAME
@@ -58,24 +58,7 @@ class GitWrapper:
         # TODO: [LOW] Raise ZenML exceptions here instead.
         self.repo_path: str = repo_path
         self.git_root_path: str = os.path.join(repo_path, GIT_FOLDER_NAME)
-        self.git_repo: GitRepo = GitRepo(self.repo_path)
-
-    def add_gitignore(self, items: List[str]):
-        """
-        Adds `items` to .gitignore, if .gitignore exists. Otherwise creates
-        and adds.
-
-        Args:
-            items (list[str]): Items to add.
-        """
-        str_items = "\n".join(items)
-        str_items = "\n\n# ZenML\n" + str_items
-
-        gitignore_path = os.path.join(self.repo_path, ".gitignore")
-        if not path_utils.file_exists(gitignore_path):
-            path_utils.create_file_if_not_exists(gitignore_path, str_items)
-        else:
-            path_utils.append_file(gitignore_path, str_items)
+        self.git_repo = GitRepo(self.repo_path)
 
     def check_file_committed(self, file_path: str) -> bool:
         """
@@ -106,14 +89,13 @@ class GitWrapper:
         """
         Finds the git sha that each file within the module is currently on.
         """
-        return self.git_repo.head.object.hexsha
+        return cast(str, self.git_repo.head.object.hexsha)
 
-    def check_module_clean(self, source: str):
-        """
-        Returns True if all files within source's module are committed.
+    def check_module_clean(self, source: str) -> bool:
+        """Returns `True` if all files within source's module are committed.
 
         Args:
-            source (str): relative module path pointing to a Class.
+            source: relative module path pointing to a Class.
         """
         # Get the module path
         module_path = source_utils.get_module_source_from_source(source)
@@ -152,25 +134,28 @@ class GitWrapper:
                 return False
         return True
 
-    def stash(self):
+    def stash(self) -> None:
         """Wrapper for git stash"""
         git = self.git_repo.git
         git.stash()
 
-    def stash_pop(self):
+    def stash_pop(self) -> None:
         """Wrapper for git stash pop. Only pops if there's something to pop."""
         git = self.git_repo.git
         if git.stash("list") != "":
             git.stash("pop")
 
-    def checkout(self, sha_or_branch: str = None, directory: str = None):
-        """
-        Wrapper for git checkout
+    def checkout(
+        self,
+        sha_or_branch: Optional[str] = None,
+        directory: Optional[str] = None,
+    ) -> None:
+        """Wrapper for git checkout
 
         Args:
             sha_or_branch: hex string of len 40 representing git sha OR
-            name of branch
-            directory (str): relative path to directory to scope checkout
+                name of branch
+            directory: relative path to directory to scope checkout
         """
         # TODO: [MEDIUM] Implement exception handling
         git = self.git_repo.git
@@ -187,19 +172,17 @@ class GitWrapper:
             # In this case, the whole repo is checked out at sha_or_branch
             git.checkout(sha_or_branch)
 
-    def reset(self, directory: str = None):
-        """
-        Wrapper for `git reset HEAD <directory>`.
+    def reset(self, directory: Optional[str] = None) -> None:
+        """Wrapper for `git reset HEAD <directory>`.
 
         Args:
-            directory (str): relative path to directory to scope checkout
+            directory: Relative path to directory to scope checkout
         """
         git = self.git_repo.git
         git.reset("HEAD", directory)
 
     def resolve_class_source(self, class_source: str) -> str:
-        """
-        Resolves class_source with an optional pin.
+        """Resolves class_source with an optional pin.
         Takes source (e.g. this.module.ClassName), and appends relevant
         sha to it if the files within `module` are all committed. If even one
         file is not committed, then returns `source` unchanged.
@@ -240,7 +223,7 @@ class GitWrapper:
             return False
         return True
 
-    def load_source_path_class(self, source: str) -> Type:
+    def load_source_path_class(self, source: str) -> Type[Any]:
         """
         Loads a Python class from the source.
 
@@ -308,9 +291,10 @@ class GitWrapper:
 
         return class_
 
-    def resolve_class(self, class_: Type) -> str:
-        """
-        Resolves
+    # TODO [HIGH]: should this be calling source_utils.resolve_class?
+    def resolve_class(self, class_: Type[Any]) -> str:
+        """Resolves a class into a serializable source string.
+
         Args:
             class_: A Python Class reference.
 

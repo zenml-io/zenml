@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import Type
+from typing import Any, Type
 
 from pytorch_lightning.trainer import Trainer
 
@@ -27,7 +27,7 @@ class PyTorchLightningMaterializer(BaseMaterializer):
 
     ASSOCIATED_TYPES = [Trainer]
 
-    def handle_input(self, data_type: Type) -> Trainer:
+    def handle_input(self, data_type: Type[Any]) -> Trainer:
         """Reads and returns a PyTorch Lightning trainer.
 
         Returns:
@@ -40,11 +40,11 @@ class PyTorchLightningMaterializer(BaseMaterializer):
             )
         )
 
-    def handle_return(self, trainer: Trainer):
+    def handle_return(self, trainer: Trainer) -> None:
         """Writes a PyTorch Lightning trainer.
 
         Args:
-            model: A PyTorch Lightning trainer object.
+            trainer: A PyTorch Lightning trainer object.
         """
         super().handle_return(trainer)
         trainer.save_checkpoint(

@@ -13,9 +13,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from tfx.orchestration import pipeline as tfx_pipeline
+import tfx.orchestration.pipeline as tfx_pipeline
 
 from zenml.core.component_factory import orchestrator_store_factory
 from zenml.enums import OrchestratorTypes
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 class LocalOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines locally."""
 
-    def run(self, zenml_pipeline: "BasePipeline", **pipeline_args):
+    def run(self, zenml_pipeline: "BasePipeline", **pipeline_args: Any) -> None:
         """Runs a pipeline locally.
 
         Args:
@@ -46,7 +46,7 @@ class LocalOrchestrator(BaseOrchestrator):
                 raise TypeError(
                     f"When you are designing a pipeline, you can only pass in "
                     f"@step like annotated objects. You passed in "
-                    f"{s.__name__}: {s} which is of type {type(s)}"
+                    f"`{s}` which is of type `{type(s)}`"
                 )
 
         zenml_pipeline.connect(**zenml_pipeline.steps)
@@ -59,7 +59,7 @@ class LocalOrchestrator(BaseOrchestrator):
 
         created_pipeline = tfx_pipeline.Pipeline(
             pipeline_name=zenml_pipeline.name,
-            components=steps,
+            components=steps,  # type: ignore[arg-type]
             pipeline_root=artifact_store.path,
             metadata_connection_config=metadata_store.get_tfx_metadata_config(),
             enable_cache=zenml_pipeline.enable_cache,

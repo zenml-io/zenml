@@ -50,18 +50,23 @@ class ComponentFactory:
             f"{[k for k in self.components.keys()]}"
         )
 
-    def register_component(self, key: str, component: BaseComponentType):
+    def register_component(
+        self, key: str, component: BaseComponentType
+    ) -> None:
         """Registers a single component class for a given key."""
         self.components[key] = component
 
-    def register(self, name: str) -> Callable:
-        """Class decorator to register component classes to the internal registry.
+    def register(
+        self, name: str
+    ) -> Callable[[BaseComponentType], BaseComponentType]:
+        """Class decorator to register component classes to
+        the internal registry.
 
         Args:
             name: The name of the component.
 
         Returns:
-            A class decorator which registers the class at this ComponentFactory instance.
+            A function which registers the class at this ComponentFactory.
         """
 
         def inner_wrapper(
@@ -70,7 +75,9 @@ class ComponentFactory:
             """Inner wrapper for decorator."""
             if name in self.components:
                 logger.debug(
-                    f"Executor {name} already exists for factory {self.name}. Will replace it"
+                    "Executor %s already exists for factory %s, replacing it..",
+                    name,
+                    self.name,
                 )
             self.register_component(name, wrapped_class)
             return wrapped_class
@@ -78,6 +85,8 @@ class ComponentFactory:
         return inner_wrapper
 
 
-artifact_store_factory = ComponentFactory(name="artifact")
-metadata_store_factory = ComponentFactory(name="metadata")
-orchestrator_store_factory = ComponentFactory(name="orchestrator")
+artifact_store_factory: ComponentFactory = ComponentFactory(name="artifact")
+metadata_store_factory: ComponentFactory = ComponentFactory(name="metadata")
+orchestrator_store_factory: ComponentFactory = ComponentFactory(
+    name="orchestrator"
+)

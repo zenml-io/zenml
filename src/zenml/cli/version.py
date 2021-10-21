@@ -19,7 +19,7 @@ from zenml.cli.cli import cli
 
 
 @cli.command()
-def version():
+def version() -> None:
     """Version of ZenML"""
     click.echo(
         click.style(
