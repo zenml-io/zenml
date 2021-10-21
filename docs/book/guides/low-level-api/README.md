@@ -4,7 +4,7 @@ description: Build production ML pipelines from the simple step interface.
 
 # Low Level API
 
-The Low Level ZenML API is defined by the primitive `@step` and `@pipeline` decorators. These should be used when the [High Level API](../high-level-api) is too inflexible for the use-case at hand, and one requires more control over individual steps and connecting them in pipelines.
+The Low Level ZenML API is defined by the primitive `@step` and `@pipeline` decorators. These should be used when the [High Level API](../high-level-api) is too inflexible for the use-case at hand, and when one requires more control over individual steps and connecting them in pipelines.
 
 A user may also mix-and-match the Low Level API with the High Level API: All standard data types and steps that are applicable in the High Level API can be used with the Low Level API as well!
 
