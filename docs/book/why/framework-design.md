@@ -51,7 +51,7 @@ One small step for data scientist..
 
 ### Simple Functions
 
-We wanted to make a simple Python functions be ZenML steps with one decorator:
+We wanted to make simple Python functions be ZenML steps with just one decorator:
 
 ```python
 @step
