@@ -85,7 +85,7 @@ class SklearnMaterializer(BaseMaterializer):
             DensityMixin,
             TransformerMixin,
         ],
-    ):
+    ) -> None:
         """Creates a pickle for a sklearn model.
 
         Args:
