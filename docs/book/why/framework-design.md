@@ -22,7 +22,7 @@ We decided early on that we wanted to clearly define what a Pipeline and a Pipel
 * Pipelines define the **data dependencies** between steps.
 * Pipeline runs define the **parameters** of each step.
 
-The advantage of this is that the user need only define a pipeline once, but can reuse that pipeline with different parameters. So then I can do the following:
+The advantage of this is that the user needs to only define a pipeline once, but can reuse that pipeline with different parameters. So then I can do the following:
 
 ```python
 def my_pipeline(
