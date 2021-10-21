@@ -81,7 +81,7 @@ Of course this example is still a bit silly, as you don't really want to store e
 
 ### Pipeline
 
-Again, there is no need to change the pipeline. You can just specify in the pipeline run that evaluator step should use the custom materializer:
+Again, there is no need to change the pipeline. You can just specify in the pipeline run that the evaluator step should use the custom materializer:
 
 ```python
 # Run the pipeline
