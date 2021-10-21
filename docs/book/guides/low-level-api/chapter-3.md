@@ -1,5 +1,5 @@
 ---
-description: Add some normalization
+description: Train some models.
 ---
 
 To follow along with the guide, best is to copy the code you see into your own local env and play along. To get started:
