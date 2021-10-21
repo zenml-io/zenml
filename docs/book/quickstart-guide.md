@@ -2,41 +2,31 @@
 description: A simple example to get started with ZenML
 ---
 
-# Quickstart Guide
+# Quickstart
 
-Our goal here is to help you to get the first practical experience with our tool and give you a brief overview on some basic functionalities of ZenML.
+Our goal here is to help you to get the first practical experience with our tool and give you a brief overview on some basic functionalities of ZenML. We'll create a training pipeline for the [MNIST](http://yann.lecun.com/exdb/mnist/) dataset.
 
-The quickest way to get started is to create a simple pipeline. We'll be using the [MNIST](http://yann.lecun.com/exdb/mnist/) dataset (originally developed by Yann LeCun and others) digits, and then later the [Fashion MNIST](https://github.com/zalandoresearch/fashion-mnist) dataset developed by Zalando.
+If you want to run this notebook in an interactive environment, feel free to run it in a [Google Colab](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb) or view it on [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/quickstart) directly.
 
-If you want to run this notebook in an interactive environment, feel free to run it in a [Google Colab](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb).
-
-## Purpose
-
-This quickstart guide is designed to provide a practical introduction to some of the main concepts and paradigms used by the ZenML framework.&#x20;
-
-## Using Google Colab
-
-You will want to use a GPU for this example. If you are following this quickstart in Google's Colab, follow these steps:
-
-* Before running anything, you need to tell Colab that you want to use a GPU. You can do this by clicking on the ‘Runtime’ tab and selecting ‘Change runtime type’. A pop-up window will open up with a drop-down menu.
-* Select ‘GPU’ from the menu and click ‘Save’.
-* It may ask if you want to restart the runtime. If so, go ahead and do that.
-
-## Install libraries
+## Install and initialize
 
 ```python
-# Install the ZenML CLI tool
-!pip install zenml tensorflow tensorflow_datasets
+# Install the dependencies for the quickstart
+pip install zenml
 ```
+
+{% hint style="success" %}
+We are just using Tensorflow for illustration principals, ZenML works with any ML library such as PyTorch, HuggingFace, PyTorch Lightning etc.
+{% endhint %}
 
 Once the installation is completed, you can go ahead and create your first ZenML repository for your project. As ZenML repositories are built on top of Git repositories, you can create yours in a desired empty directory through:
 
 ```python
 # Initialize a git repository
-!git init
+git init
 
-# Initialize ZenML's .zen file
-!zenml init
+# Initialize ZenML
+zenml init
 ```
 
 Now, the setup is completed. For the next steps, just make sure that you are executing the code within your ZenML repository.
@@ -51,51 +41,27 @@ import tensorflow as tf
 
 from zenml.pipelines import pipeline
 from zenml.steps import step
-from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
 
-class TrainerConfig(BaseStepConfig):
-    """Trainer params"""
 
-    epochs: int = 1
-    
 @step
-def importer_mnist() -> Output(
+def importer() -> Output(
     X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
 ):
-    """Download the MNIST data store it as an artifact"""
-    (X_train, y_train), (
-        X_test,
-        y_test,
-    ) = tf.keras.datasets.mnist.load_data()
+    """Download the MNIST data store it as numpy arrays."""
+    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
     return X_train, y_train, X_test, y_test
 
 
 @step
-def normalizer(
-    X_train: np.ndarray, X_test: np.ndarray
-) -> Output(X_train_normed=np.ndarray, X_test_normed=np.ndarray):
-    """Normalize the values for all the images so they are between 0 and 1"""
-    X_train_normed = X_train / 255.0
-    X_test_normed = X_test / 255.0
-    return X_train_normed, X_test_normed
-
-
-@step
 def trainer(
-    config: TrainerConfig,
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> tf.keras.Model:
-    """Train a neural net from scratch to recognise MNIST digits return our
-    model or the learner"""
-    model = tf.keras.Sequential(
-        [
-            tf.keras.layers.Flatten(input_shape=(28, 28)),
-            tf.keras.layers.Dense(10, activation="relu"),
-            tf.keras.layers.Dense(10),
-        ]
-    )
+    """A simple Keras Model to train on the data."""
+    model = tf.keras.Sequential()
+    model.add(tf.keras.layers.Flatten(input_shape=(28, 28)))
+    model.add(tf.keras.layers.Dense(10))
 
     model.compile(
         optimizer=tf.keras.optimizers.Adam(0.001),
@@ -103,11 +69,7 @@ def trainer(
         metrics=["accuracy"],
     )
 
-    model.fit(
-        X_train,
-        y_train,
-        epochs=config.epochs,
-    )
+    model.fit(X_train, y_train)
 
     # write model
     return model
@@ -118,85 +80,65 @@ def evaluator(
     X_test: np.ndarray,
     y_test: np.ndarray,
     model: tf.keras.Model,
-) -> np.ndarray:
-    """Calculate the loss for the model for each epoch in a graph"""
+) -> float:
+    """Calculate the accuracy and store it in the metadata store"""
+    test_acc = model.evaluate(X_test, y_test, verbose=2)
+    return test_acc
 
-    test_loss, test_acc = model.evaluate(X_test, y_test, verbose=2)
-    return np.array([test_loss, test_acc])
 
-
-```
-
-## Define ZenML Pipeline
-
-A pipeline is defined with the `@pipeline` decorator. This defines the various steps of the pipeline and specifies the order in which they will be run.
-
-```python
 @pipeline
 def mnist_pipeline(
     importer,
-    normalizer: normalizer,
     trainer,
     evaluator,
 ):
-    # Link all the steps artifacts together
+    """Links all the steps together in a pipeline"""
     X_train, y_train, X_test, y_test = importer()
-    X_trained_normed, X_test_normed = normalizer(X_train=X_train, X_test=X_test)
-    model = trainer(X_train=X_trained_normed, y_train=y_train)
-    evaluator(X_test=X_test_normed, y_test=y_test, model=model)
+    model = trainer(X_train=X_train, y_train=y_train)
+    evaluator(X_test=X_test, y_test=y_test, model=model)
+
+
+if __name__ == "__main__":
+    # Run the pipeline
+    p = mnist_pipeline(
+        importer=importer(),
+        trainer=trainer(),
+        evaluator=evaluator(),
+    )
+    p.run()
 ```
 
-## Run the Pipeline with MNIST
+{% hint style="info" %}
+This code block should work 'as is'. Copy paste it into your IDE and run it!
+{% endhint %}
 
-Here we initialize an instance of our `mnist_pipeline.`
+If you had a hiccup or you have some suggestions/questions regarding our framework, you can always check [our Github](https://github.com/zenml-io/zenml) or even better join us on [our Slack channel](https://zenml.io/slack-invite).
 
-```python
-# Initialise the pipeline
-p = mnist_pipeline(
-    importer=importer_mnist(),
-    normalizer=normalizer(),
-    trainer=trainer(config=TrainerConfig(epochs=1)),
-    evaluator=evaluator(),
-)
-p.run()
-```
+## Wait, how is this useful?
 
-## From MNIST to Fashion MNIST
+The above code looks like its yet another standard pipeline framework that added to your work, but there is a lot going on under-the-hood that is mighty helpful:
 
-We got pretty good results on the MNIST model that we trained, but maybe we want to see how a similar training pipeline would work on a different dataset.
+* All data is versioned and tracked as it flows through the steps.
+* All parameters and return values are tracked by a central metadata store that you can later query.
+* Individual step outputs are now cached, so you can swap out the trainer for other implementations and be fast in iteration.
+* Code is git-stamped to version it.
 
-You can see how easy it is to switch out one data import step and processing for another in our pipeline.
+With just a little more work, one can:
 
-```python
-# Define a new modified import data step to download the Fashion MNIST model
-@step
-def importer_fashion_mnist() -> Output(
-    X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
-):
-    """Download the MNIST data store it as an artifact"""
-    (X_train, y_train), (
-        X_test,
-        y_test,
-    ) = tf.keras.datasets.fashion_mnist.load_data()
-    return X_train, y_train, X_test, y_test
+* Deploy this pipeline 'in production' on the cloud with a production ready orchestrator like Airflow (or on a chosen Stack).
+* Useful metadata like statistics, schema's, drifts can be inferred from model and data flowing through these steps.
+* Convert these steps to run distributed processing to handle large volumes of data.
+* Models trained this way can be set up to be easily deployed, run batch inference on, or set up in continuous training loops with automatic deployments.
 
+Keep reading to learn how all of the above can be achieved.
 
-# Initialise a new pipeline
-fashion_p = mnist_pipeline(
-    importer=importer_fashion_mnist(),
-    normalizer=normalizer(),
-    trainer=trainer(config=TrainerConfig(epochs=1)),
-    evaluator=evaluator(),
-)
+## Next Steps?
 
-# Run the new pipeline
-fashion_p.run()
-```
+Normally at this point in a quickstart, you'd like to learn more about what the product has to offer (if the docs have succeeded in making you feel so). So there are essentially two choices you can make:
 
-… and that's it for the quickstart. If you came here without a hiccup, you must have successfully installed ZenML, set up a ZenML repo, configured a training pipeline, executed it and evaluated the results. And, this is just the tip of the iceberg on the capabilities of ZenML.
+* If your work involves a use-case that is fairly 'standard' training/inference/deployment, start with the [High Level API ](guides/high-level-api/)guide.
+* If you have a more complex workflow that requires more control over your pipelines, start with the [Low Level API](guides/low-level-api/) guide.
 
-However, if you had a hiccup or you have some suggestions/questions regarding our framework, you can always check [our github](https://github.com/zenml-io/zenml) or even better join us on [our Slack channel](https://zenml.io/slack-invite).
+If you're not sure, pick any one of the above. They are the easiest way to learn how ZenML enables MLOps.
 
-For more detailed information on all the components and steps that went into this short example, please continue reading our more detailed documentation pages.
-
-Cheers!
+However, for those of you who don't want to read guides, then feel free to start perusing the docs with the [Core Concepts](core-concepts.md) before the guides. See you there!
