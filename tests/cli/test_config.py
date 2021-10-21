@@ -32,7 +32,8 @@ def read_global_config():
 
 def get_analytics_opt_in_status():
     """Get the analytics opt-in status"""
-    return read_global_config()["analytics_opt_in"]
+    gc = GlobalConfig()
+    return gc.analytics_opt_in
 
 
 def set_analytics_opt_in_status(status: bool):
