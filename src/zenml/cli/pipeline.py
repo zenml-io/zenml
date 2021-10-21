@@ -135,9 +135,11 @@ def run_pipeline(python_file: str, config_path: str) -> None:
 
 
 def _load_source(path: str) -> ModuleType:
+    """Load single python file"""
     import importlib.machinery
     import importlib.util
     import os
+    import sys
 
     module_name = os.path.splitext(os.path.basename(path))[0].replace("-", "_")
 
@@ -146,4 +148,5 @@ def _load_source(path: str) -> ModuleType:
     )
     module = importlib.util.module_from_spec(spec)  # type: ignore
     spec.loader.exec_module(module)  # type: ignore
+    sys.modules[module_name] = module
     return module
