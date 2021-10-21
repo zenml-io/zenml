@@ -30,7 +30,7 @@ def importer_mnist() -> Output(
 
 There are some things to note:
 
-* As this step has multiple outputs, we need to use the `zenml.steps.step_output.Output` class to indicate the names of each output. If there was only one, we did not need to do this.
+* As this step has multiple outputs, we need to use the `zenml.steps.step_output.Output` class to indicate the names of each output. If there was only one, we would not have to do this.
 * We could have returned the `tf.keras.datasets.mnist` directly but we wanted to persist the actual data (for caching purposes), rather than the dataset object.
 
 Now we can go ahead and create a pipeline with one step to make sure this step works:
