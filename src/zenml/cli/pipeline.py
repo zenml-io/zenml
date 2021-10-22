@@ -12,9 +12,6 @@
 # #  or implied. See the License for the specific language governing
 # #  permissions and limitations under the License.
 """CLI to interact with pipelines."""
-import importlib
-import os
-import sys
 import types
 from typing import Any
 
@@ -23,26 +20,9 @@ import click
 from zenml.cli.cli import cli
 from zenml.exceptions import PipelineConfigurationError
 from zenml.logger import get_logger
-from zenml.utils import yaml_utils
+from zenml.utils import source_utils, yaml_utils
 
 logger = get_logger(__name__)
-
-
-def _import_python_file(file_path: str) -> types.ModuleType:
-    """Imports a python file.
-
-    Args:
-        file_path: Path to python file that should be imported.
-
-    Returns:
-        The imported module.
-    """
-    # Add directory of python file to PYTHONPATH so we can import it
-    file_path = os.path.abspath(file_path)
-    sys.path.append(os.path.dirname(file_path))
-
-    module_name = os.path.splitext(os.path.basename(file_path))[0]
-    return importlib.import_module(module_name)
 
 
 def _get_module_attribute(module: types.ModuleType, attribute_name: str) -> Any:
@@ -89,7 +69,7 @@ def run_pipeline(python_file: str, config_path: str) -> None:
         python_file: Path to the python file that defines the pipeline.
         config_path: Path to configuration YAML file.
     """
-    module = _import_python_file(python_file)
+    module = source_utils.import_python_file(python_file)
     config = yaml_utils.read_yaml(config_path)
 
     pipeline_name = config["name"]
