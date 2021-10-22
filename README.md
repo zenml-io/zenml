@@ -47,7 +47,7 @@ solve these individual problems. Rather, it integrates natively with many popula
 _**Ichi Wa Zen, Zen Wa Ichi.**_
 
 We built ZenML because we could not find an easy framework that translates the patterns observed in the research phase with Jupyter notebooks into a production-ready ML environment.
-ZenML follows the paradigm of [`Pipelines As Experiments` (PaE)](https://docs.zenml.io/why/why-zenml), meaning ZenML pipelines are designed to be written early on the development lifecycle, where the users can explore their
+ZenML follows the paradigm of [`Pipelines As Experiments` (PaE)](https://docs.zenml.io/why-zenml), meaning ZenML pipelines are designed to be written early on the development lifecycle, where the users can explore their
 pipelines as they develop towards production.
 
 By using ZenML at the early stages of development, you get the following features:
@@ -96,7 +96,7 @@ ZenML is being built in public. The [roadmap](https://zenml.io/roadmap) is a reg
 ZenML is managed by a [core team](https://zenml.io/team) of developers that are responsible for making key decisions and incorporating feedback from the community. The team oversee's feedback via various channels, but you can directly influence the roadmap as follows:
 
 - Vote on your most wanted feature on the [Discussion board](https://zenml.io/discussion).
-- Create a [Feature Issue](https://github.com/zenml-io/zenml/issues/new?assignees=&labels=&template=enhancement_request.md&title=%5BFEATURE%5D) in the [GitHub board](https://github.com/zenml-io/zenml/issues).
+- Create a [Feature Request](https://github.com/zenml-io/zenml/issues/new/choose) in the [GitHub board](https://github.com/zenml-io/zenml/issues).
 - Start a thread in the [Slack channel](https://zenml.io/slack-invite).
 
 ## Contributing
