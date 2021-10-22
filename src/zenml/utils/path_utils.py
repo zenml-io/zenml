@@ -21,14 +21,14 @@ from pathlib import Path
 from typing import Callable, Iterable, List, Optional, Tuple
 
 from tfx.dsl.io.filesystem import PathType
-from tfx.utils.io_utils import _REMOTE_FS_PREFIX as _REMOTE_FS_PREFIX
-from tfx.utils.io_utils import fileio, load_csv_column_names
 
 from zenml.core.constants import ZENML_DIR_NAME
 from zenml.exceptions import InitializationException
+from zenml.io import fileio
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
+_REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 
 
 def walk(
@@ -130,7 +130,7 @@ def list_dir(dir_path: str, only_file_names: bool = False) -> List[str]:
             else convert_to_str(f)
             for f in fileio.listdir(dir_path)
         ]
-    except fileio.NotFoundError:
+    except IOError:
         logger.debug(f"Dir {dir_path} not found.")
         return []
 
@@ -319,6 +319,12 @@ def get_parent(dir_path: str) -> str:
         Parent (stem) of the dir as a string.
     """
     return Path(dir_path).stem
+
+
+def load_csv_column_names(csv_file: str) -> List[str]:
+    """Parse the first line of a csv file as column names."""
+    with fileio.open(csv_file) as f:
+        return f.readline().strip().split(",")
 
 
 def load_csv_header(csv_path: str) -> List[str]:
