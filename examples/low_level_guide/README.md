@@ -21,7 +21,7 @@ In order to run the chapters of the guide, you need to install and initialize Ze
 
 ```bash
 # install CLI
-pip install zenml tensorflow sklearn sqlalchemy 'google-cloud-bigquery[bqstorage,pandas]'
+pip install zenml tensorflow sklearn sqlalchemy
 
 # initialize CLI
 cd ~
