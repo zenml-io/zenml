@@ -152,33 +152,41 @@ class BaseStep(metaclass=BaseStepMeta):
         self.spec_materializer_registry = SpecMaterializerRegistry()
 
         # TODO [LOW]: Support args
+        # TODO [LOW]: Currently the kwarg name doesn't matter
+        #  and will be used as the config
         if args:
             raise StepInterfaceError(
                 "When you are creating an instance of a step, please only "
                 "use key-word arguments."
             )
 
-        if self.CONFIG:
-            # Find the config
-            for v in kwargs.values():
-                if isinstance(v, BaseStepConfig):
-                    config = v
+        maximum_kwarg_count = 1 if self.CONFIG else 0
+        if len(kwargs) > maximum_kwarg_count:
+            raise StepInterfaceError(
+                f"Too many keyword arguments ({len(kwargs)}, "
+                f"expected: {maximum_kwarg_count}) passed when "
+                f"creating a '{self.step_name}' step."
+            )
 
-                try:
-                    # create a pydantic model out of a primitive type
-                    model_dict = config.dict()  # noqa
-                    self.PARAM_SPEC = {
-                        k: json.dumps(v) for k, v in model_dict.items()
-                    }
-                except RuntimeError as e:
-                    # TODO [LOW]: Attach a URL with all supported types.
-                    logger.debug(f"Pydantic Error: {str(e)}")
-                    raise StepInterfaceError(
-                        "You passed in a parameter that we cannot serialize!"
-                    )
-                assert self.PARAM_SPEC, (
-                    "Could not find step config even "
-                    "though specified in signature."
+        if self.CONFIG and len(kwargs) == 1:
+            config = kwargs.popitem()[1]
+
+            if not isinstance(config, self.CONFIG):
+                raise StepInterfaceError(
+                    f"`{config}` object passed when creating a "
+                    f"'{self.step_name}' step is not a "
+                    f"`{self.CONFIG.__name__}` instance."
+                )
+
+            try:
+                self.PARAM_SPEC = {
+                    k: json.dumps(v) for k, v in config.dict().items()
+                }
+            except RuntimeError as e:
+                # TODO [LOW]: Attach a URL with all supported types.
+                logger.debug(f"Pydantic Error: {str(e)}")
+                raise StepInterfaceError(
+                    "You passed in a parameter that we cannot serialize!"
                 )
 
     def __call__(

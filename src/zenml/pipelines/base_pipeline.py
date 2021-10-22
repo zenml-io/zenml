@@ -12,15 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import inspect
+import json
 from abc import abstractmethod
 from typing import Any, ClassVar, Dict, NoReturn, Tuple, Type, cast
 
+from zenml.config.config_keys import (
+    PipelineConfigurationKeys,
+    StepConfigurationKeys,
+)
 from zenml.core.repo import Repository
-from zenml.exceptions import PipelineInterfaceError
+from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
 from zenml.logger import get_logger
 from zenml.stacks.base_stack import BaseStack
 from zenml.steps.base_step import BaseStep
-from zenml.utils import analytics_utils
+from zenml.utils import analytics_utils, yaml_utils
 
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
@@ -83,8 +88,15 @@ class BasePipeline(metaclass=BasePipelineMeta):
             else:
                 raise PipelineInterfaceError(
                     f"The argument {k} is an unknown argument. Needs to be "
-                    f"one of {self.STEP_SPEC.keys()}"
+                    f"one of {list(self.STEP_SPEC.keys())}"
                 )
+
+        missing_keys = set(self.STEP_SPEC.keys()) - set(self.steps.keys())
+        if missing_keys:
+            raise PipelineInterfaceError(
+                f"Trying to initialize pipeline but missing"
+                f" one or more steps: {missing_keys}"
+            )
 
     @abstractmethod
     def connect(self, *args: BaseStep, **kwargs: BaseStep) -> None:
@@ -139,3 +151,89 @@ class BasePipeline(metaclass=BasePipelineMeta):
             f"pipeline `{self.pipeline_name}`. Running pipeline.."
         )
         return self.stack.orchestrator.run(self)
+
+    def with_config(
+        self, config_file: str, overwrite_step_parameters: bool = False
+    ) -> "BasePipeline":
+        """Configures this pipeline using a yaml file.
+
+        Args:
+            config_file: Path to a yaml file which contains configuration
+                options for running this pipeline. See [TODO](url) for details
+                regarding the specification of this file.
+            overwrite_step_parameters: If set to `True`, values from the
+                configuration file will overwrite configuration parameters
+                passed in code.
+
+        Returns:
+            The pipeline object that this method was called on.
+        """
+        config_yaml = yaml_utils.read_yaml(config_file)
+
+        if PipelineConfigurationKeys.STEPS in config_yaml:
+            self._read_config_steps(
+                config_yaml[PipelineConfigurationKeys.STEPS],
+                overwrite=overwrite_step_parameters,
+            )
+
+        return self
+
+    def _read_config_steps(
+        self, steps: Dict[str, Dict[str, Any]], overwrite: bool = False
+    ) -> None:
+        """Reads and sets step parameters from a config file.
+
+        Args:
+            steps: Maps step names to dicts of parameter names and values.
+            overwrite: If `True`, overwrite previously set step parameters.
+        """
+        for step_name, step_dict in steps.items():
+            StepConfigurationKeys.key_check(step_dict)
+
+            if step_name not in self.__steps:
+                raise PipelineConfigurationError(
+                    f"Found '{step_name}' step in configuration yaml but it "
+                    f"doesn't exist in the pipeline steps "
+                    f"{list(self.__steps.keys())}."
+                )
+
+            step = self.__steps[step_name]
+            step_parameters = (
+                step.CONFIG.__fields__.keys() if step.CONFIG else {}
+            )
+            parameters = step_dict.get(StepConfigurationKeys.PARAMETERS_, {})
+            for parameter, value in parameters.items():
+                if parameter not in step_parameters:
+                    raise PipelineConfigurationError(
+                        f"Found parameter '{parameter}' for '{step_name}' step "
+                        f"in configuration yaml but it doesn't exist in the "
+                        f"configuration class `{step.CONFIG}`. Available "
+                        f"parameters for this step: "
+                        f"{list(step_parameters)}."
+                    )
+
+                # make sure the value gets serialized to a string
+                value = json.dumps(value)
+                previous_value = step.PARAM_SPEC.get(parameter, None)
+
+                if overwrite:
+                    step.PARAM_SPEC[parameter] = value
+                else:
+                    step.PARAM_SPEC.setdefault(parameter, value)
+
+                if overwrite or not previous_value:
+                    logger.debug(
+                        "Setting parameter %s=%s for step '%s'.",
+                        parameter,
+                        value,
+                        step_name,
+                    )
+                if previous_value and not overwrite:
+                    logger.warning(
+                        "Parameter '%s' from configuration yaml will NOT be "
+                        "set as a configuration object was given when "
+                        "creating the step. Set `overwrite_step_parameters="
+                        "True` when setting the configuration yaml to always "
+                        "use the options specified in the yaml file.",
+                        parameter,
+                    )
