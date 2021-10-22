@@ -43,7 +43,7 @@ class GitExamplesHandler(object):
         # delete source directory if force redownload is set
         if redownload:
             self.delete_example_source_dir(examples_dir)
-            installed_version = redownload
+            installed_version = installed_version
 
         config_directory_files = os.listdir(repo_dir)
 
@@ -146,18 +146,34 @@ def info(git_examples_handler: Any, example_name: str) -> None:
 )
 @pass_git_examples_handler
 @click.argument("example_name", required=False, default=None)
+# @click.option(
+#     "--force-redownload",
+#     help="Pass in a version number to redownload the examples folder for that specific version.",
+# )
 @click.option(
-    "--force-redownload",
-    help="Pass in a version number to redownload the examples folder for that specific version.",
+    "--force",
+    "-f",
+    is_flag=True,
+    help="Force the redownload of the examples folder to the ZenML config folder.",
+)
+@click.option(
+    "--version",
+    "-v",
+    type=click.STRING,
+    default=zenml_version_installed,
+    help="The version of ZenML to use for the force-redownloaded examples.",
 )
 # TODO: [MEDIUM] Use a better type for the git_examples_handler
 def pull(
-    git_examples_handler: Any, example_name: str, force_redownload: str
+    git_examples_handler: Any,
+    example_name: str,
+    force: bool,
+    version: str,
 ) -> None:
     """Pull examples straight into your current working directory.
     Add the flag --force-redownload"""
-    if force_redownload:
-        GitExamplesHandler(redownload=force_redownload)
+    if force:
+        GitExamplesHandler(redownload=version)
         # TODO: [HIGH] decide whether user's CwD examples are deleted or not
         # Currently we don't delete them, but ask if an overwrite happens
 
