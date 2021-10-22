@@ -25,6 +25,7 @@ from zenml.utils.yaml_utils import write_yaml
 def create_pipeline_with_config_value(config_value: int):
     """Creates pipeline instance with a step named 'step' which has a
     parameter named 'value'."""
+
     class Config(BaseStepConfig):
         value: int
 
