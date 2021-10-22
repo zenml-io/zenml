@@ -18,6 +18,10 @@ from typing import Any
 import click
 
 from zenml.cli.cli import cli
+from zenml.config.config_keys import (
+    PipelineConfigurationKeys,
+    StepConfigurationKeys,
+)
 from zenml.exceptions import PipelineConfigurationError
 from zenml.logger import get_logger
 from zenml.utils import source_utils, yaml_utils
@@ -71,15 +75,23 @@ def run_pipeline(python_file: str, config_path: str) -> None:
     """
     module = source_utils.import_python_file(python_file)
     config = yaml_utils.read_yaml(config_path)
+    PipelineConfigurationKeys.key_check(config)
 
-    pipeline_name = config["name"]
+    pipeline_name = config[PipelineConfigurationKeys.NAME]
     pipeline_class = _get_module_attribute(module, pipeline_name)
 
     steps = {}
-    for step_name, step_config in config["steps"].items():
-        step_class = _get_module_attribute(module, step_config["source"])
+    for step_name, step_config in config[
+        PipelineConfigurationKeys.STEPS
+    ].items():
+        StepConfigurationKeys.key_check(step_config)
+        step_class = _get_module_attribute(
+            module, step_config[StepConfigurationKeys.SOURCE_]
+        )
         step_instance = step_class()
-        materializers_config = step_config.get("materializers", None)
+        materializers_config = step_config.get(
+            StepConfigurationKeys.MATERIALIZERS_, None
+        )
         if materializers_config:
             # We need to differentiate whether it's a single materializer
             # or a dictionary mapping output names to materializers

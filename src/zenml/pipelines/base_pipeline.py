@@ -16,6 +16,10 @@ import json
 from abc import abstractmethod
 from typing import Any, ClassVar, Dict, NoReturn, Tuple, Type, cast
 
+from zenml.config.config_keys import (
+    PipelineConfigurationKeys,
+    StepConfigurationKeys,
+)
 from zenml.core.repo import Repository
 from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
 from zenml.logger import get_logger
@@ -166,9 +170,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
         """
         config_yaml = yaml_utils.read_yaml(config_file)
 
-        if "steps" in config_yaml:
+        if PipelineConfigurationKeys.STEPS in config_yaml:
             self._read_config_steps(
-                config_yaml["steps"], overwrite=overwrite_step_parameters
+                config_yaml[PipelineConfigurationKeys.STEPS],
+                overwrite=overwrite_step_parameters,
             )
 
         return self
@@ -183,6 +188,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             overwrite: If `True`, overwrite previously set step parameters.
         """
         for step_name, step_dict in steps.items():
+            StepConfigurationKeys.key_check(step_dict)
+
             if step_name not in self.__steps:
                 raise PipelineConfigurationError(
                     f"Found '{step_name}' step in configuration yaml but it "
@@ -194,7 +201,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             step_parameters = (
                 step.CONFIG.__fields__.keys() if step.CONFIG else {}
             )
-            parameters = step_dict.get("parameters", {})
+            parameters = step_dict.get(StepConfigurationKeys.PARAMETERS_, {})
             for parameter, value in parameters.items():
                 if parameter not in step_parameters:
                     raise PipelineConfigurationError(
