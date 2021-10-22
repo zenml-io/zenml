@@ -112,6 +112,9 @@ def register_metadata_store(
     metadata_store = comp(**parsed_args)
     service = repo.get_service()
     service.register_metadata_store(metadata_store_name, metadata_store)
+    cli_utils.declare(
+        f"Metadata Store `{metadata_store_name}` successfully registered!"
+    )
 
 
 @metadata.command("list")
@@ -127,9 +130,8 @@ def list_metadata_stores() -> None:
 def delete_metadata_store(metadata_store_name: str) -> None:
     """Delete a metadata store."""
     service = Repository().get_service()
-    cli_utils.declare(f"Deleting metadata store: {metadata_store_name}")
     service.delete_metadata_store(metadata_store_name)
-    cli_utils.declare("Deleted!")
+    cli_utils.declare(f"Deleted metadata store: {metadata_store_name}")
 
 
 # Artifact Store
@@ -160,6 +162,9 @@ def register_artifact_store(
     artifact_store = comp(**parsed_args)
     service = repo.get_service()
     service.register_artifact_store(artifact_store_name, artifact_store)
+    cli_utils.declare(
+        f"Artifact Store `{artifact_store_name}` successfully registered!"
+    )
 
 
 @artifact.command("list")
@@ -175,9 +180,8 @@ def list_artifact_stores() -> None:
 def delete_artifact_store(artifact_store_name: str) -> None:
     """Delete a artifact store."""
     service = Repository().get_service()
-    cli_utils.declare(f"Deleting artifact store: {artifact_store_name}")
     service.delete_artifact_store(artifact_store_name)
-    cli_utils.declare("Deleted!")
+    cli_utils.declare(f"Deleted artifact store: {artifact_store_name}")
 
 
 # Orchestrator
@@ -208,6 +212,9 @@ def register_orchestrator(
     orchestrator = comp(**parsed_args)
     service = repo.get_service()
     service.register_orchestrator(orchestrator_name, orchestrator)
+    cli_utils.declare(
+        f"Orchestrator `{orchestrator_name}` successfully registered!"
+    )
 
 
 @orchestrator.command("list")
@@ -223,6 +230,5 @@ def list_orchestrators() -> None:
 def delete_orchestrator(orchestrator_name: str) -> None:
     """Delete a orchestrator."""
     service = Repository().get_service()
-    cli_utils.declare(f"Deleting orchestrator: {orchestrator_name}")
     service.delete_orchestrator(orchestrator_name)
-    cli_utils.declare("Deleted!")
+    cli_utils.declare(f"Deleted orchestrator: {orchestrator_name}")

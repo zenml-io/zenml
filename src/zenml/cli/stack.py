@@ -47,6 +47,7 @@ def register_stack(
         metadata_store_name=metadata_store,
     )
     service.register_stack(stack_name, stack)
+    cli_utils.declare(f"Stack `{stack_name}` successfully registered!")
 
 
 @stack.command("list")
