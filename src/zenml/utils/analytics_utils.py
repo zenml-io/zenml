@@ -123,10 +123,11 @@ def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> None:
             analytics.write_key = get_segment_key()
 
         assert (
-                analytics.write_key is not None
+            analytics.write_key is not None
         ), "Analytics key not set but trying to make telemetry call."
 
         from zenml.config.global_config import GlobalConfig
+
         gc = GlobalConfig()
 
         if not gc.analytics_opt_in and event != INITIALIZE_REPO:
@@ -150,7 +151,7 @@ def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> None:
 
 
 def parametrized(
-        dec: Callable[..., Callable[..., Any]]
+    dec: Callable[..., Callable[..., Any]]
 ) -> Callable[..., Callable[[Callable[..., Any]], Callable[..., Any]]]:
     """This is a meta-decorator, that is, a decorator for decorators.
     As a decorator is a function, it actually works as a regular decorator
