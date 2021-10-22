@@ -10,7 +10,7 @@ When developing ML models, your pipelines will, at first, most probably live in 
 
 ## Install and configure Airflow
 
-This part is optional, and it would depend on your pre-existing production setting. For example, for this guide we chose to deploy and install Airflow from scratch and set it to work with a local `DAG_FOLDER`, however you might want to use a manage Airflow instance like [Cloud Composer](https://cloud.google.com/composer) or [Astronomer](https://astronomer.io/) and change the `DAG_FOLDER` accordingly.
+This part is optional, and it would depend on your pre-existing production setting. For example, for this guide we chose to deploy and install Airflow from scratch and set it to work locally, however you might want to use a managed Airflow instance like [Cloud Composer](https://cloud.google.com/composer) or [Astronomer](https://astronomer.io/) .
 
 To install Airflow, please follow the [awesome official guide](https://airflow.apache.org/docs/apache-airflow/stable/start/local.html). Its just a pip install really.
 

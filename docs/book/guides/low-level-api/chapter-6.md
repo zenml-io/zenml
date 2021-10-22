@@ -19,42 +19,44 @@ This could be anything like:
 Let's also slightly change our pipeline to add our new step. For this guide, we have set up a [public BigQuery table]() that simulates a real world setting of reading from a production database. The data in the public BigQuery table is just MNIST data but new data is added every day.
 
 ```python
-from google.cloud import bigquery
 import numpy as np
+import pandas as pd
+import requests
+
 from zenml.steps import step
+from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
 
 
+class ImporterConfig(BaseStepConfig):
+    n_days: int = 1
+
+
+def get_X_y_from_api(n_days: int = 1, is_train: bool = True):
+    url = (
+        "https://storage.googleapis.com/zenml-public-bucket/mnist"
+        "/mnist_handwritten_train.json"
+        if is_train
+        else "https://storage.googleapis.com/zenml-public-bucket/mnist"
+        "/mnist_handwritten_test.json"
+    )
+    df = pd.DataFrame(requests.get(url).json())
+    X = df["image"].map(lambda x: np.array(x)).values
+    X = np.array([x.reshape(28, 28) for x in X])
+    y = df["label"].map(lambda y: np.array(y)).values
+    return X, y
+
+
 @step
-def dynamic_importer() -> Output(
+def dynamic_importer(
+    config: ImporterConfig,
+) -> Output(
     X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
 ):
-    
-    bqclient = bigquery.Client()
-    
-    # Download query results.
-    query_string = """
-    SELECT
-    CONCAT(
-        'https://stackoverflow.com/questions/',
-        CAST(id as STRING)) as url,
-    view_count
-    FROM `zenml-core.mnist.mnist_data`
-    WHERE timestamp like '%google-bigquery%'
-    ORDER BY view_count DESC
-    """
-    
-    dataframe = (
-        bqclient.query(query_string)
-        .result()
-        .to_dataframe(
-            # Optionally, explicitly request to use the BigQuery Storage API. As of
-            # google-cloud-bigquery version 1.26.0 and above, the BigQuery Storage
-            # API is used by default.
-            create_bqstorage_client=True,
-        )
-    )
-    return dataframe[], 
+    """Downloads the latest data from a mock API."""
+    X_train, y_train = get_X_y_from_api(n_days=config.n_days, is_train=True)
+    X_test, y_test = get_X_y_from_api(n_days=config.n_days, is_train=False)
+    return X_train, y_train, X_test, y_test
 ```
 
 And then change the pipeline run as follows:
@@ -83,29 +85,21 @@ Even if our data originally lives in BigQuery, we have now downloaded it and ver
 from zenml.core.repo import Repository
 
 repo = Repository()
-p = repo.get_pipeline(pipeline_name="load_and_normalize_pipeline")
-runs = p.get_runs()
-print(f"Pipeline `load_and_normalize_pipeline` has {len(runs)} run(s)")
-run = runs[-1]
-print(f"The run you just made has {len(run.steps)} steps.")
-step = run.get_step('normalize_mnist')
-print(f"The `normalizer` step has {len(step.outputs)} output artifacts.")
-for i, o in enumerate(step.outputs):
-    arr = o.read(None)
-    print(f"Output {i} is an array with shape: {arr.shape}")
+p = repo.get_pipeline(pipeline_name="mnist_pipeline")
+print(f"Pipeline `mnist_pipeline` has {len(p.get_runs())} run(s)")
+eval_step = p.get_runs()[-1].get_step("sklearn_evaluator")
+val = eval_step.outputs[0].read()
+print(f"We scored an accuracy of {val} on the latest run!")
 ```
 
 You will get the following output:
 
 ```bash
-Pipeline `load_and_normalize_pipeline` has 1 run(s)
-The run you just made has 2 steps.
-The `normalizer` step has 2 output artifacts.
-Output 0 is an array with shape: (60000, 28, 28)
-Output 1 is an array with shape: (10000, 28, 28)
+Pipeline `mnist_pipeline` has 1 run(s)
+We scored an accuracy of 0.72 on the latest run!
 ```
 
-This show's that the data shape is the same as we had from the previous runs!
+Now we are loading data dynamically from a continously changing data source!
 
 {% hint style="info" %}
 In the near future, ZenML will help you automatically detect drift and schema changes across pipeline runs, to make your pipelines even more robust! Keep an eye out on this space and future releases!
