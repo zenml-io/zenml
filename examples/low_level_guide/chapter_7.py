@@ -18,7 +18,6 @@ import requests
 from sklearn.base import ClassifierMixin
 from sklearn.linear_model import LogisticRegression
 
-from zenml.core.repo import Repository
 from zenml.pipelines import pipeline
 from zenml.steps import step
 from zenml.steps.base_step_config import BaseStepConfig
@@ -112,12 +111,4 @@ scikit_p = mnist_pipeline(
 )
 
 # Run the new pipeline
-scikit_p.run()
-
-# Post-execution
-repo = Repository()
-p = repo.get_pipeline(pipeline_name="mnist_pipeline")
-print(f"Pipeline `mnist_pipeline` has {len(p.get_runs())} run(s)")
-eval_step = p.get_runs()[-1].get_step("sklearn_evaluator")
-val = eval_step.outputs[0].read()
-print(f"We scored an accuracy of {val} on the latest run!")
+DAG = scikit_p.run()

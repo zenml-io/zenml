@@ -44,21 +44,32 @@ zenml stack register airflow_stack \
     -m local_metadata_store \
     -a local_artifact_store \
     -o airflow_orchestrator
+zenml stack set airflow_stack
 ```
 
 Output:
 ```bash
 Orchestrator `airflow_orchestrator` successfully registered!
 Stack `airflow_stack` successfully registered!
+Active stack: airflow_stack
 ```
-
-This does the following:
-* Changes AIRFLOW_HOME and DAG_HOME to point to the ZenML repo instead.
-* Sets the `airflow_stack` to be the active stack, so essentially all pipelines will now be run on Airflow. So with just a few commands we transitioned to a production-ready setup!
 
 {% hint style="warning" %}
 In the real-world we would also switch to something like a MySQL-based metadata store and a Azure/GCP/S3-based artifact store. We have just skipped that part to keep everything in one machine to make it a bit easier to run this guide.
 {% endhint %}
+
+## Run
+The code from this chapter is the same as the last chapter. So run:
+
+```python
+python chapter_7.py
+```
+
+Even through the pipeline script is  the same, the output will be a lot different from last time. ZenML will detect that `airflow_stack` is the active stack, and bootstrap airflow locally for you. It will create a bunch of files in the current working directory and even create an admin with the username `admin` and store the password in the `standalone_admin_password.txt` file.
+
+Navigate over to `https://0.0.0.0:8080` and you can enter your just generated credentials. You would then be able to see a list of Airflow DAGs, including one called `mnist`, scheduled to run every 5 minutes. You can click it and now finally see a visualization of the pipeline we've been working so hard to create in these chapters. Go ahead and trigger the DAG from the UI to see it in action.
+
+And that's it: As long as you keep Airflow running now, this script will run every 5 minutes, pull the latest data, and train a new model!
 
 We now have a continuously training ML pipeline training on new data every day. All the pipelines will be tracked in your production [Stack's metadata store](../../core-concepts.md), the interim artifacts will be stored in the [Artifact Store](../../core-concepts.md), and the scheduling and orchestration is being handled by the [orchestrator](../../core-concepts.md), in this case Airflow.
 
