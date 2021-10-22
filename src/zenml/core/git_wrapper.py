@@ -18,7 +18,6 @@ from typing import Any, Optional, Type, cast
 
 from git import BadName  # type: ignore[attr-defined]
 from git import Repo as GitRepo  # type: ignore[attr-defined]
-from tfx.utils.import_utils import import_class_by_path
 
 from zenml.constants import APP_NAME
 from zenml.exceptions import GitException
@@ -266,7 +265,7 @@ class GitWrapper:
 
             # After this point, all exceptions will first undo the above
             try:
-                class_ = import_class_by_path(source)
+                class_ = source_utils.import_class_by_path(source)
                 self.reset(relative_module_path)
                 self.checkout(directory=relative_module_path)
             except Exception as e:
@@ -281,13 +280,13 @@ class GitWrapper:
         elif "@" in source and is_standard:
             logger.debug(f"Default {APP_NAME} class used. Loading directly.")
             # TODO: [LOW] Check if ZenML version is installed before loading.
-            class_ = import_class_by_path(source)
+            class_ = source_utils.import_class_by_path(source)
         else:
             logger.debug(
                 "Unpinned step found with no git sha. Attempting to "
                 "load class from current repository state."
             )
-            class_ = import_class_by_path(source)
+            class_ = source_utils.import_class_by_path(source)
 
         return class_
 

@@ -17,14 +17,13 @@ from typing import Type
 
 os.environ["ZENML_DEBUG"] = "true"
 import pandas as pd
+import tensorflow as tf
 
-from zenml import pipeline
 from zenml.materializers.pandas_materializer import PandasMaterializer
+from zenml.pipelines import pipeline
 from zenml.steps import step
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
-
-import tensorflow as tf
 
 
 class StepConfig(BaseStepConfig):

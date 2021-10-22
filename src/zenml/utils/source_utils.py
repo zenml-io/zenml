@@ -30,8 +30,6 @@ import sys
 import types
 from typing import Any, Optional, Type, Union
 
-from tfx.utils.import_utils import import_class_by_path
-
 from zenml import __version__
 from zenml.constants import APP_NAME
 from zenml.logger import get_logger
@@ -204,6 +202,20 @@ def resolve_class(class_: Type[Any]) -> str:
         module_source = get_module_source_from_file_path(file_path)
         class_source = module_source + "." + class_.__name__
     return class_source
+
+
+def import_class_by_path(class_path: str) -> Type[Any]:
+    """Imports a class based on a given path
+
+    Args:
+        class_path: str, class_source e.g. this.module.Class
+
+    Returns: the given class
+    """
+    classname = class_path.split(".")[-1]
+    modulename = ".".join(class_path.split(".")[0:-1])
+    mod = importlib.import_module(modulename)
+    return getattr(mod, classname)
 
 
 def load_source_path_class(source: str) -> Type[Any]:
