@@ -21,7 +21,6 @@ from typing import Any, List
 import click
 from git.repo.base import Repo
 
-# import zenml.logger as logger
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
 from zenml.constants import APP_NAME, GIT_REPO_URL
@@ -30,9 +29,6 @@ from zenml.utils import path_utils
 # TODO: [MEDIUM] Add an example-run command to run an example.
 
 EXAMPLES_GITHUB_REPO = "zenml_examples"
-
-
-# logger = logger.get_logger(__name__)
 
 
 class GitExamplesHandler(object):
