@@ -24,12 +24,9 @@ from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, warning
 from zenml.constants import APP_NAME, GIT_REPO_URL
-from zenml.logger import get_logger
 from zenml.utils import path_utils
 
 # TODO: [MEDIUM] Add an example-run command to run an example.
-
-logger = get_logger(__name__)
 
 EXAMPLES_GITHUB_REPO = "zenml_examples"
 
