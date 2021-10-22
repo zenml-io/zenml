@@ -15,10 +15,9 @@
 
 import platform
 import sys
-from typing import Any, Callable, Dict, Optional, cast
+from typing import Any, Callable, Dict, Optional
 
 import distro
-import requests
 
 from zenml import __version__
 from zenml.constants import IS_DEBUG_ENV
@@ -59,18 +58,9 @@ def get_segment_key() -> str:
         requests.exceptions.RequestException if request times out.
     """
     if IS_DEBUG_ENV:
-        url = "https://zenml.io/dev.analytics.json"
+        return "mDBYI0m7GcCj59EZ4f9d016L1T3rh8J5"
     else:
-        url = "https://zenml.io/analytics.json"
-
-    headers = {"content-type": "application/json"}
-
-    try:
-        r = requests.get(url, headers=headers, timeout=5)
-        return cast(str, r.json()["id"])
-    except requests.exceptions.RequestException:
-        logger.debug("Failed to get segment write key", exc_info=True)
-        raise
+        return "sezE77zEoxHPFDXuyFfILx6fBnJFZ4p7"
 
 
 def in_docker() -> bool:
@@ -133,7 +123,7 @@ def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> None:
             analytics.write_key = get_segment_key()
 
         assert (
-            analytics.write_key is not None
+                analytics.write_key is not None
         ), "Analytics key not set but trying to make telemetry call."
 
         from zenml.config.global_config import GlobalConfig
@@ -160,7 +150,7 @@ def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> None:
 
 
 def parametrized(
-    dec: Callable[..., Callable[..., Any]]
+        dec: Callable[..., Callable[..., Any]]
 ) -> Callable[..., Callable[[Callable[..., Any]], Callable[..., Any]]]:
     """This is a meta-decorator, that is, a decorator for decorators.
     As a decorator is a function, it actually works as a regular decorator
