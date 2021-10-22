@@ -105,6 +105,7 @@ def example() -> None:
 
 @example.command(help="List the available examples.")
 @pass_git_examples_handler
+# TODO: [MEDIUM] Use a better type for the git_examples_handler
 def list(git_examples_handler: Any) -> None:
     """List all available examples."""
     click.echo("Listing examples: \n")
@@ -118,6 +119,7 @@ def list(git_examples_handler: Any) -> None:
 @example.command(help="Find out more about an example.")
 @pass_git_examples_handler
 @click.argument("example_name")
+# TODO: [MEDIUM] Use a better type for the git_examples_handler
 def info(git_examples_handler: Any, example_name: str) -> None:
     """Find out more about an example."""
     # TODO: [MEDIUM] format the output so that it looks nicer (not a pure .md dump)
@@ -137,6 +139,7 @@ def info(git_examples_handler: Any, example_name: str) -> None:
     "--force-redownload",
     help="Pass in a version number to redownload the examples folder for that specific version.",
 )
+# TODO: [MEDIUM] Use a better type for the git_examples_handler
 def pull(
     git_examples_handler: Any, example_name: str, force_redownload: str
 ) -> None:
