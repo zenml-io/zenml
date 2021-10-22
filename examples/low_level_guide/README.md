@@ -21,7 +21,7 @@ In order to run the chapters of the guide, you need to install and initialize Ze
 
 ```bash
 # install CLI
-pip install zenml tensorflow sklearn sqlalchemy
+pip install zenml tensorflow sklearn sqlalchemy 'google-cloud-bigquery[bqstorage,pandas]'
 
 # initialize CLI
 cd ~
@@ -33,11 +33,13 @@ git init
 zenml init
 ```
 
+At some point, you'll also need to (optionally) install and set up [Apache Airflow](https://airflow.apache.org/), but we address that again later in the guide itself.
+
 ### Run the project
 Now we're ready. Execute:
 
 ```bash
-python chapter_*.py
+python chapter_*.py  # for the chapter of your choice (except the Airflow chapter)
 ```
 
 Note before executing each chapter, make sure to clean the old chapter artifact and metadata store:
