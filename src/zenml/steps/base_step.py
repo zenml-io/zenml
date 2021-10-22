@@ -171,12 +171,11 @@ class BaseStep(metaclass=BaseStepMeta):
         if self.CONFIG and len(kwargs) == 1:
             config = kwargs.popitem()[1]
 
-            if not isinstance(config, BaseStepConfig):
+            if not isinstance(config, self.CONFIG):
                 raise StepInterfaceError(
                     f"`{config}` object passed when creating a "
-                    f"'{self.step_name}' step is not a valid configuration "
-                    f"object. Only `{BaseStepConfig}` instances are "
-                    f"allowed arguments when creating a step."
+                    f"'{self.step_name}' step is not a "
+                    f"`{self.CONFIG.__name__}` instance."
                 )
 
             try:
