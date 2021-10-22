@@ -129,12 +129,12 @@ def example() -> None:
 # TODO: [MEDIUM] Use a better type for the git_examples_handler
 def list(git_examples_handler: Any) -> None:
     """List all available examples."""
-    click.echo("Listing examples: \n")
+    declare("Listing examples: \n")
     # git_examples_handler.get_all_examples()
     for name in git_examples_handler.get_all_examples():
-        click.echo(f"{name}")
-    click.echo("\nTo pull the examples, type: ")
-    click.echo("zenml example pull EXAMPLE_NAME")
+        declare(f"{name}")
+    declare("\nTo pull the examples, type: ")
+    declare("zenml example pull EXAMPLE_NAME")
 
 
 @example.command(help="Find out more about an example.")
