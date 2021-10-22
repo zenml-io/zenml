@@ -13,7 +13,6 @@
 # #  permissions and limitations under the License.
 """CLI to interact with pipelines."""
 
-from types import ModuleType
 
 import click
 
@@ -90,14 +89,21 @@ def run_pipeline(python_file: str, config_path: str) -> None:
         python_file: Path to the python file that defines the pipeline.
         config_path: Path to configuration YAML file.
     """
+    import importlib
     import os
+    import sys
 
     from zenml.utils import yaml_utils
 
     python_file = os.path.abspath(python_file)
 
+    # Add directory of python file to PYTHONPATH so we can import it
+    sys.path.append(os.path.dirname(python_file))
+
+    module_name = os.path.splitext(os.path.basename(python_file))[0]
+    pipeline_module = importlib.import_module(module_name)
+
     config = yaml_utils.read_yaml(config_path)
-    pipeline_module = _load_source(python_file)
 
     pipeline_name = config["name"]
     pipeline_class = getattr(pipeline_module, pipeline_name)
@@ -132,21 +138,3 @@ def run_pipeline(python_file: str, config_path: str) -> None:
         config_path, overwrite_step_parameters=True
     )
     pipeline_instance.run()
-
-
-def _load_source(path: str) -> ModuleType:
-    """Load single python file"""
-    import importlib.machinery
-    import importlib.util
-    import os
-    import sys
-
-    module_name = os.path.splitext(os.path.basename(path))[0].replace("-", "_")
-
-    spec = importlib.util.spec_from_loader(
-        module_name, importlib.machinery.SourceFileLoader(module_name, path)
-    )
-    module = importlib.util.module_from_spec(spec)  # type: ignore
-    spec.loader.exec_module(module)  # type: ignore
-    sys.modules[module_name] = module
-    return module
