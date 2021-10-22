@@ -18,10 +18,6 @@ from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_decorator import step
 
 
-def test_me():
-    """A simple test to check a functionality"""
-
-
 def test_initialize_step_with_unexpected_config():
     """Tests that passing a config to a step that was defined without
     config raises an Exception."""
