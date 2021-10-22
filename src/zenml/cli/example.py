@@ -16,12 +16,12 @@
 import os
 import shutil
 from pathlib import Path
-from typing import List
+from typing import Any, List
 
 import click
-from git import Repo
+from git.repo import Repo
 
-import zenml.logger as logger
+# import zenml.logger as logger
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
 from zenml.constants import APP_NAME, GIT_REPO_URL
@@ -32,14 +32,14 @@ from zenml.utils import path_utils
 EXAMPLES_GITHUB_REPO = "zenml_examples"
 
 
-logger = logger.get_logger(__name__)
+# logger = logger.get_logger(__name__)
 
 
 class GitExamplesHandler(object):
-    def __init__(self, redownload=None) -> None:
+    def __init__(self, redownload: str = "") -> None:
         self.clone_repo(redownload)
 
-    def clone_repo(self, redownload=None) -> None:
+    def clone_repo(self, redownload: str = "") -> None:
         """Clone ZenML git repo into global config directory if not already cloned"""
         installed_version = zenml_version_installed
         repo_dir = click.get_app_dir(APP_NAME)
@@ -47,7 +47,6 @@ class GitExamplesHandler(object):
 
         # delete source directory if force redownload is set
         if redownload:
-            logger.debug(f"DELETING SOURCE REPO: {redownload}")
             self.delete_example_source_dir(examples_dir)
             installed_version = redownload
 
@@ -83,7 +82,7 @@ class GitExamplesHandler(object):
             )
         ]
 
-    def get_example_readme(self, example_path) -> str:
+    def get_example_readme(self, example_path: str) -> str:
         """Get the example README file contents."""
         with open(os.path.join(example_path, "README.md")) as readme:
             readme_content = readme.read()
@@ -100,26 +99,13 @@ pass_git_examples_handler = click.make_pass_decorator(
 
 
 @cli.group(help="Access all ZenML examples.")
-def example():
+def example() -> None:
     """Examples group"""
-
-
-@example.command(help="Test examples.")
-@pass_git_examples_handler
-@click.option(
-    "--force-redownload",
-    help="Pass in a version number to redownload the examples folder for that specific version. Defaults to your current installed version.",
-)
-def test(git_examples_handler, force_redownload):
-    """Testing function"""
-    logger.debug(force_redownload)
-    if force_redownload:
-        GitExamplesHandler(redownload=force_redownload)
 
 
 @example.command(help="List the available examples.")
 @pass_git_examples_handler
-def list(git_examples_handler):
+def list(git_examples_handler: Any) -> None:
     """List all available examples."""
     click.echo("Listing examples: \n")
     # git_examples_handler.get_all_examples()
@@ -132,7 +118,7 @@ def list(git_examples_handler):
 @example.command(help="Find out more about an example.")
 @pass_git_examples_handler
 @click.argument("example_name")
-def info(git_examples_handler, example_name):
+def info(git_examples_handler: Any, example_name: str) -> None:
     """Find out more about an example."""
     # TODO: [MEDIUM] format the output so that it looks nicer (not a pure .md dump)
     example_dir = os.path.join(
@@ -149,10 +135,13 @@ def info(git_examples_handler, example_name):
 @click.argument("example_name", required=False, default=None)
 @click.option(
     "--force-redownload",
-    help="Pass in a version number to redownload the examples folder for that specific version. Defaults to your current installed version.",
+    help="Pass in a version number to redownload the examples folder for that specific version.",
 )
-def pull(git_examples_handler, example_name, force_redownload):
-    """Pull examples straight " "into your current working directory."""
+def pull(
+    git_examples_handler: Any, example_name: str, force_redownload: str
+) -> None:
+    """Pull examples straight into your current working directory.
+    Add the flag --force-redownload"""
     if force_redownload:
         GitExamplesHandler(redownload=force_redownload)
         # TODO: [HIGH] decide whether user's CwD examples are deleted or not
