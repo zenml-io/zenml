@@ -181,8 +181,9 @@ def create_dir_recursive_if_not_exists(dir_path: str) -> None:
     Args:
         dir_path: Local path in filesystem.
     """
-    if not fileio.exists(dir_path):
-        Path(dir_path).mkdir(parents=True, exist_ok=True)
+    if not fileio.isdir(dir_path):
+        # TODO [MEDIUM]:  fix recursive delete (currently not working)
+        fileio.mkdir(dir_path)
 
 
 def resolve_relative_path(path: str) -> str:
