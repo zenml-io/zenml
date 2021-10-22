@@ -12,7 +12,7 @@
 # #  or implied. See the License for the specific language governing
 # #  permissions and limitations under the License.
 """CLI to interact with pipelines."""
-
+import importlib
 import os
 import sys
 import types
@@ -26,6 +26,46 @@ from zenml.logger import get_logger
 from zenml.utils import yaml_utils
 
 logger = get_logger(__name__)
+
+
+def _import_python_file(file_path: str) -> types.ModuleType:
+    """Imports a python file.
+
+    Args:
+        file_path: Path to python file that should be imported.
+
+    Returns:
+        The imported module.
+    """
+    # Add directory of python file to PYTHONPATH so we can import it
+    file_path = os.path.abspath(file_path)
+    sys.path.append(os.path.dirname(file_path))
+
+    module_name = os.path.splitext(os.path.basename(file_path))[0]
+    return importlib.import_module(module_name)
+
+
+def _get_module_attribute(module: types.ModuleType, attribute_name: str) -> Any:
+    """Gets an attribute from a module.
+
+    Args:
+        module: The module to load the attribute from.
+        attribute_name: Name of the attribute to load.
+
+    Returns:
+        The attribute value.
+
+    Raises:
+        PipelineConfigurationError: If the module does not have an attribute
+            with the given name.
+    """
+    try:
+        return getattr(module, attribute_name)
+    except AttributeError:
+        raise PipelineConfigurationError(
+            f"Unable to load '{attribute_name}' from"
+            f" file '{module.__file__}'"
+        ) from None
 
 
 @cli.group()
@@ -90,45 +130,3 @@ def run_pipeline(python_file: str, config_path: str) -> None:
     )
     logger.debug("Finished setting up pipeline '%s' from CLI", pipeline_name)
     pipeline_instance.run()
-
-
-def _get_module_attribute(module: types.ModuleType, attribute_name: str) -> Any:
-    """Gets an attribute from a module.
-
-    Args:
-        module: The module to load the attribute from.
-        attribute_name: Name of the attribute to load.
-
-    Returns:
-        The attribute value.
-
-    Raises:
-        PipelineConfigurationError: If the module does not have an attribute
-            with the given name.
-    """
-    try:
-        return getattr(module, attribute_name)
-    except AttributeError:
-        raise PipelineConfigurationError(
-            f"Unable to load '{attribute_name}' from"
-            f" file '{module.__file__}'"
-        ) from None
-
-
-def _import_python_file(file_path: str) -> types.ModuleType:
-    """Imports a python file.
-
-    Args:
-        file_path: Path to python file that should be imported.
-
-    Returns:
-        The imported module.
-    """
-    import importlib
-
-    # Add directory of python file to PYTHONPATH so we can import it
-    file_path = os.path.abspath(file_path)
-    sys.path.append(os.path.dirname(file_path))
-
-    module_name = os.path.splitext(os.path.basename(file_path))[0]
-    return importlib.import_module(module_name)
