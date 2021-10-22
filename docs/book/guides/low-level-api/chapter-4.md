@@ -2,7 +2,7 @@
 description: Leverage caching.
 ---
 
-If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low_level_guide/).
+If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low_level_guide/chapter_4.py).
 
 # Chapter 4: Swap out implementations of individual steps and see caching in action
 

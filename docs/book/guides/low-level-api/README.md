@@ -17,6 +17,6 @@ Here is what we'll do in this guide:
 * Persist our interim data artifacts in SQL tables rather than on files.
 * Deploy the pipeline on [Airflow](https://airflow.apache.org/).
 
-If you just want to see the code for the guide, head over to the [GitHub version](https://github.com/zenml-io/zenml/tree/main/examples/low_level_guide)
+If you just want to see all of the code for each chapter of the guide, head over to the [GitHub version](https://github.com/zenml-io/zenml/tree/main/examples/low_level_guide)
 
 If not, then press next and let's go through it together!
