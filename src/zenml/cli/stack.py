@@ -29,9 +29,9 @@ def stack() -> None:
 
 @stack.command("register", context_settings=dict(ignore_unknown_options=True))
 @click.argument("stack_name", type=str)
-@click.argument("metadata_store", type=str)
-@click.argument("artifact_store", type=str)
-@click.argument("orchestrator", type=str)
+@click.argument("-m", "--metadata-store", type=str, required=True)
+@click.argument("-a", "--artifact-store", type=str, required=True)
+@click.argument("-o", "--orchestrator", type=str, required=True)
 def register_stack(
     stack_name: str,
     metadata_store: str,
