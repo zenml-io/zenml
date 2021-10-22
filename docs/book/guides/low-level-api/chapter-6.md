@@ -8,6 +8,12 @@ If you want to see the code for this chapter of the guide, head over to the [Git
 
 Until now, we've been reading from a static data importer step because we are at the experimentation phase of the ML workflow. Now as we head towards production, we want to switch over to a non-static, dynamic data importer step:
 
+This could be anything like:
+
+* A database/data warehouse that updates regularly (SQL databases, BigQuery, Snowflake)
+* A data lake (S3 Buckets/Azure Blob Storage/GCP Storage)
+* An API which allows you to query the latest data.
+
 ## Read from a dynamic datasource
 
 Let's also slightly change our pipeline to add our new step. For this guide, we have set up a [public BigQuery table]() that simulates a real world setting of reading from a production database. The data in the public BigQuery table is just MNIST data but new data is added every day.
@@ -33,8 +39,8 @@ def dynamic_importer() -> Output(
         'https://stackoverflow.com/questions/',
         CAST(id as STRING)) as url,
     view_count
-    FROM `bigquery-public-data.stackoverflow.posts_questions`
-    WHERE tags like '%google-bigquery%'
+    FROM `zenml-core.mnist.mnist_data`
+    WHERE timestamp like '%google-bigquery%'
     ORDER BY view_count DESC
     """
     

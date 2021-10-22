@@ -13,47 +13,47 @@
 #  permissions and limitations under the License.
 
 import numpy as np
-from google.cloud import bigquery
+import pandas as pd
+import requests
 from sklearn.base import ClassifierMixin
 from sklearn.linear_model import LogisticRegression
 
+from zenml.core.repo import Repository
 from zenml.pipelines import pipeline
 from zenml.steps import step
+from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
 
 
+class ImporterConfig(BaseStepConfig):
+    n_days: int = 1
+
+
+def get_X_y_from_api(n_days: int = 1, is_train: bool = True):
+    url = (
+        "https://storage.googleapis.com/zenml-public-bucket/mnist"
+        "/mnist_handwritten_train.json"
+        if is_train
+        else "https://storage.googleapis.com/zenml-public-bucket/mnist"
+        "/mnist_handwritten_test.json"
+    )
+    df = pd.DataFrame(requests.get(url).json())
+    X = df["image"].map(lambda x: np.array(x)).values
+    X = np.array([x.reshape(28, 28) for x in X])
+    y = df["label"].map(lambda y: np.array(y)).values
+    return X, y
+
+
 @step
-def dynamic_importer() -> Output(
+def dynamic_importer(
+    config: ImporterConfig,
+) -> Output(
     X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
 ):
-    """Downloads the latest data from a BigQuery table."""
-    bqclient = bigquery.Client()
-
-    # Download query results.
-    query_string = """
-    SELECT
-    CONCAT(
-        'https://stackoverflow.com/questions/',
-        CAST(id as STRING)) as url,
-    view_count
-    FROM `bigquery-public-data.stackoverflow.posts_questions`
-    WHERE tags like '%google-bigquery%'
-    ORDER BY view_count DESC
-    """
-
-    dataframe = (
-        bqclient.query(query_string)
-        .result()
-        .to_dataframe(
-            # Optionally, explicitly request to use the BigQuery Storage API.
-            # As of
-            # google-cloud-bigquery version 1.26.0 and above, the BigQuery
-            # Storage
-            # API is used by default.
-            create_bqstorage_client=True,
-        )
-    )
-    return dataframe
+    """Downloads the latest data from a mock API."""
+    X_train, y_train = get_X_y_from_api(n_days=config.n_days, is_train=True)
+    X_test, y_test = get_X_y_from_api(n_days=config.n_days, is_train=False)
+    return X_train, y_train, X_test, y_test
 
 
 @step
@@ -89,7 +89,7 @@ def sklearn_evaluator(
     return test_acc
 
 
-@pipeline
+@pipeline(enable_cache=False)
 def mnist_pipeline(
     importer,
     normalizer,
@@ -112,4 +112,12 @@ scikit_p = mnist_pipeline(
 )
 
 # Run the new pipeline
-DAG = scikit_p.run()
+scikit_p.run()
+
+# Post-execution
+repo = Repository()
+p = repo.get_pipeline(pipeline_name="mnist_pipeline")
+print(f"Pipeline `mnist_pipeline` has {len(p.get_runs())} run(s)")
+eval_step = p.get_runs()[-1].get_step("sklearn_evaluator")
+val = eval_step.outputs[0].read()
+print(f"We scored an accuracy of {val} on the latest run!")
