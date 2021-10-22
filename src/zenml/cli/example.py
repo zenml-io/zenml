@@ -103,6 +103,16 @@ class GitExamplesHandler(object):
                 "You can only delete the source directory from your ZenML config directory"
             )
 
+    def delete_working_directory_examples_folder(self) -> None:
+        """Delete the zenml_examples folder from the current working directory."""
+        cwd_directory_path = str(os.path.join(os.getcwd(), "zenml_examples"))
+        if os.path.exists(cwd_directory_path):
+            path_utils.rm_dir(cwd_directory_path)
+        else:
+            raise ValueError(
+                "You can only delete the examples directory from your current working directory."
+            )
+
 
 pass_git_examples_handler = click.make_pass_decorator(
     GitExamplesHandler, ensure=True
@@ -146,10 +156,6 @@ def info(git_examples_handler: Any, example_name: str) -> None:
 )
 @pass_git_examples_handler
 @click.argument("example_name", required=False, default=None)
-# @click.option(
-#     "--force-redownload",
-#     help="Pass in a version number to redownload the examples folder for that specific version.",
-# )
 @click.option(
     "--force",
     "-f",
@@ -173,9 +179,10 @@ def pull(
     """Pull examples straight into your current working directory.
     Add the flag --force-redownload"""
     if force:
+        click.echo(f"Recloning ZenML repo for version {version}...")
         GitExamplesHandler(redownload=version)
-        # TODO: [HIGH] decide whether user's CwD examples are deleted or not
-        # Currently we don't delete them, but ask if an overwrite happens
+        click.echo("Deleting examples from current working directory...")
+        git_examples_handler.delete_working_directory_examples_folder()
 
     examples_dir = git_examples_handler.get_examples_dir()
     examples = (
@@ -199,7 +206,7 @@ def pull(
                 path_utils.rm_dir(dst_dir)
             else:
                 continue
-        click.echo(f"Pulling example {example}")
+        click.echo(f"Pulling example {example}...")
         src_dir = os.path.join(examples_dir, example)
         path_utils.copy_dir(src_dir, dst_dir)
 
