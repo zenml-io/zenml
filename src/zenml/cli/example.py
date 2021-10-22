@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any, List
 
 import click
-from git.repo import Repo
+from git.repo.base import Repo
 
 # import zenml.logger as logger
 from zenml import __version__ as zenml_version_installed
