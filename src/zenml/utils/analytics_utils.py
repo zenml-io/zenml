@@ -22,7 +22,6 @@ import distro
 import requests
 
 from zenml import __version__
-from zenml.config.global_config import GlobalConfig
 from zenml.constants import IS_DEBUG_ENV
 from zenml.logger import get_logger
 
@@ -135,9 +134,12 @@ def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> None:
         metadata: Dict of metadata to track.
     """
     try:
+        import analytics
         assert (
             analytics.write_key is not None
         ), "Analytics key not set but trying to make telemetry call."
+
+        from zenml.config.global_config import GlobalConfig
 
         gc = GlobalConfig()
 
