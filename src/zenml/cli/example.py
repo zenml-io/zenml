@@ -14,7 +14,6 @@
 
 
 import os
-import shutil
 from pathlib import Path
 from typing import Any, List
 
@@ -85,8 +84,24 @@ class GitExamplesHandler(object):
         return readme_content
 
     def delete_example_source_dir(self, source_path: str) -> None:
-        """Clean the example directory"""
-        shutil.rmtree(source_path, ignore_errors=True)
+        """Clean the example directory. This method checks that we are
+        inside the ZenML config directory before performing its deletion.
+
+        Args:
+            source_path (str): The path to the example source directory.
+
+        Raises:
+            ValueError: If the source_path is not the ZenML config directory.
+        """
+        config_directory_path = str(
+            os.path.join(click.get_app_dir(APP_NAME), EXAMPLES_GITHUB_REPO)
+        )
+        if source_path == config_directory_path:
+            path_utils.rm_dir(source_path)
+        else:
+            raise ValueError(
+                "You can only delete the source directory from your ZenML config directory"
+            )
 
 
 pass_git_examples_handler = click.make_pass_decorator(
