@@ -139,7 +139,10 @@ To register a new stack, you must already have registered the individual compone
 Use the `zenml stack register` command to register your stack. It takes four arguments as in the following example:
 
 ```bash
-zenml stack register --stack_name my-new-stack --metadata_store my-new-metadata-store --artifact_store my-new-artifact-store --orchestrator my-new-orchestrator
+zenml stack register STACK_NAME \
+    -m METADATA_STORE_NAME \
+    -a ARTIFACT_STORE_NAME \
+    -o ORCHESTRATOR_NAME
 ```
 
 Each corresponding argument should be the name you passed in as an identifier for the artifact store, metadata store or orchestrator when you originally registered it.

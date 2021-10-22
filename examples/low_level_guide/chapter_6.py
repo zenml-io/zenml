@@ -12,91 +12,47 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os
-import re
-
 import numpy as np
-import tensorflow as tf
+import pandas as pd
+import requests
 from sklearn.base import ClassifierMixin
 from sklearn.linear_model import LogisticRegression
-from sqlalchemy import Column, Float, Integer, create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 
 from zenml.core.repo import Repository
-from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
 from zenml.steps import step
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
 
-Base = declarative_base()
+
+class ImporterConfig(BaseStepConfig):
+    n_days: int = 1
 
 
-class Floats(Base):
-    __tablename__ = "my_floats"
-
-    id = Column(Integer, primary_key=True)
-    value = Column(Float, nullable=False)
-
-
-class SQLALchemyMaterializerForSQLite(BaseMaterializer):
-    """Read/Write float to sqlalchemy table."""
-
-    ASSOCIATED_TYPES = [float]
-
-    def __init__(self, artifact):
-        super().__init__(artifact)
-        # connection
-        sqlite_filepath = os.path.join(artifact.uri, "database")
-        engine = create_engine(f"sqlite:///{sqlite_filepath}")
-
-        # create metadata
-        Base.metadata.create_all(engine)
-
-        # create session
-        Session = sessionmaker(bind=engine)
-        self.session = Session()
-
-        # Every artifact has a URI with a unique integer ID
-        self.float_id = int(re.search(r"\d+", artifact.uri).group())
-
-    def handle_input(self, data_type) -> float:
-        """Reads float from a table"""
-        super().handle_input(data_type)
-
-        # query data
-        return (
-            self.session.query(Floats)
-            .filter(Floats.id == self.float_id)
-            .first()
-        ).value
-
-    def handle_return(self, data: float):
-        """Stores float in a SQLAlchemy Table"""
-        super().handle_return(data)
-        my_float = Floats(id=self.float_id, value=data)
-        self.session.add_all([my_float])
-        self.session.commit()
-
-
-class TrainerConfig(BaseStepConfig):
-    """Trainer params"""
-
-    epochs: int = 1
-    gamma: float = 0.7
-    lr: float = 0.001
+def get_X_y_from_api(n_days: int = 1, is_train: bool = True):
+    url = (
+        "https://storage.googleapis.com/zenml-public-bucket/mnist"
+        "/mnist_handwritten_train.json"
+        if is_train
+        else "https://storage.googleapis.com/zenml-public-bucket/mnist"
+        "/mnist_handwritten_test.json"
+    )
+    df = pd.DataFrame(requests.get(url).json())
+    X = df["image"].map(lambda x: np.array(x)).values
+    X = np.array([x.reshape(28, 28) for x in X])
+    y = df["label"].map(lambda y: np.array(y)).values
+    return X, y
 
 
 @step
-def importer_mnist() -> Output(
+def dynamic_importer(
+    config: ImporterConfig,
+) -> Output(
     X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
 ):
-    """Download the MNIST data and store it as an artifact"""
-    (X_train, y_train), (
-        X_test,
-        y_test,
-    ) = tf.keras.datasets.mnist.load_data()
+    """Downloads the latest data from a mock API."""
+    X_train, y_train = get_X_y_from_api(n_days=config.n_days, is_train=True)
+    X_test, y_test = get_X_y_from_api(n_days=config.n_days, is_train=False)
     return X_train, y_train, X_test, y_test
 
 
@@ -112,7 +68,6 @@ def normalize_mnist(
 
 @step
 def sklearn_trainer(
-    config: TrainerConfig,
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
@@ -134,7 +89,7 @@ def sklearn_evaluator(
     return test_acc
 
 
-@pipeline
+@pipeline(enable_cache=False)
 def mnist_pipeline(
     importer,
     normalizer,
@@ -150,12 +105,10 @@ def mnist_pipeline(
 
 # Initialise a new pipeline run
 scikit_p = mnist_pipeline(
-    importer=importer_mnist(),
+    importer=dynamic_importer(),
     normalizer=normalize_mnist(),
-    trainer=sklearn_trainer(config=TrainerConfig()),
-    evaluator=sklearn_evaluator().with_return_materializers(
-        SQLALchemyMaterializerForSQLite
-    ),
+    trainer=sklearn_trainer(),
+    evaluator=sklearn_evaluator(),
 )
 
 # Run the new pipeline
@@ -166,5 +119,5 @@ repo = Repository()
 p = repo.get_pipeline(pipeline_name="mnist_pipeline")
 print(f"Pipeline `mnist_pipeline` has {len(p.get_runs())} run(s)")
 eval_step = p.get_runs()[-1].get_step("sklearn_evaluator")
-val = eval_step.outputs[0].read(float, SQLALchemyMaterializerForSQLite)
-print(f"The evaluator stored the value: {val} in a SQLite database!")
+val = eval_step.outputs[0].read()
+print(f"We scored an accuracy of {val} on the latest run!")

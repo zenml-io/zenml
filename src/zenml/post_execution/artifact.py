@@ -63,7 +63,7 @@ class ArtifactView:
     # TODO [MEDIUM]: can we store a default datatype inside the metadata store
     def read(
         self,
-        output_data_type: Type[Any],
+        output_data_type: Optional[Type[Any]] = None,
         materializer_class: Optional[Type[BaseMaterializer]] = None,
     ) -> Any:
         """Materializes the data stored in this artifact.

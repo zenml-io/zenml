@@ -13,7 +13,10 @@
 #  permissions and limitations under the License.
 
 import datetime
-from typing import TYPE_CHECKING, Any
+import multiprocessing
+import os
+import time
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import tfx.orchestration.pipeline as tfx_pipeline
 
@@ -24,9 +27,11 @@ from zenml.orchestrators.airflow.airflow_dag_runner import (
     AirflowPipelineConfig,
 )
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+from zenml.utils import path_utils
 
 if TYPE_CHECKING:
     import airflow
+    from airflow.cli.commands.standalone_command import StandaloneCommand
 
     from zenml.pipelines.base_pipeline import BasePipeline
 
@@ -34,6 +39,55 @@ if TYPE_CHECKING:
 @orchestrator_store_factory.register(OrchestratorTypes.airflow)
 class AirflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
+
+    airflow_home: Optional[str] = None
+    airflow_config: Optional[Dict[str, Any]] = {}
+
+    def _set_env(self) -> None:
+        self.airflow_home = os.getcwd()
+        os.environ["AIRFLOW_HOME"] = self.airflow_home
+        os.environ["AIRFLOW__CORE__DAGS_FOLDER"] = self.airflow_home
+        os.environ["AIRFLOW__CORE__DAG_DISCOVERY_SAFE_MODE"] = "false"
+
+    def _run_standalone_thread(self, standalone: "StandaloneCommand") -> None:
+        """The function that runs the standalone command in a separate thread.
+
+        Args:
+            standalone: An Airflow StandaloneCommand.
+        """
+        self._set_env()
+        standalone.run()
+
+    def _run_standalone(self, standalone: "StandaloneCommand") -> None:
+        """Run the `airflow standalone` command.
+
+        Args:
+            standalone: An Airflow StandaloneCommand.
+        """
+        t = multiprocessing.Process(
+            target=self._run_standalone_thread,
+            args=(standalone,),
+        )
+        t.start()
+
+    def bootstrap_airflow(self) -> None:
+        """Starts Airflow with the standalone command."""
+        self._set_env()
+        from airflow.cli.commands.standalone_command import StandaloneCommand
+
+        standalone = StandaloneCommand()
+
+        if not standalone.is_ready():
+            self._run_standalone(standalone)
+
+        # Wait for it to finish
+        while True:
+            try:
+                if standalone.is_ready():
+                    break
+            except Exception:
+                pass
+            time.sleep(10)
 
     def run(
         self, zenml_pipeline: "BasePipeline", **kwargs: Any
@@ -44,13 +98,17 @@ class AirflowOrchestrator(BaseOrchestrator):
             zenml_pipeline: The pipeline to run.
             **kwargs: Unused argument to conform with base class signature.
         """
-        # TODO: [LOW] remove or modify the configuration here
-        _airflow_config = {
-            "schedule_interval": None,
-            "start_date": datetime.datetime(2019, 1, 1),
+        if not path_utils.file_exists(
+            os.path.join(self.airflow_home, "airflow.cfg")
+        ):
+            self.bootstrap_airflow()
+
+        self.airflow_config = {
+            "schedule_interval": datetime.timedelta(minutes=5),
+            "start_date": datetime.datetime.now(),
         }
 
-        runner = AirflowDagRunner(AirflowPipelineConfig(_airflow_config))
+        runner = AirflowDagRunner(AirflowPipelineConfig(self.airflow_config))
 
         # Establish the connections between the components
         zenml_pipeline.connect(**zenml_pipeline.steps)
@@ -66,7 +124,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             components=steps,  # type: ignore[arg-type]
             pipeline_root=artifact_store.path,
             metadata_connection_config=metadata_store.get_tfx_metadata_config(),
-            enable_cache=True,
+            enable_cache=zenml_pipeline.enable_cache,
         )
 
         return runner.run(created_pipeline)

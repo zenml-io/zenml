@@ -39,7 +39,10 @@ zenml init
 ### Create a new Airflow Stack
 ```bash
 zenml orchestrator register airflow_orchestrator airflow
-zenml stack set airflow_stack
+zenml stack register airflow_stack \
+    -m local_metadata_store \
+    -a local_artifact_store \
+    -o airflow_orchestrator
 ```
 
 ### Copy the runner script to the Airflow dag folder:
