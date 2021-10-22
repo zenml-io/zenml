@@ -17,14 +17,13 @@ from typing import Type
 
 os.environ["ZENML_DEBUG"] = "true"
 import pandas as pd
+import tensorflow as tf
 
-from zenml.pipelines import pipeline
 from zenml.materializers.pandas_materializer import PandasMaterializer
+from zenml.pipelines import pipeline
 from zenml.steps import step
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
-
-import tensorflow as tf
 
 
 class StepConfig(BaseStepConfig):
@@ -38,8 +37,7 @@ class PandasJSONMaterializer(PandasMaterializer):
     def handle_input(self, data_type: Type) -> pd.DataFrame:
         """Reads all files inside the artifact directory and concatenates
         them to a pandas dataframe."""
-        return pd.read_json(
-            os.path.join(self.artifact.uri, self.DATA_FILENAME))
+        return pd.read_json(os.path.join(self.artifact.uri, self.DATA_FILENAME))
 
     def handle_return(self, df: pd.DataFrame):
         """Writes a pandas dataframe to the specified filename.
@@ -53,7 +51,7 @@ class PandasJSONMaterializer(PandasMaterializer):
 
 @step
 def number_returner(
-        config: StepConfig,
+    config: StepConfig,
 ) -> Output(number=int, non_number=int):
     return config.basic_param_1 + int(config.basic_param_2), "test"
 
