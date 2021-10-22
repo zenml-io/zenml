@@ -138,7 +138,7 @@ def list_dir(dir_path: str, only_file_names: bool = False) -> List[str]:
 def create_file_if_not_exists(
     file_path: str, file_contents: str = "{}"
 ) -> None:
-    """Creates directory if it does not exist.
+    """Creates file if it does not exist.
 
     Args:
         file_path: Local path in filesystem.
@@ -181,8 +181,8 @@ def create_dir_recursive_if_not_exists(dir_path: str) -> None:
     Args:
         dir_path: Local path in filesystem.
     """
-    if not fileio.isdir(dir_path):
-        fileio.mkdir(dir_path)  # TODO [LOW]:  check if working recursively
+    if not fileio.exists(dir_path):
+        Path(dir_path).mkdir(parents=True, exist_ok=True)
 
 
 def resolve_relative_path(path: str) -> str:
@@ -230,18 +230,18 @@ def copy_dir(
     Args:
         source_dir: Path to copy from.
         destination_dir: Path to copy to.
-        overwrite: Boolean, if false, then throws an error before overwrite.
+        overwrite: Boolean. If false, function throws an error before overwrite.
     """
-    for f in list_dir(source_dir):
-        p = Path(f)
-        destination_name = os.path.join(destination_dir, p.name)
-        if is_dir(f):
-            copy_dir(f, destination_name, overwrite)
+    for source_file in list_dir(source_dir):
+        source_file_path = Path(source_file)
+        destination_name = os.path.join(destination_dir, source_file_path.name)
+        if is_dir(source_file):
+            copy_dir(source_file, destination_name, overwrite)
         else:
             create_dir_recursive_if_not_exists(
                 str(Path(destination_name).parent)
             )
-            copy(f, destination_name, overwrite)
+            copy(source_file, destination_name, overwrite)
 
 
 def move(source: str, destination: str, overwrite: bool = False) -> None:
