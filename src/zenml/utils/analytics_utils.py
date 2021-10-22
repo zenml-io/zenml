@@ -17,7 +17,6 @@ import platform
 import sys
 from typing import Any, Callable, Dict, Optional, cast
 
-import analytics
 import distro
 import requests
 
@@ -72,12 +71,6 @@ def get_segment_key() -> str:
     except requests.exceptions.RequestException:
         logger.debug("Failed to get segment write key", exc_info=True)
         raise
-
-
-def initialize_telemetry() -> None:
-    """Initializes telemetry with the right key"""
-    if analytics.write_key is None:
-        analytics.write_key = get_segment_key()
 
 
 def in_docker() -> bool:
@@ -135,6 +128,10 @@ def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> None:
     """
     try:
         import analytics
+
+        if analytics.write_key is None:
+            analytics.write_key = get_segment_key()
+
         assert (
             analytics.write_key is not None
         ), "Analytics key not set but trying to make telemetry call."

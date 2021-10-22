@@ -20,7 +20,5 @@ with open(os.path.join(ROOT_DIR, "VERSION")) as version_file:
     __version__: str = version_file.read().strip()
 
 from zenml.logger import init_logging  # noqa
-from zenml.utils.analytics_utils import initialize_telemetry  # noqa
 
 init_logging()
-initialize_telemetry()
