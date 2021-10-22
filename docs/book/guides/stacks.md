@@ -15,10 +15,10 @@ A stack is made up of the following three core components:
 A ZenML stack also happens to be a Pydantic `BaseSettings` class, which means that there are multiple ways to use it.
 
 ```bash
-zenml stack register MY_NEW_STACK
-    --metadata_store my-new-metadata-store \
-    --artifact_store my-new-artifact-store \ 
-    --orchestrator my-new-orchestrator
+zenml stack register STACK_NAME \
+    -m METADATA_STORE_NAME \
+    -a ARTIFACT_STORE_NAME \
+    -o ORCHESTRATOR_NAME
 ```
 
 {% hint style="info" %}

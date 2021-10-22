@@ -112,7 +112,10 @@ Let's stick with the `local_metadata_store` and a `local_artifact_store` for now
 
 ```shell
 zenml orchestrator register airflow_orchestrator airflow
-zenml stack register airflow_stack local_metadata_store local_artifact_store airflow_orchestrator
+zenml stack register airflow_stack \
+    -m local_metadata_store \
+    -a local_artifact_store \
+    -o airflow_orchestrator
 ```
 
 Output:
