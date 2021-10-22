@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import json
 import os
 from abc import abstractmethod
 from collections import OrderedDict
@@ -152,10 +153,10 @@ class BaseMetadataStore(BaseComponent):
             # TODO [HIGH]: why is the name like this?
             step_prefix = "zenml.steps.base_step."
             if step_name.startswith(step_prefix):
-                step_name = step_name[len(step_prefix) :]  # TODO [LOW]: black
+                step_name = step_name[len(step_prefix) :]
 
             step_parameters = {
-                k: v.string_value  # TODO [LOW]: Can we get the actual type?
+                k: json.loads(v.string_value)
                 for k, v in execution.custom_properties.items()
             }
 

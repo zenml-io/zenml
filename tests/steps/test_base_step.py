@@ -11,7 +11,44 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import pytest
+
+from zenml.exceptions import StepInterfaceError
+from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps.step_decorator import step
 
 
-def test_me():
-    """A simple test to check a functionality"""
+def test_initialize_step_with_unexpected_config():
+    """Tests that passing a config to a step that was defined without
+    config raises an Exception."""
+
+    @step
+    def step_without_config() -> None:
+        pass
+
+    with pytest.raises(StepInterfaceError):
+        step_without_config(config=BaseStepConfig())
+
+
+def test_initialize_step_with_config():
+    """Tests that a step can only be initialized with it's defined
+    config class."""
+
+    class StepConfig(BaseStepConfig):
+        pass
+
+    class DifferentConfig(BaseStepConfig):
+        pass
+
+    @step
+    def step_with_config(config: StepConfig) -> None:
+        pass
+
+    with pytest.raises(StepInterfaceError):
+        step_with_config(config=BaseStepConfig())  # noqa
+
+    with pytest.raises(StepInterfaceError):
+        step_with_config(config=DifferentConfig())  # noqa
+
+    # this should succeed
+    step_with_config(config=StepConfig())

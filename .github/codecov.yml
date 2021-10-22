@@ -2,6 +2,7 @@ codecov:
   branch: main
 
 comment: false          # don't comment on PRs
+github_checks: false
 
 coverage:
   status:

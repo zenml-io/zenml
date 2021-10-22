@@ -25,6 +25,9 @@ or the version of zenml as a string.
 """
 import importlib
 import inspect
+import os
+import sys
+import types
 from typing import Any, Optional, Type, Union
 
 from zenml import __version__
@@ -229,3 +232,20 @@ def load_source_path_class(source: str) -> Type[Any]:
     )
     class_ = import_class_by_path(source)
     return class_
+
+
+def import_python_file(file_path: str) -> types.ModuleType:
+    """Imports a python file.
+
+    Args:
+        file_path: Path to python file that should be imported.
+
+    Returns:
+        The imported module.
+    """
+    # Add directory of python file to PYTHONPATH so we can import it
+    file_path = os.path.abspath(file_path)
+    sys.path.append(os.path.dirname(file_path))
+
+    module_name = os.path.splitext(os.path.basename(file_path))[0]
+    return importlib.import_module(module_name)

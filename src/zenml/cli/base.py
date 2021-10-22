@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+from typing import Optional
 
 import click
 import git
@@ -28,14 +29,14 @@ from zenml.utils.analytics_utils import INITIALIZE_REPO, track
 @click.option("--analytics_opt_in", "-a", type=click.BOOL)
 @track(event=INITIALIZE_REPO)
 def init(
-    repo_path: str,
+    repo_path: Optional[str],
     analytics_opt_in: bool = True,
 ) -> None:
     """Initialize ZenML on given path.
 
     Args:
-      repo_path: str:
-      analytics_opt_in: bool:  (Default value = True)
+      repo_path: Path to the repository.
+      analytics_opt_in: (Default value = True)
 
     Raises:
         InvalidGitRepositoryError: If repo is not a git repo.
