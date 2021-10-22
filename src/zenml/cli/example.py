@@ -148,6 +148,7 @@ def pull(
     if force_redownload:
         GitExamplesHandler(redownload=force_redownload)
         # TODO: [HIGH] decide whether user's CwD examples are deleted or not
+        # Currently we don't delete them, but ask if an overwrite happens
 
     examples_dir = git_examples_handler.get_examples_dir()
     examples = (
