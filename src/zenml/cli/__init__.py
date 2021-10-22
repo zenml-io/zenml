@@ -12,9 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.logger import init_logging
-
-init_logging()
 
 from .base import *  # noqa
 from .config import *  # noqa

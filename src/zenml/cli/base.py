@@ -35,7 +35,6 @@ def init(
 
     Args:
       repo_path: str:
-      pipelines_dir: str:  (Default value = None)
       analytics_opt_in: bool:  (Default value = True)
 
     Raises:

@@ -140,7 +140,6 @@ def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> None:
         ), "Analytics key not set but trying to make telemetry call."
 
         from zenml.config.global_config import GlobalConfig
-
         gc = GlobalConfig()
 
         if not gc.analytics_opt_in and event != INITIALIZE_REPO:
