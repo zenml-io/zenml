@@ -22,10 +22,14 @@ from git.repo.base import Repo
 
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
+from zenml.cli.utils import confirmation, declare, warning
 from zenml.constants import APP_NAME, GIT_REPO_URL
+from zenml.logger import get_logger
 from zenml.utils import path_utils
 
 # TODO: [MEDIUM] Add an example-run command to run an example.
+
+logger = get_logger(__name__)
 
 EXAMPLES_GITHUB_REPO = "zenml_examples"
 
@@ -105,13 +109,9 @@ class GitExamplesHandler(object):
 
     def delete_working_directory_examples_folder(self) -> None:
         """Delete the zenml_examples folder from the current working directory."""
-        cwd_directory_path = str(os.path.join(os.getcwd(), "zenml_examples"))
+        cwd_directory_path = os.path.join(os.getcwd(), EXAMPLES_GITHUB_REPO)
         if os.path.exists(cwd_directory_path):
-            path_utils.rm_dir(cwd_directory_path)
-        else:
-            raise ValueError(
-                "You can only delete the examples directory from your current working directory."
-            )
+            path_utils.rm_dir(str(cwd_directory_path))
 
 
 pass_git_examples_handler = click.make_pass_decorator(
@@ -179,9 +179,9 @@ def pull(
     """Pull examples straight into your current working directory.
     Add the flag --force-redownload"""
     if force:
-        click.echo(f"Recloning ZenML repo for version {version}...")
+        declare(f"Recloning ZenML repo for version {version}...")
         GitExamplesHandler(redownload=version)
-        click.echo("Deleting examples from current working directory...")
+        warning("Deleting examples from current working directory...")
         git_examples_handler.delete_working_directory_examples_folder()
 
     examples_dir = git_examples_handler.get_examples_dir()
@@ -199,20 +199,20 @@ def pull(
         dst_dir = os.path.join(dst, example)
         # Check if example has already been pulled before.
         if path_utils.file_exists(dst_dir):
-            if click.confirm(
+            if confirmation(
                 f"Example {example} is already pulled. "
                 f"Do you wish to overwrite the directory?"
             ):
                 path_utils.rm_dir(dst_dir)
 
-        click.echo(f"Pulling example {example}...")
+        declare(f"Pulling example {example}...")
         src_dir = os.path.join(examples_dir, example)
         path_utils.copy_dir(src_dir, dst_dir)
 
-        click.echo(f"Example pulled in directory: {dst_dir}")
+        declare(f"Example pulled in directory: {dst_dir}")
 
-    click.echo()
-    click.echo(
+    declare("")
+    declare(
         "Please read the README.md file in the respective example "
         "directory to find out more about the example"
     )
