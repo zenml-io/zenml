@@ -204,8 +204,7 @@ def pull(
                 f"Do you wish to overwrite the directory?"
             ):
                 path_utils.rm_dir(dst_dir)
-            else:
-                continue
+
         click.echo(f"Pulling example {example}...")
         src_dir = os.path.join(examples_dir, example)
         path_utils.copy_dir(src_dir, dst_dir)
