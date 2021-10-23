@@ -118,4 +118,5 @@ class BaseComponent(BaseSettings):
     class Config:
         """Configuration of settings."""
 
+        arbitrary_types_allowed = True
         env_prefix = "zenml_"
