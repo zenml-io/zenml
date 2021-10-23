@@ -46,16 +46,11 @@ class EmptyDatasourceException(Exception):
 
 
 class DoesNotExistException(Exception):
-    """Raises exception when the `name` does not exist in the system but an
+    """Raises exception when the entity does not exist in the system but an
     action is being done that requires it to be present."""
 
-    def __init__(
-        self,
-        name: str = "",
-        reason: str = "",
-        message: str = "{} does not exist! This might be due to: {}",
-    ):
-        super().__init__(message.format(name, reason))
+    def __init__(self, message: str):
+        super().__init__(message)
 
 
 class AlreadyExistsException(Exception):
