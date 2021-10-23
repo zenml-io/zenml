@@ -21,7 +21,11 @@ from zenml.config.config_keys import (
     StepConfigurationKeys,
 )
 from zenml.core.repo import Repository
-from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
+from zenml.exceptions import (
+    DoesNotExistException,
+    PipelineConfigurationError,
+    PipelineInterfaceError,
+)
 from zenml.logger import get_logger
 from zenml.stacks.base_stack import BaseStack
 from zenml.steps.base_step import BaseStep
@@ -66,7 +70,15 @@ class BasePipeline(metaclass=BasePipelineMeta):
     STEP_SPEC: ClassVar[Dict[str, Any]] = None  # type: ignore[assignment]
 
     def __init__(self, *args: BaseStep, **kwargs: BaseStep) -> None:
-        self.__stack = Repository().get_active_stack()
+
+        try:
+            self.__stack = Repository().get_active_stack()
+        except DoesNotExistException as exc:
+            raise DoesNotExistException(
+                "Could not retrieve any active stack. Make sure to set a "
+                "stack active via `zenml stack set STACK_NAME`"
+            ) from exc
+
         self.enable_cache = getattr(self, PARAM_ENABLE_CACHE)
         self.pipeline_name = self.__class__.__name__
         self.__steps = dict()

@@ -76,7 +76,7 @@ class LocalService(BaseComponent):
         if key not in self.stacks:
             raise DoesNotExistException(
                 f"Stack of key `{key}` does not exist. "
-                f"Available keys: {self.stacks.keys()}"
+                f"Available keys: {list(self.stacks.keys())}"
             )
         return self.stacks[key]
 
@@ -111,6 +111,13 @@ class LocalService(BaseComponent):
         del self.stacks[key]
         self.update()
         logger.debug(f"Deleted stack with key: {key}.")
+        logger.info(
+            "Deleting a stack currently does not delete the underlying "
+            "architecture of the stack. It just deletes the reference to it. "
+            "Therefore please make sure to delete these resources on your "
+            "own. Also, if this stack was the active stack, please make sure "
+            "to set a not active stack via `zenml stack set`."
+        )
 
     def get_artifact_store(self, key: str) -> BaseArtifactStore:
         """Return a single artifact store based on key.
@@ -125,7 +132,7 @@ class LocalService(BaseComponent):
         if key not in self.artifact_store_map:
             raise DoesNotExistException(
                 f"Stack of key `{key}` does not exist. "
-                f"Available keys: {self.artifact_store_map.keys()}"
+                f"Available keys: {list(self.artifact_store_map.keys())}"
             )
         return mapping_utils.get_component_from_key(  # type: ignore[return-value] # noqa
             key, self.artifact_store_map
@@ -183,7 +190,7 @@ class LocalService(BaseComponent):
         if key not in self.metadata_store_map:
             raise DoesNotExistException(
                 f"Metadata store of key `{key}` does not exist. "
-                f"Available keys: {self.metadata_store_map.keys()}"
+                f"Available keys: {list(self.metadata_store_map.keys())}"
             )
         return mapping_utils.get_component_from_key(  # type: ignore[return-value] # noqa
             key, self.metadata_store_map
@@ -241,7 +248,7 @@ class LocalService(BaseComponent):
         if key not in self.orchestrator_map:
             raise DoesNotExistException(
                 f"Orchestrator of key `{key}` does not exist. "
-                f"Available keys: {self.orchestrator_map.keys()}"
+                f"Available keys: {list(self.orchestrator_map.keys())}"
             )
         return mapping_utils.get_component_from_key(  # type: ignore[return-value] # noqa
             key, self.orchestrator_map

@@ -60,7 +60,14 @@ class GlobalConfig(BaseComponent):
         """Gets the global config dir for installed package."""
         return GLOBAL_CONFIG_NAME
 
-    def set_stack_for_repo(self, repo_path: str, stack_key: str) -> None:
-        """Sets the active stack for a specific repository."""
+    def make_stack_active_for_repo(
+        self, repo_path: str, stack_key: str
+    ) -> None:
+        """Sets the active stack for a specific repository.
+
+        Args:
+            repo_path: Unique path of the repo.
+            stack_key: Key of the stack to set active.
+        """
         self.repo_active_stacks[repo_path] = stack_key
         self.update()

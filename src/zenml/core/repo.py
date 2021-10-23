@@ -115,10 +115,11 @@ class Repository:
         zen_dir = os.path.join(repo_path, ZENML_DIR_NAME)
         path_utils.create_dir_recursive_if_not_exists(zen_dir)
 
-        # set up metadata and artifact store defaults
+        # Set up metadata and artifact store defaults
         artifact_dir = os.path.join(zen_dir, "local_store")
         metadata_dir = os.path.join(artifact_dir, "metadata.db")
 
+        # Create stack if not specified
         if stack is None:
             service = LocalService()
 
@@ -142,8 +143,10 @@ class Repository:
                     orchestrator_name="local_orchestrator",
                 ),
             )
+
+            # Make local stack active
             gc = GlobalConfig()
-            gc.set_stack_for_repo(repo_path, "local_stack")
+            gc.make_stack_active_for_repo(repo_path, "local_stack")
 
     def get_git_wrapper(self) -> GitWrapper:
         """Returns the git wrapper for the repo."""
@@ -163,8 +166,7 @@ class Repository:
         """
         gc = GlobalConfig()
         self.service.get_stack(stack_key)  # check if it exists
-        gc.set_stack_for_repo(self.path, stack_key)
-        gc.update()
+        gc.make_stack_active_for_repo(self.path, stack_key)
 
     @track(event=FETCHED_STACK)
     def get_active_stack_key(self) -> str:
