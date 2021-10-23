@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 class AirflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
 
-    airflow_home: Optional[str] = None
+    airflow_home: str = ""
     airflow_config: Optional[Dict[str, Any]] = {}
 
     def _set_env(self) -> None:
