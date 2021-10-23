@@ -10,13 +10,19 @@ When developing ML models, your pipelines will, at first, most probably live in 
 
 ## Install and configure Airflow
 
-This part is optional, and it would depend on your pre-existing production setting. For example, for this guide we chose to deploy and install Airflow from scratch and set it to work locally, however you might want to use a managed Airflow instance like [Cloud Composer](https://cloud.google.com/composer) or [Astronomer](https://astronomer.io/) .
+This part is optional, and it would depend on your pre-existing production setting. For example, for this guide, Airflow will be set up from scratch and set it to work locally, however you might want to use a managed Airflow instance like [Cloud Composer](https://cloud.google.com/composer) or [Astronomer](https://astronomer.io/).
 
-To install Airflow, please follow the [awesome official guide](https://airflow.apache.org/docs/apache-airflow/stable/start/local.html). Its just a pip install really.
+For this guide, you'll want to install airflow before continuing:
+
+```shell
+pip install apache_airflow
+```
+
+That's it - ZenML will take care of setting up airflow for you after this.
 
 ## Creating an Airflow Stack
 
-A [Stack](../../core-concepts.md) is the configuration of the surrounding infrastructure where ZenML pipelines are run and managed. For now the stack consists of:
+A [Stack](../../core-concepts.md) is the configuration of the surrounding infrastructure where ZenML pipelines are run and managed. For now, a `Stack` consists of:
 
 * A metadata store: To store metadata like parameters and artifact URIs
 * An artifact store: To store interim data step output.
@@ -36,7 +42,7 @@ key          stack_type    metadata_store_name    artifact_store_name    orchest
 local_stack  base          local_metadata_store   local_artifact_store   local_orchestrator
 ```
 
-Let's stick with the `local_metadata_store` and a `local_artifact_store` for now and create an Airflow orchestrator and stack.
+Let's stick with the `local_metadata_store` and a `local_artifact_store` for now and create an Airflow orchestrator and corresponding stack.
 
 ```shell
 zenml orchestrator register airflow_orchestrator airflow
@@ -65,9 +71,20 @@ The code from this chapter is the same as the last chapter. So run:
 python chapter_7.py
 ```
 
-Even through the pipeline script is  the same, the output will be a lot different from last time. ZenML will detect that `airflow_stack` is the active stack, and bootstrap airflow locally for you. It will create a bunch of files in the current working directory and even create an admin with the username `admin` and store the password in the `standalone_admin_password.txt` file.
+Even through the pipeline script is  the same, the output will be a lot different from last time. ZenML will detect that `airflow_stack` is the active stack, and do the following:
 
-Navigate over to `https://0.0.0.0:8080` and you can enter your just generated credentials. You would then be able to see a list of Airflow DAGs, including one called `mnist`, scheduled to run every minute. You can click it and now finally see a visualization of the pipeline we've been working so hard to create in these chapters. Go ahead and trigger the DAG from the UI to see it in action.
+* Airflow will be bootstrapped locally, and an admin username and password created. Username will be `admin` and password will be printed out in the console logs.
+* The current working directory will be made into Airflow's `dag_dir`, so all python files in there would be treated as a [Airflow DAG definition file](https://airflow.apache.org/docs/apache-airflow/stable/tutorial.html#it-s-a-dag-definition-file).
+* `chapter_7.py` will start producing an Airflow DAG which will show up in the Airflow UI at [http://0.0.0.0:8080](http://0.0.0.0:8080). You will have to login with the username and password generated above.
+* The DAG name will be the same as the pipeline name, so in this case `mnist_pipeline`.
+* The DAG will be scheduled to run every minute.
+* The DAG will be un-paused so you'll probably see the first run as you click through.
+
+{% hint style="warning" %}
+If you can't find the password on the console, you can navigate to the `APP_DIR / airflow / airflow_root / STACK_UUID / standalone_admin_password.txt` file. 
+* APP_DIR will depend on your os. See which path corresponds to your OS [here](https://click.palletsprojects.com/en/8.0.x/api/#click.get_app_dir).
+* STACK_UUID will be the unique id of the airflow_stack. There will be only one folder here so you can just navigate to the one that is present.
+{% endhint %}
 
 And that's it: As long as you keep Airflow running now, this script will run every minute, pull the latest data, and train a new model!
 

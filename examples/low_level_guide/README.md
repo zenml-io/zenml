@@ -22,7 +22,7 @@ In order to run the chapters of the guide, you need to install and initialize Ze
 
 ```shell
 # install CLI
-pip install zenml tensorflow sklearn sqlalchemy
+pip install zenml tensorflow sklearn sqlalchemy apache_airflow
 
 # pull example
 zenml example pull low_level_guide
@@ -32,8 +32,6 @@ cd zenml_examples/low_level_guide
 git init
 zenml init
 ```
-
-At some point, you'll also need to (optionally) install and set up [Apache Airflow](https://airflow.apache.org/), but we address that again later in the guide itself.
 
 ### Run the project
 Now we're ready. Execute:

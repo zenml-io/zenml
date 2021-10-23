@@ -8,9 +8,7 @@ description: A good place to start before diving further into the docs.
 
 **ZenML** consists of the following key components:
 
-![ZenML Architectural Overview](<.gitbook/assets/architecture\_diagram (1) (2) (1).png>)
-
-****
+![ZenML Architectural Overview](<.gitbook/assets/core_concepts_zenml.png>)
 
 **Repository**
 
