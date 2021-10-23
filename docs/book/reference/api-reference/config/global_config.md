@@ -41,5 +41,5 @@ Classes
     `get_serialization_file_name(self) ‑> str`
     :   Gets the global config dir for installed package.
 
-    `set_stack_for_repo(self, repo_path: str, stack_key: str)`
+    `make_stack_active_for_repo(self, repo_path: str, stack_key: str)`
     :   Sets the active stack for a specific repository.
