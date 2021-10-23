@@ -94,6 +94,7 @@ class AirflowDagRunner(tfx_runner.TfxRunner):
                 ).airflow_dag_config
             ),
             is_paused_upon_creation=False,
+            catchup=False,  # no backfill
         )
         if "tmp_dir" not in pipeline.additional_pipeline_args:
             tmp_dir = os.path.join(

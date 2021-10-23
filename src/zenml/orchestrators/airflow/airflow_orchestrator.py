@@ -39,6 +39,7 @@ class AirflowOrchestrator(BaseOrchestrator):
 
     airflow_home: str = ""
     airflow_config: Optional[Dict[str, Any]] = {}
+    schedule_interval_minutes: int = 1
 
     def _set_env(self) -> None:
         self.airflow_home = os.getcwd()
@@ -71,8 +72,11 @@ class AirflowOrchestrator(BaseOrchestrator):
             self.bootstrap_airflow()
 
         self.airflow_config = {
-            "schedule_interval": datetime.timedelta(minutes=5),
-            "start_date": datetime.datetime.now(),
+            "schedule_interval": datetime.timedelta(
+                minutes=self.schedule_interval_minutes
+            ),
+            # We set this in the past and turn catchup off and then it works
+            "start_date": datetime.datetime(2019, 1, 1),
         }
 
         runner = AirflowDagRunner(AirflowPipelineConfig(self.airflow_config))

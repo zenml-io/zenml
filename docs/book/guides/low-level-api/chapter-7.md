@@ -67,9 +67,9 @@ python chapter_7.py
 
 Even through the pipeline script is  the same, the output will be a lot different from last time. ZenML will detect that `airflow_stack` is the active stack, and bootstrap airflow locally for you. It will create a bunch of files in the current working directory and even create an admin with the username `admin` and store the password in the `standalone_admin_password.txt` file.
 
-Navigate over to `https://0.0.0.0:8080` and you can enter your just generated credentials. You would then be able to see a list of Airflow DAGs, including one called `mnist`, scheduled to run every 5 minutes. You can click it and now finally see a visualization of the pipeline we've been working so hard to create in these chapters. Go ahead and trigger the DAG from the UI to see it in action.
+Navigate over to `https://0.0.0.0:8080` and you can enter your just generated credentials. You would then be able to see a list of Airflow DAGs, including one called `mnist`, scheduled to run every minute. You can click it and now finally see a visualization of the pipeline we've been working so hard to create in these chapters. Go ahead and trigger the DAG from the UI to see it in action.
 
-And that's it: As long as you keep Airflow running now, this script will run every 5 minutes, pull the latest data, and train a new model!
+And that's it: As long as you keep Airflow running now, this script will run every minute, pull the latest data, and train a new model!
 
 We now have a continuously training ML pipeline training on new data every day. All the pipelines will be tracked in your production [Stack's metadata store](../../core-concepts.md), the interim artifacts will be stored in the [Artifact Store](../../core-concepts.md), and the scheduling and orchestration is being handled by the [orchestrator](../../core-concepts.md), in this case Airflow.
 
