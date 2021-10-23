@@ -45,7 +45,9 @@ ENV_ZENML_LOGGING_VERBOSITY = "ZENML_LOGGING_VERBOSITY"
 ENV_ABSL_LOGGING_VERBOSITY = "ZENML_ABSL_LOGGING_VERBOSITY"
 
 # Logging variables
-IS_DEBUG_ENV = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
+IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
+
+ZENML_LOGGING_VERBOSITY: str = "INFO"
 
 if IS_DEBUG_ENV:
     ZENML_LOGGING_VERBOSITY = os.getenv(
@@ -56,32 +58,35 @@ else:
         ENV_ZENML_LOGGING_VERBOSITY, default="INFO"
     ).upper()
 
-ABSL_LOGGING_VERBOSITY = os.getenv(ENV_ABSL_LOGGING_VERBOSITY, -100)
+ABSL_LOGGING_VERBOSITY: int = handle_int_env_var(
+    ENV_ABSL_LOGGING_VERBOSITY, -100
+)
 
 # Base images for zenml
-ZENML_REGISTRY = "eu.gcr.io/maiot-zenml"
-ZENML_BASE_IMAGE_NAME = f"{ZENML_REGISTRY}/zenml:base-{__version__}"
-ZENML_TRAINER_IMAGE_NAME = f"{ZENML_REGISTRY}/zenml:cuda-{__version__}"
-ZENML_DATAFLOW_IMAGE_NAME = f"{ZENML_REGISTRY}/zenml:dataflow-{__version__}"
+ZENML_REGISTRY: str = "eu.gcr.io/maiot-zenml"
+ZENML_BASE_IMAGE_NAME: str = f"{ZENML_REGISTRY}/zenml:base-{__version__}"
+ZENML_TRAINER_IMAGE_NAME: str = f"{ZENML_REGISTRY}/zenml:cuda-{__version__}"
+ZENML_DATAFLOW_IMAGE_NAME: str = (
+    f"{ZENML_REGISTRY}/zenml:dataflow-{__version__}"
+)
 
 # Evaluation utils constants
-COMPARISON_NOTEBOOK = "comparison_notebook.ipynb"
-EVALUATION_NOTEBOOK = "evaluation_notebook.ipynb"
+COMPARISON_NOTEBOOK: str = "comparison_notebook.ipynb"
+EVALUATION_NOTEBOOK: str = "evaluation_notebook.ipynb"
 
 # Pipeline related constants
-PREPROCESSING_FN = (
+PREPROCESSING_FN: str = (
     "zenml.components.transform.transform_module" ".preprocessing_fn"
 )
-TRAINER_FN = "zenml.components.trainer.trainer_module.run_fn"
+TRAINER_FN: str = "zenml.components.trainer.trainer_module.run_fn"
 
 # GCP Orchestration
-GCP_ENTRYPOINT = "zenml.backends.orchestrator.entrypoint"
-AWS_ENTRYPOINT = "zenml.backends.orchestrator.entrypoint"
-K8S_ENTRYPOINT = "zenml.backends.orchestrator.entrypoint"
+GCP_ENTRYPOINT: str = "zenml.backends.orchestrator.entrypoint"
+AWS_ENTRYPOINT: str = "zenml.backends.orchestrator.entrypoint"
+K8S_ENTRYPOINT: str = "zenml.backends.orchestrator.entrypoint"
 
 # Analytics constants
 VALID_OPERATING_SYSTEMS = ["Windows", "Darwin", "Linux"]
 
 # Path utilities constants
-
 REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]

@@ -17,7 +17,7 @@ import os
 import re
 import sys
 from logging.handlers import TimedRotatingFileHandler
-from typing import Any
+from typing import Any, Dict
 
 from absl import logging as absl_logging
 
@@ -33,23 +33,23 @@ from zenml.constants import (  # isort: skip
 class CustomFormatter(logging.Formatter):
     """Formats logs according to custom specifications."""
 
-    grey = "\x1b[38;21m"
-    pink = "\x1b[35m"
-    green = "\x1b[32m"
-    yellow = "\x1b[33;21m"
-    red = "\x1b[31;21m"
-    bold_red = "\x1b[31;1m"
-    purple = "\x1b[1;35m"
-    reset = "\x1b[0m"
+    grey: str = "\x1b[38;21m"
+    pink: str = "\x1b[35m"
+    green: str = "\x1b[32m"
+    yellow: str = "\x1b[33;21m"
+    red: str = "\x1b[31;21m"
+    bold_red: str = "\x1b[31;1m"
+    purple: str = "\x1b[1;35m"
+    reset: str = "\x1b[0m"
 
-    format_template = (
+    format_template: str = (
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%("
         "filename)s:%(lineno)d)"
         if LoggingLevels[ZENML_LOGGING_VERBOSITY] == LoggingLevels.DEBUG
         else "%(message)s"
     )
 
-    COLORS = {
+    COLORS: Dict[LoggingLevels, str] = {
         LoggingLevels.DEBUG: grey,
         LoggingLevels.INFO: purple,
         LoggingLevels.WARN: yellow,
@@ -67,7 +67,7 @@ class CustomFormatter(logging.Formatter):
             A string formatted according to specifications.
         """
         log_fmt = (
-            self.COLORS.get(LoggingLevels[ZENML_LOGGING_VERBOSITY])
+            self.COLORS[LoggingLevels[ZENML_LOGGING_VERBOSITY]]
             + self.format_template
             + self.reset
         )
