@@ -35,6 +35,18 @@ class BaseOrchestrator(BaseComponent):
             get_zenml_config_dir(), self._ORCHESTRATOR_STORE_DIR_NAME
         )
 
+    def pre_run(self) -> None:
+        """Should be run before the `run()` function to prepare orchestrator."""
+
+    def post_run(self) -> None:
+        """Should be run after the `run()` to clean up."""
+
+    def up(self) -> None:
+        """Provisions resources for the orchestrator."""
+
+    def down(self) -> None:
+        """Destroys resources for the orchestrator."""
+
     class Config:
         """Configuration of settings."""
 

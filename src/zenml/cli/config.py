@@ -231,4 +231,32 @@ def delete_orchestrator(orchestrator_name: str) -> None:
     """Delete a orchestrator."""
     service = Repository().get_service()
     service.delete_orchestrator(orchestrator_name)
-    cli_utils.declare(f"Deleted orchestrator: {orchestrator_name}")
+    cli_utils.declare(f"Deleted orchestrator: `{orchestrator_name}`")
+
+
+@orchestrator.command("up")
+@click.argument("orchestrator_name", type=str)
+def up_orchestrator(orchestrator_name: str) -> None:
+    """Provisions resources for the orchestrator"""
+    service = Repository().get_service()
+    orch = service.get_orchestrator(orchestrator_name)
+    cli_utils.declare(
+        f"Bootstrapping resources for orchestrator: `{orchestrator_name}`."
+    )
+    orch.up()
+    cli_utils.declare(f"Orchestrator: `{orchestrator_name}` is up.")
+
+
+@orchestrator.command("down")
+@click.argument("orchestrator_name", type=str)
+def down_orchestrator(orchestrator_name: str) -> None:
+    """Tears down resources for the orchestrator"""
+    service = Repository().get_service()
+    orch = service.get_orchestrator(orchestrator_name)
+    cli_utils.declare(
+        f"Tearing down resources for orchestrator: `{orchestrator_name}`."
+    )
+    orch.down()
+    cli_utils.declare(
+        f"Orchestrator: `{orchestrator_name}` resources are now torn down."
+    )
