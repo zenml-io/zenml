@@ -20,7 +20,7 @@ from typing import Any, Callable, Dict, Optional
 import distro
 
 from zenml import __version__
-from zenml.constants import IS_DEBUG_ENV
+from zenml.constants import IS_DEBUG_ENV, SEGMENT_KEY_DEV, SEGMENT_KEY_PROD
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -34,7 +34,6 @@ RUN_PIPELINE = "Pipeline run"
 GET_PIPELINES = "Pipelines fetched"
 
 # Repo
-
 INITIALIZE_REPO = "ZenML initialized"
 
 # Components
@@ -53,14 +52,11 @@ def get_segment_key() -> str:
 
     Returns:
         Segment key as a string.
-
-    Raises:
-        requests.exceptions.RequestException if request times out.
     """
     if IS_DEBUG_ENV:
-        return "mDBYI0m7GcCj59EZ4f9d016L1T3rh8J5"
+        return SEGMENT_KEY_DEV
     else:
-        return "sezE77zEoxHPFDXuyFfILx6fBnJFZ4p7"
+        return SEGMENT_KEY_PROD
 
 
 def in_docker() -> bool:

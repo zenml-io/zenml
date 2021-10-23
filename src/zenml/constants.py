@@ -90,3 +90,7 @@ VALID_OPERATING_SYSTEMS = ["Windows", "Darwin", "Linux"]
 
 # Path utilities constants
 REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
+
+# Segment
+SEGMENT_KEY_DEV = "mDBYI0m7GcCj59EZ4f9d016L1T3rh8J5"
+SEGMENT_KEY_PROD = "sezE77zEoxHPFDXuyFfILx6fBnJFZ4p7"
