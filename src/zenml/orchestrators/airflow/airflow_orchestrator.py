@@ -14,10 +14,10 @@
 
 import datetime
 import os
-import signal
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import click
+import psutil
 import tfx.orchestration.pipeline as tfx_pipeline
 from pydantic import Field, PrivateAttr, root_validator
 
@@ -54,7 +54,6 @@ class AirflowOrchestrator(BaseOrchestrator):
     airflow_home: str = Field(default_factory=default_airflow_home)
     airflow_config: Optional[Dict[str, Any]] = {}
     schedule_interval_minutes: int = 1
-    pids: List[int] = []  # subprocess pids
     pid: Optional[int] = None
     _commander: Optional[Any] = PrivateAttr()
 
@@ -80,7 +79,7 @@ class AirflowOrchestrator(BaseOrchestrator):
 
     def _set_env(self) -> None:
         os.environ["AIRFLOW_HOME"] = self.airflow_home
-        os.environ["AIRFLOW__CORE__DAGS_FOLDER"] = self.airflow_home
+        os.environ["AIRFLOW__CORE__DAGS_FOLDER"] = os.getcwd()
         os.environ["AIRFLOW__CORE__DAG_DISCOVERY_SAFE_MODE"] = "false"
 
     def is_bootstrapped(self) -> bool:
@@ -98,12 +97,16 @@ class AirflowOrchestrator(BaseOrchestrator):
         self._commander.bootstrap()
 
     def pre_run(self) -> None:
-        """Bootstraps Airflow is not done so, and then makes sure its up."""
+        """Bootstraps Airflow if not done so, and then makes sure its up."""
         self.up()
 
     def up(self) -> None:
         """This should ensure that Airflow is running."""
-        self._set_env()
+        if self._commander.is_ready():
+            # If its already up, then go back
+            logger.info("Airflow is already up.")
+            return
+
         path_utils.create_dir_recursive_if_not_exists(self.airflow_home)
         logger.info(f"Setting up Airflow at: {self.airflow_home}")
         if not self.is_bootstrapped():
@@ -114,17 +117,6 @@ class AirflowOrchestrator(BaseOrchestrator):
         self._commander.up()
         logger.info("Airflow is now up.")
 
-        # Store threads in a persistent basis if they exist.
-        if self._commander.subcommands:
-            for (
-                subcommand_name,
-                subcommand,
-            ) in self._commander.subcommands.items():
-                logger.debug(
-                    f"{subcommand_name} process ID: {subcommand.process.pid}"
-                )
-                self.pids.append(subcommand.process.pid)
-
         # Store our own pid for future termination
         self.pid = os.getpid()
 
@@ -133,23 +125,22 @@ class AirflowOrchestrator(BaseOrchestrator):
 
     def down(self) -> None:
         """Tears down resources for Airflow. Stops running processes."""
-        self._set_env()
         if self._commander.subcommands:
             # if the _commander state has the subcommands then use them
             self._commander.down()
         else:
-            # else use the cached pids
-            for pid in self.pids:
-                logger.debug(f"Killing airflow pid: {pid}")
-                os.kill(pid, signal.SIGKILL)
-
-            # kill the up process's pid
+            # kill the up process's pid and all children
             if self.pid:
-                os.kill(self.pid, signal.SIGKILL)
+                if psutil.pid_exists(self.pid):  # needs to exist
+                    parent = psutil.Process(self.pid)
+                    if parent.name() == APP_NAME:
+                        # only kill if the thread is called 'zenml'
+                        for child in parent.children(recursive=True):
+                            child.kill()
+                        parent.kill()
 
         # At this point, we want to reset pids
         self.pid = None
-        self.pids = []
         self.update()
 
         # Delete the rest
