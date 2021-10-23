@@ -27,8 +27,12 @@ If not, then get your environment ready and follow along!
 In order to run the chapters of the guide, you need to install and initialize ZenML:
 
 ```shell
-# install CLI
-pip install zenml tensorflow sklearn sqlalchemy apache_airflow
+# install CLI (order matters, please install in this order.)
+pip install zenml 
+pip install tensorflow
+pip install apache_airflow
+pip install sqlalchemy 
+pip install sklearn
 
 # pull example
 zenml example pull low_level_guide
@@ -60,4 +64,3 @@ rm -rf zenml_examples
 ```
 
 Press next to start the first chapter!
-
