@@ -16,7 +16,7 @@ This could be anything like:
 
 ## Read from a dynamic datasource
 
-Let's also slightly change our pipeline to add our new step. For this guide, we have set up a [public BigQuery table]() that simulates a real world setting of reading from a production database. The data in the public BigQuery table is just MNIST data but new data is added every day.
+Let's also slightly change our pipeline to add our new step. For this guide, we have set up a Mock APU that simulates a real world setting of reading from an external API. The data in the API is just MNIST data but new data is added every day, and we query the new data each time the pipeline runs.
 
 ```python
 import numpy as np
@@ -79,7 +79,7 @@ python chapter_6.py
 
 ## Inspect 
 
-Even if our data originally lives in BigQuery, we have now downloaded it and versioned locally as we ran this pipeline. So we can fetch it and inspect it:
+Even if our data originally lives in an external API, we have now downloaded it and versioned locally as we ran this pipeline. So we can fetch it and inspect it:
 
 ```python
 from zenml.core.repo import Repository

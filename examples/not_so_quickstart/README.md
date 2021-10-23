@@ -16,16 +16,15 @@ Here we swap out the `trainer` and `evaluator` steps of the MNIST pipeline with 
 ### Pre-requisites
 In order to run this example, you need to install and initialize ZenML:
 
-```bash
+```shell
 # install CLI
 pip install zenml tensorflow torch sklearn
 
-# initialize CLI
-cd ~
-mkdir zenml_examples
-git clone https://github.com/zenml-io/zenml.git
-cp -r zenml/examples/not_so_quickstart zenml_examples
+# pull example
+zenml example pull not_so_quickstart
 cd zenml_examples/not_so_quickstart
+
+# initialize
 git init
 zenml init
 ```
@@ -38,9 +37,8 @@ python run.py
 ```
 
 ### Clean up
-In order to clean up, in the root of your repo, delete the remaining `zenml` references.
+In order to clean up, delete the remaining zenml references.
 
-```python
-rm -rf ~/zenml_examples
-rm -rf ~/zenml
+```shell
+rm -rf zenml_examples
 ```

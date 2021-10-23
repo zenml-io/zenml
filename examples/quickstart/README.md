@@ -11,16 +11,15 @@ Here we train a simple `tensorflow.keras` classifier on the MNIST dataset.
 ### Pre-requisites
 In order to run this example, you need to install and initialize ZenML:
 
-```bash
+```shell
 # install CLI
 pip install zenml tensorflow
 
-# initialize CLI
-cd ~
-mkdir zenml_examples
-git clone https://github.com/zenml-io/zenml.git
-cp -r zenml/examples/quickstart zenml_examples
+# pull example
+zenml example pull quickstart
 cd zenml_examples/quickstart
+
+# initialize
 git init
 zenml init
 ```
@@ -28,7 +27,7 @@ zenml init
 ### Run the project
 Now we're ready. Execute:
 
-```bash
+```shell
 python quickstart.py
 ```
 
@@ -40,9 +39,8 @@ jupyter notebook  # jupyter must be installed
 Or check out a [Google Colab version](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb) to test it out immediately.
 
 ### Clean up
-In order to clean up, in the root of your repo, delete the remaining zenml references.
+In order to clean up, delete the remaining zenml references.
 
-```python
-rm -rf ~/zenml_examples
-rm -rf ~/zenml
+```shell
+rm -rf zenml_examples
 ```

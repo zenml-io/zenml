@@ -2,36 +2,24 @@
 ZenML pipelines can be executed natively as Airflow DAGs. This brings together the power of the Airflow 
 orchestration with the ML-specific benefits of ZenML pipelines. Each ZenML step can be run as an Airflow 
 [`PythonOperator`](https://airflow.apache.org/docs/apache-airflow/stable/howto/operator/python.html), and 
-executes Airflow natively.
+executes Airflow natively. We will use the MNIST dataset again (pull it from a Mock API).
+
+Note that this tutorial installs and deploys Airflow locally on your machine, but in a production setting that part might be already done. 
+Please read the other airflow tutorials that cover that case.
 
 ## Pre-requisites
-In order to run this example, you need to install and initialize ZenML:
+In order to run this example, you need to install and initialize ZenML and Airflow.
 
 ### Installation
 ```bash
 # install CLI
 pip install zenml apache-airflow tensorflow
-```
 
-### Set up airflow
-Setting up airflow locally is quite simple, and there is a handy guide available 
-[here](https://airflow.apache.org/docs/apache-airflow/stable/start/local.html). 
-We will assume in this example that Airflow has been set up with the following settings:
+# pull example
+zenml example pull airflow_local
+cd zenml_examples/airflow_local
 
-Airflow home is at `~/airflow`:
-```
-export AIRFLOW_HOME=~/airflow
-```
-
-In the `~/airflow/airflow.cfg`:
-```
-dags_folder = ~/airflow/dags/
-dag_discovery_safe_mode = False
-```
-
-### Initialize zenml at the Airflow DAGs folder root:
-```bash
-cd ~/airflow/dags
+# initialize
 git init
 zenml init
 ```
@@ -43,41 +31,23 @@ zenml stack register airflow_stack \
     -m local_metadata_store \
     -a local_artifact_store \
     -o airflow_orchestrator
-```
-
-### Copy the runner script to the Airflow dag folder:
-```bash
-cd ~
-git clone https://github.com/zenml-io/zenml.git
-cp -r zenml/examples/airflow/run.py ~/airflow/dags/zenml_mnist.py
-```
-
-### Run the project
-Now we're ready. Open up airflow with the following commands:
-
-```bash
-airflow scheduler
-```
-And in another terminal
-```bash
-airflow webserver --port 8080
+zenml stack set airflow_stack
 ```
 
 ### Trigger the airflow DAG
-Now you would be able to see the `mnist` dag in your browser at [localhost](http://0.0.0.0:8080/) (you might be asked to login with 
-the credentials you set up when you installed Airflow). Unpause it, and trigger it via the UI or run the 
+Now you would be able to see the `mnist` dag in your browser at [localhost](http://0.0.0.0:8080/) (you will be asked to login with 
+the credentials in the `standalone_admin_password.txt` file). Trigger it via the UI or run the 
 following script:
 
 ```bash
-python ~/zenml/examples/airflow/trigger_dag.py
+python trigger_dag.py
 ```
 
 You would now be able to see the executed dag [here](http://0.0.0.0:8080/tree?dag_id=mnist)
 
 ### Clean up
-In order to clean up, in the root of your repo, delete the remaining zenml and airflow references.
+In order to clean up, delete the remaining zenml references.
 
-```python
-rm -rf ~/airflow
-rm -rf ~/zenml
+```shell
+rm -rf zenml_examples
 ```

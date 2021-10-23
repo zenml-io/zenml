@@ -11,6 +11,7 @@ Here is what we'll do in this guide:
 * Create a MNIST pipeline that trains using [TensorFlow (Keras)](https://www.tensorflow.org/) (similar to the [Quickstart](../../quickstart-guide.md)).
 * Swap out implementations of the `trainer` and `evaluator` steps with [scikit-learn](https://scikit-learn.org/).
 * Persist our interim data artifacts in SQL tables rather than on files.
+* Read from a dynamically changing datasource rather than a static one.
 * Deploy the pipeline on [Airflow](https://airflow.apache.org/).
 
 
@@ -19,16 +20,15 @@ Here is what we'll do in this guide:
 ### Pre-requisites
 In order to run the chapters of the guide, you need to install and initialize ZenML:
 
-```bash
+```shell
 # install CLI
 pip install zenml tensorflow sklearn sqlalchemy
 
-# initialize CLI
-cd ~
-mkdir zenml_examples
-git clone https://github.com/zenml-io/zenml.git
-cp -r zenml/examples/low_level_guide zenml_examples
+# pull example
+zenml example pull low_level_guide
 cd zenml_examples/low_level_guide
+
+# initialize
 git init
 zenml init
 ```
@@ -38,21 +38,20 @@ At some point, you'll also need to (optionally) install and set up [Apache Airfl
 ### Run the project
 Now we're ready. Execute:
 
-```bash
+```shell
 python chapter_*.py  # for the chapter of your choice (except the Airflow chapter)
 ```
 
 Note before executing each chapter, make sure to clean the old chapter artifact and metadata store:
 
-```bash
-rm -rf ~/zenml_examples/low_level_guide/.zen
+```shell
+rm -rf .zen
 zenml init  # start again
 ```
 
 ### Clean up
-In order to clean up, in the root of your repo, delete the remaining `zenml` references.
+In order to clean up, delete the remaining zenml references.
 
-```python
-rm -rf ~/zenml_examples
-rm -rf ~/zenml
+```shell
+rm -rf zenml_examples
 ```
