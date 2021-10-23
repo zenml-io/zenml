@@ -14,12 +14,17 @@
 
 import datetime
 import os
-from typing import TYPE_CHECKING, Any, Dict, Optional
+import signal
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
+import click
 import tfx.orchestration.pipeline as tfx_pipeline
+from pydantic import Field, PrivateAttr, root_validator
 
+from zenml.constants import APP_NAME
 from zenml.core.component_factory import orchestrator_store_factory
 from zenml.enums import OrchestratorTypes
+from zenml.logger import get_logger
 from zenml.orchestrators.airflow.airflow_dag_runner import (
     AirflowDagRunner,
     AirflowPipelineConfig,
@@ -27,36 +32,129 @@ from zenml.orchestrators.airflow.airflow_dag_runner import (
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.utils import path_utils
 
+logger = get_logger(__name__)
+
 if TYPE_CHECKING:
     import airflow
 
     from zenml.pipelines.base_pipeline import BasePipeline
+
+AIRFLOW_ROOT_DIR = "airflow_root"
+
+
+def default_airflow_home() -> str:
+    """Returns a default airflow home in the global directory"""
+    return os.path.join(click.get_app_dir(APP_NAME), AIRFLOW_ROOT_DIR)
 
 
 @orchestrator_store_factory.register(OrchestratorTypes.airflow)
 class AirflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
 
-    airflow_home: str = ""
+    airflow_home: str = Field(default_factory=default_airflow_home)
     airflow_config: Optional[Dict[str, Any]] = {}
     schedule_interval_minutes: int = 1
+    pids: List[int] = []  # subprocess pids
+    pid: Optional[int] = None
+    _commander: Optional[Any] = PrivateAttr()
+
+    def __init__(self, **values: Any):
+        """Intiailizes the AirflowCommander for the duration of this objects
+        existence. Also makes sure env variables are set."""
+        super().__init__(**values)
+        self._set_env()
+        from zenml.orchestrators.airflow.zenml_standalone_command import (
+            AirflowCommander,
+        )
+
+        self._commander = AirflowCommander()
+
+    @root_validator
+    def set_airflow_home(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if "uuid" not in values:
+            raise ValueError("`uuid` needs to exist for AirflowOrchestrator.")
+        values["airflow_home"] = os.path.join(
+            click.get_app_dir(APP_NAME), AIRFLOW_ROOT_DIR, str(values["uuid"])
+        )
+        return values
 
     def _set_env(self) -> None:
-        self.airflow_home = os.getcwd()
         os.environ["AIRFLOW_HOME"] = self.airflow_home
         os.environ["AIRFLOW__CORE__DAGS_FOLDER"] = self.airflow_home
         os.environ["AIRFLOW__CORE__DAG_DISCOVERY_SAFE_MODE"] = "false"
 
+    def is_bootstrapped(self) -> bool:
+        """Return True if airflow already bootstrapped, else return False"""
+        if path_utils.file_exists(
+            os.path.join(self.airflow_home, "airflow.db")
+        ):
+            logger.info(f"airflow.db already exists at {self.airflow_home}")
+            return True
+        else:
+            return False
+
     def bootstrap_airflow(self) -> None:
         """Starts Airflow with the standalone command."""
-        self._set_env()
-        from zenml.orchestrators.airflow.zenml_standalone_command import (
-            ZenStandaloneCommand,
-        )
+        self._commander.bootstrap()
 
-        standalone = ZenStandaloneCommand()
-        if not standalone.is_ready():
-            standalone.run()
+    def pre_run(self) -> None:
+        """Bootstraps Airflow is not done so, and then makes sure its up."""
+        self.up()
+
+    def up(self) -> None:
+        """This should ensure that Airflow is running."""
+        self._set_env()
+        path_utils.create_dir_recursive_if_not_exists(self.airflow_home)
+        logger.info(f"Setting up Airflow at: {self.airflow_home}")
+        if not self.is_bootstrapped():
+            # Bootstrap airflow if not already done so.
+            self.bootstrap_airflow()
+
+        # Now we can run it as its bootstrapped.
+        self._commander.up()
+        logger.info("Airflow is now up.")
+
+        # Store threads in a persistent basis if they exist.
+        if self._commander.subcommands:
+            for (
+                subcommand_name,
+                subcommand,
+            ) in self._commander.subcommands.items():
+                logger.debug(
+                    f"{subcommand_name} process ID: {subcommand.process.pid}"
+                )
+                self.pids.append(subcommand.process.pid)
+
+        # Store our own pid for future termination
+        self.pid = os.getpid()
+
+        # Persist
+        self.update()
+
+    def down(self) -> None:
+        """Tears down resources for Airflow. Stops running processes."""
+        self._set_env()
+        if self._commander.subcommands:
+            # if the _commander state has the subcommands then use them
+            self._commander.down()
+        else:
+            # else use the cached pids
+            for pid in self.pids:
+                logger.debug(f"Killing airflow pid: {pid}")
+                os.kill(pid, signal.SIGKILL)
+
+            # kill the up process's pid
+            if self.pid:
+                os.kill(self.pid, signal.SIGKILL)
+
+        # At this point, we want to reset pids
+        self.pid = None
+        self.pids = []
+        self.update()
+
+        # Delete the rest
+        path_utils.rm_dir(self.airflow_home)
+        logger.info("Airflow spun down.")
 
     def run(
         self, zenml_pipeline: "BasePipeline", **kwargs: Any
@@ -67,10 +165,6 @@ class AirflowOrchestrator(BaseOrchestrator):
             zenml_pipeline: The pipeline to run.
             **kwargs: Unused argument to conform with base class signature.
         """
-        self._set_env()
-        if not path_utils.file_exists(os.path.join(os.getcwd(), "airflow.cfg")):
-            self.bootstrap_airflow()
-
         self.airflow_config = {
             "schedule_interval": datetime.timedelta(
                 minutes=self.schedule_interval_minutes

@@ -162,9 +162,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
             f"Using orchestrator `{self.stack.orchestrator_name}` for "
             f"pipeline `{self.pipeline_name}`. Running pipeline.."
         )
-        self.stack.orchestrator.pre_run(self)
+        self.stack.orchestrator.pre_run()
         ret = self.stack.orchestrator.run(self)
-        self.stack.orchestrator.pre_run(self)
+        self.stack.orchestrator.pre_run()
         return ret
 
     def with_config(
