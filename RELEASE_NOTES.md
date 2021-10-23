@@ -1,3 +1,20 @@
+# 0.5.1
+0.5.1 builds on top of Slack of the 0.5.0 release with quick bug updates.
+
+
+## Overview
+
+* Pipeline can now be run via a YAML file. #132
+* CLI now let's you pull directly from GitHub examples folder. :fire: Amazing @alex-zenml with #141!
+* ZenML now has full [mypy](http://mypy-lang.org/) compliance. :tada: Thanks @schustmi for #140!
+* Numerous bugs and performance improvements. #136, @bcdurak great job with #142
+* Added new docs with a low level API guide. #143
+
+[Our roadmap](https://docs.zenml.io/support/roadmap) goes into further detail on the timeline. Vote on the [next features now](https://github.com/zenml-io/zenml/discussions).
+
+We encourage every user (old or new) to start afresh with this release. Please go over our latest [docs](https://docs.zenml.io) and [examples](examples) to get a hang of the new system.
+
+
 # 0.5.0
 This long-awaited ZenML release marks a seminal moment in the project's history. We present to you a complete 
 revamp of the internals of ZenML, with a fresh new design and API. While these changes are significant, and have been months 
