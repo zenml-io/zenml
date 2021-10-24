@@ -6,30 +6,40 @@ After executing a pipeline, the user needs to be able to fetch it from history a
 
 ## Component Hierarchy
 
+
 In the context of a post-execution workflow, there is an implied hierarchy of some basic ZenML components:
 
-```python
-pipelines -> runs -> steps -> outputs
+```bash
+repository -> pipelines -> runs -> steps -> outputs
 
 # where -> implies a 1-many relationship.
 ```
 
-The highest level `pipeline` object is also related to the `stack` component implicitly.
+### Repository
 
-### Hierarchy in Code
+The highest level `repository` object is where to start from.
+
+```python
+from zenml.core.repo import Repository
+
+repo = Repository()
+```
 
 #### Pipelines
 
 ```python
-pipelines = repo.get_pipelines()  # get all pipeline, can be filtered by name etc via params
-pipeline = pipeline[0]
+# get all pipelines from all stacks
+pipelines = repo.get_pipelines()  
+
+# or get one pipeline by name and/or stack key
+pipeline = repo.get_pipeline(pipeline_name=..., stack_key=...)
 ```
 
 #### Runs
 
 ```python
-runs = pipeline.get_runs()  # all runs of a pipeline, can be filtered by name etc.
-run = runs[0]
+runs = pipeline.get_runs()  # all runs of a pipeline chronlogically ordered
+run = runs[-1]  # latest run
 ```
 
 #### Steps
@@ -37,51 +47,47 @@ run = runs[0]
 ```python
 # at this point we switch from the `get_` paradigm to properties
 steps = run.steps  # all steps of a pipeline
-step = steps[0] || steps.step_name
+step = steps[0] 
+print(step.name)
 ```
 
 #### Outputs
 
 ```python
-outputs = step.outputs # all outputs of a step: these are all Artifacts
-output = outputs.text_artifact_name  # artifact output
+# all outputs of a step
+# if one output, then its the first element in the list
+# if multiple output, then in the order defined with the `Output`
+outputs = step.outputs 
+output = outputs[0]
 
->>> output.type_
-TextArtifact
->> output.materializers
-
-# OR
-output = outputs[0]  # basic output
->> output.type_
-int
->> output.value
-4
+# will get you the value from the original materializer used in the pipeline
+output.read()  
 ```
 
 ## Visuals
 
 ### Materializing outputs (or inputs)
 
-Once an `output_artifact` is acquired from history, one can visualize it with any chosen `Materializer`.
+Once an output artifact is acquired from history, one can visualize it with any chosen `Materializer`.
 
 ```python
-df = output.materializers.pandas.read() # can Read TextArtifact into Pandas DF
+df = output.read(materializer=PandasMaterializer)
 df.head()
 ```
 
 ### Seeing statistics and schema
 
 ```python
-stats = output.materializers.statistics.read()
-stats  # visualize facet
+stats = output.read(materializer=StatisticsMaterializer)
+stats  # visualize stats
 
-schema = output.materializers.schema.read()
+schema = output.read(materializer=SchemaMaterializer)
 schema # visualize schema
 ```
 
 ### Retrieving Model
 
 ```python
-model = output.materializers.keras.read()
-model  # visualize facet
+model = output.read(materializer=KerasModelMaterializer)
+model  # visualize model
 ```

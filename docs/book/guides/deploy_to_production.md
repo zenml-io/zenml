@@ -1,10 +1,10 @@
 ---
-description: Swap out local stack for Airflow stack to get to a production pipeline.
+description: Swap out local stack for a cloud-based stack to get pipelines running in production.
 ---
 
 # Deploy Pipelines to Production
 
-## Stack
+When users want to run pipelines in production, all they need to do is swap out their `local` stack with a cloud-based stack, which you can configure.
 
 A stack is made up of the following three core components:
 
@@ -12,18 +12,27 @@ A stack is made up of the following three core components:
 * A Metadata Store
 * An Orchestrator (backend)
 
-A ZenML stack also happens to be a Pydantic `BaseSettings` class, which means that there are multiple ways to use it.
+A ZenML stack can be registered in the following way:
 
 ```bash
 zenml stack register STACK_NAME \
     -m METADATA_STORE_NAME \
     -a ARTIFACT_STORE_NAME \
     -o ORCHESTRATOR_NAME
+zenml stack set STACK_NAME  # turns it active
 ```
 
 {% hint style="info" %}
 See [CLI reference](../reference/cli-command-reference.md) for more help.
 {% endhint %}
+
+After a stack has been set as active, just running a pipeline will run that pipeline on the cloud stack instead of the local stack:
+
+```python
+python run.py  # will now run in production
+```
+
+Let's see what different combinations of stacks exists:
 
 ## Metadata Stores
 
@@ -47,12 +56,12 @@ Using MySQL as a Metadata Store is where ZenML can become really powerful, espec
 The Metadata Store can be simply configured to use any MySQL server (=>5.6):
 
 ```
-zenml config metadata set mysql \
-    --host 127.0.0.1 \ 
-    --port 3306 \
-    --username USER \
-    --passwd PASSWD \
-    --database DATABASE
+zenml metadata register METADATA_STORE_NAME mysql \
+    --host=127.0.0.1 \ 
+    --port=3306 \
+    --username=USER \
+    --passwd=PASSWD \
+    --database=DATABASE
 ```
 
 One particular configuration our team is very fond of internally leverages Google Cloud SQL and the docker-based cloudsql proxy to track experiments across team members and environments. Stay tuned for a tutorial on that!
@@ -80,7 +89,7 @@ Many experiments and many ZenML integrations require a remote Artifact Store to 
 Configuring a remote Artifact Store for ZenML is a one-liner using the CLI:
 
 ```
-zenml config artifacts set gs://your-bucket/sub/dir
+zenml artifact register ARTIFACT_STORE_NAME gcp --path=gs://your-bucket/sub/dir
 ```
 
 ## Orchestrator

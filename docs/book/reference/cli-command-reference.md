@@ -55,10 +55,8 @@ zenml init --repo_path /path/to/dir
 If you wish to specify that you do not want analytics to be transmitted back to ZenML about your usage of the tool, pass in `False` to the `--analytics_opt_in` option:
 
 ```bash
-zenml init --analytics_opt_in False
+zenml init --analytics_opt_out
 ```
-
-Read more about exactly what information it sends back here.
 
 If you wish to delete all data relating to your project from the directory, use the `zenml clean` command. This will:
 
@@ -73,7 +71,7 @@ _Note that the_ `clean` _command is not implemented for the current version._
 The configuration of each pipeline, step, backend, and produced artifacts are all tracked within the metadata store. By default ZenML initialises your repository with a metadata store kept on your local machine. If you wish to register a new metadata store, do so with the `register` command:
 
 ```bash
-zenml metadata register --metadata_store_name my-new-metadata-store
+zenml metadata register METADATA_STORE_NAME METADATA_STORE_TYPE [--OPTIONS]
 ```
 
 If you wish to list the metadata stores that have already been registered within your ZenML project / repository, type:
@@ -85,7 +83,7 @@ zenml metadata list
 If you wish to delete a particular metadata store, pass the name of the metadata store into the CLI with the following command:
 
 ```bash
-zenml metadata delete --metadata_store_name my-new-metadata-store
+zenml metadata delete METADATA_STORE_NAME
 ```
 
 ## Customizing your Artifact Store
@@ -93,7 +91,7 @@ zenml metadata delete --metadata_store_name my-new-metadata-store
 The artifact store is where all the inputs and outputs of your pipeline steps are stored. By default ZenML initialises your repository with an artifact store with everything kept on your local machine. If you wish to register a new artifact store, do so with the `register` command:
 
 ```bash
-zenml artifact register --artifact_store_name my-new-artifact-store
+zenml artifact register ARTIFACT_STORE_NAME ARTIFACT_STORE_TYPE [--OPTIONS]
 ```
 
 If you wish to list the artifact stores that have already been registered within your ZenML project / repository, type:
@@ -105,7 +103,7 @@ zenml artifact list
 If you wish to delete a particular artifact store, pass the name of the artifact store into the CLI with the following command:
 
 ```bash
-zenml artifact delete --metadata_store_name my-new-artifact-store
+zenml artifact delete ARTIFACT_STORE_NAME
 ```
 
 ## Customizing your Orchestrator
@@ -115,7 +113,7 @@ An orchestrator is a special kind of backend that manages the running of each st
 If you wish to register a new orchestrator, do so with the `register` command:
 
 ```bash
-zenml orchestrator register --orchestrator_name my-new-orchestrator
+zenml orchestrator register ORCHESTRATOR_NAME ORCHESTRATOR_TYPE [--ORCHESTRATOR_OPTIONS]
 ```
 
 If you wish to list the orchestrators that have already been registered within your ZenML project / repository, type:
@@ -127,7 +125,7 @@ zenml orchestrator list
 If you wish to delete a particular orchestrator, pass the name of the orchestrator into the CLI with the following command:
 
 ```bash
-zenml orchestrator delete --orchestrator_name my-new-orchestrator
+zenml orchestrator delete ORCHESTRATOR_NAME
 ```
 
 ## Administering the Stack
@@ -156,13 +154,13 @@ zenml stack list
 To delete a stack that you have previously registered, type:
 
 ```bash
-zenml stack delete --stack_name my-new-stack
+zenml stack delete STACK_NAME
 ```
 
 By default, ZenML uses a local stack whereby all pipelines run on your local computer. If you wish to set a different stack as the current active stack to be used when running your pipeline, type:
 
 ```bash
-zenml stack set --stack_name my-new-stack
+zenml stack set STACK_NAME
 ```
 
 This changes a configuration property within your local environment.

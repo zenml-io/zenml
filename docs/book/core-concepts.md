@@ -26,7 +26,7 @@ zenml init
 Please make sure to be inside a valid git repository before executing the above!
 {% endhint %}
 
-The initialization creates a local `.zen` folder where various information about your local configuration lives, e.g., the active [Stack](guides/stacks.md) that you are using to run pipelines.
+The initialization creates a local `.zen` folder where various information about your local configuration lives, e.g., the active [Stack](guides/deploy_to_production.md) that you are using to run pipelines.
 
 **Pipeline**
 

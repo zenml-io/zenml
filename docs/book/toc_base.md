@@ -21,7 +21,7 @@
 * [High Level API](guides/high-level-api/README.md)
   * [Chapter 1](guides/high-level-api/chapter-1.md)
 * [Post Execution Workflow](guides/post-execution-workflow.md)
-* [Deploy Pipelines to Production](guides/stacks.md)
+* [Deploy Pipelines to Production](guides/deploy_to_production.md)
 
 ## Support
 
