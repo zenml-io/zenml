@@ -21,7 +21,7 @@ We built ZenML because we could not find an easy framework that translates the p
 
 ## Developer Experience (DX)
 
-Modern developer experience is an und ZenML is built to give developers a similar experience as other awesome frameworks in other domains like [HuggingFace](https://huggingface.co) and [PyTorch Lightning](https://www.pytorchlightning.ai), but geared towards MLOps.
+Modern developer experience is an underrated aspect of a ZenML is built to give developers a similar experience as other awesome frameworks in other domains like [HuggingFace](https://huggingface.co) and [PyTorch Lightning](https://www.pytorchlightning.ai), but geared towards MLOps.
 
 ## Data-centric Pipelines
 
