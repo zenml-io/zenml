@@ -25,9 +25,12 @@ from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.constants import APP_NAME, GIT_REPO_URL
+from zenml.logger import get_logger
 from zenml.utils import path_utils
 
 # TODO: [MEDIUM] Add an example-run command to run an example.
+
+logger = get_logger(__name__)
 
 EXAMPLES_GITHUB_REPO = "zenml_examples"
 
@@ -52,10 +55,17 @@ class GitExamplesHandler(object):
         # check out the branch of the installed version even if we do have a local copy (minimal check)
         if EXAMPLES_GITHUB_REPO not in config_directory_files:
             self.clone_from_zero(GIT_REPO_URL, examples_dir, installed_version)
+        # elif EXAMPLES_GITHUB_REPO in config_directory_files and self.is_not_release():
+        #     self.clone_when_examples_already_cloned(
+        #         examples_dir, installed_version)
         else:
             self.clone_when_examples_already_cloned(
                 examples_dir, installed_version
             )
+
+    def is_not_release() -> bool:
+        """Checks whether we are making a release or not"""
+        return True
 
     def clone_from_zero(
         self, git_repo_url: str, local_dir: str, version: str
@@ -77,7 +87,10 @@ class GitExamplesHandler(object):
         into the global config directory if they are already cloned."""
         repo = Repo(Path(local_dir))
         # TODO: [HIGH] fix bug with post-release versions
-        repo.git.checkout(version)
+        if float(repo.active_branch) < (version):
+            logger.debug("")
+        else:
+            repo.git.checkout(version)
 
     def get_examples_dir(self) -> str:
         """Return the examples dir"""
