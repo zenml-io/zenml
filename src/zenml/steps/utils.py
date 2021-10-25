@@ -261,7 +261,7 @@ class _FunctionExecutor(BaseExecutor):
             Return the output of `handle_input()` of selected materializer.
         """
         materializer = source_utils.load_source_path_class(
-            artifact.materializers
+            artifact.materializer
         )(artifact)
         # The materializer now returns a resolved input
         return materializer.handle_input(data_type=data_type)

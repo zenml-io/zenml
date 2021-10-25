@@ -203,7 +203,11 @@ def resolve_class(class_: Type[Any]) -> str:
     if is_standard_source(initial_source):
         return resolve_standard_source(initial_source)
 
-    file_path = inspect.getfile(class_)
+    try:
+        file_path = inspect.getfile(class_)
+    except TypeError:
+        # builtin file
+        return initial_source
 
     # Get the full module path relative to the repository
     if initial_source.startswith("__main__") or not is_inside_repository(
