@@ -60,11 +60,13 @@ zenml init --analytics_opt_out
 
 If you wish to delete all data relating to your project from the directory, use the `zenml clean` command. This will:
 
-* delete all pipelines
-* delete all artifacts
-* delete all metadata
+- delete all pipelines
+- delete all artifacts
+- delete all metadata
 
 _Note that the_ `clean` _command is not implemented for the current version._
+
+## Loading and using pre-built examples
 
 ## Customizing your Metadata Store
 
@@ -170,4 +172,3 @@ To see which stack is currently set as the default active stack, type:
 ```bash
 zenml stack get
 ```
-
