@@ -86,8 +86,8 @@ class StepView:
     def inputs(self) -> List[ArtifactView]:
         """Returns a list of input artifacts that were used to run this step.
 
-        These artifacts are in the same order as defined in the signature of
-        the step function.
+        These artifacts are **NOT** in the same order as defined in the
+        signature of the step function.
         """
         self._ensure_inputs_outputs_fetched()
         return list(self._inputs.values())
@@ -120,9 +120,11 @@ class StepView:
     def outputs(self) -> List[ArtifactView]:
         """Returns a list of output artifacts that were written by this step.
 
-        These artifacts are in the same order as defined in the signature of
-        the step function.
+        These artifacts are **NOT** in the same order as defined in the
+        signature of the step function.
         """
+        # TODO [MEDIUM]: Do we want these outputs ordered? If yes we'd probably
+        #  have to store the order in the metadata store ourselves
         self._ensure_inputs_outputs_fetched()
         return list(self._outputs.values())
 
@@ -163,8 +165,6 @@ class StepView:
         self._inputs, self._outputs = self._metadata_store.get_step_artifacts(
             self
         )
-
-        # TODO: ordering
 
     def __repr__(self) -> str:
         """Returns a string representation of this step."""
