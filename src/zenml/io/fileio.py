@@ -17,6 +17,7 @@ from typing import Any, Callable, Iterable, List, Optional, Tuple, Type
 
 from tfx.dsl.io.filesystem import Filesystem, PathType
 
+from zenml.utils.path_utils import convert_to_str
 from zenml.utils.source_utils import import_class_by_path
 
 
@@ -36,18 +37,23 @@ def _get_scheme(path: PathType) -> PathType:
         return ""
 
 
-def _get_filesystem(path) -> Type[Filesystem]:
+def _get_filesystem(path: PathType) -> Type[Filesystem]:
     scheme = _get_scheme(path)
 
     if scheme == "gs://":
-        return import_class_by_path("zenml.io.gcs_plugin.ZenGCS")()
+        return import_class_by_path("zenml.io.gcs_plugin.ZenGCS")()  # type: ignore[no-any-return] # noqa
     elif scheme == "":
-        return import_class_by_path(
+        return import_class_by_path(  # type: ignore[no-any-return] # noqa
             "tfx.dsl.io.plugins.local.LocalFilesystem"
         )()
 
+    raise ValueError(
+        f"No registered handler found for filesystem "
+        f"scheme `{convert_to_str(scheme)}`."
+    )
 
-def open(path: PathType, mode: str = "r"):  # pylint: disable=redefined-builtin
+
+def open(path: PathType, mode: str = "r") -> Any:  # noqa
     """Open a file at the given path."""
     return _get_filesystem(path).open(path, mode=mode)
 

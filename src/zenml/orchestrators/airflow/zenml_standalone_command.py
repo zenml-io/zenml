@@ -84,7 +84,7 @@ class AirflowCommander(StandaloneCommand):
                 self.update_output()  # type: ignore[no-untyped-call]
                 # Print info banner when all components are ready and the
                 # delay has passed
-                if not self.ready_time and self.is_ready():    # type: ignore[no-untyped-call] # noqa
+                if not self.ready_time and self.is_ready():  # type: ignore[no-untyped-call] # noqa
                     self.ready_time = time.monotonic()
                 if (
                     not shown_ready
