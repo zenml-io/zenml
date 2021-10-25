@@ -152,7 +152,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
         analytics_utils.track_event(
             event=analytics_utils.RUN_PIPELINE,
             metadata={
-                "pipeline_type": self.__class__.__name__,
                 "stack_type": self.stack.stack_type,
                 "total_steps": len(self.steps),
             },
