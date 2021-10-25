@@ -28,11 +28,13 @@ repos:
                                   types-futures, types-Markdown, types-protobuf, types-PyMySQL, types-python-dateutil,
                                   types-PyYAML, types-requests, types-setuptools, types-six, types-tabulate, types-toml]
         args: [  ]
+        files: ^src/zenml
   - repo: https://github.com/econchick/interrogate
     rev: 1.4.0
     hooks:
       - id: interrogate
         args: [  ]
+        files: ^src/zenml
   - repo: local
     hooks:
       - id: dependency_update_warning
