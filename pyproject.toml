@@ -161,6 +161,7 @@ module = [
     "pytorch_lightning.*",
     "sklearn.*",
     "numpy.*",
+    "psutil.*"
 ]
 ignore_missing_imports = true
 
