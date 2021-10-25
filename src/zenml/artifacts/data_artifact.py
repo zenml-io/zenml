@@ -26,5 +26,3 @@ class DataArtifact(BaseArtifact):
     """
 
     TYPE_NAME = "data_artifact"
-
-    PROPERTIES = {"split_names": SPLIT_NAMES_PROPERTY}
