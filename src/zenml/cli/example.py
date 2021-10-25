@@ -53,22 +53,31 @@ class GitExamplesHandler(object):
         if EXAMPLES_GITHUB_REPO not in config_directory_files:
             self.clone_from_zero(GIT_REPO_URL, examples_dir, installed_version)
         else:
-            repo = Repo(Path(examples_dir))
-            # TODO: [HIGH] fix bug with post-release versions
-            repo.git.checkout(installed_version)
+            self.clone_when_examples_already_cloned(
+                examples_dir, installed_version
+            )
 
     def clone_from_zero(
-        self, git_repo_url: str, dest_dir: str, version: str
+        self, git_repo_url: str, local_dir: str, version: str
     ) -> None:
         """Basic functionality to clone a repo."""
         try:
-            Repo.clone_from(git_repo_url, dest_dir, branch=version)
+            Repo.clone_from(git_repo_url, local_dir, branch=version)
         except GitCommandError:
             error(
                 f"You just tried to download examples for version {version}. There is no corresponding release or version. Please try again with a version number corresponding to an actual release."
             )
         except KeyboardInterrupt:
-            self.delete_example_source_dir(dest_dir)
+            self.delete_example_source_dir(local_dir)
+
+    def clone_when_examples_already_cloned(
+        local_dir: str, version: str
+    ) -> None:
+        """Basic functionality to clone the ZenML examples
+        into the global config directory if they are already cloned."""
+        repo = Repo(Path(local_dir))
+        # TODO: [HIGH] fix bug with post-release versions
+        repo.git.checkout(version)
 
     def get_examples_dir(self) -> str:
         """Return the examples dir"""
