@@ -163,8 +163,8 @@ scikit_p.run()
 # Post execution flow
 repo = Repository()
 p = repo.get_pipeline(pipeline_name="mnist_pipeline")
-print(f"Pipeline `mnist_pipeline` has {len(p.get_runs())} run(s)")
-for r in p.get_runs()[0:2]:
+print(f"Pipeline `mnist_pipeline` has {len(p.runs)} run(s)")
+for r in p.runs[0:2]:
     eval_step = r.steps[3]
     print(
         f"For {eval_step.name}, the accuracy is: "
