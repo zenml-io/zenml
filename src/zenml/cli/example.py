@@ -44,7 +44,7 @@ class GitExamplesHandler(object):
         # delete source directory if force redownload is set
         if redownload:
             self.delete_example_source_dir(examples_dir)
-            installed_version = installed_version
+            installed_version = redownload
 
         config_directory_files = os.listdir(repo_dir)
 
