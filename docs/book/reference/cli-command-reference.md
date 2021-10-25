@@ -90,10 +90,23 @@ If you want to pull all the examples into your current working directory (wherev
 zenml example pull
 ```
 
-pull (all)
-pull (single)
-pull --force
-pull -f --version
+If you'd only like to pull a single example, add the name of that example (for example, `quickstart`) as an argument to the same command, as follows:
+
+```bash
+zenml example pull quickstart
+```
+
+If you would like to force-redownload the examples, use the `--force` or `-f` flag as in this example:
+
+```bash
+zenml example pull --force
+```
+
+This will redownload all the examples afresh, using the same version of ZenML as you currently have installed. If for some reason you want to download examples corresponding to a previous release of ZenML, use the `--version` or `-v` flag to specify, as in the following example:
+
+```bash
+zenml example pull --force --version 0.3.8
+```
 
 ## Customizing your Metadata Store
 
