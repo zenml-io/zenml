@@ -148,14 +148,19 @@ class AirflowOrchestrator(BaseOrchestrator):
         logger.info("Airflow spun down.")
 
     def run(
-        self, zenml_pipeline: "BasePipeline", **kwargs: Any
+        self,
+        zenml_pipeline: "BasePipeline",
+        run_name: Optional[str] = None,
+        **kwargs: Any,
     ) -> "airflow.DAG":
         """Prepares the pipeline so it can be run in Airflow.
 
         Args:
             zenml_pipeline: The pipeline to run.
+            run_name: Optional name for the run.
             **kwargs: Unused argument to conform with base class signature.
         """
+        # TODO [HIGH]: set the run name
         self.airflow_config = {
             "schedule_interval": datetime.timedelta(
                 minutes=self.schedule_interval_minutes

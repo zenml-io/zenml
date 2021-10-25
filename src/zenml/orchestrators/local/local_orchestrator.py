@@ -13,7 +13,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 import tfx.orchestration.pipeline as tfx_pipeline
 
@@ -21,7 +21,6 @@ from zenml.core.component_factory import orchestrator_store_factory
 from zenml.enums import OrchestratorTypes
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.local.local_dag_runner import LocalDagRunner
-from zenml.steps.base_step import BaseStep
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
@@ -31,11 +30,17 @@ if TYPE_CHECKING:
 class LocalOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines locally."""
 
-    def run(self, zenml_pipeline: "BasePipeline", **pipeline_args: Any) -> None:
+    def run(
+        self,
+        zenml_pipeline: "BasePipeline",
+        run_name: Optional[str] = None,
+        **pipeline_args: Any
+    ) -> None:
         """Runs a pipeline locally.
 
         Args:
             zenml_pipeline: The pipeline to run.
+            run_name: Optional name for the run.
             **pipeline_args: Unused kwargs to conform with base signature.
         """
         runner = LocalDagRunner()
@@ -56,4 +61,4 @@ class LocalOrchestrator(BaseOrchestrator):
             metadata_connection_config=metadata_store.get_tfx_metadata_config(),
             enable_cache=zenml_pipeline.enable_cache,
         )
-        return runner.run(created_pipeline)
+        return runner.run(created_pipeline, run_name)

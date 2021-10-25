@@ -14,7 +14,7 @@
 import inspect
 import json
 from abc import abstractmethod
-from typing import Any, ClassVar, Dict, NoReturn, Tuple, Type, cast
+from typing import Any, ClassVar, Dict, NoReturn, Optional, Tuple, Type, cast
 
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
@@ -42,8 +42,7 @@ class BasePipelineMeta(type):
     def __new__(
         mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
     ) -> "BasePipelineMeta":
-        """Ensures that all function arguments are either a `Step`
-        or an `Input`."""
+        """Saves argument names for later verification purposes"""
         cls = cast(Type["BasePipeline"], super().__new__(mcs, name, bases, dct))
 
         cls.NAME = name
@@ -154,8 +153,12 @@ class BasePipeline(metaclass=BasePipelineMeta):
         """
         raise PipelineInterfaceError("Cannot set steps manually!")
 
-    def run(self) -> Any:
-        """Runs the pipeline using the orchestrator of the pipeline stack."""
+    def run(self, run_name: Optional[str] = None) -> Any:
+        """Runs the pipeline using the orchestrator of the pipeline stack.
+
+        Args:
+            run_name: Optional name for the run.
+        """
         analytics_utils.track_event(
             event=analytics_utils.RUN_PIPELINE,
             metadata={
@@ -170,7 +173,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             f"pipeline `{self.pipeline_name}`. Running pipeline.."
         )
         self.stack.orchestrator.pre_run()
-        ret = self.stack.orchestrator.run(self)
+        ret = self.stack.orchestrator.run(self, run_name)
         self.stack.orchestrator.post_run()
         return ret
 
