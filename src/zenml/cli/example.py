@@ -19,10 +19,11 @@ from typing import Any, List
 
 import click
 from git.repo.base import Repo
+from git.exc import GitCommandError
 
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
-from zenml.cli.utils import confirmation, declare, warning
+from zenml.cli.utils import confirmation, declare, warning, error
 from zenml.constants import APP_NAME, GIT_REPO_URL
 from zenml.utils import path_utils
 
@@ -50,15 +51,22 @@ class GitExamplesHandler(object):
 
         # check out the branch of the installed version even if we do have a local copy (minimal check)
         if EXAMPLES_GITHUB_REPO not in config_directory_files:
-            try:
-                Repo.clone_from(
-                    GIT_REPO_URL, examples_dir, branch=installed_version
-                )
-            except KeyboardInterrupt:
-                self.delete_example_source_dir(examples_dir)
+            self.clone_from_zero(GIT_REPO_URL, examples_dir, installed_version)
         else:
             repo = Repo(Path(examples_dir))
             repo.git.checkout(installed_version)
+
+    def clone_from_zero(self, git_repo_url: str, dest_dir: str, version: str) -> None:
+        """Basic functionality to clone a repo."""
+        try:
+            Repo.clone_from(
+                GIT_REPO_URL, dest_dir, branch=version
+            )
+        except GitCommandError:
+            error(
+                f"You just tried to download examples for version {version}. There is no corresponding release or version. Please try again with a version number corresponding to an actual release.")
+        except KeyboardInterrupt:
+            self.delete_example_source_dir(dest_dir)
 
     def get_examples_dir(self) -> str:
         """Return the examples dir"""
