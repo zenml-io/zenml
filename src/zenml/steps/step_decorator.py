@@ -11,12 +11,24 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Any, Callable, Optional, Type, TypeVar, Union
+from typing import Any, Callable, Optional, Type, TypeVar, Union, overload
 
 from zenml.steps.base_step import BaseStep
 from zenml.steps.utils import STEP_INNER_FUNC_NAME
 
 F = TypeVar("F", bound=Callable[..., Any])
+
+
+@overload
+def step(_func: F) -> Type[BaseStep]:
+    """Type annotations for step decorator in case of no arguments."""
+    ...
+
+
+@overload
+def step(*, name: Optional[str] = None) -> Callable[[F], Type[BaseStep]]:
+    """Type annotations for step decorator in case of arguments."""
+    ...
 
 
 def step(
