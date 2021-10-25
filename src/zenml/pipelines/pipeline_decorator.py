@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Callable, Optional, Type, TypeVar, Union
+from typing import Callable, Optional, Type, TypeVar, Union, overload
 
 from zenml.pipelines.base_pipeline import (
     PARAM_ENABLE_CACHE,
@@ -20,6 +20,20 @@ from zenml.pipelines.base_pipeline import (
 )
 
 F = TypeVar("F", bound=Callable[..., None])
+
+
+@overload
+def pipeline(_func: F) -> Type[BasePipeline]:
+    """Type annotations for pipeline decorator in case of no arguments."""
+    ...
+
+
+@overload
+def pipeline(
+    *, name: Optional[str] = None, enable_cache: bool = True
+) -> Callable[[F], Type[BasePipeline]]:
+    """Type annotations for step decorator in case of arguments."""
+    ...
 
 
 def pipeline(
