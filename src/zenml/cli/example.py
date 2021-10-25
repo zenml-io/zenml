@@ -58,6 +58,7 @@ class GitExamplesHandler(object):
                 self.delete_example_source_dir(examples_dir)
         else:
             repo = Repo(Path(examples_dir))
+            # TODO: [HIGH] fix bug with post-release versions
             repo.git.checkout(installed_version)
 
     def get_examples_dir(self) -> str:
