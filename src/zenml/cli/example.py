@@ -62,7 +62,7 @@ class GitExamplesHandler(object):
     ) -> None:
         """Basic functionality to clone a repo."""
         try:
-            Repo.clone_from(GIT_REPO_URL, dest_dir, branch=version)
+            Repo.clone_from(git_repo_url, dest_dir, branch=version)
         except GitCommandError:
             error(
                 f"You just tried to download examples for version {version}. There is no corresponding release or version. Please try again with a version number corresponding to an actual release."
