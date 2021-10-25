@@ -41,14 +41,6 @@ class LocalOrchestrator(BaseOrchestrator):
         runner = LocalDagRunner()
 
         # Establish the connections between the components
-        for s in zenml_pipeline.steps.values():
-            if not issubclass(type(s), BaseStep):
-                raise TypeError(
-                    f"When you are designing a pipeline, you can only pass in "
-                    f"@step like annotated objects. You passed in "
-                    f"`{s}` which is of type `{type(s)}`"
-                )
-
         zenml_pipeline.connect(**zenml_pipeline.steps)
 
         # Create the final step list and the corresponding pipeline

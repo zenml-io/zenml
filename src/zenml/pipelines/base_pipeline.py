@@ -95,6 +95,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
 
         for k, v in kwargs.items():
+            if not isinstance(v, BaseStep):
+                raise PipelineInterfaceError(
+                    f"When instantiating a pipeline, you can only pass "
+                    f"in @step like annotated objects. You passed in "
+                    f"`{v}` which is of type `{type(v)}`"
+                )
+
             if k in self.STEP_SPEC:
                 self.__steps.update({k: v})
             else:
