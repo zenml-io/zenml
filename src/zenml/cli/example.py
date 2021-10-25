@@ -18,12 +18,12 @@ from pathlib import Path
 from typing import Any, List
 
 import click
-from git.repo.base import Repo
 from git.exc import GitCommandError
+from git.repo.base import Repo
 
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
-from zenml.cli.utils import confirmation, declare, warning, error
+from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.constants import APP_NAME, GIT_REPO_URL
 from zenml.utils import path_utils
 
@@ -57,15 +57,16 @@ class GitExamplesHandler(object):
             # TODO: [HIGH] fix bug with post-release versions
             repo.git.checkout(installed_version)
 
-    def clone_from_zero(self, git_repo_url: str, dest_dir: str, version: str) -> None:
+    def clone_from_zero(
+        self, git_repo_url: str, dest_dir: str, version: str
+    ) -> None:
         """Basic functionality to clone a repo."""
         try:
-            Repo.clone_from(
-                GIT_REPO_URL, dest_dir, branch=version
-            )
+            Repo.clone_from(GIT_REPO_URL, dest_dir, branch=version)
         except GitCommandError:
             error(
-                f"You just tried to download examples for version {version}. There is no corresponding release or version. Please try again with a version number corresponding to an actual release.")
+                f"You just tried to download examples for version {version}. There is no corresponding release or version. Please try again with a version number corresponding to an actual release."
+            )
         except KeyboardInterrupt:
             self.delete_example_source_dir(dest_dir)
 
