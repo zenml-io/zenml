@@ -82,7 +82,7 @@ print(f"The run you just made has {len(run.steps)} step(s).")
 step = run.get_step('importer_mnist')
 print(f"That step has {len(step.outputs)} output artifacts.")
 for i, o in enumerate(step.outputs):
-    arr = o.read(None)
+    arr = o.read()
     print(f"Output {i} is an array with shape: {arr.shape}")
 ```
 

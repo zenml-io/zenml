@@ -38,7 +38,7 @@ pipeline = repo.get_pipeline(pipeline_name=..., stack_key=...)
 #### Runs
 
 ```python
-runs = pipeline.get_runs()  # all runs of a pipeline chronlogically ordered
+runs = pipeline.runs  # all runs of a pipeline chronlogically ordered
 run = runs[-1]  # latest run
 ```
 
