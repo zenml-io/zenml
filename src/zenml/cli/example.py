@@ -81,6 +81,7 @@ class GitExamplesHandler(object):
     ) -> None:
         """Basic functionality to clone the ZenML examples
         into the global config directory if they are already cloned."""
+        # TODO: [HIGH] fix the release bug
         local_dir_path = Path(local_dir)
         logger.debug(f"local_dir_path is {local_dir_path}")
         repo = Repo(str(local_dir_path))
