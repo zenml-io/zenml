@@ -164,7 +164,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
         self.stack.orchestrator.pre_run()
         ret = self.stack.orchestrator.run(self)
-        self.stack.orchestrator.pre_run()
+        self.stack.orchestrator.post_run()
         return ret
 
     def with_config(
