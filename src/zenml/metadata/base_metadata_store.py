@@ -18,6 +18,7 @@ from abc import abstractmethod
 from collections import OrderedDict
 from typing import Dict, List, Optional, Tuple
 
+from ml_metadata import proto
 from ml_metadata.metadata_store import metadata_store
 from ml_metadata.proto import metadata_store_pb2
 from tfx.dsl.compiler.constants import (
@@ -90,7 +91,7 @@ class BaseMetadataStore(BaseComponent):
             PIPELINE_CONTEXT_TYPE_NAME, pipeline_name
         )
         if pipeline_context:
-            logger.debug("Fetched pipelines with name '%s'", pipeline_name)
+            logger.debug("Fetched pipeline with name '%s'", pipeline_name)
             return PipelineView(
                 id_=pipeline_context.id,
                 name=pipeline_context.name,
@@ -100,33 +101,43 @@ class BaseMetadataStore(BaseComponent):
             logger.info("No pipelines found for name '%s'", pipeline_name)
             return None
 
+    def _check_if_executions_belong_to_pipeline(
+        self,
+        executions: List[proto.Execution],
+        pipeline: PipelineView,
+    ) -> bool:
+        """Returns `True` if the executions are associated with the pipeline
+        context."""
+        for execution in executions:
+            associated_contexts = self.store.get_contexts_by_execution(
+                execution.id
+            )
+            for context in associated_contexts:
+                if context.id == pipeline._id:  # noqa
+                    return True
+        return False
+
     def get_pipeline_runs(
         self, pipeline: PipelineView
-    ) -> List[PipelineRunView]:
+    ) -> Dict[str, PipelineRunView]:
         """Gets all runs for the given pipeline."""
         all_pipeline_runs = self.store.get_contexts_by_type(
             PIPELINE_RUN_CONTEXT_TYPE_NAME
         )
-        runs = []
+        runs: Dict[str, PipelineRunView] = OrderedDict()
 
         for run in all_pipeline_runs:
-            run_executions = self.store.get_executions_by_context(run.id)
-            if run_executions:
-                associated_contexts = self.store.get_contexts_by_execution(
-                    run_executions[0].id
+            executions = self.store.get_executions_by_context(run.id)
+            if self._check_if_executions_belong_to_pipeline(
+                executions, pipeline
+            ):
+                run_view = PipelineRunView(
+                    id_=run.id,
+                    name=run.name,
+                    executions=executions,
+                    metadata_store=self,
                 )
-                for context in associated_contexts:
-                    if context.id == pipeline._id:  # noqa
-                        # Run is of this pipeline
-                        runs.append(
-                            PipelineRunView(
-                                id_=run.id,
-                                name=run.name,
-                                executions=run_executions,
-                                metadata_store=self,
-                            )
-                        )
-                        break
+                runs[run.name] = run_view
 
         logger.debug(
             "Fetched %d pipeline runs for pipeline named '%s'.",
@@ -135,6 +146,31 @@ class BaseMetadataStore(BaseComponent):
         )
 
         return runs
+
+    def get_pipeline_run(
+        self, pipeline: PipelineView, run_name: str
+    ) -> Optional[PipelineRunView]:
+        """Gets a specific run for the given pipeline."""
+        run = self.store.get_context_by_type_and_name(
+            PIPELINE_RUN_CONTEXT_TYPE_NAME, run_name
+        )
+
+        if not run:
+            # No context found for the given run name
+            return None
+
+        executions = self.store.get_executions_by_context(run.id)
+        if self._check_if_executions_belong_to_pipeline(executions, pipeline):
+            logger.debug("Fetched pipeline run with name '%s'", run_name)
+            return PipelineRunView(
+                id_=run.id,
+                name=run.name,
+                executions=executions,
+                metadata_store=self,
+            )
+
+        logger.info("No pipeline run found for name '%s'", run_name)
+        return None
 
     def get_pipeline_run_steps(
         self, pipeline_run: PipelineRunView
