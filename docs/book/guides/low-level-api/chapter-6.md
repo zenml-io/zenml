@@ -86,8 +86,8 @@ from zenml.core.repo import Repository
 
 repo = Repository()
 p = repo.get_pipeline(pipeline_name="mnist_pipeline")
-print(f"Pipeline `mnist_pipeline` has {len(p.get_runs())} run(s)")
-eval_step = p.get_runs()[-1].get_step("sklearn_evaluator")
+print(f"Pipeline `mnist_pipeline` has {len(p.runs)} run(s)")
+eval_step = p.runs[-1].get_step("sklearn_evaluator")
 val = eval_step.outputs[0].read()
 print(f"We scored an accuracy of {val} on the latest run!")
 ```

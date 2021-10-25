@@ -147,7 +147,7 @@ from zenml.core.repo import Repository
 
 repo = Repository()
 p = repo.get_pipeline(pipeline_name="mnist_pipeline")
-runs = p.get_runs()
+runs = p.runs
 print(f"Pipeline `mnist_pipeline` has {len(runs)} run(s)")
 run = runs[-1]
 print(f"The run you just made has {len(run.steps)} steps.")
