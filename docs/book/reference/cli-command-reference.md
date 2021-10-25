@@ -60,15 +60,57 @@ zenml init --analytics_opt_out
 
 If you wish to delete all data relating to your project from the directory, use the `zenml clean` command. This will:
 
-* delete all pipelines
-* delete all artifacts
-* delete all metadata
+- delete all pipelines
+- delete all artifacts
+- delete all metadata
 
 _Note that the_ `clean` _command is not implemented for the current version._
 
+## Loading and using pre-built examples
+
+If you don't have a project of your own that you're currently working on, or if you just want to play around a bit and see some functional code, we've got your back! You can use the ZenML CLI tool to download some pre-built examples.
+
+We know that working examples are a great way to get to know a tool, so we've made some examples for you to use to get started. (This is something that will grow as we add more).
+
+To list all the examples available to you, type:
+
+```bash
+zenml example list
+```
+
+If you want more detailed information about a specific example, use the `info` subcommand in combination with the name of the example, like this:
+
+```bash
+zenml example info quickstart
+```
+
+If you want to pull all the examples into your current working directory (wherever you are executing the `zenml` command from in your terminal), the CLI will create a `zenml_examples` folder for you if it doesn't already exist whenever you use the `pull` subcommand. The default is to copy all the examples, like this:
+
+```bash
+zenml example pull
+```
+
+If you'd only like to pull a single example, add the name of that example (for example, `quickstart`) as an argument to the same command, as follows:
+
+```bash
+zenml example pull quickstart
+```
+
+If you would like to force-redownload the examples, use the `--force` or `-f` flag as in this example:
+
+```bash
+zenml example pull --force
+```
+
+This will redownload all the examples afresh, using the same version of ZenML as you currently have installed. If for some reason you want to download examples corresponding to a previous release of ZenML, use the `--version` or `-v` flag to specify, as in the following example:
+
+```bash
+zenml example pull --force --version 0.3.8
+```
+
 ## Customizing your Metadata Store
 
-The configuration of each pipeline, step, backend, and produced artifacts are all tracked within the metadata store. By default ZenML initialises your repository with a metadata store kept on your local machine. If you wish to register a new metadata store, do so with the `register` command:
+The configuration of each pipeline, step, backend, and produced artifacts are all tracked within the metadata store. By default ZenML initializes your repository with a metadata store kept on your local machine. If you wish to register a new metadata store, do so with the `register` command:
 
 ```bash
 zenml metadata register METADATA_STORE_NAME METADATA_STORE_TYPE [--OPTIONS]
@@ -88,7 +130,7 @@ zenml metadata delete METADATA_STORE_NAME
 
 ## Customizing your Artifact Store
 
-The artifact store is where all the inputs and outputs of your pipeline steps are stored. By default ZenML initialises your repository with an artifact store with everything kept on your local machine. If you wish to register a new artifact store, do so with the `register` command:
+The artifact store is where all the inputs and outputs of your pipeline steps are stored. By default ZenML initializes your repository with an artifact store with everything kept on your local machine. If you wish to register a new artifact store, do so with the `register` command:
 
 ```bash
 zenml artifact register ARTIFACT_STORE_NAME ARTIFACT_STORE_TYPE [--OPTIONS]
@@ -108,7 +150,7 @@ zenml artifact delete ARTIFACT_STORE_NAME
 
 ## Customizing your Orchestrator
 
-An orchestrator is a special kind of backend that manages the running of each step of the pipeline. Orchestrators administer the actual pipeline runs. By default ZenML initialises your repository with an orchestrator that runs everything on your local machine.
+An orchestrator is a special kind of backend that manages the running of each step of the pipeline. Orchestrators administer the actual pipeline runs. By default ZenML initializes your repository with an orchestrator that runs everything on your local machine.
 
 If you wish to register a new orchestrator, do so with the `register` command:
 
@@ -170,4 +212,3 @@ To see which stack is currently set as the default active stack, type:
 ```bash
 zenml stack get
 ```
-

@@ -54,6 +54,7 @@ class GitExamplesHandler(object):
             self.clone_from_zero(GIT_REPO_URL, examples_dir, installed_version)
         else:
             repo = Repo(Path(examples_dir))
+            # TODO: [HIGH] fix bug with post-release versions
             repo.git.checkout(installed_version)
 
     def clone_from_zero(self, git_repo_url: str, dest_dir: str, version: str) -> None:
