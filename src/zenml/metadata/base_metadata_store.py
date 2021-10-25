@@ -26,7 +26,10 @@ from tfx.dsl.compiler.constants import (
     PIPELINE_RUN_CONTEXT_TYPE_NAME,
 )
 
-from zenml.artifacts.base_artifact import MATERIALIZERS_PROPERTY_KEY
+from zenml.artifacts.base_artifact import (
+    DATATYPE_PROPERTY_KEY,
+    MATERIALIZER_PROPERTY_KEY,
+)
 from zenml.core.base_component import BaseComponent
 from zenml.core.component_factory import metadata_store_factory
 from zenml.enums import ExecutionStatus, MLMetadataTypes
@@ -254,7 +257,11 @@ class BaseMetadataStore(BaseComponent):
             artifact_name = event_proto.path.steps[0].key
 
             materializer = artifact_proto.properties[
-                MATERIALIZERS_PROPERTY_KEY
+                MATERIALIZER_PROPERTY_KEY
+            ].string_value
+
+            data_type = artifact_proto.properties[
+                DATATYPE_PROPERTY_KEY
             ].string_value
 
             artifact = ArtifactView(
@@ -262,6 +269,7 @@ class BaseMetadataStore(BaseComponent):
                 type_=artifact_type,
                 uri=artifact_proto.uri,
                 materializer=materializer,
+                data_type=data_type,
             )
 
             if event_proto.type == event_proto.INPUT:
