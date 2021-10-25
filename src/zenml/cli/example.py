@@ -174,7 +174,9 @@ def pull(
     version: str,
 ) -> None:
     """Pull examples straight into your current working directory.
-    Add the flag --force-redownload"""
+    Add the flag --force or -f to redownload all the examples afresh.
+    Use the flag --version or -v and the version number to specify
+    which version of ZenML you wish to use for the examples."""
     if force:
         declare(f"Recloning ZenML repo for version {version}...")
         GitExamplesHandler(redownload=version)
