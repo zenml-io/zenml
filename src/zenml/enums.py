@@ -56,6 +56,8 @@ class ExecutionStatus(Enum):
 
 
 class LoggingLevels(Enum):
+    """Enum for logging levels."""
+
     NOTSET = logging.NOTSET
     ERROR = logging.ERROR
     WARN = logging.WARN
