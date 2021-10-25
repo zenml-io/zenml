@@ -29,6 +29,9 @@ from zenml.orchestrators.airflow.airflow_dag_runner import (
     AirflowDagRunner,
     AirflowPipelineConfig,
 )
+from zenml.orchestrators.airflow.zenml_standalone_command import (
+    AirflowCommander,
+)
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.utils import path_utils
 
@@ -55,18 +58,14 @@ class AirflowOrchestrator(BaseOrchestrator):
     airflow_config: Optional[Dict[str, Any]] = {}
     schedule_interval_minutes: int = 1
     pid: Optional[int] = None
-    _commander: Optional[Any] = PrivateAttr()
+    _commander: AirflowCommander = PrivateAttr()
 
     def __init__(self, **values: Any):
         """Intiailizes the AirflowCommander for the duration of this objects
         existence. Also makes sure env variables are set."""
         super().__init__(**values)
         self._set_env()
-        from zenml.orchestrators.airflow.zenml_standalone_command import (
-            AirflowCommander,
-        )
-
-        self._commander = AirflowCommander()
+        self._commander = AirflowCommander()  # type: ignore[no-untyped-call]
 
     @root_validator
     def set_airflow_home(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -102,7 +101,7 @@ class AirflowOrchestrator(BaseOrchestrator):
 
     def up(self) -> None:
         """This should ensure that Airflow is running."""
-        if self._commander.is_ready():
+        if self._commander.is_ready():  # type: ignore[no-untyped-call]
             # If its already up, then go back
             logger.info("Airflow is already up.")
             return
