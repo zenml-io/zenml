@@ -15,4 +15,4 @@ then
 fi
 
 # for now remove this until we figure out the problems with it
-# mypy $MYPY_ARGS "$SRC"
+mypy $MYPY_ARGS "$SRC"
