@@ -13,5 +13,18 @@
 #  permissions and limitations under the License.
 
 
-def test_me():
-    """A simple test to check a functionality"""
+from zenml.core.utils import define_json_config_settings_source
+
+
+def test_define_settings_source_returns_a_callable(tmp_path):
+    """Check that define_json_config_settings_source
+    returns a callable"""
+    config_name = "test_config.json"
+    assert callable(define_json_config_settings_source(tmp_path, config_name))
+
+
+def test_generate_customise_sources_returns_a_callable(tmp_path):
+    """Check that generate_customise_sources
+    returns a callable"""
+    file_name = "test.json"
+    assert callable(define_json_config_settings_source(tmp_path, file_name))
