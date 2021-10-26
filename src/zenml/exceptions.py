@@ -147,3 +147,7 @@ class MissingStepParameterError(Exception):
             )
         )
         super().__init__(message)
+
+
+class IntegrationNotFoundError(Exception):
+    """ """
