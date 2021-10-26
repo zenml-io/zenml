@@ -18,7 +18,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseSettings, Field
 
-from zenml.core.utils import generate_customise_sources
+from zenml.core.utils import generate_customize_sources
 from zenml.logger import get_logger
 from zenml.utils import path_utils
 
@@ -44,22 +44,22 @@ class BaseComponent(BaseSettings):
     _file_suffix = ".json"
 
     def __init__(self, **values: Any):
-        # Here, we insert monkey patch the `customise_sources` function
+        # Here, we insert monkey patch the `customize_sources` function
         #  because we want to dynamically generate the serialization
         #  file path and name.
 
         if hasattr(self, "uuid"):
-            self.__config__.customise_sources = generate_customise_sources(  # type: ignore[assignment] # noqa
+            self.__config__.customize_sources = generate_customize_sources(  # type: ignore[assignment] # noqa
                 self.get_serialization_dir(),
                 self.get_serialization_file_name(),
             )
         elif "uuid" in values:
-            self.__config__.customise_sources = generate_customise_sources(  # type: ignore[assignment] # noqa
+            self.__config__.customize_sources = generate_customize_sources(  # type: ignore[assignment] # noqa
                 self.get_serialization_dir(),
                 f"{str(values['uuid'])}{self._file_suffix}",
             )
         else:
-            self.__config__.customise_sources = generate_customise_sources(  # type: ignore[assignment] # noqa
+            self.__config__.customize_sources = generate_customize_sources(  # type: ignore[assignment] # noqa
                 self.get_serialization_dir(),
                 self.get_serialization_file_name(),
             )
