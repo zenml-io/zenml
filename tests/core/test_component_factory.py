@@ -32,4 +32,5 @@ COMPONENT_FACTORIES = [
 def test_factories_are_type_component_factory(component_factory):
     assert isinstance(component_factory, ComponentFactory)
     assert component_factory.name is not None
+    assert isinstance(component_factory.name, str)
     assert isinstance(component_factory.components, dict)
