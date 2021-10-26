@@ -20,6 +20,7 @@ from typing import Any, List
 import click
 from git.exc import GitCommandError
 from git.repo.base import Repo
+from packaging.version import parse
 
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
@@ -81,12 +82,13 @@ class GitExamplesHandler(object):
     ) -> None:
         """Basic functionality to clone the ZenML examples
         into the global config directory if they are already cloned."""
-        # TODO: [HIGH] fix the release bug
         local_dir_path = Path(local_dir)
         logger.debug(f"local_dir_path is {local_dir_path}")
         repo = Repo(str(local_dir_path))
-        last_release_tag = repo.tags[-1]
-        if last_release_tag.name < version:
+        last_release = parse(repo.tags[-1].name)
+        running_version = parse(version)
+
+        if last_release < running_version:
             self.delete_example_source_dir(str(local_dir_path))
             self.clone_from_zero(GIT_REPO_URL, local_dir, version)
         else:
@@ -210,9 +212,13 @@ def pull(
     Use the flag --version or -v and the version number to specify
     which version of ZenML you wish to use for the examples."""
     if force:
+        repo_dir = click.get_app_dir(APP_NAME)
+        examples_dir = os.path.join(repo_dir, EXAMPLES_GITHUB_REPO)
         declare(f"Recloning ZenML repo for version {version}...")
         logger.debug(f"VERSION IS {version}")
-        GitExamplesHandler(redownload=version)
+        git_examples_handler.clone_when_examples_already_cloned(
+            examples_dir, version
+        )
         warning("Deleting examples from current working directory...")
         git_examples_handler.delete_working_directory_examples_folder()
 
