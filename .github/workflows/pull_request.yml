@@ -28,7 +28,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m poetry install
-          python -m pip install apache-airflow~=2.2.0 gcsfc~=2021.9.0
+          python -m pip install apache-airflow~=2.2.0 gcsfs~=2021.9.0
 
       - name: Lint
         run: |
