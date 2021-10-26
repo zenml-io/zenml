@@ -152,6 +152,16 @@ strict = true
 namespace_packages = true
 show_error_codes = true
 
+# temporary fix for python 3.8 https://github.com/apache/airflow/discussions/19006
+# remove once the issue is solved in airflow
+exclude = "airflow/"
+
+[[tool.mypy.overrides]]
+module = "airflow.*"
+follow_imports = "skip"
+
+# end of fix
+
 [[tool.mypy.overrides]]
 module = [
     "tensorflow.*",
