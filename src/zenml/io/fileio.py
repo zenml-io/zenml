@@ -17,7 +17,6 @@ from typing import Any, Callable, Iterable, List, Optional, Tuple, Type
 
 from tfx.dsl.io.filesystem import Filesystem, PathType
 
-from zenml.utils.path_utils import convert_to_str
 from zenml.utils.source_utils import import_class_by_path
 
 
@@ -38,6 +37,7 @@ def _get_scheme(path: PathType) -> PathType:
 
 
 def _get_filesystem(path: PathType) -> Type[Filesystem]:
+    """Returns a filesystem class for a given path."""
     scheme = _get_scheme(path)
 
     if scheme == "gs://":
@@ -47,9 +47,11 @@ def _get_filesystem(path: PathType) -> Type[Filesystem]:
             "tfx.dsl.io.plugins.local.LocalFilesystem"
         )()
 
+    if isinstance(scheme, bytes):
+        scheme = scheme.decode("utf-8")
+
     raise ValueError(
-        f"No registered handler found for filesystem "
-        f"scheme `{convert_to_str(scheme)}`."
+        f"No registered handler found for filesystem scheme `{scheme}`."
     )
 
 
