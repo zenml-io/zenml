@@ -35,13 +35,13 @@ jobs:
           python -m pip install "poetry"
 
       - name: Install Dependencies
-        run: python -m poetry install --extras all
+        run: |
+          python -m poetry install
+          python -m poetry run pip install apache-airflow~=2.2.0 gcsfs~=2021.9.0 click~=8.0.3 torch~=1.10.0
 
       # This should be unnecessary, but good to run it.
       - name: Lint
-        run: |
-          python -m poetry run bash scripts/lint.sh
-          python -m poetry run bash scripts/type_checker.sh --install-types
+        run: python -m poetry run bash scripts/lint.sh
 
       # Runs a set of commands using the runners shell
       - name: publish
