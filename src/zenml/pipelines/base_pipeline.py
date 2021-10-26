@@ -42,8 +42,7 @@ class BasePipelineMeta(type):
     def __new__(
         mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
     ) -> "BasePipelineMeta":
-        """Ensures that all function arguments are either a `Step`
-        or an `Input`."""
+        """Parses out a step spec for the pipeline with the given arguments"""
         cls = cast(Type["BasePipeline"], super().__new__(mcs, name, bases, dct))
 
         cls.NAME = name
