@@ -31,9 +31,7 @@ jobs:
           python -m poetry run pip install apache-airflow~=2.2.0 gcsfs~=2021.9.0 click~=8.0.3 torch~=1.10.0
 
       - name: Lint
-        run: |
-          python -m poetry run bash scripts/lint.sh
-          python -m poetry run bash scripts/type_checker.sh --install-types
+        run: python -m poetry run bash scripts/lint.sh
 
       - name: Test
         run: python -m poetry run bash scripts/test-coverage-xml.sh
