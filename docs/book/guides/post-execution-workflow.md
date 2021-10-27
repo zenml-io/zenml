@@ -54,11 +54,12 @@ print(step.name)
 #### Outputs
 
 ```python
-# all outputs of a step
-# if one output, then its the first element in the list
-# if multiple output, then in the order defined with the `Output`
-outputs = step.outputs 
-output = outputs[0]
+# The outputs of a step
+# if multiple outputs they are accessible by name
+outputs = step.outputs["step_name"]
+
+# if one output, use the `.output` property instead 
+output = step.output 
 
 # will get you the value from the original materializer used in the pipeline
 output.read()  
