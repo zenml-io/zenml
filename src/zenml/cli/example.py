@@ -18,11 +18,13 @@ from pathlib import Path
 from typing import Any, List
 
 import click
+from git.exc import GitCommandError
 from git.repo.base import Repo
+from packaging.version import parse
 
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
-from zenml.cli.utils import confirmation, declare, warning
+from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.constants import APP_NAME, GIT_REPO_URL
 from zenml.utils import path_utils
 
@@ -35,31 +37,72 @@ class GitExamplesHandler(object):
     def __init__(self, redownload: str = "") -> None:
         self.clone_repo(redownload)
 
-    def clone_repo(self, redownload: str = "") -> None:
+    def clone_repo(self, redownload_version: str = "") -> None:
         """Clone ZenML git repo into global config directory if not already cloned"""
         installed_version = zenml_version_installed
         repo_dir = click.get_app_dir(APP_NAME)
         examples_dir = os.path.join(repo_dir, EXAMPLES_GITHUB_REPO)
-
         # delete source directory if force redownload is set
-        if redownload:
+        if redownload_version:
             self.delete_example_source_dir(examples_dir)
-            installed_version = installed_version
+            installed_version = redownload_version
 
         config_directory_files = os.listdir(repo_dir)
 
-        # check out the branch of the installed version even if we do have a local copy (minimal check)
-        if EXAMPLES_GITHUB_REPO not in config_directory_files:
-            try:
-                Repo.clone_from(
-                    GIT_REPO_URL, examples_dir, branch=installed_version
-                )
-            except KeyboardInterrupt:
-                self.delete_example_source_dir(examples_dir)
+        if (
+            redownload_version
+            or EXAMPLES_GITHUB_REPO not in config_directory_files
+        ):
+            self.clone_from_zero(GIT_REPO_URL, examples_dir, installed_version)
+
+    def clone_from_zero(
+        self, git_repo_url: str, local_dir: str, version: str
+    ) -> None:
+        """Basic functionality to clone a repo."""
+        try:
+            Repo.clone_from(git_repo_url, local_dir, branch=version)
+        except GitCommandError:
+            error(
+                f"You just tried to download examples for version {version}. "
+                f"There is no corresponding release or version. Please try "
+                f"again with a version number corresponding to an actual release."
+            )
+        except KeyboardInterrupt:
+            self.delete_example_source_dir(local_dir)
+
+    def checkout_repository(
+        self, repository: Repo, desired_version: str
+    ) -> None:
+        """Checks out a branch or tag of a git repository
+
+        Args:
+            desired_version: a valid ZenML release version number
+        """
+        try:
+            repository.git.checkout(desired_version)
+        except GitCommandError:
+            error(
+                f"You just tried to checkout the repository for version {desired_version}. "
+                f"There is no corresponding release or version. Please try "
+                f"again with a version number corresponding to an actual release."
+            )
+
+    def clone_when_examples_already_cloned(
+        self, local_dir: str, version: str
+    ) -> None:
+        """Basic functionality to clone the ZenML examples
+        into the global config directory if they are already cloned."""
+        local_dir_path = Path(local_dir)
+        repo = Repo(str(local_dir_path))
+
+        last_release = parse(repo.tags[-1].name)
+        desired_version = parse(version)
+
+        if last_release < desired_version:
+            self.delete_example_source_dir(str(local_dir_path))
+            self.clone_from_zero(GIT_REPO_URL, local_dir, str(desired_version))
         else:
-            repo = Repo(Path(examples_dir))
-            # TODO: [HIGH] fix bug with post-release versions
-            repo.git.checkout(installed_version)
+            self.checkout_repository(repo, str(desired_version))
 
     def get_examples_dir(self) -> str:
         """Return the examples dir"""
@@ -175,10 +218,16 @@ def pull(
     version: str,
 ) -> None:
     """Pull examples straight into your current working directory.
-    Add the flag --force-redownload"""
+    Add the flag --force or -f to redownload all the examples afresh.
+    Use the flag --version or -v and the version number to specify
+    which version of ZenML you wish to use for the examples."""
     if force:
+        repo_dir = click.get_app_dir(APP_NAME)
+        examples_dir = os.path.join(repo_dir, EXAMPLES_GITHUB_REPO)
         declare(f"Recloning ZenML repo for version {version}...")
-        GitExamplesHandler(redownload=version)
+        git_examples_handler.clone_when_examples_already_cloned(
+            examples_dir, version
+        )
         warning("Deleting examples from current working directory...")
         git_examples_handler.delete_working_directory_examples_folder()
 
