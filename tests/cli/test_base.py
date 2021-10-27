@@ -39,4 +39,5 @@ def test_init_raises_error_when_repo_not_git_repo(tmp_path: Path) -> None:
     """Ensure an InvalidGitRepositoryError is raised when the given path is not a git repository"""
     runner = CliRunner()
     with pytest.raises(InvalidGitRepositoryError):
-        runner.invoke(init, ["--repo_path", str(tmp_path)])
+        zen_fake_repo_path = tmp_path / ZENML_DIR_NAME
+        runner.invoke(init, ["--repo_path", str(zen_fake_repo_path)])
