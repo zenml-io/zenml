@@ -15,12 +15,12 @@
 
 import os
 from pathlib import Path
-from typing import Any, List, Union
+from typing import Any, List
 
 import click
 from git.exc import GitCommandError
 from git.repo.base import Repo
-from packaging.version import InvalidVersion, LegacyVersion, Version, parse
+from packaging.version import parse
 
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
@@ -37,19 +37,22 @@ class GitExamplesHandler(object):
     def __init__(self, redownload: str = "") -> None:
         self.clone_repo(redownload)
 
-    def clone_repo(self, redownload: str = "") -> None:
+    def clone_repo(self, redownload_version: str = "") -> None:
         """Clone ZenML git repo into global config directory if not already cloned"""
         installed_version = zenml_version_installed
         repo_dir = click.get_app_dir(APP_NAME)
         examples_dir = os.path.join(repo_dir, EXAMPLES_GITHUB_REPO)
         # delete source directory if force redownload is set
-        if redownload:
+        if redownload_version:
             self.delete_example_source_dir(examples_dir)
-            installed_version = redownload
+            installed_version = redownload_version
 
         config_directory_files = os.listdir(repo_dir)
 
-        if redownload or EXAMPLES_GITHUB_REPO not in config_directory_files:
+        if (
+            redownload_version
+            or EXAMPLES_GITHUB_REPO not in config_directory_files
+        ):
             self.clone_from_zero(GIT_REPO_URL, examples_dir, installed_version)
 
     def clone_from_zero(
@@ -60,20 +63,29 @@ class GitExamplesHandler(object):
             Repo.clone_from(git_repo_url, local_dir, branch=version)
         except GitCommandError:
             error(
-                f"You just tried to download examples for version {version}."
-                f"There is no corresponding release or version. Please try"
+                f"You just tried to download examples for version {version}. "
+                f"There is no corresponding release or version. Please try "
                 f"again with a version number corresponding to an actual release."
             )
         except KeyboardInterrupt:
             self.delete_example_source_dir(local_dir)
 
-    def parse_version(self, version: str) -> Union[Version, LegacyVersion]:
-        """Parse and check the version string and return as Version type."""
+    def checkout_repository(
+        self, repository: Repo, desired_version: str
+    ) -> None:
+        """Checks out a branch or tag of a git repository
+
+        Args:
+            desired_version: a valid ZenML release version number
+        """
         try:
-            parsed_version = parse(version)
-        except InvalidVersion:
-            parsed_version = parse("main")
-        return parsed_version
+            repository.git.checkout(desired_version)
+        except GitCommandError:
+            error(
+                f"You just tried to checkout the repository for version {desired_version}. "
+                f"There is no corresponding release or version. Please try "
+                f"again with a version number corresponding to an actual release."
+            )
 
     def clone_when_examples_already_cloned(
         self, local_dir: str, version: str
@@ -83,14 +95,14 @@ class GitExamplesHandler(object):
         local_dir_path = Path(local_dir)
         repo = Repo(str(local_dir_path))
 
-        last_release = self.parse_version(repo.tags[-1].name)
-        running_version = self.parse_version(version)
+        last_release = parse(repo.tags[-1].name)
+        desired_version = parse(version)
 
-        if last_release < running_version:
+        if last_release < desired_version:
             self.delete_example_source_dir(str(local_dir_path))
-            self.clone_from_zero(GIT_REPO_URL, local_dir, version)
+            self.clone_from_zero(GIT_REPO_URL, local_dir, str(desired_version))
         else:
-            repo.git.checkout(version)
+            self.checkout_repository(repo, str(desired_version))
 
     def get_examples_dir(self) -> str:
         """Return the examples dir"""
