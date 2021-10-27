@@ -48,7 +48,7 @@ def define_json_config_settings_source(
     return json_config_settings_source
 
 
-def generate_customize_sources(
+def generate_customise_sources(
     file_dir: str, file_name: str
 ) -> Callable[
     [
@@ -59,7 +59,7 @@ def generate_customize_sources(
     ],
     Tuple[SettingsSourceCallable, ...],
 ]:
-    """Generate a customize_sources function as defined here:
+    """Generate a customise_sources function as defined here:
     https://pydantic-docs.helpmanual.io/usage/settings/. This function
     generates a function that configures the priorities of the sources through
     which the model is loaded. The important thing to note here is that the
@@ -72,11 +72,11 @@ def generate_customize_sources(
         file_name: Name of the file to persist.
 
     Returns:
-        A `customize_sources` class method to be defined the a Pydantic
+        A `customise_sources` class method to be defined the a Pydantic
         BaseSettings inner Config class.
     """
 
-    def customize_sources(
+    def customise_sources(
         cls: Type[BaseSettings.Config],
         init_settings: SettingsSourceCallable,
         env_settings: SettingsSourceCallable,
@@ -93,4 +93,4 @@ def generate_customize_sources(
             file_secret_settings,
         )
 
-    return classmethod(customize_sources)  # type: ignore[return-value]
+    return classmethod(customise_sources)  # type: ignore[return-value]

@@ -15,7 +15,7 @@
 
 from zenml.core.utils import (
     define_json_config_settings_source,
-    generate_customize_sources,
+    generate_customise_sources,
 )
 
 
@@ -26,8 +26,8 @@ def test_define_settings_source_returns_a_callable(tmp_path):
     assert callable(define_json_config_settings_source(tmp_path, config_name))
 
 
-def test_generate_customize_sources_returns_a_callable(tmp_path):
-    """Check that generate_customize_sources
+def test_generate_customise_sources_returns_a_callable(tmp_path):
+    """Check that generate_customise_sources
     returns a callable"""
     file_name = "test.json"
-    assert callable(generate_customize_sources(tmp_path, file_name))
+    assert callable(generate_customise_sources(tmp_path, file_name))
