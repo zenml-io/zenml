@@ -41,3 +41,7 @@ def test_init_raises_error_when_repo_not_git_repo(tmp_path: Path) -> None:
     with pytest.raises(InvalidGitRepositoryError):
         zen_fake_repo_path = tmp_path / ZENML_DIR_NAME
         runner.invoke(init, ["--repo_path", str(zen_fake_repo_path)])
+
+
+# TODO: add test for when the repo path is already initialised as a zenml repository (check other tests existing already)
+# it raises an assertion error
