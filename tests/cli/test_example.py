@@ -15,17 +15,23 @@
 import pytest
 from click.testing import CliRunner
 
+from zenml import __version__ as running_zenml_version
 from zenml.cli.example import info, list, pull
 
+# from hypothesis import given
+# from hypothesis.strategies import text
+
+
 ZERO_FIVE_RELEASE_EXAMPLES = ["airflow", "legacy", "quickstart"]
+BAD_VERSIONS = ["aaa", "999999", "111111"]
 
 
 @pytest.mark.parametrize("example", ZERO_FIVE_RELEASE_EXAMPLES)
 def test_list_returns_three_examples_for_0_5_release(example: str) -> None:
     """Check the examples returned from zenml example list"""
     runner = CliRunner()
-    runner.invoke(pull, ["-f", "-v", "0.5.0"])
     with runner.isolated_filesystem():
+        runner.invoke(pull, ["-f", "-v", "0.5.0"])
         result = runner.invoke(list)
         assert result.exit_code == 0
         assert example in result.output
@@ -35,8 +41,8 @@ def test_list_returns_three_examples_for_0_5_release(example: str) -> None:
 def test_info_returns_zero_exit_code(example: str) -> None:
     """Check info command exits without errors"""
     runner = CliRunner()
-    runner.invoke(pull, ["-f", "-v", "0.5.0"])
     with runner.isolated_filesystem():
+        runner.invoke(pull, ["-f", "-v", "0.5.0"])
         result = runner.invoke(info, [example])
         assert result.exit_code == 0
 
@@ -44,7 +50,48 @@ def test_info_returns_zero_exit_code(example: str) -> None:
 def test_pull_command_returns_zero_exit_code() -> None:
     """Check pull command exits without errors"""
     runner = CliRunner()
-    runner.invoke(pull, ["-f", "-v", "0.5.0"])
     with runner.isolated_filesystem():
-        result = runner.invoke(pull)
+        result = runner.invoke(pull, ["-f", "-v", running_zenml_version])
         assert result.exit_code == 0
+
+
+def test_pull_earlier_version_returns_zero_exit_code() -> None:
+    """Check pull of earlier version exits without errors"""
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        runner.invoke(pull, ["-f", "-v", "0.5.1"])
+        result = runner.invoke(pull, ["-f", "-v", "0.3.8"])
+        assert result.exit_code == 0
+
+
+@pytest.mark.parametrize("bad_version", BAD_VERSIONS)
+def test_pull_of_nonexistent_version_fails(bad_version: str) -> None:
+    """When trying to pull a version that doesn't exist,
+    ZenML handles the failed cloning"""
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(pull, ["-f", "-v", bad_version])
+        assert result.exit_code != 0
+
+
+def test_pull_of_higher_version_than_currently_in_global_config_store() -> None:
+    """Check what happens when (valid) desired version for a force redownload
+    is higher than the latest version stored in the global config"""
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        runner.invoke(pull, ["-f", "-v", "0.5.0"])
+        result = runner.invoke(pull, ["-f", "-v", "0.5.1"])
+        assert result.exit_code == 0
+
+
+@pytest.mark.parametrize("bad_version", BAD_VERSIONS)
+def test_pull_of_bad_version_when_valid_version_already_exists(
+    bad_version: str,
+) -> None:
+    """When user has valid version present in global config, attempts to force
+    redownload invalid versions should fail"""
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        runner.invoke(pull, ["-f", "-v", "0.5.1"])
+        result = runner.invoke(pull, ["-f", "-v", bad_version])
+        assert result.exit_code != 0
