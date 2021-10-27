@@ -60,7 +60,9 @@ class GitExamplesHandler(object):
             Repo.clone_from(git_repo_url, local_dir, branch=version)
         except GitCommandError:
             error(
-                f"You just tried to download examples for version {version}. There is no corresponding release or version. Please try again with a version number corresponding to an actual release."
+                f"You just tried to download examples for version {version}."
+                f"There is no corresponding release or version. Please try"
+                f"again with a version number corresponding to an actual release."
             )
         except KeyboardInterrupt:
             self.delete_example_source_dir(local_dir)
