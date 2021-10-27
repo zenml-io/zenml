@@ -16,6 +16,8 @@ from typing import Any, Dict, List, Tuple
 
 
 class ConfigKeys:
+    """Class to validate dictionary configurations."""
+
     @classmethod
     def get_keys(cls) -> Tuple[List[str], List[str]]:
         """Gets all the required and optional config keys for this class.

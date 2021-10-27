@@ -177,6 +177,7 @@ class BaseMetadataStore(BaseComponent):
         return steps
 
     def get_step_status(self, step: StepView) -> ExecutionStatus:
+        """Gets the execution status of a single step."""
         proto = self.store.get_executions_by_id([step._id])[0]  # noqa
         state = proto.last_known_state
 

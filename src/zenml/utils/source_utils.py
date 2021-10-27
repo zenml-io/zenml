@@ -215,7 +215,7 @@ def import_class_by_path(class_path: str) -> Type[Any]:
     classname = class_path.split(".")[-1]
     modulename = ".".join(class_path.split(".")[0:-1])
     mod = importlib.import_module(modulename)
-    return getattr(mod, classname)
+    return getattr(mod, classname)  # type: ignore[no-any-return]
 
 
 def load_source_path_class(source: str) -> Type[Any]:

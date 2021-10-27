@@ -52,7 +52,7 @@ class AirflowCommander(StandaloneCommand):
         self.print_output("zenml_airflow", "Starting Airflow components..")
 
         old_level = self._silence_logging()
-        env = self.calculate_env()
+        env = self.calculate_env()  # type: ignore[no-untyped-call]
         # Set up commands to run
         self.subcommands["scheduler"] = SubCommand(
             self,
@@ -81,10 +81,10 @@ class AirflowCommander(StandaloneCommand):
         while not shown_ready:
             try:
                 # Print all the current lines onto the screen
-                self.update_output()
+                self.update_output()  # type: ignore[no-untyped-call]
                 # Print info banner when all components are ready and the
                 # delay has passed
-                if not self.ready_time and self.is_ready():
+                if not self.ready_time and self.is_ready():  # type: ignore[no-untyped-call] # noqa
                     self.ready_time = time.monotonic()
                 if (
                     not shown_ready
@@ -112,6 +112,6 @@ class AirflowCommander(StandaloneCommand):
         old_level = self._silence_logging()
         self.print_output("zenml_airflow", "Bootstrapping Airflow..")
         # Startup checks and prep
-        self.calculate_env()
-        self.initialize_database()
+        self.calculate_env()  # type: ignore[no-untyped-call]
+        self.initialize_database()  # type: ignore[no-untyped-call]
         self._unsilence_logging(old_level)
