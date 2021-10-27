@@ -15,12 +15,12 @@
 
 import os
 from pathlib import Path
-from typing import Any, List
+from typing import Any, List, Union
 
 import click
 from git.exc import GitCommandError
 from git.repo.base import Repo
-from packaging.version import parse
+from packaging.version import InvalidVersion, LegacyVersion, Version, parse
 
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
@@ -67,6 +67,19 @@ class GitExamplesHandler(object):
         except KeyboardInterrupt:
             self.delete_example_source_dir(local_dir)
 
+    def parse_check_version(
+        self, version: str
+    ) -> Union[Version, LegacyVersion]:
+        """Parse and check the version string and return as Version type."""
+        try:
+            parsed_version = parse(version)
+        except InvalidVersion:
+            error(
+                f"The version {version} is not a valid version."
+                f"Please try again with a valid version."
+            )
+        return parsed_version
+
     def clone_when_examples_already_cloned(
         self, local_dir: str, version: str
     ) -> None:
@@ -74,8 +87,8 @@ class GitExamplesHandler(object):
         into the global config directory if they are already cloned."""
         local_dir_path = Path(local_dir)
         repo = Repo(str(local_dir_path))
-        last_release = parse(repo.tags[-1].name) or version
-        running_version = parse(version) or version
+        last_release = self.parse_check_version(repo.tags[-1].name)
+        running_version = self.parse_check_version(version)
 
         if last_release < running_version:
             self.delete_example_source_dir(str(local_dir_path))
