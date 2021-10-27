@@ -12,8 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict
 
 from zenml.enums import ExecutionStatus
 from zenml.post_execution.artifact import ArtifactView
@@ -51,8 +50,8 @@ class StepView:
         self._parameters = parameters
         self._metadata_store = metadata_store
 
-        self._inputs: Dict[str, ArtifactView] = OrderedDict()
-        self._outputs: Dict[str, ArtifactView] = OrderedDict()
+        self._inputs: Dict[str, ArtifactView] = {}
+        self._outputs: Dict[str, ArtifactView] = {}
 
     @property
     def name(self) -> str:
@@ -83,78 +82,44 @@ class StepView:
         return self._metadata_store.get_step_status(self)
 
     @property
-    def inputs(self) -> List[ArtifactView]:
-        """Returns a list of input artifacts that were used to run this step.
-
-        These artifacts are **NOT** in the same order as defined in the
-        signature of the step function.
-        """
+    def inputs(self) -> Dict[str, ArtifactView]:
+        """Returns all input artifacts that were used to run this step."""
         self._ensure_inputs_outputs_fetched()
-        return list(self._inputs.values())
-
-    def get_input_names(self) -> List[str]:
-        """Returns a list of all input artifact names."""
-        self._ensure_inputs_outputs_fetched()
-        return list(self._inputs.keys())
-
-    def get_input(self, name: str) -> ArtifactView:
-        """Returns an input artifact for the given name.
-
-        Args:
-            name: The name of the input artifact to return.
-
-        Raises:
-            KeyError: If there is no input artifact with the given name.
-        """
-        self._ensure_inputs_outputs_fetched()
-        try:
-            return self._inputs[name]
-        except KeyError:
-            raise KeyError(
-                f"No input artifact found for name `{name}`. "
-                f"This step only has inputs with the following "
-                f"names: `{self.get_input_names()}`"
-            )
+        return self._inputs
 
     @property
-    def outputs(self) -> List[ArtifactView]:
-        """Returns a list of output artifacts that were written by this step.
-
-        These artifacts are **NOT** in the same order as defined in the
-        signature of the step function.
-        """
-        # TODO [MEDIUM]: Do we want these outputs ordered? If yes we'd probably
-        #  have to store the order in the metadata store ourselves
-        self._ensure_inputs_outputs_fetched()
-        return list(self._outputs.values())
-
-    def get_output_names(self) -> List[str]:
-        """Returns a list of all output artifact names.
-
-        If a step only has a single output, it will have the
-        default name `output`.
-        """
-        self._ensure_inputs_outputs_fetched()
-        return list(self._outputs.keys())
-
-    def get_output(self, name: str) -> ArtifactView:
-        """Returns an output artifact for the given name.
-
-        Args:
-            name: The name of the output artifact to return.
+    def input(self) -> ArtifactView:
+        """Returns the input artifact that was used to run this step.
 
         Raises:
-            KeyError: If there is no output artifact with the given name.
+            ValueError: If there were zero or multiple inputs to this step.
         """
-        self._ensure_inputs_outputs_fetched()
-        try:
-            return self._outputs[name]
-        except KeyError:
-            raise KeyError(
-                f"No output artifact found for name `{name}`. "
-                f"This step only has outputs with the following "
-                f"names: `{self.get_output_names()}`"
+        if len(self.inputs) != 1:
+            raise ValueError(
+                "Can't use the `StepView.input` property for steps with zero "
+                "or multiple inputs, use `StepView.inputs` instead."
             )
+        return next(iter(self.inputs.values()))
+
+    @property
+    def outputs(self) -> Dict[str, ArtifactView]:
+        """Returns all output artifacts that were written by this step."""
+        self._ensure_inputs_outputs_fetched()
+        return self._outputs
+
+    @property
+    def output(self) -> ArtifactView:
+        """Returns the output artifact that was written by this step.
+
+        Raises:
+            ValueError: If there were zero or multiple step outputs.
+        """
+        if len(self.outputs) != 1:
+            raise ValueError(
+                "Can't use the `StepView.output` property for steps with zero "
+                "or multiple outputs, use `StepView.outputs` instead."
+            )
+        return next(iter(self.outputs.values()))
 
     def _ensure_inputs_outputs_fetched(self) -> None:
         """Fetches all step inputs and outputs from the metadata store."""

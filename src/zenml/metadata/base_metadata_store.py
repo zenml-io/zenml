@@ -236,7 +236,7 @@ class BaseMetadataStore(BaseComponent):
 
         Returns:
             A tuple (inputs, outputs) where inputs and outputs
-            are both OrderedDicts mapping artifact names
+            are both Dicts mapping artifact names
             to the input and output artifacts respectively.
         """
         # maps artifact types to their string representation
@@ -249,8 +249,8 @@ class BaseMetadataStore(BaseComponent):
             [event.artifact_id for event in events]
         )
 
-        inputs: Dict[str, ArtifactView] = OrderedDict()
-        outputs: Dict[str, ArtifactView] = OrderedDict()
+        inputs: Dict[str, ArtifactView] = {}
+        outputs: Dict[str, ArtifactView] = {}
 
         for event_proto, artifact_proto in zip(events, artifacts):
             artifact_type = artifact_type_mapping[artifact_proto.type_id]
