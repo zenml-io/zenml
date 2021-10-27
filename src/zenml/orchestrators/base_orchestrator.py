@@ -1,6 +1,6 @@
 import os
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from zenml.core.base_component import BaseComponent
 from zenml.core.component_factory import orchestrator_store_factory
@@ -18,12 +18,18 @@ class BaseOrchestrator(BaseComponent):
     _ORCHESTRATOR_STORE_DIR_NAME: str = "orchestrators"
 
     @abstractmethod
-    def run(self, zenml_pipeline: "BasePipeline", **kwargs: Any) -> Any:
+    def run(
+        self,
+        zenml_pipeline: "BasePipeline",
+        run_name: Optional[str] = None,
+        **kwargs: Any
+    ) -> Any:
         """Abstract method to run a pipeline. Overwrite this in subclasses
         with a concrete implementation on how to run the given pipeline.
 
         Args:
             zenml_pipeline: The pipeline to run.
+            run_name: Optional name for the run.
             **kwargs: Potential additional parameters used in subclass
                 implementations.
         """

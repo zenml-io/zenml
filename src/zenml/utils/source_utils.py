@@ -26,6 +26,7 @@ or the version of zenml as a string.
 import importlib
 import inspect
 import os
+import pathlib
 import sys
 import types
 from typing import Any, Optional, Type, Union
@@ -46,6 +47,14 @@ def is_standard_pin(pin: str) -> bool:
     if pin.startswith(f"{APP_NAME}_"):
         return True
     return False
+
+
+def is_inside_repository(file_path: str) -> bool:
+    """Returns whether a file is inside a zenml repository."""
+    from zenml.core.repo import Repository
+
+    repo_path = os.path.abspath(Repository().path)
+    return repo_path in pathlib.Path(file_path).resolve().parents
 
 
 def create_zenml_pin() -> str:
@@ -194,11 +203,18 @@ def resolve_class(class_: Type[Any]) -> str:
     if is_standard_source(initial_source):
         return resolve_standard_source(initial_source)
 
+    try:
+        file_path = inspect.getfile(class_)
+    except TypeError:
+        # builtin file
+        return initial_source
+
     # Get the full module path relative to the repository
-    if initial_source.startswith("__main__"):
+    if initial_source.startswith("__main__") or not is_inside_repository(
+        file_path
+    ):
         class_source = initial_source
     else:
-        file_path = inspect.getfile(class_)
         module_source = get_module_source_from_file_path(file_path)
         class_source = module_source + "." + class_.__name__
     return class_source

@@ -100,9 +100,9 @@ scikit_p.run()
 repo = Repository()
 pipeline = repo.get_pipelines()[0]
 print("***********************OUTPUT************************")
-for r in pipeline.get_runs()[0:3]:
+for r in pipeline.runs[0:3]:
     eval_step = r.steps[3]
     print(
         f"For {eval_step.name}, the accuracy is: "
-        f"{eval_step.outputs[0].read(None):.2f}"
+        f"{eval_step.output.read():.2f}"
     )
