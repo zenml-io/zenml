@@ -61,3 +61,18 @@ def test_analytics_opt_out_amends_global_config():
     assert result.exit_code == 0
     assert not read_global_config()["analytics_opt_in"]
     set_analytics_opt_in_status(pre_test_status)
+
+
+# test logging verbosity raises KeyError when it's not a real level
+
+# test metadata register command actually registers a new metadata store
+# test metadata list actually lists newly created metadata stores
+# test metadata delete actually deletes newly created metadata stores
+# test artifact register command actually registers a new artifact store
+# test artifact list actually lists newly created artifact stores
+# test artifact delete actually deletes newly created artifact stores
+# test orchestrator register command actually registers a new orchestrator
+# test orchestrator list actually lists newly created orchestrators
+# test orchestrator delete actually deletes newly created orchestrators
+# test orchestrator up actually spins up our orchestrator
+# test orchestrator down actually shuts down our orchestrator
