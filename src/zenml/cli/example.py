@@ -74,8 +74,8 @@ class GitExamplesHandler(object):
         into the global config directory if they are already cloned."""
         local_dir_path = Path(local_dir)
         repo = Repo(str(local_dir_path))
-        last_release = parse(repo.tags[-1].name)
-        running_version = parse(version)
+        last_release = parse(repo.tags[-1].name) or version
+        running_version = parse(version) or version
 
         if last_release < running_version:
             self.delete_example_source_dir(str(local_dir_path))
