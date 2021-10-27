@@ -16,6 +16,7 @@ import os
 from typing import Any, Type, Union
 
 import torch
+from torch.nn import Module  # type: ignore[attr-defined]
 
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.types.pytorch_types import TorchDict
@@ -26,20 +27,18 @@ DEFAULT_FILENAME = "entire_model.pt"
 class PyTorchMaterializer(BaseMaterializer):
     """Materializer to read/write Pytorch models."""
 
-    ASSOCIATED_TYPES = [torch.nn.Module, TorchDict]
+    ASSOCIATED_TYPES = [Module, TorchDict]
 
-    def handle_input(
-        self, data_type: Type[Any]
-    ) -> Union[torch.nn.Module, TorchDict]:
+    def handle_input(self, data_type: Type[Any]) -> Union[Module, TorchDict]:
         """Reads and returns a PyTorch model.
 
         Returns:
             A loaded pytorch model.
         """
         super().handle_input(data_type)
-        return torch.load(os.path.join(self.artifact.uri, DEFAULT_FILENAME))
+        return torch.load(os.path.join(self.artifact.uri, DEFAULT_FILENAME))  # type: ignore[no-untyped-call] # noqa
 
-    def handle_return(self, model: Union[torch.nn.Module, TorchDict]) -> None:
+    def handle_return(self, model: Union[Module, TorchDict]) -> None:
         """Writes a PyTorch model.
 
         Args:

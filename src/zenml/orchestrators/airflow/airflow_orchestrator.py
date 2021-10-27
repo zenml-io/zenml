@@ -37,6 +37,9 @@ logger = get_logger(__name__)
 if TYPE_CHECKING:
     import airflow
 
+    from zenml.orchestrators.airflow.zenml_standalone_command import (
+        AirflowCommander,
+    )
     from zenml.pipelines.base_pipeline import BasePipeline
 
 AIRFLOW_ROOT_DIR = "airflow_root"
@@ -55,18 +58,19 @@ class AirflowOrchestrator(BaseOrchestrator):
     airflow_config: Optional[Dict[str, Any]] = {}
     schedule_interval_minutes: int = 1
     pid: Optional[int] = None
-    _commander: Optional[Any] = PrivateAttr()
+    _commander: "AirflowCommander" = PrivateAttr()
 
     def __init__(self, **values: Any):
         """Intiailizes the AirflowCommander for the duration of this objects
         existence. Also makes sure env variables are set."""
         super().__init__(**values)
         self._set_env()
+
         from zenml.orchestrators.airflow.zenml_standalone_command import (
             AirflowCommander,
         )
 
-        self._commander = AirflowCommander()
+        self._commander = AirflowCommander()  # type: ignore[no-untyped-call]
 
     @root_validator
     def set_airflow_home(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -102,7 +106,7 @@ class AirflowOrchestrator(BaseOrchestrator):
 
     def up(self) -> None:
         """This should ensure that Airflow is running."""
-        if self._commander.is_ready():
+        if self._commander.is_ready():  # type: ignore[no-untyped-call]
             # If its already up, then go back
             logger.info("Airflow is already up.")
             return
@@ -148,14 +152,19 @@ class AirflowOrchestrator(BaseOrchestrator):
         logger.info("Airflow spun down.")
 
     def run(
-        self, zenml_pipeline: "BasePipeline", **kwargs: Any
+        self,
+        zenml_pipeline: "BasePipeline",
+        run_name: Optional[str] = None,
+        **kwargs: Any,
     ) -> "airflow.DAG":
         """Prepares the pipeline so it can be run in Airflow.
 
         Args:
             zenml_pipeline: The pipeline to run.
+            run_name: Optional name for the run.
             **kwargs: Unused argument to conform with base class signature.
         """
+        # TODO [HIGH]: set the run name
         self.airflow_config = {
             "schedule_interval": datetime.timedelta(
                 minutes=self.schedule_interval_minutes

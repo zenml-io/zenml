@@ -66,15 +66,15 @@ from zenml.core.repo import Repository
 
 repo = Repository()
 p = repo.get_pipeline(pipeline_name="load_and_normalize_pipeline")
-runs = p.get_runs()
+runs = p.runs
 print(f"Pipeline `load_and_normalize_pipeline` has {len(runs)} run(s)")
 run = runs[-1]
 print(f"The run you just made has {len(run.steps)} steps.")
 step = run.get_step('normalize_mnist')
 print(f"The `normalizer` step has {len(step.outputs)} output artifacts.")
-for i, o in enumerate(step.outputs):
-    arr = o.read(None)
-    print(f"Output {i} is an array with shape: {arr.shape}")
+for k, o in step.outputs.items():
+    arr = o.read()
+    print(f"Output '{k}' is an array with shape: {arr.shape}")
 ```
 
 You will get the following output:
@@ -83,8 +83,8 @@ You will get the following output:
 Pipeline `load_and_normalize_pipeline` has 1 run(s)
 The run you just made has 2 steps.
 The `normalizer` step has 2 output artifacts.
-Output 0 is an array with shape: (60000, 28, 28)
-Output 1 is an array with shape: (10000, 28, 28)
+Output 'X_train_normed' is an array with shape: (60000, 28, 28)
+Output 'X_test_normed' is an array with shape: (10000, 28, 28)
 ```
 
 Which confirms again that the data is stored properly! Now we are ready to create some trainers..

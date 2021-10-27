@@ -32,6 +32,7 @@ class ArtifactView:
         type_: str,
         uri: str,
         materializer: str,
+        data_type: str,
     ):
         """Initializes a post-execution artifact object.
 
@@ -44,11 +45,15 @@ class ArtifactView:
             uri: Specifies where the artifact data is stored.
             materializer: Information needed to restore the materializer
                 that was used to write this artifact.
+            data_type: The type of data that was passed to the materializer
+                when writing that artifact. Will be used as a default type
+                to read the artifact.
         """
         self._id = id_
         self._type = type_
         self._uri = uri
         self._materializer = materializer
+        self._data_type = data_type
 
     @property
     def type(self) -> str:
@@ -60,7 +65,6 @@ class ArtifactView:
         """Returns the URI where the artifact data is stored."""
         return self._uri
 
-    # TODO [MEDIUM]: can we store a default datatype inside the metadata store
     def read(
         self,
         output_data_type: Optional[Type[Any]] = None,
@@ -84,6 +88,11 @@ class ArtifactView:
                 self._materializer
             )
 
+        if not output_data_type:
+            output_data_type = source_utils.load_source_path_class(
+                self._data_type
+            )
+
         logger.debug(
             "Using '%s' to read '%s' (uri: %s).",
             materializer_class.__qualname__,
@@ -95,7 +104,7 @@ class ArtifactView:
         #  works because materializers only require a `.uri` property at the
         #  moment.
         materializer = materializer_class(self)  # type: ignore[arg-type]
-        return materializer.handle_input(output_data_type)
+        return materializer.handle_input(output_data_type)  # type: ignore
 
     def __repr__(self) -> str:
         """Returns a string representation of this artifact."""

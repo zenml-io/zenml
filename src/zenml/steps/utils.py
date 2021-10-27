@@ -261,7 +261,7 @@ class _FunctionExecutor(BaseExecutor):
             Return the output of `handle_input()` of selected materializer.
         """
         materializer = source_utils.load_source_path_class(
-            artifact.materializers
+            artifact.materializer
         )(artifact)
         # The materializer now returns a resolved input
         return materializer.handle_input(data_type=data_type)
@@ -280,7 +280,8 @@ class _FunctionExecutor(BaseExecutor):
         materializer_class = self.resolve_materializer_with_registry(
             param_name, artifact
         )
-        artifact.materializers = source_utils.resolve_class(materializer_class)
+        artifact.materializer = source_utils.resolve_class(materializer_class)
+        artifact.datatype = source_utils.resolve_class(type(data))
         materializer_class(artifact).handle_return(data)
 
     def check_output_types_match(
