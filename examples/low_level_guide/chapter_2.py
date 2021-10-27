@@ -68,6 +68,6 @@ run = runs[-1]
 print(f"The run you just made has {len(run.steps)} steps.")
 step = run.get_step("normalize_mnist")
 print(f"The `normalizer` step has {len(step.outputs)} output artifacts.")
-for i, o in enumerate(step.outputs):
+for k, o in step.outputs.items():
     arr = o.read()
-    print(f"Output {i} is an array with shape: {arr.shape}")
+    print(f"Output '{k}' is an array with shape: {arr.shape}")

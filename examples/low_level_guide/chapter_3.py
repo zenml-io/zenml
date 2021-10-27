@@ -127,4 +127,4 @@ print(f"Pipeline `mnist_pipeline` has {len(runs)} run(s)")
 run = runs[-1]
 print(f"The run you just made has {len(run.steps)} steps.")
 step = run.get_step("tf_evaluator")
-print(f"The `tf_evaluator` step returned an accuracy: {step.outputs[0].read()}")
+print(f"The `tf_evaluator` step returned an accuracy: {step.output.read()}")

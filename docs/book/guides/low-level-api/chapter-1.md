@@ -81,9 +81,9 @@ run = runs[-1]
 print(f"The run you just made has {len(run.steps)} step(s).")
 step = run.get_step('importer_mnist')
 print(f"That step has {len(step.outputs)} output artifacts.")
-for i, o in enumerate(step.outputs):
+for k, o in step.outputs.items():
     arr = o.read()
-    print(f"Output {i} is an array with shape: {arr.shape}")
+    print(f"Output '{k}' is an array with shape: {arr.shape}")
 ```
 
 You will get the following output:
@@ -92,10 +92,10 @@ You will get the following output:
 Pipeline `load_mnist_pipeline` has 1 run(s).
 The run you just made has 1 step(s).
 That step has 4 output artifacts.
-Output 0 is an array with shape: (10000, 28, 28)
-Output 1 is an array with shape: (10000,)
-Output 2 is an array with shape: (60000,)
-Output 3 is an array with shape: (60000, 28, 28)
+Output 'X_test' is an array with shape: (10000, 28, 28)
+Output 'y_test' is an array with shape: (10000,)
+Output 'y_train' is an array with shape: (60000,)
+Output 'X_train' is an array with shape: (60000, 28, 28)
 ```
 
 So now we have successfully confirmed that the data is loaded with the right shape and we can fetch it again from the artifact store.

@@ -103,7 +103,7 @@ for r in p.runs[0:2]:
     eval_step = r.steps[3]
     print(
         f"For {eval_step.name}, the accuracy is: "
-        f"{eval_step.outputs[0].read():.2f}"
+        f"{eval_step.output.read():.2f}"
     )
 ```
 

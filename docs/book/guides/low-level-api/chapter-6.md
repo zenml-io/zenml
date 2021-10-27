@@ -88,7 +88,7 @@ repo = Repository()
 p = repo.get_pipeline(pipeline_name="mnist_pipeline")
 print(f"Pipeline `mnist_pipeline` has {len(p.runs)} run(s)")
 eval_step = p.runs[-1].get_step("sklearn_evaluator")
-val = eval_step.outputs[0].read()
+val = eval_step.output.read()
 print(f"We scored an accuracy of {val} on the latest run!")
 ```
 
