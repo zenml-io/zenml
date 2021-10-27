@@ -23,15 +23,22 @@ from zenml.cli.utils import title
 
 @pytest.mark.xfail()
 @given(sample_text=text())
-def test_title_formats_a_string_properly(sample_text):
+def test_title_formats_a_string_properly(sample_text: str) -> None:
     """Check that title function capitalizes text and adds newline"""
 
     @click.command()
     @click.argument("text")
-    def title_trial(text):
+    def title_trial(text: str) -> None:
         """wrapper function to run title"""
         title(text)
 
     runner = CliRunner()
     result = runner.invoke(title_trial, [sample_text])
     assert result.output == sample_text.upper() + "\n"
+
+
+# test all the click.echo9ing of specific comments (style checks)
+# test component listing
+# test format date
+# test format timedelta
+# test parsing of unknown CLI options
