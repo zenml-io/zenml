@@ -8,6 +8,7 @@
   <a href="https://zenml.io/roadmap">Roadmap</a> •
   <a href="https://zenml.io/discussion">Vote For Features</a> •
   <a href="https://zenml.io/slack-invite/">Join Slack</a>
+  <a href="https://zenml.io/newsletter/">Newsletter</a>
 </p>
 
 [![PyPI - ZenML Version](https://img.shields.io/pypi/v/zenml.svg?label=pip&logo=PyPI&logoColor=white)](https://pypi.org/project/zenml/)
@@ -145,46 +146,82 @@ git init
 zenml init
 ```
 
-#### Step 2: Assemble, run and evaluate your pipeline locally
+#### Step 2: Assemble, run, and evaluate your pipeline locally
 
 ```python
-from zenml.pipelines import TrainingPipeline
-from zenml.steps.evaluator import TFMAEvaluator
-from zenml.steps.split import RandomSplit
-from zenml.steps.preprocessor import StandardPreprocessor
-from zenml.steps.trainer import TFFeedForwardTrainer
+import numpy as np
+import tensorflow as tf
+
+from zenml.pipelines import pipeline
+from zenml.steps import step
+from zenml.steps.step_output import Output
 
 
-@step.trainer
-def TFFeedForwardTrainer():
-    pass
-
-@pipeline(name="my_pipeline")
-def SplitPipeline(simple_step: Step[SimplestStepEver],
-                  data_step: Step[DataIngestionStep],
-                  split_step: Step[DistSplitStep],
-                  preprocessor_step: Step[InMemPreprocessorStep]):
-    data_step(input_random_number=simple_step.outputs["return_output"])
-    split_step(input_artifact=data_step.outputs["output_artifact"])
-    preprocessor_step(input_artifact=split_step.outputs["output_artifact"])
+@step
+def importer() -> Output(
+    X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
+):
+    """Download the MNIST data store it as numpy arrays."""
+    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
+    return X_train, y_train, X_test, y_test
 
 
-pipeline = TrainingPipeline(
-    data_step=ImportDataStep(uri='gs://zenml_quickstart/diabetes.csv'),
-    split_step=RandomSplit(split_map={'train': 0.7, 'test': 0.3}),
-    preprocessor_step=StandardPreprocessor(),
-    trainer_step=TFFeedForwardTrainer(),
-    evaluator_step=TFMAEvaluator()
+@step
+def trainer(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+) -> tf.keras.Model:
+    """A simple Keras Model to train on the data."""
+    model = tf.keras.Sequential()
+    model.add(tf.keras.layers.Flatten(input_shape=(28, 28)))
+    model.add(tf.keras.layers.Dense(10))
+
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(0.001),
+        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+        metrics=["accuracy"],
+    )
+
+    model.fit(X_train, y_train)
+
+    # write model
+    return model
+
+
+@step
+def evaluator(
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    model: tf.keras.Model,
+) -> float:
+    """Calculate the accuracy on the test set"""
+    test_acc = model.evaluate(X_test, y_test, verbose=2)
+    return test_acc
+
+
+@pipeline
+def mnist_pipeline(
+    importer,
+    trainer,
+    evaluator,
+):
+    """Links all the steps together in a pipeline"""
+    X_train, y_train, X_test, y_test = importer()
+    model = trainer(X_train=X_train, y_train=y_train)
+    evaluator(X_test=X_test, y_test=y_test, model=model)
+
+pipeline = mnist_pipeline(
+    importer=importer(),
+    trainer=trainer(),
+    evaluator=evaluator(),
 )
-
-# Run the pipeline locally
 pipeline.run()
 ```
 
 ## Leverage powerful integrations
 
 Once code is organized into a ZenML pipeline, you can supercharge your ML development with powerful integrations and
-on multiple [MLOps stacks].
+on multiple [MLOps stacks](https://docs.zenml.io/core-concepts).
 
 ### Work locally but switch seamlessly to the cloud
 
@@ -194,20 +231,21 @@ Switching from local experiments to cloud-based pipelines doesn't need to be com
 pipeline.run('airflow_gcp_stack')
 ```
 
-### Versioning galore
+### Versioning galore: Use caching across experiments
 
 ZenML makes sure for every pipeline you can trust that:
 
 ✅ Code is versioned  
 ✅ Data is versioned  
 ✅ Models are versioned  
-✅ Configurations are versioned  
-![ZenML declarative config](docs/versioning.png)
+✅ Configurations are versioned
+
+Use caching to help iterate quickly through ML experiments.
 
 ### Automatically detect schema
 
 ```python
-# See the schema of your data
+# See the schema of your data [COMING SOON]
 pipeline.view_schema()
 ```
 
@@ -216,7 +254,7 @@ pipeline.view_schema()
 ### View statistics
 
 ```python
-# See statistics of train and eval
+# See statistics of train and eval [COMING SOON]
 pipeline.view_statistics()
 ```
 
@@ -225,7 +263,7 @@ pipeline.view_statistics()
 ### Evaluate the model using built-in evaluators
 
 ```python
-# Creates a notebook for evaluation
+# Creates a notebook for evaluation [COMING SOON]
 training_pipeline.evaluate()
 ```
 
@@ -234,7 +272,7 @@ training_pipeline.evaluate()
 ### Compare training pipelines
 
 ```python
-repo.compare_training_runs()
+# COMING SOON
 ```
 
 ![ZenML built-in pipeline comparison](docs/compare.png)
@@ -244,28 +282,17 @@ repo.compare_training_runs()
 Leverage distributed compute powered by [Apache Beam](https://beam.apache.org/):
 
 ```python
-training_pipeline.add_preprocessor(
-    StandardPreprocessor(...).with_backend(
-      ProcessingDataFlowBackend(
-        project=GCP_PROJECT,
-        num_workers=10,
-    ))
-)
+# COMING SOON
 ```
 
 <img src="docs/zenml_distribute.png" alt="ZenML distributed processing"   />
 
 ### Deploy models automatically
 
-Automatically deploy each model with powerful Deployment integrations like [Cortex](examples/cortex).
+Automatically deploy each model with powerful Deployment integrations like [Ray](https://docs.ray.io/en/latest/serve/index.html).
 
 ```python
-pipeline.add_deployment(
-    CortexDeployerStep(
-        api_spec=api_spec,
-        predictor=PythonPredictor,
-    )
-)
+# COMING SOON
 ```
 
 The best part is that ZenML is extensible easily, and can be molded to your use-case. You can create your own custom logic or create a PR and contribute to the ZenML community, so that everyone can benefit.
