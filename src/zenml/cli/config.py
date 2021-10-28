@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
 
-from typing import List
+from typing import List, Optional
 
 import click
 
@@ -199,7 +199,7 @@ def orchestrator() -> None:
 def register_orchestrator(
     orchestrator_name: str, orchestrator_type: str, args: List[str]
 ) -> None:
-    """Register a orchestrator."""
+    """Register an orchestrator."""
 
     try:
         parsed_args = cli_utils.parse_unknown_options(args)
@@ -209,9 +209,9 @@ def register_orchestrator(
 
     repo: Repository = Repository()
     comp = orchestrator_store_factory.get_single_component(orchestrator_type)
-    orchestrator = comp(**parsed_args)
+    orchestrator_ = comp(**parsed_args)
     service = repo.get_service()
-    service.register_orchestrator(orchestrator_name, orchestrator)
+    service.register_orchestrator(orchestrator_name, orchestrator_)
     cli_utils.declare(
         f"Orchestrator `{orchestrator_name}` successfully registered!"
     )
@@ -235,28 +235,46 @@ def delete_orchestrator(orchestrator_name: str) -> None:
 
 
 @orchestrator.command("up")
-@click.argument("orchestrator_name", type=str)
-def up_orchestrator(orchestrator_name: str) -> None:
+@click.argument("orchestrator_name", type=str, required=False)
+def up_orchestrator(orchestrator_name: Optional[str] = None) -> None:
     """Provisions resources for the orchestrator"""
+    if not orchestrator_name:
+        active_stack = Repository().get_active_stack()
+        orchestrator_name = active_stack.orchestrator_name
+        cli_utils.declare(
+            f"No orchestrator name given, using `{orchestrator_name}` "
+            f"from active stack."
+        )
+
     service = Repository().get_service()
-    orch = service.get_orchestrator(orchestrator_name)
+    orchestrator_ = service.get_orchestrator(orchestrator_name)
+
     cli_utils.declare(
         f"Bootstrapping resources for orchestrator: `{orchestrator_name}`."
     )
-    orch.up()
+    orchestrator_.up()
     cli_utils.declare(f"Orchestrator: `{orchestrator_name}` is up.")
 
 
 @orchestrator.command("down")
-@click.argument("orchestrator_name", type=str)
-def down_orchestrator(orchestrator_name: str) -> None:
+@click.argument("orchestrator_name", type=str, required=False)
+def down_orchestrator(orchestrator_name: Optional[str] = None) -> None:
     """Tears down resources for the orchestrator"""
+    if not orchestrator_name:
+        active_stack = Repository().get_active_stack()
+        orchestrator_name = active_stack.orchestrator_name
+        cli_utils.declare(
+            f"No orchestrator name given, using `{orchestrator_name}` "
+            f"from active stack."
+        )
+
     service = Repository().get_service()
-    orch = service.get_orchestrator(orchestrator_name)
+    orchestrator_ = service.get_orchestrator(orchestrator_name)
+
     cli_utils.declare(
         f"Tearing down resources for orchestrator: `{orchestrator_name}`."
     )
-    orch.down()
+    orchestrator_.down()
     cli_utils.declare(
         f"Orchestrator: `{orchestrator_name}` resources are now torn down."
     )
