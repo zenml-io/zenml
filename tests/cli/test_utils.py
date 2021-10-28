@@ -21,7 +21,18 @@ from hypothesis import given
 from hypothesis.strategies import datetimes, text
 from hypothesis.strategies._internal.datetime import timedeltas
 
-from zenml.cli.utils import format_date, format_timedelta, title
+from zenml.cli.utils import (
+    format_date,
+    format_timedelta,
+    parse_unknown_options,
+    title,
+)
+
+SAMPLE_CUSTOM_ARGUMENTS = [
+    '--custom_argument="value"',
+    '--food="chicken biryani"',
+    '--best_cat="aria"',
+]
 
 
 @pytest.mark.xfail()
@@ -60,4 +71,9 @@ def test_format_timedelta_formats_into_a_string_correctly(
     assert format_timedelta(timedelta(days=1)) == "24:00:00"
 
 
-# test parsing of unknown CLI options
+def test_parse_unknown_options_returns_a_dict_of_known_options() -> None:
+    """Check that parse_unknown_options returns a dict of known options"""
+    parsed_sample_args = parse_unknown_options(SAMPLE_CUSTOM_ARGUMENTS)
+    assert isinstance(parsed_sample_args, dict)
+    assert len(parsed_sample_args.values()) == 3
+    assert parsed_sample_args["best_cat"] == '"aria"'
