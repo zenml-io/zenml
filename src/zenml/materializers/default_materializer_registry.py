@@ -39,7 +39,6 @@ class DefaultMaterializerRegistry(object):
         """
         if key not in cls.materializer_types:
             cls.materializer_types[key] = type_
-            logger.debug(f"Registered materializer {type_} for {key}")
         else:
             logger.debug(
                 f"{key} already registered with "
@@ -77,12 +76,6 @@ class DefaultMaterializerRegistry(object):
                 f"Type {key} does not have a default `Materializer`! Please "
                 f"specify your own `Materializer`."
             )
-
-    def get_materializer_types(
-        self,
-    ) -> Dict[Type[Any], Type["BaseMaterializer"]]:
-        """Get all registered materializers."""
-        return self.materializer_types
 
     def is_registered(self, key: Type[Any]) -> bool:
         """Returns true if key type is registered, else returns False."""
