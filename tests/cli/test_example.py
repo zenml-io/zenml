@@ -12,17 +12,23 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
+
 import pytest
 from click.testing import CliRunner
 
 from zenml import __version__ as running_zenml_version
-from zenml.cli.example import info, list, pull
+from zenml.cli.example import EXAMPLES_GITHUB_REPO, info, list, pull
+from zenml.logger import get_logger
 
 # from hypothesis import given
 # from hypothesis.strategies import text
 
 
+logger = get_logger(__name__)
+
 ZERO_FIVE_RELEASE_EXAMPLES = ["airflow", "legacy", "quickstart"]
+NOT_ZERO_FIVE_RELEASE_EXAMPLES = ["not_airflow", "not_legacy", "not_quickstart"]
 BAD_VERSIONS = ["aaa", "999999", "111111"]
 
 
@@ -97,13 +103,43 @@ def test_pull_of_bad_version_when_valid_version_already_exists(
         assert result.exit_code != 0
 
 
-# Shouldn't we test here that it pulls properly in all the use-cases we have
-# imagined? Like trying to pull first without any flags, then using a pull with
-# an older version, then trying to pull from a version that doesn't exist at all?
+def test_pull_without_any_flags_should_exit_without_errors() -> None:
+    """Check pull command exits without errors"""
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result1 = runner.invoke(pull)
+        assert result1.exit_code == 0
 
 
-# Test examples lists all examples for a specific version
-# Test info echos out readme content
+@pytest.mark.parametrize("example", ZERO_FIVE_RELEASE_EXAMPLES)
+def test_info_echos_out_readme_content(example: str) -> None:
+    """Check that info subcommand displays readme content"""
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        runner.invoke(pull, ["-f", "-v", "0.5.0"])
+        result = runner.invoke(info, [example])
+        assert result.exit_code == 0
+        assert example in result.output
+        examples_dir = os.path.join(os.getcwd(), EXAMPLES_GITHUB_REPO)
+        assert example in os.listdir(examples_dir)
+
+
+@pytest.mark.parametrize("bad_example", NOT_ZERO_FIVE_RELEASE_EXAMPLES)
+def test_info_fails_gracefully_when_bad_example_given(
+    tmp_path: str, bad_example: str
+) -> None:
+    """Check info command fails gracefully when bad example given"""
+    runner = CliRunner()
+    with runner.isolated_filesystem(tmp_path):
+        runner.invoke(pull, ["-f", "-v", "0.5.0"])
+        result = runner.invoke(info, [bad_example])
+        assert (
+            f"Example {bad_example} is not one of the available options."
+            in result.output
+        )
+        assert bad_example not in os.listdir(tmp_path)
+
+
 # Test info fails somehow (predictably?) if we pass in the wrong argument
 # test examples pull handles parsing for weird version numbers
 # test examples pull on its own

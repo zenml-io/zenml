@@ -35,6 +35,7 @@ EXAMPLES_GITHUB_REPO = "zenml_examples"
 
 class GitExamplesHandler(object):
     def __init__(self, redownload: str = "") -> None:
+        """Initialize the GitExamplesHandler class."""
         self.clone_repo(redownload)
 
     def clone_repo(self, redownload_version: str = "") -> None:
@@ -123,7 +124,11 @@ class GitExamplesHandler(object):
         ]
 
     def get_example_readme(self, example_path: str) -> str:
-        """Get the example README file contents."""
+        """Get the example README file contents.
+
+        Raises:
+            FileNotFoundError: if the file doesn't exist.
+        """
         with open(os.path.join(example_path, "README.md")) as readme:
             readme_content = readme.read()
         return readme_content
@@ -188,8 +193,14 @@ def info(git_examples_handler: Any, example_name: str) -> None:
     example_dir = os.path.join(
         git_examples_handler.get_examples_dir(), example_name
     )
-    readme_content = git_examples_handler.get_example_readme(example_dir)
-    click.echo(readme_content)
+    try:
+        readme_content = git_examples_handler.get_example_readme(example_dir)
+        click.echo(readme_content)
+    except FileNotFoundError:
+        error(
+            f"Example {example_name} is not one of the available options."
+            f"\nTo list all available examples, type: `zenml example list`"
+        )
 
 
 @example.command(
