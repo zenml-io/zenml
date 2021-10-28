@@ -29,8 +29,20 @@ COMPONENT_FACTORIES = [
 
 
 @pytest.mark.parametrize("component_factory", COMPONENT_FACTORIES)
-def test_factories_are_type_component_factory(component_factory):
+def test_factories_are_type_component_factory(
+    component_factory: ComponentFactory,
+) -> None:
+    """Checks that factories are component factory types"""
     assert isinstance(component_factory, ComponentFactory)
     assert component_factory.name is not None
     assert isinstance(component_factory.name, str)
     assert isinstance(component_factory.components, dict)
+
+
+@pytest.mark.parametrize("component_factory", COMPONENT_FACTORIES)
+def test_get_components_returns_components(
+    component_factory: ComponentFactory,
+) -> None:
+    """Checks that get_components method returns a dictionary"""
+    components = component_factory.get_components()
+    assert isinstance(components, dict)

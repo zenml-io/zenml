@@ -104,7 +104,7 @@ class ArtifactView:
         #  works because materializers only require a `.uri` property at the
         #  moment.
         materializer = materializer_class(self)  # type: ignore[arg-type]
-        return materializer.handle_input(output_data_type)  # type: ignore
+        return materializer.handle_input(output_data_type)
 
     def __repr__(self) -> str:
         """Returns a string representation of this artifact."""
