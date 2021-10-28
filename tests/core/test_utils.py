@@ -19,15 +19,19 @@ from zenml.core.utils import (
 )
 
 
-def test_define_settings_source_returns_a_callable(tmp_path):
+def test_define_settings_source_returns_a_callable(tmp_path: str) -> None:
     """Check that define_json_config_settings_source
     returns a callable"""
     config_name = "test_config.json"
     assert callable(define_json_config_settings_source(tmp_path, config_name))
 
 
-def test_generate_customise_sources_returns_a_callable(tmp_path):
+def test_generate_customise_sources_returns_a_class_method(
+    tmp_path: str,
+) -> None:
     """Check that generate_customise_sources
     returns a callable"""
     file_name = "test.json"
-    assert callable(generate_customise_sources(tmp_path, file_name))
+    assert isinstance(
+        generate_customise_sources(tmp_path, file_name), classmethod
+    )
