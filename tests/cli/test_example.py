@@ -95,3 +95,21 @@ def test_pull_of_bad_version_when_valid_version_already_exists(
         runner.invoke(pull, ["-f", "-v", "0.5.1"])
         result = runner.invoke(pull, ["-f", "-v", bad_version])
         assert result.exit_code != 0
+
+
+# Shouldn't we test here that it pulls properly in all the use-cases we have
+# imagined? Like trying to pull first without any flags, then using a pull with
+# an older version, then trying to pull from a version that doesn't exist at all?
+
+
+# Test examples lists all examples for a specific version
+# Test info echos out readme content
+# Test info fails somehow (predictably?) if we pass in the wrong argument
+# test examples pull handles parsing for weird version numbers
+# test examples pull on its own
+# test examples pull -f on its own
+# test examples pull -f -v with an actual version
+# test examples pull -f -v with a non-existent version
+
+# add tests for this scenario (user has 0.5.0 as latest version in the global
+# config, but wants 0.5.1 (should redownload + try to checkout desired version))
