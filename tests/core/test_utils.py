@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 
 
+from pydantic import BaseSettings
+
 from zenml.core.utils import (
     define_json_config_settings_source,
     generate_customise_sources,
@@ -35,3 +37,11 @@ def test_generate_customise_sources_returns_a_class_method(
     assert isinstance(
         generate_customise_sources(tmp_path, file_name), classmethod
     )
+
+
+def test_json_config_settings_source_returns_a_dict(tmp_path: str) -> None:
+    """Check that define_json_config_settings_source
+    returns a dict"""
+    config_name = "test_config.json"
+    settings_source = define_json_config_settings_source(tmp_path, config_name)
+    assert isinstance(settings_source(BaseSettings), dict)
