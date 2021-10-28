@@ -14,11 +14,14 @@
 
 import os
 
+import click
 import pytest
 from click.testing import CliRunner
+from git.repo.base import Repo
 
 from zenml import __version__ as running_zenml_version
 from zenml.cli.example import EXAMPLES_GITHUB_REPO, info, list, pull
+from zenml.constants import APP_NAME
 from zenml.logger import get_logger
 
 # from hypothesis import given
@@ -140,12 +143,21 @@ def test_info_fails_gracefully_when_bad_example_given(
         assert bad_example not in os.listdir(tmp_path)
 
 
-# Test info fails somehow (predictably?) if we pass in the wrong argument
-# test examples pull handles parsing for weird version numbers
-# test examples pull on its own
-# test examples pull -f on its own
-# test examples pull -f -v with an actual version
-# test examples pull -f -v with a non-existent version
-
-# add tests for this scenario (user has 0.5.0 as latest version in the global
-# config, but wants 0.5.1 (should redownload + try to checkout desired version))
+def test_user_has_latest_zero_five_version_but_wants_zero_five_one():
+    """Test the scenario where the latest version available to the user is 0.5.0
+    but the user wants to download 0.5.1. In this case, it should redownload
+    and try to checkout the desired version."""
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        # save the repository currently on the local system
+        current_saved_global_examples_path = os.path.join(
+            click.get_app_dir(APP_NAME), EXAMPLES_GITHUB_REPO
+        )
+        current_saved_global_examples_repo = Repo(
+            current_saved_global_examples_path
+        )
+        # reset the repo such that it has 0.5.0 as the latest version
+        current_saved_global_examples_repo.git.reset("--hard", "0.5.0")
+        runner.invoke(pull, ["-f", "-v", "0.5.1"])
+        result = runner.invoke(list)
+        assert "airflow_local" in result.output
