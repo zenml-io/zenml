@@ -12,17 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from datetime import datetime, timedelta
+
 import click
 import pytest
 from click.testing import CliRunner
 from hypothesis import given
-from hypothesis.strategies import text
+from hypothesis.strategies import datetimes, text
+from hypothesis.strategies._internal.datetime import timedeltas
 
-from zenml.cli.utils import title
+from zenml.cli.utils import format_date, format_timedelta, title
 
 
 @pytest.mark.xfail()
-@given(sample_text=text())
+@given(sample_text=text(min_size=1))
 def test_title_formats_a_string_properly(sample_text: str) -> None:
     """Check that title function capitalizes text and adds newline"""
 
@@ -37,8 +40,24 @@ def test_title_formats_a_string_properly(sample_text: str) -> None:
     assert result.output == sample_text.upper() + "\n"
 
 
-# test all the click.echo9ing of specific comments (style checks)
-# test component listing
-# test format date
-# test format timedelta
+@given(sample_datetime=datetimes(allow_imaginary=False))
+def test_format_date_formats_a_string_properly(
+    sample_datetime: datetime,
+) -> None:
+    """Check that format_date function formats a string properly"""
+    # format_date(sample_datetime)
+    assert isinstance(format_date(sample_datetime), str)
+    assert format_date(datetime(2020, 1, 1), "%Y") == "2020"
+
+
+@given(sample_timedelta=timedeltas())
+def test_format_timedelta_formats_into_a_string_correctly(
+    sample_timedelta: timedelta,
+) -> None:
+    """Check the format_timedelta function returns a formatted
+    string according to specification."""
+    assert isinstance(format_timedelta(sample_timedelta), str)
+    assert format_timedelta(timedelta(days=1)) == "24:00:00"
+
+
 # test parsing of unknown CLI options
