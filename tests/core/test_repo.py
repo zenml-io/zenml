@@ -18,8 +18,11 @@ import os
 from pathlib import Path
 
 import pytest
+from git.repo.base import Repo
 
 import zenml
+from zenml.core.base_component import BaseComponent
+from zenml.core.local_service import LocalService
 from zenml.core.repo import Repository
 
 # a way to get to the root
@@ -41,6 +44,33 @@ def test_initializing_repository_from_root_sets_cwd_as_repo_path() -> None:
     repo = Repository()
     assert repo.path == "/"
     os.chdir(current_dir)
+
+
+def test_initializing_repository_without_git_repo_does_not_raise_error(
+    tmp_path: str,
+) -> None:
+    """Check initializing repository without git repository does not raise error"""
+    repo = Repository(str(tmp_path))
+    assert repo.git_wrapper is None
+
+
+def test_initializing_repo_with_git_repo_present_sets_git_wrapper(
+    tmp_path: str,
+) -> None:
+    """Check initializing repository with git repository sets git wrapper"""
+    git_repo_instance = Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    assert repo.git_wrapper is not None
+    assert repo.git_wrapper.repo_path == str(tmp_path)
+    assert repo.git_wrapper.git_repo == git_repo_instance
+
+
+def test_initializing_repo_sets_up_service(tmp_path: str) -> None:
+    """Check initializing repository sets up service"""
+    repo = Repository(str(tmp_path))
+    assert repo.service is not None
+    assert isinstance(repo.service, BaseComponent)
+    assert isinstance(repo.service, LocalService)
 
 
 # def test_repo_double_init(tmp_path) -> None:
