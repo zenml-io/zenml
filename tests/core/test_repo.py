@@ -26,6 +26,7 @@ from zenml.core.constants import ZENML_DIR_NAME
 from zenml.core.git_wrapper import GitWrapper
 from zenml.core.local_service import LocalService
 from zenml.core.repo import Repository
+from zenml.stacks.base_stack import BaseStack
 
 # a way to get to the root
 ZENML_ROOT = str(Path(zenml.__path__[0]).parent)
@@ -121,119 +122,69 @@ def test_getting_the_active_service_returns_local_service(
     """Check getting the active service"""
     Repo.init(tmp_path)
     repo = Repository(str(tmp_path))
-    assert repo.service is not None
-    assert isinstance(repo.service, BaseComponent)
-    assert isinstance(repo.service, LocalService)
+    assert repo.get_service() is not None
+    assert isinstance(repo.get_service(), BaseComponent)
+    assert isinstance(repo.get_service(), LocalService)
+    assert repo.get_service() == repo.service
 
 
-# def test_get_pipeline_file_paths(repo, monkeypatch):
-#     mock_paths = ["pipeline_1.yaml", "pipeline_2.yaml", "awjfof.txt"]
-
-#     def mock_list_dir(dir_path: Text, only_file_names: bool = False):
-#         # add a corrupted file into the pipelines
-#         return mock_paths
-
-#     monkeypatch.setattr("zenml.utils.path_utils.list_dir", mock_list_dir)
-
-#     paths = repo.get_pipeline_file_paths(only_file_names=True)
-
-#     assert paths == mock_paths[:-1]
+def test_getting_active_stack_key_returns_local_stack(
+    tmp_path: str,
+) -> None:
+    """Check getting the active stack key"""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    repo.set_active_stack("local_stack")
+    assert repo.get_active_stack_key() == "local_stack"
 
 
-# def test_get_pipeline_names(repo):
-#     # TODO: This has to be made dynamic once more pipelines come
-#     real_p_names = sorted(["csvtest{0}".format(i) for i in range(1, 6)])
-
-#     found_p_names = sorted(repo.get_pipeline_names())
-
-#     assert set(real_p_names) <= set(found_p_names)
-
-
-# def test_get_pipelines(repo):
-#     p_names = sorted(repo.get_pipeline_names())
-
-#     pipelines = repo.get_pipelines()
-
-#     pipelines = sorted(pipelines, key=lambda p: p.name)
-
-#     assert all(p.name == name for p, name in zip(pipelines, p_names))
+def test_getting_active_stack_returns_local_stack(
+    tmp_path: str,
+) -> None:
+    """Check getting the active stack"""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    repo.set_active_stack("local_stack")
+    assert repo.get_active_stack() == LocalService().get_stack("local_stack")
+    assert isinstance(repo.get_active_stack(), BaseStack)
 
 
-# def test_get_pipelines_by_type(repo):
-#     pipelines = repo.get_pipelines_by_type(type_filter=["training"])
-
-#     pipelines_2 = repo.get_pipelines_by_type(type_filter=["base"])
-
-#     assert len(pipelines) == 5
-
-#     assert not pipelines_2
-
-
-# def test_get_pipeline_by_name(repo, equal_pipelines):
-#     p_names = repo.get_pipeline_names()
-
-#     random_name = random.choice(p_names)
-#     cfg_list = [y for y in repo.get_pipeline_file_paths() if random_name in y]
-
-#     cfg = yaml_utils.read_yaml(cfg_list[0])
-
-#     p1 = repo.get_pipeline_by_name(random_name)
-
-#     p2 = BasePipeline.from_config(cfg)
-
-#     assert equal_pipelines(p1, p2, loaded=True)
+def test_get_pipelines_returns_list(tmp_path: str) -> None:
+    """Check get_pipelines returns a list"""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    repo.set_active_stack("local_stack")
+    our_pipelines = repo.get_pipelines()
+    assert our_pipelines is not None
+    assert isinstance(our_pipelines, list)
 
 
-# def test_get_step_versions(repo):
-#     step_versions = repo.get_step_versions()
-
-#     # TODO: Make this less hardcoded
-#     steps_used = [
-#         "zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.StandardPreprocesser",
-#         "zenml.steps.split.categorical_domain_split_step.CategoricalDomainSplit",
-#         "zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.FeedForwardTrainer",
-#     ]
-
-#     current_version = "zenml_" + str(__version__)
-
-#     assert set(steps_used) >= set(step_versions.keys())
-#     assert all(current_version in s for s in step_versions.values())
+def test_get_pipelines_returns_same_list_when_stack_specified(tmp_path) -> None:
+    """Check get_pipelines returns the same list when stack specified"""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    repo.set_active_stack("local_stack")
+    our_pipelines_default = repo.get_pipelines()
+    our_pipelines_local = repo.get_pipelines(stack_key="local_stack")
+    assert our_pipelines_default == our_pipelines_local
 
 
-# def test_get_step_by_version(repo):
-#     # TODO: Make this less hardcoded
-#     steps_used = [
-#         "zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.StandardPreprocesser",
-#         "zenml.steps.split.categorical_domain_split_step.CategoricalDomainSplit",
-#         "zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.FeedForwardTrainer",
-#     ]
-
-#     random_step = random.choice(steps_used)
-
-#     current_version = "zenml_" + str(__version__)
-
-#     bogus_version = "asdfghjklöä"
-
-#     assert repo.get_step_by_version(random_step, current_version)
-#     assert repo.get_step_by_version(random_step, bogus_version) is None
+def test_get_pipeline_returns_none_if_non_existent(tmp_path: str) -> None:
+    """Check get_pipeline returns None if it doesn't exist"""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    repo.set_active_stack("local_stack")
+    our_pipeline = repo.get_pipeline("not_a_pipeline")
+    assert our_pipeline is None
 
 
-# def test_get_step_versions_by_type(repo):
-#     # TODO: Make this less hardcoded
-#     steps_used = [
-#         "zenml.steps.preprocesser.standard_preprocesser.standard_preprocesser.StandardPreprocesser",
-#         "zenml.steps.split.categorical_domain_split_step.CategoricalDomainSplit",
-#         "zenml.steps.trainer.tensorflow_trainers.tf_ff_trainer.FeedForwardTrainer",
-#     ]
-
-#     random_step = random.choice(steps_used)
-
-#     current_version = "zenml_" + str(__version__)
-
-#     bogus_step = "asdfghjklöä"
-
-#     step_versions = repo.get_step_versions_by_type(random_step)
-
-#     assert step_versions == {current_version}
-
-#     assert repo.get_step_versions_by_type(bogus_step) is None
+def test_get_pipeline_returns_same_when_stack_specified(tmp_path: str) -> None:
+    """Check get_pipeline returns the same if stack specified"""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    repo.set_active_stack("local_stack")
+    our_pipeline_default = repo.get_pipeline("pipeline_1")
+    our_pipeline_local = repo.get_pipeline(
+        "pipeline_1", stack_key="local_stack"
+    )
+    assert our_pipeline_default == our_pipeline_local
