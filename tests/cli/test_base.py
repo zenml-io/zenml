@@ -15,10 +15,8 @@
 import os
 from pathlib import Path
 
-import pytest
 from click.testing import CliRunner
 from git import Repo
-from git.exc import InvalidGitRepositoryError
 
 from zenml.cli.base import init
 from zenml.core.constants import ZENML_DIR_NAME
@@ -34,14 +32,9 @@ def test_init_creates_zen_folder(tmp_path: Path) -> None:
     assert ZENML_DIR_NAME in dir_files
 
 
-@pytest.mark.xfail()
 def test_init_raises_error_when_repo_not_git_repo(tmp_path: Path) -> None:
-    """Ensure an InvalidGitRepositoryError is raised when the given path is not a git repository"""
+    """Ensure ZenML fails when the given path is not a git repository"""
     runner = CliRunner()
-    with pytest.raises(InvalidGitRepositoryError):
-        zen_fake_repo_path = tmp_path / ZENML_DIR_NAME
-        runner.invoke(init, ["--repo_path", str(zen_fake_repo_path)])
-
-
-# TODO: add test for when the repo path is already initialised as a zenml repository (check other tests existing already)
-# it raises an assertion error
+    zen_fake_repo_path = tmp_path / ZENML_DIR_NAME
+    result = runner.invoke(init, ["--repo_path", str(zen_fake_repo_path)])
+    assert result.exit_code == 2
