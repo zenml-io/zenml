@@ -103,34 +103,6 @@ def test_init_repo_creates_a_zen_folder(tmp_path: str) -> None:
     assert os.path.exists(os.path.join(tmp_path, ZENML_DIR_NAME))
 
 
-# def test_get_datasources(repo):
-#     ds_list = repo.get_datasources()
-
-#     assert "my_csv_datasource" in [x.name for x in ds_list]
-
-
-# def test_get_datasource_by_name(repo):
-#     assert repo.get_datasource_by_name("my_csv_datasource")
-
-#     fake_ds = repo.get_datasource_by_name("ds_123")
-
-#     assert fake_ds is None
-
-
-# def test_get_datasource_names(repo):
-#     # TODO [LOW]: Automatically expand when new datasource tests are added!
-#     test_ds_names = [
-#         "my_csv_datasource",
-#         "image_ds_local",
-#         "image_ds_gcp",
-#         "json_ds",
-#     ]
-
-#     ds_names = repo.get_datasource_names()
-
-#     assert set(test_ds_names) <= set(ds_names)
-
-
 # def test_get_pipeline_file_paths(repo, monkeypatch):
 #     mock_paths = ["pipeline_1.yaml", "pipeline_2.yaml", "awjfof.txt"]
 
