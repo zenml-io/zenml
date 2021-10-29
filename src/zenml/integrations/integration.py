@@ -17,11 +17,14 @@ import pkg_resources
 
 from zenml.exceptions import IntegrationError
 from zenml.integrations.registry import integration_registry
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class IntegrationMeta(type):
     def __new__(
-        mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
+            mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
     ) -> "IntegrationMeta":
         cls = cast(Type["Integration"], super().__new__(mcs, name, bases, dct))
         if name != "Integration":
@@ -39,9 +42,9 @@ class Integration(metaclass=IntegrationMeta):
         try:
             pkg_resources.require(cls.REQUIREMENTS)
         except pkg_resources.DistributionNotFound:
-            raise IntegrationError("")
-        except pkg_resources.ContextualVersionConflict:
-            raise IntegrationError("")
+            raise IntegrationError("Required packages not fully installed.")
+        except pkg_resources.VersionConflict:
+            raise IntegrationError("Version conflicts in required packages.")
 
     @staticmethod
     def activate():

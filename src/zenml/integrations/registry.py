@@ -13,10 +13,9 @@
 #  permissions and limitations under the License.
 
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Type
-
 from zenml.exceptions import IntegrationError
 from zenml.logger import get_logger
-
+from zenml.utils.source_utils import LazyLoader
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
@@ -30,22 +29,23 @@ class IntegrationRegistry(object):
     def register_integration(
         cls, key: Type[Any], type_: Type["Integration"]
     ) -> None:
-
-        if key not in cls.integrations:
-            cls.integrations[key] = type_
-        else:
-            logger.debug(
-                f"{key} already registered with "
-                f"{cls.integrations[key]}. Cannot register {type_}."
-            )
+        cls.integrations[key] = type_
 
     @classmethod
     def activate(cls):
-        for name, integration in cls.integrations.items():
+        for name in cls.integrations.keys():
             try:
+                integration = cls.integrations.get(name)
+                if issubclass(type(integration), LazyLoader):
+                    integration.load()
+                    integration = cls.integrations.get(name)
                 integration.activate()
-            except IntegrationError:
-                raise IntegrationError(f"{name} could not be activated")
+                logger.info(
+                    f"Integration `{name}` is activated."
+                )
+            except IntegrationError as e:
+                logger.warning(
+                    f"Integration `{name}` could not be activated. {e}")
 
 
 integration_registry = IntegrationRegistry()

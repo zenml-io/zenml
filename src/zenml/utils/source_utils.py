@@ -256,16 +256,16 @@ class LazyLoader(types.ModuleType):
         self.module = None
         super(LazyLoader, self).__init__(name)
 
-    def _load(self):
+    def load(self):
         if self.module is None:
             self.module = importlib.import_module(self.__name__)
             self.__dict__.update(self.module.__dict__)
         return self.module
 
     def __getattr__(self, item):
-        self.module = self._load()
+        self.module = self.load()
         return getattr(self.module, item)
 
     def __dir__(self):
-        self.module = self._load()
+        self.module = self.load()
         return dir(self.module)
