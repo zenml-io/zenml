@@ -99,7 +99,10 @@ def test_init_repo_creates_a_zen_folder(tmp_path: str) -> None:
     """Check initializing repository creates a ZenML folder"""
     _ = Repo.init(tmp_path)
     repo = Repository(str(tmp_path))
-    repo.init_repo(repo_path=tmp_path, analytics_opt_in=False)
+    local_stack = LocalService().get_stack("local_stack")
+    repo.init_repo(
+        repo_path=tmp_path, analytics_opt_in=False, stack=local_stack
+    )
     assert os.path.exists(os.path.join(tmp_path, ZENML_DIR_NAME))
 
 
