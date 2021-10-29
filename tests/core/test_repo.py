@@ -115,6 +115,17 @@ def test_get_git_wrapper_returns_the_wrapper(tmp_path: str) -> None:
     assert repo.get_git_wrapper().git_repo == GitWrapper(tmp_path).git_repo
 
 
+def test_getting_the_active_service_returns_local_service(
+    tmp_path: str,
+) -> None:
+    """Check getting the active service"""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    assert repo.service is not None
+    assert isinstance(repo.service, BaseComponent)
+    assert isinstance(repo.service, LocalService)
+
+
 # def test_get_pipeline_file_paths(repo, monkeypatch):
 #     mock_paths = ["pipeline_1.yaml", "pipeline_2.yaml", "awjfof.txt"]
 
