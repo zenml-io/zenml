@@ -16,7 +16,7 @@
 import pytest
 from git.exc import InvalidGitRepositoryError, NoSuchPathError
 from git.repo.base import Repo
-from hypothesis import given
+from hypothesis import HealthCheck, given, settings
 from hypothesis.strategies import text
 
 from zenml.core import git_wrapper
@@ -47,6 +47,7 @@ def test_exception_raised_if_repo_is_not_a_git_repository(
 
 
 @given(non_path=text(min_size=1))
+@settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
 def test_exception_raised_if_repo_path_does_not_exist(
     tmp_path: str, non_path: str
 ) -> None:
