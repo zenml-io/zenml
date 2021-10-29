@@ -252,27 +252,20 @@ def import_python_file(file_path: str) -> types.ModuleType:
 
 
 class LazyLoader(types.ModuleType):
-
-    def __init__(self,
-                 local_name,
-                 parent_module_globals,
-                 name):
-        self._local_name = local_name
-        self._parent_module_globals = parent_module_globals
-
+    def __init__(self, name):
+        self.module = None
         super(LazyLoader, self).__init__(name)
 
     def _load(self):
-        module = importlib.import_module(self.__name__)
-        self._parent_module_globals[self._local_name] = module
-        self.__dict__.update(module.__dict__)
-
-        return module
+        if self.module is None:
+            self.module = importlib.import_module(self.__name__)
+            self.__dict__.update(self.module.__dict__)
+        return self.module
 
     def __getattr__(self, item):
-        module = self._load()
-        return getattr(module, item)
+        self.module = self._load()
+        return getattr(self.module, item)
 
     def __dir__(self):
-        module = self._load()
-        return dir(module)
+        self.module = self._load()
+        return dir(self.module)
