@@ -22,7 +22,9 @@ from hypothesis.strategies import text
 from zenml.core import git_wrapper
 
 
-def test_no_exception_raised_if_repository_is_valid_git_repository(tmp_path):
+def test_no_exception_raised_if_repository_is_valid_git_repository(
+    tmp_path: str,
+) -> None:
     """Test whether class instantiation works when valid git repository present"""
     Repo.init(tmp_path)
     git_instance = git_wrapper.GitWrapper(tmp_path)
@@ -35,16 +37,19 @@ def test_no_exception_raised_if_repository_is_valid_git_repository(tmp_path):
     assert isinstance(git_instance.git_repo, Repo)
 
 
-def test_exception_raised_if_repo_is_not_a_git_repository(tmp_path):
+def test_exception_raised_if_repo_is_not_a_git_repository(
+    tmp_path: str,
+) -> None:
     """Initialization of GitWrapper class should raise an exception
     if directory is not a git repository"""
     with pytest.raises(InvalidGitRepositoryError):
         git_wrapper.GitWrapper(tmp_path)
 
 
-@pytest.fixture(scope="module")
 @given(non_path=text(min_size=1))
-def test_exception_raised_if_repo_path_does_not_exist(tmp_path, non_path):
+def test_exception_raised_if_repo_path_does_not_exist(
+    tmp_path: str, non_path: str
+) -> None:
     """Initialization of GitWrapper class should raise an exception
     if the repository path does not exist"""
     not_a_path = tmp_path / non_path
