@@ -24,7 +24,7 @@ def test_service_crud(tmp_path):
     #  physically checking the FS us `path_utils`.
 
     ls = LocalService()
-    METADATA_KEY = "metadata test_local"
+    METADATA_KEY = "metadata_test_local"
     ARTIFACT_KEY = "artifact_test_local"
     STACK_KEY = "stack_test_local"
     ORCHESTRATOR_KEY = "orchestrator_test_local"
