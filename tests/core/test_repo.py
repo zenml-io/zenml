@@ -79,7 +79,15 @@ def test_repo_double_init(tmp_path) -> None:
     _ = Repo.init(tmp_path)
     os.mkdir(os.path.join(tmp_path, ZENML_DIR_NAME))
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(Exception):
+        _ = Repository(str(tmp_path)).init_repo(
+            repo_path=tmp_path, analytics_opt_in=False
+        )
+
+
+def test_repo_init_without_git_repo_initialized_raises_error(tmp_path) -> None:
+    """Check initializing repository without git repository raises error"""
+    with pytest.raises(Exception):
         _ = Repository(str(tmp_path)).init_repo(
             repo_path=tmp_path, analytics_opt_in=False
         )
