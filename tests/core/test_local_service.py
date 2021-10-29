@@ -96,7 +96,7 @@ def test_get_stack_returns_a_stack_when_provided_a_key(tmp_path: str) -> None:
     )
 
 
-def test_register_stack_works_as_expected(tmp_path) -> None:
+def test_register_stack_works_as_expected(tmp_path: str) -> None:
     """Test register_stack method registers a stack as expected."""
     Repo.init(tmp_path)
     repo = Repository(str(tmp_path))
@@ -112,13 +112,27 @@ def test_register_stack_works_as_expected(tmp_path) -> None:
     local_service.delete_stack("local_stack_2")
 
 
-def test_get_stack_raises_exception_when_key_does_not_exist(tmp_path) -> None:
+def test_get_stack_raises_exception_when_key_does_not_exist(
+    tmp_path: str,
+) -> None:
     """Test get_stack raises exception when key does not exist."""
     Repo.init(tmp_path)
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
     with pytest.raises(Exception):
         local_service.get_stack("made_up_stack")
+
+
+def test_register_stack_raises_exception_when_key_already_exists(
+    tmp_path: str,
+) -> None:
+    """Test register_stack raises exception when key already exists."""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    local_service = repo.get_service()
+    local_stack1 = local_service.get_stack("local_stack")
+    with pytest.raises(Exception):
+        local_service.register_stack("local_stack", local_stack1)
 
 
 # def test_service_crud(tmp_path):
