@@ -135,6 +135,60 @@ def test_register_stack_raises_exception_when_key_already_exists(
         local_service.register_stack("local_stack", local_stack1)
 
 
+def test_delete_stack_deletes_the_stack(tmp_path: str) -> None:
+    """Test delete_stack deletes the stack."""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    local_service = repo.get_service()
+    local_stack1 = local_service.get_stack("local_stack")
+    local_service.register_stack("local_stack_2", local_stack1)
+    local_stack2 = local_service.get_stack("local_stack_2")
+    assert local_stack2 is not None
+    local_service.delete_stack("local_stack_2")
+    with pytest.raises(Exception):
+        local_service.get_stack("local_stack_2")
+
+
+def test_get_artifact_store_returns_artifact_store(tmp_path: str) -> None:
+    """Test get_artifact_store returns artifact store."""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    local_service = repo.get_service()
+    artifact_store = local_service.get_artifact_store("local_artifact_store")
+    assert artifact_store is not None
+    assert isinstance(artifact_store, BaseArtifactStore)
+
+
+# def test_register_artifact_store_works_as_expected(tmp_path: str) -> None:
+#     """Test register_artifact_store method registers an artifact store as expected."""
+#     Repo.init(tmp_path)
+#     repo = Repository(str(tmp_path))
+#     local_service = repo.get_service()
+#     local_artifact_store1 = local_service.get_artifact_store(
+#         "local_artifact_store"
+#     )
+#     local_service.register_artifact_store(
+#         "local_artifact_store_2", local_artifact_store1
+#     )
+#     local_artifact_store2 = local_service.get_artifact_store(
+#         "local_artifact_store_2"
+#     )
+#     assert local_artifact_store2 is not None
+#     assert local_artifact_store2 == local_artifact_store1
+
+
+def test_register_artifact_store_with_existing_key_fails(tmp_path: str) -> None:
+    """Test register_artifact_store with existing key fails."""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    local_service = repo.get_service()
+    with pytest.raises(Exception):
+        local_service.register_artifact_store(
+            "local_artifact_store",
+            local_service.get_artifact_store("local_artifact_store"),
+        )
+
+
 # def test_service_crud(tmp_path):
 #     """Test basic service crud."""
 #     # TODO [LOW] [TEST]: Need to improve this logic, potentially with
