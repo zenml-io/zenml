@@ -18,6 +18,12 @@ from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.core.repo import Repository
 from zenml.metadata.base_metadata_store import BaseMetadataStore
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+from zenml.stacks.base_stack import BaseStack
+
+LOCAL_STACK_NAME = "local_stack"
+LOCAL_ORCHESTRATOR_NAME = "local_orchestrator"
+LOCAL_METADATA_STORE_NAME = "local_metadata_store"
+LOCAL_ARTIFACT_STORE_NAME = "local_artifact_store"
 
 
 def test_local_service_file_name_exists(tmp_path: str) -> None:
@@ -36,7 +42,7 @@ def test_local_service_can_access_metadata_stores(tmp_path: str) -> None:
     assert local_service.metadata_stores is not None
     assert isinstance(local_service.metadata_stores, dict)
     assert isinstance(
-        local_service.metadata_stores["local_metadata_store"],
+        local_service.metadata_stores[LOCAL_METADATA_STORE_NAME],
         BaseMetadataStore,
     )
 
@@ -49,7 +55,7 @@ def test_local_service_can_access_artifact_stores(tmp_path: str) -> None:
     assert local_service.artifact_stores is not None
     assert isinstance(local_service.artifact_stores, dict)
     assert isinstance(
-        local_service.artifact_stores["local_artifact_store"],
+        local_service.artifact_stores[LOCAL_ARTIFACT_STORE_NAME],
         BaseArtifactStore,
     )
 
@@ -62,8 +68,30 @@ def test_local_service_can_access_orchestrators(tmp_path: str) -> None:
     assert local_service.orchestrators is not None
     assert isinstance(local_service.orchestrators, dict)
     assert isinstance(
-        local_service.orchestrators["local_orchestrator"],
+        local_service.orchestrators[LOCAL_ORCHESTRATOR_NAME],
         BaseOrchestrator,
+    )
+
+
+def test_get_stack_returns_a_stack_when_provided_a_key(tmp_path: str) -> None:
+    """Check get_stack returns a stack with expected properties."""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    local_service = repo.get_service()
+    stack = local_service.get_stack("local_stack")
+    assert stack is not None
+    assert isinstance(stack, BaseStack)
+    assert (
+        stack.orchestrator
+        == local_service.orchestrators[LOCAL_ORCHESTRATOR_NAME]
+    )
+    assert (
+        stack.artifact_store
+        == local_service.artifact_stores[LOCAL_ARTIFACT_STORE_NAME]
+    )
+    assert (
+        stack.metadata_store
+        == local_service.metadata_stores[LOCAL_METADATA_STORE_NAME]
     )
 
 
