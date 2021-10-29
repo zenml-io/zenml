@@ -21,6 +21,7 @@ from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
 from zenml.core.repo import Repository
 from zenml.metadata.base_metadata_store import BaseMetadataStore
+from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.stacks.base_stack import BaseStack
 
@@ -157,7 +158,7 @@ def test_get_artifact_store_returns_artifact_store(tmp_path: str) -> None:
     Repo.init(tmp_path)
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
-    artifact_store = local_service.get_artifact_store("local_artifact_store")
+    artifact_store = local_service.get_artifact_store(LOCAL_ARTIFACT_STORE_NAME)
     assert artifact_store is not None
     assert isinstance(artifact_store, BaseArtifactStore)
 
@@ -185,8 +186,47 @@ def test_register_artifact_store_with_existing_key_fails(tmp_path: str) -> None:
     local_service = repo.get_service()
     with pytest.raises(Exception):
         local_service.register_artifact_store(
-            "local_artifact_store",
-            local_service.get_artifact_store("local_artifact_store"),
+            LOCAL_ARTIFACT_STORE_NAME,
+            local_service.get_artifact_store(LOCAL_ARTIFACT_STORE_NAME),
+        )
+
+
+def test_get_metadata_store_returns_metadata_store(tmp_path: str) -> None:
+    """Test get_metadata_store returns metadata store."""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    local_service = repo.get_service()
+    metadata_store = local_service.get_metadata_store(LOCAL_METADATA_STORE_NAME)
+    assert metadata_store is not None
+    assert isinstance(metadata_store, BaseMetadataStore)
+
+
+def test_register_metadata_store_works_as_expected(tmp_path: str) -> None:
+    """Test register_metadata_store method registers an metadata store as expected."""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    local_service = repo.get_service()
+    artifact_store_dir = os.path.join(tmp_path, "test_store")
+    metadata_file = os.path.join(artifact_store_dir, "metadata.db")
+    metadata_store = SQLiteMetadataStore(uri=metadata_file)
+    local_service.register_metadata_store(
+        "local_metadata_store_2", metadata_store
+    )
+    assert (
+        local_service.get_metadata_store("local_metadata_store_2") is not None
+    )
+    local_service.delete_metadata_store("local_metadata_store_2")
+
+
+def test_register_metadata_store_with_existing_key_fails(tmp_path: str) -> None:
+    """Test register_metadata_store with existing key fails."""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    local_service = repo.get_service()
+    with pytest.raises(Exception):
+        local_service.register_metadata_store(
+            LOCAL_METADATA_STORE_NAME,
+            local_service.get_artifact_store(LOCAL_METADATA_STORE_NAME),
         )
 
 
