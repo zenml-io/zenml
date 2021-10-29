@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import pytest
 from git.repo.base import Repo
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
@@ -93,6 +94,31 @@ def test_get_stack_returns_a_stack_when_provided_a_key(tmp_path: str) -> None:
         stack.metadata_store
         == local_service.metadata_stores[LOCAL_METADATA_STORE_NAME]
     )
+
+
+def test_register_stack_works_as_expected(tmp_path) -> None:
+    """Test register_stack method registers a stack as expected."""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    local_service = repo.get_service()
+    local_stack1 = local_service.get_stack("local_stack")
+    local_service.register_stack("local_stack_2", local_stack1)
+    local_stack2 = local_service.get_stack("local_stack_2")
+    assert local_stack2 is not None
+    assert local_stack2.orchestrator == local_stack1.orchestrator
+    assert local_stack2.artifact_store == local_stack1.artifact_store
+    assert local_stack2.metadata_store == local_stack1.metadata_store
+    # TODO: [Medium] rework this as a fixture to be run after the test completes
+    local_service.delete_stack("local_stack_2")
+
+
+def test_get_stack_raises_exception_when_key_does_not_exist(tmp_path) -> None:
+    """Test get_stack raises exception when key does not exist."""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    local_service = repo.get_service()
+    with pytest.raises(Exception):
+        local_service.get_stack("made_up_stack")
 
 
 # def test_service_crud(tmp_path):
