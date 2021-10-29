@@ -22,6 +22,7 @@ from git.repo.base import Repo
 
 import zenml
 from zenml.core.base_component import BaseComponent
+from zenml.core.constants import ZENML_DIR_NAME
 from zenml.core.local_service import LocalService
 from zenml.core.repo import Repository
 
@@ -73,11 +74,15 @@ def test_initializing_repo_sets_up_service(tmp_path: str) -> None:
     assert isinstance(repo.service, LocalService)
 
 
-# def test_repo_double_init(tmp_path) -> None:
-#     # explicitly constructing another repository should fail
-#     _ = Repository("str(tmp_path)")
-#     with pytest.raises(Exception):
-#         _ = Repository(str(tmp_path))
+def test_repo_double_init(tmp_path) -> None:
+    """explicitly constructing another repository should fail"""
+    _ = Repo.init(tmp_path)
+    os.mkdir(os.path.join(tmp_path, ZENML_DIR_NAME))
+
+    with pytest.raises(AssertionError):
+        _ = Repository(str(tmp_path)).init_repo(
+            repo_path=tmp_path, analytics_opt_in=False
+        )
 
 
 # def test_get_datasources(repo):
