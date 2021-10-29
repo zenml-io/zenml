@@ -12,10 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
+
 import pytest
 from git.repo.base import Repo
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
 from zenml.core.repo import Repository
 from zenml.metadata.base_metadata_store import BaseMetadataStore
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
@@ -159,22 +162,20 @@ def test_get_artifact_store_returns_artifact_store(tmp_path: str) -> None:
     assert isinstance(artifact_store, BaseArtifactStore)
 
 
-# def test_register_artifact_store_works_as_expected(tmp_path: str) -> None:
-#     """Test register_artifact_store method registers an artifact store as expected."""
-#     Repo.init(tmp_path)
-#     repo = Repository(str(tmp_path))
-#     local_service = repo.get_service()
-#     local_artifact_store1 = local_service.get_artifact_store(
-#         "local_artifact_store"
-#     )
-#     local_service.register_artifact_store(
-#         "local_artifact_store_2", local_artifact_store1
-#     )
-#     local_artifact_store2 = local_service.get_artifact_store(
-#         "local_artifact_store_2"
-#     )
-#     assert local_artifact_store2 is not None
-#     assert local_artifact_store2 == local_artifact_store1
+def test_register_artifact_store_works_as_expected(tmp_path: str) -> None:
+    """Test register_artifact_store method registers an artifact store as expected."""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    local_service = repo.get_service()
+    artifact_store_dir = os.path.join(tmp_path, "test_store")
+    local_artifact_store = LocalArtifactStore(path=artifact_store_dir)
+    local_service.register_artifact_store(
+        "local_artifact_store_2", local_artifact_store
+    )
+    assert (
+        local_service.get_artifact_store("local_artifact_store_2") is not None
+    )
+    local_service.delete_artifact_store("local_artifact_store_2")
 
 
 def test_register_artifact_store_with_existing_key_fails(tmp_path: str) -> None:
