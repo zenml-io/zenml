@@ -18,7 +18,7 @@ from zenml.utils.source_utils import LazyLoader
 logger = get_logger(__name__)
 
 # Google Cloud Platform
-gcp = LazyLoader("zenml.integrations.gcp.integration")
+gcp = LazyLoader("zenml.integrations.gcp")
 integration_registry.register_integration("gcp", gcp)
 
 # Tensorflow
