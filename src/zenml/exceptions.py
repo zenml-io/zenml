@@ -38,7 +38,7 @@ class EmptyDatasourceException(Exception):
         self,
         message: str = "This datasource has not been used in "
         "any pipelines, therefore the associated data has no "
-        "versions. Please use this datasouce in any ZenML "
+        "versions. Please use this datasource in any ZenML "
         "pipeline with `pipeline.add_datasource("
         "datasource)`",
     ):
@@ -108,7 +108,7 @@ class ArtifactInterfaceError(Exception):
 
 
 class PipelineConfigurationError(Exception):
-    """Raises exceptions when a pipeline configuration containns
+    """Raises exceptions when a pipeline configuration contains
     invalid values."""
 
 
@@ -149,5 +149,5 @@ class MissingStepParameterError(Exception):
         super().__init__(message)
 
 
-class IntegrationNotFoundError(Exception):
-    """ """
+class IntegrationError(Exception):
+    """Raises exceptions when a requested integration can not be activated."""
