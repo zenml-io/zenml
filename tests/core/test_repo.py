@@ -31,7 +31,7 @@ ZENML_ROOT = str(Path(zenml.__path__[0]).parent)
 TEST_ROOT = os.path.join(ZENML_ROOT, "tests")
 
 
-def test_repo_init_from_empty_directory_raises_error(tmp_path) -> None:
+def test_repo_init_from_empty_directory_raises_error(tmp_path: str) -> None:
     """Check empty directory"""
     with pytest.raises(FileNotFoundError):
         _ = Repository(os.path.join(tmp_path, "empty_repo"))
@@ -74,7 +74,7 @@ def test_initializing_repo_sets_up_service(tmp_path: str) -> None:
     assert isinstance(repo.service, LocalService)
 
 
-def test_repo_double_init(tmp_path) -> None:
+def test_repo_double_init(tmp_path: str) -> None:
     """explicitly constructing another repository should fail"""
     _ = Repo.init(tmp_path)
     os.mkdir(os.path.join(tmp_path, ZENML_DIR_NAME))
@@ -85,12 +85,22 @@ def test_repo_double_init(tmp_path) -> None:
         )
 
 
-def test_repo_init_without_git_repo_initialized_raises_error(tmp_path) -> None:
+def test_repo_init_without_git_repo_initialized_raises_error(
+    tmp_path: str,
+) -> None:
     """Check initializing repository without git repository raises error"""
     with pytest.raises(Exception):
         _ = Repository(str(tmp_path)).init_repo(
             repo_path=tmp_path, analytics_opt_in=False
         )
+
+
+def test_init_repo_creates_a_zen_folder(tmp_path: str) -> None:
+    """Check initializing repository creates a ZenML folder"""
+    _ = Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    repo.init_repo(repo_path=tmp_path, analytics_opt_in=False)
+    assert os.path.exists(os.path.join(tmp_path, ZENML_DIR_NAME))
 
 
 # def test_get_datasources(repo):
