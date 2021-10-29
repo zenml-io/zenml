@@ -23,6 +23,7 @@ from git.repo.base import Repo
 import zenml
 from zenml.core.base_component import BaseComponent
 from zenml.core.constants import ZENML_DIR_NAME
+from zenml.core.git_wrapper import GitWrapper
 from zenml.core.local_service import LocalService
 from zenml.core.repo import Repository
 
@@ -104,6 +105,14 @@ def test_init_repo_creates_a_zen_folder(tmp_path: str) -> None:
         repo_path=tmp_path, analytics_opt_in=False, stack=local_stack
     )
     assert os.path.exists(os.path.join(tmp_path, ZENML_DIR_NAME))
+
+
+def test_get_git_wrapper_returns_the_wrapper(tmp_path: str) -> None:
+    """Check get_git_wrapper returns the wrapper"""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    assert repo.get_git_wrapper() is not None
+    assert repo.get_git_wrapper().git_repo == GitWrapper(tmp_path).git_repo
 
 
 # def test_get_pipeline_file_paths(repo, monkeypatch):
