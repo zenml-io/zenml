@@ -23,6 +23,7 @@ from zenml.core.repo import Repository
 from zenml.metadata.base_metadata_store import BaseMetadataStore
 from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.stacks.base_stack import BaseStack
 
 LOCAL_STACK_NAME = "local_stack"
@@ -191,6 +192,21 @@ def test_register_artifact_store_with_existing_key_fails(tmp_path: str) -> None:
         )
 
 
+def test_delete_artifact_store_works(tmp_path: str) -> None:
+    """Test delete_artifact_store works as expected."""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    local_service = repo.get_service()
+    artifact_store_dir = os.path.join(tmp_path, "test_store")
+    local_artifact_store = LocalArtifactStore(path=artifact_store_dir)
+    local_service.register_artifact_store(
+        "local_artifact_store_2", local_artifact_store
+    )
+    local_service.delete_artifact_store("local_artifact_store_2")
+    with pytest.raises(Exception):
+        local_service.get_artifact_store("local_artifact_store_2")
+
+
 def test_get_metadata_store_returns_metadata_store(tmp_path: str) -> None:
     """Test get_metadata_store returns metadata store."""
     Repo.init(tmp_path)
@@ -226,10 +242,72 @@ def test_register_metadata_store_with_existing_key_fails(tmp_path: str) -> None:
     with pytest.raises(Exception):
         local_service.register_metadata_store(
             LOCAL_METADATA_STORE_NAME,
-            local_service.get_artifact_store(LOCAL_METADATA_STORE_NAME),
+            local_service.get_metadata_store(LOCAL_METADATA_STORE_NAME),
         )
 
 
+def test_delete_metadata_store_works(tmp_path: str) -> None:
+    """Test delete_metadata_store works as expected"""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    local_service = repo.get_service()
+    artifact_store_dir = os.path.join(tmp_path, "test_store")
+    metadata_file = os.path.join(artifact_store_dir, "metadata.db")
+    metadata_store = SQLiteMetadataStore(uri=metadata_file)
+    local_service.register_metadata_store(
+        "local_metadata_store_2", metadata_store
+    )
+    local_service.delete_metadata_store("local_metadata_store_2")
+    with pytest.raises(Exception):
+        local_service.get_metadata_store("local_metadata_store_2")
+
+
+def test_get_orchestrator_returns_orchestrator(tmp_path: str) -> None:
+    """Test get_orchestrator returns orchestrator"""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    local_service = repo.get_service()
+    orchestrator = local_service.get_orchestrator(LOCAL_ORCHESTRATOR_NAME)
+    assert orchestrator is not None
+    assert isinstance(orchestrator, BaseOrchestrator)
+
+
+def test_register_orchestrator_works_as_expected(tmp_path: str) -> None:
+    """Test register_orchestrator method registers an orchestrator as expected."""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    local_service = repo.get_service()
+    orchestrator = LocalOrchestrator()
+    local_service.register_orchestrator("local_orchestrator_2", orchestrator)
+    assert local_service.get_orchestrator("local_orchestrator_2") is not None
+    local_service.delete_orchestrator("local_orchestrator_2")
+
+
+def test_register_orchestrator_with_existing_key_fails(tmp_path: str) -> None:
+    """Test register_orchestrator with existing key fails."""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    local_service = repo.get_service()
+    with pytest.raises(Exception):
+        local_service.register_orchestrator(
+            LOCAL_ORCHESTRATOR_NAME,
+            local_service.get_orchestrator(LOCAL_ORCHESTRATOR_NAME),
+        )
+
+
+def test_delete_orchestrator_works(tmp_path: str) -> None:
+    """Test delete_orchestrator works as expected."""
+    Repo.init(tmp_path)
+    repo = Repository(str(tmp_path))
+    local_service = repo.get_service()
+    orchestrator = LocalOrchestrator()
+    local_service.register_orchestrator("local_orchestrator_2", orchestrator)
+    local_service.delete_orchestrator("local_orchestrator_2")
+    with pytest.raises(Exception):
+        local_service.get_orchestrator("local_orchestrator_2")
+
+
+# TODO: [LOW] remove this legacy test code if we don't need it anymore
 # def test_service_crud(tmp_path):
 #     """Test basic service crud."""
 #     # TODO [LOW] [TEST]: Need to improve this logic, potentially with
