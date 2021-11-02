@@ -61,17 +61,8 @@ click = "^8.0.1"
 pydantic = "^1.8.2"
 analytics-python = "^1.4.0"
 distro = "^1.6.0"
-# A list of all of the optional dependencies, some of which are included in the
-# below `extras`. They can be opted into by apps.
-apache-airflow = {version = "^2.1.4", optional = true }
-gcsfs = {version= "^2021.9.0", optional = true}
 tabulate = "^0.8.9"
 
-[tool.poetry.extras]
-airflow = ["apache-airflow"]
-gcp = ["gcsfs"]
-# This should contain ALL of the above
-all = ["apache-airflow", "gcsfs"]
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"
@@ -89,6 +80,21 @@ hypothesis = "^6.23.0"
 Sphinx = "^4.2.0"
 sphinx-bootstrap-theme = "^0.8.0"
 typing-extensions = ">=3.7.4"
+
+# mypy type stubs
+types-certifi = "^2021.10.8.0"
+types-croniter = "^1.0.2"
+types-futures = "^3.3.1"
+types-Markdown = "^3.3.6"
+types-protobuf = "^3.18.0"
+types-PyMySQL = "^1.0.4"
+types-python-dateutil = "^2.8.2"
+types-python-slugify = "^5.0.2"
+types-PyYAML = "^6.0.0"
+types-setuptools = "^57.4.2"
+types-six = "^1.16.2"
+types-tabulate = "^0.8.3"
+types-termcolor = "^1.1.2"
 
 [build-system]
 requires = ["poetry-core"]
@@ -146,6 +152,16 @@ strict = true
 namespace_packages = true
 show_error_codes = true
 
+# temporary fix for python 3.8 https://github.com/apache/airflow/discussions/19006
+# remove once the issue is solved in airflow
+exclude = "airflow/"
+
+[[tool.mypy.overrides]]
+module = "airflow.*"
+follow_imports = "skip"
+
+# end of fix
+
 [[tool.mypy.overrides]]
 module = [
     "tensorflow.*",
@@ -161,6 +177,7 @@ module = [
     "pytorch_lightning.*",
     "sklearn.*",
     "numpy.*",
+    "psutil.*"
 ]
 ignore_missing_imports = true
 
@@ -191,7 +208,7 @@ ignore-module = true
 ignore-nested-functions = false
 ignore-nested-classes = true
 ignore-setters = false
-fail-under = 80
+fail-under = 95
 exclude = ["setup.py", "docs", "build"]
 ignore-regex = ["^get$", "^mock_.*", ".*BaseClass.*"]
 verbose = 1

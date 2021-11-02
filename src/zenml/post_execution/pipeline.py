@@ -46,23 +46,48 @@ class PipelineView:
         self._id = id_
         self._name = name
         self._metadata_store = metadata_store
-        self._runs: List[PipelineRunView] = []
 
     @property
     def name(self) -> str:
         """Returns the name of the pipeline."""
         return self._name
 
-    def get_runs(self) -> List[PipelineRunView]:
+    @property
+    def runs(self) -> List[PipelineRunView]:
         """Returns all stored runs of this pipeline.
 
         The runs are returned in chronological order, so the latest
         run will be the last element in this list.
         """
-        if not self._runs:
-            self._runs = self._metadata_store.get_pipeline_runs(self)
+        # Do not cache runs as new runs might appear during this objects
+        # lifecycle
+        runs = self._metadata_store.get_pipeline_runs(self)
+        return list(runs.values())
 
-        return self._runs
+    def get_run_names(self) -> List[str]:
+        """Returns a list of all run names."""
+        # Do not cache runs as new runs might appear during this objects
+        # lifecycle
+        runs = self._metadata_store.get_pipeline_runs(self)
+        return list(runs.keys())
+
+    def get_run(self, name: str) -> PipelineRunView:
+        """Returns a run for the given name.
+
+        Args:
+            name: The name of the run to return.
+
+        Raises:
+            KeyError: If there is no run with the given name.
+        """
+        run = self._metadata_store.get_pipeline_run(self, name)
+        if not run:
+            raise KeyError(
+                f"No run found for name `{name}`. This pipeline "
+                f"only has runs with the following "
+                f"names: `{self.get_run_names()}`"
+            )
+        return run
 
     def __repr__(self) -> str:
         """Returns a string representation of this pipeline."""

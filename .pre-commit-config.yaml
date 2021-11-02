@@ -19,20 +19,22 @@ repos:
     hooks:
       - id: autoflake
         args: [ '--in-place', '--remove-all-unused-imports', '--remove-unused-variable', '--recursive', '-c']
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.910
-    hooks:
-      - id: mypy
-        additional_dependencies: [apache-airflow~=2.1.4, ml-pipelines-sdk~=1.3.0, apache-beam~=2.30.0, pydantic~=1.8.2,
-                                  analytics-python~=1.4.0, click~=8.0.1, gitpython~=3.1.18, types-tabulate, types-croniter,
-                                  types-futures, types-Markdown, types-protobuf, types-PyMySQL, types-python-dateutil,
-                                  types-PyYAML, types-requests, types-setuptools, types-six, types-tabulate, types-toml]
-        args: [  ]
+#  - repo: https://github.com/pre-commit/mirrors-mypy
+#    rev: v0.910
+#    hooks:
+#      - id: mypy
+#        additional_dependencies: [apache-airflow~=2.2.0, ml-pipelines-sdk~=1.3.0, apache-beam~=2.30.0, pydantic~=1.8.2,
+#                                  analytics-python~=1.4.0, click~=8.0.1, gitpython~=3.1.18, torch~=1.10.0, types-tabulate, types-croniter,
+#                                  types-futures, types-Markdown, types-protobuf, types-PyMySQL, types-python-dateutil,
+#                                  types-PyYAML, types-requests, types-setuptools, types-six, types-tabulate, types-toml]
+#        args: [  ]
+#        files: ^src/zenml
   - repo: https://github.com/econchick/interrogate
     rev: 1.4.0
     hooks:
       - id: interrogate
         args: [  ]
+        files: ^src/zenml
   - repo: local
     hooks:
       - id: dependency_update_warning

@@ -324,7 +324,7 @@ def get_parent(dir_path: str) -> str:
 def load_csv_column_names(csv_file: str) -> List[str]:
     """Parse the first line of a csv file as column names."""
     with fileio.open(csv_file) as f:
-        return f.readline().strip().split(",")
+        return f.readline().strip().split(",")  # type: ignore[no-any-return]
 
 
 def load_csv_header(csv_path: str) -> List[str]:

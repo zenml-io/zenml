@@ -15,8 +15,10 @@ from typing import Dict
 
 from tfx.types.artifact import Artifact, Property, PropertyType
 
-MATERIALIZERS_PROPERTY_KEY = "materializers"
-MATERIALIZERS_PROPERTY = Property(type=PropertyType.STRING)  # type: ignore[no-untyped-call] # noqa
+MATERIALIZER_PROPERTY_KEY = "materializer"
+MATERIALIZER_PROPERTY = Property(type=PropertyType.STRING)  # type: ignore[no-untyped-call] # noqa
+DATATYPE_PROPERTY_KEY = "datatype"
+DATATYPE_PROPERTY = Property(type=PropertyType.STRING)  # type: ignore[no-untyped-call] # noqa
 
 
 class BaseArtifact(Artifact):
@@ -34,5 +36,6 @@ class BaseArtifact(Artifact):
 
     TYPE_NAME: str = "BaseArtifact"  # type: ignore[assignment]
     PROPERTIES: Dict[str, Property] = {  # type: ignore[assignment]
-        MATERIALIZERS_PROPERTY_KEY: MATERIALIZERS_PROPERTY,
+        MATERIALIZER_PROPERTY_KEY: MATERIALIZER_PROPERTY,
+        DATATYPE_PROPERTY_KEY: DATATYPE_PROPERTY,
     }

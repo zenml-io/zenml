@@ -26,6 +26,7 @@ or the version of zenml as a string.
 import importlib
 import inspect
 import os
+import pathlib
 import sys
 import types
 from typing import Any, Optional, Type, Union
@@ -37,6 +38,32 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
+class LazyLoader(types.ModuleType):
+    """Lazily loads modules."""
+
+    def __init__(self, name: str) -> None:
+        """Initializes a lazy loader."""
+        self.module = None
+        super(LazyLoader, self).__init__(name)
+
+    def load(self) -> types.ModuleType:
+        """Loads a module and returns it."""
+        if self.module is None:
+            self.module = importlib.import_module(self.__name__)
+            self.__dict__.update(self.module.__dict__)
+        return self.module
+
+    def __getattr__(self, item: str):
+        """Overrides the __getattr__ method with loading logic."""
+        self.module = self.load()
+        return getattr(self.module, item)
+
+    def __dir__(self):
+        """Overrides the __dir__ method with loading logic."""
+        self.module = self.load()
+        return dir(self.module)
+
+
 def is_standard_pin(pin: str) -> bool:
     """Returns `True` if pin is valid ZenML pin, else False.
 
@@ -46,6 +73,15 @@ def is_standard_pin(pin: str) -> bool:
     if pin.startswith(f"{APP_NAME}_"):
         return True
     return False
+
+
+def is_inside_repository(file_path: str) -> bool:
+    """Returns whether a file is inside a zenml repository."""
+    from zenml.core.repo import Repository
+
+    repo_path = pathlib.Path(Repository().path).resolve()
+    absolute_file_path = pathlib.Path(file_path).resolve()
+    return repo_path in absolute_file_path.parents
 
 
 def create_zenml_pin() -> str:
@@ -194,11 +230,18 @@ def resolve_class(class_: Type[Any]) -> str:
     if is_standard_source(initial_source):
         return resolve_standard_source(initial_source)
 
+    try:
+        file_path = inspect.getfile(class_)
+    except TypeError:
+        # builtin file
+        return initial_source
+
     # Get the full module path relative to the repository
-    if initial_source.startswith("__main__"):
+    if initial_source.startswith("__main__") or not is_inside_repository(
+        file_path
+    ):
         class_source = initial_source
     else:
-        file_path = inspect.getfile(class_)
         module_source = get_module_source_from_file_path(file_path)
         class_source = module_source + "." + class_.__name__
     return class_source
@@ -215,7 +258,7 @@ def import_class_by_path(class_path: str) -> Type[Any]:
     classname = class_path.split(".")[-1]
     modulename = ".".join(class_path.split(".")[0:-1])
     mod = importlib.import_module(modulename)
-    return getattr(mod, classname)
+    return getattr(mod, classname)  # type: ignore[no-any-return]
 
 
 def load_source_path_class(source: str) -> Type[Any]:
@@ -249,23 +292,3 @@ def import_python_file(file_path: str) -> types.ModuleType:
 
     module_name = os.path.splitext(os.path.basename(file_path))[0]
     return importlib.import_module(module_name)
-
-
-class LazyLoader(types.ModuleType):
-    def __init__(self, name):
-        self.module = None
-        super(LazyLoader, self).__init__(name)
-
-    def load(self):
-        if self.module is None:
-            self.module = importlib.import_module(self.__name__)
-            self.__dict__.update(self.module.__dict__)
-        return self.module
-
-    def __getattr__(self, item):
-        self.module = self.load()
-        return getattr(self.module, item)
-
-    def __dir__(self):
-        self.module = self.load()
-        return dir(self.module)
