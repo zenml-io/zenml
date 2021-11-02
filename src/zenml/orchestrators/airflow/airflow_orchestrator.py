@@ -32,8 +32,7 @@ from zenml.orchestrators.airflow.airflow_dag_runner import (
     AirflowPipelineConfig,
 )
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
-from zenml.utils import path_utils
-from zenml.utils.daemon import run_as_daemon, stop_daemon
+from zenml.utils import daemon, path_utils
 
 logger = get_logger(__name__)
 
@@ -98,7 +97,10 @@ class AirflowOrchestrator(BaseOrchestrator):
         """Returns whether the airflow daemon is currently running."""
         from airflow.cli.commands.standalone_command import StandaloneCommand
 
-        return StandaloneCommand().is_ready()  # TODO
+        airflow_running = StandaloneCommand().is_ready()
+        daemon_running = daemon.check_if_daemon_is_running(self.pid_file)
+
+        return airflow_running and daemon_running
 
     def _set_env(self) -> None:
         """Sets environment variables to configure airflow."""
@@ -182,7 +184,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         from airflow.cli.commands.standalone_command import StandaloneCommand
 
         command = StandaloneCommand()
-        run_as_daemon(command.run, self.pid_file, self.log_file)
+        daemon.run_as_daemon(command.run, self.pid_file, self.log_file)
 
         while not self.is_running:
             # Wait until the daemon started all the relevant airflow processes
@@ -193,7 +195,7 @@ class AirflowOrchestrator(BaseOrchestrator):
     def down(self) -> None:
         """Stops the airflow daemon if necessary and tears down resources."""
         if self.is_running:
-            stop_daemon(self.pid_file, kill_children=True)
+            daemon.stop_daemon(self.pid_file, kill_children=True)
 
         path_utils.rm_dir(self.airflow_home)
         logger.info("Airflow spun down.")

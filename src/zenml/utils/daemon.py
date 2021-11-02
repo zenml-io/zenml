@@ -122,3 +122,19 @@ def stop_daemon(pid_file: str, kill_children: bool = True) -> None:
         process.kill()
     else:
         logger.warning("PID from '%s' does not exist.", pid_file)
+
+
+def check_if_daemon_is_running(pid_file: str) -> bool:
+    """Checks whether a daemon process indicated by the PID file is running.
+
+    Args:
+        pid_file: Path to file containing the PID of the daemon
+            process to check.
+    """
+    try:
+        with open(pid_file, "r") as f:
+            pid = int(f.read().strip())
+    except (IOError, FileNotFoundError):
+        return False
+
+    return psutil.pid_exists(pid)
