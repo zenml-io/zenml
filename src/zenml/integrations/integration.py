@@ -24,7 +24,7 @@ logger = get_logger(__name__)
 
 class IntegrationMeta(type):
     def __new__(
-            mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
+        mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
     ) -> "IntegrationMeta":
         cls = cast(Type["Integration"], super().__new__(mcs, name, bases, dct))
         if name != "Integration":

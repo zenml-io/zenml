@@ -33,4 +33,5 @@ class GcpIntegration(Integration):
         )
 
         import_class_by_path(
-            "zenml.integrations.gcp.artifact_stores.gcp_artifact_store.GCPArtifactStore")
+            "zenml.integrations.gcp.artifact_stores.gcp_artifact_store.GCPArtifactStore"
+        )

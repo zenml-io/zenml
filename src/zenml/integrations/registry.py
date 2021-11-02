@@ -13,9 +13,11 @@
 #  permissions and limitations under the License.
 
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Type
+
 from zenml.exceptions import IntegrationError
 from zenml.logger import get_logger
 from zenml.utils.source_utils import LazyLoader
+
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
@@ -40,12 +42,11 @@ class IntegrationRegistry(object):
                     integration.load()
                     integration = cls.integrations.get(name)
                 integration.activate()
-                logger.info(
-                    f"Integration `{name}` is activated."
-                )
-            except IntegrationError as e:
+                logger.info(f"Integration `{name}` is activated.")
+            except (ModuleNotFoundError, IntegrationError) as e:
                 logger.warning(
-                    f"Integration `{name}` could not be activated. {e}")
+                    f"Integration `{name}` could not be activated. {e}"
+                )
 
 
 integration_registry = IntegrationRegistry()
