@@ -43,6 +43,8 @@ key          stack_type    metadata_store_name    artifact_store_name    orchest
 local_stack  base          local_metadata_store   local_artifact_store   local_orchestrator
 ```
 
+![Your local stack when you start](assets/localstack.png)
+
 Let's stick with the `local_metadata_store` and a `local_artifact_store` for now and create an Airflow orchestrator and corresponding stack.
 
 ```shell
@@ -61,6 +63,8 @@ Orchestrator `airflow_orchestrator` successfully registered!
 Stack `airflow_stack` successfully registered!
 Active stack: airflow_stack
 ```
+
+![Your stack with Airflow as orchestrator](assets/localstack-with-airflow-orchestrator.png)
 
 {% hint style="warning" %}
 In the real-world we would also switch to something like a MySQL-based metadata store and a Azure/GCP/S3-based artifact store. We have just skipped that part to keep everything in one machine to make it a bit easier to run this guide.
