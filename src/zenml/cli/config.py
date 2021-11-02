@@ -240,7 +240,18 @@ def delete_orchestrator(orchestrator_name: str) -> None:
 def _get_orchestrator(
     orchestrator_name: Optional[str] = None,
 ) -> Tuple["BaseOrchestrator", str]:
-    """"""
+    """Gets an orchestrator for a given name.
+
+    Args:
+        orchestrator_name: Name of the orchestrator to get. If `None`, the
+            orchestrator of the active stack gets returned.
+
+    Returns:
+        A tuple containing the orchestrator and its name.
+
+    Raises:
+        DoesNotExistException: If no orchestrator for the name exists.
+    """
     if not orchestrator_name:
         active_stack = Repository().get_active_stack()
         orchestrator_name = active_stack.orchestrator_name
