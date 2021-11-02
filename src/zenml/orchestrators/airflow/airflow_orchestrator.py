@@ -103,10 +103,10 @@ class AirflowOrchestrator(BaseOrchestrator):
     def _set_env(self) -> None:
         """Sets environment variables to configure airflow."""
         os.environ["AIRFLOW_HOME"] = self.airflow_home
-        os.environ["AIRFLOW__CORE__DAGS_FOLDER"] = self.dags_folder
+        os.environ["AIRFLOW__CORE__DAGS_FOLDER"] = self.dags_directory
         os.environ["AIRFLOW__CORE__DAG_DISCOVERY_SAFE_MODE"] = "false"
 
-    def _copy_to_dag_folder_if_necessary(self):
+    def _copy_to_dag_directory_if_necessary(self):
         """Copies the __main__ module to the airflow DAGs directory if it's not
         already located there."""
         # TODO [HIGH]: This assumes the airflow DAG is in the __main__ module,
@@ -116,23 +116,23 @@ class AirflowOrchestrator(BaseOrchestrator):
         dag_filepath = path_utils.resolve_relative_path(
             sys.modules["__main__"].__file__
         )
-        dags_folder = path_utils.resolve_relative_path(self.dags_folder)
+        dags_directory = path_utils.resolve_relative_path(self.dags_directory)
 
-        if dags_folder == os.path.dirname(dag_filepath):
+        if dags_directory == os.path.dirname(dag_filepath):
             logger.debug("File is already in airflow DAGs directory.")
         else:
             logger.debug(
                 "Copying dag file '%s' to DAGs directory.", dag_filepath
             )
             destination_path = os.path.join(
-                dags_folder, os.path.basename(dag_filepath)
+                dags_directory, os.path.basename(dag_filepath)
             )
             if path_utils.file_exists(destination_path):
                 logger.info(
                     "File '{%s}' already exists, overwriting with new DAG file",
                     destination_path,
                 )
-            shutil.copy2(dag_filepath, dags_folder)
+            shutil.copy2(dag_filepath, dags_directory)
 
     def _log_webserver_credentials(self):
         """Logs URL and credentials to login to the airflow webserver.
@@ -167,7 +167,7 @@ class AirflowOrchestrator(BaseOrchestrator):
                 "orchestrator of the active stack."
             )
 
-        self._copy_to_dag_folder_if_necessary()
+        self._copy_to_dag_directory_if_necessary()
 
     def up(self) -> None:
         """Ensures that Airflow is running."""
@@ -176,8 +176,8 @@ class AirflowOrchestrator(BaseOrchestrator):
             self._log_webserver_credentials()
             return
 
-        if not path_utils.file_exists(self.dags_folder):
-            path_utils.create_dir_recursive_if_not_exists(self.dags_folder)
+        if not path_utils.file_exists(self.dags_directory):
+            path_utils.create_dir_recursive_if_not_exists(self.dags_directory)
 
         from airflow.cli.commands.standalone_command import StandaloneCommand
 
