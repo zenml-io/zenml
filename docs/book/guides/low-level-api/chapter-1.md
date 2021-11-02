@@ -4,7 +4,7 @@ description: Create your  first step.
 
 If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low_level_guide/chapter_1.py).
 
-# Chapter 1: Create an importer step to load data
+# Create an importer step to load data
 
 The first thing to do is to load our data. We create a step that can load data from an external source (in this case a [Keras Dataset](https://keras.io/api/datasets/)). This can be done by creating a simple function and decorating it with the `@step` decorator.
 
@@ -30,8 +30,8 @@ def importer_mnist() -> Output(
 
 There are some things to note:
 
-* As this step has multiple outputs, we need to use the `zenml.steps.step_output.Output` class to indicate the names of each output. If there was only one, we would not need to do this.
-* We could have returned the `tf.keras.datasets.mnist` directly but we wanted to persist the actual data (for caching purposes), rather than the dataset object.
+- As this step has multiple outputs, we need to use the `zenml.steps.step_output.Output` class to indicate the names of each output. If there was only one, we would not need to do this.
+- We could have returned the `tf.keras.datasets.mnist` directly but we wanted to persist the actual data (for caching purposes), rather than the dataset object.
 
 Now we can go ahead and create a pipeline with one step to make sure this step works:
 
@@ -51,11 +51,13 @@ load_mnist_pipeline(importer=importer_mnist()).run()
 ```
 
 ## Run
+
 You can run this as follows:
 
 ```python
 python chapter_1.py
 ```
+
 The output will look as follows (note: this is filtered to highlight the most important logs)
 
 ```bash
@@ -66,7 +68,7 @@ Step `importer_mnist` has started.
 Step `importer_mnist` has finished in 1.726s.
 ```
 
-## Inspect 
+## Inspect
 
 You can add the following code to fetch the pipeline:
 
