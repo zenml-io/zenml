@@ -5,4 +5,4 @@ set -x
 SRC=${1:-"src/zenml tests"}
 SRC_NO_TESTS=${1:-"src/zenml"}
 
-prettier --check ${SRC}
+prettier --write ${SRC}
