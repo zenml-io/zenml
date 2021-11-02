@@ -35,6 +35,8 @@ Now, the setup is completed. For the next steps, just make sure that you are exe
 
 In the code that follows, you can see that we are defining the various steps of our pipeline. Each step is decorated with `@step`, the main abstraction that is currently available for creating pipeline steps.
 
+![Quickstart steps](assets/quickstart-diagram.png)
+
 ```python
 import numpy as np
 import tensorflow as tf
@@ -118,17 +120,17 @@ If you had a hiccup or you have some suggestions/questions regarding our framewo
 
 The above code looks like its yet another standard pipeline framework that added to your work, but there is a lot going on under-the-hood that is mighty helpful:
 
-* All data is versioned and tracked as it flows through the steps.
-* All parameters and return values are tracked by a central metadata store that you can later query.
-* Individual step outputs are now cached, so you can swap out the trainer for other implementations and be fast in iteration.
-* Code is git-stamped to version it.
+- All data is versioned and tracked as it flows through the steps.
+- All parameters and return values are tracked by a central metadata store that you can later query.
+- Individual step outputs are now cached, so you can swap out the trainer for other implementations and be fast in iteration.
+- Code is git-stamped to version it.
 
 With just a little more work, one can:
 
-* Deploy this pipeline 'in production' on the cloud with a production ready orchestrator like Airflow.
-* Useful metadata like statistics, schema's, drifts can be inferred from model and data flowing through these steps.
-* Convert these steps to run distributed processing to handle large volumes of data.
-* Models trained this way can be set up to be easily deployed, run batch inference on, or set up in continuous training loops with automatic deployments.
+- Deploy this pipeline 'in production' on the cloud with a production ready orchestrator like Airflow.
+- Useful metadata like statistics, schema's, drifts can be inferred from model and data flowing through these steps.
+- Convert these steps to run distributed processing to handle large volumes of data.
+- Models trained this way can be set up to be easily deployed, run batch inference on, or set up in continuous training loops with automatic deployments.
 
 Best of all: We let you and your infra/ops team decide what the underlying tools are to achieve all this.
 
@@ -138,8 +140,8 @@ Keep reading to learn how all of the above can be achieved.
 
 Normally at this point in a quickstart, you'd like to learn more about what the product has to offer (if the docs have succeeded in making you feel so). So there are essentially two choices you can make:
 
-* If your work involves a use-case that is fairly 'standard' training/inference/deployment, start with the [High Level API ](guides/high-level-api/)guide.
-* If you have a more complex workflow that requires more control over your pipelines, start with the [Low Level API](guides/low-level-api/) guide.
+- If your work involves a use-case that is fairly 'standard' training/inference/deployment, start with the [High Level API ](guides/high-level-api/)guide.
+- If you have a more complex workflow that requires more control over your pipelines, start with the [Low Level API](guides/low-level-api/) guide.
 
 If you're not sure, pick any one of the above. They are the easiest way to learn how ZenML enables MLOps.
 

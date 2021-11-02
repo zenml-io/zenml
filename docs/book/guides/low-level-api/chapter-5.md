@@ -4,12 +4,13 @@ description: Materialize artifacts as you want.
 
 If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low_level_guide/chapter_5.py).
 
-# Chapter 5: Materialize artifacts the way you want to consume them.
+# Materialize artifacts the way you want to consume them.
 
 At this point, the precise way that data passes between the steps has been a bit of a mystery to us. There is, of course, a mechanism to serialize and deserialize stuff flowing between steps. We can now take control of this mechanism if we require further control.
 
 ## Create custom materializer
-Data that flows through steps is stored in `Artifact Stores`. The logic that governs the reading and writing of data to and from the `Artifact Stores` lives in the `Materializers`. 
+
+Data that flows through steps is stored in `Artifact Stores`. The logic that governs the reading and writing of data to and from the `Artifact Stores` lives in the `Materializers`.
 
 Suppose we wanted to write the output of our `evaluator` step and store it in a SQLite table in the Artifact Store, rather than whatever the default mechanism is to store the float. Well, that should be easy. Let's create a custom materializer:
 
@@ -96,13 +97,14 @@ scikit_p = mnist_pipeline(
 ```
 
 ## Run
+
 You can run this as follows:
 
 ```python
 python chapter_5.py
 ```
 
-## Inspect 
+## Inspect
 
 We can also now read data from the SQLite table with our custom materializer:
 
