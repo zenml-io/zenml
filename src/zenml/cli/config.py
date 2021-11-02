@@ -12,8 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
-
-from typing import List, Optional
+import time
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 import click
 
@@ -27,6 +27,9 @@ from zenml.core.component_factory import (
 )
 from zenml.core.repo import Repository
 from zenml.enums import LoggingLevels
+
+if TYPE_CHECKING:
+    from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 
 
 # Analytics
@@ -234,10 +237,10 @@ def delete_orchestrator(orchestrator_name: str) -> None:
     cli_utils.declare(f"Deleted orchestrator: `{orchestrator_name}`")
 
 
-@orchestrator.command("up")
-@click.argument("orchestrator_name", type=str, required=False)
-def up_orchestrator(orchestrator_name: Optional[str] = None) -> None:
-    """Provisions resources for the orchestrator"""
+def _get_orchestrator(
+    orchestrator_name: Optional[str] = None,
+) -> Tuple["BaseOrchestrator", str]:
+    """"""
     if not orchestrator_name:
         active_stack = Repository().get_active_stack()
         orchestrator_name = active_stack.orchestrator_name
@@ -247,10 +250,18 @@ def up_orchestrator(orchestrator_name: Optional[str] = None) -> None:
         )
 
     service = Repository().get_service()
-    orchestrator_ = service.get_orchestrator(orchestrator_name)
+    return service.get_orchestrator(orchestrator_name), orchestrator_name
+
+
+@orchestrator.command("up")
+@click.argument("orchestrator_name", type=str, required=False)
+def up_orchestrator(orchestrator_name: Optional[str] = None) -> None:
+    """Provisions resources for the orchestrator"""
+    orchestrator_, orchestrator_name = _get_orchestrator(orchestrator_name)
 
     cli_utils.declare(
-        f"Bootstrapping resources for orchestrator: `{orchestrator_name}`."
+        f"Bootstrapping resources for orchestrator: `{orchestrator_name}`. "
+        f"This might take a few seconds..."
     )
     orchestrator_.up()
     cli_utils.declare(f"Orchestrator: `{orchestrator_name}` is up.")
@@ -260,16 +271,7 @@ def up_orchestrator(orchestrator_name: Optional[str] = None) -> None:
 @click.argument("orchestrator_name", type=str, required=False)
 def down_orchestrator(orchestrator_name: Optional[str] = None) -> None:
     """Tears down resources for the orchestrator"""
-    if not orchestrator_name:
-        active_stack = Repository().get_active_stack()
-        orchestrator_name = active_stack.orchestrator_name
-        cli_utils.declare(
-            f"No orchestrator name given, using `{orchestrator_name}` "
-            f"from active stack."
-        )
-
-    service = Repository().get_service()
-    orchestrator_ = service.get_orchestrator(orchestrator_name)
+    orchestrator_, orchestrator_name = _get_orchestrator(orchestrator_name)
 
     cli_utils.declare(
         f"Tearing down resources for orchestrator: `{orchestrator_name}`."
@@ -278,3 +280,40 @@ def down_orchestrator(orchestrator_name: Optional[str] = None) -> None:
     cli_utils.declare(
         f"Orchestrator: `{orchestrator_name}` resources are now torn down."
     )
+
+
+@orchestrator.command("monitor")
+@click.argument("orchestrator_name", type=str, required=False)
+def monitor_orchestrator(orchestrator_name: Optional[str] = None) -> None:
+    """Monitor a running orchestrator."""
+    orchestrator_, orchestrator_name = _get_orchestrator(orchestrator_name)
+    if not orchestrator_.is_running:
+        cli_utils.warning(
+            f"Can't monitor orchestrator '{orchestrator_name}' "
+            f"because it isn't running."
+        )
+        return
+
+    if not orchestrator_.log_file:
+        cli_utils.warning(f"Can't monitor orchestrator '{orchestrator_name}'.")
+        return
+
+    cli_utils.declare(
+        f"Monitoring orchestrator '{orchestrator_name}', press CTRL+C to stop."
+    )
+    try:
+        with open(orchestrator_.log_file, "r") as log_file:
+            # seek to the end of the file
+            log_file.seek(0, 2)
+
+            while True:
+                line = log_file.readline()
+                if not line:
+                    time.sleep(0.1)
+                    continue
+                line = line.rstrip("\n")
+                click.echo(line)
+    except KeyboardInterrupt:
+        cli_utils.declare(
+            f"Stop monitoring orchestrator '{orchestrator_name}'."
+        )

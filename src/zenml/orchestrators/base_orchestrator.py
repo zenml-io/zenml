@@ -41,6 +41,16 @@ class BaseOrchestrator(BaseComponent):
             get_zenml_config_dir(), self._ORCHESTRATOR_STORE_DIR_NAME
         )
 
+    @property
+    @abstractmethod
+    def is_running(self) -> bool:
+        """Returns whether the orchestrator is currently running."""
+
+    @property
+    def log_file(self) -> Optional[str]:
+        """Returns path to a log file if available."""
+        return None
+
     def pre_run(self) -> None:
         """Should be run before the `run()` function to prepare orchestrator."""
 

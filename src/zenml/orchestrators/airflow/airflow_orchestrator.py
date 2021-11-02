@@ -14,12 +14,14 @@
 
 import datetime
 import os
+import shutil
+import sys
+import time
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import click
-import psutil
 import tfx.orchestration.pipeline as tfx_pipeline
-from pydantic import Field, PrivateAttr, root_validator
+from pydantic import Field, root_validator
 
 from zenml.constants import APP_NAME
 from zenml.core.component_factory import orchestrator_store_factory
@@ -31,15 +33,13 @@ from zenml.orchestrators.airflow.airflow_dag_runner import (
 )
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.utils import path_utils
+from zenml.utils.daemon import run_as_daemon, stop_daemon
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     import airflow
 
-    from zenml.orchestrators.airflow.zenml_standalone_command import (
-        AirflowCommander,
-    )
     from zenml.pipelines.base_pipeline import BasePipeline
 
 AIRFLOW_ROOT_DIR = "airflow_root"
@@ -57,23 +57,15 @@ class AirflowOrchestrator(BaseOrchestrator):
     airflow_home: str = Field(default_factory=default_airflow_home)
     airflow_config: Optional[Dict[str, Any]] = {}
     schedule_interval_minutes: int = 1
-    pid: Optional[int] = None
-    _commander: "AirflowCommander" = PrivateAttr()
 
     def __init__(self, **values: Any):
-        """Intiailizes the AirflowCommander for the duration of this objects
-        existence. Also makes sure env variables are set."""
+        """Sets environment variables to configure airflow."""
         super().__init__(**values)
         self._set_env()
 
-        from zenml.orchestrators.airflow.zenml_standalone_command import (
-            AirflowCommander,
-        )
-
-        self._commander = AirflowCommander()  # type: ignore[no-untyped-call]
-
     @root_validator
     def set_airflow_home(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Sets airflow home according to orchestrator UUID."""
         if "uuid" not in values:
             raise ValueError("`uuid` needs to exist for AirflowOrchestrator.")
         values["airflow_home"] = os.path.join(
@@ -81,73 +73,128 @@ class AirflowOrchestrator(BaseOrchestrator):
         )
         return values
 
+    @property
+    def dags_directory(self) -> str:
+        """Returns path to the airflow dags directory."""
+        return os.path.join(self.airflow_home, "dags")
+
+    @property
+    def pid_file(self) -> str:
+        """Returns path to the daemon PID file."""
+        return os.path.join(self.airflow_home, "airflow_daemon.pid")
+
+    @property
+    def log_file(self) -> str:
+        """Returns path to the airflow log file."""
+        return os.path.join(self.airflow_home, "airflow_orchestrator.log")
+
+    @property
+    def password_file(self) -> str:
+        """Returns path to the webserver password file."""
+        return os.path.join(self.airflow_home, "standalone_admin_password.txt")
+
+    @property
+    def is_running(self) -> bool:
+        """Returns whether the airflow daemon is currently running."""
+        from airflow.cli.commands.standalone_command import StandaloneCommand
+
+        return StandaloneCommand().is_ready()  # TODO
+
     def _set_env(self) -> None:
+        """Sets environment variables to configure airflow."""
         os.environ["AIRFLOW_HOME"] = self.airflow_home
-        os.environ["AIRFLOW__CORE__DAGS_FOLDER"] = os.getcwd()
+        os.environ["AIRFLOW__CORE__DAGS_FOLDER"] = self.dags_folder
         os.environ["AIRFLOW__CORE__DAG_DISCOVERY_SAFE_MODE"] = "false"
 
-    def is_bootstrapped(self) -> bool:
-        """Return True if airflow already bootstrapped, else return False"""
-        if path_utils.file_exists(
-            os.path.join(self.airflow_home, "airflow.db")
-        ):
-            logger.info(f"airflow.db already exists at {self.airflow_home}")
-            return True
-        else:
-            return False
+    def _copy_to_dag_folder_if_necessary(self):
+        """Copies the __main__ module to the airflow DAGs directory if it's not
+        already located there."""
+        # TODO [HIGH]: This assumes the airflow DAG is in the __main__ module,
+        #  not sure if that's a reasonable assumption. An alternative way of
+        #  getting the file could be
+        #   `filepath = inspect.currentframe().f_back.f_back.f_code.co_filename`
+        dag_filepath = path_utils.resolve_relative_path(
+            sys.modules["__main__"].__file__
+        )
+        dags_folder = path_utils.resolve_relative_path(self.dags_folder)
 
-    def bootstrap_airflow(self) -> None:
-        """Starts Airflow with the standalone command."""
-        self._commander.bootstrap()
+        if dags_folder == os.path.dirname(dag_filepath):
+            logger.debug("File is already in airflow DAGs directory.")
+        else:
+            logger.debug(
+                "Copying dag file '%s' to DAGs directory.", dag_filepath
+            )
+            destination_path = os.path.join(
+                dags_folder, os.path.basename(dag_filepath)
+            )
+            if path_utils.file_exists(destination_path):
+                logger.info(
+                    "File '{%s}' already exists, overwriting with new DAG file",
+                    destination_path,
+                )
+            shutil.copy2(dag_filepath, dags_folder)
+
+    def _log_webserver_credentials(self):
+        """Logs URL and credentials to login to the airflow webserver.
+
+        Raises:
+            FileNotFoundError: If the password file does not exist.
+        """
+        if path_utils.file_exists(self.password_file):
+            with open(self.password_file) as file:
+                password = file.read().strip()
+        else:
+            raise FileNotFoundError(
+                f"Can't find password file '{self.password_file}'"
+            )
+        logger.info(
+            "To inspect your DAGs, login to http://0.0.0.0:8080 "
+            "with username: admin password: %s",
+            password,
+        )
 
     def pre_run(self) -> None:
-        """Bootstraps Airflow if not done so, and then makes sure its up."""
-        self.up()
+        """Checks whether airflow is running and copies the DAG file to the
+        airflow DAGs directory.
+
+        Raises:
+            RuntimeError: If airflow is not running.
+        """
+        if not self.is_running:
+            raise RuntimeError(
+                "Airflow orchestrator is currently not running. "
+                "Run `zenml orchestrator up` to start the "
+                "orchestrator of the active stack."
+            )
+
+        self._copy_to_dag_folder_if_necessary()
 
     def up(self) -> None:
-        """This should ensure that Airflow is running."""
-        if self._commander.is_ready():  # type: ignore[no-untyped-call]
-            # If its already up, then go back
-            logger.info("Airflow is already up.")
+        """Ensures that Airflow is running."""
+        if self.is_running:
+            logger.info("Airflow is already running.")
+            self._log_webserver_credentials()
             return
 
-        path_utils.create_dir_recursive_if_not_exists(self.airflow_home)
-        logger.info(f"Setting up Airflow at: {self.airflow_home}")
-        if not self.is_bootstrapped():
-            # Bootstrap airflow if not already done so.
-            self.bootstrap_airflow()
+        if not path_utils.file_exists(self.dags_folder):
+            path_utils.create_dir_recursive_if_not_exists(self.dags_folder)
 
-        # Now we can run it as its bootstrapped.
-        self._commander.up()
-        logger.info("Airflow is now up.")
+        from airflow.cli.commands.standalone_command import StandaloneCommand
 
-        # Store our own pid for future termination
-        self.pid = os.getpid()
+        command = StandaloneCommand()
+        run_as_daemon(command.run, self.pid_file, self.log_file)
 
-        # Persist
-        self.update()
+        while not self.is_running:
+            # Wait until the daemon started all the relevant airflow processes
+            time.sleep(0.1)
+
+        self._log_webserver_credentials()
 
     def down(self) -> None:
-        """Tears down resources for Airflow. Stops running processes."""
-        if self._commander.subcommands:
-            # if the _commander state has the subcommands then use them
-            self._commander.down()
-        else:
-            # kill the up process's pid and all children
-            if self.pid:
-                if psutil.pid_exists(self.pid):  # needs to exist
-                    parent = psutil.Process(self.pid)
-                    if parent.name() == APP_NAME:
-                        # only kill if the thread is called 'zenml'
-                        for child in parent.children(recursive=True):
-                            child.kill()
-                        parent.kill()
+        """Stops the airflow daemon if necessary and tears down resources."""
+        if self.is_running:
+            stop_daemon(self.pid_file, kill_children=True)
 
-        # At this point, we want to reset pids
-        self.pid = None
-        self.update()
-
-        # Delete the rest
         path_utils.rm_dir(self.airflow_home)
         logger.info("Airflow spun down.")
 
