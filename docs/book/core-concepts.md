@@ -4,11 +4,9 @@ description: A good place to start before diving further into the docs.
 
 # Core Concepts
 
-## Core Concepts
-
 **ZenML** consists of the following key components:
 
-![ZenML Architectural Overview](<.gitbook/assets/core_concepts_zenml.png>)
+![ZenML Architectural Overview](assets/2021-11-02-architecture-overview.png)
 
 **Repository**
 
@@ -83,8 +81,8 @@ def simplest_step_ever(basic_param_1: int, basic_param_2: str) -> int:
 
 There are only a few considerations for the parameters and return types.
 
-* All parameters passed into the signature must be [typed](https://docs.python.org/3/library/typing.html). Similarly, if you're returning something, it must be also be typed with the return operator (`->`)
-* ZenML uses [Pydantic](https://pydantic-docs.helpmanual.io/usage/types/) for type checking and serialization under-the-hood, so all [Pydantic types](https://pydantic-docs.helpmanual.io/usage/types/) are supported \[full list available soon].
+- All parameters passed into the signature must be [typed](https://docs.python.org/3/library/typing.html). Similarly, if you're returning something, it must be also be typed with the return operator (`->`)
+- ZenML uses [Pydantic](https://pydantic-docs.helpmanual.io/usage/types/) for type checking and serialization under-the-hood, so all [Pydantic types](https://pydantic-docs.helpmanual.io/usage/types/) are supported \[full list available soon].
 
 While this is just a function with a decorator, it is not super useful. ZenML steps really get powerful when you put them together with [data artifacts](broken-reference). Read about more of that here!
 
@@ -104,7 +102,7 @@ def my_step(first_artifact: int, second_artifact: torch.nn.Module -> int:
     return 1
 ```
 
-Artifacts can be serialized and deserialized (i.e. written and read from the Artifact Store) in many different ways like `TFRecord`s or saved model pickles, depending on what the step produces.The serialization and deserialization logic of artifacts is defined by  [materializers.md](reference/zenml/materializers.md "mention").
+Artifacts can be serialized and deserialized (i.e. written and read from the Artifact Store) in many different ways like `TFRecord`s or saved model pickles, depending on what the step produces.The serialization and deserialization logic of artifacts is defined by [materializers.md](reference/zenml/materializers.md "mention").
 
 **Materializers**
 
@@ -120,7 +118,7 @@ from zenml.steps.base_step_config import BaseStepConfig
 class MyStepConfig(BaseStepConfig):
     basic_param_1: int = 1
     basic_param_2: str = 2
-    
+
 @step
 def my_step(params: MyStepConfig):
     # user params here
@@ -143,9 +141,9 @@ An orchestrator is a special kind of backend that manages the running of each st
 
 A stack is made up of the following three core components:
 
-* An Artifact Store
-* A Metadata Store
-* An Orchestrator (backend)
+- An Artifact Store
+- A Metadata Store
+- An Orchestrator (backend)
 
 A ZenML stack also happens to be a Pydantic `BaseSettings` class, which means that there are multiple ways to use it.
 
@@ -172,9 +170,9 @@ On a high level, when data is read from an **artifact** the results are persiste
 
 A few rules apply:
 
-* Every **orchestrator** (local, Google Cloud VMs, etc) can run all **pipeline steps**, including training.
-* **Orchestrators** have a selection of compatible **processing backends**.
-* **Pipelines** can be configured to utilize more powerful **processing** (e.g. distributed) and **training** (e.g. Google AI Platform) **executors**.
+- Every **orchestrator** (local, Google Cloud VMs, etc) can run all **pipeline steps**, including training.
+- **Orchestrators** have a selection of compatible **processing backends**.
+- **Pipelines** can be configured to utilize more powerful **processing** (e.g. distributed) and **training** (e.g. Google AI Platform) **executors**.
 
 A quick example for large datasets makes this clearer. By default, your experiments will run locally. Pipelines that load large datasets would be severely bottlenecked, so you can configure [Google Dataflow](https://cloud.google.com/dataflow) as a **processing executor** for distributed computation, and [Google AI Platform](https://cloud.google.com/ai-platform) as a **training executor**.
 
@@ -184,11 +182,11 @@ The design choices in **ZenML** follow the understanding that production-ready m
 
 In different words, **ZenML** runs your **ML** code while taking care of the "**Op**eration**s**" for you. It takes care of:
 
-* Interfacing between the individual processing **steps** (splitting, transform, training).
-* Tracking of intermediate results and metadata
-* Caching your processing artifacts.
-* Parallelization of computing tasks.
-* Ensuring the immutability of your pipelines from data sourcing to model artifacts.
-* No matter where - cloud, on-prem, or locally.
+- Interfacing between the individual processing **steps** (splitting, transform, training).
+- Tracking of intermediate results and metadata
+- Caching your processing artifacts.
+- Parallelization of computing tasks.
+- Ensuring the immutability of your pipelines from data sourcing to model artifacts.
+- No matter where - cloud, on-prem, or locally.
 
 Since production scenarios often look complex, **ZenML** is built with integrations in mind. **ZenML** will support a range of integrations for processing, training, and serving, and you can always add custom integrations via our extensible interfaces.
