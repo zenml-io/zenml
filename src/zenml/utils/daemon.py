@@ -16,6 +16,7 @@ def run_as_daemon(
     daemon_function: Callable[..., Any],
     pid_file: str,
     log_file: Optional[str] = None,
+    working_directory: str = "/",
 ) -> None:
     """Runs a function as a daemon process.
 
@@ -24,6 +25,8 @@ def run_as_daemon(
         pid_file: Path to file in which to store the PID of the daemon process.
         log_file: Optional file to which the daemons stdout/stderr will be
             redirected to.
+        working_directory: Working directory for the daemon process, defaults
+            to the root directory.
     Raises:
         FileExistsError: If the PID file already exists.
     """
@@ -51,7 +54,7 @@ def run_as_daemon(
         sys.exit(1)
 
     # decouple from parent environment
-    os.chdir("/")
+    os.chdir(working_directory)
     os.setsid()
     os.umask(0)
 

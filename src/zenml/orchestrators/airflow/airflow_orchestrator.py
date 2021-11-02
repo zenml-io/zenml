@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 
 import datetime
+import inspect
 import os
 import shutil
-import sys
 import time
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
@@ -96,27 +96,37 @@ class AirflowOrchestrator(BaseOrchestrator):
     def is_running(self) -> bool:
         """Returns whether the airflow daemon is currently running."""
         from airflow.cli.commands.standalone_command import StandaloneCommand
+        from airflow.jobs.triggerer_job import TriggererJob
 
-        airflow_running = StandaloneCommand().is_ready()
         daemon_running = daemon.check_if_daemon_is_running(self.pid_file)
 
-        return airflow_running and daemon_running
+        # we can't use StandaloneCommand().is_ready() here as the
+        # Airflow SequentialExecutor apparently does not send a heartbeat
+        # while running a task which would result in this returning `False`
+        # even if Airflow is running.
+        command = StandaloneCommand()
+        airflow_running = command.port_open(8080) and command.job_running(
+            TriggererJob
+        )
+        return daemon_running and airflow_running
 
     def _set_env(self) -> None:
         """Sets environment variables to configure airflow."""
         os.environ["AIRFLOW_HOME"] = self.airflow_home
         os.environ["AIRFLOW__CORE__DAGS_FOLDER"] = self.dags_directory
         os.environ["AIRFLOW__CORE__DAG_DISCOVERY_SAFE_MODE"] = "false"
+        os.environ["AIRFLOW__CORE__LOAD_EXAMPLES"] = "false"
+        # check the DAG folder every 10 seconds for new files
+        os.environ["AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL"] = "10"
 
     def _copy_to_dag_directory_if_necessary(self):
-        """Copies the __main__ module to the airflow DAGs directory if it's not
+        """Copies the DAG module to the airflow DAGs directory if it's not
         already located there."""
-        # TODO [HIGH]: This assumes the airflow DAG is in the __main__ module,
-        #  not sure if that's a reasonable assumption. An alternative way of
-        #  getting the file could be
-        #   `filepath = inspect.currentframe().f_back.f_back.f_code.co_filename`
+        # TODO [HIGH]: This assumes the amount of stack frames back the DAG
+        #  is defined, find a better way (maybe store it in the Pipeline object
+        #  when it is defined?)
         dag_filepath = path_utils.resolve_relative_path(
-            sys.modules["__main__"].__file__
+            inspect.currentframe().f_back.f_back.f_back.f_code.co_filename
         )
         dags_directory = path_utils.resolve_relative_path(self.dags_directory)
 
@@ -184,7 +194,14 @@ class AirflowOrchestrator(BaseOrchestrator):
         from airflow.cli.commands.standalone_command import StandaloneCommand
 
         command = StandaloneCommand()
-        daemon.run_as_daemon(command.run, self.pid_file, self.log_file)
+        # Run the daemon with a working directory inside the current
+        # zenml repo so the same repo will be used to run the DAGs
+        daemon.run_as_daemon(
+            command.run,
+            pid_file=self.pid_file,
+            log_file=self.log_file,
+            working_directory=path_utils.get_zenml_dir(),
+        )
 
         while not self.is_running:
             # Wait until the daemon started all the relevant airflow processes
