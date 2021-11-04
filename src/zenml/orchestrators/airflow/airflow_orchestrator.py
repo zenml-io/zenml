@@ -46,7 +46,7 @@ AIRFLOW_ROOT_DIR = "airflow_root"
 class AirflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
 
-    airflow_home: str
+    airflow_home: str = ""
     airflow_config: Optional[Dict[str, Any]] = {}
     schedule_interval_minutes: int = 1
 
@@ -93,15 +93,28 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         daemon_running = daemon.check_if_daemon_is_running(self.pid_file)
 
+        command = StandaloneCommand()
+        webserver_port_open = command.port_open(8080)
+
+        if not daemon_running:
+            if webserver_port_open:
+                raise RuntimeError(
+                    "The airflow daemon does not seem to be running but "
+                    "local port 8080 is occupied. Make sure the port is "
+                    "available and try again."
+                )
+
+            # exit early so we don't check non-existing airflow databases
+            return False
+
         # we can't use StandaloneCommand().is_ready() here as the
         # Airflow SequentialExecutor apparently does not send a heartbeat
         # while running a task which would result in this returning `False`
         # even if Airflow is running.
-        command = StandaloneCommand()
-        airflow_running = command.port_open(8080) and command.job_running(
+        airflow_running = webserver_port_open and command.job_running(
             TriggererJob
         )
-        return daemon_running and airflow_running
+        return airflow_running
 
     def _set_env(self) -> None:
         """Sets environment variables to configure airflow."""
