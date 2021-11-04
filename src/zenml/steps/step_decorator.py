@@ -26,13 +26,18 @@ def step(_func: F) -> Type[BaseStep]:
 
 
 @overload
-def step(*, name: Optional[str] = None) -> Callable[[F], Type[BaseStep]]:
+def step(
+    *, name: Optional[str] = None, enable_cache: bool = True
+) -> Callable[[F], Type[BaseStep]]:
     """Type annotations for step decorator in case of arguments."""
     ...
 
 
 def step(
-    _func: Optional[F] = None, *, name: Optional[str] = None
+    _func: Optional[F] = None,
+    *,
+    name: Optional[str] = None,
+    enable_cache: bool = True
 ) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
     """Outer decorator function for the creation of a ZenML step
 
@@ -40,8 +45,10 @@ def step(
     nested decorator structure.
 
     Args:
-        _func: Optional func from outside.
-        name (required) the given name for the step.
+        _func: The decorated function.
+        name: The name of the step. If left empty, the name of the decorated
+            function will be used as a fallback.
+        enable_cache: Whether to use caching or not.
 
     Returns:
         the inner decorator which creates the step class based on the
