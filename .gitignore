@@ -174,3 +174,6 @@ zenml_examples/
 
 # GitHub Folder YAML files not to be ignored
 !.github/ISSUE_TEMPLATE/**
+
+# Prettier
+.prettierignore

@@ -4,9 +4,10 @@ description: Train some models.
 
 If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low_level_guide/chapter_3.py).
 
-# Chapter 3: Train and evaluate the model.
+# Train and evaluate the model.
 
-Finally we can train and evaluate our model. 
+Finally we can train and evaluate our model.
+
 ## Create steps
 
 For this we decide to add two steps, a `trainer` and an `evaluator` step. We also keep using TensorFlow to help with these.
@@ -26,10 +27,10 @@ class TrainerConfig(BaseStepConfig):
     epochs: int = 1
     gamma: float = 0.7
     lr: float = 0.001
-    
+
 @step
 def tf_trainer(
-    config: TrainerConfig,  # not an artifact, passed in when 
+    config: TrainerConfig,  # not an artifact, passed in when
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> tf.keras.Model:
@@ -61,10 +62,11 @@ def tf_trainer(
 
 A few things of note:
 
-* This is our first instance of `parameterizing` a step with a `BaseStepConfig`. This allows us to specify some parameters at run-time rather than via data artifacts between steps.
-* This time the trainer returns a `tf.keras.Model`, which ZenML takes care of storing in the artifact store. We will talk about how to 'take over' this storing via `Materializers` in a later chapter.
+- This is our first instance of `parameterizing` a step with a `BaseStepConfig`. This allows us to specify some parameters at run-time rather than via data artifacts between steps.
+- This time the trainer returns a `tf.keras.Model`, which ZenML takes care of storing in the artifact store. We will talk about how to 'take over' this storing via `Materializers` in a later chapter.
 
 ### Evaluator
+
 We also add a a simple evaluator:
 
 ```python
@@ -116,6 +118,7 @@ mnist_pipeline(
 Beautiful, now the pipeline is truly doing something. Let's run it!
 
 ## Run
+
 You can run this as follows:
 
 ```python
@@ -138,7 +141,7 @@ Step `tf_evaluator` has started.
 `tf_evaluator` has finished in 0.742s.
 ```
 
-## Inspect 
+## Inspect
 
 If you add the following code to fetch the pipeline:
 
