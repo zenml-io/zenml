@@ -4,10 +4,9 @@ description: Add some normalization
 
 If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low_level_guide/chapter_2.py).
 
-# Chapter 2: Normalize the data.
+# Normalize the data.
 
 Now before writing any trainers we can actually normalize our data to make sure we get better results. To do this let's add another step and make the pipeline a bit more complex.
-
 
 ## Create steps
 
@@ -38,13 +37,14 @@ def load_and_normalize_pipeline(
     normalizer(X_train=X_train, X_test=X_test)
 ```
 
-
 ## Run
+
 You can run this as follows:
 
 ```python
 python chapter_2.py
 ```
+
 The output will look as follows (note: this is filtered to highlight the most important logs)
 
 ```bash
@@ -57,7 +57,7 @@ Step `normalize_mnist` has started.
 Step `normalize_mnist` has finished in 1.848s.
 ```
 
-## Inspect 
+## Inspect
 
 You can add the following code to fetch the pipeline:
 

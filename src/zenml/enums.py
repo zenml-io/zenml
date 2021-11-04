@@ -23,6 +23,10 @@ class ArtifactStoreTypes(str, Enum):
     local = "local"
     gcp = "gcp"
 
+    def __str__(self) -> str:
+        """Returns the enum string value."""
+        return self.value
+
 
 class MLMetadataTypes(str, Enum):
     """All supported ML Metadata types."""
@@ -32,6 +36,10 @@ class MLMetadataTypes(str, Enum):
     mysql = "mysql"
     mock = "mock"
 
+    def __str__(self) -> str:
+        """Returns the enum string value."""
+        return self.value
+
 
 class OrchestratorTypes(str, Enum):
     """All supported Orchestrator types"""
@@ -39,6 +47,10 @@ class OrchestratorTypes(str, Enum):
     base = "base"
     local = "local"
     airflow = "airflow"
+
+    def __str__(self) -> str:
+        """Returns the enum string value."""
+        return self.value
 
 
 class StackTypes(str, Enum):

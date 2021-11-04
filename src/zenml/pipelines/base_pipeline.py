@@ -29,7 +29,7 @@ from zenml.exceptions import (
 from zenml.logger import get_logger
 from zenml.stacks.base_stack import BaseStack
 from zenml.steps.base_step import BaseStep
-from zenml.utils import analytics_utils, yaml_utils
+from zenml.utils import analytics_utils, path_utils, yaml_utils
 
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
@@ -171,7 +171,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
             f"Using orchestrator `{self.stack.orchestrator_name}` for "
             f"pipeline `{self.pipeline_name}`. Running pipeline.."
         )
-        self.stack.orchestrator.pre_run()
+
+        # filepath of the file where pipeline.run() was called
+        caller_filepath = path_utils.resolve_relative_path(
+            inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr] # noqa
+        )
+
+        self.stack.orchestrator.pre_run(caller_filepath=caller_filepath)
         ret = self.stack.orchestrator.run(self, run_name)
         self.stack.orchestrator.post_run()
         return ret

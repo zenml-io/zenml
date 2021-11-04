@@ -41,8 +41,27 @@ class BaseOrchestrator(BaseComponent):
             get_zenml_config_dir(), self._ORCHESTRATOR_STORE_DIR_NAME
         )
 
-    def pre_run(self) -> None:
-        """Should be run before the `run()` function to prepare orchestrator."""
+    @property
+    @abstractmethod
+    def is_running(self) -> bool:
+        """Returns whether the orchestrator is currently running."""
+
+    @property
+    def log_file(self) -> Optional[str]:
+        """Returns path to a log file if available."""
+        # TODO [MEDIUM]: make this more generic in case an orchestrator has
+        #  multiple log files, e.g. change to a monitor() method which yields
+        #  new logs to output to the CLI
+        return None
+
+    def pre_run(self, caller_filepath: str) -> None:
+        """Should be run before the `run()` function to prepare orchestrator.
+
+        Args:
+            caller_filepath: Path to the file in which `pipeline.run()` was
+                called. This is necessary for airflow so we know the file in
+                which the DAG is defined.
+        """
 
     def post_run(self) -> None:
         """Should be run after the `run()` to clean up."""
