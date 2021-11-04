@@ -121,8 +121,14 @@ def test_info_echos_out_readme_content(example: str) -> None:
     with runner.isolated_filesystem():
         runner.invoke(pull, ["-f", "-v", "0.5.0"])
         result = runner.invoke(info, [example])
+        repo_dir = click.get_app_dir(APP_NAME)
+        examples_dir = os.path.join(repo_dir, EXAMPLES_GITHUB_REPO, "examples")
+        readme_path = os.path.join(examples_dir, example, "README.md")
         assert result.exit_code == 0
         assert example in result.output
+        with open(readme_path) as f:
+            for line in f.read().splitlines():
+                assert line in result.output
         examples_dir = os.path.join(os.getcwd(), EXAMPLES_GITHUB_REPO)
         assert example in os.listdir(examples_dir)
 
