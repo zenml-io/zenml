@@ -20,7 +20,7 @@ from git.repo.base import Repo
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
 from zenml.core.repo import Repository
-from zenml.exceptions import DoesNotExistException
+from zenml.exceptions import AlreadyExistsException, DoesNotExistException
 from zenml.metadata.base_metadata_store import BaseMetadataStore
 from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
@@ -137,7 +137,7 @@ def test_register_stack_raises_exception_when_key_already_exists(
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
     local_stack1 = local_service.get_stack("local_stack")
-    with pytest.raises(Exception):
+    with pytest.raises(AlreadyExistsException):
         local_service.register_stack("local_stack", local_stack1)
 
 
