@@ -20,6 +20,7 @@ from git.repo.base import Repo
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
 from zenml.core.repo import Repository
+from zenml.exceptions import DoesNotExistException
 from zenml.metadata.base_metadata_store import BaseMetadataStore
 from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
@@ -124,7 +125,7 @@ def test_get_stack_raises_exception_when_key_does_not_exist(
     Repo.init(tmp_path)
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
-    with pytest.raises(Exception):
+    with pytest.raises(DoesNotExistException):
         local_service.get_stack("made_up_stack")
 
 
