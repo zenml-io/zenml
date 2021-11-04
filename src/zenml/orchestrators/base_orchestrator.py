@@ -49,6 +49,9 @@ class BaseOrchestrator(BaseComponent):
     @property
     def log_file(self) -> Optional[str]:
         """Returns path to a log file if available."""
+        # TODO [MEDIUM]: make this more generic in case an orchestrator has
+        #  multiple log files, e.g. change to a monitor() method which yields
+        #  new logs to output to the CLI
         return None
 
     def pre_run(self) -> None:

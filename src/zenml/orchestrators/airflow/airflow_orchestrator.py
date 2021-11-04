@@ -15,13 +15,12 @@
 import datetime
 import inspect
 import os
-import shutil
 import time
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import click
 import tfx.orchestration.pipeline as tfx_pipeline
-from pydantic import Field, root_validator
+from pydantic import root_validator
 
 from zenml.constants import APP_NAME
 from zenml.core.component_factory import orchestrator_store_factory
@@ -44,16 +43,11 @@ if TYPE_CHECKING:
 AIRFLOW_ROOT_DIR = "airflow_root"
 
 
-def default_airflow_home() -> str:
-    """Returns a default airflow home in the global directory"""
-    return os.path.join(click.get_app_dir(APP_NAME), AIRFLOW_ROOT_DIR)
-
-
 @orchestrator_store_factory.register(OrchestratorTypes.airflow)
 class AirflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
 
-    airflow_home: str = Field(default_factory=default_airflow_home)
+    airflow_home: str
     airflow_config: Optional[Dict[str, Any]] = {}
     schedule_interval_minutes: int = 1
 
@@ -144,7 +138,7 @@ class AirflowOrchestrator(BaseOrchestrator):
                     "File '{%s}' already exists, overwriting with new DAG file",
                     destination_path,
                 )
-            shutil.copy2(dag_filepath, dags_directory)
+            path_utils.copy(dag_filepath, destination_path, overwrite=True)
 
     def _log_webserver_credentials(self):
         """Logs URL and credentials to login to the airflow webserver.
