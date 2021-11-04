@@ -27,6 +27,13 @@ def artifact() -> None:
     """Utilities for artifact store"""
 
 
+@artifact.command("get")
+def get_active_artifact_store() -> None:
+    """Gets the artifact store of the active stack."""
+    artifact_store_name = Repository().get_active_stack().artifact_store_name
+    cli_utils.declare(f"Active artifact store: {artifact_store_name}")
+
+
 @artifact.command(
     "register", context_settings=dict(ignore_unknown_options=True)
 )

@@ -27,6 +27,13 @@ def metadata() -> None:
     """Utilities for metadata store"""
 
 
+@metadata.command("get")
+def get_active_metadata_store() -> None:
+    """Gets the metadata store of the active stack."""
+    metadata_store_name = Repository().get_active_stack().metadata_store_name
+    cli_utils.declare(f"Active metadata store: {metadata_store_name}")
+
+
 @metadata.command(
     "register", context_settings=dict(ignore_unknown_options=True)
 )

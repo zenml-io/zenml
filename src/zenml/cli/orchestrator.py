@@ -58,6 +58,13 @@ def orchestrator() -> None:
     """Utilities for orchestrator"""
 
 
+@orchestrator.command("get")
+def get_active_orchestrator() -> None:
+    """Gets the orchestrator of the active stack."""
+    orchestrator_name = Repository().get_active_stack().orchestrator_name
+    cli_utils.declare(f"Active orchestrator: {orchestrator_name}")
+
+
 @orchestrator.command(
     "register", context_settings=dict(ignore_unknown_options=True)
 )
@@ -96,7 +103,7 @@ def list_orchestrators() -> None:
 @orchestrator.command("delete")
 @click.argument("orchestrator_name", type=str)
 def delete_orchestrator(orchestrator_name: str) -> None:
-    """Delete a orchestrator."""
+    """Delete an orchestrator."""
     service = Repository().get_service()
     service.delete_orchestrator(orchestrator_name)
     cli_utils.declare(f"Deleted orchestrator: `{orchestrator_name}`")
