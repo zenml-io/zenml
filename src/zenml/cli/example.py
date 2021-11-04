@@ -176,7 +176,6 @@ def example() -> None:
 def list(git_examples_handler: Any) -> None:
     """List all available examples."""
     declare("Listing examples: \n")
-    # git_examples_handler.get_all_examples()
     for name in git_examples_handler.get_all_examples():
         declare(f"{name}")
     declare("\nTo pull the examples, type: ")
@@ -198,10 +197,15 @@ def info(git_examples_handler: Any, example_name: str) -> None:
         click.echo(readme_content)
         # markdown_to_console(readme_content)
     except FileNotFoundError:
-        error(
-            f"Example {example_name} is not one of the available options."
-            f"\nTo list all available examples, type: `zenml example list`"
-        )
+        if path_utils.file_exists(example_dir) and path_utils.is_dir(
+            example_dir
+        ):
+            error(f"No README.md file found in {example_dir}")
+        else:
+            error(
+                f"Example {example_name} is not one of the available options."
+                f"\nTo list all available examples, type: `zenml example list`"
+            )
 
 
 @example.command(

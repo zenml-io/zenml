@@ -154,6 +154,25 @@ def test_info_fails_gracefully_when_bad_example_given(
         assert bad_example not in os.listdir(tmp_path)
 
 
+@pytest.mark.parametrize("bad_example", NOT_ZERO_FIVE_RELEASE_EXAMPLES)
+def test_info_fails_gracefully_when_no_readme_present(
+    tmp_path: str, bad_example: str
+) -> None:
+    """Check info command fails gracefully when bad example given"""
+    # get path variables
+    repo_dir = click.get_app_dir(APP_NAME)
+    examples_dir = os.path.join(repo_dir, EXAMPLES_GITHUB_REPO, "examples")
+
+    runner = CliRunner()
+    with runner.isolated_filesystem(tmp_path):
+        runner.invoke(pull, ["-f", "-v", "0.5.0"])
+        fake_example_path = os.path.join(examples_dir, bad_example)
+        os.mkdir(fake_example_path)
+        result = runner.invoke(info, [bad_example])
+        assert "No README.md file found" in result.output
+        os.rmdir(fake_example_path)
+
+
 def test_user_has_latest_zero_five_version_but_wants_zero_five_one():
     """Test the scenario where the latest version available to the user is 0.5.0
     but the user wants to download 0.5.1. In this case, it should redownload
