@@ -151,7 +151,7 @@ def test_delete_stack_deletes_the_stack(tmp_path: str) -> None:
     local_stack2 = local_service.get_stack("local_stack_2")
     assert local_stack2 is not None
     local_service.delete_stack("local_stack_2")
-    with pytest.raises(Exception):
+    with pytest.raises(DoesNotExistException):
         local_service.get_stack("local_stack_2")
 
 
@@ -186,7 +186,7 @@ def test_register_artifact_store_with_existing_key_fails(tmp_path: str) -> None:
     Repo.init(tmp_path)
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
-    with pytest.raises(Exception):
+    with pytest.raises(AlreadyExistsException):
         local_service.register_artifact_store(
             LOCAL_ARTIFACT_STORE_NAME,
             local_service.get_artifact_store(LOCAL_ARTIFACT_STORE_NAME),
@@ -204,7 +204,7 @@ def test_delete_artifact_store_works(tmp_path: str) -> None:
         "local_artifact_store_2", local_artifact_store
     )
     local_service.delete_artifact_store("local_artifact_store_2")
-    with pytest.raises(Exception):
+    with pytest.raises(DoesNotExistException):
         local_service.get_artifact_store("local_artifact_store_2")
 
 
@@ -240,7 +240,7 @@ def test_register_metadata_store_with_existing_key_fails(tmp_path: str) -> None:
     Repo.init(tmp_path)
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
-    with pytest.raises(Exception):
+    with pytest.raises(AlreadyExistsException):
         local_service.register_metadata_store(
             LOCAL_METADATA_STORE_NAME,
             local_service.get_metadata_store(LOCAL_METADATA_STORE_NAME),
@@ -259,7 +259,7 @@ def test_delete_metadata_store_works(tmp_path: str) -> None:
         "local_metadata_store_2", metadata_store
     )
     local_service.delete_metadata_store("local_metadata_store_2")
-    with pytest.raises(Exception):
+    with pytest.raises(DoesNotExistException):
         local_service.get_metadata_store("local_metadata_store_2")
 
 
@@ -289,7 +289,7 @@ def test_register_orchestrator_with_existing_key_fails(tmp_path: str) -> None:
     Repo.init(tmp_path)
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
-    with pytest.raises(Exception):
+    with pytest.raises(AlreadyExistsException):
         local_service.register_orchestrator(
             LOCAL_ORCHESTRATOR_NAME,
             local_service.get_orchestrator(LOCAL_ORCHESTRATOR_NAME),
@@ -304,7 +304,7 @@ def test_delete_orchestrator_works(tmp_path: str) -> None:
     orchestrator = LocalOrchestrator()
     local_service.register_orchestrator("local_orchestrator_2", orchestrator)
     local_service.delete_orchestrator("local_orchestrator_2")
-    with pytest.raises(Exception):
+    with pytest.raises(DoesNotExistException):
         local_service.get_orchestrator("local_orchestrator_2")
 
 
