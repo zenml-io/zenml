@@ -16,11 +16,3 @@
 def test_me() -> None:
     """basic test"""
     assert True
-
-
-# test registering a stack works
-# test listing a stack works
-# test deleting a stack works
-# test activating a stack works
-# test geting the active stack works
-# test that on initial installation we have an active stack to start with (maybe not here, though?)

@@ -16,10 +16,3 @@
 def test_me() -> None:
     """basic test"""
     assert True
-
-
-# test pipeline run with no arguments
-# test pipeline run with a file but no config YAML file (should fail)
-# test what is returned from a pipeline run
-# test failure of bad YAML file
-# test failure of bad pipeline python file
