@@ -18,8 +18,6 @@ For this guide, you'll want to install airflow before continuing:
 pip install apache_airflow
 ```
 
-That's it - ZenML will take care of setting up airflow for you after this.
-
 ## Creating an Airflow Stack
 
 A [Stack](../../core-concepts.md) is the configuration of the surrounding infrastructure where ZenML pipelines are run and managed. For now, a `Stack` consists of:
@@ -70,6 +68,25 @@ Active stack: airflow_stack
 In the real-world we would also switch to something like a MySQL-based metadata store and a Azure/GCP/S3-based artifact store. We have just skipped that part to keep everything in one machine to make it a bit easier to run this guide.
 {% endhint %}
 
+## Starting up Airflow
+
+ZenML takes care of configuring Airflow, all we need to do is run:
+
+```bash
+zenml orchestrator up
+```
+
+This will bootstrap Airflow, start up all the necessary components and run them in the background.
+When the setup is finished, it will print username and password for the Airflow webserver to the console.
+
+{% hint style="warning" %}
+If you can't find the password on the console, you can navigate to the `APP_DIR / airflow / airflow_root / STACK_UUID / standalone_admin_password.txt` file.
+The username will always be `admin`.
+
+- APP_DIR will depend on your os. See which path corresponds to your OS [here](https://click.palletsprojects.com/en/8.0.x/api/#click.get_app_dir).
+- STACK_UUID will be the unique id of the airflow_stack. There will be only one folder here so you can just navigate to the one that is present.
+  {% endhint %}
+
 ## Run
 
 The code from this chapter is the same as the last chapter. So run:
@@ -80,23 +97,23 @@ python chapter_7.py
 
 Even through the pipeline script is the same, the output will be a lot different from last time. ZenML will detect that `airflow_stack` is the active stack, and do the following:
 
-- Airflow will be bootstrapped locally, and an admin username and password created. Username will be `admin` and password will be printed out in the console logs.
-- The current working directory will be made into Airflow's `dag_dir`, so all python files in there would be treated as a [Airflow DAG definition file](https://airflow.apache.org/docs/apache-airflow/stable/tutorial.html#it-s-a-dag-definition-file).
-- `chapter_7.py` will start producing an Airflow DAG which will show up in the Airflow UI at [http://0.0.0.0:8080](http://0.0.0.0:8080). You will have to login with the username and password generated above.
+- `chapter_7.py` will be copied to the Airflow `dag_dir` so Airflow can detect is as an [Airflow DAG definition file](https://airflow.apache.org/docs/apache-airflow/stable/tutorial.html#it-s-a-dag-definition-file).
+- The Airflow DAG will show up in the Airflow UI at [http://0.0.0.0:8080](http://0.0.0.0:8080). You will have to login with the username and password generated above.
 - The DAG name will be the same as the pipeline name, so in this case `mnist_pipeline`.
 - The DAG will be scheduled to run every minute.
 - The DAG will be un-paused so you'll probably see the first run as you click through.
 
-{% hint style="warning" %}
-If you can't find the password on the console, you can navigate to the `APP_DIR / airflow / airflow_root / STACK_UUID / standalone_admin_password.txt` file.
-
-- APP_DIR will depend on your os. See which path corresponds to your OS [here](https://click.palletsprojects.com/en/8.0.x/api/#click.get_app_dir).
-- STACK_UUID will be the unique id of the airflow_stack. There will be only one folder here so you can just navigate to the one that is present.
-  {% endhint %}
-
 And that's it: As long as you keep Airflow running now, this script will run every minute, pull the latest data, and train a new model!
 
 We now have a continuously training ML pipeline training on new data every day. All the pipelines will be tracked in your production [Stack's metadata store](../../core-concepts.md), the interim artifacts will be stored in the [Artifact Store](../../core-concepts.md), and the scheduling and orchestration is being handled by the [orchestrator](../../core-concepts.md), in this case Airflow.
+
+## Shutting down Airflow
+
+Once we are done experimenting, we need to shut down Airflow by running:
+
+```bash
+zenml orchestrator down
+```
 
 # Conclusion
 
