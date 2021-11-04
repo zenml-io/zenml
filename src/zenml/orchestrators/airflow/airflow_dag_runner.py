@@ -130,9 +130,9 @@ class AirflowDagRunner(tfx_runner.TfxRunner):
             )
             component_impl_map[tfx_component] = current_airflow_component
             for upstream_node in tfx_component.upstream_nodes:
-                assert upstream_node in component_impl_map, (
-                    "Components is not in " "topological order"
-                )
+                assert (
+                    upstream_node in component_impl_map
+                ), "Components is not in topological order"
                 current_airflow_component.set_upstream(
                     component_impl_map[upstream_node]
                 )
