@@ -179,6 +179,8 @@ class BaseStep(metaclass=BaseStepMeta):
                 )
 
             try:
+                # TODO [MEDIUM]: include pydantic default values so they get
+                #  stored inside the metadata store as well
                 self.PARAM_SPEC = {
                     k: json.dumps(v) for k, v in config.dict().items()
                 }
