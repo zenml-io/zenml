@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 
 import datetime
-import inspect
 import os
 import time
 from typing import TYPE_CHECKING, Any, Dict, Optional
@@ -113,15 +112,13 @@ class AirflowOrchestrator(BaseOrchestrator):
         # check the DAG folder every 10 seconds for new files
         os.environ["AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL"] = "10"
 
-    def _copy_to_dag_directory_if_necessary(self):
+    def _copy_to_dag_directory_if_necessary(self, dag_filepath: str):
         """Copies the DAG module to the airflow DAGs directory if it's not
-        already located there."""
-        # TODO [HIGH]: This assumes the amount of stack frames back the DAG
-        #  is defined, find a better way (maybe store it in the Pipeline object
-        #  when it is defined?)
-        dag_filepath = path_utils.resolve_relative_path(
-            inspect.currentframe().f_back.f_back.f_back.f_code.co_filename
-        )
+        already located there.
+
+        Args:
+            dag_filepath: Path to the file in which the DAG is defined.
+        """
         dags_directory = path_utils.resolve_relative_path(self.dags_directory)
 
         if dags_directory == os.path.dirname(dag_filepath):
@@ -159,9 +156,14 @@ class AirflowOrchestrator(BaseOrchestrator):
             password,
         )
 
-    def pre_run(self) -> None:
+    def pre_run(self, caller_filepath: str) -> None:
         """Checks whether airflow is running and copies the DAG file to the
         airflow DAGs directory.
+
+        Args:
+            caller_filepath: Path to the file in which `pipeline.run()` was
+                called. This contains the airflow DAG that is returned by
+                the `run()` method.
 
         Raises:
             RuntimeError: If airflow is not running.
@@ -173,7 +175,7 @@ class AirflowOrchestrator(BaseOrchestrator):
                 "orchestrator of the active stack."
             )
 
-        self._copy_to_dag_directory_if_necessary()
+        self._copy_to_dag_directory_if_necessary(dag_filepath=caller_filepath)
 
     def up(self) -> None:
         """Ensures that Airflow is running."""
