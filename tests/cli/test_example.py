@@ -117,13 +117,18 @@ def test_pull_without_any_flags_should_exit_without_errors() -> None:
 @pytest.mark.parametrize("example", ZERO_FIVE_RELEASE_EXAMPLES)
 def test_info_echos_out_readme_content(example: str) -> None:
     """Check that info subcommand displays readme content"""
+    # TODO: [LOW] make test handle rich markdown output
     runner = CliRunner()
     with runner.isolated_filesystem():
+        # setup the test
         runner.invoke(pull, ["-f", "-v", "0.5.0"])
-        result = runner.invoke(info, [example])
+
+        # get path variables
         repo_dir = click.get_app_dir(APP_NAME)
         examples_dir = os.path.join(repo_dir, EXAMPLES_GITHUB_REPO, "examples")
         readme_path = os.path.join(examples_dir, example, "README.md")
+
+        result = runner.invoke(info, [example])
         assert result.exit_code == 0
         assert example in result.output
         with open(readme_path) as f:

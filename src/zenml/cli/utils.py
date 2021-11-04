@@ -17,6 +17,8 @@ from typing import Any, Dict, List, Mapping
 
 import click
 from dateutil import tz
+from rich.console import Console
+from rich.markdown import Markdown
 from tabulate import tabulate
 
 from zenml.core.base_component import BaseComponent
@@ -181,3 +183,14 @@ def parse_unknown_options(args: List[str]) -> Dict[str, Any]:
     assert len(p_args) == len(r_args), "Replicated arguments!"
 
     return r_args
+
+
+def markdown_to_console(markdown: str) -> None:
+    """Echo markdown on the CLI.
+
+    Args:
+      markdown: Markdown string to be echoed.
+    """
+    console = Console()
+    md = Markdown(markdown)
+    console.print(md)

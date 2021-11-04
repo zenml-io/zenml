@@ -189,13 +189,14 @@ def list(git_examples_handler: Any) -> None:
 # TODO: [MEDIUM] Use a better type for the git_examples_handler
 def info(git_examples_handler: Any, example_name: str) -> None:
     """Find out more about an example."""
-    # TODO: [MEDIUM] format the output so that it looks nicer (not a pure .md dump)
+    # TODO: [MEDIUM] fix markdown formatting so that it looks nicer (not a pure .md dump)
     example_dir = os.path.join(
         git_examples_handler.get_examples_dir(), example_name
     )
     try:
         readme_content = git_examples_handler.get_example_readme(example_dir)
         click.echo(readme_content)
+        # markdown_to_console(readme_content)
     except FileNotFoundError:
         error(
             f"Example {example_name} is not one of the available options."
