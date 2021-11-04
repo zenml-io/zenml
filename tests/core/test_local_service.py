@@ -80,7 +80,7 @@ def test_local_service_can_access_orchestrators(tmp_path: str) -> None:
 
 
 def test_get_stack_returns_a_stack_when_provided_a_key(tmp_path: str) -> None:
-    """Check get_stack returns a stack with expected properties."""
+    """Check get_stack returns a stack with its expected components."""
     Repo.init(tmp_path)
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
