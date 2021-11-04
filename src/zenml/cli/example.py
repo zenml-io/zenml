@@ -195,7 +195,6 @@ def info(git_examples_handler: Any, example_name: str) -> None:
     try:
         readme_content = git_examples_handler.get_example_readme(example_dir)
         click.echo(readme_content)
-        # markdown_to_console(readme_content)
     except FileNotFoundError:
         if path_utils.file_exists(example_dir) and path_utils.is_dir(
             example_dir

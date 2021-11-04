@@ -21,9 +21,6 @@ from tabulate import tabulate
 
 from zenml.core.base_component import BaseComponent
 
-# from rich.console import Console
-# from rich.markdown import Markdown
-
 
 def title(text: str) -> None:
     """Echo a title formatted string on the CLI.
@@ -184,14 +181,3 @@ def parse_unknown_options(args: List[str]) -> Dict[str, Any]:
     assert len(p_args) == len(r_args), "Replicated arguments!"
 
     return r_args
-
-
-# def markdown_to_console(markdown: str) -> None:
-#     """Echo markdown on the CLI.
-
-#     Args:
-#       markdown: Markdown string to be echoed.
-#     """
-#     console = Console()
-#     md = Markdown(markdown)
-#     console.print(md)
