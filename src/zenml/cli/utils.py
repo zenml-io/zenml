@@ -17,11 +17,12 @@ from typing import Any, Dict, List, Mapping
 
 import click
 from dateutil import tz
-from rich.console import Console
-from rich.markdown import Markdown
 from tabulate import tabulate
 
 from zenml.core.base_component import BaseComponent
+
+# from rich.console import Console
+# from rich.markdown import Markdown
 
 
 def title(text: str) -> None:
@@ -185,12 +186,12 @@ def parse_unknown_options(args: List[str]) -> Dict[str, Any]:
     return r_args
 
 
-def markdown_to_console(markdown: str) -> None:
-    """Echo markdown on the CLI.
+# def markdown_to_console(markdown: str) -> None:
+#     """Echo markdown on the CLI.
 
-    Args:
-      markdown: Markdown string to be echoed.
-    """
-    console = Console()
-    md = Markdown(markdown)
-    console.print(md)
+#     Args:
+#       markdown: Markdown string to be echoed.
+#     """
+#     console = Console()
+#     md = Markdown(markdown)
+#     console.print(md)
