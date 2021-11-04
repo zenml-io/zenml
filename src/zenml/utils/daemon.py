@@ -1,3 +1,23 @@
+#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Utility functions to start/stop daemon processes.
+
+This is only implemented for UNIX systems and therefore doesn't work on
+Windows. Based on
+https://www.jejik.com/articles/2007/02/a_simple_unix_linux_daemon_in_python/
+"""
+
 import atexit
 import os
 import signal
@@ -69,7 +89,7 @@ def run_as_daemon(
         sys.stderr.write(f"Unable to fork (error code: {e.errno})")
         sys.exit(1)
 
-    # redirect standard file descriptors to devnull
+    # redirect standard file descriptors to devnull (or the given logfile)
     devnull = "/dev/null"
     if hasattr(os, "devnull"):
         devnull = os.devnull
