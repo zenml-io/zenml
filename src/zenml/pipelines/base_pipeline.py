@@ -174,7 +174,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         # filepath of the file where pipeline.run() was called
         caller_filepath = path_utils.resolve_relative_path(
-            inspect.currentframe().f_back.f_code.co_filename
+            inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr] # noqa
         )
 
         self.stack.orchestrator.pre_run(caller_filepath=caller_filepath)
