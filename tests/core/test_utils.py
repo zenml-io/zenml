@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import json
 
 from pydantic import BaseSettings
 
@@ -44,4 +45,8 @@ def test_json_config_settings_source_returns_a_dict(tmp_path: str) -> None:
     returns a dict"""
     config_name = "test_config.json"
     settings_source = define_json_config_settings_source(tmp_path, config_name)
+    some_data = {"some": "data"}
+    with open(tmp_path / config_name, "w") as json_file:
+        json.dump(some_data, json_file)
     assert isinstance(settings_source(BaseSettings), dict)
+    assert settings_source(BaseSettings) == some_data
