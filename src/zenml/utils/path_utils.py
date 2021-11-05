@@ -152,16 +152,16 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #         f.write(file_contents)
 
 
-def append_file(file_path: str, file_contents: str) -> None:
-    """Appends file_contents to file.
+# def append_file(file_path: str, file_contents: str) -> None:
+#     """Appends file_contents to file.
 
-    Args:
-        file_path: Local path in filesystem.
-        file_contents: Contents of file.
-    """
-    # with file_io.FileIO(file_path, mode='a') as f:
-    #     f.write(file_contents)
-    raise NotImplementedError
+#     Args:
+#         file_path: Local path in filesystem.
+#         file_contents: Contents of file.
+#     """
+#     # with file_io.FileIO(file_path, mode='a') as f:
+#     #     f.write(file_contents)
+#     raise NotImplementedError
 
 
 def create_dir_if_not_exists(dir_path: str) -> None:

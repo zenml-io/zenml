@@ -269,3 +269,15 @@ def create_file_if_not_exists(
     create_dir_recursive_if_not_exists(str(full_path.parent))
     with open(str(full_path), "w") as f:
         f.write(file_contents)
+
+
+def append_file(file_path: str, file_contents: str) -> None:
+    """Appends file_contents to file.
+
+    Args:
+        file_path: Local path in filesystem.
+        file_contents: Contents of file.
+    """
+    # with file_io.FileIO(file_path, mode='a') as f:
+    #     f.write(file_contents)
+    raise NotImplementedError
