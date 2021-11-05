@@ -18,17 +18,10 @@ import pytest
 from click import get_app_dir
 from click.testing import CliRunner
 
-from zenml.cli.config import (
-    list_metadata_stores,
-    opt_in,
-    opt_out,
-    register_metadata_store,
-    set_logging_verbosity,
-)
+from zenml.cli.config import opt_in, opt_out, set_logging_verbosity
 from zenml.config.constants import GLOBAL_CONFIG_NAME
 from zenml.config.global_config import GlobalConfig
 from zenml.constants import APP_NAME, ZENML_LOGGING_VERBOSITY
-from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
 from zenml.utils.yaml_utils import read_json
 
 NOT_LOGGING_LEVELS = ["abc", "my_cat_is_called_aria", "pipeline123"]
@@ -84,28 +77,3 @@ def test_set_logging_verbosity_stops_when_not_real_level(
     result = runner.invoke(set_logging_verbosity, [not_a_level])
     os.environ["ZENML_LOGGING_VERBOSITY"] = pre_test_logging_status
     assert result.exit_code == 2
-
-
-@pytest.mark.xfail()
-def test_metadata_register_actually_registers_new_metadata_store(
-    tmp_path,
-) -> None:
-    """Test that the metadata register command actually registers a metadata store"""
-    # TODO: [Medium] implement this test
-    runner = CliRunner()
-    test_metadata_dir = os.path.join(tmp_path, "metadata.db")
-
-    result = runner.invoke(
-        register_metadata_store,
-        ["test_store", SQLiteMetadataStore(uri=test_metadata_dir)],
-    )
-    assert result.exit_code == 0
-
-
-def test_metadata_list_lists_default_local_metadata_store() -> None:
-    """Test that the metadata list command lists the default local metadata store"""
-    # TODO: [HIGH] add a fixture that spins up a test env each time
-    runner = CliRunner()
-    result = runner.invoke(list_metadata_stores)
-    assert result.exit_code == 0
-    assert "local_metadata_store" in result.output
