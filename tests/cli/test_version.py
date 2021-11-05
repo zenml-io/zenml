@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,11 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from click.core import Group
+from click.testing import CliRunner
 
-from zenml.cli import cli
+from zenml import __version__ as current_zenml_version
+from zenml.cli.version import version
 
 
-def test_cli_command_defines_a_cli_group() -> None:
-    """Check that cli command defines a CLI group when invoked"""
-    assert isinstance(cli, Group)
+def test_version_outputs_running_version_number() -> None:
+    """Checks that CLI version command works"""
+    runner = CliRunner()
+    result = runner.invoke(version)
+    assert result.exit_code == 0
+    assert current_zenml_version in result.output

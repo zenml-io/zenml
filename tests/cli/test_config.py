@@ -14,14 +14,17 @@
 
 import os
 
+import pytest
 from click import get_app_dir
 from click.testing import CliRunner
 
-from zenml.cli.config import opt_in, opt_out
+from zenml.cli.config import opt_in, opt_out, set_logging_verbosity
 from zenml.config.constants import GLOBAL_CONFIG_NAME
 from zenml.config.global_config import GlobalConfig
-from zenml.constants import APP_NAME
+from zenml.constants import APP_NAME, ZENML_LOGGING_VERBOSITY
 from zenml.utils.yaml_utils import read_json
+
+NOT_LOGGING_LEVELS = ["abc", "my_cat_is_called_aria", "pipeline123"]
 
 
 def read_global_config():
@@ -61,3 +64,16 @@ def test_analytics_opt_out_amends_global_config():
     assert result.exit_code == 0
     assert not read_global_config()["analytics_opt_in"]
     set_analytics_opt_in_status(pre_test_status)
+
+
+@pytest.mark.parametrize("not_a_level", NOT_LOGGING_LEVELS)
+def test_set_logging_verbosity_stops_when_not_real_level(
+    not_a_level: str,
+) -> None:
+    """Check that set_logging_verbosity doesn't run when no real level"""
+    # TODO: [Medium] replace the pytest params with hypothesis params
+    pre_test_logging_status = ZENML_LOGGING_VERBOSITY
+    runner = CliRunner()
+    result = runner.invoke(set_logging_verbosity, [not_a_level])
+    os.environ["ZENML_LOGGING_VERBOSITY"] = pre_test_logging_status
+    assert result.exit_code == 2
