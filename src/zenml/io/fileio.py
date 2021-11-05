@@ -21,10 +21,7 @@ from typing import Any, Callable, Iterable, List, Optional, Tuple, Type
 from tfx.dsl.io.filesystem import Filesystem, PathType
 
 from zenml.logger import get_logger
-from zenml.utils.path_utils import (
-    convert_to_str,
-    create_dir_recursive_if_not_exists,
-)
+from zenml.utils.path_utils import convert_to_str
 from zenml.utils.source_utils import import_class_by_path
 
 logger = get_logger(__name__)
@@ -291,3 +288,13 @@ def create_dir_if_not_exists(dir_path: str) -> None:
     """
     if not isdir(dir_path):
         mkdir(dir_path)
+
+
+def create_dir_recursive_if_not_exists(dir_path: str) -> None:
+    """Creates directory recursively if it does not exist.
+
+    Args:
+        dir_path: Local path in filesystem.
+    """
+    if not isdir(dir_path):
+        makedirs(dir_path)

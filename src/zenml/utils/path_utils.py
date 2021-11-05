@@ -174,14 +174,14 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #         fileio.mkdir(dir_path)
 
 
-def create_dir_recursive_if_not_exists(dir_path: str) -> None:
-    """Creates directory recursively if it does not exist.
+# def create_dir_recursive_if_not_exists(dir_path: str) -> None:
+#     """Creates directory recursively if it does not exist.
 
-    Args:
-        dir_path: Local path in filesystem.
-    """
-    if not fileio.isdir(dir_path):
-        fileio.makedirs(dir_path)
+#     Args:
+#         dir_path: Local path in filesystem.
+#     """
+#     if not fileio.isdir(dir_path):
+#         fileio.makedirs(dir_path)
 
 
 def resolve_relative_path(path: str) -> str:
@@ -237,7 +237,7 @@ def copy_dir(
         if fileio.isdir(source_file):
             copy_dir(source_file, destination_name, overwrite)
         else:
-            create_dir_recursive_if_not_exists(
+            fileio.create_dir_recursive_if_not_exists(
                 str(Path(destination_name).parent)
             )
             copy(source_file, destination_name, overwrite)

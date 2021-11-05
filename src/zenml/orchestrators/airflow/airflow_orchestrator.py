@@ -24,6 +24,7 @@ from pydantic import root_validator
 from zenml.constants import APP_NAME
 from zenml.core.component_factory import orchestrator_store_factory
 from zenml.enums import OrchestratorTypes
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators.airflow.airflow_dag_runner import (
     AirflowDagRunner,
@@ -198,7 +199,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             return
 
         if not path_utils.file_exists(self.dags_directory):
-            path_utils.create_dir_recursive_if_not_exists(self.dags_directory)
+            fileio.create_dir_recursive_if_not_exists(self.dags_directory)
 
         from airflow.cli.commands.standalone_command import StandaloneCommand
 

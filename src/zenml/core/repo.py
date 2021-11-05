@@ -114,7 +114,7 @@ class Repository:
 
         # Create the base dir
         zen_dir = os.path.join(repo_path, ZENML_DIR_NAME)
-        path_utils.create_dir_recursive_if_not_exists(zen_dir)
+        fileio.create_dir_recursive_if_not_exists(zen_dir)
 
         # Set up metadata and artifact store defaults
         artifact_dir = os.path.join(zen_dir, "local_store")
