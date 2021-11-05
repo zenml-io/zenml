@@ -25,10 +25,11 @@ from zenml.exceptions import (
     PipelineConfigurationError,
     PipelineInterfaceError,
 )
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.stacks.base_stack import BaseStack
 from zenml.steps.base_step import BaseStep
-from zenml.utils import analytics_utils, path_utils, yaml_utils
+from zenml.utils import analytics_utils, yaml_utils
 
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
@@ -172,7 +173,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
 
         # filepath of the file where pipeline.run() was called
-        caller_filepath = path_utils.resolve_relative_path(
+        caller_filepath = fileio.resolve_relative_path(
             inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr] # noqa
         )
 

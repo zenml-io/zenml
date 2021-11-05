@@ -41,7 +41,7 @@ class SQLiteMetadataStore(BaseMetadataStore):
             )
 
         # Resolve URI if relative URI provided
-        # self.uri = path_utils.resolve_relative_path(uri)
+        # self.uri = fileio.resolve_relative_path(uri)
 
     def get_tfx_metadata_config(self) -> metadata_store_pb2.ConnectionConfig:
         """Return tfx metadata config for sqlite metadata store."""

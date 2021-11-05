@@ -133,7 +133,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         Args:
             dag_filepath: Path to the file in which the DAG is defined.
         """
-        dags_directory = path_utils.resolve_relative_path(self.dags_directory)
+        dags_directory = fileio.resolve_relative_path(self.dags_directory)
 
         if dags_directory == os.path.dirname(dag_filepath):
             logger.debug("File is already in airflow DAGs directory.")

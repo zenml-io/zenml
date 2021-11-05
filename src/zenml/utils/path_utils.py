@@ -184,18 +184,18 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #         fileio.makedirs(dir_path)
 
 
-def resolve_relative_path(path: str) -> str:
-    """Takes relative path and resolves it absolutely.
+# def resolve_relative_path(path: str) -> str:
+#     """Takes relative path and resolves it absolutely.
 
-    Args:
-      path: Local path in filesystem.
+#     Args:
+#       path: Local path in filesystem.
 
-    Returns:
-        Resolved path.
-    """
-    if fileio.is_remote(path):
-        return path
-    return str(Path(path).resolve())
+#     Returns:
+#         Resolved path.
+#     """
+#     if fileio.is_remote(path):
+#         return path
+#     return str(Path(path).resolve())
 
 
 def file_exists(path: str) -> bool:

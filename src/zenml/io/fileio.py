@@ -298,3 +298,17 @@ def create_dir_recursive_if_not_exists(dir_path: str) -> None:
     """
     if not isdir(dir_path):
         makedirs(dir_path)
+
+
+def resolve_relative_path(path: str) -> str:
+    """Takes relative path and resolves it absolutely.
+
+    Args:
+      path: Local path in filesystem.
+
+    Returns:
+        Resolved path.
+    """
+    if is_remote(path):
+        return path
+    return str(Path(path).resolve())
