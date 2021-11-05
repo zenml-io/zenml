@@ -81,7 +81,7 @@ class BaseArtifactStore(BaseComponent):
 
         # Create if not exists and download
         fileio.create_dir_recursive_if_not_exists(path)
-        path_utils.copy_dir(artifact_uri, path, overwrite=True)
+        fileio.copy_dir(artifact_uri, path, overwrite=True)
 
         return path
 

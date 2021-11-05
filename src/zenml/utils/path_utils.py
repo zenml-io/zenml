@@ -221,26 +221,26 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #     fileio.copy(source, destination, overwrite)
 
 
-def copy_dir(
-    source_dir: str, destination_dir: str, overwrite: bool = False
-) -> None:
-    """Copies dir from source to destination.
+# def copy_dir(
+#     source_dir: str, destination_dir: str, overwrite: bool = False
+# ) -> None:
+#     """Copies dir from source to destination.
 
-    Args:
-        source_dir: Path to copy from.
-        destination_dir: Path to copy to.
-        overwrite: Boolean. If false, function throws an error before overwrite.
-    """
-    for source_file in fileio.list_dir(source_dir):
-        source_file_path = Path(source_file)
-        destination_name = os.path.join(destination_dir, source_file_path.name)
-        if fileio.isdir(source_file):
-            copy_dir(source_file, destination_name, overwrite)
-        else:
-            fileio.create_dir_recursive_if_not_exists(
-                str(Path(destination_name).parent)
-            )
-            fileio.copy(str(source_file_path), str(destination_name), overwrite)
+#     Args:
+#         source_dir: Path to copy from.
+#         destination_dir: Path to copy to.
+#         overwrite: Boolean. If false, function throws an error before overwrite.
+#     """
+#     for source_file in fileio.list_dir(source_dir):
+#         source_file_path = Path(source_file)
+#         destination_name = os.path.join(destination_dir, source_file_path.name)
+#         if fileio.isdir(source_file):
+#             copy_dir(source_file, destination_name, overwrite)
+#         else:
+#             fileio.create_dir_recursive_if_not_exists(
+#                 str(Path(destination_name).parent)
+#             )
+#             fileio.copy(str(source_file_path), str(destination_name), overwrite)
 
 
 def move(source: str, destination: str, overwrite: bool = False) -> None:

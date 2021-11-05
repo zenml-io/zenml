@@ -289,7 +289,7 @@ def pull(
 
         declare(f"Pulling example {example}...")
         src_dir = os.path.join(examples_dir, example)
-        path_utils.copy_dir(src_dir, dst_dir)
+        fileio.copy_dir(src_dir, dst_dir)
 
         declare(f"Example pulled in directory: {dst_dir}")
 
