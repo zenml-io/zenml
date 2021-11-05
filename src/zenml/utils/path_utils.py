@@ -240,7 +240,7 @@ def copy_dir(
             fileio.create_dir_recursive_if_not_exists(
                 str(Path(destination_name).parent)
             )
-            fileio.copy(source_file_path, Path(destination_name), overwrite)
+            fileio.copy(str(source_file_path), str(destination_name), overwrite)
 
 
 def move(source: str, destination: str, overwrite: bool = False) -> None:
