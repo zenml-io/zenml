@@ -145,5 +145,12 @@ def walk(
     topdown: bool = True,
     onerror: Optional[Callable[..., None]] = None,
 ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
-    """Return an iterator walking a directory tree."""
+    """Walks down the dir_path.
+
+    Args:
+        dir_path: Path of dir to walk down.
+
+    Returns:
+        Iterable of tuples to walk down.
+    """
     return _get_filesystem(top).walk(top, topdown=topdown, onerror=onerror)

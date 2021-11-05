@@ -18,7 +18,7 @@ import fnmatch
 import os
 import tarfile
 from pathlib import Path
-from typing import Callable, Iterable, List, Optional, Tuple
+from typing import Callable, Iterable, List, Optional
 
 from tfx.dsl.io.filesystem import PathType
 
@@ -31,18 +31,18 @@ logger = get_logger(__name__)
 _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 
 
-def walk(
-    dir_path: PathType,
-) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
-    """Walks down the dir_path.
+# def walk(
+#     dir_path: PathType,
+# ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
+#     """Walks down the dir_path.
 
-    Args:
-        dir_path: Path of dir to walk down.
+#     Args:
+#         dir_path: Path of dir to walk down.
 
-    Returns:
-        Iterable of tuples to walk down.
-    """
-    return fileio.walk(dir_path)
+#     Returns:
+#         Iterable of tuples to walk down.
+#     """
+#     return fileio.walk(dir_path)
 
 
 def is_root(path: str) -> bool:
@@ -80,7 +80,7 @@ def find_files(dir_path: PathType, pattern: str) -> Iterable[str]:
     Yields:
          All matching filenames if found, else None.
     """
-    for root, dirs, files in walk(dir_path):
+    for root, dirs, files in fileio.walk(dir_path):
         for basename in files:
             if fnmatch.fnmatch(convert_to_str(basename), pattern):
                 filename = os.path.join(

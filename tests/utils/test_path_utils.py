@@ -30,9 +30,9 @@ TEMPORARY_FILE_NAME = "a_file.txt"
 TEMPORARY_FILE_SEARCH_PREFIX = "a_f*.*"
 
 
-def test_walk_function_returns_a_generator_object(tmp_path):
-    """Check walk function returns a generator object"""
-    assert isinstance(path_utils.walk(str(tmp_path)), GeneratorType)
+# def test_walk_function_returns_a_generator_object(tmp_path):
+#     """Check walk function returns a generator object"""
+#     assert isinstance(path_utils.walk(str(tmp_path)), GeneratorType)
 
 
 def test_is_root_when_true():
