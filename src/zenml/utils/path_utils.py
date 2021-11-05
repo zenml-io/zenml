@@ -254,13 +254,13 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #     fileio.rename(source, destination, overwrite)
 
 
-def rm_dir(dir_path: str) -> None:
-    """Deletes dir recursively. Dangerous operation.
+# def rm_dir(dir_path: str) -> None:
+#     """Deletes dir recursively. Dangerous operation.
 
-    Args:
-        dir_path: Dir to delete.
-    """
-    fileio.rmtree(dir_path)
+#     Args:
+#         dir_path: Dir to delete.
+#     """
+#     fileio.rmtree(dir_path)
 
 
 def rm_file(file_path: str) -> None:

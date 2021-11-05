@@ -187,9 +187,13 @@ def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
         )
 
 
-def rmtree(path: PathType) -> None:
-    """Remove the given directory and its recursive contents."""
-    _get_filesystem(path).rmtree(path)
+def rm_dir(dir_path: str) -> None:
+    """Deletes dir recursively. Dangerous operation.
+
+    Args:
+        dir_path: Dir to delete.
+    """
+    _get_filesystem(Path(dir_path)).rmtree(Path(dir_path))
 
 
 def stat(path: PathType) -> Any:

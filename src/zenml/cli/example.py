@@ -27,7 +27,6 @@ from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.constants import APP_NAME, GIT_REPO_URL
 from zenml.io import fileio
-from zenml.utils import path_utils
 
 # TODO: [MEDIUM] Add an example-run command to run an example.
 
@@ -165,7 +164,7 @@ class GitExamplesHandler(object):
             os.path.join(click.get_app_dir(APP_NAME), EXAMPLES_GITHUB_REPO)
         )
         if source_path == config_directory_path:
-            path_utils.rm_dir(source_path)
+            fileio.rm_dir(source_path)
         else:
             raise ValueError(
                 "You can only delete the source directory from your ZenML "
@@ -177,7 +176,7 @@ class GitExamplesHandler(object):
         directory."""
         cwd_directory_path = os.path.join(os.getcwd(), EXAMPLES_GITHUB_REPO)
         if os.path.exists(cwd_directory_path):
-            path_utils.rm_dir(str(cwd_directory_path))
+            fileio.rm_dir(str(cwd_directory_path))
 
 
 pass_git_examples_handler = click.make_pass_decorator(
@@ -285,7 +284,7 @@ def pull(
                 f"Example {example} is already pulled. "
                 f"Do you wish to overwrite the directory?"
             ):
-                path_utils.rm_dir(dst_dir)
+                fileio.rm_dir(dst_dir)
 
         declare(f"Pulling example {example}...")
         src_dir = os.path.join(examples_dir, example)

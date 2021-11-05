@@ -227,7 +227,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         if self.is_running:
             daemon.stop_daemon(self.pid_file, kill_children=True)
 
-        path_utils.rm_dir(self.airflow_home)
+        fileio.rm_dir(self.airflow_home)
         logger.info("Airflow spun down.")
 
     def run(
