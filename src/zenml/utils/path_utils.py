@@ -100,16 +100,16 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #     return any([path.startswith(prefix) for prefix in _REMOTE_FS_PREFIX])
 
 
-def is_gcs_path(path: str) -> bool:
-    """Returns True if path is on Google Cloud Storage.
+# def is_gcs_path(path: str) -> bool:
+#     """Returns True if path is on Google Cloud Storage.
 
-    Args:
-        path: Any path as a string.
+#     Args:
+#         path: Any path as a string.
 
-    Returns:
-        True if gcs path, else False.
-    """
-    return path.startswith("gs://")
+#     Returns:
+#         True if gcs path, else False.
+#     """
+#     return path.startswith("gs://")
 
 
 def list_dir(dir_path: str, only_file_names: bool = False) -> List[str]:

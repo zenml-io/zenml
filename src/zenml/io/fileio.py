@@ -216,3 +216,15 @@ def is_remote(path: str) -> bool:
         True if remote path, else False.
     """
     return any(path.startswith(prefix) for prefix in _REMOTE_FS_PREFIX)
+
+
+def is_gcs_path(path: str) -> bool:
+    """Returns True if path is on Google Cloud Storage.
+
+    Args:
+        path: Any path as a string.
+
+    Returns:
+        True if gcs path, else False.
+    """
+    return path.startswith("gs://")

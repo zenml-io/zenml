@@ -102,19 +102,19 @@ TEMPORARY_FILE_SEARCH_PREFIX = "a_f*.*"
 #     assert path_utils.is_remote(some_random_path) is False
 
 
-@given(text())
-def test_gcs_path_when_true(filename):
-    """is_gcs checks if a file begins with the prefix `gs`"""
-    gs_prefix = "gs://"
-    sample_file_path = gs_prefix + filename
-    assert path_utils.is_gcs_path(sample_file_path)
+# @given(text())
+# def test_gcs_path_when_true(filename):
+#     """is_gcs checks if a file begins with the prefix `gs`"""
+#     gs_prefix = "gs://"
+#     sample_file_path = gs_prefix + filename
+#     assert path_utils.is_gcs_path(sample_file_path)
 
 
-@given(text())
-def test_gcs_path_when_false(filesystem):
-    """is_gcs checks that false is returned when file has no `gs` prefix"""
-    sample_file_path = filesystem + "test_file.txt"
-    assert path_utils.is_gcs_path(sample_file_path) is False
+# @given(text())
+# def test_gcs_path_when_false(filesystem):
+#     """is_gcs checks that false is returned when file has no `gs` prefix"""
+#     sample_file_path = filesystem + "test_file.txt"
+#     assert path_utils.is_gcs_path(sample_file_path) is False
 
 
 def test_list_dir_returns_a_list_of_file_names(tmp_path):
