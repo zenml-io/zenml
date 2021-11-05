@@ -88,16 +88,16 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #                 yield filename
 
 
-def is_remote(path: str) -> bool:
-    """Returns True if path exists remotely.
+# def is_remote(path: str) -> bool:
+#     """Returns True if path exists remotely.
 
-    Args:
-        path: Any path as a string.
+#     Args:
+#         path: Any path as a string.
 
-    Returns:
-        True if remote path, else False.
-    """
-    return any([path.startswith(prefix) for prefix in _REMOTE_FS_PREFIX])
+#     Returns:
+#         True if remote path, else False.
+#     """
+#     return any([path.startswith(prefix) for prefix in _REMOTE_FS_PREFIX])
 
 
 def is_gcs_path(path: str) -> bool:
@@ -193,7 +193,7 @@ def resolve_relative_path(path: str) -> str:
     Returns:
         Resolved path.
     """
-    if is_remote(path):
+    if fileio.is_remote(path):
         return path
     return str(Path(path).resolve())
 
@@ -384,7 +384,7 @@ def extract_tarfile(source_tar: str, output_dir: str) -> None:
         source_tar: Path to a tar compressed file.
         output_dir: Directory where to uncompress.
     """
-    if is_remote(source_tar):
+    if fileio.is_remote(source_tar):
         raise NotImplementedError("Use local tars for now.")
 
     with tarfile.open(source_tar, "r:gz") as tar:

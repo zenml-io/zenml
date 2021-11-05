@@ -20,6 +20,7 @@ from zenml.config.global_config import GlobalConfig
 from zenml.core.base_component import BaseComponent
 from zenml.core.component_factory import artifact_store_factory
 from zenml.enums import ArtifactStoreTypes
+from zenml.io import fileio
 from zenml.utils import path_utils
 from zenml.utils.path_utils import get_zenml_config_dir
 
@@ -65,7 +66,7 @@ class BaseArtifactStore(BaseComponent):
         Returns:
             Locally resolved uri.
         """
-        if not path_utils.is_remote(artifact_uri):
+        if not fileio.is_remote(artifact_uri):
             # Its already local
             return artifact_uri
 

@@ -25,6 +25,8 @@ from zenml.utils.source_utils import import_class_by_path
 
 # TODO: [LOW] choose between is_dir vs isdir pattern (& standardize)
 
+_REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
+
 
 def _get_scheme(path: PathType) -> PathType:
     """Get filesystem plugin for given path."""
@@ -200,3 +202,15 @@ def find_files(dir_path: PathType, pattern: str) -> Iterable[str]:
                     convert_to_str(root), convert_to_str(basename)
                 )
                 yield filename
+
+
+def is_remote(path: str) -> bool:
+    """Returns True if path exists remotely.
+
+    Args:
+        path: Any path as a string.
+
+    Returns:
+        True if remote path, else False.
+    """
+    return any(path.startswith(prefix) for prefix in _REMOTE_FS_PREFIX)
