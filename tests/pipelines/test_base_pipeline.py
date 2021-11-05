@@ -49,7 +49,7 @@ def test_setting_step_parameter_with_config_object():
     pipeline_instance = create_pipeline_with_config_value(config_value)
     step_instance = pipeline_instance.steps["step_"]
 
-    assert step_instance.PARAM_SPEC["value"] == str(config_value)
+    assert step_instance.PARAM_SPEC["value"] == config_value
 
 
 def test_overwrite_step_parameter_with_config_yaml(tmp_path):
@@ -67,7 +67,7 @@ def test_overwrite_step_parameter_with_config_yaml(tmp_path):
         yaml_path, overwrite_step_parameters=True
     )
     step_instance = pipeline_instance.steps["step_"]
-    assert step_instance.PARAM_SPEC["value"] == str(yaml_config_value)
+    assert step_instance.PARAM_SPEC["value"] == yaml_config_value
 
 
 def test_dont_overwrite_step_parameter_with_config_yaml(tmp_path):
@@ -84,7 +84,7 @@ def test_dont_overwrite_step_parameter_with_config_yaml(tmp_path):
     )
     pipeline_instance = pipeline_instance.with_config(yaml_path)
     step_instance = pipeline_instance.steps["step_"]
-    assert step_instance.PARAM_SPEC["value"] == str(config_value)
+    assert step_instance.PARAM_SPEC["value"] == config_value
 
 
 def test_yaml_configuration_with_invalid_step_name(tmp_path):

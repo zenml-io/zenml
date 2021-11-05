@@ -45,9 +45,9 @@ class ComponentFactory:
         """Get a registered component from a key."""
         if key in self.components:
             return self.components[key]
-        raise AssertionError(
-            f"Type {key} does not exist! Available options: "
-            f"{[k for k in self.components.keys()]}"
+        raise KeyError(
+            f"Type '{key}' does not exist! Available options: "
+            f"{[str(k) for k in self.components.keys()]}"
         )
 
     def register_component(

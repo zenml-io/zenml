@@ -12,13 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from click.testing import CliRunner
 
-from zenml.cli.artifact import *  # noqa
-from zenml.cli.base import *  # noqa
-from zenml.cli.config import *  # noqa
-from zenml.cli.example import *  # noqa
-from zenml.cli.metadata import *  # noqa
-from zenml.cli.orchestrator import *  # noqa
-from zenml.cli.pipeline import *  # noqa
-from zenml.cli.stack import *  # noqa
-from zenml.cli.version import *  # noqa
+from zenml import __version__ as current_zenml_version
+from zenml.cli.version import version
+
+
+def test_version_outputs_running_version_number() -> None:
+    """Checks that CLI version command works"""
+    runner = CliRunner()
+    result = runner.invoke(version)
+    assert result.exit_code == 0
+    assert current_zenml_version in result.output

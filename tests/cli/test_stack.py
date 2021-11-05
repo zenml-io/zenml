@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,12 +13,6 @@
 #  permissions and limitations under the License.
 
 
-from zenml.cli.artifact import *  # noqa
-from zenml.cli.base import *  # noqa
-from zenml.cli.config import *  # noqa
-from zenml.cli.example import *  # noqa
-from zenml.cli.metadata import *  # noqa
-from zenml.cli.orchestrator import *  # noqa
-from zenml.cli.pipeline import *  # noqa
-from zenml.cli.stack import *  # noqa
-from zenml.cli.version import *  # noqa
+def test_me() -> None:
+    """basic test"""
+    assert True

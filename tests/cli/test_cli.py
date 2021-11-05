@@ -12,10 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from click.core import Group
 
-def test_cli_command_defines_a_cli_group():
-    # TODO: [Medium] implement this test
+from zenml.cli import cli
+
+
+def test_cli_command_defines_a_cli_group() -> None:
     """Check that cli command defines a CLI group when invoked"""
-
-
-# TODO: [LOW] check that CLI command sets the logging verbosity
+    assert isinstance(cli, Group)

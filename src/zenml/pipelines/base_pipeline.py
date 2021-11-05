@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import inspect
-import json
 from abc import abstractmethod
 from typing import Any, ClassVar, Dict, NoReturn, Optional, Tuple, Type, cast
 
@@ -29,7 +28,7 @@ from zenml.exceptions import (
 from zenml.logger import get_logger
 from zenml.stacks.base_stack import BaseStack
 from zenml.steps.base_step import BaseStep
-from zenml.utils import analytics_utils, yaml_utils
+from zenml.utils import analytics_utils, path_utils, yaml_utils
 
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
@@ -171,7 +170,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
             f"Using orchestrator `{self.stack.orchestrator_name}` for "
             f"pipeline `{self.pipeline_name}`. Running pipeline.."
         )
-        self.stack.orchestrator.pre_run()
+
+        # filepath of the file where pipeline.run() was called
+        caller_filepath = path_utils.resolve_relative_path(
+            inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr] # noqa
+        )
+
+        self.stack.orchestrator.pre_run(caller_filepath=caller_filepath)
         ret = self.stack.orchestrator.run(self, run_name)
         self.stack.orchestrator.post_run()
         return ret
@@ -223,7 +228,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
             step = self.__steps[step_name]
             step_parameters = (
-                step.CONFIG.__fields__.keys() if step.CONFIG else {}
+                step.CONFIG_CLASS.__fields__.keys() if step.CONFIG_CLASS else {}
             )
             parameters = step_dict.get(StepConfigurationKeys.PARAMETERS_, {})
             for parameter, value in parameters.items():
@@ -231,13 +236,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     raise PipelineConfigurationError(
                         f"Found parameter '{parameter}' for '{step_name}' step "
                         f"in configuration yaml but it doesn't exist in the "
-                        f"configuration class `{step.CONFIG}`. Available "
+                        f"configuration class `{step.CONFIG_CLASS}`. Available "
                         f"parameters for this step: "
                         f"{list(step_parameters)}."
                     )
 
-                # make sure the value gets serialized to a string
-                value = json.dumps(value)
                 previous_value = step.PARAM_SPEC.get(parameter, None)
 
                 if overwrite:

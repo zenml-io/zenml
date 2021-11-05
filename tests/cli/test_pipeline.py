@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from airflow.api.client.local_client import Client
 
-c = Client(None, None)
-c.trigger_dag(dag_id="mnist", run_id="mnist_test_run", conf={})
+def test_me() -> None:
+    """basic test"""
+    assert True

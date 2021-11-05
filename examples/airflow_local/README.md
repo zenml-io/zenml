@@ -34,20 +34,38 @@ zenml stack register airflow_stack \
 zenml stack set airflow_stack
 ```
 
-### Trigger the airflow DAG
-Now you would be able to see the `mnist` dag in your browser at [localhost](http://0.0.0.0:8080/) (you will be asked to login with 
-the credentials in the `standalone_admin_password.txt` file). Trigger it via the UI or run the 
-following script:
+### Starting up Airflow
+
+ZenML takes care of configuring Airflow, all we need to do is run:
 
 ```bash
-python trigger_dag.py
+zenml orchestrator up
 ```
 
-You would now be able to see the executed dag [here](http://0.0.0.0:8080/tree?dag_id=mnist)
+This will bootstrap Airflow, start up all the necessary components and run them in the background.
+When the setup is finished, it will print username and password for the Airflow webserver to the console.
+
+{% hint style="warning" %}
+If you can't find the password on the console, you can navigate to the `APP_DIR / airflow / airflow_root / STACK_UUID / standalone_admin_password.txt` file.
+The username will always be `admin`.
+
+- APP_DIR will depend on your os. See which path corresponds to your OS [here](https://click.palletsprojects.com/en/8.0.x/api/#click.get_app_dir).
+- STACK_UUID will be the unique id of the airflow_stack. There will be only one folder here so you can just navigate to the one that is present.
+  {% endhint %}
+
+
+### Schedule the airflow DAG
+To schedule the DAG, simply run:
+```bash
+python run.py
+```
+
+After a few seconds, you should be able to see the executed dag [here](http://0.0.0.0:8080/tree?dag_id=mnist_pipeline)
 
 ### Clean up
-In order to clean up, delete the remaining zenml references.
+In order to clean up, shut down the airflow orchestrator and delete the remaining zenml references.
 
 ```shell
+zenml orchestrator down
 rm -rf zenml_examples
 ```

@@ -24,7 +24,7 @@ class UUIDSourceTuple(BaseModel):
 
 
 def get_key_from_uuid(uuid: UUID, mapping: Dict[str, UUIDSourceTuple]) -> str:
-    """Return they key that points to a certain uuid in a mapping.
+    """Return the key that points to a certain uuid in a mapping.
 
     Args:
         uuid: uuid to query.
