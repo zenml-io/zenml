@@ -12,26 +12,68 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from datetime import datetime, timedelta
+
 import click
 import pytest
 from click.testing import CliRunner
 from hypothesis import given
-from hypothesis.strategies import text
+from hypothesis.strategies import datetimes, text
+from hypothesis.strategies._internal.datetime import timedeltas
 
-from zenml.cli.utils import title
+from zenml.cli.utils import (
+    format_date,
+    format_timedelta,
+    parse_unknown_options,
+    title,
+)
+
+SAMPLE_CUSTOM_ARGUMENTS = [
+    '--custom_argument="value"',
+    '--food="chicken biryani"',
+    '--best_cat="aria"',
+]
 
 
 @pytest.mark.xfail()
-@given(sample_text=text())
-def test_title_formats_a_string_properly(sample_text):
+@given(sample_text=text(min_size=1))
+def test_title_formats_a_string_properly(sample_text: str) -> None:
     """Check that title function capitalizes text and adds newline"""
 
     @click.command()
     @click.argument("text")
-    def title_trial(text):
+    def title_trial(text: str) -> None:
         """wrapper function to run title"""
         title(text)
 
     runner = CliRunner()
     result = runner.invoke(title_trial, [sample_text])
     assert result.output == sample_text.upper() + "\n"
+
+
+@given(sample_datetime=datetimes(allow_imaginary=False))
+def test_format_date_formats_a_string_properly(
+    sample_datetime: datetime,
+) -> None:
+    """Check that format_date function formats a string properly"""
+    # format_date(sample_datetime)
+    assert isinstance(format_date(sample_datetime), str)
+    assert format_date(datetime(2020, 1, 1), "%Y") == "2020"
+
+
+@given(sample_timedelta=timedeltas())
+def test_format_timedelta_formats_into_a_string_correctly(
+    sample_timedelta: timedelta,
+) -> None:
+    """Check the format_timedelta function returns a formatted
+    string according to specification."""
+    assert isinstance(format_timedelta(sample_timedelta), str)
+    assert format_timedelta(timedelta(days=1)) == "24:00:00"
+
+
+def test_parse_unknown_options_returns_a_dict_of_known_options() -> None:
+    """Check that parse_unknown_options returns a dict of known options"""
+    parsed_sample_args = parse_unknown_options(SAMPLE_CUSTOM_ARGUMENTS)
+    assert isinstance(parsed_sample_args, dict)
+    assert len(parsed_sample_args.values()) == 3
+    assert parsed_sample_args["best_cat"] == '"aria"'
