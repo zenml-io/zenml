@@ -82,7 +82,7 @@ class AirflowDagRunner(tfx_runner.TfxRunner):
         # Only import these when needed.
         import airflow  # noqa
 
-        from zenml.orchestrators.airflow import airflow_component  # noqa
+        from zenml.integrations.airflow.orchestrators import airflow_component
 
         # Merge airflow-specific configs with pipeline args
 
