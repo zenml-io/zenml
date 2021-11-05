@@ -1,9 +1,10 @@
 # 0.5.2
 
 0.5.2 brings an improved post-execution workflow and lots of minor changes and upgrades for the developer experience when 
-creating pipelines.
+creating pipelines. It also improves the Airflow orchestrator logic to accommodate for more real world scenarios. Check out the 
+[low level API guide for more details!](https://docs.zenml.io/guides/low-level-api)
 
-## Changes
+## What's Changed
 * Fix autocomplete for step and pipeline decorated functions by @schustmi in https://github.com/zenml-io/zenml/pull/144
 * Add reference docs for CLI example functionality by @alex-zenml in https://github.com/zenml-io/zenml/pull/145
 * Fix mypy integration by @schustmi in https://github.com/zenml-io/zenml/pull/147
