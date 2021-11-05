@@ -20,6 +20,8 @@ from tfx.dsl.io.filesystem import Filesystem, PathType
 
 from zenml.utils.source_utils import import_class_by_path
 
+# TODO: [LOW] choose between is_dir vs isdir pattern (& standardize)
+
 
 def _get_scheme(path: PathType) -> PathType:
     """Get filesystem plugin for given path."""
@@ -91,6 +93,7 @@ def glob(pattern: PathType) -> List[PathType]:
 
 
 def isdir(path: PathType) -> bool:
+    # TODO: [Low] consider renaming to is_dir for standardization
     """Returns true if dir_path points to a dir.
 
     Args:
