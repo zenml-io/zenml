@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import hashlib
 import inspect
 import json
 import random
@@ -179,6 +180,13 @@ class BaseStep(metaclass=BaseStepMeta):
             key = INTERNAL_EXECUTION_PARAMETER_PREFIX + "disable_cache"
             random_string = f"{random.getrandbits(128):032x}"
             properties[key] = json.dumps(random_string)
+        else:
+            # caching is enabled so we compute a hash of the step function code
+            # to catch changes in the step implementation
+            key = INTERNAL_EXECUTION_PARAMETER_PREFIX + "step_source"
+            step_source = inspect.getsource(self.process)
+            step_hash = hashlib.sha256(step_source.encode("utf-8")).hexdigest()
+            properties[key] = json.dumps(step_hash)
 
         return properties
 
@@ -200,9 +208,10 @@ class BaseStep(metaclass=BaseStepMeta):
                 with a wrong name/type.
         """
         maximum_arg_count = 1 if self.CONFIG_CLASS else 0
-        if (len(args) + len(kwargs)) > maximum_arg_count:
+        arg_count = len(args) + len(kwargs)
+        if arg_count > maximum_arg_count:
             raise StepInterfaceError(
-                f"Too many arguments ({len(kwargs)}, expected: "
+                f"Too many arguments ({arg_count}, expected: "
                 f"{maximum_arg_count}) passed when creating a "
                 f"'{self.step_name}' step."
             )
