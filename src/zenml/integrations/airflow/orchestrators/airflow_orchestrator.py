@@ -24,11 +24,11 @@ from pydantic import root_validator
 from zenml.constants import APP_NAME
 from zenml.core.component_factory import orchestrator_store_factory
 from zenml.enums import OrchestratorTypes
-from zenml.logger import get_logger
-from zenml.orchestrators.airflow.airflow_dag_runner import (
+from zenml.integrations.airflow.orchestrators.airflow_dag_runner import (
     AirflowDagRunner,
     AirflowPipelineConfig,
 )
+from zenml.logger import get_logger
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.utils import daemon, path_utils
 
