@@ -19,7 +19,6 @@ import pytest
 from click.testing import CliRunner
 from git.repo.base import Repo
 
-from zenml import __version__ as running_zenml_version
 from zenml.cli.example import EXAMPLES_GITHUB_REPO, info, list, pull
 from zenml.constants import APP_NAME
 from zenml.logger import get_logger
@@ -53,14 +52,6 @@ def test_info_returns_zero_exit_code(example: str) -> None:
     with runner.isolated_filesystem():
         runner.invoke(pull, ["-f", "-v", "0.5.0"])
         result = runner.invoke(info, [example])
-        assert result.exit_code == 0
-
-
-def test_pull_command_returns_zero_exit_code() -> None:
-    """Check pull command exits without errors"""
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        result = runner.invoke(pull, ["-f", "-v", running_zenml_version])
         assert result.exit_code == 0
 
 

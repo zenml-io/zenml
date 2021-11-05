@@ -19,7 +19,7 @@ import click
 import git
 
 from zenml.cli.cli import cli
-from zenml.cli.utils import confirmation
+from zenml.cli.utils import confirmation, declare, error
 from zenml.core.repo import Repository
 from zenml.utils.analytics_utils import INITIALIZE_REPO, track
 
@@ -45,22 +45,22 @@ def init(
     if repo_path is None:
         repo_path = os.getcwd()
 
-    click.echo(f"Initializing at {repo_path}")
+    declare(f"Initializing at {repo_path}")
 
     try:
         Repository.init_repo(
             repo_path=repo_path,
             analytics_opt_in=analytics_opt_in,
         )
-        click.echo(f"ZenML repo initialized at {repo_path}")
+        declare(f"ZenML repo initialized at {repo_path}")
     except git.InvalidGitRepositoryError:  # type: ignore[attr-defined]
-        click.echo(
+        error(
             f"{repo_path} is not a valid git repository! Please "
             f"initialize ZenML within a git repository using "
             f"`git init `"
         )
     except AssertionError as e:
-        click.echo(f"{e}")
+        error(f"{e}")
 
 
 @cli.command("clean")
@@ -78,6 +78,6 @@ def clean(yes: bool = False) -> None:
             "Are you sure you want to proceed?"
         )
 
-    click.echo("Not implemented for this version")
+    error("Not implemented for this version")
     # if confirm:
     #     repo.clean()
