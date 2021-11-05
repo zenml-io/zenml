@@ -16,6 +16,7 @@
 from typing import TYPE_CHECKING, Any, Optional
 
 import tfx.orchestration.pipeline as tfx_pipeline
+from pydantic import PrivateAttr
 
 from zenml.core.component_factory import orchestrator_store_factory
 from zenml.enums import OrchestratorTypes
@@ -30,6 +31,13 @@ if TYPE_CHECKING:
 class LocalOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines locally."""
 
+    _is_running: bool = PrivateAttr(default=False)
+
+    @property
+    def is_running(self) -> bool:
+        """Returns whether the orchestrator is currently running."""
+        return self._is_running
+
     def run(
         self,
         zenml_pipeline: "BasePipeline",
@@ -43,6 +51,7 @@ class LocalOrchestrator(BaseOrchestrator):
             run_name: Optional name for the run.
             **pipeline_args: Unused kwargs to conform with base signature.
         """
+        self._is_running = True
         runner = LocalDagRunner()
 
         # Establish the connections between the components
@@ -61,4 +70,5 @@ class LocalOrchestrator(BaseOrchestrator):
             metadata_connection_config=metadata_store.get_tfx_metadata_config(),
             enable_cache=zenml_pipeline.enable_cache,
         )
-        return runner.run(created_pipeline, run_name)
+        runner.run(created_pipeline, run_name)
+        self._is_running = False

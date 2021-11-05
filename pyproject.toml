@@ -95,6 +95,7 @@ types-setuptools = "^57.4.2"
 types-six = "^1.16.2"
 types-tabulate = "^0.8.3"
 types-termcolor = "^1.1.2"
+types-psutil = "^5.8.13"
 
 [build-system]
 requires = ["poetry-core"]
@@ -177,7 +178,6 @@ module = [
     "pytorch_lightning.*",
     "sklearn.*",
     "numpy.*",
-    "psutil.*"
 ]
 ignore_missing_imports = true
 
