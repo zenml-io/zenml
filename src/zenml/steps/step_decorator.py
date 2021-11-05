@@ -14,7 +14,7 @@
 from typing import Any, Callable, Optional, Type, TypeVar, Union, overload
 
 from zenml.steps.base_step import BaseStep
-from zenml.steps.utils import STEP_INNER_FUNC_NAME
+from zenml.steps.utils import PARAM_ENABLE_CACHE, STEP_INNER_FUNC_NAME
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -71,6 +71,7 @@ def step(
             (BaseStep,),
             {
                 STEP_INNER_FUNC_NAME: staticmethod(func),
+                PARAM_ENABLE_CACHE: enable_cache,
             },
         )
 

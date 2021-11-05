@@ -14,6 +14,7 @@
 
 import inspect
 import json
+import random
 from abc import abstractmethod
 from typing import (
     Any,
@@ -43,6 +44,8 @@ from zenml.materializers.spec_materializer_registry import (
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
 from zenml.steps.utils import (
+    INTERNAL_EXECUTION_PARAMETER_PREFIX,
+    PARAM_ENABLE_CACHE,
     SINGLE_RETURN_OUT_NAME,
     STEP_INNER_FUNC_NAME,
     _ZenMLSimpleComponent,
@@ -154,12 +157,30 @@ class BaseStep(metaclass=BaseStepMeta):
         self.materializers: Dict[str, Type[BaseMaterializer]] = {}
         self.__component = None
         self.step_name = self.__class__.__name__
+        self.enable_cache = getattr(self, PARAM_ENABLE_CACHE)
         self.PARAM_SPEC: Dict[str, Any] = {}
         self.INPUT_SPEC: Dict[str, Type[BaseArtifact]] = {}
         self.OUTPUT_SPEC: Dict[str, Type[BaseArtifact]] = {}
         self.spec_materializer_registry = SpecMaterializerRegistry()
 
         self._verify_arguments(*args, **kwargs)
+
+    @property
+    def _internal_execution_properties(self) -> Dict[str, str]:
+        """ZenML internal execution properties for this step.
+
+        **IMPORTANT**: When modifying this dictionary, make sure to
+        prefix the key with `INTERNAL_EXECUTION_PARAMETER_PREFIX` and serialize
+        the value using `json.dumps(...)`.
+        """
+        properties = {}
+        if not self.enable_cache:
+            # add a random string to the execution properties to disable caching
+            key = INTERNAL_EXECUTION_PARAMETER_PREFIX + "disable_cache"
+            random_string = f"{random.getrandbits(128):032x}"
+            properties[key] = json.dumps(random_string)
+
+        return properties
 
     def _verify_arguments(self, *args: Any, **kwargs: Any) -> None:
         """Verifies the initialization args and kwargs of this step.
@@ -293,6 +314,7 @@ class BaseStep(metaclass=BaseStepMeta):
         self.__component = generate_component(self)(
             **artifacts,
             **self.PARAM_SPEC,
+            **self._internal_execution_properties,
         )
 
         # Resolve the returns in the right order.
