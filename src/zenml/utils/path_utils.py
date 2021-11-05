@@ -14,11 +14,10 @@
 """File utilities"""
 # TODO: [TFX] [LOW] Unnecessary dependency here
 
-import fnmatch
 import os
 import tarfile
 from pathlib import Path
-from typing import Callable, Iterable, List, Optional
+from typing import Callable, List, Optional
 
 from tfx.dsl.io.filesystem import PathType
 
@@ -69,24 +68,24 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #     return fileio.isdir(dir_path)
 
 
-def find_files(dir_path: PathType, pattern: str) -> Iterable[str]:
-    # TODO [LOW]: correct docstring since 'None' is never returned
-    """Find files in a directory that match pattern.
+# def find_files(dir_path: PathType, pattern: str) -> Iterable[str]:
+#     # TODO [LOW]: correct docstring since 'None' is never returned
+#     """Find files in a directory that match pattern.
 
-    Args:
-        dir_path: Path to directory.
-        pattern: pattern like *.png.
+#     Args:
+#         dir_path: Path to directory.
+#         pattern: pattern like *.png.
 
-    Yields:
-         All matching filenames if found, else None.
-    """
-    for root, dirs, files in fileio.walk(dir_path):
-        for basename in files:
-            if fnmatch.fnmatch(convert_to_str(basename), pattern):
-                filename = os.path.join(
-                    convert_to_str(root), convert_to_str(basename)
-                )
-                yield filename
+#     Yields:
+#          All matching filenames if found, else None.
+#     """
+#     for root, dirs, files in fileio.walk(dir_path):
+#         for basename in files:
+#             if fnmatch.fnmatch(convert_to_str(basename), pattern):
+#                 filename = os.path.join(
+#                     convert_to_str(root), convert_to_str(basename)
+#                 )
+#                 yield filename
 
 
 def is_remote(path: str) -> bool:

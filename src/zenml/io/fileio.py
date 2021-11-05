@@ -12,12 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import fnmatch
+import os
 import re
 from pathlib import Path
 from typing import Any, Callable, Iterable, List, Optional, Tuple, Type
 
 from tfx.dsl.io.filesystem import Filesystem, PathType
 
+from zenml.utils.path_utils import convert_to_str
 from zenml.utils.source_utils import import_class_by_path
 
 # TODO: [LOW] choose between is_dir vs isdir pattern (& standardize)
@@ -177,3 +180,23 @@ def walk(
         Iterable of tuples to walk down.
     """
     return _get_filesystem(top).walk(top, topdown=topdown, onerror=onerror)
+
+
+def find_files(dir_path: PathType, pattern: str) -> Iterable[str]:
+    # TODO [LOW]: correct docstring since 'None' is never returned
+    """Find files in a directory that match pattern.
+
+    Args:
+        dir_path: Path to directory.
+        pattern: pattern like *.png.
+
+    Yields:
+         All matching filenames if found, else None.
+    """
+    for root, dirs, files in walk(dir_path):
+        for basename in files:
+            if fnmatch.fnmatch(convert_to_str(basename), pattern):
+                filename = os.path.join(
+                    convert_to_str(root), convert_to_str(basename)
+                )
+                yield filename

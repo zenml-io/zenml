@@ -14,7 +14,6 @@
 
 import os
 from tempfile import NamedTemporaryFile
-from types import GeneratorType
 
 import pytest
 from hypothesis import given
@@ -58,36 +57,36 @@ TEMPORARY_FILE_SEARCH_PREFIX = "a_f*.*"
 #     )
 
 
-def test_find_files_returns_generator_object_when_file_present(tmp_path):
-    """find_files returns a generator object when it finds a file"""
-    temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
-    with open(temp_file, "w"):
-        assert isinstance(
-            path_utils.find_files(str(tmp_path), TEMPORARY_FILE_SEARCH_PREFIX),
-            GeneratorType,
-        )
+# def test_find_files_returns_generator_object_when_file_present(tmp_path):
+#     """find_files returns a generator object when it finds a file"""
+#     temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
+#     with open(temp_file, "w"):
+#         assert isinstance(
+#             path_utils.find_files(str(tmp_path), TEMPORARY_FILE_SEARCH_PREFIX),
+#             GeneratorType,
+#         )
 
 
-def test_find_files_when_file_present(tmp_path):
-    """find_files locates a file within a temporary directory"""
-    temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
-    with open(temp_file, "w"):
-        assert (
-            next(
-                path_utils.find_files(
-                    str(tmp_path), TEMPORARY_FILE_SEARCH_PREFIX
-                )
-            )
-            is not None
-        )
+# def test_find_files_when_file_present(tmp_path):
+#     """find_files locates a file within a temporary directory"""
+#     temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
+#     with open(temp_file, "w"):
+#         assert (
+#             next(
+#                 path_utils.find_files(
+#                     str(tmp_path), TEMPORARY_FILE_SEARCH_PREFIX
+#                 )
+#             )
+#             is not None
+#         )
 
 
-def test_find_files_when_file_absent(tmp_path):
-    """find_files returns None when it doesn't find a file"""
-    temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
-    with open(temp_file, "w"):
-        with pytest.raises(StopIteration):
-            assert next(path_utils.find_files(str(tmp_path), "abc*.*"))
+# def test_find_files_when_file_absent(tmp_path):
+#     """find_files returns None when it doesn't find a file"""
+#     temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
+#     with open(temp_file, "w"):
+#         with pytest.raises(StopIteration):
+#             assert next(path_utils.find_files(str(tmp_path), "abc*.*"))
 
 
 @pytest.mark.parametrize("filesystem", REMOTE_FS_PREFIX)
