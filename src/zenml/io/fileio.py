@@ -127,11 +127,6 @@ def is_root(path: str) -> bool:
     return Path(path).parent == Path(path)
 
 
-def listdir(path: PathType) -> List[PathType]:
-    """Return the list of files in a directory."""
-    return _get_filesystem(path).listdir(path)
-
-
 def list_dir(dir_path: str, only_file_names: bool = False) -> List[str]:
     """Returns a list of files under dir.
 
