@@ -21,7 +21,10 @@ from typing import Any, Callable, Iterable, List, Optional, Tuple, Type
 from tfx.dsl.io.filesystem import Filesystem, PathType
 
 from zenml.logger import get_logger
-from zenml.utils.path_utils import convert_to_str
+from zenml.utils.path_utils import (
+    convert_to_str,
+    create_dir_recursive_if_not_exists,
+)
 from zenml.utils.source_utils import import_class_by_path
 
 logger = get_logger(__name__)
@@ -248,3 +251,21 @@ def is_gcs_path(path: str) -> bool:
         True if gcs path, else False.
     """
     return path.startswith("gs://")
+
+
+def create_file_if_not_exists(
+    file_path: str, file_contents: str = "{}"
+) -> None:
+    """Creates file if it does not exist.
+
+    Args:
+        file_path: Local path in filesystem.
+        file_contents: Contents of file.
+
+    """
+    # if not fileio.exists(file_path):
+    #     fileio.(file_path, file_contents)
+    full_path = Path(file_path)
+    create_dir_recursive_if_not_exists(str(full_path.parent))
+    with open(str(full_path), "w") as f:
+        f.write(file_contents)

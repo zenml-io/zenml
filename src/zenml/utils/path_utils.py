@@ -134,22 +134,22 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #         return []
 
 
-def create_file_if_not_exists(
-    file_path: str, file_contents: str = "{}"
-) -> None:
-    """Creates file if it does not exist.
+# def create_file_if_not_exists(
+#     file_path: str, file_contents: str = "{}"
+# ) -> None:
+#     """Creates file if it does not exist.
 
-    Args:
-        file_path: Local path in filesystem.
-        file_contents: Contents of file.
+#     Args:
+#         file_path: Local path in filesystem.
+#         file_contents: Contents of file.
 
-    """
-    # if not fileio.exists(file_path):
-    #     fileio.(file_path, file_contents)
-    full_path = Path(file_path)
-    create_dir_recursive_if_not_exists(str(full_path.parent))
-    with fileio.open(str(full_path), "w") as f:
-        f.write(file_contents)
+#     """
+#     # if not fileio.exists(file_path):
+#     #     fileio.(file_path, file_contents)
+#     full_path = Path(file_path)
+#     create_dir_recursive_if_not_exists(str(full_path.parent))
+#     with fileio.open(str(full_path), "w") as f:
+#         f.write(file_contents)
 
 
 def append_file(file_path: str, file_contents: str) -> None:

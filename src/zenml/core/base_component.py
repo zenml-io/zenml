@@ -19,6 +19,7 @@ from uuid import UUID, uuid4
 from pydantic import BaseSettings, Field
 
 from zenml.core.utils import generate_customise_sources
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import path_utils
 
@@ -80,7 +81,7 @@ class BaseComponent(BaseSettings):
         """Creates the serialization file if it does not exist."""
         f = self.get_serialization_full_path()
         if not path_utils.file_exists(str(f)):
-            path_utils.create_file_if_not_exists(str(f))
+            fileio.create_file_if_not_exists(str(f))
 
     @abstractmethod
     def get_serialization_dir(self) -> str:
