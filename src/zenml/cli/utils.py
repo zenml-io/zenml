@@ -156,7 +156,7 @@ def format_timedelta(td: timedelta) -> str:
 
 
 def parse_unknown_options(args: List[str]) -> Dict[str, Any]:
-    """Parse unknown options from the cli.
+    """Parse unknown options from the CLI.
 
     Args:
       args: A list of strings from the CLI.

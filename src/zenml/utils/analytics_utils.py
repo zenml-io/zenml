@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Analytics code for ZenML"""
 
+import os
 import platform
 import sys
 from typing import Any, Callable, Dict, Optional
@@ -68,6 +69,13 @@ def in_docker() -> bool:
             return "docker" in info or "kubepod" in info
     except (FileNotFoundError, Exception):
         return False
+
+
+def in_google_colab() -> bool:
+    """Returns: True if running in a Google Colab env, else False"""
+    if "COLAB_GPU" in os.environ:
+        return True
+    return False
 
 
 def get_system_info() -> Dict[str, Any]:
@@ -134,7 +142,13 @@ def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> None:
 
         # add basics
         metadata.update(get_system_info())
-        metadata.update({"in_docker": in_docker(), "version": __version__})
+        metadata.update(
+            {
+                "in_docker": in_docker(),
+                "in_google_colab": in_google_colab(),
+                "version": __version__,
+            }
+        )
 
         analytics.track(str(gc.user_id), event, metadata)
         logger.debug(

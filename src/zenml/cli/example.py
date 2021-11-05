@@ -35,6 +35,7 @@ EXAMPLES_GITHUB_REPO = "zenml_examples"
 
 class GitExamplesHandler(object):
     def __init__(self, redownload: str = "") -> None:
+        """Initialize the GitExamplesHandler class."""
         self.clone_repo(redownload)
 
     def clone_repo(self, redownload_version: str = "") -> None:
@@ -99,6 +100,11 @@ class GitExamplesHandler(object):
         desired_version = parse(version)
 
         if last_release < desired_version:
+            warning(
+                f"You tried to download {desired_version}."
+                f"The latest version you currently have available is {last_release}."
+                f"Recloning the repository from scratch to try to obtain {desired_version}"
+            )
             self.delete_example_source_dir(str(local_dir_path))
             self.clone_from_zero(GIT_REPO_URL, local_dir, str(desired_version))
         else:
@@ -123,7 +129,11 @@ class GitExamplesHandler(object):
         ]
 
     def get_example_readme(self, example_path: str) -> str:
-        """Get the example README file contents."""
+        """Get the example README file contents.
+
+        Raises:
+            FileNotFoundError: if the file doesn't exist.
+        """
         with open(os.path.join(example_path, "README.md")) as readme:
             readme_content = readme.read()
         return readme_content
@@ -171,7 +181,6 @@ def example() -> None:
 def list(git_examples_handler: Any) -> None:
     """List all available examples."""
     declare("Listing examples: \n")
-    # git_examples_handler.get_all_examples()
     for name in git_examples_handler.get_all_examples():
         declare(f"{name}")
     declare("\nTo pull the examples, type: ")
@@ -184,12 +193,23 @@ def list(git_examples_handler: Any) -> None:
 # TODO: [MEDIUM] Use a better type for the git_examples_handler
 def info(git_examples_handler: Any, example_name: str) -> None:
     """Find out more about an example."""
-    # TODO: [MEDIUM] format the output so that it looks nicer (not a pure .md dump)
+    # TODO: [MEDIUM] fix markdown formatting so that it looks nicer (not a pure .md dump)
     example_dir = os.path.join(
         git_examples_handler.get_examples_dir(), example_name
     )
-    readme_content = git_examples_handler.get_example_readme(example_dir)
-    click.echo(readme_content)
+    try:
+        readme_content = git_examples_handler.get_example_readme(example_dir)
+        click.echo(readme_content)
+    except FileNotFoundError:
+        if path_utils.file_exists(example_dir) and path_utils.is_dir(
+            example_dir
+        ):
+            error(f"No README.md file found in {example_dir}")
+        else:
+            error(
+                f"Example {example_name} is not one of the available options."
+                f"\nTo list all available examples, type: `zenml example list`"
+            )
 
 
 @example.command(

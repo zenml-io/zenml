@@ -70,9 +70,6 @@ def clean(yes: bool = False) -> None:
 
     Args:
       yes: bool:  (Default value = False)
-
-    Returns:
-
     """
     if not yes:
         _ = confirmation(

@@ -46,7 +46,7 @@ class GitWrapper:
 
     def __init__(self, repo_path: str):
         """
-        Initialize GitWrapper. Should be initialize by ZenML Repository.
+        Initialize GitWrapper. Should be initialized by ZenML Repository.
         Args:
             repo_path:
 
