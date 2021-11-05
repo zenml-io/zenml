@@ -229,7 +229,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
             step = self.__steps[step_name]
             step_parameters = (
-                step.CONFIG.__fields__.keys() if step.CONFIG else {}
+                step.CONFIG_CLASS.__fields__.keys() if step.CONFIG_CLASS else {}
             )
             parameters = step_dict.get(StepConfigurationKeys.PARAMETERS_, {})
             for parameter, value in parameters.items():
@@ -237,7 +237,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     raise PipelineConfigurationError(
                         f"Found parameter '{parameter}' for '{step_name}' step "
                         f"in configuration yaml but it doesn't exist in the "
-                        f"configuration class `{step.CONFIG}`. Available "
+                        f"configuration class `{step.CONFIG_CLASS}`. Available "
                         f"parameters for this step: "
                         f"{list(step_parameters)}."
                     )

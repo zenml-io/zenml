@@ -31,7 +31,7 @@ from typing import (
 from tfx.types.channel import Channel
 
 from zenml.artifacts.base_artifact import BaseArtifact
-from zenml.exceptions import StepInterfaceError
+from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
@@ -82,7 +82,8 @@ class BaseStepMeta(type):
 
         cls.INPUT_SIGNATURE = {}
         cls.OUTPUT_SIGNATURE = {}
-        cls.CONFIG = None
+        cls.CONFIG_PARAMETER_NAME = None
+        cls.CONFIG_CLASS = None
 
         # Looking into the signature of the provided process function
         process_spec = inspect.getfullargspec(
@@ -102,12 +103,13 @@ class BaseStepMeta(type):
             # materializer type.
             if issubclass(arg_type, BaseStepConfig):
                 # It needs to be None at this point, otherwise multi configs.
-                if cls.CONFIG is not None:
+                if cls.CONFIG_CLASS is not None:
                     raise StepInterfaceError(
                         "Please only use one `BaseStepConfig` type object in "
                         "your step."
                     )
-                cls.CONFIG = arg_type
+                cls.CONFIG_PARAMETER_NAME = arg
+                cls.CONFIG_CLASS = arg_type
             else:
                 cls.INPUT_SIGNATURE.update({arg: arg_type})
 
@@ -127,6 +129,11 @@ class BaseStepMeta(type):
                     {SINGLE_RETURN_OUT_NAME: return_spec}
                 )
 
+        if check_dict_keys_match(cls.INPUT_SIGNATURE, cls.OUTPUT_SIGNATURE):
+            raise StepInterfaceError(
+                "The input names and output names cannot be the same!"
+            )
+
         return cls
 
 
@@ -140,7 +147,8 @@ class BaseStep(metaclass=BaseStepMeta):
     # TODO [MEDIUM]: Ensure these are ordered
     INPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
     OUTPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
-    CONFIG: ClassVar[Optional[Type[BaseStepConfig]]] = None
+    CONFIG_PARAMETER_NAME: ClassVar[Optional[str]] = None
+    CONFIG_CLASS: ClassVar[Optional[Type[BaseStepConfig]]] = None
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.materializers: Dict[str, Type[BaseMaterializer]] = {}
@@ -151,38 +159,100 @@ class BaseStep(metaclass=BaseStepMeta):
         self.OUTPUT_SPEC: Dict[str, Type[BaseArtifact]] = {}
         self.spec_materializer_registry = SpecMaterializerRegistry()
 
-        # TODO [LOW]: Support args
-        # TODO [LOW]: Currently the kwarg name doesn't matter
-        #  and will be used as the config
-        if args:
+        self._verify_arguments(*args, **kwargs)
+
+    def _verify_arguments(self, *args: Any, **kwargs: Any) -> None:
+        """Verifies the initialization args and kwargs of this step.
+
+        This method makes sure that there is only a config object passed at
+        initialization and that it was passed using the correct name and
+        type specified in the step declaration.
+        If the correct config object was found, additionally saves the
+        config parameters to `self.PARAM_SPEC`.
+
+        Args:
+            *args: The args passed to the init method of this step.
+            **kwargs: The kwargs passed to the init method of this step.
+
+        Raises:
+            StepInterfaceError: If there are too many arguments or arguments
+                with a wrong name/type.
+        """
+        maximum_arg_count = 1 if self.CONFIG_CLASS else 0
+        if (len(args) + len(kwargs)) > maximum_arg_count:
             raise StepInterfaceError(
-                "When you are creating an instance of a step, please only "
-                "use key-word arguments."
+                f"Too many arguments ({len(kwargs)}, expected: "
+                f"{maximum_arg_count}) passed when creating a "
+                f"'{self.step_name}' step."
             )
 
-        maximum_kwarg_count = 1 if self.CONFIG else 0
-        if len(kwargs) > maximum_kwarg_count:
-            raise StepInterfaceError(
-                f"Too many keyword arguments ({len(kwargs)}, "
-                f"expected: {maximum_kwarg_count}) passed when "
-                f"creating a '{self.step_name}' step."
-            )
+        if self.CONFIG_PARAMETER_NAME and self.CONFIG_CLASS:
+            if args:
+                config = args[0]
+            elif kwargs:
+                key, config = kwargs.popitem()
 
-        if self.CONFIG and len(kwargs) == 1:
-            config = kwargs.popitem()[1]
+                if key != self.CONFIG_PARAMETER_NAME:
+                    raise StepInterfaceError(
+                        f"Unknown keyword argument '{key}' when creating a "
+                        f"'{self.step_name}' step, only expected a single "
+                        f"argument with key '{self.CONFIG_PARAMETER_NAME}'."
+                    )
+            else:
+                # This step requires configuration parameters but no config
+                # object was passed as an argument. The parameters might be
+                # set via default values in the config class or in a
+                # configuration file, so we continue for now and verify
+                # that all parameters are set before running the step
+                return
 
-            if not isinstance(config, self.CONFIG):
+            if not isinstance(config, self.CONFIG_CLASS):
                 raise StepInterfaceError(
                     f"`{config}` object passed when creating a "
                     f"'{self.step_name}' step is not a "
-                    f"`{self.CONFIG.__name__}` instance."
+                    f"`{self.CONFIG_CLASS.__name__}` instance."
                 )
 
+            self.PARAM_SPEC = config.dict()
+
+    def _prepare_parameter_spec(self) -> None:
+        """Verifies and prepares the config parameters for running this step.
+
+        When the step requires config parameters, this method:
+            - checks if config parameters were set via a config object or file
+            - tries to set missing config parameters from default values of the
+              config class
+
+        Raises:
+            MissingStepParameterError: If no value could be found for one or
+                more config parameters.
+            StepInterfaceError: If a config parameter value couldn't be
+                serialized to json.
+        """
+        if self.CONFIG_CLASS:
+            # we need to store a value for all config keys inside the
+            # metadata store to make sure caching works as expected
+            missing_keys = []
+            for name, field in self.CONFIG_CLASS.__fields__.items():
+                if name in self.PARAM_SPEC:
+                    # a value for this parameter has been set already
+                    continue
+
+                if field.default is not None:
+                    # use default value from the pydantic config class
+                    self.PARAM_SPEC[name] = field.default
+                else:
+                    missing_keys.append(name)
+
+            if missing_keys:
+                raise MissingStepParameterError(
+                    self.step_name, missing_keys, self.CONFIG_CLASS
+                )
+
+            # convert param spec values to strings
             try:
-                # TODO [MEDIUM]: include pydantic default values so they get
-                #  stored inside the metadata store as well
                 self.PARAM_SPEC = {
-                    k: json.dumps(v) for k, v in config.dict().items()
+                    k: json.dumps(v) for k, v in self.PARAM_SPEC.items()
                 }
             except RuntimeError as e:
                 # TODO [LOW]: Attach a URL with all supported types.
@@ -196,11 +266,8 @@ class BaseStep(metaclass=BaseStepMeta):
     ) -> Union[Channel, List[Channel]]:
         """Generates a component when called."""
         # TODO [MEDIUM]: Support *args as well.
-        # register defaults
-        if check_dict_keys_match(self.INPUT_SIGNATURE, self.OUTPUT_SIGNATURE):
-            raise StepInterfaceError(
-                "The input names and output names cannot be the same!"
-            )
+
+        self._prepare_parameter_spec()
 
         # Construct INPUT_SPEC from INPUT_SIGNATURE
         self.resolve_signature_materializers(self.INPUT_SIGNATURE, True)
@@ -224,7 +291,8 @@ class BaseStep(metaclass=BaseStepMeta):
                 )
 
         self.__component = generate_component(self)(
-            **artifacts, **self.PARAM_SPEC
+            **artifacts,
+            **self.PARAM_SPEC,
         )
 
         # Resolve the returns in the right order.
