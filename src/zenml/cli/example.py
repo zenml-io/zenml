@@ -100,6 +100,11 @@ class GitExamplesHandler(object):
         desired_version = parse(version)
 
         if last_release < desired_version:
+            warning(
+                f"You tried to download {desired_version}."
+                f"The latest version you currently have available is {last_release}."
+                f"Recloning the repository from scratch to try to obtain {desired_version}"
+            )
             self.delete_example_source_dir(str(local_dir_path))
             self.clone_from_zero(GIT_REPO_URL, local_dir, str(desired_version))
         else:
