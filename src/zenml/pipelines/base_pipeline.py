@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import inspect
-import json
 from abc import abstractmethod
 from typing import Any, ClassVar, Dict, NoReturn, Optional, Tuple, Type, cast
 
@@ -242,8 +241,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
                         f"{list(step_parameters)}."
                     )
 
-                # make sure the value gets serialized to a string
-                value = json.dumps(value)
                 previous_value = step.PARAM_SPEC.get(parameter, None)
 
                 if overwrite:
