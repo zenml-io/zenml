@@ -97,6 +97,18 @@ def exists(path: PathType) -> bool:
     return _get_filesystem(path).exists(path)
 
 
+def file_exists(path: str) -> bool:
+    """Returns true if file exists at path.
+
+    Args:
+        path: Local path in filesystem.
+
+    Returns:
+        True if file exists, else False.
+    """
+    return exists(path)
+
+
 def glob(pattern: PathType) -> List[PathType]:
     """Return the paths that match a glob pattern."""
     return _get_filesystem(pattern).glob(pattern)

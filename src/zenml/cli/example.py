@@ -202,7 +202,7 @@ def info(git_examples_handler: Any, example_name: str) -> None:
         readme_content = git_examples_handler.get_example_readme(example_dir)
         click.echo(readme_content)
     except FileNotFoundError:
-        if path_utils.file_exists(example_dir) and fileio.isdir(example_dir):
+        if fileio.file_exists(example_dir) and fileio.isdir(example_dir):
             error(f"No README.md file found in {example_dir}")
         else:
             error(
@@ -264,7 +264,7 @@ def pull(
     for example in examples:
         dst_dir = os.path.join(dst, example)
         # Check if example has already been pulled before.
-        if path_utils.file_exists(dst_dir):
+        if fileio.file_exists(dst_dir):
             if confirmation(
                 f"Example {example} is already pulled. "
                 f"Do you wish to overwrite the directory?"

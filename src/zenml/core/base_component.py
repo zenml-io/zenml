@@ -80,7 +80,7 @@ class BaseComponent(BaseSettings):
     def _create_serialization_file_if_not_exists(self) -> None:
         """Creates the serialization file if it does not exist."""
         f = self.get_serialization_full_path()
-        if not path_utils.file_exists(str(f)):
+        if not fileio.file_exists(str(f)):
             fileio.create_file_if_not_exists(str(f))
 
     @abstractmethod

@@ -198,16 +198,16 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #     return str(Path(path).resolve())
 
 
-def file_exists(path: str) -> bool:
-    """Returns true if file exists at path.
+# def file_exists(path: str) -> bool:
+#     """Returns true if file exists at path.
 
-    Args:
-        path: Local path in filesystem.
+#     Args:
+#         path: Local path in filesystem.
 
-    Returns:
-        True if file exists, else False.
-    """
-    return fileio.exists(path)
+#     Returns:
+#         True if file exists, else False.
+#     """
+#     return fileio.exists(path)
 
 
 def copy(source: str, destination: str, overwrite: bool = False) -> None:
@@ -269,7 +269,7 @@ def rm_file(file_path: str) -> None:
     Args:
         file_path: Path of file to delete.
     """
-    if not file_exists(file_path):
+    if not fileio.file_exists(file_path):
         raise FileNotFoundError(f"{file_path} does not exist!")
     fileio.remove(file_path)
 
@@ -280,7 +280,7 @@ def read_file_contents_as_string(file_path: str) -> str:
     Args:
         file_path: Path to file.
     """
-    if not file_exists(file_path):
+    if not fileio.file_exists(file_path):
         raise FileNotFoundError(f"{file_path} does not exist!")
     return fileio.open(file_path).read()  # type: ignore[no-any-return]
 
@@ -332,7 +332,7 @@ def load_csv_header(csv_path: str) -> List[str]:
     Args:
         csv_path: Path to csv file.
     """
-    if file_exists(csv_path):
+    if fileio.file_exists(csv_path):
         return load_csv_column_names(csv_path)
     else:
         raise FileNotFoundError(f"{csv_path} does not exist!")

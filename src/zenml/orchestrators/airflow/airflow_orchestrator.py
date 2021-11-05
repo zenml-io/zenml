@@ -144,7 +144,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             destination_path = os.path.join(
                 dags_directory, os.path.basename(dag_filepath)
             )
-            if path_utils.file_exists(destination_path):
+            if fileio.file_exists(destination_path):
                 logger.info(
                     "File '{%s}' already exists, overwriting with new DAG file",
                     destination_path,
@@ -157,7 +157,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         Raises:
             FileNotFoundError: If the password file does not exist.
         """
-        if path_utils.file_exists(self.password_file):
+        if fileio.file_exists(self.password_file):
             with open(self.password_file) as file:
                 password = file.read().strip()
         else:
@@ -198,7 +198,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             self._log_webserver_credentials()
             return
 
-        if not path_utils.file_exists(self.dags_directory):
+        if not fileio.file_exists(self.dags_directory):
             fileio.create_dir_recursive_if_not_exists(self.dags_directory)
 
         from airflow.cli.commands.standalone_command import StandaloneCommand
