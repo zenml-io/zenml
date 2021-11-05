@@ -210,15 +210,15 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #     return fileio.exists(path)
 
 
-def copy(source: str, destination: str, overwrite: bool = False) -> None:
-    """Copies dir from source to destination.
+# def copy(source: str, destination: str, overwrite: bool = False) -> None:
+#     """Copies dir from source to destination.
 
-    Args:
-        source(str): Path to copy from.
-        destination(str): Path to copy to.
-        overwrite: boolean, if false, then throws an error before overwrite.
-    """
-    fileio.copy(source, destination, overwrite)
+#     Args:
+#         source(str): Path to copy from.
+#         destination(str): Path to copy to.
+#         overwrite: boolean, if false, then throws an error before overwrite.
+#     """
+#     fileio.copy(source, destination, overwrite)
 
 
 def copy_dir(
@@ -240,7 +240,7 @@ def copy_dir(
             fileio.create_dir_recursive_if_not_exists(
                 str(Path(destination_name).parent)
             )
-            copy(source_file, destination_name, overwrite)
+            fileio.copy(source_file_path, Path(destination_name), overwrite)
 
 
 def move(source: str, destination: str, overwrite: bool = False) -> None:
