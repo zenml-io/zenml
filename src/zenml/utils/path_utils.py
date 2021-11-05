@@ -164,14 +164,14 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #     raise NotImplementedError
 
 
-def create_dir_if_not_exists(dir_path: str) -> None:
-    """Creates directory if it does not exist.
+# def create_dir_if_not_exists(dir_path: str) -> None:
+#     """Creates directory if it does not exist.
 
-    Args:
-        dir_path(str): Local path in filesystem.
-    """
-    if not fileio.isdir(dir_path):
-        fileio.mkdir(dir_path)
+#     Args:
+#         dir_path(str): Local path in filesystem.
+#     """
+#     if not fileio.isdir(dir_path):
+#         fileio.mkdir(dir_path)
 
 
 def create_dir_recursive_if_not_exists(dir_path: str) -> None:

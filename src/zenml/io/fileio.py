@@ -281,3 +281,13 @@ def append_file(file_path: str, file_contents: str) -> None:
     # with file_io.FileIO(file_path, mode='a') as f:
     #     f.write(file_contents)
     raise NotImplementedError
+
+
+def create_dir_if_not_exists(dir_path: str) -> None:
+    """Creates directory if it does not exist.
+
+    Args:
+        dir_path(str): Local path in filesystem.
+    """
+    if not isdir(dir_path):
+        mkdir(dir_path)

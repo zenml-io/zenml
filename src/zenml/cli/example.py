@@ -258,7 +258,7 @@ def pull(
     )
     # Create destination dir.
     dst = os.path.join(os.getcwd(), "zenml_examples")
-    path_utils.create_dir_if_not_exists(dst)
+    fileio.create_dir_if_not_exists(dst)
 
     # Pull specified examples.
     for example in examples:
