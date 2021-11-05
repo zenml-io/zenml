@@ -153,6 +153,7 @@ def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> None:
             {
                 "in_docker": in_docker(),
                 "in_google_colab": in_google_colab(),
+                "in_paperspace_gradient": in_paperspace_gradient(),
                 "version": __version__,
             }
         )
