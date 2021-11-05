@@ -249,17 +249,17 @@ class BaseStep(metaclass=BaseStepMeta):
                     self.step_name, missing_keys, self.CONFIG_CLASS
                 )
 
-            # convert param spec values to strings
+            # convert config parameter values to strings
             try:
                 self.PARAM_SPEC = {
                     k: json.dumps(v) for k, v in self.PARAM_SPEC.items()
                 }
-            except RuntimeError as e:
-                # TODO [LOW]: Attach a URL with all supported types.
-                logger.debug(f"Pydantic Error: {str(e)}")
+            except TypeError as e:
                 raise StepInterfaceError(
-                    "You passed in a parameter that we cannot serialize!"
-                )
+                    f"Failed to serialize config parameters for step "
+                    f"'{self.step_name}'. Please make sure to only use "
+                    f"json serializable parameter values."
+                ) from e
 
     def __call__(
         self, **artifacts: BaseArtifact
