@@ -80,7 +80,7 @@ def copy(src: PathType, dst: PathType, overwrite: bool = False) -> None:
     if src_fs is dst_fs:
         src_fs.copy(src, dst, overwrite=overwrite)
     else:
-        if not overwrite and exists(dst):
+        if not overwrite and file_exists(str(dst)):
             raise OSError(
                 (
                     "Destination file %r already exists and argument `overwrite` is "
@@ -92,11 +92,6 @@ def copy(src: PathType, dst: PathType, overwrite: bool = False) -> None:
         open(dst, mode="wb").write(contents)
 
 
-def exists(path: PathType) -> bool:
-    """Return whether a path exists."""
-    return _get_filesystem(path).exists(path)
-
-
 def file_exists(path: str) -> bool:
     """Returns true if file exists at path.
 
@@ -106,7 +101,7 @@ def file_exists(path: str) -> bool:
     Returns:
         True if file exists, else False.
     """
-    return exists(path)
+    return _get_filesystem(path).exists(path)
 
 
 def glob(pattern: PathType) -> List[PathType]:
