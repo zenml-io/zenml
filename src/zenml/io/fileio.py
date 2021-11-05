@@ -24,6 +24,8 @@ from zenml.utils.path_utils import convert_to_str
 from zenml.utils.source_utils import import_class_by_path
 
 # TODO: [LOW] choose between is_dir vs isdir pattern (& standardize)
+# `is_dir` is what ZenML has been defaulting to for path_utils
+# `isdir` is what TFX has been defaulting to
 
 _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 
