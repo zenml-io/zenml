@@ -16,14 +16,14 @@ import click
 
 from zenml import __version__
 from zenml.cli.cli import cli
+from zenml.cli.utils import declare
 
 
 @cli.command()
 def version() -> None:
     """Version of ZenML"""
-    click.echo(
-        click.style(
-            r"""      
+    declare(
+        r"""      
            .-') _   ('-.       .-') _  _   .-')              
           (  OO) )_(  OO)     ( OO ) )( '.( OO )_            
         ,(_)----.(,------.,--./ ,--,'  ,--.   ,--.),--.      
@@ -33,8 +33,6 @@ def version() -> None:
          /   /___ |  .--' |  |\    |   |  |   |  |(|  '---.' 
         |        ||  `---.|  | \   |   |  |   |  | |      |  
         `--------'`------'`--'  `--'   `--'   `--' `------' 
-         """,
-            fg="green",
-        )
+         """
     )
     click.echo(click.style(f"version: {__version__}", bold=True))
