@@ -6,6 +6,7 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from zenml.core.base_component import BaseComponent
+from zenml.io import fileio
 from zenml.utils import path_utils, source_utils
 
 
@@ -73,7 +74,7 @@ def get_components_from_store(
         store_name,
     )
     comps = {}
-    for fnames in path_utils.list_dir(store_dir, only_file_names=True):
+    for fnames in fileio.list_dir(store_dir, only_file_names=True):
         uuid = Path(fnames).stem
         key = get_key_from_uuid(UUID(uuid), mapping)
         comps[key] = get_component_from_key(key, mapping)

@@ -67,7 +67,7 @@
 #     def wrapper():
 #         """ """
 #         pipelines_dir = repo.zenml_config.get_pipelines_dir()
-#         for p_config in path_utils.list_dir(pipelines_dir):
+#         for p_config in fileio.list_dir(pipelines_dir):
 #             try:
 #                 os.remove(p_config)
 #             except Exception as e:

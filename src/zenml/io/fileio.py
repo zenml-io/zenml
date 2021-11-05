@@ -20,8 +20,11 @@ from typing import Any, Callable, Iterable, List, Optional, Tuple, Type
 
 from tfx.dsl.io.filesystem import Filesystem, PathType
 
+from zenml.logger import get_logger
 from zenml.utils.path_utils import convert_to_str
 from zenml.utils.source_utils import import_class_by_path
+
+logger = get_logger(__name__)
 
 # TODO: [LOW] choose between is_dir vs isdir pattern (& standardize)
 # `is_dir` is what ZenML has been defaulting to for path_utils
@@ -127,6 +130,28 @@ def is_root(path: str) -> bool:
 def listdir(path: PathType) -> List[PathType]:
     """Return the list of files in a directory."""
     return _get_filesystem(path).listdir(path)
+
+
+def list_dir(dir_path: str, only_file_names: bool = False) -> List[str]:
+    """Returns a list of files under dir.
+
+    Args:
+        dir_path: Path in filesystem.
+        only_file_names: Returns only file names if True.
+
+    Returns:
+        List of full qualified paths.
+    """
+    try:
+        return [
+            os.path.join(dir_path, convert_to_str(f))
+            if not only_file_names
+            else convert_to_str(f)
+            for f in _get_filesystem(dir_path).listdir(dir_path)
+        ]
+    except IOError:
+        logger.debug(f"Dir {dir_path} not found.")
+        return []
 
 
 def makedirs(path: PathType) -> None:

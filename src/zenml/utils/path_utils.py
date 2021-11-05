@@ -112,26 +112,26 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #     return path.startswith("gs://")
 
 
-def list_dir(dir_path: str, only_file_names: bool = False) -> List[str]:
-    """Returns a list of files under dir.
+# def list_dir(dir_path: str, only_file_names: bool = False) -> List[str]:
+#     """Returns a list of files under dir.
 
-    Args:
-        dir_path: Path in filesystem.
-        only_file_names: Returns only file names if True.
+#     Args:
+#         dir_path: Path in filesystem.
+#         only_file_names: Returns only file names if True.
 
-    Returns:
-        List of full qualified paths.
-    """
-    try:
-        return [
-            os.path.join(dir_path, convert_to_str(f))
-            if not only_file_names
-            else convert_to_str(f)
-            for f in fileio.listdir(dir_path)
-        ]
-    except IOError:
-        logger.debug(f"Dir {dir_path} not found.")
-        return []
+#     Returns:
+#         List of full qualified paths.
+#     """
+#     try:
+#         return [
+#             os.path.join(dir_path, convert_to_str(f))
+#             if not only_file_names
+#             else convert_to_str(f)
+#             for f in fileio.listdir(dir_path)
+#         ]
+#     except IOError:
+#         logger.debug(f"Dir {dir_path} not found.")
+#         return []
 
 
 def create_file_if_not_exists(
@@ -231,7 +231,7 @@ def copy_dir(
         destination_dir: Path to copy to.
         overwrite: Boolean. If false, function throws an error before overwrite.
     """
-    for source_file in list_dir(source_dir):
+    for source_file in fileio.list_dir(source_dir):
         source_file_path = Path(source_file)
         destination_name = os.path.join(destination_dir, source_file_path.name)
         if fileio.isdir(source_file):

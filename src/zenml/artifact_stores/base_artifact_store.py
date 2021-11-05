@@ -67,7 +67,7 @@ class BaseArtifactStore(BaseComponent):
             Locally resolved uri.
         """
         if not fileio.is_remote(artifact_uri):
-            # Its already local
+            # It's already local
             return artifact_uri
 
         if path is None:
