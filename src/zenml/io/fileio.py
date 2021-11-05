@@ -193,7 +193,7 @@ def rm_dir(dir_path: str) -> None:
     Args:
         dir_path: Dir to delete.
     """
-    _get_filesystem(Path(dir_path)).rmtree(Path(dir_path))
+    _get_filesystem(dir_path).rmtree(dir_path)
 
 
 def stat(path: PathType) -> Any:
