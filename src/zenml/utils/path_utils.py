@@ -45,16 +45,16 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #     return fileio.walk(dir_path)
 
 
-def is_root(path: str) -> bool:
-    """Returns true if path has no parent in local filesystem.
+# def is_root(path: str) -> bool:
+#     """Returns true if path has no parent in local filesystem.
 
-    Args:
-        path: Local path in filesystem.
+#     Args:
+#         path: Local path in filesystem.
 
-    Returns:
-        True if root, else False.
-    """
-    return Path(path).parent == Path(path)
+#     Returns:
+#         True if root, else False.
+#     """
+#     return Path(path).parent == Path(path)
 
 
 def is_dir(dir_path: str) -> bool:
@@ -422,7 +422,7 @@ def get_zenml_dir(path: str = os.getcwd()) -> str:
     if is_zenml_dir(path):
         return path
 
-    if is_root(path):
+    if fileio.is_root(path):
         raise InitializationException(
             "Looks like you used ZenML outside of a ZenML repo. "
             "Please init a ZenML repo first before you using "

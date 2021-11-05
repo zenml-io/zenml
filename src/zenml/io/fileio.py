@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import re
+from pathlib import Path
 from typing import Any, Callable, Iterable, List, Optional, Tuple, Type
 
 from tfx.dsl.io.filesystem import Filesystem, PathType
@@ -92,6 +93,18 @@ def glob(pattern: PathType) -> List[PathType]:
 def isdir(path: PathType) -> bool:
     """Return whether a path is a directory."""
     return _get_filesystem(path).isdir(path)
+
+
+def is_root(path: str) -> bool:
+    """Returns true if path has no parent in local filesystem.
+
+    Args:
+        path: Local path in filesystem.
+
+    Returns:
+        True if root, else False.
+    """
+    return Path(path).parent == Path(path)
 
 
 def listdir(path: PathType) -> List[PathType]:

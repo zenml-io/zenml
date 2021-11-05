@@ -35,14 +35,14 @@ TEMPORARY_FILE_SEARCH_PREFIX = "a_f*.*"
 #     assert isinstance(path_utils.walk(str(tmp_path)), GeneratorType)
 
 
-def test_is_root_when_true():
-    """Check is_root returns true if path is the root"""
-    assert path_utils.is_root("/")
+# def test_is_root_when_true():
+#     """Check is_root returns true if path is the root"""
+#     assert path_utils.is_root("/")
 
 
-def test_is_root_when_false(tmp_path):
-    """Check is_root returns false if path isn't the root"""
-    assert path_utils.is_root(tmp_path) is False
+# def test_is_root_when_false(tmp_path):
+#     """Check is_root returns false if path isn't the root"""
+#     assert path_utils.is_root(tmp_path) is False
 
 
 def test_is_dir_when_true(tmp_path):
