@@ -172,7 +172,7 @@ def remove(path: PathType) -> None:
 
 
 def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
-    """Rename a source file to a destination path."""
+    """Rename a source file (or directory) to a destination path."""
     src_fs = _get_filesystem(src)
     dst_fs = _get_filesystem(dst)
     if src_fs is dst_fs:
@@ -341,3 +341,14 @@ def copy_dir(
                 str(Path(destination_name).parent)
             )
             copy(str(source_file_path), str(destination_name), overwrite)
+
+
+def move(source: str, destination: str, overwrite: bool = False) -> None:
+    """Moves dir or file from source to destination. Can be used to rename.
+
+    Args:
+        source: Local path to copy from.
+        destination: Local path to copy to.
+        overwrite: boolean, if false, then throws an error before overwrite.
+    """
+    rename(source, destination, overwrite)

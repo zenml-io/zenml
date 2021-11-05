@@ -243,15 +243,15 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #             fileio.copy(str(source_file_path), str(destination_name), overwrite)
 
 
-def move(source: str, destination: str, overwrite: bool = False) -> None:
-    """Moves dir from source to destination. Can be used to rename.
+# def move(source: str, destination: str, overwrite: bool = False) -> None:
+#     """Moves dir from source to destination. Can be used to rename.
 
-    Args:
-        source: Local path to copy from.
-        destination: Local path to copy to.
-        overwrite: boolean, if false, then throws an error before overwrite.
-    """
-    fileio.rename(source, destination, overwrite)
+#     Args:
+#         source: Local path to copy from.
+#         destination: Local path to copy to.
+#         overwrite: boolean, if false, then throws an error before overwrite.
+#     """
+#     fileio.rename(source, destination, overwrite)
 
 
 def rm_dir(dir_path: str) -> None:
