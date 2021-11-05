@@ -21,6 +21,7 @@ from git import Repo as GitRepo  # type: ignore[attr-defined]
 
 from zenml.constants import APP_NAME
 from zenml.exceptions import GitException
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import path_utils, source_utils
 from zenml.utils.source_utils import (
@@ -120,7 +121,7 @@ class GitWrapper:
             if len(self.git_repo.ignored(path)) > 0:
                 continue
 
-            if path_utils.is_dir(os.path.join(mod_abs_dir, file_path)):
+            if fileio.isdir(os.path.join(mod_abs_dir, file_path)):
                 logger.warning(
                     f"The step {source} is contained inside a module "
                     f"that "

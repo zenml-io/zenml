@@ -18,6 +18,7 @@ from typing import Any, Dict
 
 import yaml
 
+from zenml.io import fileio
 from zenml.utils import path_utils
 
 
@@ -33,7 +34,7 @@ def write_yaml(file_path: str, contents: Dict[Any, Any]) -> None:
     """
     if not path_utils.is_remote(file_path):
         dir_ = str(Path(file_path).parent)
-        if not path_utils.is_dir(dir_):
+        if not fileio.isdir(dir_):
             raise FileNotFoundError(f"Directory {dir_} does not exist.")
     path_utils.write_file_contents_as_string(file_path, yaml.dump(contents))
 
@@ -86,7 +87,7 @@ def write_json(file_path: str, contents: Dict[str, Any]) -> None:
     """
     if not path_utils.is_remote(file_path):
         dir_ = str(Path(file_path).parent)
-        if not path_utils.is_dir(dir_):
+        if not fileio.isdir(dir_):
             # If it is a local path and it doesnt exist, raise Exception.
             raise FileNotFoundError(f"Directory {dir_} does not exist.")
     path_utils.write_file_contents_as_string(file_path, json.dumps(contents))

@@ -26,6 +26,7 @@ from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.constants import APP_NAME, GIT_REPO_URL
+from zenml.io import fileio
 from zenml.utils import path_utils
 
 # TODO: [MEDIUM] Add an example-run command to run an example.
@@ -201,9 +202,7 @@ def info(git_examples_handler: Any, example_name: str) -> None:
         readme_content = git_examples_handler.get_example_readme(example_dir)
         click.echo(readme_content)
     except FileNotFoundError:
-        if path_utils.file_exists(example_dir) and path_utils.is_dir(
-            example_dir
-        ):
+        if path_utils.file_exists(example_dir) and fileio.isdir(example_dir):
             error(f"No README.md file found in {example_dir}")
         else:
             error(

@@ -24,6 +24,7 @@ from zenml.core.constants import ZENML_DIR_NAME
 from zenml.core.git_wrapper import GitWrapper
 from zenml.core.local_service import LocalService
 from zenml.exceptions import InitializationException
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
@@ -61,7 +62,7 @@ class Repository:
                 # If there isn't a zenml.config, use the cwd
                 path = os.getcwd()
 
-        if not path_utils.is_dir(path):
+        if not fileio.isdir(path):
             raise FileNotFoundError(f"{path} does not exist or is not a dir!")
         self.path = path
         self.service = LocalService()

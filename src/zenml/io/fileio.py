@@ -91,7 +91,14 @@ def glob(pattern: PathType) -> List[PathType]:
 
 
 def isdir(path: PathType) -> bool:
-    """Return whether a path is a directory."""
+    """Returns true if dir_path points to a dir.
+
+    Args:
+        dir_path: Local path in filesystem.
+
+    Returns:
+        True if is dir, else False.
+    """
     return _get_filesystem(path).isdir(path)
 
 

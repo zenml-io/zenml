@@ -45,17 +45,17 @@ TEMPORARY_FILE_SEARCH_PREFIX = "a_f*.*"
 #     assert path_utils.is_root(tmp_path) is False
 
 
-def test_is_dir_when_true(tmp_path):
-    """is_dir returns true when path refers to a directory"""
-    assert path_utils.is_dir(str(tmp_path))
+# def test_is_dir_when_true(tmp_path):
+#     """is_dir returns true when path refers to a directory"""
+#     assert path_utils.is_dir(str(tmp_path))
 
 
-def test_is_dir_when_false(tmp_path):
-    """is_dir returns false when path doesn't refer to a directory"""
-    assert (
-        path_utils.is_dir(os.path.join(str(tmp_path) + TEMPORARY_FILE_NAME))
-        is False
-    )
+# def test_is_dir_when_false(tmp_path):
+#     """is_dir returns false when path doesn't refer to a directory"""
+#     assert (
+#         path_utils.is_dir(os.path.join(str(tmp_path) + TEMPORARY_FILE_NAME))
+#         is False
+#     )
 
 
 def test_find_files_returns_generator_object_when_file_present(tmp_path):

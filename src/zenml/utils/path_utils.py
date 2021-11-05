@@ -57,16 +57,16 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #     return Path(path).parent == Path(path)
 
 
-def is_dir(dir_path: str) -> bool:
-    """Returns true if dir_path points to a dir.
+# def is_dir(dir_path: str) -> bool:
+#     """Returns true if dir_path points to a dir.
 
-    Args:
-        dir_path: Local path in filesystem.
+#     Args:
+#         dir_path: Local path in filesystem.
 
-    Returns:
-        True if is dir, else False.
-    """
-    return fileio.isdir(dir_path)
+#     Returns:
+#         True if is dir, else False.
+#     """
+#     return fileio.isdir(dir_path)
 
 
 def find_files(dir_path: PathType, pattern: str) -> Iterable[str]:
@@ -235,7 +235,7 @@ def copy_dir(
     for source_file in list_dir(source_dir):
         source_file_path = Path(source_file)
         destination_name = os.path.join(destination_dir, source_file_path.name)
-        if is_dir(source_file):
+        if fileio.isdir(source_file):
             copy_dir(source_file, destination_name, overwrite)
         else:
             create_dir_recursive_if_not_exists(
@@ -402,7 +402,7 @@ def is_zenml_dir(path: str) -> bool:
         True if path contains a zenml dir, False if not.
     """
     config_dir_path = os.path.join(path, ZENML_DIR_NAME)
-    if is_dir(config_dir_path):
+    if fileio.isdir(config_dir_path):
         return True
     return False
 
