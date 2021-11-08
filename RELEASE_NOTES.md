@@ -1,3 +1,29 @@
+# 0.5.2
+
+0.5.2 brings an improved post-execution workflow and lots of minor changes and upgrades for the developer experience when 
+creating pipelines. It also improves the Airflow orchestrator logic to accommodate for more real world scenarios. Check out the 
+[low level API guide for more details!](https://docs.zenml.io/guides/low-level-api)
+
+## What's Changed
+* Fix autocomplete for step and pipeline decorated functions by @schustmi in https://github.com/zenml-io/zenml/pull/144
+* Add reference docs for CLI example functionality by @alex-zenml in https://github.com/zenml-io/zenml/pull/145
+* Fix mypy integration by @schustmi in https://github.com/zenml-io/zenml/pull/147
+* Improve Post-Execution Workflow by @schustmi in https://github.com/zenml-io/zenml/pull/146
+* Fix CLI examples bug by @alex-zenml in https://github.com/zenml-io/zenml/pull/148
+* Update quickstart example notebook by @alex-zenml in https://github.com/zenml-io/zenml/pull/150
+* Add documentation images by @alex-zenml in https://github.com/zenml-io/zenml/pull/151
+* Add prettierignore to gitignore by @alex-zenml in https://github.com/zenml-io/zenml/pull/154
+* Airflow orchestrator improvements by @schustmi in https://github.com/zenml-io/zenml/pull/153
+* Google colab added by @htahir1 in https://github.com/zenml-io/zenml/pull/155
+* Tests for `core` and `cli` modules by @alex-zenml in https://github.com/zenml-io/zenml/pull/149
+* Add Paperspace environment check by @alex-zenml in https://github.com/zenml-io/zenml/pull/156
+* Step caching by @schustmi in https://github.com/zenml-io/zenml/pull/157
+* Add documentation for pipeline step parameter and run name configuration by @schustmi in https://github.com/zenml-io/zenml/pull/158
+* Automatically disable caching if the step function code has changed by @schustmi in https://github.com/zenml-io/zenml/pull/159
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.5.1...0.5.2
+
 # 0.5.1
 0.5.1 builds on top of Slack of the 0.5.0 release with quick bug updates.
 
