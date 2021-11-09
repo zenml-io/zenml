@@ -13,7 +13,17 @@
 #  permissions and limitations under the License.
 import inspect
 from abc import abstractmethod
-from typing import Any, ClassVar, Dict, NoReturn, Optional, Tuple, Type, cast
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    NoReturn,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    cast,
+)
 
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
@@ -60,6 +70,9 @@ class BasePipelineMeta(type):
             arg_type = connect_spec.annotations.get(arg, None)
             cls.STEP_SPEC.update({arg: arg_type})
         return cls
+
+
+T = TypeVar("T", bound="BasePipeline")
 
 
 class BasePipeline(metaclass=BasePipelineMeta):
@@ -183,13 +196,14 @@ class BasePipeline(metaclass=BasePipelineMeta):
         return ret
 
     def with_config(
-        self, config_file: str, overwrite_step_parameters: bool = False
-    ) -> "BasePipeline":
+        self: T, config_file: str, overwrite_step_parameters: bool = False
+    ) -> T:
         """Configures this pipeline using a yaml file.
 
         Args:
             config_file: Path to a yaml file which contains configuration
-                options for running this pipeline. See [TODO](url) for details
+                options for running this pipeline. See
+                https://docs.zenml.io/guides/pipeline-configuration for details
                 regarding the specification of this file.
             overwrite_step_parameters: If set to `True`, values from the
                 configuration file will overwrite configuration parameters
