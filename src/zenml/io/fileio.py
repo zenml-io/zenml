@@ -15,6 +15,7 @@
 import fnmatch
 import os
 import re
+import tarfile
 from pathlib import Path
 from typing import Any, Callable, Iterable, List, Optional, Tuple, Type
 
@@ -421,3 +422,40 @@ def load_csv_header(csv_path: str) -> List[str]:
     if not file_exists(csv_path):
         raise FileNotFoundError(f"{csv_path} does not exist!")
     return load_csv_column_names(csv_path)
+
+
+def create_tarfile(
+    source_dir: str,
+    output_filename: str = "zipped.tar.gz",
+    exclude_function: Optional[
+        Callable[[tarfile.TarInfo], Optional[tarfile.TarInfo]]
+    ] = None,
+) -> None:
+    """Create a compressed representation of source_dir.
+
+    Args:
+        source_dir: Path to source dir.
+        output_filename: Name of outputted gz.
+        exclude_function: Function that determines whether to exclude file.
+    """
+    if exclude_function is None:
+        # default is to exclude the .zenml directory
+        def exclude_function(
+            tarinfo: tarfile.TarInfo,
+        ) -> Optional[tarfile.TarInfo]:
+            """Exclude files from tar.
+
+            Args:
+              tarinfo: Any
+
+            Returns:
+                tarinfo required for exclude.
+            """
+            filename = tarinfo.name
+            if ".zenml/" in filename or "venv/" in filename:
+                return None
+            else:
+                return tarinfo
+
+    with tarfile.open(output_filename, "w:gz") as tar:
+        tar.add(source_dir, arcname="", filter=exclude_function)

@@ -17,7 +17,6 @@
 import os
 import tarfile
 from pathlib import Path
-from typing import Callable, List, Optional
 
 from tfx.dsl.io.filesystem import PathType
 
@@ -326,54 +325,54 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #         return f.readline().strip().split(",")  # type: ignore[no-any-return]
 
 
-def load_csv_header(csv_path: str) -> List[str]:
-    """Gets header column of csv and returns list.
+# def load_csv_header(csv_path: str) -> List[str]:
+#     """Gets header column of csv and returns list.
 
-    Args:
-        csv_path: Path to csv file.
-    """
-    if not fileio.file_exists(csv_path):
-        raise FileNotFoundError(f"{csv_path} does not exist!")
-    return fileio.load_csv_column_names(csv_path)
+#     Args:
+#         csv_path: Path to csv file.
+#     """
+#     if not fileio.file_exists(csv_path):
+#         raise FileNotFoundError(f"{csv_path} does not exist!")
+#     return fileio.load_csv_column_names(csv_path)
 
 
-def create_tarfile(
-    source_dir: str,
-    output_filename: str = "zipped.tar.gz",
-    exclude_function: Optional[
-        Callable[[tarfile.TarInfo], Optional[tarfile.TarInfo]]
-    ] = None,
-) -> None:
-    """Create a compressed representation of source_dir.
+# def create_tarfile(
+#     source_dir: str,
+#     output_filename: str = "zipped.tar.gz",
+#     exclude_function: Optional[
+#         Callable[[tarfile.TarInfo], Optional[tarfile.TarInfo]]
+#     ] = None,
+# ) -> None:
+#     """Create a compressed representation of source_dir.
 
-    Args:
-        source_dir: Path to source dir.
-        output_filename: Name of outputted gz.
-        exclude_function: Function that determines whether to exclude file.
-    """
-    if exclude_function is None:
-        # default is to exclude the .zenml directory
-        def exclude_function(
-            tarinfo: tarfile.TarInfo,
-        ) -> Optional[tarfile.TarInfo]:
-            """Exclude files from tar.
+#     Args:
+#         source_dir: Path to source dir.
+#         output_filename: Name of outputted gz.
+#         exclude_function: Function that determines whether to exclude file.
+#     """
+#     if exclude_function is None:
+#         # default is to exclude the .zenml directory
+#         def exclude_function(
+#             tarinfo: tarfile.TarInfo,
+#         ) -> Optional[tarfile.TarInfo]:
+#             """Exclude files from tar.
 
-            Args:
-              tarinfo: Any
+#             Args:
+#               tarinfo: Any
 
-            Returns:
-                tarinfo required for exclude.
-            """
-            filename = tarinfo.name
-            if ".zenml/" in filename:
-                return None
-            elif "venv/" in filename:
-                return None
-            else:
-                return tarinfo
+#             Returns:
+#                 tarinfo required for exclude.
+#             """
+#             filename = tarinfo.name
+#             if ".zenml/" in filename:
+#                 return None
+#             elif "venv/" in filename:
+#                 return None
+#             else:
+#                 return tarinfo
 
-    with tarfile.open(output_filename, "w:gz") as tar:
-        tar.add(source_dir, arcname="", filter=exclude_function)
+#     with tarfile.open(output_filename, "w:gz") as tar:
+#         tar.add(source_dir, arcname="", filter=exclude_function)
 
 
 def extract_tarfile(source_tar: str, output_dir: str) -> None:
