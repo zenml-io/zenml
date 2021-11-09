@@ -459,11 +459,11 @@ def create_tarfile(
 
 
 def extract_tarfile(source_tar: str, output_dir: str) -> None:
-    """Untars a compressed tar file to output_dir.
+    """Extracts all files in a compressed tar file to output_dir.
 
     Args:
         source_tar: Path to a tar compressed file.
-        output_dir: Directory where to uncompress.
+        output_dir: Directory where to extract.
     """
     if is_remote(source_tar):
         raise NotImplementedError("Use local tars for now.")
