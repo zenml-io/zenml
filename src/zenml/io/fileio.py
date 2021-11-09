@@ -410,3 +410,14 @@ def load_csv_column_names(csv_file: str) -> List[str]:
     """Parse the first line of a csv file as column names."""
     with open(csv_file) as f:
         return f.readline().strip().split(",")  # type: ignore[no-any-return]
+
+
+def load_csv_header(csv_path: str) -> List[str]:
+    """Gets header column of csv and returns list.
+
+    Args:
+        csv_path: Path to csv file.
+    """
+    if not file_exists(csv_path):
+        raise FileNotFoundError(f"{csv_path} does not exist!")
+    return load_csv_column_names(csv_path)
