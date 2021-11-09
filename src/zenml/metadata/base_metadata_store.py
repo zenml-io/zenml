@@ -33,6 +33,7 @@ from zenml.artifacts.base_artifact import (
 from zenml.core.base_component import BaseComponent
 from zenml.core.component_factory import metadata_store_factory
 from zenml.enums import ExecutionStatus, MLMetadataTypes
+from zenml.io.fileio import get_zenml_config_dir
 from zenml.logger import get_logger
 from zenml.post_execution import (
     ArtifactView,
@@ -40,7 +41,6 @@ from zenml.post_execution import (
     PipelineView,
     StepView,
 )
-from zenml.utils.path_utils import get_zenml_config_dir
 
 logger = get_logger(__name__)
 

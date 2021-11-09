@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from zenml.core.base_component import BaseComponent
 from zenml.io import fileio
-from zenml.utils import path_utils, source_utils
+from zenml.utils import source_utils
 
 
 class UUIDSourceTuple(BaseModel):
@@ -70,7 +70,7 @@ def get_components_from_store(
         A dict of objects which are a subclass of type BaseComponent.
     """
     store_dir = os.path.join(
-        path_utils.get_zenml_config_dir(),
+        fileio.get_zenml_config_dir(),
         store_name,
     )
     comps = {}

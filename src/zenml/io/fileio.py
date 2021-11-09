@@ -512,3 +512,18 @@ def get_zenml_dir(path: str = os.getcwd()) -> str:
             "the framework."
         )
     return get_zenml_dir(str(Path(path).parent))
+
+
+def get_zenml_config_dir(path: str = os.getcwd()) -> str:
+    """Recursive function to find the zenml config starting from path.
+
+    Args:
+        path (Default value = os.getcwd()): Path to check.
+
+    Returns:
+        The full path with the resolved zenml directory.
+
+    Raises:
+        InitializationException if directory not found until root of OS.
+    """
+    return os.path.join(get_zenml_dir(str(Path(path))), ZENML_DIR_NAME)

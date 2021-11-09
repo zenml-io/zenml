@@ -21,7 +21,7 @@ from zenml.core.base_component import BaseComponent
 from zenml.core.component_factory import artifact_store_factory
 from zenml.enums import ArtifactStoreTypes
 from zenml.io import fileio
-from zenml.utils.path_utils import get_zenml_config_dir
+from zenml.io.fileio import get_zenml_config_dir
 
 
 @artifact_store_factory.register(ArtifactStoreTypes.base)

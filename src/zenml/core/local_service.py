@@ -5,11 +5,12 @@ from zenml.core import mapping_utils
 from zenml.core.base_component import BaseComponent
 from zenml.core.mapping_utils import UUIDSourceTuple
 from zenml.exceptions import AlreadyExistsException, DoesNotExistException
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata.base_metadata_store import BaseMetadataStore
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.stacks.base_stack import BaseStack
-from zenml.utils import path_utils, source_utils
+from zenml.utils import source_utils
 from zenml.utils.analytics_utils import (
     REGISTERED_ARTIFACT_STORE,
     REGISTERED_METADATA_STORE,
@@ -35,7 +36,7 @@ class LocalService(BaseComponent):
 
     def get_serialization_dir(self) -> str:
         """The local service stores everything in the zenml config dir."""
-        return path_utils.get_zenml_config_dir()
+        return fileio.get_zenml_config_dir()
 
     def get_serialization_file_name(self) -> str:
         """Return the name of the file where object is serialized."""
