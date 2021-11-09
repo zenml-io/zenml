@@ -45,16 +45,15 @@ def test_is_root_when_false(tmp_path):
     assert fileio.is_root(tmp_path) is False
 
 
-def test_is_dir_when_true(tmp_path):
-    """is_dir returns true when path refers to a directory"""
-    assert fileio.is_dir(str(tmp_path))
+def test_isdir_when_true(tmp_path):
+    """isdir returns true when path refers to a directory"""
+    assert fileio.isdir(str(tmp_path))
 
 
-def test_is_dir_when_false(tmp_path):
-    """is_dir returns false when path doesn't refer to a directory"""
+def test_isdir_when_false(tmp_path):
+    """isdir returns false when path doesn't refer to a directory"""
     assert (
-        fileio.is_dir(os.path.join(str(tmp_path) + TEMPORARY_FILE_NAME))
-        is False
+        fileio.isdir(os.path.join(str(tmp_path) + TEMPORARY_FILE_NAME)) is False
     )
 
 
