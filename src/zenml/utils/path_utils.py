@@ -308,16 +308,16 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #     return Path(dir_path).parent.stem
 
 
-def get_parent(dir_path: str) -> str:
-    """Get parent of dir.
+# def get_parent(dir_path: str) -> str:
+#     """Get parent of dir.
 
-    Args:
-        dir_path(str): Path to directory.
+#     Args:
+#         dir_path(str): Path to directory.
 
-    Returns:
-        Parent (stem) of the dir as a string.
-    """
-    return Path(dir_path).stem
+#     Returns:
+#         Parent (stem) of the dir as a string.
+#     """
+#     return Path(dir_path).stem
 
 
 def load_csv_column_names(csv_file: str) -> List[str]:

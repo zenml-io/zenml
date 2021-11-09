@@ -21,7 +21,6 @@ from zenml.core.base_component import BaseComponent
 from zenml.core.component_factory import artifact_store_factory
 from zenml.enums import ArtifactStoreTypes
 from zenml.io import fileio
-from zenml.utils import path_utils
 from zenml.utils.path_utils import get_zenml_config_dir
 
 
@@ -76,7 +75,7 @@ class BaseArtifactStore(BaseComponent):
                 GlobalConfig().get_serialization_dir(),
                 str(self.uuid),
                 BaseArtifactStore.get_component_name_from_uri(artifact_uri),
-                path_utils.get_parent(artifact_uri),  # unique ID from MLMD
+                fileio.get_parent(artifact_uri),  # unique ID from MLMD
             )
 
         # Create if not exists and download

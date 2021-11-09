@@ -392,3 +392,15 @@ def get_grandparent(dir_path: str) -> str:
         The input paths parents parent.
     """
     return Path(dir_path).parent.stem
+
+
+def get_parent(dir_path: str) -> str:
+    """Get parent of dir.
+
+    Args:
+        dir_path(str): Path to directory.
+
+    Returns:
+        Parent (stem) of the dir as a string.
+    """
+    return Path(dir_path).stem
