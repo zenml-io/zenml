@@ -459,3 +459,17 @@ def create_tarfile(
 
     with tarfile.open(output_filename, "w:gz") as tar:
         tar.add(source_dir, arcname="", filter=exclude_function)
+
+
+def extract_tarfile(source_tar: str, output_dir: str) -> None:
+    """Untars a compressed tar file to output_dir.
+
+    Args:
+        source_tar: Path to a tar compressed file.
+        output_dir: Directory where to uncompress.
+    """
+    if is_remote(source_tar):
+        raise NotImplementedError("Use local tars for now.")
+
+    with tarfile.open(source_tar, "r:gz") as tar:
+        tar.extractall(output_dir)
