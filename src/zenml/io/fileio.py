@@ -524,7 +524,7 @@ def get_zenml_config_dir(path: str = os.getcwd()) -> str:
     return os.path.join(get_zenml_dir(str(Path(path))), ZENML_DIR_NAME)
 
 
-def convert_to_str(path: PathType):
+def convert_to_str(path: PathType) -> str:
     """Converts a PathType to a str using UTF-8."""
     if isinstance(path, str):
         return path
