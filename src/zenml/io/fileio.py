@@ -358,3 +358,14 @@ def move(source: str, destination: str, overwrite: bool = False) -> None:
         overwrite: boolean, if false, then throws an error before overwrite.
     """
     rename(source, destination, overwrite)
+
+
+def read_file_contents_as_string(file_path: str) -> str:
+    """Reads contents of file.
+
+    Args:
+        file_path: Path to file.
+    """
+    if not file_exists(file_path):
+        raise FileNotFoundError(f"{file_path} does not exist!")
+    return open(file_path).read()  # type: ignore[no-any-return]

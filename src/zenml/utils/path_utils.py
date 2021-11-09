@@ -274,15 +274,15 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #     fileio.remove(file_path)
 
 
-def read_file_contents_as_string(file_path: str) -> str:
-    """Reads contents of file.
+# def read_file_contents_as_string(file_path: str) -> str:
+#     """Reads contents of file.
 
-    Args:
-        file_path: Path to file.
-    """
-    if not fileio.file_exists(file_path):
-        raise FileNotFoundError(f"{file_path} does not exist!")
-    return fileio.open(file_path).read()  # type: ignore[no-any-return]
+#     Args:
+#         file_path: Path to file.
+#     """
+#     if not fileio.file_exists(file_path):
+#         raise FileNotFoundError(f"{file_path} does not exist!")
+#     return fileio.open(file_path).read()  # type: ignore[no-any-return]
 
 
 def write_file_contents_as_string(file_path: str, content: str) -> None:

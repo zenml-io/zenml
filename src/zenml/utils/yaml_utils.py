@@ -52,7 +52,7 @@ def read_yaml(file_path: str) -> Any:
         FileNotFoundError if file does not exist.
     """
     if fileio.file_exists(file_path):
-        contents = path_utils.read_file_contents_as_string(file_path)
+        contents = fileio.read_file_contents_as_string(file_path)
         return yaml.load(contents, Loader=yaml.FullLoader)
     else:
         raise FileNotFoundError(f"{file_path} does not exist.")
@@ -100,7 +100,7 @@ def read_json(file_path: str) -> Any:
         file_path: Path to JSON file.
     """
     if fileio.file_exists(file_path):
-        contents = path_utils.read_file_contents_as_string(file_path)
+        contents = fileio.read_file_contents_as_string(file_path)
         return json.loads(contents)
     else:
         raise FileNotFoundError(f"{file_path} does not exist.")
