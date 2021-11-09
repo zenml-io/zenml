@@ -15,13 +15,13 @@
 These utils are predicated on the following definitions:
 
 * class_source: This is a python-import type path to a class, e.g.
-some.mod.class
+    some.mod.class
 * module_source: This is a python-import type path to a module, e.g. some.mod
 * file_path, relative_path, absolute_path: These are file system paths.
 * source: This is a class_source or module_source. If it is a class_source, it
-can also be optionally pinned.
+    can also be optionally pinned.
 * pin: Whatever comes after the `@` symbol from a source, usually the git sha
-or the version of zenml as a string.
+    or the version of zenml as a string.
 """
 import importlib
 import inspect
