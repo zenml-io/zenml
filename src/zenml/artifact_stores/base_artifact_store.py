@@ -45,7 +45,7 @@ class BaseArtifactStore(BaseComponent):
         Returns:
             Name of the component.
         """
-        return path_utils.get_grandparent(artifact_uri)
+        return fileio.get_grandparent(artifact_uri)
 
     def get_serialization_dir(self) -> str:
         """Gets the local path where artifacts are stored."""

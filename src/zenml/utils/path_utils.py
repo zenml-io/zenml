@@ -296,16 +296,16 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #         f.write(content)
 
 
-def get_grandparent(dir_path: str) -> str:
-    """Get grandparent of dir.
+# def get_grandparent(dir_path: str) -> str:
+#     """Get grandparent of dir.
 
-    Args:
-        dir_path: Path to directory.
+#     Args:
+#         dir_path: Path to directory.
 
-    Returns:
-        The input paths parents parent.
-    """
-    return Path(dir_path).parent.stem
+#     Returns:
+#         The input paths parents parent.
+#     """
+#     return Path(dir_path).parent.stem
 
 
 def get_parent(dir_path: str) -> str:

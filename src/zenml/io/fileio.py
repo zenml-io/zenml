@@ -380,3 +380,15 @@ def write_file_contents_as_string(file_path: str, content: str) -> None:
     """
     with open(file_path, "w") as f:
         f.write(content)
+
+
+def get_grandparent(dir_path: str) -> str:
+    """Get grandparent of dir.
+
+    Args:
+        dir_path: Path to directory.
+
+    Returns:
+        The input paths parents parent.
+    """
+    return Path(dir_path).parent.stem
