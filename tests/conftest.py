@@ -121,7 +121,7 @@
 #
 #         """
 #         cfg = os.path.join(pipeline_root, filename)
-#         path_utils.rm_file(cfg)
+#         fileio.remove(cfg)
 #
 #     return wrapper
 #

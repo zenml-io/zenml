@@ -263,15 +263,15 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #     fileio.rmtree(dir_path)
 
 
-def rm_file(file_path: str) -> None:
-    """Deletes file. Dangerous operation.
+# def rm_file(file_path: str) -> None:
+#     """Deletes file. Dangerous operation.
 
-    Args:
-        file_path: Path of file to delete.
-    """
-    if not fileio.file_exists(file_path):
-        raise FileNotFoundError(f"{file_path} does not exist!")
-    fileio.remove(file_path)
+#     Args:
+#         file_path: Path of file to delete.
+#     """
+#     if not fileio.file_exists(file_path):
+#         raise FileNotFoundError(f"{file_path} does not exist!")
+#     fileio.remove(file_path)
 
 
 def read_file_contents_as_string(file_path: str) -> str:

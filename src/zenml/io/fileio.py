@@ -104,6 +104,13 @@ def file_exists(path: str) -> bool:
     return _get_filesystem(path).exists(path)
 
 
+def remove(path: PathType) -> None:
+    """Remove the file at the given path. Dangerous operation."""
+    if not file_exists(path):
+        raise FileNotFoundError(f"{path} does not exist!")
+    _get_filesystem(path).remove(path)
+
+
 def glob(pattern: PathType) -> List[PathType]:
     """Return the paths that match a glob pattern."""
     return _get_filesystem(pattern).glob(pattern)
@@ -164,11 +171,6 @@ def makedirs(path: PathType) -> None:
 def mkdir(path: PathType) -> None:
     """Make a directory at the given path; parent directory must exist."""
     _get_filesystem(path).mkdir(path)
-
-
-def remove(path: PathType) -> None:
-    """Remove the file at the given path."""
-    _get_filesystem(path).remove(path)
 
 
 def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
