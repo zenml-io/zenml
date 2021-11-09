@@ -21,19 +21,19 @@ from typing import Any, Callable, Iterable, List, Optional, Tuple, Type
 
 from tfx.dsl.io.filesystem import Filesystem, PathType
 
+from zenml.constants import REMOTE_FS_PREFIX
 from zenml.core.constants import ZENML_DIR_NAME
 from zenml.exceptions import InitializationException
 from zenml.logger import get_logger
-from zenml.utils.path_utils import convert_to_str
 from zenml.utils.source_utils import import_class_by_path
 
 logger = get_logger(__name__)
 
-# TODO: [LOW] choose between is_dir vs isdir pattern (& standardize)
-# `is_dir` is what ZenML has been defaulting to for path_utils
-# `isdir` is what TFX has been defaulting to
+# TODO: [TFX] [LOW] Unnecessary dependency here
 
-_REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
+# TODO: [LOW] choose between is_dir vs isdir pattern (& standardize)
+# `is_dir` is what ZenML had been defaulting to for path_utils
+# `isdir` is what TFX has been defaulting to
 
 
 def _get_scheme(path: PathType) -> PathType:
@@ -251,7 +251,7 @@ def is_remote(path: str) -> bool:
     Returns:
         True if remote path, else False.
     """
-    return any(path.startswith(prefix) for prefix in _REMOTE_FS_PREFIX)
+    return any(path.startswith(prefix) for prefix in REMOTE_FS_PREFIX)
 
 
 def is_gcs_path(path: str) -> bool:
@@ -527,3 +527,11 @@ def get_zenml_config_dir(path: str = os.getcwd()) -> str:
         InitializationException if directory not found until root of OS.
     """
     return os.path.join(get_zenml_dir(str(Path(path))), ZENML_DIR_NAME)
+
+
+def convert_to_str(path: PathType) -> str:
+    """Converts a PathType to a str using UTF-8."""
+    if isinstance(path, str):
+        return path
+    else:
+        return path.decode("utf-8")

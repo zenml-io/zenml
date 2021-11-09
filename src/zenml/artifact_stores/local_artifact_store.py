@@ -15,9 +15,9 @@
 from pydantic import validator
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+from zenml.constants import REMOTE_FS_PREFIX
 from zenml.core.component_factory import artifact_store_factory
 from zenml.enums import ArtifactStoreTypes
-from zenml.utils.path_utils import _REMOTE_FS_PREFIX
 
 
 @artifact_store_factory.register(ArtifactStoreTypes.local)
@@ -27,6 +27,6 @@ class LocalArtifactStore(BaseArtifactStore):
     @validator("path")
     def must_be_local_path(cls, v: str) -> str:
         """Validates that the path is a local path."""
-        if any([v.startswith(prefix) for prefix in _REMOTE_FS_PREFIX]):
+        if any([v.startswith(prefix) for prefix in REMOTE_FS_PREFIX]):
             raise ValueError("Must be a local path.")
         return v

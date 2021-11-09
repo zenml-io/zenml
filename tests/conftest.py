@@ -30,7 +30,7 @@
 # # from zenml.pipelines import BasePipeline
 # # from zenml.repo import Repository, ZenMLConfig
 # # from zenml.steps import BaseStep
-# # from zenml.utils import path_utils
+# # from zenml.io import fileio
 #
 # logger = get_logger(__name__)
 #
