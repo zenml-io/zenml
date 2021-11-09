@@ -359,6 +359,7 @@ class BaseStep(metaclass=BaseStepMeta):
         self, *artifacts: Channel, **kw_artifacts: Channel
     ) -> Union[Channel, List[Channel]]:
         """Generates a component when called."""
+        # TODO [MEDIUM]: replaces Channels with ZenML class (BaseArtifact?)
         self._prepare_parameter_spec()
 
         # Construct INPUT_SPEC from INPUT_SIGNATURE
