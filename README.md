@@ -105,6 +105,7 @@ ZenML is managed by a [core team](https://zenml.io/team) of developers that are 
 We would love to receive your contributions! Check our [Contributing Guide](CONTRIBUTING.md) for more details on how best to contribute.
 
 <br>
+
 ![Repobeats analytics image](https://repobeats.axiom.co/api/embed/635c57b743efe649cadceba6a2e6a956663f96dd.svg "Repobeats analytics image")
 
 ## Copyright
