@@ -404,3 +404,9 @@ def get_parent(dir_path: str) -> str:
         Parent (stem) of the dir as a string.
     """
     return Path(dir_path).stem
+
+
+def load_csv_column_names(csv_file: str) -> List[str]:
+    """Parse the first line of a csv file as column names."""
+    with open(csv_file) as f:
+        return f.readline().strip().split(",")  # type: ignore[no-any-return]

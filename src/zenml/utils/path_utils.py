@@ -320,10 +320,10 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #     return Path(dir_path).stem
 
 
-def load_csv_column_names(csv_file: str) -> List[str]:
-    """Parse the first line of a csv file as column names."""
-    with fileio.open(csv_file) as f:
-        return f.readline().strip().split(",")  # type: ignore[no-any-return]
+# def load_csv_column_names(csv_file: str) -> List[str]:
+#     """Parse the first line of a csv file as column names."""
+#     with fileio.open(csv_file) as f:
+#         return f.readline().strip().split(",")  # type: ignore[no-any-return]
 
 
 def load_csv_header(csv_path: str) -> List[str]:
@@ -332,10 +332,9 @@ def load_csv_header(csv_path: str) -> List[str]:
     Args:
         csv_path: Path to csv file.
     """
-    if fileio.file_exists(csv_path):
-        return load_csv_column_names(csv_path)
-    else:
+    if not fileio.file_exists(csv_path):
         raise FileNotFoundError(f"{csv_path} does not exist!")
+    return fileio.load_csv_column_names(csv_path)
 
 
 def create_tarfile(
