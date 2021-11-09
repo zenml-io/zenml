@@ -20,7 +20,6 @@ from pathlib import Path
 from tfx.dsl.io.filesystem import PathType
 
 from zenml.core.constants import ZENML_DIR_NAME
-from zenml.exceptions import InitializationException
 from zenml.io import fileio
 from zenml.logger import get_logger
 
@@ -403,28 +402,28 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #     return False
 
 
-def get_zenml_dir(path: str = os.getcwd()) -> str:
-    """Recursive function to find the zenml config starting from path.
+# def get_zenml_dir(path: str = os.getcwd()) -> str:
+#     """Recursive function to find the zenml config starting from path.
 
-    Args:
-        path (Default value = os.getcwd()): Path to check.
+#     Args:
+#         path (Default value = os.getcwd()): Path to check.
 
-    Returns:
-        The full path with the resolved zenml directory.
+#     Returns:
+#         The full path with the resolved zenml directory.
 
-    Raises:
-        InitializationException if directory not found until root of OS.
-    """
-    if fileio.is_zenml_dir(path):
-        return path
+#     Raises:
+#         InitializationException if directory not found until root of OS.
+#     """
+#     if fileio.is_zenml_dir(path):
+#         return path
 
-    if fileio.is_root(path):
-        raise InitializationException(
-            "Looks like you used ZenML outside of a ZenML repo. "
-            "Please init a ZenML repo first before you using "
-            "the framework."
-        )
-    return get_zenml_dir(str(Path(path).parent))
+#     if fileio.is_root(path):
+#         raise InitializationException(
+#             "Looks like you used ZenML outside of a ZenML repo. "
+#             "Please init a ZenML repo first before you using "
+#             "the framework."
+#         )
+#     return get_zenml_dir(str(Path(path).parent))
 
 
 def get_zenml_config_dir(path: str = os.getcwd()) -> str:
@@ -439,7 +438,7 @@ def get_zenml_config_dir(path: str = os.getcwd()) -> str:
     Raises:
         InitializationException if directory not found until root of OS.
     """
-    return os.path.join(get_zenml_dir(str(Path(path))), ZENML_DIR_NAME)
+    return os.path.join(fileio.get_zenml_dir(str(Path(path))), ZENML_DIR_NAME)
 
 
 def convert_to_str(path: PathType) -> str:

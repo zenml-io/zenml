@@ -32,7 +32,7 @@ from zenml.integrations.airflow.orchestrators.airflow_dag_runner import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
-from zenml.utils import daemon, path_utils
+from zenml.utils import daemon
 
 logger = get_logger(__name__)
 
@@ -213,7 +213,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             command.run,
             pid_file=self.pid_file,
             log_file=self.log_file,
-            working_directory=path_utils.get_zenml_dir(),
+            working_directory=fileio.get_zenml_dir(),
         )
 
         while not self.is_running:

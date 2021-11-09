@@ -30,7 +30,6 @@ from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.post_execution.pipeline import PipelineView
 from zenml.stacks.base_stack import BaseStack
-from zenml.utils import path_utils
 from zenml.utils.analytics_utils import (
     FETCHED_STACK,
     GET_PIPELINES,
@@ -57,7 +56,7 @@ class Repository:
         if path is None:
             try:
                 # Start from cwd and traverse up until find zenml config.
-                path = path_utils.get_zenml_dir(os.getcwd())
+                path = fileio.get_zenml_dir(os.getcwd())
             except InitializationException:
                 # If there isn't a zenml.config, use the cwd
                 path = os.getcwd()

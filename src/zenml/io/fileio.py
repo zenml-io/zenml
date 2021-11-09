@@ -22,6 +22,7 @@ from typing import Any, Callable, Iterable, List, Optional, Tuple, Type
 from tfx.dsl.io.filesystem import Filesystem, PathType
 
 from zenml.core.constants import ZENML_DIR_NAME
+from zenml.exceptions import InitializationException
 from zenml.logger import get_logger
 from zenml.utils.path_utils import convert_to_str
 from zenml.utils.source_utils import import_class_by_path
@@ -487,3 +488,27 @@ def is_zenml_dir(path: str) -> bool:
     """
     config_dir_path = os.path.join(path, ZENML_DIR_NAME)
     return bool(isdir(config_dir_path))
+
+
+def get_zenml_dir(path: str = os.getcwd()) -> str:
+    """Recursive function to find the zenml config starting from path.
+
+    Args:
+        path (Default value = os.getcwd()): Path to check.
+
+    Returns:
+        The full path with the resolved zenml directory.
+
+    Raises:
+        InitializationException if directory not found until root of OS.
+    """
+    if is_zenml_dir(path):
+        return path
+
+    if is_root(path):
+        raise InitializationException(
+            "Looks like you used ZenML outside of a ZenML repo. "
+            "Please init a ZenML repo first before you using "
+            "the framework."
+        )
+    return get_zenml_dir(str(Path(path).parent))
