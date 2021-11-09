@@ -95,7 +95,7 @@ class Repository:
             NoSuchPathError: If the repo_path does not exist.
         """
         # First check whether it already exists or not
-        if path_utils.is_zenml_dir(repo_path):
+        if fileio.is_zenml_dir(repo_path):
             raise AssertionError(f"{repo_path} is already initialized!")
 
         # Edit global config

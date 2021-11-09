@@ -21,6 +21,7 @@ from typing import Any, Callable, Iterable, List, Optional, Tuple, Type
 
 from tfx.dsl.io.filesystem import Filesystem, PathType
 
+from zenml.core.constants import ZENML_DIR_NAME
 from zenml.logger import get_logger
 from zenml.utils.path_utils import convert_to_str
 from zenml.utils.source_utils import import_class_by_path
@@ -473,3 +474,16 @@ def extract_tarfile(source_tar: str, output_dir: str) -> None:
 
     with tarfile.open(source_tar, "r:gz") as tar:
         tar.extractall(output_dir)
+
+
+def is_zenml_dir(path: str) -> bool:
+    """Check if dir is a zenml dir or not.
+
+    Args:
+        path: Path to the root.
+
+    Returns:
+        True if path contains a zenml dir, False if not.
+    """
+    config_dir_path = os.path.join(path, ZENML_DIR_NAME)
+    return bool(isdir(config_dir_path))

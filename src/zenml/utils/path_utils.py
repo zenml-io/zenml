@@ -15,7 +15,6 @@
 # TODO: [TFX] [LOW] Unnecessary dependency here
 
 import os
-import tarfile
 from pathlib import Path
 
 from tfx.dsl.io.filesystem import PathType
@@ -375,33 +374,33 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #         tar.add(source_dir, arcname="", filter=exclude_function)
 
 
-def extract_tarfile(source_tar: str, output_dir: str) -> None:
-    """Untars a compressed tar file to output_dir.
+# def extract_tarfile(source_tar: str, output_dir: str) -> None:
+#     """Untars a compressed tar file to output_dir.
 
-    Args:
-        source_tar: Path to a tar compressed file.
-        output_dir: Directory where to uncompress.
-    """
-    if fileio.is_remote(source_tar):
-        raise NotImplementedError("Use local tars for now.")
+#     Args:
+#         source_tar: Path to a tar compressed file.
+#         output_dir: Directory where to uncompress.
+#     """
+#     if fileio.is_remote(source_tar):
+#         raise NotImplementedError("Use local tars for now.")
 
-    with tarfile.open(source_tar, "r:gz") as tar:
-        tar.extractall(output_dir)
+#     with tarfile.open(source_tar, "r:gz") as tar:
+#         tar.extractall(output_dir)
 
 
-def is_zenml_dir(path: str) -> bool:
-    """Check if dir is a zenml dir or not.
+# def is_zenml_dir(path: str) -> bool:
+#     """Check if dir is a zenml dir or not.
 
-    Args:
-        path: Path to the root.
+#     Args:
+#         path: Path to the root.
 
-    Returns:
-        True if path contains a zenml dir, False if not.
-    """
-    config_dir_path = os.path.join(path, ZENML_DIR_NAME)
-    if fileio.isdir(config_dir_path):
-        return True
-    return False
+#     Returns:
+#         True if path contains a zenml dir, False if not.
+#     """
+#     config_dir_path = os.path.join(path, ZENML_DIR_NAME)
+#     if fileio.isdir(config_dir_path):
+#         return True
+#     return False
 
 
 def get_zenml_dir(path: str = os.getcwd()) -> str:
@@ -416,7 +415,7 @@ def get_zenml_dir(path: str = os.getcwd()) -> str:
     Raises:
         InitializationException if directory not found until root of OS.
     """
-    if is_zenml_dir(path):
+    if fileio.is_zenml_dir(path):
         return path
 
     if fileio.is_root(path):
