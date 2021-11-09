@@ -291,12 +291,74 @@ class BaseStep(metaclass=BaseStepMeta):
                     f"json serializable parameter values."
                 ) from e
 
+    def _prepare_input_artifacts(
+        self, *artifacts: Channel, **kw_artifacts: Channel
+    ) -> Dict[str, Channel]:
+        """Verifies and prepares the input artifacts for running this step.
+
+        Args:
+            *artifacts: Positional input artifacts passed to
+                the __call__ method.
+            **kw_artifacts: Keyword input artifacts passed to
+                the __call__ method.
+
+        Returns:
+            Dictionary containing both the positional and keyword input
+            artifacts.
+
+        Raises:
+            StepInterfaceError: If there are too many or too few artifacts.
+        """
+        input_artifact_keys = list(self.INPUT_SPEC.keys())
+        if len(artifacts) > len(input_artifact_keys):
+            raise StepInterfaceError(
+                f"Too many input artifacts for step '{self.step_name}'. "
+                f"This step expects {len(input_artifact_keys)} artifact(s) "
+                f"but got {len(artifacts) + len(kw_artifacts)}."
+            )
+
+        combined_artifacts = {}
+
+        for i, artifact in enumerate(artifacts):
+            key = input_artifact_keys[i]
+            combined_artifacts[key] = artifact
+
+        for key, artifact in kw_artifacts.items():
+            if key in combined_artifacts:
+                # an artifact for this key was already set by
+                # the positional input artifacts
+                raise StepInterfaceError(
+                    f"Unexpected keyword argument '{key}' for step "
+                    f"'{self.step_name}'. An artifact for this key was "
+                    f"already passed as a positional argument."
+                )
+
+            combined_artifacts[key] = artifact
+
+        # check if there are any missing or unexpected artifacts
+        expected_artifacts = set(self.INPUT_SPEC.keys())
+        actual_artifacts = set(combined_artifacts.keys())
+        missing_artifacts = expected_artifacts - actual_artifacts
+        unexpected_artifacts = actual_artifacts - expected_artifacts
+
+        if missing_artifacts:
+            raise StepInterfaceError(
+                f"Missing input artifacts for step "
+                f"'{self.step_name}': {missing_artifacts}."
+            )
+
+        if unexpected_artifacts:
+            raise StepInterfaceError(
+                f"Got unexpected input artifacts for step "
+                f"'{self.step_name}': {unexpected_artifacts}."
+            )
+
+        return combined_artifacts
+
     def __call__(
-        self, **artifacts: BaseArtifact
+        self, *artifacts: Channel, **kw_artifacts: Channel
     ) -> Union[Channel, List[Channel]]:
         """Generates a component when called."""
-        # TODO [MEDIUM]: Support *args as well.
-
         self._prepare_parameter_spec()
 
         # Construct INPUT_SPEC from INPUT_SIGNATURE
@@ -304,24 +366,12 @@ class BaseStep(metaclass=BaseStepMeta):
         # Construct OUTPUT_SPEC from OUTPUT_SIGNATURE
         self.resolve_signature_materializers(self.OUTPUT_SIGNATURE, False)
 
-        # Basic checks
-        for artifact in artifacts.keys():
-            if artifact not in self.INPUT_SPEC:
-                raise ValueError(
-                    f"Artifact `{artifact}` is not defined in the input "
-                    f"signature of the step. Defined artifacts: "
-                    f"{list(self.INPUT_SPEC.keys())}"
-                )
-
-        for artifact in self.INPUT_SPEC.keys():
-            if artifact not in artifacts.keys():
-                raise ValueError(
-                    f"Artifact {artifact} is defined in the input signature "
-                    f"of the step but not connected in the pipeline creation!"
-                )
+        input_artifacts = self._prepare_input_artifacts(
+            *artifacts, **kw_artifacts
+        )
 
         self.__component = generate_component(self)(
-            **artifacts,
+            **input_artifacts,
             **self.PARAM_SPEC,
             **self._internal_execution_properties,
         )
