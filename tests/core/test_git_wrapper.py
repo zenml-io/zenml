@@ -29,7 +29,7 @@ def test_no_exception_raised_if_repository_is_valid_git_repository(
     git_instance = git_wrapper.GitWrapper(tmp_path)
     assert git_instance.repo_path == tmp_path
     assert git_instance.repo_path.exists()
-    assert fileio.isdir(str(git_instance.repo_path))
+    assert fileio.is_dir(str(git_instance.repo_path))
     assert git_instance.git_root_path == str(
         tmp_path / git_wrapper.GIT_FOLDER_NAME
     )

@@ -33,7 +33,7 @@ def write_yaml(file_path: str, contents: Dict[Any, Any]) -> None:
     """
     if not fileio.is_remote(file_path):
         dir_ = str(Path(file_path).parent)
-        if not fileio.isdir(dir_):
+        if not fileio.is_dir(dir_):
             raise FileNotFoundError(f"Directory {dir_} does not exist.")
     fileio.write_file_contents_as_string(file_path, yaml.dump(contents))
 
@@ -86,7 +86,7 @@ def write_json(file_path: str, contents: Dict[str, Any]) -> None:
     """
     if not fileio.is_remote(file_path):
         dir_ = str(Path(file_path).parent)
-        if not fileio.isdir(dir_):
+        if not fileio.is_dir(dir_):
             # If it is a local path and it doesnt exist, raise Exception.
             raise FileNotFoundError(f"Directory {dir_} does not exist.")
     fileio.write_file_contents_as_string(file_path, json.dumps(contents))

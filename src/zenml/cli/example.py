@@ -216,7 +216,7 @@ def info(git_examples_handler: Any, example_name: str) -> None:
         readme_content = git_examples_handler.get_example_readme(example_dir)
         click.echo(readme_content)
     except FileNotFoundError:
-        if fileio.file_exists(example_dir) and fileio.isdir(example_dir):
+        if fileio.file_exists(example_dir) and fileio.is_dir(example_dir):
             error(f"No README.md file found in {example_dir}")
         else:
             error(

@@ -119,7 +119,7 @@ class GitWrapper:
             if len(self.git_repo.ignored(path)) > 0:
                 continue
 
-            if fileio.isdir(os.path.join(mod_abs_dir, file_path)):
+            if fileio.is_dir(os.path.join(mod_abs_dir, file_path)):
                 logger.warning(
                     f"The step {source} is contained inside a module "
                     f"that "

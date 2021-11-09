@@ -31,10 +31,6 @@ logger = get_logger(__name__)
 
 # TODO: [TFX] [LOW] Unnecessary dependency here
 
-# TODO: [LOW] choose between is_dir vs isdir pattern (& standardize)
-# `is_dir` is what ZenML had been defaulting to for path_utils
-# `isdir` is what TFX has been defaulting to
-
 
 def _get_scheme(path: PathType) -> PathType:
     """Get filesystem plugin for given path."""
@@ -119,8 +115,7 @@ def glob(pattern: PathType) -> List[PathType]:
     return _get_filesystem(pattern).glob(pattern)
 
 
-def isdir(path: PathType) -> bool:
-    # TODO: [Low] consider renaming to is_dir for standardization
+def is_dir(path: PathType) -> bool:
     """Returns true if dir_path points to a dir.
 
     Args:
@@ -166,7 +161,7 @@ def list_dir(dir_path: str, only_file_names: bool = False) -> List[str]:
         return []
 
 
-def makedirs(path: PathType) -> None:
+def make_dirs(path: PathType) -> None:
     """Make a directory at the given path, recursively creating parents."""
     _get_filesystem(path).makedirs(path)
 
@@ -302,7 +297,7 @@ def create_dir_if_not_exists(dir_path: str) -> None:
     Args:
         dir_path(str): Local path in filesystem.
     """
-    if not isdir(dir_path):
+    if not is_dir(dir_path):
         mkdir(dir_path)
 
 
@@ -312,8 +307,8 @@ def create_dir_recursive_if_not_exists(dir_path: str) -> None:
     Args:
         dir_path: Local path in filesystem.
     """
-    if not isdir(dir_path):
-        makedirs(dir_path)
+    if not is_dir(dir_path):
+        make_dirs(dir_path)
 
 
 def resolve_relative_path(path: str) -> str:
@@ -343,7 +338,7 @@ def copy_dir(
     for source_file in list_dir(source_dir):
         source_file_path = Path(source_file)
         destination_name = os.path.join(destination_dir, source_file_path.name)
-        if isdir(source_file):
+        if is_dir(source_file):
             copy_dir(source_file, destination_name, overwrite)
         else:
             create_dir_recursive_if_not_exists(
@@ -487,7 +482,7 @@ def is_zenml_dir(path: str) -> bool:
         True if path contains a zenml dir, False if not.
     """
     config_dir_path = os.path.join(path, ZENML_DIR_NAME)
-    return bool(isdir(config_dir_path))
+    return bool(is_dir(config_dir_path))
 
 
 def get_zenml_dir(path: str = os.getcwd()) -> str:

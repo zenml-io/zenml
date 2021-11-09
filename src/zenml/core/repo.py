@@ -61,7 +61,7 @@ class Repository:
                 # If there isn't a zenml.config, use the cwd
                 path = os.getcwd()
 
-        if not fileio.isdir(path):
+        if not fileio.is_dir(path):
             raise FileNotFoundError(f"{path} does not exist or is not a dir!")
         self.path = path
         self.service = LocalService()
