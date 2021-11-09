@@ -412,8 +412,8 @@ class BaseStep(metaclass=BaseStepMeta):
         in then we make sure the output names match.
 
         Args:
-            materializers: Either a `Type[BaseMaterializer]`, or a
-            dict that maps {output_name: Type[BaseMaterializer]}.
+            materializers: A `BaseMaterializer` subclass or a dict mapping
+                output names to `BaseMaterializer` subclasses.
         """
         if not isinstance(materializers, dict):
             assert isinstance(materializers, type) and issubclass(
