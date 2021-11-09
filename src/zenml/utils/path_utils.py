@@ -285,15 +285,15 @@ _REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
 #     return fileio.open(file_path).read()  # type: ignore[no-any-return]
 
 
-def write_file_contents_as_string(file_path: str, content: str) -> None:
-    """Writes contents of file.
+# def write_file_contents_as_string(file_path: str, content: str) -> None:
+#     """Writes contents of file.
 
-    Args:
-        file_path: Path to file.
-        content: Contents of file.
-    """
-    with fileio.open(file_path, "w") as f:
-        f.write(content)
+#     Args:
+#         file_path: Path to file.
+#         content: Contents of file.
+#     """
+#     with fileio.open(file_path, "w") as f:
+#         f.write(content)
 
 
 def get_grandparent(dir_path: str) -> str:

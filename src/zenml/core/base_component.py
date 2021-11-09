@@ -21,7 +21,6 @@ from pydantic import BaseSettings, Field
 from zenml.core.utils import generate_customise_sources
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.utils import path_utils
 
 logger = get_logger(__name__)
 
@@ -73,7 +72,7 @@ class BaseComponent(BaseSettings):
         self._create_serialization_file_if_not_exists()
         f = self.get_serialization_full_path()
 
-        path_utils.write_file_contents_as_string(
+        fileio.write_file_contents_as_string(
             f, self.json(indent=2, sort_keys=True)
         )
 
