@@ -38,7 +38,7 @@
 
 <div style="float:left;padding:5px;width:50%;display:flex;">
 
-![A data scientist is frustarted without ZenML <](docs/readme/sam_frustrated.jpg)
+![A data scientist is frustrated without ZenML <](docs/readme/sam_frustrated.jpg)
 
 </div>
 
