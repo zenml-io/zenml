@@ -36,17 +36,12 @@
 
 ## What is ZenML?
 
-<div style="float:left;padding:5px;width:50%;display:flex;">
 
-![A data scientist is frustrated without ZenML <](docs/readme/sam_frustrated.jpg)
+Before: Sam struggles to productionalize ML |  After: Sam finds Zen in her MLOps with ZenML.
+:-------------------------:|:-------------------------:
+![](docs/readme/sam_frustrated.jpg)  |  ![](docs/readme/sam_zen_mode.jpg)
 
-</div>
 
-<div style="padding:5px;width:50%;display:flex;">
-
-![A data scientist finds Zen in their MLOps with ZenML >](docs/readme/sam_zen_mode.jpg)
-
-</div>
 
 **ZenML** is an extensible, open-source MLOps framework to create production-ready machine learning pipelines. It has a simple, flexible syntax,
 is cloud and tool agnostic, and has interfaces/abstractions that are catered towards ML workflows.
