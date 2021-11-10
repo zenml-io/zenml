@@ -37,7 +37,7 @@
 ## What is ZenML?
 
 
-Before: Sam struggles to productionalize ML |  After: Sam finds Zen in her MLOps with ZenML.
+Before: Sam struggles to productionalize ML |  After: Sam finds Zen in her MLOps with ZenML
 :-------------------------:|:-------------------------:
 ![](docs/readme/sam_frustrated.jpg)  |  ![](docs/readme/sam_zen_mode.jpg)
 
