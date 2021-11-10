@@ -16,9 +16,9 @@ import os
 import pytest
 
 from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
-from zenml.pipelines.pipeline_decorator import pipeline
+from zenml.pipelines import pipeline
+from zenml.steps import step
 from zenml.steps.base_step_config import BaseStepConfig
-from zenml.steps.step_decorator import step
 from zenml.utils.yaml_utils import write_yaml
 
 
@@ -43,49 +43,81 @@ def create_pipeline_with_config_value(config_value: int):
     return pipeline_instance
 
 
-def test_initialize_pipeline():
-    @step
-    def empty_step():
-        pass
+def test_initialize_pipeline_with_args(
+    unconnected_two_step_pipeline, empty_step
+):
+    """Test that a pipeline can be initialized with args."""
+    unconnected_two_step_pipeline(empty_step(), empty_step())
 
-    @pipeline
-    def some_pipeline(step_1, step_2):
-        pass
 
-    # initialize with args
-    some_pipeline(empty_step(), empty_step())
+def test_initialize_pipeline_with_kwargs(
+    unconnected_two_step_pipeline, empty_step
+):
+    """Test that a pipeline can be initialized with kwargs."""
+    unconnected_two_step_pipeline(step_1=empty_step(), step_2=empty_step())
 
-    # initialize with kwargs
-    some_pipeline(step_1=empty_step(), step_2=empty_step())
 
-    # initialize mixed
-    some_pipeline(empty_step(), step_2=empty_step())
+def test_initialize_pipeline_with_args_and_kwargs(
+    unconnected_two_step_pipeline, empty_step
+):
+    """Test that a pipeline can be initialized with a mix of args and kwargs."""
+    unconnected_two_step_pipeline(empty_step(), step_2=empty_step())
 
-    # too many args
+
+def test_initialize_pipeline_with_too_many_args(
+    unconnected_two_step_pipeline, empty_step
+):
+    """Test that pipeline initialization fails when too many args
+    are passed."""
     with pytest.raises(PipelineInterfaceError):
-        some_pipeline(empty_step(), empty_step(), empty_step())
+        unconnected_two_step_pipeline(empty_step(), empty_step(), empty_step())
 
-    # too many combined arguments
-    with pytest.raises(PipelineInterfaceError):
-        some_pipeline(empty_step(), step_1=empty_step(), step_2=empty_step())
 
-    # missing key
+def test_initialize_pipeline_with_too_many_args_and_kwargs(
+    unconnected_two_step_pipeline, empty_step
+):
+    """Test that pipeline initialization fails when too many args
+    and kwargs are passed."""
     with pytest.raises(PipelineInterfaceError):
-        some_pipeline(step_1=empty_step())
+        unconnected_two_step_pipeline(
+            empty_step(), step_1=empty_step(), step_2=empty_step()
+        )
 
-    # unexpected key
+
+def test_initialize_pipeline_with_missing_key(
+    unconnected_two_step_pipeline, empty_step
+):
+    """Test that pipeline initialization fails when an argument
+    is missing."""
     with pytest.raises(PipelineInterfaceError):
-        some_pipeline(
+        unconnected_two_step_pipeline(step_1=empty_step())
+
+
+def test_initialize_pipeline_with_unexpected_key(
+    unconnected_two_step_pipeline, empty_step
+):
+    """Test that pipeline initialization fails when an argument
+    has an unexpected key."""
+    with pytest.raises(PipelineInterfaceError):
+        unconnected_two_step_pipeline(
             step_1=empty_step(), step_2=empty_step(), step_3=empty_step()
         )
 
-    # wrong type for arg
-    with pytest.raises(PipelineInterfaceError):
-        some_pipeline(empty_step(), 1)
 
-    # wrong type for kwarg
+def test_initialize_pipeline_with_wrong_arg_type(
+    unconnected_two_step_pipeline, empty_step
+):
+    """Test that pipeline initialization fails when an arg has a wrong type."""
     with pytest.raises(PipelineInterfaceError):
-        some_pipeline(step_1=1, step_2=empty_step())
+        unconnected_two_step_pipeline(1, empty_step())
+
+
+def test_initialize_pipeline_with_wrong_kwarg_type(
+    unconnected_two_step_pipeline, empty_step
+):
+    """Test that pipeline initialization fails when a kwarg has a wrong type."""
+    with pytest.raises(PipelineInterfaceError):
+        unconnected_two_step_pipeline(step_1=1, step_2=empty_step())
 
 
 def test_setting_step_parameter_with_config_object():
