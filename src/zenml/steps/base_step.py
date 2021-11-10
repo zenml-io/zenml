@@ -320,6 +320,14 @@ class BaseStep(metaclass=BaseStepMeta):
         combined_artifacts = {}
 
         for i, artifact in enumerate(artifacts):
+            if not isinstance(artifact, Channel):
+                raise StepInterfaceError(
+                    f"Wrong argument type (`{type(artifact)}`) for positional "
+                    f"argument {i} of step '{self.step_name}'. Only outputs "
+                    f"from previous steps can be used as arguments when "
+                    f"connecting steps."
+                )
+
             key = input_artifact_keys[i]
             combined_artifacts[key] = artifact
 
@@ -333,6 +341,14 @@ class BaseStep(metaclass=BaseStepMeta):
                     f"already passed as a positional argument."
                 )
 
+            if not isinstance(artifact, Channel):
+                raise StepInterfaceError(
+                    f"Wrong argument type (`{type(artifact)}`) for argument "
+                    f"'{key}' of step '{self.step_name}'. Only outputs from "
+                    f"previous steps can be used as arguments when "
+                    f"connecting steps."
+                )
+
             combined_artifacts[key] = artifact
 
         # check if there are any missing or unexpected artifacts
@@ -343,13 +359,13 @@ class BaseStep(metaclass=BaseStepMeta):
 
         if missing_artifacts:
             raise StepInterfaceError(
-                f"Missing input artifacts for step "
+                f"Missing input artifact(s) for step "
                 f"'{self.step_name}': {missing_artifacts}."
             )
 
         if unexpected_artifacts:
             raise StepInterfaceError(
-                f"Got unexpected input artifacts for step "
+                f"Unexpected input artifact(s) for step "
                 f"'{self.step_name}': {unexpected_artifacts}."
             )
 
