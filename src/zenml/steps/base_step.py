@@ -366,7 +366,8 @@ class BaseStep(metaclass=BaseStepMeta):
         if unexpected_artifacts:
             raise StepInterfaceError(
                 f"Unexpected input artifact(s) for step "
-                f"'{self.step_name}': {unexpected_artifacts}."
+                f"'{self.step_name}': {unexpected_artifacts}. This step "
+                f"only requires the following artifacts: {expected_artifacts}."
             )
 
         return combined_artifacts

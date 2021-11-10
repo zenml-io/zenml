@@ -175,7 +175,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         if unexpected_steps:
             raise PipelineInterfaceError(
                 f"Unexpected input step(s) for pipeline "
-                f"'{self.pipeline_name}': {unexpected_steps}."
+                f"'{self.pipeline_name}': {unexpected_steps}. This pipeline "
+                f"only requires the following steps: {expected_steps}."
             )
 
         self.__steps = combined_steps
