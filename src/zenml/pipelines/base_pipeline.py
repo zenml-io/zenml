@@ -92,13 +92,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         self.enable_cache = getattr(self, PARAM_ENABLE_CACHE)
         self.pipeline_name = self.__class__.__name__
-        self.__steps = dict()
         logger.info(f"Creating pipeline: {self.pipeline_name}")
         logger.info(
             f'Cache {"enabled" if self.enable_cache else "disabled"} for '
             f"pipeline `{self.pipeline_name}`"
         )
 
+        self.__steps: Dict[str, BaseStep] = {}
         self._verify_arguments(*args, **kwargs)
 
     def _verify_arguments(self, *steps: BaseStep, **kw_steps: BaseStep) -> None:
