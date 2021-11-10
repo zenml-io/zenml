@@ -131,8 +131,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 raise PipelineInterfaceError(
                     f"Wrong argument type (`{type(step)}`) for positional "
                     f"argument {i} of pipeline '{self.pipeline_name}'. Only "
-                    f"`@step` decorated functions can be used as arguments "
-                    f"when creating a pipeline."
+                    f"`@step` decorated functions or instances of `BaseStep` "
+                    f"subclasses can be used as arguments when creating "
+                    f"a pipeline."
                 )
 
             key = input_step_keys[i]
@@ -152,8 +153,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 raise PipelineInterfaceError(
                     f"Wrong argument type (`{type(step)}`) for argument "
                     f"'{key}' of pipeline '{self.pipeline_name}'. Only "
-                    f"`@step` decorated functions can be used as arguments "
-                    f"when creating a pipeline."
+                    f"`@step` decorated functions or instances of `BaseStep` "
+                    f"subclasses can be used as arguments when creating "
+                    f"a pipeline."
                 )
 
             combined_steps[key] = step
