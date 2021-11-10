@@ -15,7 +15,7 @@ import os
 
 import pytest
 
-from zenml.exceptions import PipelineConfigurationError
+from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
 from zenml.pipelines.pipeline_decorator import pipeline
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_decorator import step
@@ -41,6 +41,51 @@ def create_pipeline_with_config_value(config_value: int):
         step_=step_with_config(config=Config(value=config_value))
     )
     return pipeline_instance
+
+
+def test_initialize_pipeline():
+    @step
+    def empty_step():
+        pass
+
+    @pipeline
+    def some_pipeline(step_1, step_2):
+        pass
+
+    # initialize with args
+    some_pipeline(empty_step(), empty_step())
+
+    # initialize with kwargs
+    some_pipeline(step_1=empty_step(), step_2=empty_step())
+
+    # initialize mixed
+    some_pipeline(empty_step(), step_2=empty_step())
+
+    # too many args
+    with pytest.raises(PipelineInterfaceError):
+        some_pipeline(empty_step(), empty_step(), empty_step())
+
+    # too many combined arguments
+    with pytest.raises(PipelineInterfaceError):
+        some_pipeline(empty_step(), step_1=empty_step(), step_2=empty_step())
+
+    # missing key
+    with pytest.raises(PipelineInterfaceError):
+        some_pipeline(step_1=empty_step())
+
+    # unexpected key
+    with pytest.raises(PipelineInterfaceError):
+        some_pipeline(
+            step_1=empty_step(), step_2=empty_step(), step_3=empty_step()
+        )
+
+    # wrong type for arg
+    with pytest.raises(PipelineInterfaceError):
+        some_pipeline(empty_step(), 1)
+
+    # wrong type for kwarg
+    with pytest.raises(PipelineInterfaceError):
+        some_pipeline(step_1=1, step_2=empty_step())
 
 
 def test_setting_step_parameter_with_config_object():
