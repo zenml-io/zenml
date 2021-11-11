@@ -9,8 +9,6 @@ ENV PYTHONFAULTHANDLER=1 \
 
 RUN apt-get update && \
   apt-get install --no-install-recommends -q -y software-properties-common && \
-  add-apt-repository ppa:deadsnakes/ppa && \
-  add-apt-repository ppa:maarten-fonville/protobuf && \
   apt-get update && \
   apt-get install --no-install-recommends -q -y \
   build-essential \
@@ -18,12 +16,9 @@ RUN apt-get update && \
   libsnappy-dev \
   protobuf-compiler \
   libprotobuf-dev \
-  python3.7-dev \
   wget \
   unzip \
   git && \
-  add-apt-repository -r ppa:deadsnakes/ppa && \
-  add-apt-repository -r ppa:maarten-fonville/protobuf && \
   apt-get autoclean && \
   apt-get autoremove --purge && \
   wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py && \

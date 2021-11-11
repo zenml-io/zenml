@@ -12,6 +12,7 @@ ENV PYTHONFAULTHANDLER=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=on
 
 ENV ZENML_DEBUG=true
+ENV POETRY_HOME="/usr/local/poetry"
 ENV PATH="$POETRY_HOME/bin:$PATH"
 
 
@@ -26,7 +27,6 @@ RUN apt-get update && \
   libsnappy-dev \
   protobuf-compiler \
   libprotobuf-dev \
-  python3.7-dev \
   wget \
   unzip \
   git && \
@@ -37,7 +37,7 @@ RUN apt-get update && \
   wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py && \
   pip install --no-cache-dir --upgrade --pre pip && \
   wget https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py && \
-  python install-poetry.py
+  python3 install-poetry.py
 
 
 # copy project requirement files here to ensure they will be cached.
