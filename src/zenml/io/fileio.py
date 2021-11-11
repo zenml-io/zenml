@@ -53,7 +53,7 @@ def _get_filesystem(path: PathType) -> Type[Filesystem]:
     scheme = _get_scheme(path)
 
     if scheme == "gs://":
-        return import_class_by_path("zenml.io.gcs_plugin.ZenGCS")()  # type: ignore[no-any-return] # noqa
+        return import_class_by_path("zenml.integrations.gcp.io.gcs_plugin.ZenGCS")()  # type: ignore[no-any-return] # noqa
     elif scheme == "":
         return import_class_by_path(  # type: ignore[no-any-return] # noqa
             "tfx.dsl.io.plugins.local.LocalFilesystem"
