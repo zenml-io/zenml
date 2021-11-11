@@ -372,8 +372,12 @@
 import logging
 import os
 
+import pytest
+
 from zenml.constants import ENV_ZENML_DEBUG
 from zenml.core.repo import Repository
+from zenml.pipelines import pipeline
+from zenml.steps import step
 
 
 def pytest_sessionstart(session):
@@ -392,3 +396,26 @@ def pytest_sessionfinish(session, exitstatus):
     """Called after whole test run finished, right before
     returning the exit status to the system.
     """
+
+
+@pytest.fixture
+def empty_step():
+    """Pytest fixture that returns an empty (no input, no output) step."""
+
+    @step
+    def _empty_step():
+        pass
+
+    return _empty_step
+
+
+@pytest.fixture
+def unconnected_two_step_pipeline():
+    """Pytest fixture that returns a pipeline which takes two steps
+    `step_1` and `step_2`. The steps are not connected to each other."""
+
+    @pipeline
+    def _pipeline(step_1, step_2):
+        pass
+
+    return _pipeline

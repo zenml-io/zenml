@@ -93,41 +93,94 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         self.enable_cache = getattr(self, PARAM_ENABLE_CACHE)
         self.pipeline_name = self.__class__.__name__
-        self.__steps = dict()
         logger.info(f"Creating pipeline: {self.pipeline_name}")
         logger.info(
             f'Cache {"enabled" if self.enable_cache else "disabled"} for '
             f"pipeline `{self.pipeline_name}`"
         )
 
-        if args:
+        self.__steps: Dict[str, BaseStep] = {}
+        self._verify_arguments(*args, **kwargs)
+
+    def _verify_arguments(self, *steps: BaseStep, **kw_steps: BaseStep) -> None:
+        """Verifies the initialization args and kwargs of this pipeline.
+
+        This method makes sure that no missing/unexpected arguments or
+        arguments of a wrong type are passed when creating a pipeline. If
+        all arguments are correct, saves the steps to `self.__steps`.
+
+        Args:
+            *steps: The args passed to the init method of this pipeline.
+            **kw_steps: The kwargs passed to the init method of this pipeline.
+
+        Raises:
+            PipelineInterfaceError: If there are too many/few arguments or
+                arguments with a wrong name/type.
+        """
+        input_step_keys = list(self.STEP_SPEC.keys())
+        if len(steps) > len(input_step_keys):
             raise PipelineInterfaceError(
-                "You can only use keyword arguments while you are creating an "
-                "instance of a pipeline."
+                f"Too many input steps for pipeline '{self.pipeline_name}'. "
+                f"This pipeline expects {len(input_step_keys)} step(s) "
+                f"but got {len(steps) + len(kw_steps)}."
             )
 
-        for k, v in kwargs.items():
-            if not isinstance(v, BaseStep):
+        combined_steps = {}
+
+        for i, step in enumerate(steps):
+            if not isinstance(step, BaseStep):
                 raise PipelineInterfaceError(
-                    f"When instantiating a pipeline, you can only pass "
-                    f"in @step like annotated objects. You passed in "
-                    f"`{v}` which is of type `{type(v)}`"
+                    f"Wrong argument type (`{type(step)}`) for positional "
+                    f"argument {i} of pipeline '{self.pipeline_name}'. Only "
+                    f"`@step` decorated functions or instances of `BaseStep` "
+                    f"subclasses can be used as arguments when creating "
+                    f"a pipeline."
                 )
 
-            if k in self.STEP_SPEC:
-                self.__steps.update({k: v})
-            else:
+            key = input_step_keys[i]
+            combined_steps[key] = step
+
+        for key, step in kw_steps.items():
+            if key in combined_steps:
+                # a step for this key was already set by
+                # the positional input steps
                 raise PipelineInterfaceError(
-                    f"The argument {k} is an unknown argument. Needs to be "
-                    f"one of {list(self.STEP_SPEC.keys())}"
+                    f"Unexpected keyword argument '{key}' for pipeline "
+                    f"'{self.pipeline_name}'. A step for this key was "
+                    f"already passed as a positional argument."
                 )
 
-        missing_keys = set(self.STEP_SPEC.keys()) - set(self.steps.keys())
-        if missing_keys:
+            if not isinstance(step, BaseStep):
+                raise PipelineInterfaceError(
+                    f"Wrong argument type (`{type(step)}`) for argument "
+                    f"'{key}' of pipeline '{self.pipeline_name}'. Only "
+                    f"`@step` decorated functions or instances of `BaseStep` "
+                    f"subclasses can be used as arguments when creating "
+                    f"a pipeline."
+                )
+
+            combined_steps[key] = step
+
+        # check if there are any missing or unexpected steps
+        expected_steps = set(self.STEP_SPEC.keys())
+        actual_steps = set(combined_steps.keys())
+        missing_steps = expected_steps - actual_steps
+        unexpected_steps = actual_steps - expected_steps
+
+        if missing_steps:
             raise PipelineInterfaceError(
-                f"Trying to initialize pipeline but missing"
-                f" one or more steps: {missing_keys}"
+                f"Missing input step(s) for pipeline "
+                f"'{self.pipeline_name}': {missing_steps}."
             )
+
+        if unexpected_steps:
+            raise PipelineInterfaceError(
+                f"Unexpected input step(s) for pipeline "
+                f"'{self.pipeline_name}': {unexpected_steps}. This pipeline "
+                f"only requires the following steps: {expected_steps}."
+            )
+
+        self.__steps = combined_steps
 
     @abstractmethod
     def connect(self, *args: BaseStep, **kwargs: BaseStep) -> None:
