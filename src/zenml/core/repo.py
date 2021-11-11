@@ -24,12 +24,12 @@ from zenml.core.constants import ZENML_DIR_NAME
 from zenml.core.git_wrapper import GitWrapper
 from zenml.core.local_service import LocalService
 from zenml.exceptions import InitializationException
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.post_execution.pipeline import PipelineView
 from zenml.stacks.base_stack import BaseStack
-from zenml.utils import path_utils
 from zenml.utils.analytics_utils import (
     FETCHED_STACK,
     GET_PIPELINES,
@@ -56,12 +56,12 @@ class Repository:
         if path is None:
             try:
                 # Start from cwd and traverse up until find zenml config.
-                path = path_utils.get_zenml_dir(os.getcwd())
+                path = fileio.get_zenml_dir(os.getcwd())
             except InitializationException:
                 # If there isn't a zenml.config, use the cwd
                 path = os.getcwd()
 
-        if not path_utils.is_dir(path):
+        if not fileio.is_dir(path):
             raise FileNotFoundError(f"{path} does not exist or is not a dir!")
         self.path = path
         self.service = LocalService()
@@ -94,7 +94,7 @@ class Repository:
             NoSuchPathError: If the repo_path does not exist.
         """
         # First check whether it already exists or not
-        if path_utils.is_zenml_dir(repo_path):
+        if fileio.is_zenml_dir(repo_path):
             raise AssertionError(f"{repo_path} is already initialized!")
 
         # Edit global config
@@ -113,7 +113,7 @@ class Repository:
 
         # Create the base dir
         zen_dir = os.path.join(repo_path, ZENML_DIR_NAME)
-        path_utils.create_dir_recursive_if_not_exists(zen_dir)
+        fileio.create_dir_recursive_if_not_exists(zen_dir)
 
         # Set up metadata and artifact store defaults
         artifact_dir = os.path.join(zen_dir, "local_store")

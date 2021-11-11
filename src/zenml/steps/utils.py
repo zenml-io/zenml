@@ -70,6 +70,8 @@ logger = get_logger(__name__)
 STEP_INNER_FUNC_NAME: str = "process"
 SINGLE_RETURN_OUT_NAME: str = "output"
 PARAM_STEP_NAME: str = "step_name"
+PARAM_ENABLE_CACHE: str = "enable_cache"
+INTERNAL_EXECUTION_PARAMETER_PREFIX: str = "zenml-"
 
 
 def do_types_match(type_a: Type[Any], type_b: Type[Any]) -> bool:
@@ -104,6 +106,8 @@ def generate_component(step: "BaseStep") -> Callable[..., Any]:
     for key, artifact_type in step.OUTPUT_SPEC.items():
         spec_outputs[key] = component_spec.ChannelParameter(type=artifact_type)
     for key, prim_type in step.PARAM_SPEC.items():
+        spec_params[key] = component_spec.ExecutionParameter(type=str)  # type: ignore[no-untyped-call] # noqa
+    for key in step._internal_execution_properties.keys():  # noqa
         spec_params[key] = component_spec.ExecutionParameter(type=str)  # type: ignore[no-untyped-call] # noqa
 
     component_spec_class = type(
@@ -319,6 +323,13 @@ class _FunctionExecutor(BaseExecutor):
             output_dict: dictionary containing the output artifacts
             exec_properties: dictionary containing the execution parameters
         """
+        # remove all ZenML internal execution properties
+        exec_properties = {
+            k: v
+            for k, v in exec_properties.items()
+            if not k.startswith(INTERNAL_EXECUTION_PARAMETER_PREFIX)
+        }
+
         # Building the args for the process function
         function_params = {}
 

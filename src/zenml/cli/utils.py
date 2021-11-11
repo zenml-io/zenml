@@ -68,15 +68,6 @@ def declare(text: str) -> None:
     click.echo(click.style(text, fg="green"))
 
 
-def notice(text: str) -> None:
-    """Echo a notice string on the CLI.
-
-    Args:
-      text: Input text string.
-    """
-    click.echo(click.style(text, fg="cyan"))
-
-
 def error(text: str) -> None:
     """Echo an error string on the CLI.
 

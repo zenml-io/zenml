@@ -312,7 +312,7 @@ def test_delete_orchestrator_works(tmp_path: str) -> None:
 # def test_service_crud(tmp_path):
 #     """Test basic service crud."""
 #     # TODO [LOW] [TEST]: Need to improve this logic, potentially with
-#     #  physically checking the FS us `path_utils`.
+#     #  physically checking the FS using `fileio`.
 
 #     ls = LocalService()
 #     METADATA_KEY = "metadata_test_local"

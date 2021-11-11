@@ -11,15 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.logger import get_logger
 
-logger = get_logger(__name__)
 
 from pydantic import validator
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.core.component_factory import artifact_store_factory
 from zenml.enums import ArtifactStoreTypes
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 @artifact_store_factory.register(ArtifactStoreTypes.gcp)

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.5.1"
+version = "0.5.2"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -80,6 +80,7 @@ hypothesis = "^6.23.0"
 Sphinx = "^4.2.0"
 sphinx-bootstrap-theme = "^0.8.0"
 typing-extensions = ">=3.7.4"
+pytest-randomly = "^3.10.1"
 
 # mypy type stubs
 types-certifi = "^2021.10.8.0"

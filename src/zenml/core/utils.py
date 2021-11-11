@@ -4,8 +4,9 @@ from typing import Any, Callable, Dict, Tuple, Type, cast
 from pydantic import BaseSettings
 from pydantic.env_settings import SettingsSourceCallable
 
+from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.utils import path_utils, yaml_utils
+from zenml.utils import yaml_utils
 
 logger = get_logger(__name__)
 
@@ -41,7 +42,7 @@ def define_json_config_settings_source(
         """
         full_path = Path(config_dir) / config_name
         logger.debug(f"Parsing file: {full_path}")
-        if path_utils.file_exists(str(full_path)):
+        if fileio.file_exists(str(full_path)):
             return cast(Dict[str, Any], yaml_utils.read_json(str(full_path)))
         return {}
 

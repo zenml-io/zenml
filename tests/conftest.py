@@ -30,7 +30,7 @@
 # # from zenml.pipelines import BasePipeline
 # # from zenml.repo import Repository, ZenMLConfig
 # # from zenml.steps import BaseStep
-# # from zenml.utils import path_utils
+# # from zenml.io import fileio
 #
 # logger = get_logger(__name__)
 #
@@ -67,7 +67,7 @@
 #     def wrapper():
 #         """ """
 #         pipelines_dir = repo.zenml_config.get_pipelines_dir()
-#         for p_config in path_utils.list_dir(pipelines_dir):
+#         for p_config in fileio.list_dir(pipelines_dir):
 #             try:
 #                 os.remove(p_config)
 #             except Exception as e:
@@ -121,7 +121,7 @@
 #
 #         """
 #         cfg = os.path.join(pipeline_root, filename)
-#         path_utils.rm_file(cfg)
+#         fileio.remove(cfg)
 #
 #     return wrapper
 #
@@ -372,8 +372,12 @@
 import logging
 import os
 
+import pytest
+
 from zenml.constants import ENV_ZENML_DEBUG
 from zenml.core.repo import Repository
+from zenml.pipelines import pipeline
+from zenml.steps import step
 
 
 def pytest_sessionstart(session):
@@ -392,3 +396,26 @@ def pytest_sessionfinish(session, exitstatus):
     """Called after whole test run finished, right before
     returning the exit status to the system.
     """
+
+
+@pytest.fixture
+def empty_step():
+    """Pytest fixture that returns an empty (no input, no output) step."""
+
+    @step
+    def _empty_step():
+        pass
+
+    return _empty_step
+
+
+@pytest.fixture
+def unconnected_two_step_pipeline():
+    """Pytest fixture that returns a pipeline which takes two steps
+    `step_1` and `step_2`. The steps are not connected to each other."""
+
+    @pipeline
+    def _pipeline(step_1, step_2):
+        pass
+
+    return _pipeline

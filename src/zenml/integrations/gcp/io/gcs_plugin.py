@@ -27,7 +27,7 @@ import gcsfs
 from tfx.dsl.io import filesystem, filesystem_registry
 from tfx.dsl.io.filesystem import PathType
 
-from zenml.utils.path_utils import convert_to_str
+from zenml.io.fileio import convert_to_str
 
 
 class ZenGCS(filesystem.Filesystem):

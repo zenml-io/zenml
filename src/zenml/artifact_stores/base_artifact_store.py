@@ -20,8 +20,8 @@ from zenml.config.global_config import GlobalConfig
 from zenml.core.base_component import BaseComponent
 from zenml.core.component_factory import artifact_store_factory
 from zenml.enums import ArtifactStoreTypes
-from zenml.utils import path_utils
-from zenml.utils.path_utils import get_zenml_config_dir
+from zenml.io import fileio
+from zenml.io.fileio import get_zenml_config_dir
 
 
 @artifact_store_factory.register(ArtifactStoreTypes.base)
@@ -44,7 +44,7 @@ class BaseArtifactStore(BaseComponent):
         Returns:
             Name of the component.
         """
-        return path_utils.get_grandparent(artifact_uri)
+        return fileio.get_grandparent(artifact_uri)
 
     def get_serialization_dir(self) -> str:
         """Gets the local path where artifacts are stored."""
@@ -65,8 +65,8 @@ class BaseArtifactStore(BaseComponent):
         Returns:
             Locally resolved uri.
         """
-        if not path_utils.is_remote(artifact_uri):
-            # Its already local
+        if not fileio.is_remote(artifact_uri):
+            # It's already local
             return artifact_uri
 
         if path is None:
@@ -75,12 +75,12 @@ class BaseArtifactStore(BaseComponent):
                 GlobalConfig().get_serialization_dir(),
                 str(self.uuid),
                 BaseArtifactStore.get_component_name_from_uri(artifact_uri),
-                path_utils.get_parent(artifact_uri),  # unique ID from MLMD
+                fileio.get_parent(artifact_uri),  # unique ID from MLMD
             )
 
         # Create if not exists and download
-        path_utils.create_dir_recursive_if_not_exists(path)
-        path_utils.copy_dir(artifact_uri, path, overwrite=True)
+        fileio.create_dir_recursive_if_not_exists(path)
+        fileio.copy_dir(artifact_uri, path, overwrite=True)
 
         return path
 

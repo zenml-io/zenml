@@ -78,6 +78,13 @@ def in_google_colab() -> bool:
     return False
 
 
+def in_paperspace_gradient() -> bool:
+    """Returns: True if running in a Paperspace Gradient env, else False"""
+    if "PAPERSPACE_NOTEBOOK_REPO_ID" in os.environ:
+        return True
+    return False
+
+
 def get_system_info() -> Dict[str, Any]:
     """Returns system info as a dict.
 
@@ -146,6 +153,7 @@ def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> None:
             {
                 "in_docker": in_docker(),
                 "in_google_colab": in_google_colab(),
+                "in_paperspace_gradient": in_paperspace_gradient(),
                 "version": __version__,
             }
         )

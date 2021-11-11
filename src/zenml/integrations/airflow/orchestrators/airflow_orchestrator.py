@@ -15,6 +15,7 @@
 import datetime
 import os
 import time
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import click
@@ -28,9 +29,10 @@ from zenml.integrations.airflow.orchestrators.airflow_dag_runner import (
     AirflowDagRunner,
     AirflowPipelineConfig,
 )
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
-from zenml.utils import daemon, path_utils
+from zenml.utils import daemon
 
 logger = get_logger(__name__)
 
@@ -132,7 +134,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         Args:
             dag_filepath: Path to the file in which the DAG is defined.
         """
-        dags_directory = path_utils.resolve_relative_path(self.dags_directory)
+        dags_directory = fileio.resolve_relative_path(self.dags_directory)
 
         if dags_directory == os.path.dirname(dag_filepath):
             logger.debug("File is already in airflow DAGs directory.")
@@ -143,12 +145,14 @@ class AirflowOrchestrator(BaseOrchestrator):
             destination_path = os.path.join(
                 dags_directory, os.path.basename(dag_filepath)
             )
-            if path_utils.file_exists(destination_path):
+            if fileio.file_exists(destination_path):
                 logger.info(
                     "File '{%s}' already exists, overwriting with new DAG file",
                     destination_path,
                 )
-            path_utils.copy(dag_filepath, destination_path, overwrite=True)
+            fileio.copy(
+                Path(dag_filepath), Path(destination_path), overwrite=True
+            )
 
     def _log_webserver_credentials(self):
         """Logs URL and credentials to login to the airflow webserver.
@@ -156,7 +160,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         Raises:
             FileNotFoundError: If the password file does not exist.
         """
-        if path_utils.file_exists(self.password_file):
+        if fileio.file_exists(self.password_file):
             with open(self.password_file) as file:
                 password = file.read().strip()
         else:
@@ -197,8 +201,8 @@ class AirflowOrchestrator(BaseOrchestrator):
             self._log_webserver_credentials()
             return
 
-        if not path_utils.file_exists(self.dags_directory):
-            path_utils.create_dir_recursive_if_not_exists(self.dags_directory)
+        if not fileio.file_exists(self.dags_directory):
+            fileio.create_dir_recursive_if_not_exists(self.dags_directory)
 
         from airflow.cli.commands.standalone_command import StandaloneCommand
 
@@ -209,7 +213,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             command.run,
             pid_file=self.pid_file,
             log_file=self.log_file,
-            working_directory=path_utils.get_zenml_dir(),
+            working_directory=fileio.get_zenml_dir(),
         )
 
         while not self.is_running:
@@ -223,7 +227,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         if self.is_running:
             daemon.stop_daemon(self.pid_file, kill_children=True)
 
-        path_utils.rm_dir(self.airflow_home)
+        fileio.rm_dir(self.airflow_home)
         logger.info("Airflow spun down.")
 
     def run(

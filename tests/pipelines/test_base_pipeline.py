@@ -15,10 +15,10 @@ import os
 
 import pytest
 
-from zenml.exceptions import PipelineConfigurationError
-from zenml.pipelines.pipeline_decorator import pipeline
+from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
+from zenml.pipelines import pipeline
+from zenml.steps import step
 from zenml.steps.base_step_config import BaseStepConfig
-from zenml.steps.step_decorator import step
 from zenml.utils.yaml_utils import write_yaml
 
 
@@ -43,13 +43,90 @@ def create_pipeline_with_config_value(config_value: int):
     return pipeline_instance
 
 
+def test_initialize_pipeline_with_args(
+    unconnected_two_step_pipeline, empty_step
+):
+    """Test that a pipeline can be initialized with args."""
+    unconnected_two_step_pipeline(empty_step(), empty_step())
+
+
+def test_initialize_pipeline_with_kwargs(
+    unconnected_two_step_pipeline, empty_step
+):
+    """Test that a pipeline can be initialized with kwargs."""
+    unconnected_two_step_pipeline(step_1=empty_step(), step_2=empty_step())
+
+
+def test_initialize_pipeline_with_args_and_kwargs(
+    unconnected_two_step_pipeline, empty_step
+):
+    """Test that a pipeline can be initialized with a mix of args and kwargs."""
+    unconnected_two_step_pipeline(empty_step(), step_2=empty_step())
+
+
+def test_initialize_pipeline_with_too_many_args(
+    unconnected_two_step_pipeline, empty_step
+):
+    """Test that pipeline initialization fails when too many args
+    are passed."""
+    with pytest.raises(PipelineInterfaceError):
+        unconnected_two_step_pipeline(empty_step(), empty_step(), empty_step())
+
+
+def test_initialize_pipeline_with_too_many_args_and_kwargs(
+    unconnected_two_step_pipeline, empty_step
+):
+    """Test that pipeline initialization fails when too many args
+    and kwargs are passed."""
+    with pytest.raises(PipelineInterfaceError):
+        unconnected_two_step_pipeline(
+            empty_step(), step_1=empty_step(), step_2=empty_step()
+        )
+
+
+def test_initialize_pipeline_with_missing_key(
+    unconnected_two_step_pipeline, empty_step
+):
+    """Test that pipeline initialization fails when an argument
+    is missing."""
+    with pytest.raises(PipelineInterfaceError):
+        unconnected_two_step_pipeline(step_1=empty_step())
+
+
+def test_initialize_pipeline_with_unexpected_key(
+    unconnected_two_step_pipeline, empty_step
+):
+    """Test that pipeline initialization fails when an argument
+    has an unexpected key."""
+    with pytest.raises(PipelineInterfaceError):
+        unconnected_two_step_pipeline(
+            step_1=empty_step(), step_2=empty_step(), step_3=empty_step()
+        )
+
+
+def test_initialize_pipeline_with_wrong_arg_type(
+    unconnected_two_step_pipeline, empty_step
+):
+    """Test that pipeline initialization fails when an arg has a wrong type."""
+    with pytest.raises(PipelineInterfaceError):
+        unconnected_two_step_pipeline(1, empty_step())
+
+
+def test_initialize_pipeline_with_wrong_kwarg_type(
+    unconnected_two_step_pipeline, empty_step
+):
+    """Test that pipeline initialization fails when a kwarg has a wrong type."""
+    with pytest.raises(PipelineInterfaceError):
+        unconnected_two_step_pipeline(step_1=1, step_2=empty_step())
+
+
 def test_setting_step_parameter_with_config_object():
     """Test whether step parameters can be set using a config object."""
     config_value = 0
     pipeline_instance = create_pipeline_with_config_value(config_value)
     step_instance = pipeline_instance.steps["step_"]
 
-    assert step_instance.PARAM_SPEC["value"] == str(config_value)
+    assert step_instance.PARAM_SPEC["value"] == config_value
 
 
 def test_overwrite_step_parameter_with_config_yaml(tmp_path):
@@ -67,7 +144,7 @@ def test_overwrite_step_parameter_with_config_yaml(tmp_path):
         yaml_path, overwrite_step_parameters=True
     )
     step_instance = pipeline_instance.steps["step_"]
-    assert step_instance.PARAM_SPEC["value"] == str(yaml_config_value)
+    assert step_instance.PARAM_SPEC["value"] == yaml_config_value
 
 
 def test_dont_overwrite_step_parameter_with_config_yaml(tmp_path):
@@ -84,7 +161,7 @@ def test_dont_overwrite_step_parameter_with_config_yaml(tmp_path):
     )
     pipeline_instance = pipeline_instance.with_config(yaml_path)
     step_instance = pipeline_instance.steps["step_"]
-    assert step_instance.PARAM_SPEC["value"] == str(config_value)
+    assert step_instance.PARAM_SPEC["value"] == config_value
 
 
 def test_yaml_configuration_with_invalid_step_name(tmp_path):

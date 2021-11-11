@@ -21,8 +21,9 @@ from git import Repo as GitRepo  # type: ignore[attr-defined]
 
 from zenml.constants import APP_NAME
 from zenml.exceptions import GitException
+from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.utils import path_utils, source_utils
+from zenml.utils import source_utils
 from zenml.utils.source_utils import (
     get_module_source_from_file_path,
     get_module_source_from_source,
@@ -104,13 +105,11 @@ class GitWrapper:
             module_path
         )
 
-        # Get absolute path of module because path_utils.list_dir needs that
+        # Get absolute path of module because fileio.list_dir needs that
         mod_abs_dir = source_utils.get_absolute_path_from_module_source(
             module_path
         )
-        module_file_names = path_utils.list_dir(
-            mod_abs_dir, only_file_names=True
-        )
+        module_file_names = fileio.list_dir(mod_abs_dir, only_file_names=True)
 
         # Go through each file in module and see if there are uncommitted ones
         for file_path in module_file_names:
@@ -120,7 +119,7 @@ class GitWrapper:
             if len(self.git_repo.ignored(path)) > 0:
                 continue
 
-            if path_utils.is_dir(os.path.join(mod_abs_dir, file_path)):
+            if fileio.is_dir(os.path.join(mod_abs_dir, file_path)):
                 logger.warning(
                     f"The step {source} is contained inside a module "
                     f"that "

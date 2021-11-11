@@ -44,11 +44,29 @@ def test_initialize_step_with_config():
     def step_with_config(config: StepConfig) -> None:
         pass
 
+    # initialize with wrong config classes
     with pytest.raises(StepInterfaceError):
         step_with_config(config=BaseStepConfig())  # noqa
 
     with pytest.raises(StepInterfaceError):
         step_with_config(config=DifferentConfig())  # noqa
 
-    # this should succeed
+    # initialize with wrong key
+    with pytest.raises(StepInterfaceError):
+        step_with_config(wrong_config_key=StepConfig())  # noqa
+
+    # initializing with correct key should work
     step_with_config(config=StepConfig())
+
+    # initializing as non-kwarg should work as well
+    step_with_config(StepConfig())
+
+    # initializing with multiple args or kwargs should fail
+    with pytest.raises(StepInterfaceError):
+        step_with_config(StepConfig(), config=StepConfig())
+
+    with pytest.raises(StepInterfaceError):
+        step_with_config(StepConfig(), StepConfig())
+
+    with pytest.raises(StepInterfaceError):
+        step_with_config(config=StepConfig(), config2=StepConfig())

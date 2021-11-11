@@ -27,6 +27,7 @@ import importlib
 import inspect
 import os
 import pathlib
+import site
 import sys
 import types
 from typing import Any, Optional, Type, Union
@@ -82,6 +83,17 @@ def is_inside_repository(file_path: str) -> bool:
     repo_path = pathlib.Path(Repository().path).resolve()
     absolute_file_path = pathlib.Path(file_path).resolve()
     return repo_path in absolute_file_path.parents
+
+
+def is_third_party_module(file_path: str) -> bool:
+    """Returns whether a file belongs to a third party package."""
+    absolute_file_path = pathlib.Path(file_path).resolve()
+
+    for path in site.getsitepackages() + [site.getusersitepackages()]:
+        if pathlib.Path(path).resolve() in absolute_file_path.parents:
+            return True
+
+    return False
 
 
 def create_zenml_pin() -> str:
@@ -236,15 +248,17 @@ def resolve_class(class_: Type[Any]) -> str:
         # builtin file
         return initial_source
 
-    # Get the full module path relative to the repository
-    if initial_source.startswith("__main__") or not is_inside_repository(
-        file_path
+    if (
+        initial_source.startswith("__main__")
+        or not is_inside_repository(file_path)
+        or is_third_party_module(file_path)
     ):
-        class_source = initial_source
-    else:
-        module_source = get_module_source_from_file_path(file_path)
-        class_source = module_source + "." + class_.__name__
-    return class_source
+        return initial_source
+
+    # Regular user file inside the repository -> get the full module
+    # path relative to the repository
+    module_source = get_module_source_from_file_path(file_path)
+    return module_source + "." + class_.__name__
 
 
 def import_class_by_path(class_path: str) -> Type[Any]:

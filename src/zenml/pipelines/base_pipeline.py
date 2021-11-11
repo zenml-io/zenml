@@ -12,9 +12,18 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import inspect
-import json
 from abc import abstractmethod
-from typing import Any, ClassVar, Dict, NoReturn, Optional, Tuple, Type, cast
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    NoReturn,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    cast,
+)
 
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
@@ -26,10 +35,11 @@ from zenml.exceptions import (
     PipelineConfigurationError,
     PipelineInterfaceError,
 )
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.stacks.base_stack import BaseStack
 from zenml.steps.base_step import BaseStep
-from zenml.utils import analytics_utils, path_utils, yaml_utils
+from zenml.utils import analytics_utils, yaml_utils
 
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
@@ -62,6 +72,9 @@ class BasePipelineMeta(type):
         return cls
 
 
+T = TypeVar("T", bound="BasePipeline")
+
+
 class BasePipeline(metaclass=BasePipelineMeta):
     """Base ZenML pipeline."""
 
@@ -80,41 +93,94 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         self.enable_cache = getattr(self, PARAM_ENABLE_CACHE)
         self.pipeline_name = self.__class__.__name__
-        self.__steps = dict()
         logger.info(f"Creating pipeline: {self.pipeline_name}")
         logger.info(
             f'Cache {"enabled" if self.enable_cache else "disabled"} for '
             f"pipeline `{self.pipeline_name}`"
         )
 
-        if args:
+        self.__steps: Dict[str, BaseStep] = {}
+        self._verify_arguments(*args, **kwargs)
+
+    def _verify_arguments(self, *steps: BaseStep, **kw_steps: BaseStep) -> None:
+        """Verifies the initialization args and kwargs of this pipeline.
+
+        This method makes sure that no missing/unexpected arguments or
+        arguments of a wrong type are passed when creating a pipeline. If
+        all arguments are correct, saves the steps to `self.__steps`.
+
+        Args:
+            *steps: The args passed to the init method of this pipeline.
+            **kw_steps: The kwargs passed to the init method of this pipeline.
+
+        Raises:
+            PipelineInterfaceError: If there are too many/few arguments or
+                arguments with a wrong name/type.
+        """
+        input_step_keys = list(self.STEP_SPEC.keys())
+        if len(steps) > len(input_step_keys):
             raise PipelineInterfaceError(
-                "You can only use keyword arguments while you are creating an "
-                "instance of a pipeline."
+                f"Too many input steps for pipeline '{self.pipeline_name}'. "
+                f"This pipeline expects {len(input_step_keys)} step(s) "
+                f"but got {len(steps) + len(kw_steps)}."
             )
 
-        for k, v in kwargs.items():
-            if not isinstance(v, BaseStep):
+        combined_steps = {}
+
+        for i, step in enumerate(steps):
+            if not isinstance(step, BaseStep):
                 raise PipelineInterfaceError(
-                    f"When instantiating a pipeline, you can only pass "
-                    f"in @step like annotated objects. You passed in "
-                    f"`{v}` which is of type `{type(v)}`"
+                    f"Wrong argument type (`{type(step)}`) for positional "
+                    f"argument {i} of pipeline '{self.pipeline_name}'. Only "
+                    f"`@step` decorated functions or instances of `BaseStep` "
+                    f"subclasses can be used as arguments when creating "
+                    f"a pipeline."
                 )
 
-            if k in self.STEP_SPEC:
-                self.__steps.update({k: v})
-            else:
+            key = input_step_keys[i]
+            combined_steps[key] = step
+
+        for key, step in kw_steps.items():
+            if key in combined_steps:
+                # a step for this key was already set by
+                # the positional input steps
                 raise PipelineInterfaceError(
-                    f"The argument {k} is an unknown argument. Needs to be "
-                    f"one of {list(self.STEP_SPEC.keys())}"
+                    f"Unexpected keyword argument '{key}' for pipeline "
+                    f"'{self.pipeline_name}'. A step for this key was "
+                    f"already passed as a positional argument."
                 )
 
-        missing_keys = set(self.STEP_SPEC.keys()) - set(self.steps.keys())
-        if missing_keys:
+            if not isinstance(step, BaseStep):
+                raise PipelineInterfaceError(
+                    f"Wrong argument type (`{type(step)}`) for argument "
+                    f"'{key}' of pipeline '{self.pipeline_name}'. Only "
+                    f"`@step` decorated functions or instances of `BaseStep` "
+                    f"subclasses can be used as arguments when creating "
+                    f"a pipeline."
+                )
+
+            combined_steps[key] = step
+
+        # check if there are any missing or unexpected steps
+        expected_steps = set(self.STEP_SPEC.keys())
+        actual_steps = set(combined_steps.keys())
+        missing_steps = expected_steps - actual_steps
+        unexpected_steps = actual_steps - expected_steps
+
+        if missing_steps:
             raise PipelineInterfaceError(
-                f"Trying to initialize pipeline but missing"
-                f" one or more steps: {missing_keys}"
+                f"Missing input step(s) for pipeline "
+                f"'{self.pipeline_name}': {missing_steps}."
             )
+
+        if unexpected_steps:
+            raise PipelineInterfaceError(
+                f"Unexpected input step(s) for pipeline "
+                f"'{self.pipeline_name}': {unexpected_steps}. This pipeline "
+                f"only requires the following steps: {expected_steps}."
+            )
+
+        self.__steps = combined_steps
 
     @abstractmethod
     def connect(self, *args: BaseStep, **kwargs: BaseStep) -> None:
@@ -173,7 +239,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
 
         # filepath of the file where pipeline.run() was called
-        caller_filepath = path_utils.resolve_relative_path(
+        caller_filepath = fileio.resolve_relative_path(
             inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr] # noqa
         )
 
@@ -183,13 +249,14 @@ class BasePipeline(metaclass=BasePipelineMeta):
         return ret
 
     def with_config(
-        self, config_file: str, overwrite_step_parameters: bool = False
-    ) -> "BasePipeline":
+        self: T, config_file: str, overwrite_step_parameters: bool = False
+    ) -> T:
         """Configures this pipeline using a yaml file.
 
         Args:
             config_file: Path to a yaml file which contains configuration
-                options for running this pipeline. See [TODO](url) for details
+                options for running this pipeline. See
+                https://docs.zenml.io/guides/pipeline-configuration for details
                 regarding the specification of this file.
             overwrite_step_parameters: If set to `True`, values from the
                 configuration file will overwrite configuration parameters
@@ -229,7 +296,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
             step = self.__steps[step_name]
             step_parameters = (
-                step.CONFIG.__fields__.keys() if step.CONFIG else {}
+                step.CONFIG_CLASS.__fields__.keys() if step.CONFIG_CLASS else {}
             )
             parameters = step_dict.get(StepConfigurationKeys.PARAMETERS_, {})
             for parameter, value in parameters.items():
@@ -237,13 +304,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     raise PipelineConfigurationError(
                         f"Found parameter '{parameter}' for '{step_name}' step "
                         f"in configuration yaml but it doesn't exist in the "
-                        f"configuration class `{step.CONFIG}`. Available "
+                        f"configuration class `{step.CONFIG_CLASS}`. Available "
                         f"parameters for this step: "
                         f"{list(step_parameters)}."
                     )
 
-                # make sure the value gets serialized to a string
-                value = json.dumps(value)
                 previous_value = step.PARAM_SPEC.get(parameter, None)
 
                 if overwrite:
