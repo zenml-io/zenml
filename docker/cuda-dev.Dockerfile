@@ -1,4 +1,6 @@
-FROM ubuntu:18.04
+ARG TENSORFLOW_VERSION=2.6.0
+FROM tensorflow/tensorflow:${TENSORFLOW_VERSION}-gpu
+ARG TENSORFLOW_VERSION
 
 WORKDIR /zenml
 
@@ -7,11 +9,11 @@ ENV PYTHONFAULTHANDLER=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONHASHSEED=random \
     PIP_NO_CACHE_DIR=off \
-    PIP_DISABLE_PIP_VERSION_CHECK=on \
-    POETRY_HOME=/root/.local
+    PIP_DISABLE_PIP_VERSION_CHECK=on
 
 ENV ZENML_DEBUG=true
 ENV PATH="$POETRY_HOME/bin:$PATH"
+
 
 RUN apt-get update && \
   apt-get install --no-install-recommends -q -y software-properties-common && \
@@ -39,6 +41,7 @@ RUN apt-get update && \
   pip install --no-cache-dir --upgrade --pre pip && \
   wget https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py && \
   python install-poetry.py
+
 
 # copy project requirement files here to ensure they will be cached.
 COPY pyproject.toml /zenml
