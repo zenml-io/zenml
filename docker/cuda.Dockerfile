@@ -26,9 +26,6 @@ RUN apt-get update && \
   git && \
   add-apt-repository -r ppa:deadsnakes/ppa && \
   add-apt-repository -r ppa:maarten-fonville/protobuf && \
-  update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1 && \
-  update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.7 1 && \
-  update-alternatives --install /usr/bin/python-config python-config /usr/bin/python3.7-config 1 && \
   apt-get autoclean && \
   apt-get autoremove --purge && \
   wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py && \
