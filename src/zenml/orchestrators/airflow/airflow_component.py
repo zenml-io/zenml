@@ -101,6 +101,7 @@ class AirflowComponent(python.PythonOperator):
         component_config: base_component_config.BaseComponentConfig
     ):
         """Constructs an Airflow implementation of TFX component.
+
         Args:
           parent_dag: An AirflowPipeline instance as the pipeline DAG.
           component: An instance of base_node.BaseNode that holds all
