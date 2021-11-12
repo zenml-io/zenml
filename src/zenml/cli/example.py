@@ -278,12 +278,11 @@ def pull(
     for example in examples:
         dst_dir = os.path.join(dst, example)
         # Check if example has already been pulled before.
-        if path_utils.file_exists(dst_dir):
-            if confirmation(
-                f"Example {example} is already pulled. "
-                f"Do you wish to overwrite the directory?"
-            ):
-                path_utils.rm_dir(dst_dir)
+        if path_utils.file_exists(dst_dir) and confirmation(
+            f"Example {example} is already pulled. "
+            f"Do you wish to overwrite the directory?"
+        ):
+            path_utils.rm_dir(dst_dir)
 
         declare(f"Pulling example {example}...")
         src_dir = os.path.join(examples_dir, example)
