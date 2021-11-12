@@ -26,7 +26,6 @@ from zenml.logger import get_logger
 # from hypothesis import given
 # from hypothesis.strategies import text
 
-
 logger = get_logger(__name__)
 
 ZERO_FIVE_RELEASE_EXAMPLES = ["airflow", "legacy", "quickstart"]
