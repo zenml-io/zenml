@@ -158,6 +158,7 @@ def init_logging() -> None:
 
     # Mute apache_beam
     logging.getLogger("apache_beam").setLevel(logging.WARNING)
+    logging.getLogger("rdbms_metadata_access_object").setLevel(logging.WARNING)
 
     # set absl logging
     absl_logging.set_verbosity(ABSL_LOGGING_VERBOSITY)
