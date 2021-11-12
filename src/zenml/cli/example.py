@@ -15,7 +15,7 @@
 
 import os
 from pathlib import Path
-from typing import Any, List
+from typing import List
 
 import click
 from git.exc import GitCommandError
@@ -191,8 +191,7 @@ def example() -> None:
 
 @example.command(help="List the available examples.")
 @pass_git_examples_handler
-# TODO: [MEDIUM] Use a better type for the git_examples_handler
-def list(git_examples_handler: Any) -> None:
+def list(git_examples_handler: GitExamplesHandler) -> None:
     """List all available examples."""
     declare("Listing examples: \n")
     for name in git_examples_handler.get_all_examples():
@@ -204,8 +203,7 @@ def list(git_examples_handler: Any) -> None:
 @example.command(help="Find out more about an example.")
 @pass_git_examples_handler
 @click.argument("example_name")
-# TODO: [MEDIUM] Use a better type for the git_examples_handler
-def info(git_examples_handler: Any, example_name: str) -> None:
+def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
     """Find out more about an example."""
     # TODO: [MEDIUM] fix markdown formatting so that it looks nicer (not a
     #  pure .md dump)
@@ -246,9 +244,8 @@ def info(git_examples_handler: Any, example_name: str) -> None:
     default=zenml_version_installed,
     help="The version of ZenML to use for the force-redownloaded examples.",
 )
-# TODO: [MEDIUM] Use a better type for the git_examples_handler
 def pull(
-    git_examples_handler: Any,
+    git_examples_handler: GitExamplesHandler,
     example_name: str,
     force: bool,
     version: str,
