@@ -34,11 +34,14 @@
     <b>NEW: </b> <a href="https://zenml.io/discussion" target="_blank"><img width="25" src="https://cdn1.iconfinder.com/data/icons/social-17/48/like-512.png" alt="Vote"/><b> Vote</b></a> on the next ZenML features 
 </div>
 
-<br>
-
-![Repobeats analytics image](https://repobeats.axiom.co/api/embed/635c57b743efe649cadceba6a2e6a956663f96dd.svg "Repobeats analytics image")
-
 ## What is ZenML?
+
+
+Before: Sam struggles to productionalize ML |  After: Sam finds Zen in her MLOps with ZenML.
+:-------------------------:|:-------------------------:
+![](docs/readme/sam_frustrated.jpg)  |  ![](docs/readme/sam_zen_mode.jpg)
+
+
 
 **ZenML** is an extensible, open-source MLOps framework to create production-ready machine learning pipelines. It has a simple, flexible syntax,
 is cloud and tool agnostic, and has interfaces/abstractions that are catered towards ML workflows.
@@ -107,6 +110,10 @@ ZenML is managed by a [core team](https://zenml.io/team) of developers that are 
 ## Contributing
 
 We would love to receive your contributions! Check our [Contributing Guide](CONTRIBUTING.md) for more details on how best to contribute.
+
+<br>
+
+![Repobeats analytics image](https://repobeats.axiom.co/api/embed/635c57b743efe649cadceba6a2e6a956663f96dd.svg "Repobeats analytics image")
 
 ## Copyright
 
