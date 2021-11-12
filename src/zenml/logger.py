@@ -156,5 +156,8 @@ def init_logging() -> None:
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
     set_root_verbosity()
 
+    # Mute apache_beam
+    logging.getLogger("apache_beam").setLevel(logging.WARNING)
+
     # set absl logging
     absl_logging.set_verbosity(ABSL_LOGGING_VERBOSITY)
