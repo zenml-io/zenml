@@ -1,5 +1,5 @@
 # This is a basic workflow that publishes the website
-name: Publish
+name: Publish API Docs
 
 # Controls when the action will run.
 on:
