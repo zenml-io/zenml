@@ -12,6 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import inspect
 
-def test_me():
-    """A simple test to check a functionality"""
+import pytest
+
+from zenml.utils import source_utils
+
+
+def test_is_third_party_module():
+    """Tests that third party modules get detected correctly."""
+    third_party_file = inspect.getfile(pytest.Cache)
+    assert source_utils.is_third_party_module(third_party_file)
+
+    non_third_party_file = inspect.getfile(source_utils)
+    assert not source_utils.is_third_party_module(non_third_party_file)
