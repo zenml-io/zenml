@@ -177,3 +177,6 @@ zenml_examples/
 
 # Prettier
 .prettierignore
+
+# Docs
+docs/sphinx_docs/_build
