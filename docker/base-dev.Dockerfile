@@ -11,6 +11,7 @@ ENV PYTHONFAULTHANDLER=1 \
     POETRY_HOME=/root/.local
 
 ENV ZENML_DEBUG=true
+ENV ZENML_ANALYTICS_OPT_IN=false
 ENV PATH="$POETRY_HOME/bin:$PATH"
 
 RUN apt-get update && \

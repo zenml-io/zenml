@@ -17,12 +17,11 @@
   * [Chapter 5](guides/low-level-api/chapter-5.md)
   * [Chapter 6](guides/low-level-api/chapter-6.md)
   * [Chapter 7](guides/low-level-api/chapter-7.md)
-
 * [High Level API](guides/high-level-api/README.md)
   * [Chapter 1](guides/high-level-api/chapter-1.md)
 * [Post Execution Workflow](guides/post-execution-workflow.md)
 * [Pipeline Configuration](guides/pipeline-configuration.md)
-* [Deploy Pipelines to Production](guides/deploy_to_production.md)
+* [Deploy Pipelines to Production](guides/deploy\_to\_production.md)
 
 ## Support
 
@@ -34,21 +33,4 @@
 
 * [Glossary](reference/glossary.md)
 * [CLI Reference](reference/cli-command-reference.md)
-* [API Reference](reference/api-reference/README.md)
-  * [Artifact stores](reference/api-reference/artifact-stores.md)
-  * [Artifacts](reference/api-reference/artifacts.md)
-  * [Cli](reference/api-reference/cli.md)
-  * [Config](reference/api-reference/config.md)
-  * [Core](reference/api-reference/core.md)
-  * [Io](reference/api-reference/io.md)
-  * [Materializers](reference/api-reference/materializers.md)
-  * [Metadata](reference/api-reference/metadata.md)
-  * [Orchestrators](reference/api-reference/orchestrators/README.md)
-    * [Local](reference/api-reference/orchestrators/local.md)
-  * [Pipelines](reference/api-reference/pipelines.md)
-  * [Post execution](reference/api-reference/post-execution.md)
-  * [Stacks](reference/api-reference/stacks.md)
-  * [Steps](reference/api-reference/steps/README.md)
-    * [Step interfaces](reference/api-reference/steps/step-interfaces.md)
-  * [Types](reference/api-reference/types.md)
-  * [Utils](reference/api-reference/utils.md)
+* [API Reference](https://apidocs.zenml.io)
