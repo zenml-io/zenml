@@ -33,7 +33,7 @@ jobs:
         python -m poetry run pip install awscli
 
     - name: Runs docs generation
-      run: poetry run bash scripts/generate-docs.py
+      run: poetry run bash scripts/generate-docs.sh
 
     - name: Runs deploy
       env:
@@ -41,4 +41,4 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_BUCKET: testapidocs.zenml.io
         CLOUDFRONT_DISTRIBUTION_ID: E1VI10FL4K97QY
-      run: poetry run bash scripts/deploy-docs.py
+      run: poetry run bash scripts/deploy-docs.sh
