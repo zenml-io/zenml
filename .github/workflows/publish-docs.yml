@@ -32,12 +32,12 @@ jobs:
         python -m poetry run pip install apache-airflow~=2.2.0 gcsfs~=2021.9.0 click~=8.0.3 torch~=1.10.0
 
     - name: Runs docs generation
-      run: ./scripts/generate-docs.py
+      run: poetry run bash scripts/generate-docs.py
 
     - name: Runs deploy
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_BUCKET=testapidocs.zenml.io
-        CLOUDFRONT_DISTRIBUTION_ID=E1VI10FL4K97QY
-      run: ./scripts/deploy-docs.py
+        AWS_BUCKET: testapidocs.zenml.io
+        CLOUDFRONT_DISTRIBUTION_ID: E1VI10FL4K97QY
+      run: poetry run bash scripts/deploy-docs.py
