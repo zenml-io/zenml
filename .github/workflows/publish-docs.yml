@@ -13,13 +13,13 @@ jobs:
   publish:
     name: Build and publishes the api docs reference to S3
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/zenml-io/zenml-static-hosting-jekyll-aws:latest
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
     - uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+    - run: npm install
+    - run: npm install html-minifier -g
 
     - name: Install poetry
       run: |
@@ -30,6 +30,7 @@ jobs:
       run: |
         python -m poetry install
         python -m poetry run pip install apache-airflow~=2.2.0 gcsfs~=2021.9.0 click~=8.0.3 torch~=1.10.0
+        python -m poetry run pip install awscli
 
     - name: Runs docs generation
       run: poetry run bash scripts/generate-docs.py
