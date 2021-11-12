@@ -26,10 +26,11 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install "poetry"
 
-    - name: Install Dependencies
+    - name: Install Dependencies and opt-out of analytics
       run: |
         python -m poetry install
         python -m poetry run pip install apache-airflow~=2.2.0 gcsfs~=2021.9.0 click~=8.0.3 torch~=1.10.0
+        python -m poetry run zenml analytics opt-out
         python -m poetry run pip install awscli
 
     - name: Runs docs generation
