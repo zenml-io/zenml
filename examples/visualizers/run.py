@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 
 
-import numpy as np
 import pandas as pd
 import tensorflow as tf
 
@@ -25,29 +24,52 @@ from zenml.post_execution.visualizers.facet_statistics_visualizer import (
 from zenml.steps import step
 from zenml.steps.step_output import Output
 
+FEATURE_COLS = [
+    "CRIM",
+    "ZN",
+    "INDUS",
+    "CHAS",
+    "NOX",
+    "RM",
+    "AGE",
+    "DIS",
+    "RAD",
+    "TAX",
+    "PTRATIO",
+    "B",
+    "STAT",
+    # "MEDV",
+]
+TARGET_COL_NAME = "target"
+
+
+def convert_np_to_pandas(X, y):
+    df = pd.DataFrame(X, columns=FEATURE_COLS)
+    df[TARGET_COL_NAME] = y
+    return df
+
 
 @step
-def importer() -> Output(
-    X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
-):
+def importer() -> Output(train_df=pd.DataFrame, test_df=pd.DataFrame):
     """Download the MNIST data store it as numpy arrays."""
     (X_train, y_train), (
         X_test,
         y_test,
     ) = tf.keras.datasets.boston_housing.load_data()
-    return X_train, y_train, X_test, y_test
+    train_df = convert_np_to_pandas(X_train, y_train)
+    test_df = convert_np_to_pandas(X_test, y_test)
+    return train_df, test_df
 
 
 @step
-def trainer(
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-) -> tf.keras.Model:
+def trainer(train_df: pd.DataFrame) -> tf.keras.Model:
     """A simple Keras Model to train on the data."""
     model = tf.keras.Sequential()
     model.add(
         tf.keras.layers.Dense(
-            64, activation="relu", input_shape=(X_train.shape[1],)
+            64,
+            activation="relu",
+            input_shape=(len(FEATURE_COLS),),
         )
     )
     model.add(tf.keras.layers.Dense(64, activation="relu"))
@@ -59,7 +81,7 @@ def trainer(
         metrics=["mae"],
     )
 
-    model.fit(X_train, y_train)
+    model.fit(train_df[FEATURE_COLS], train_df[TARGET_COL_NAME])
 
     # write model
     return model
@@ -67,12 +89,13 @@ def trainer(
 
 @step
 def evaluator(
-    X_test: np.ndarray,
-    y_test: np.ndarray,
+    test_df: pd.DataFrame,
     model: tf.keras.Model,
 ) -> float:
     """Calculate the accuracy on the test set"""
-    test_acc = model.evaluate(X_test, y_test, verbose=2)
+    test_acc = model.evaluate(
+        test_df[FEATURE_COLS].values, test_df[TARGET_COL_NAME].values, verbose=2
+    )
     return test_acc
 
 
@@ -83,49 +106,16 @@ def boston_housing_pipeline(
     evaluator,
 ):
     """Links all the steps together in a pipeline"""
-    X_train, y_train, X_test, y_test = importer()
-    model = trainer(X_train=X_train, y_train=y_train)
-    evaluator(X_test=X_test, y_test=y_test, model=model)
-
-
-def convert_np_to_pandas(X, y):
-    cols = [
-        "CRIM",
-        "ZN",
-        "INDUS",
-        "CHAS",
-        "NOX",
-        "RM",
-        "AGE",
-        "DIS",
-        "RAD",
-        "TAX",
-        "PTRATIO",
-        "B",
-        "STAT",
-        "MEDV",
-    ]
-    data = {}
-    for i in range(0, X.shape[0]):
-        for col in cols:
-            data[col] = X[i]
-        data["target"] = y[i]
-    return pd.DataFrame(data)
+    train_df, test_df = importer()
+    model = trainer(train_df=train_df)
+    evaluator(test_df=test_df, model=model)
 
 
 def visualize_statistics():
     repo = Repository()
     pipe = repo.get_pipelines()[-1]
-    importer_outputs = pipe.runs[-1].get_step(name="importer").outputs
-    X_train = importer_outputs["X_train"].read()
-    y_train = importer_outputs["y_train"].read()
-
-    # X_test = importer_outputs["X_test"].read()
-    # y_test = importer_outputs["y_test"].read()
-    # test_df = convert_np_to_pandas(X_test, y_test)
-
-    train_df = convert_np_to_pandas(X_train, y_train)
-    FacetStatisticsVisualizer().visualize(train_df)
+    importer_outputs = pipe.runs[-1].get_step(name="importer")
+    FacetStatisticsVisualizer().visualize(importer_outputs)
 
 
 if __name__ == "__main__":
