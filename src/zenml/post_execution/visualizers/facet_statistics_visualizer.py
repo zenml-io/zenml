@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import base64
+import os
 import sys
 import tempfile
 import webbrowser
@@ -29,20 +30,6 @@ from zenml.utils import path_utils
 logger = get_logger(__name__)
 
 
-HTML_TEMPLATE = """
-<iframe id='facets-iframe' width="100%" height="500px"></iframe>
-<script>
-  facets_iframe = document.getElementById('facets-iframe');
-  facets_html = '<script src="https://cdnjs.cloudflare.com/ajax/libs/webcomponentsjs/1.3.3/webcomponents-lite.js"><\/script><link rel="import" href="https://raw.githubusercontent.com/PAIR-code/facets/master/facets-dist/facets-jupyter.html"><facets-overview proto-input="protostr"></facets-overview>';  # noqa
-  facets_iframe.srcdoc = facets_html;
-  facets_iframe.id = "";
-  setTimeout(() => {
-    facets_iframe.setAttribute('height', facets_iframe.contentWindow.document.body.offsetHeight + 'px')
-  }, 1500)
-</script>
-"""
-
-
 class FacetStatisticsVisualizer:
     """The base implementation of a ZenML Visualizer."""
 
@@ -53,7 +40,13 @@ class FacetStatisticsVisualizer:
             [{"name": "Facet Overview", "table": df}]
         )
         protostr = base64.b64encode(proto.SerializeToString()).decode("utf-8")
-        h = HTML_TEMPLATE.replace("protostr", protostr)
+
+        template = os.path.join(
+            os.path.abspath(os.path.dirname(__file__)), "stats.html"
+        )
+        html_template = path_utils.read_file_contents_as_string(template)
+
+        h = html_template.replace("protostr", protostr)
 
         if magic:
 
