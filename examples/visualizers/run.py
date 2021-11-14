@@ -14,16 +14,16 @@
 
 
 import numpy as np
-from zenml.post_execution.visualizers.facet_statistics_visualizer import (
-    FacetStatisticsVisualizer,
-)
 import pandas as pd
 import tensorflow as tf
 
+from zenml.core.repo import Repository
 from zenml.pipelines import pipeline
+from zenml.post_execution.visualizers.facet_statistics_visualizer import (
+    FacetStatisticsVisualizer,
+)
 from zenml.steps import step
 from zenml.steps.step_output import Output
-from zenml.core.repo import Repository
 
 
 @step
@@ -45,8 +45,12 @@ def trainer(
 ) -> tf.keras.Model:
     """A simple Keras Model to train on the data."""
     model = tf.keras.Sequential()
-    model.add(tf.keras.layers.Dense(64, activation='relu', input_shape=(X_train.shape[1],)))
-    model.add(tf.keras.layers.Dense(64, activation='relu'))
+    model.add(
+        tf.keras.layers.Dense(
+            64, activation="relu", input_shape=(X_train.shape[1],)
+        )
+    )
+    model.add(tf.keras.layers.Dense(64, activation="relu"))
     model.add(tf.keras.layers.Dense(1))
 
     model.compile(
@@ -105,8 +109,24 @@ def convert_np_to_pandas(X, y):
     for i in range(0, X.shape[0]):
         for col in cols:
             data[col] = X[i]
-        data['target'] = y[i]
+        data["target"] = y[i]
     return pd.DataFrame(data)
+
+
+def visualize_statistics():
+    repo = Repository()
+    pipe = repo.get_pipelines()[-1]
+    importer_outputs = pipe.runs[-1].get_step(name="importer").outputs
+    X_train = importer_outputs["X_train"].read()
+    y_train = importer_outputs["y_train"].read()
+
+    # X_test = importer_outputs["X_test"].read()
+    # y_test = importer_outputs["y_test"].read()
+    # test_df = convert_np_to_pandas(X_test, y_test)
+
+    train_df = convert_np_to_pandas(X_train, y_train)
+    FacetStatisticsVisualizer().visualize(train_df)
+
 
 if __name__ == "__main__":
     # Run the pipeline
@@ -117,17 +137,4 @@ if __name__ == "__main__":
     )
     p.run()
 
-    repo = Repository()
-    pipe = repo.get_pipelines()[-1]
-    importer_outputs = pipe.runs[-1].get_step(name="importer").outputs
-    X_train = importer_outputs["X_train"].read()
-    X_test = importer_outputs["X_test"].read()
-    y_train = importer_outputs["y_train"].read()
-    y_test = importer_outputs["y_test"].read()
-
-    train_df = convert_np_to_pandas(X_train, y_train)
-    test_df = convert_np_to_pandas(X_test, y_test)
-
-
-
-    FacetStatisticsVisualizer().visualize(train_df)
+    visualize_statistics()
