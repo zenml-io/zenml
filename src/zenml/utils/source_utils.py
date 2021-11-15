@@ -104,7 +104,7 @@ def get_path_from_source(source: str) -> str:
     Args:
         source: class_source e.g. this.module.Class.
     """
-    # TODO: [MEDIUM] Make sure this is an absolute path rather than naive split
+    # TODO [MEDIUM]: Make sure this is an absolute path rather than naive split
     file_path = "/".join(source.split(".")[:-1]) + ".py"
     return file_path
 

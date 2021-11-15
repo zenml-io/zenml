@@ -223,7 +223,7 @@ class _FunctionExecutor(BaseExecutor):
     """Base TFX Executor class which is compatible with ZenML steps"""
 
     _FUNCTION = staticmethod(lambda: None)
-    # TODO[HIGH]: should this be an instance variable?
+    # TODO [HIGH]: should this be an instance variable?
     spec_materializer_registry: ClassVar[
         Optional[SpecMaterializerRegistry]
     ] = None

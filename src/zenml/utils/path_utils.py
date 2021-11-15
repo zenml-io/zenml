@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """File utilities"""
-# TODO: [TFX] [LOW] Unnecessary dependency here
+# TODO [LOW]: Unnecessary dependency here
 
 import fnmatch
 import os
