@@ -26,7 +26,6 @@ from zenml.cli.example import (
     EXAMPLES_GITHUB_REPO,
     GitExamplesHandler,
     example,
-    info,
     list,
     pull,
 )
@@ -40,7 +39,7 @@ from zenml.utils import path_utils
 
 logger = get_logger(__name__)
 
-ZERO_FIVE_ZERO_RELEASE_EXAMPLES = ["airflow", "legacy", "quickstart"]
+ZERO_FIVE_ZERO_RELEASE_EXAMPLES = ["legacy", "quickstart"]
 NOT_ZERO_FIVE_RELEASE_EXAMPLES = ["not_airflow", "not_legacy", "not_quickstart"]
 BAD_VERSIONS = ["aaa", "999999", "111111"]
 
@@ -121,7 +120,7 @@ mock_pass_git_examples_handler = click.make_pass_decorator(
     help="The version of ZenML to use for the force-redownloaded examples.",
 )
 def mock_pull(
-    git_examples_handler: GitExamplesHandler,
+    git_examples_handler: MockGitExamplesHandler,
     example_name: str,
     force: bool,
     version: str,
@@ -173,6 +172,33 @@ def mock_pull(
     )
 
 
+@example.command(help="Find out more about an example.")
+@mock_pass_git_examples_handler
+@click.argument("example_name")
+def mock_info(
+    git_examples_handler: MockGitExamplesHandler, example_name: str
+) -> None:
+    """Find out more about an example."""
+    # TODO: [MEDIUM] fix markdown formatting so that it looks nicer (not a
+    #  pure .md dump)
+    example_dir = os.path.join(
+        git_examples_handler.get_examples_dir(), example_name
+    )
+    try:
+        readme_content = git_examples_handler.get_example_readme(example_dir)
+        click.echo(readme_content)
+    except FileNotFoundError:
+        if path_utils.file_exists(example_dir) and path_utils.is_dir(
+            example_dir
+        ):
+            error(f"No README.md file found in {example_dir}")
+        else:
+            error(
+                f"Example {example_name} is not one of the available options."
+                f"\nTo list all available examples, type: `zenml example list`"
+            )
+
+
 @pytest.fixture()
 def monkey_patch_clone_repo(monkeypatch) -> None:
     """Mock the clone_repo method"""
@@ -180,6 +206,11 @@ def monkey_patch_clone_repo(monkeypatch) -> None:
         GitExamplesHandler,
         "clone_repo",
         MockGitExamplesHandler.clone_repo,
+    )
+    monkeypatch.setattr(
+        GitExamplesHandler,
+        "clone_when_examples_already_cloned",
+        MockGitExamplesHandler.clone_when_examples_already_cloned,
     )
 
 
@@ -204,7 +235,7 @@ def test_info_returns_zero_exit_code(
     runner = CliRunner()
     with runner.isolated_filesystem():
         runner.invoke(mock_pull, ["-f", "-v", "0.5.0"])
-        result = runner.invoke(info, [example])
+        result = runner.invoke(mock_info, [example])
         assert result.exit_code == 0
 
 
@@ -217,19 +248,6 @@ def test_pull_earlier_version_returns_zero_exit_code(
         runner.invoke(mock_pull, ["-f", "-v", "0.5.1"])
         result = runner.invoke(pull, ["-f", "-v", "0.3.8"])
         assert result.exit_code == 0
-
-
-@pytest.mark.xfail()
-@pytest.mark.parametrize("bad_version", BAD_VERSIONS)
-def test_pull_of_nonexistent_version_fails(
-    bad_version: str, monkey_patch_clone_repo
-) -> None:
-    """When trying to pull a version that doesn't exist,
-    ZenML handles the failed cloning"""
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        result = runner.invoke(mock_pull, ["-f", "-v", bad_version])
-        assert result.exit_code != 0
 
 
 def test_pull_of_higher_version_than_currently_in_global_config_store(
@@ -283,7 +301,7 @@ def test_info_echos_out_readme_content(
         examples_dir = os.path.join(repo_dir, EXAMPLES_GITHUB_REPO, "examples")
         readme_path = os.path.join(examples_dir, example, "README.md")
 
-        result = runner.invoke(info, [example])
+        result = runner.invoke(mock_info, [example])
         assert result.exit_code == 0
         assert example in result.output
         with open(readme_path) as f:
@@ -301,7 +319,7 @@ def test_info_fails_gracefully_when_bad_example_given(
     runner = CliRunner()
     with runner.isolated_filesystem(tmp_path):
         runner.invoke(mock_pull, ["-f", "-v", "0.5.0"])
-        result = runner.invoke(info, [bad_example])
+        result = runner.invoke(mock_info, [bad_example])
         assert (
             f"Example {bad_example} is not one of the available options."
             in result.output
@@ -323,28 +341,6 @@ def test_info_fails_gracefully_when_no_readme_present(
         runner.invoke(mock_pull, ["-f", "-v", "0.5.0"])
         fake_example_path = os.path.join(examples_dir, bad_example)
         os.mkdir(fake_example_path)
-        result = runner.invoke(info, [bad_example])
+        result = runner.invoke(mock_info, [bad_example])
         assert "No README.md file found" in result.output
         os.rmdir(fake_example_path)
-
-
-def test_user_has_latest_zero_five_version_but_wants_zero_five_one(
-    monkey_patch_clone_repo,
-):
-    """Test the scenario where the latest version available to the user is 0.5.0
-    but the user wants to download 0.5.1. In this case, it should redownload
-    and try to checkout the desired version."""
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        # save the repository currently on the local system
-        current_saved_global_examples_path = os.path.join(
-            click.get_app_dir(APP_NAME), EXAMPLES_GITHUB_REPO
-        )
-        current_saved_global_examples_repo = Repo(
-            current_saved_global_examples_path
-        )
-        # reset the repo such that it has 0.5.0 as the latest version
-        current_saved_global_examples_repo.git.reset("--hard", "0.5.0")
-        runner.invoke(mock_pull, ["-f", "-v", "0.5.1"])
-        result = runner.invoke(list)
-        assert "airflow_local" in result.output
