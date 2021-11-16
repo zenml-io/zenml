@@ -29,10 +29,11 @@ jobs:
           JIRA_API_TOKEN: ${{ secrets.JIRA_ACCESS_TOKEN }}
           JIRA_BOARD_ID: 10004
           JIRA_ISSUE_TYPE_ID: 10017
+          JIRA_DONE_STATUS_CATEGORY_ID: 3
         run: python scripts/update_todo_references.py
       - name: Commit report
         run: |
-          git config --global user.name 'Condemonkey'
+          git config --global user.name 'Code Monkey'
           git config --global user.email 'codemonkey@zenml.io'
           git commit -am "Update TODO references"
           git push
