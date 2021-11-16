@@ -35,5 +35,5 @@ jobs:
         run: |
           git config --global user.name 'Code Monkey'
           git config --global user.email 'codemonkey@zenml.io'
-          git commit -am "Update TODO references"
+          git commit -am "Update TODO comments"
           git push
