@@ -1,3 +1,4 @@
+import argparse
 import json
 import logging
 import os
@@ -18,8 +19,8 @@ JIRA_API_TOKEN = os.environ["JIRA_API_TOKEN"]
 
 JIRA_BOARD_ID = os.environ["JIRA_BOARD_ID"]
 JIRA_ISSUE_TYPE_ID = os.environ["JIRA_ISSUE_TYPE_ID"]
-JIRA_DONE_STATUS_CATEGORY_ID = os.environ["JIRA_DONE_STATUS_CATEGORY_ID"]
-JIRA_ISSUE_LABEL = "todo_comment"
+JIRA_DONE_STATUS_CATEGORY_ID = int(os.environ["JIRA_DONE_STATUS_CATEGORY_ID"])
+JIRA_ISSUE_LABEL = os.environ["JIRA_ISSUE_LABEL"]
 
 
 class Todo:
@@ -229,20 +230,17 @@ def update_file_with_issue_keys(file: Path, todos: List[Todo]) -> None:
     )
 
 
-def update_todos() -> None:
+def update_todos(python_files: List[Path]) -> None:
     """Updates TODO comments.
 
     This method
     - creates JIRA issues for all TODO comments that don't have a
         corresponding JIRA issue yet
     - removes TODO comments which reference a JIRA issue that was closed
+
+    Args:
+        python_files: Python files to search for todos
     """
-    zenml_root = Path("src/zenml")
-    # test_root = Path("tests")
-    # python_files = itertools.chain(
-    #     zenml_root.rglob("*.py"), test_root.rglob("*.py")
-    # )
-    python_files = zenml_root.rglob("*.py")
     jira_issues = get_all_jira_todo_issues()
 
     for file in python_files:
@@ -256,5 +254,25 @@ def update_todos() -> None:
             update_file_with_issue_keys(file, todos_without_issue)
 
 
+def _parse_args() -> argparse.Namespace:
+    """Parses the root directory from command line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Update Todos for python files in a directory."
+    )
+    parser.add_argument(
+        "directory",
+        type=Path,
+        help="The directory to search for python files.",
+    )
+
+    return parser.parse_args()
+
+
+def main():
+    root_directory = _parse_args().directory
+    python_files = root_directory.rglob("*.py")
+    update_todos(python_files)
+
+
 if __name__ == "__main__":
-    update_todos()
+    main()

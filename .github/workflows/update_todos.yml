@@ -30,7 +30,8 @@ jobs:
           JIRA_BOARD_ID: 10004
           JIRA_ISSUE_TYPE_ID: 10017
           JIRA_DONE_STATUS_CATEGORY_ID: 3
-        run: python scripts/update_todos.py
+          JIRA_ISSUE_LABEL: todo_comment
+        run: python scripts/update_todos.py src/zenml
       - name: Commit report
         run: |
           git config --global user.name 'Code Monkey'
