@@ -469,7 +469,7 @@ def test_step_converts_parameters_to_json_strings():
     """Tests that a step converts it parameters to json strings."""
 
     class Config(BaseStepConfig):
-        some_parameter: int
+        some_parameter: int = 2
 
     @step
     def some_step(config: Config):
