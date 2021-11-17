@@ -186,28 +186,37 @@ class BaseStep(metaclass=BaseStepMeta):
         self._verify_arguments(*args, **kwargs)
 
     @property
-    def _internal_execution_properties(self) -> Dict[str, str]:
-        """ZenML internal execution properties for this step.
-
-        **IMPORTANT**: When modifying this dictionary, make sure to
-        prefix the key with `INTERNAL_EXECUTION_PARAMETER_PREFIX` and serialize
-        the value using `json.dumps(...)`.
-        """
+    def _internal_execution_parameters(self) -> Dict[str, str]:
+        """ZenML internal execution parameters for this step."""
         properties = {}
-        if not self.enable_cache:
-            # add a random string to the execution properties to disable caching
-            key = INTERNAL_EXECUTION_PARAMETER_PREFIX + "disable_cache"
-            random_string = f"{random.getrandbits(128):032x}"
-            properties[key] = json.dumps(random_string)
-        else:
-            # caching is enabled so we compute a hash of the step function code
-            # to catch changes in the step implementation
-            key = INTERNAL_EXECUTION_PARAMETER_PREFIX + "step_source"
-            step_source = inspect.getsource(self.process)
-            step_hash = hashlib.sha256(step_source.encode("utf-8")).hexdigest()
-            properties[key] = json.dumps(step_hash)
+        if self.enable_cache:
+            # Caching is enabled so we compute a hash of the step function code
+            # and materializers to catch changes in the step behavior
 
-        return properties
+            def _get_hashed_source(value: Any) -> str:
+                """Returns a hash of the objects source code."""
+                source_code = inspect.getsource(value)
+                return hashlib.sha256(source_code.encode("utf-8")).hexdigest()
+
+            properties["step_source"] = _get_hashed_source(self.process)
+
+            for (
+                name,
+                materializer,
+            ) in (
+                self.spec_materializer_registry.get_materializer_types().items()
+            ):
+                key = f"{name}_materializer_source"
+                properties[key] = _get_hashed_source(materializer)
+        else:
+            # Add a random string to the execution properties to disable caching
+            random_string = f"{random.getrandbits(128):032x}"
+            properties["disable_cache"] = random_string
+
+        return {
+            INTERNAL_EXECUTION_PARAMETER_PREFIX + key: value
+            for key, value in properties.items()
+        }
 
     def _verify_arguments(self, *args: Any, **kwargs: Any) -> None:
         """Verifies the initialization args and kwargs of this step.
@@ -264,7 +273,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
             self.PARAM_SPEC = config.dict()
 
-    def _prepare_parameter_spec(self) -> None:
+    def _update_and_verify_parameter_spec(self) -> None:
         """Verifies and prepares the config parameters for running this step.
 
         When the step requires config parameters, this method:
@@ -297,18 +306,6 @@ class BaseStep(metaclass=BaseStepMeta):
                 raise MissingStepParameterError(
                     self.step_name, missing_keys, self.CONFIG_CLASS
                 )
-
-            # convert config parameter values to strings
-            try:
-                self.PARAM_SPEC = {
-                    k: json.dumps(v) for k, v in self.PARAM_SPEC.items()
-                }
-            except TypeError as e:
-                raise StepInterfaceError(
-                    f"Failed to serialize config parameters for step "
-                    f"'{self.step_name}'. Please make sure to only use "
-                    f"json serializable parameter values."
-                ) from e
 
     def _prepare_input_artifacts(
         self, *artifacts: Channel, **kw_artifacts: Channel
@@ -396,7 +393,7 @@ class BaseStep(metaclass=BaseStepMeta):
     ) -> Union[Channel, List[Channel]]:
         """Generates a component when called."""
         # TODO [MEDIUM]: replaces Channels with ZenML class (BaseArtifact?)
-        self._prepare_parameter_spec()
+        self._update_and_verify_parameter_spec()
 
         # Right now all artifacts are BaseArtifacts
         self.INPUT_SPEC = {key: BaseArtifact for key in self.INPUT_SIGNATURE}
@@ -408,10 +405,26 @@ class BaseStep(metaclass=BaseStepMeta):
             *artifacts, **kw_artifacts
         )
 
+        execution_parameters = {
+            **self.PARAM_SPEC,
+            **self._internal_execution_parameters,
+        }
+
+        # convert execution parameter values to strings
+        try:
+            execution_parameters = {
+                k: json.dumps(v) for k, v in execution_parameters.items()
+            }
+        except TypeError as e:
+            raise StepInterfaceError(
+                f"Failed to serialize execution parameters for step "
+                f"'{self.step_name}'. Please make sure to only use "
+                f"json serializable parameter values."
+            ) from e
+
         self.__component = generate_component(self)(
             **input_artifacts,
-            **self.PARAM_SPEC,
-            **self._internal_execution_properties,
+            **execution_parameters,
         )
 
         # Resolve the returns in the right order.
@@ -435,6 +448,7 @@ class BaseStep(metaclass=BaseStepMeta):
     @abstractmethod
     def process(self, *args: Any, **kwargs: Any) -> Any:
         """Abstract method for core step logic."""
+        raise NotImplementedError
 
     def with_return_materializers(
         self: T,

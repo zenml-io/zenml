@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import json
 
 import pytest
 
@@ -262,13 +261,13 @@ def test_step_with_disabled_cache_has_random_string_as_execution_property():
     step_instance_2 = some_step()
 
     assert (
-        step_instance_1._internal_execution_properties["zenml-disable_cache"]
-        != step_instance_2._internal_execution_properties["zenml-disable_cache"]
+        step_instance_1._internal_execution_parameters["zenml-disable_cache"]
+        != step_instance_2._internal_execution_parameters["zenml-disable_cache"]
     )
 
 
-def test_step_source_execution_property_stays_the_same_if_step_is_not_modified():
-    """Tests that the step source execution property remains constant when
+def test_step_source_execution_parameter_stays_the_same_if_step_is_not_modified():
+    """Tests that the step source execution parameter remains constant when
     creating multiple steps from the same source code."""
 
     @step
@@ -279,14 +278,14 @@ def test_step_source_execution_property_stays_the_same_if_step_is_not_modified()
     step_2 = some_step()
 
     assert (
-        step_1._internal_execution_properties["zenml-step_source"]
-        == step_2._internal_execution_properties["zenml-step_source"]
+        step_1._internal_execution_parameters["zenml-step_source"]
+        == step_2._internal_execution_parameters["zenml-step_source"]
     )
 
 
-def test_step_source_execution_property_changes_when_signature_changes():
+def test_step_source_execution_parameter_changes_when_signature_changes():
     """Tests that modifying the input arguments or outputs of a step
-    function changes the step source execution property."""
+    function changes the step source execution parameter."""
 
     @step
     def some_step(some_argument: int) -> int:
@@ -301,8 +300,8 @@ def test_step_source_execution_property_changes_when_signature_changes():
     step_2 = some_step()
 
     assert (
-        step_1._internal_execution_properties["zenml-step_source"]
-        != step_2._internal_execution_properties["zenml-step_source"]
+        step_1._internal_execution_parameters["zenml-step_source"]
+        != step_2._internal_execution_parameters["zenml-step_source"]
     )
 
     @step
@@ -312,14 +311,14 @@ def test_step_source_execution_property_changes_when_signature_changes():
     step_3 = some_step()
 
     assert (
-        step_1._internal_execution_properties["zenml-step_source"]
-        != step_3._internal_execution_properties["zenml-step_source"]
+        step_1._internal_execution_parameters["zenml-step_source"]
+        != step_3._internal_execution_parameters["zenml-step_source"]
     )
 
 
-def test_step_source_execution_property_changes_when_function_body_changes():
+def test_step_source_execution_parameter_changes_when_function_body_changes():
     """Tests that modifying the step function code changes the step
-    source execution property."""
+    source execution parameter."""
 
     @step
     def some_step():
@@ -335,8 +334,32 @@ def test_step_source_execution_property_changes_when_function_body_changes():
     step_2 = some_step()
 
     assert (
-        step_1._internal_execution_properties["zenml-step_source"]
-        != step_2._internal_execution_properties["zenml-step_source"]
+        step_1._internal_execution_parameters["zenml-step_source"]
+        != step_2._internal_execution_parameters["zenml-step_source"]
+    )
+
+
+def test_materializer_source_execution_parameter_changes_when_materializer_changes():
+    """Tests that changing the step materializer changes the materializer
+    source execution parameter."""
+
+    @step
+    def some_step() -> int:
+        return 1
+
+    class MyCustomMaterializer(BuiltInMaterializer):
+        pass
+
+    step_1 = some_step().with_return_materializers(BuiltInMaterializer)
+    step_2 = some_step().with_return_materializers(MyCustomMaterializer)
+
+    step_1._register_materializers()
+    step_2._register_materializers()
+
+    key = "zenml-output_materializer_source"
+    assert (
+        step_1._internal_execution_parameters[key]
+        != step_2._internal_execution_parameters[key]
     )
 
 
@@ -465,26 +488,6 @@ def test_call_step_with_explicit_materializer():
     some_step().with_return_materializers(MyTypeMaterializer)()
 
 
-def test_step_converts_parameters_to_json_strings():
-    """Tests that a step converts it parameters to json strings."""
-
-    class Config(BaseStepConfig):
-        some_parameter: int = 2
-
-    @step
-    def some_step(config: Config):
-        pass
-
-    parameter_value = 1
-    config_ = Config(some_parameter=parameter_value)
-    step_instance = some_step(config_)
-    step_instance._prepare_parameter_spec()
-
-    assert step_instance.PARAM_SPEC["some_parameter"] == json.dumps(
-        parameter_value
-    )
-
-
 def test_step_uses_config_class_default_values_if_no_config_is_passed():
     """Tests that a step falls back to the config class default values if
     no config object is passed at initialization."""
@@ -498,11 +501,9 @@ def test_step_uses_config_class_default_values_if_no_config_is_passed():
 
     # don't pass the config when initializing the step
     step_instance = some_step()
-    step_instance._prepare_parameter_spec()
+    step_instance._update_and_verify_parameter_spec()
 
-    assert step_instance.PARAM_SPEC["some_parameter"] == json.dumps(
-        ConfigWithDefaultValues.some_parameter
-    )
+    assert step_instance.PARAM_SPEC["some_parameter"] == 1
 
 
 def test_step_fails_if_config_parameter_value_is_missing():
@@ -520,4 +521,4 @@ def test_step_fails_if_config_parameter_value_is_missing():
     step_instance = some_step()
 
     with pytest.raises(MissingStepParameterError):
-        step_instance._prepare_parameter_spec()
+        step_instance._update_and_verify_parameter_spec()

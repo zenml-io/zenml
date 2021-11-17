@@ -107,7 +107,7 @@ def generate_component(step: "BaseStep") -> Callable[..., Any]:
         spec_outputs[key] = component_spec.ChannelParameter(type=artifact_type)
     for key, prim_type in step.PARAM_SPEC.items():
         spec_params[key] = component_spec.ExecutionParameter(type=str)  # type: ignore[no-untyped-call] # noqa
-    for key in step._internal_execution_properties.keys():  # noqa
+    for key in step._internal_execution_parameters.keys():  # noqa
         spec_params[key] = component_spec.ExecutionParameter(type=str)  # type: ignore[no-untyped-call] # noqa
 
     component_spec_class = type(
