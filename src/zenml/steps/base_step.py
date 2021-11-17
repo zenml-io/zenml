@@ -145,8 +145,9 @@ class BaseStepMeta(type):
                 cls.OUTPUT_SIGNATURE[SINGLE_RETURN_OUT_NAME] = return_type
 
         # Raise an exception if input and output names of a step overlap as
-        # that makes it impossible to distinguish their materializers
-        # TODO [MEDIUM]: Can we use two factories to avoid this issue?
+        # tfx requires them to be unique
+        # TODO [MEDIUM]: Can we prefix inputs and outputs to avoid this
+        #  restriction?
         shared_input_output_keys = set(cls.INPUT_SIGNATURE).intersection(
             set(cls.OUTPUT_SIGNATURE)
         )
