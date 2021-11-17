@@ -56,19 +56,6 @@ from zenml.steps.utils import (
 logger = get_logger(__name__)
 
 
-def check_dict_keys_match(x: Dict[Any, Any], y: Dict[Any, Any]) -> bool:
-    """Checks whether there is even one key shared between two dicts.
-
-    Returns:
-        True if there is a shared key, otherwise False.
-    """
-    shared_items = {k: x[k] for k in x if k in y and x[k] == y[k]}
-    if len(shared_items) == 0:
-        return False
-    logger.debug(f"Matched keys for dicts {x} and {y}: {shared_items}")
-    return True
-
-
 class BaseStepMeta(type):
     """Meta class for `BaseStep`.
 
@@ -89,53 +76,83 @@ class BaseStepMeta(type):
         cls.CONFIG_PARAMETER_NAME = None
         cls.CONFIG_CLASS = None
 
-        # Looking into the signature of the provided process function
-        process_spec = inspect.getfullargspec(
+        # Get the signature of the step function
+        step_function_signature = inspect.getfullargspec(
             getattr(cls, STEP_INNER_FUNC_NAME)
         )
-        process_args = process_spec.args
-        logger.debug(f"{name} args: {process_args}")
 
-        # Remove the self from the signature if it exists
-        if process_args and process_args[0] == "self":
-            process_args.pop(0)
+        if bases:
+            # We're not creating the abstract `BaseStep` class
+            # but a concrete implementation. Make sure the step function
+            # signature does not contain variable **args or **kwargs
+            variable_arguments = None
+            if step_function_signature.varargs:
+                variable_arguments = f"*{step_function_signature.varargs}"
+            elif step_function_signature.varkw:
+                variable_arguments = f"**{step_function_signature.varkw}"
 
-        # Parse the input signature of the function
-        for arg in process_args:
-            arg_type = process_spec.annotations.get(arg, None)
-            # Check whether its a `BaseStepConfig` or a registered
-            # materializer type.
+            if variable_arguments:
+                raise StepInterfaceError(
+                    f"Unable to create step '{name}' with variable arguments "
+                    f"'{variable_arguments}'. Please make sure your step "
+                    f"functions are defined with a fixed amount of arguments."
+                )
+
+        step_function_args = step_function_signature.args
+
+        # Remove 'self' from the signature if it exists
+        if step_function_args and step_function_args[0] == "self":
+            step_function_args.pop(0)
+
+        # Verify the input arguments of the step function
+        for arg in step_function_args:
+            arg_type = step_function_signature.annotations.get(arg, None)
+
+            if not arg_type:
+                raise StepInterfaceError(
+                    f"Missing type annotation for argument '{arg}' when "
+                    f"trying to create step '{name}'. Please make sure to "
+                    f"include type annotations for all your step inputs "
+                    f"and outputs."
+                )
+
             if issubclass(arg_type, BaseStepConfig):
-                # It needs to be None at this point, otherwise multi configs.
+                # Raise an error if we already found a config in the signature
                 if cls.CONFIG_CLASS is not None:
                     raise StepInterfaceError(
-                        "Please only use one `BaseStepConfig` type object in "
-                        "your step."
+                        f"Found multiple configuration arguments "
+                        f"('{cls.CONFIG_PARAMETER_NAME}' and '{arg}') when "
+                        f"trying to create step '{name}'. Please make sure to "
+                        f"only have one `BaseStepConfig` subclass as input "
+                        f"argument for a step."
                     )
                 cls.CONFIG_PARAMETER_NAME = arg
                 cls.CONFIG_CLASS = arg_type
             else:
+                # Can't do any check for existing materializers right now
+                # as they might get passed later, so we simply store the
+                # argument name and type for later use.
                 cls.INPUT_SIGNATURE.update({arg: arg_type})
 
-        # Infer the returned values
-        return_spec = process_spec.annotations.get("return", None)
-        if return_spec is not None:
-            if isinstance(return_spec, Output):
-                # If its a named, potentially multi, outputs we go through
-                #  each and create a spec.
-                for return_tuple in return_spec.items():
-                    cls.OUTPUT_SIGNATURE.update(
-                        {return_tuple[0]: return_tuple[1]}
-                    )
+        # Parse the returns of the step function
+        return_type = step_function_signature.annotations.get("return", None)
+        if return_type is not None:
+            if isinstance(return_type, Output):
+                cls.OUTPUT_SIGNATURE = dict(return_type.items())
             else:
-                # If its one output, then give it a single return name.
-                cls.OUTPUT_SIGNATURE.update(
-                    {SINGLE_RETURN_OUT_NAME: return_spec}
-                )
+                cls.OUTPUT_SIGNATURE[SINGLE_RETURN_OUT_NAME] = return_type
 
-        if check_dict_keys_match(cls.INPUT_SIGNATURE, cls.OUTPUT_SIGNATURE):
+        # Raise an exception if input and output names of a step overlap as
+        # that makes it impossible to distinguish their materializers
+        # TODO [MEDIUM]: Can we use two factories to avoid this issue?
+        shared_input_output_keys = set(cls.INPUT_SIGNATURE).intersection(
+            set(cls.OUTPUT_SIGNATURE)
+        )
+        if shared_input_output_keys:
             raise StepInterfaceError(
-                "The input names and output names cannot be the same!"
+                f"There is an overlap in the input and output names of "
+                f"step '{name}': {shared_input_output_keys}. Please make "
+                f"sure that your input and output names are distinct."
             )
 
         return cls

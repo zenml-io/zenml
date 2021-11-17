@@ -14,8 +14,61 @@
 import pytest
 
 from zenml.exceptions import StepInterfaceError
+from zenml.steps import step
 from zenml.steps.base_step_config import BaseStepConfig
-from zenml.steps.step_decorator import step
+from zenml.steps.step_output import Output
+
+
+def test_define_step_with_shared_input_and_output_name():
+    """Tests that defining a step with a shared input and output name raises
+    a StepInterfaceError."""
+    with pytest.raises(StepInterfaceError):
+
+        @step
+        def some_step(shared_name: int) -> Output(shared_name=int):
+            return shared_name
+
+
+def test_define_step_with_multiple_configs():
+    """Tests that defining a step with multiple configs raises
+    a StepInterfaceError."""
+    with pytest.raises(StepInterfaceError):
+
+        @step
+        def some_step(
+            first_config: BaseStepConfig, second_config: BaseStepConfig
+        ):
+            pass
+
+
+def test_define_step_without_input_annotation():
+    """Tests that defining a step with a missing input annotation raises
+    a StepInterfaceError."""
+    with pytest.raises(StepInterfaceError):
+
+        @step
+        def some_step(some_argument, some_other_argument: int):
+            pass
+
+
+def test_define_step_with_variable_args():
+    """Tests that defining a step with variable arguments raises
+    a StepInterfaceError."""
+    with pytest.raises(StepInterfaceError):
+
+        @step
+        def some_step(*args: int):
+            pass
+
+
+def test_define_step_with_variable_kwargs():
+    """Tests that defining a step with variable keyword arguments raises
+    a StepInterfaceError."""
+    with pytest.raises(StepInterfaceError):
+
+        @step
+        def some_step(**kwargs: int):
+            pass
 
 
 def test_initialize_step_with_unexpected_config():
@@ -70,3 +123,27 @@ def test_initialize_step_with_config():
 
     with pytest.raises(StepInterfaceError):
         step_with_config(config=StepConfig(), config2=StepConfig())
+
+
+def test_access_step_component_before_calling():
+    """Tests that accessing a steps component before calling it raises
+    a StepInterfaceError."""
+
+    @step
+    def some_step():
+        pass
+
+    with pytest.raises(StepInterfaceError):
+        _ = some_step().component
+
+
+def test_access_step_component_after_calling():
+    """Tests that a step component exists after the step was called."""
+
+    @step
+    def some_step():
+        pass
+
+    step_instance = some_step()
+    step_instance()
+    _ = step_instance.component
