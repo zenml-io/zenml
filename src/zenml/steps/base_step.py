@@ -98,7 +98,9 @@ class BaseStepMeta(type):
                     f"functions are defined with a fixed amount of arguments."
                 )
 
-        step_function_args = step_function_signature.args
+        step_function_args = (
+            step_function_signature.args + step_function_signature.kwonlyargs
+        )
 
         # Remove 'self' from the signature if it exists
         if step_function_args and step_function_args[0] == "self":
@@ -412,9 +414,7 @@ class BaseStep(metaclass=BaseStepMeta):
         )
 
         # Resolve the returns in the right order.
-        returns = []
-        for k in self.OUTPUT_SPEC.keys():
-            returns.append(getattr(self.component.outputs, k))
+        returns = [self.component.outputs[key] for key in self.OUTPUT_SPEC]
 
         # If its one return we just return the one channel not as a list
         if len(returns) == 1:

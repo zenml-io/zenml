@@ -71,6 +71,17 @@ def test_define_step_with_variable_kwargs():
             pass
 
 
+def test_define_step_with_keyword_only_arguments():
+    """Tests that keyword-only arguments get included in the input signature
+    or a step."""
+
+    @step
+    def some_step(some_argument: int, *, keyword_only_argument: int):
+        pass
+
+    assert "keyword_only_argument" in some_step.INPUT_SIGNATURE
+
+
 def test_initialize_step_with_unexpected_config():
     """Tests that passing a config to a step that was defined without
     config raises an Exception."""
