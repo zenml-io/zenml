@@ -138,6 +138,81 @@ def test_initialize_step_with_config():
         step_with_config(config=StepConfig(), config2=StepConfig())
 
 
+def test_call_step_with_args(int_step_output, step_with_two_int_inputs):
+    """Test that a step can be called with args."""
+    step_with_two_int_inputs()(int_step_output, int_step_output)
+
+
+def test_call_step_with_kwargs(int_step_output, step_with_two_int_inputs):
+    """Test that a step can be called with kwargs."""
+    step_with_two_int_inputs()(input_1=int_step_output, input_2=int_step_output)
+
+
+def test_call_step_with_args_and_kwargs(
+    int_step_output, step_with_two_int_inputs
+):
+    """Test that a step can be called with a mix of args and kwargs."""
+    step_with_two_int_inputs()(int_step_output, input_2=int_step_output)
+
+
+def test_call_step_with_too_many_args(
+    int_step_output, step_with_two_int_inputs
+):
+    """Test that calling a step fails when too many args
+    are passed."""
+    with pytest.raises(StepInterfaceError):
+        step_with_two_int_inputs()(
+            int_step_output, int_step_output, int_step_output
+        )
+
+
+def test_call_step_with_too_many_args_and_kwargs(
+    int_step_output, step_with_two_int_inputs
+):
+    """Test that calling a step fails when too many args
+    and kwargs are passed."""
+    with pytest.raises(StepInterfaceError):
+        step_with_two_int_inputs()(
+            int_step_output, input_1=int_step_output, input_2=int_step_output
+        )
+
+
+def test_call_step_with_missing_key(int_step_output, step_with_two_int_inputs):
+    """Test that calling a step fails when an argument
+    is missing."""
+    with pytest.raises(StepInterfaceError):
+        step_with_two_int_inputs()(input_1=int_step_output)
+
+
+def test_call_step_with_unexpected_key(
+    int_step_output, step_with_two_int_inputs
+):
+    """Test that calling a step fails when an argument
+    has an unexpected key."""
+    with pytest.raises(StepInterfaceError):
+        step_with_two_int_inputs()(
+            input_1=int_step_output,
+            input_2=int_step_output,
+            input_3=int_step_output,
+        )
+
+
+def test_call_step_with_wrong_arg_type(
+    int_step_output, step_with_two_int_inputs
+):
+    """Test that calling a step fails when an arg has a wrong type."""
+    with pytest.raises(StepInterfaceError):
+        step_with_two_int_inputs()(1, int_step_output)
+
+
+def test_call_step_with_wrong_kwarg_type(
+    int_step_output, step_with_two_int_inputs
+):
+    """Test that calling a step fails when an kwarg has a wrong type."""
+    with pytest.raises(StepInterfaceError):
+        step_with_two_int_inputs()(input_1=1, input_2=int_step_output)
+
+
 def test_access_step_component_before_calling():
     """Tests that accessing a steps component before calling it raises
     a StepInterfaceError."""
