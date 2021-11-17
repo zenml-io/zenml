@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from zenml.integrations.constants import AIRFLOW
 from zenml.integrations.integration import Integration
 from zenml.utils.source_utils import import_class_by_path
 
@@ -18,7 +19,7 @@ from zenml.utils.source_utils import import_class_by_path
 class AirflowIntegration(Integration):
     """Creates an Airflow integration."""
 
-    NAME = "airflow"
+    NAME = AIRFLOW
     REQUIREMENTS = ["apache_airflow"]
 
     @classmethod

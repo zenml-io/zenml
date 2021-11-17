@@ -14,9 +14,9 @@
 from zenml.integrations.integration import Integration
 from zenml.utils.source_utils import import_class_by_path
 
-
+from zenml.integrations.constants import SKLEARN
 class SklearnIntegration(Integration):
-    NAME = "sklearn"
+    NAME = SKLEARN
     REQUIREMENTS = ["sklearn==0.24.2"]
 
     @classmethod

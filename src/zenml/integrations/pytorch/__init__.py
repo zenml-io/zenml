@@ -15,6 +15,8 @@ from zenml.integrations.integration import Integration
 from zenml.utils.source_utils import import_class_by_path
 
 
+from zenml.integrations.constants import PYTORCH
+
 class PytorchIntegration(Integration):
     NAME = "pytorch"
     REQUIREMENTS = ["pytorch"]

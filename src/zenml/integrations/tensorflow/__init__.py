@@ -13,10 +13,11 @@
 #  permissions and limitations under the License.
 from zenml.integrations.integration import Integration
 from zenml.utils.source_utils import import_class_by_path
+from zenml.integrations.constants import TENSORFLOW
 
 
 class TensorflowIntegration(Integration):
-    NAME = "tensorflow"
+    NAME = TENSORFLOW
     REQUIREMENTS = ["tensorflow==2.6.0"]
 
     @classmethod

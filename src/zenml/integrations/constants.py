@@ -11,20 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.integrations.integration import Integration
-from zenml.utils.source_utils import import_class_by_path
 
-
-from zenml.integrations.constants import PYTORCH_L
-class PytorchLightningIntegration(Integration):
-    NAME = PYTORCH_L
-    REQUIREMENTS = ["pytorch_lightning"]
-
-    @classmethod
-    def activate(cls):
-        import_class_by_path(
-            "zenml.integrations.pytorch_lightning.materializers.pytorch_lightning_materializer.PytorchLightningMaterializer"
-        )
-
-
-PytorchLightningIntegration.check_installation()
+AIRFLOW = "airflow"
+BEAM = "beam"
+GCP = "gcp"
+PYTORCH = "pytorch"
+PYTORCH_L = "pytorch_lightning"
+SKLEARN = "sklearn"
+TENSORFLOW = "tensorflow"

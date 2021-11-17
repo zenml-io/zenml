@@ -15,30 +15,30 @@ from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.utils.source_utils import LazyLoader
 
+from zenml.integrations import constants
+
 logger = get_logger(__name__)
 
 # Google Cloud Platform
 gcp = LazyLoader("zenml.integrations.gcp")
-integration_registry.register_integration("gcp", gcp)
+integration_registry.register_integration(constants.GCP, gcp)
 
 # Tensorflow
 tensorflow = LazyLoader("zenml.integrations.tensorflow")
-integration_registry.register_integration("tensorflow", tensorflow)
+integration_registry.register_integration(constants.TENSORFLOW, tensorflow)
 
 # sklearn
 sklearn = LazyLoader("zenml.integrations.sklearn")
-integration_registry.register_integration("sklearn", sklearn)
+integration_registry.register_integration(constants.SKLEARN, sklearn)
 
 # Beam
 beam = LazyLoader("zenml.integrations.beam")
-integration_registry.register_integration("beam", beam)
+integration_registry.register_integration(constants.BEAM, beam)
 
 # Pytorch
 pytorch = LazyLoader("zenml.integrations.pytorch")
-integration_registry.register_integration("pytorch", pytorch)
+integration_registry.register_integration(constants.PYTORCH, pytorch)
 
 # Pytorch Lightning
-pytorch_lightning = LazyLoader("zenml.integrations.pytorch_lightning")
-integration_registry.register_integration(
-    "pytorch_lightning", pytorch_lightning
-)
+pytorch_l = LazyLoader("zenml.integrations.pytorch_lightning")
+integration_registry.register_integration(constants.PYTORCH_L, pytorch_l)
