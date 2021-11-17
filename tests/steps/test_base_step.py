@@ -11,9 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import json
+
 import pytest
 
-from zenml.exceptions import StepInterfaceError
+from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.built_in_materializer import BuiltInMaterializer
 from zenml.steps import step
@@ -461,3 +463,61 @@ def test_call_step_with_explicit_materializer():
         return MyType()
 
     some_step().with_return_materializers(MyTypeMaterializer)()
+
+
+def test_step_converts_parameters_to_json_strings():
+    """Tests that a step converts it parameters to json strings."""
+
+    class Config(BaseStepConfig):
+        some_parameter: int
+
+    @step
+    def some_step(config: Config):
+        pass
+
+    parameter_value = 1
+    config_ = Config(some_parameter=parameter_value)
+    step_instance = some_step(config_)
+    step_instance._prepare_parameter_spec()
+
+    assert step_instance.PARAM_SPEC["some_parameter"] == json.dumps(
+        parameter_value
+    )
+
+
+def test_step_uses_config_class_default_values_if_no_config_is_passed():
+    """Tests that a step falls back to the config class default values if
+    no config object is passed at initialization."""
+
+    class ConfigWithDefaultValues(BaseStepConfig):
+        some_parameter: int = 1
+
+    @step
+    def some_step(config: ConfigWithDefaultValues):
+        pass
+
+    # don't pass the config when initializing the step
+    step_instance = some_step()
+    step_instance._prepare_parameter_spec()
+
+    assert step_instance.PARAM_SPEC["some_parameter"] == json.dumps(
+        ConfigWithDefaultValues.some_parameter
+    )
+
+
+def test_step_fails_if_config_parameter_value_is_missing():
+    """Tests that a step fails if no config object is passed at
+    initialization and the config class misses some default values."""
+
+    class ConfigWithoutDefaultValues(BaseStepConfig):
+        some_parameter: int
+
+    @step
+    def some_step(config: ConfigWithoutDefaultValues):
+        pass
+
+    # don't pass the config when initializing the step
+    step_instance = some_step()
+
+    with pytest.raises(MissingStepParameterError):
+        step_instance._prepare_parameter_spec()
