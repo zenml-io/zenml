@@ -398,10 +398,11 @@ class BaseStep(metaclass=BaseStepMeta):
         # TODO [MEDIUM]: replaces Channels with ZenML class (BaseArtifact?)
         self._prepare_parameter_spec()
 
-        # Construct INPUT_SPEC from INPUT_SIGNATURE
-        self.resolve_signature_materializers(self.INPUT_SIGNATURE, True)
-        # Construct OUTPUT_SPEC from OUTPUT_SIGNATURE
-        self.resolve_signature_materializers(self.OUTPUT_SIGNATURE, False)
+        # Right now all artifacts are BaseArtifacts
+        self.INPUT_SPEC = {key: BaseArtifact for key in self.INPUT_SIGNATURE}
+        self.OUTPUT_SPEC = {key: BaseArtifact for key in self.OUTPUT_SIGNATURE}
+
+        self._register_materializers()
 
         input_artifacts = self._prepare_input_artifacts(
             *artifacts, **kw_artifacts
@@ -499,17 +500,15 @@ class BaseStep(metaclass=BaseStepMeta):
 
         return self
 
-    def resolve_signature_materializers(
-        self, signature: Dict[str, Type[Any]], is_input: bool = True
-    ) -> None:
-        """Takes either the INPUT_SIGNATURE and OUTPUT_SIGNATURE and resolves
-        the materializers for them in the `spec_materializer_registry`.
+    def _register_materializers(self) -> None:
+        """Registers materializers for the outputs of this step.
 
-        Args:
-            signature: Either self.INPUT_SIGNATURE or self.OUTPUT_SIGNATURE.
-            is_input: If True, then self.INPUT_SPEC used, else self.OUTPUT_SPEC.
+        Raises:
+            StepInterfaceError: If an output does not have an explicit
+                materializer assigned to it and we there is no default
+                materializer registered for the output type.
         """
-        for arg, arg_type in signature.items():
+        for arg, arg_type in self.OUTPUT_SIGNATURE.items():
             if arg in self.materializers:
                 self.spec_materializer_registry.register_materializer_type(
                     arg, self.materializers[arg]
@@ -531,8 +530,3 @@ class BaseStep(metaclass=BaseStepMeta):
                     f"materializer either. Please do so and re-run the "
                     f"pipeline."
                 )
-
-        spec = self.INPUT_SPEC if is_input else self.OUTPUT_SPEC
-        # For now, all artifacts are BaseArtifacts
-        for k in signature.keys():
-            spec[k] = BaseArtifact

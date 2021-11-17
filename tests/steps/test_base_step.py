@@ -138,81 +138,6 @@ def test_initialize_step_with_config():
         step_with_config(config=StepConfig(), config2=StepConfig())
 
 
-def test_call_step_with_args(int_step_output, step_with_two_int_inputs):
-    """Test that a step can be called with args."""
-    step_with_two_int_inputs()(int_step_output, int_step_output)
-
-
-def test_call_step_with_kwargs(int_step_output, step_with_two_int_inputs):
-    """Test that a step can be called with kwargs."""
-    step_with_two_int_inputs()(input_1=int_step_output, input_2=int_step_output)
-
-
-def test_call_step_with_args_and_kwargs(
-    int_step_output, step_with_two_int_inputs
-):
-    """Test that a step can be called with a mix of args and kwargs."""
-    step_with_two_int_inputs()(int_step_output, input_2=int_step_output)
-
-
-def test_call_step_with_too_many_args(
-    int_step_output, step_with_two_int_inputs
-):
-    """Test that calling a step fails when too many args
-    are passed."""
-    with pytest.raises(StepInterfaceError):
-        step_with_two_int_inputs()(
-            int_step_output, int_step_output, int_step_output
-        )
-
-
-def test_call_step_with_too_many_args_and_kwargs(
-    int_step_output, step_with_two_int_inputs
-):
-    """Test that calling a step fails when too many args
-    and kwargs are passed."""
-    with pytest.raises(StepInterfaceError):
-        step_with_two_int_inputs()(
-            int_step_output, input_1=int_step_output, input_2=int_step_output
-        )
-
-
-def test_call_step_with_missing_key(int_step_output, step_with_two_int_inputs):
-    """Test that calling a step fails when an argument
-    is missing."""
-    with pytest.raises(StepInterfaceError):
-        step_with_two_int_inputs()(input_1=int_step_output)
-
-
-def test_call_step_with_unexpected_key(
-    int_step_output, step_with_two_int_inputs
-):
-    """Test that calling a step fails when an argument
-    has an unexpected key."""
-    with pytest.raises(StepInterfaceError):
-        step_with_two_int_inputs()(
-            input_1=int_step_output,
-            input_2=int_step_output,
-            input_3=int_step_output,
-        )
-
-
-def test_call_step_with_wrong_arg_type(
-    int_step_output, step_with_two_int_inputs
-):
-    """Test that calling a step fails when an arg has a wrong type."""
-    with pytest.raises(StepInterfaceError):
-        step_with_two_int_inputs()(1, int_step_output)
-
-
-def test_call_step_with_wrong_kwarg_type(
-    int_step_output, step_with_two_int_inputs
-):
-    """Test that calling a step fails when an kwarg has a wrong type."""
-    with pytest.raises(StepInterfaceError):
-        step_with_two_int_inputs()(input_1=1, input_2=int_step_output)
-
-
 def test_access_step_component_before_calling():
     """Tests that accessing a steps component before calling it raises
     a StepInterfaceError."""
@@ -411,3 +336,128 @@ def test_step_source_execution_property_changes_when_function_body_changes():
         step_1._internal_execution_properties["zenml-step_source"]
         != step_2._internal_execution_properties["zenml-step_source"]
     )
+
+
+def test_call_step_with_args(int_step_output, step_with_two_int_inputs):
+    """Test that a step can be called with args."""
+    step_with_two_int_inputs()(int_step_output, int_step_output)
+
+
+def test_call_step_with_kwargs(int_step_output, step_with_two_int_inputs):
+    """Test that a step can be called with kwargs."""
+    step_with_two_int_inputs()(input_1=int_step_output, input_2=int_step_output)
+
+
+def test_call_step_with_args_and_kwargs(
+    int_step_output, step_with_two_int_inputs
+):
+    """Test that a step can be called with a mix of args and kwargs."""
+    step_with_two_int_inputs()(int_step_output, input_2=int_step_output)
+
+
+def test_call_step_with_too_many_args(
+    int_step_output, step_with_two_int_inputs
+):
+    """Test that calling a step fails when too many args
+    are passed."""
+    with pytest.raises(StepInterfaceError):
+        step_with_two_int_inputs()(
+            int_step_output, int_step_output, int_step_output
+        )
+
+
+def test_call_step_with_too_many_args_and_kwargs(
+    int_step_output, step_with_two_int_inputs
+):
+    """Test that calling a step fails when too many args
+    and kwargs are passed."""
+    with pytest.raises(StepInterfaceError):
+        step_with_two_int_inputs()(
+            int_step_output, input_1=int_step_output, input_2=int_step_output
+        )
+
+
+def test_call_step_with_missing_key(int_step_output, step_with_two_int_inputs):
+    """Test that calling a step fails when an argument
+    is missing."""
+    with pytest.raises(StepInterfaceError):
+        step_with_two_int_inputs()(input_1=int_step_output)
+
+
+def test_call_step_with_unexpected_key(
+    int_step_output, step_with_two_int_inputs
+):
+    """Test that calling a step fails when an argument
+    has an unexpected key."""
+    with pytest.raises(StepInterfaceError):
+        step_with_two_int_inputs()(
+            input_1=int_step_output,
+            input_2=int_step_output,
+            input_3=int_step_output,
+        )
+
+
+def test_call_step_with_wrong_arg_type(
+    int_step_output, step_with_two_int_inputs
+):
+    """Test that calling a step fails when an arg has a wrong type."""
+    with pytest.raises(StepInterfaceError):
+        step_with_two_int_inputs()(1, int_step_output)
+
+
+def test_call_step_with_wrong_kwarg_type(
+    int_step_output, step_with_two_int_inputs
+):
+    """Test that calling a step fails when an kwarg has a wrong type."""
+    with pytest.raises(StepInterfaceError):
+        step_with_two_int_inputs()(input_1=1, input_2=int_step_output)
+
+
+def test_call_step_with_missing_materializer_for_type():
+    """Tests that calling a step with an output without registered
+    materializer raises a StepInterfaceError."""
+
+    class MyTypeWithoutMaterializer:
+        pass
+
+    @step
+    def some_step() -> MyTypeWithoutMaterializer:
+        return MyTypeWithoutMaterializer()
+
+    with pytest.raises(StepInterfaceError):
+        some_step()()
+
+
+def test_call_step_with_default_materializer_registered():
+    """Tests that calling a step with a registered default materializer for the
+    output works."""
+
+    class MyType:
+        pass
+
+    class MyTypeMaterializer(BaseMaterializer):
+        ASSOCIATED_TYPES = [MyType]
+
+    @step
+    def some_step() -> MyType:
+        return MyType()
+
+    some_step()()
+
+
+def test_call_step_with_explicit_materializer():
+    """Tests that calling a step with an explicit materializer for the
+    output works."""
+
+    class MyType:
+        pass
+
+    class MyTypeMaterializer(BaseMaterializer):
+        # Not registered as default for `MyType`
+        ASSOCIATED_TYPES = [int]
+
+    @step
+    def some_step() -> MyType:
+        return MyType()
+
+    some_step().with_return_materializers(MyTypeMaterializer)()
