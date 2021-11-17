@@ -14,7 +14,6 @@
 
 import fnmatch
 import os
-import re
 import tarfile
 from pathlib import Path
 from typing import Any, Callable, Iterable, List, Optional, Tuple, Type
@@ -24,47 +23,15 @@ from tfx.dsl.io.filesystem import Filesystem, PathType
 from zenml.constants import REMOTE_FS_PREFIX
 from zenml.core.constants import ZENML_DIR_NAME
 from zenml.exceptions import InitializationException
+from zenml.io.fileio_registry import default_fileio_registry
 from zenml.logger import get_logger
-from zenml.utils.source_utils import import_class_by_path
 
 logger = get_logger(__name__)
 
-# TODO: [TFX] [LOW] Unnecessary dependency here
-
-
-def _get_scheme(path: PathType) -> PathType:
-    """Get filesystem plugin for given path."""
-    # Assume local path by default, but extract filesystem prefix if available.
-    if isinstance(path, str):
-        path_bytes = path.encode("utf-8")
-    elif isinstance(path, bytes):
-        path_bytes = path
-    else:
-        raise ValueError("Invalid path type: %r." % path)
-    result = re.match(b"^([a-z0-9]+://)", path_bytes)
-    if result:
-        return result.group(1).decode("utf-8")
-    else:
-        return ""
-
 
 def _get_filesystem(path: PathType) -> Type[Filesystem]:
-    """Returns a filesystem class for a given path."""
-    scheme = _get_scheme(path)
-
-    if scheme == "gs://":
-        return import_class_by_path("zenml.integrations.gcp.io.gcs_plugin.ZenGCS")()  # type: ignore[no-any-return] # noqa
-    elif scheme == "":
-        return import_class_by_path(  # type: ignore[no-any-return] # noqa
-            "tfx.dsl.io.plugins.local.LocalFilesystem"
-        )()
-
-    if isinstance(scheme, bytes):
-        scheme = scheme.decode("utf-8")
-
-    raise ValueError(
-        f"No registered handler found for filesystem scheme `{scheme}`."
-    )
+    """Returns a filesystem class for a given path from the registry"""
+    return default_fileio_registry.get_filesystem_for_path(path)
 
 
 def open(path: PathType, mode: str = "r") -> Any:  # noqa
