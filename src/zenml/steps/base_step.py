@@ -39,9 +39,6 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
 )
-from zenml.materializers.spec_materializer_registry import (
-    SpecMaterializerRegistry,
-)
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
 from zenml.steps.utils import (
@@ -175,14 +172,14 @@ class BaseStep(metaclass=BaseStepMeta):
     CONFIG_CLASS: ClassVar[Optional[Type[BaseStepConfig]]] = None
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self.materializers: Dict[str, Type[BaseMaterializer]] = {}
-        self.__component = None
         self.step_name = self.__class__.__name__
         self.enable_cache = getattr(self, PARAM_ENABLE_CACHE)
+
         self.PARAM_SPEC: Dict[str, Any] = {}
         self.INPUT_SPEC: Dict[str, Type[BaseArtifact]] = {}
         self.OUTPUT_SPEC: Dict[str, Type[BaseArtifact]] = {}
-        self.spec_materializer_registry = SpecMaterializerRegistry()
+        self._explicit_materializers: Dict[str, Type[BaseMaterializer]] = {}
+        self.__component = None
 
         self._verify_arguments(*args, **kwargs)
 
@@ -201,12 +198,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
             properties["step_source"] = _get_hashed_source(self.process)
 
-            for (
-                name,
-                materializer,
-            ) in (
-                self.spec_materializer_registry.get_materializer_types().items()
-            ):
+            for name, materializer in self.get_materializers().items():
                 key = f"{name}_materializer_source"
                 properties[key] = _get_hashed_source(materializer)
         else:
@@ -400,8 +392,6 @@ class BaseStep(metaclass=BaseStepMeta):
         self.INPUT_SPEC = {key: BaseArtifact for key in self.INPUT_SIGNATURE}
         self.OUTPUT_SPEC = {key: BaseArtifact for key in self.OUTPUT_SIGNATURE}
 
-        self._register_materializers()
-
         input_artifacts = self._prepare_input_artifacts(
             *artifacts, **kw_artifacts
         )
@@ -497,11 +487,11 @@ class BaseStep(metaclass=BaseStepMeta):
                         f"'{self.step_name}'. Only `BaseMaterializer` "
                         f"subclasses are allowed."
                     )
-                self.materializers[output_name] = materializer
+                self._explicit_materializers[output_name] = materializer
 
         elif _is_materializer_class(materializers):
             # Set the materializer for all outputs of this step
-            self.materializers = {
+            self._explicit_materializers = {
                 key: materializers for key in self.OUTPUT_SIGNATURE
             }
         else:
@@ -515,33 +505,41 @@ class BaseStep(metaclass=BaseStepMeta):
 
         return self
 
-    def _register_materializers(self) -> None:
-        """Registers materializers for the outputs of this step.
+    def get_materializers(
+        self, ensure_complete=False
+    ) -> Dict[str, Type[BaseMaterializer]]:
+        """Returns available materializers for the outputs of this step.
 
+        Args:
+            ensure_complete: If set to `True`, this method will raise a
+                `StepInterfaceError` if no materializer can be found for an
+                output.
         Raises:
-            StepInterfaceError: If an output does not have an explicit
-                materializer assigned to it and we there is no default
-                materializer registered for the output type.
+            StepInterfaceError: (Only if `ensure_complete` is set to `True`)
+                If an output does not have an explicit materializer assigned
+                to it and we there is no default materializer registered for
+                the output type.
         """
-        for arg, arg_type in self.OUTPUT_SIGNATURE.items():
-            if arg in self.materializers:
-                self.spec_materializer_registry.register_materializer_type(
-                    arg, self.materializers[arg]
-                )
-            elif default_materializer_registry.is_registered(arg_type):
-                self.spec_materializer_registry.register_materializer_type(
-                    arg,
-                    default_materializer_registry.get_single_materializer_type(
-                        arg_type
-                    ),
-                )
+        materializers = self._explicit_materializers
+
+        for output_name, output_type in self.OUTPUT_SIGNATURE.items():
+            if output_name in materializers:
+                # Materializer for this output was set explicitly
+                pass
+            elif default_materializer_registry.is_registered(output_type):
+                materializer = default_materializer_registry[output_type]
+                materializers[output_name] = materializer
             else:
-                raise StepInterfaceError(
-                    f"Argument `{arg}` of type `{arg_type}` does not have an "
-                    f"associated materializer. ZenML steps can only take input "
-                    f"and output artifacts with an associated materializer. It "
-                    f"looks like we do not have a default materializer for "
-                    f"`{arg_type}`, and you have not provided a custom "
-                    f"materializer either. Please do so and re-run the "
-                    f"pipeline."
-                )
+                if ensure_complete:
+                    raise StepInterfaceError(
+                        f"Unable to find materializer for output "
+                        f"'{output_name}' of type `{output_type}` in step "
+                        f"'{self.step_name}'. Please make sure to either "
+                        f"explicitly set a materializer for step outputs "
+                        f"using `step.with_return_materializers(...)` or "
+                        f"registering a default materializer for specific "
+                        f"types by subclassing `BaseMaterializer` and setting "
+                        f"its `ASSOCIATED_TYPES` class variable."
+                    )
+
+        return materializers

@@ -55,9 +55,6 @@ from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.exceptions import MissingStepParameterError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.materializers.spec_materializer_registry import (
-    SpecMaterializerRegistry,
-)
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
 from zenml.utils import source_utils
@@ -127,7 +124,7 @@ def generate_component(step: "BaseStep") -> Callable[..., Any]:
         {
             "_FUNCTION": staticmethod(getattr(step, STEP_INNER_FUNC_NAME)),
             "__module__": step.__module__,
-            "spec_materializer_registry": step.spec_materializer_registry,
+            "materializers": step.get_materializers(ensure_complete=True),
             PARAM_STEP_NAME: step.step_name,
         },
     )
@@ -224,8 +221,8 @@ class _FunctionExecutor(BaseExecutor):
 
     _FUNCTION = staticmethod(lambda: None)
     # TODO[HIGH]: should this be an instance variable?
-    spec_materializer_registry: ClassVar[
-        Optional[SpecMaterializerRegistry]
+    materializers: ClassVar[
+        Optional[Dict[str, Type["BaseMaterializer"]]]
     ] = None
 
     def resolve_materializer_with_registry(
@@ -241,14 +238,10 @@ class _FunctionExecutor(BaseExecutor):
             The right materializer based on the defaults or optionally the one
             set by the user.
         """
-        if not self.spec_materializer_registry:
-            raise ValueError("Spec Materializer Registry is not set!")
+        if not self.materializers:
+            raise ValueError("Materializers are missing is not set!")
 
-        materializer_class = (
-            self.spec_materializer_registry.get_single_materializer_type(
-                param_name
-            )
-        )
+        materializer_class = self.materializers[param_name]
         return materializer_class
 
     def resolve_input_artifact(
