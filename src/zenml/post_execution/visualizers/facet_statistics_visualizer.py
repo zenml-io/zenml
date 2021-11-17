@@ -28,16 +28,21 @@ from IPython.core.display import HTML, display
 
 from zenml.logger import get_logger
 from zenml.post_execution.step import StepView
+from zenml.post_execution.visualizers.base_step_visualizer import (
+    BaseStepVisualizer,
+)
 from zenml.utils import path_utils
 
 logger = get_logger(__name__)
 
 
-class FacetStatisticsVisualizer:
+class FacetStatisticsVisualizer(BaseStepVisualizer):
     """The base implementation of a ZenML Visualizer."""
 
     @abstractmethod
-    def visualize(self, step: StepView, magic: bool = False) -> None:
+    def visualize(
+        self, step: StepView, magic: bool = False, *args, **kwargs
+    ) -> None:
         """Method to visualize components
 
         Args:
@@ -90,4 +95,5 @@ class FacetStatisticsVisualizer:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as f:
                 path_utils.write_file_contents_as_string(f.name, h)
                 url = f"file:///{f.name}"
+                logger.info("Opening %s in a new browser.." % f.name)
                 webbrowser.open(url, new=2)

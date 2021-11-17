@@ -15,13 +15,14 @@
 from abc import abstractmethod
 
 from zenml.logger import get_logger
+from zenml.post_execution.step import StepView
 
 logger = get_logger(__name__)
 
 
-class BaseVisualizer:
-    """The base implementation of a ZenML Visualizer."""
+class BaseStepVisualizer:
+    """The base implementation of a ZenML Step Visualizer."""
 
     @abstractmethod
-    def visualize(self) -> None:
-        """Method to visualize components"""
+    def visualize(self, step: StepView, *args, **kwargs) -> None:
+        """Method to visualize steps."""
