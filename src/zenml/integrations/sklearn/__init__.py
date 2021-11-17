@@ -11,10 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from zenml.integrations.constants import SKLEARN
 from zenml.integrations.integration import Integration
 from zenml.utils.source_utils import import_class_by_path
 
-from zenml.integrations.constants import SKLEARN
+
 class SklearnIntegration(Integration):
     NAME = SKLEARN
     REQUIREMENTS = ["sklearn==0.24.2"]

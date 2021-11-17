@@ -24,13 +24,12 @@ from builtins import FileNotFoundError
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 import gcsfs
-from tfx.dsl.io import filesystem, filesystem_registry
-from tfx.dsl.io.filesystem import PathType
 
 from zenml.io.fileio import convert_to_str
+from zenml.io.filesystem import Filesystem, NotFoundError, PathType
 
 
-class ZenGCS(filesystem.Filesystem):
+class ZenGCS(Filesystem):
     """Filesystem that delegates to Google Cloud Store using gcsfs."""
 
     SUPPORTED_SCHEMES = ["gs://"]
@@ -149,7 +148,7 @@ class ZenGCS(filesystem.Filesystem):
         try:
             ZenGCS.fs.delete(path=path, recursive=True)
         except FileNotFoundError as e:
-            raise filesystem.NotFoundError() from e
+            raise NotFoundError() from e
 
     @staticmethod
     def stat(path: PathType) -> Dict[str, Any]:
@@ -175,8 +174,3 @@ class ZenGCS(filesystem.Filesystem):
         """
         # TODO: [LOW] Additional params
         return ZenGCS.fs.walk(path=top)  # type: ignore[no-any-return]
-
-
-# TODO: [LOW] The registration of the filesystem should happen probably at an
-#   artifact store basis
-filesystem_registry.DEFAULT_FILESYSTEM_REGISTRY.register(ZenGCS, priority=15)

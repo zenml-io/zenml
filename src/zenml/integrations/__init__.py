@@ -11,11 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from zenml.integrations import constants
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.utils.source_utils import LazyLoader
-
-from zenml.integrations import constants
 
 logger = get_logger(__name__)
 
