@@ -14,6 +14,8 @@
 import pytest
 
 from zenml.exceptions import StepInterfaceError
+from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.materializers.built_in_materializer import BuiltInMaterializer
 from zenml.steps import step
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
@@ -158,3 +160,89 @@ def test_access_step_component_after_calling():
     step_instance = some_step()
     step_instance()
     _ = step_instance.component
+
+
+def test_configure_step_with_wrong_materializer_class():
+    """Tests that passing a random class as a materializer raises a
+    StepInterfaceError."""
+
+    @step
+    def some_step() -> Output(some_output=int):
+        pass
+
+    with pytest.raises(StepInterfaceError):
+        some_step().with_return_materializers(str)  # noqa
+
+
+def test_configure_step_with_wrong_materializer_key():
+    """Tests that passing a materializer for a non-existent argument raises a
+    StepInterfaceError."""
+
+    @step
+    def some_step() -> Output(some_output=int):
+        pass
+
+    with pytest.raises(StepInterfaceError):
+        materializers = {"some_nonexistent_output": BaseMaterializer}
+        some_step().with_return_materializers(materializers)
+
+
+def test_configure_step_with_wrong_materializer_class_in_dict():
+    """Tests that passing a wrong class as materializer for a specific output
+    raises a StepInterfaceError."""
+
+    @step
+    def some_step() -> Output(some_output=int):
+        pass
+
+    with pytest.raises(StepInterfaceError):
+        materializers = {"some_output": "not_a_materializer_class"}
+        some_step().with_return_materializers(materializers)  # noqa
+
+
+def test_setting_a_materializer_for_a_step_with_multiple_outputs():
+    """Tests that setting a materializer for a step with multiple outputs
+    sets the materializer for all the outputs."""
+
+    @step
+    def some_step() -> Output(some_output=int, some_other_output=str):
+        pass
+
+    step_instance = some_step().with_return_materializers(BaseMaterializer)
+    assert step_instance.materializers["some_output"] is BaseMaterializer
+    assert step_instance.materializers["some_other_output"] is BaseMaterializer
+
+
+def test_overwriting_step_materializers():
+    """Tests that calling `with_return_materializers` multiple times allows
+    overwriting of the step materializers."""
+
+    @step
+    def some_step() -> Output(some_output=int, some_other_output=str):
+        pass
+
+    step_instance = some_step()
+    assert not step_instance.materializers
+
+    step_instance = step_instance.with_return_materializers(
+        {"some_output": BaseMaterializer}
+    )
+    assert step_instance.materializers["some_output"] is BaseMaterializer
+    assert "some_other_output" not in step_instance.materializers
+
+    step_instance = step_instance.with_return_materializers(
+        {"some_other_output": BuiltInMaterializer}
+    )
+    assert (
+        step_instance.materializers["some_other_output"] is BuiltInMaterializer
+    )
+    assert step_instance.materializers["some_output"] is BaseMaterializer
+
+    step_instance = step_instance.with_return_materializers(
+        {"some_output": BuiltInMaterializer}
+    )
+    assert step_instance.materializers["some_output"] is BuiltInMaterializer
+
+    step_instance.with_return_materializers(BaseMaterializer)
+    assert step_instance.materializers["some_output"] is BaseMaterializer
+    assert step_instance.materializers["some_other_output"] is BaseMaterializer

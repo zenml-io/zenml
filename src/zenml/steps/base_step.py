@@ -441,33 +441,62 @@ class BaseStep(metaclass=BaseStepMeta):
             Type[BaseMaterializer], Dict[str, Type[BaseMaterializer]]
         ],
     ) -> T:
-        """Inject materializers from the outside. If one materializer is passed
-        in then all outputs are assigned that materializer. If a dict is passed
-        in then we make sure the output names match.
+        """Register materializers for step outputs.
+
+        If a single materializer is passed, it will be used for all step
+        outputs. Otherwise the dictionary keys specify the output names
+        for which the materializers will be used.
 
         Args:
-            materializers: A `BaseMaterializer` subclass or a dict mapping
-                output names to `BaseMaterializer` subclasses.
+            materializers: The materializers for the outputs of this step.
+
+        Raises:
+            StepInterfaceError: If a materializer is not a `BaseMaterializer`
+                subclass or a materializer for a non-existent output is given.
         """
-        if not isinstance(materializers, dict):
-            assert isinstance(materializers, type) and issubclass(
-                materializers, BaseMaterializer
-            ), "Need to pass in a subclass of `BaseMaterializer`!"
-            if len(self.OUTPUT_SIGNATURE) == 1:
-                # If only one return, assign to `SINGLE_RETURN_OUT_NAME`.
-                self.materializers = {SINGLE_RETURN_OUT_NAME: materializers}
-            else:
-                # If multi return, then assign to all.
-                self.materializers = {
-                    k: materializers for k in self.OUTPUT_SIGNATURE
-                }
+
+        def _is_materializer_class(value: Any) -> bool:
+            """Checks whether the given object is a `BaseMaterializer`
+            subclass."""
+            is_class = isinstance(value, type)
+            return is_class and issubclass(value, BaseMaterializer)
+
+        if isinstance(materializers, dict):
+            allowed_output_names = set(self.OUTPUT_SIGNATURE)
+
+            for output_name, materializer in materializers.items():
+                if output_name not in allowed_output_names:
+                    raise StepInterfaceError(
+                        f"Got unexpected materializers for non-existent "
+                        f"output '{output_name}' in step '{self.step_name}'. "
+                        f"Only materializers for the outputs "
+                        f"{allowed_output_names} of this step can"
+                        f" be registered."
+                    )
+
+                if not _is_materializer_class(materializer):
+                    raise StepInterfaceError(
+                        f"Got unexpected object `{materializer}` as "
+                        f"materializer for output '{output_name}' of step "
+                        f"'{self.step_name}'. Only `BaseMaterializer` "
+                        f"subclasses are allowed."
+                    )
+                self.materializers[output_name] = materializer
+
+        elif _is_materializer_class(materializers):
+            # Set the materializer for all outputs of this step
+            self.materializers = {
+                key: materializers for key in self.OUTPUT_SIGNATURE
+            }
         else:
-            # Check whether signature matches.
-            assert all([x in self.OUTPUT_SIGNATURE for x in materializers]), (
-                f"One of {materializers.keys()} not defined in outputs: "
-                f"{self.OUTPUT_SIGNATURE.keys()}"
+            raise StepInterfaceError(
+                f"Got unexpected object `{materializers}` as output "
+                f"materializer for step '{self.step_name}'. Only "
+                f"`BaseMaterializer` subclasses or dictionaries mapping "
+                f"output names to `BaseMaterializer` subclasses are allowed "
+                f"as input when specifying return materializers."
             )
-            self.materializers = materializers
+
         return self
 
     def resolve_signature_materializers(
