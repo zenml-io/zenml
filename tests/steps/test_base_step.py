@@ -246,3 +246,93 @@ def test_overwriting_step_materializers():
     step_instance.with_return_materializers(BaseMaterializer)
     assert step_instance.materializers["some_output"] is BaseMaterializer
     assert step_instance.materializers["some_other_output"] is BaseMaterializer
+
+
+def test_step_with_disabled_cache_has_random_string_as_execution_property():
+    """Tests that a step with disabled caching adds a random string as
+    execution property to disable caching."""
+
+    @step(enable_cache=False)
+    def some_step():
+        pass
+
+    step_instance_1 = some_step()
+    step_instance_2 = some_step()
+
+    assert (
+        step_instance_1._internal_execution_properties["zenml-disable_cache"]
+        != step_instance_2._internal_execution_properties["zenml-disable_cache"]
+    )
+
+
+def test_step_source_execution_property_stays_the_same_if_step_is_not_modified():
+    """Tests that the step source execution property remains constant when
+    creating multiple steps from the same source code."""
+
+    @step
+    def some_step():
+        pass
+
+    step_1 = some_step()
+    step_2 = some_step()
+
+    assert (
+        step_1._internal_execution_properties["zenml-step_source"]
+        == step_2._internal_execution_properties["zenml-step_source"]
+    )
+
+
+def test_step_source_execution_property_changes_when_signature_changes():
+    """Tests that modifying the input arguments or outputs of a step
+    function changes the step source execution property."""
+
+    @step
+    def some_step(some_argument: int) -> int:
+        pass
+
+    step_1 = some_step()
+
+    @step
+    def some_step(some_argument_with_new_name: int) -> int:
+        pass
+
+    step_2 = some_step()
+
+    assert (
+        step_1._internal_execution_properties["zenml-step_source"]
+        != step_2._internal_execution_properties["zenml-step_source"]
+    )
+
+    @step
+    def some_step(some_argument: int) -> str:
+        pass
+
+    step_3 = some_step()
+
+    assert (
+        step_1._internal_execution_properties["zenml-step_source"]
+        != step_3._internal_execution_properties["zenml-step_source"]
+    )
+
+
+def test_step_source_execution_property_changes_when_function_body_changes():
+    """Tests that modifying the step function code changes the step
+    source execution property."""
+
+    @step
+    def some_step():
+        pass
+
+    step_1 = some_step()
+
+    @step
+    def some_step():
+        # this is new
+        pass
+
+    step_2 = some_step()
+
+    assert (
+        step_1._internal_execution_properties["zenml-step_source"]
+        != step_2._internal_execution_properties["zenml-step_source"]
+    )
