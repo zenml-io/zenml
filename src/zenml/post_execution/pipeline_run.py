@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from ml_metadata import proto
 
@@ -121,3 +121,13 @@ class PipelineRunView:
             f"{self.__class__.__qualname__}(id={self._id}, "
             f"name='{self._name}')"
         )
+
+    def __eq__(self, other: Any) -> bool:
+        """Returns whether the other object is referring to the same
+        pipeline run."""
+        if isinstance(other, PipelineRunView):
+            return (
+                self._id == other._id
+                and self._metadata_store.uuid == other._metadata_store.uuid
+            )
+        return NotImplemented

@@ -419,3 +419,21 @@ def unconnected_two_step_pipeline():
         pass
 
     return _pipeline
+
+
+@pytest.fixture
+def int_step_output():
+    @step
+    def _step() -> int:
+        return 1
+
+    return _step()()
+
+
+@pytest.fixture
+def step_with_two_int_inputs():
+    @step
+    def _step(input_1: int, input_2: int):
+        pass
+
+    return _step

@@ -113,3 +113,10 @@ class ArtifactView:
             f"type='{self._type}', uri='{self._uri}', "
             f"materializer='{self._materializer}')"
         )
+
+    def __eq__(self, other: Any) -> bool:
+        """Returns whether the other object is referring to the
+        same artifact."""
+        if isinstance(other, ArtifactView):
+            return self._id == other._id and self._uri == other._uri
+        return NotImplemented

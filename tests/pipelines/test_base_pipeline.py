@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
+from contextlib import ExitStack as does_not_raise
 
 import pytest
 
@@ -47,21 +48,24 @@ def test_initialize_pipeline_with_args(
     unconnected_two_step_pipeline, empty_step
 ):
     """Test that a pipeline can be initialized with args."""
-    unconnected_two_step_pipeline(empty_step(), empty_step())
+    with does_not_raise():
+        unconnected_two_step_pipeline(empty_step(), empty_step())
 
 
 def test_initialize_pipeline_with_kwargs(
     unconnected_two_step_pipeline, empty_step
 ):
     """Test that a pipeline can be initialized with kwargs."""
-    unconnected_two_step_pipeline(step_1=empty_step(), step_2=empty_step())
+    with does_not_raise():
+        unconnected_two_step_pipeline(step_1=empty_step(), step_2=empty_step())
 
 
 def test_initialize_pipeline_with_args_and_kwargs(
     unconnected_two_step_pipeline, empty_step
 ):
     """Test that a pipeline can be initialized with a mix of args and kwargs."""
-    unconnected_two_step_pipeline(empty_step(), step_2=empty_step())
+    with does_not_raise():
+        unconnected_two_step_pipeline(empty_step(), step_2=empty_step())
 
 
 def test_initialize_pipeline_with_too_many_args(

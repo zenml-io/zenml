@@ -137,3 +137,12 @@ class StepView:
             f"{self.__class__.__qualname__}(id={self._id}, "
             f"name='{self._name}', parameters={self._parameters})"
         )
+
+    def __eq__(self, other: Any) -> bool:
+        """Returns whether the other object is referring to the same step."""
+        if isinstance(other, StepView):
+            return (
+                self._id == other._id
+                and self._metadata_store.uuid == other._metadata_store.uuid
+            )
+        return NotImplemented
