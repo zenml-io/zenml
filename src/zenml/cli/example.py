@@ -14,23 +14,82 @@
 
 
 import os
+import shutil
 from pathlib import Path
 from typing import Any, List
 
 import click
 from git.exc import GitCommandError
 from git.repo.base import Repo
-from packaging.version import parse
+from packaging.version import Version, parse
 
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.constants import APP_NAME, GIT_REPO_URL
+from zenml.logger import get_logger
 from zenml.utils import path_utils
 
 # TODO [ENG-145]: Add an example-run command to run an example.
 
+logger = get_logger(__name__)
+
 EXAMPLES_GITHUB_REPO = "zenml_examples"
+
+
+class Example:
+    pass
+
+
+class ExamplesRepo:
+    def __init__(self, cloning_path: Path) -> None:
+        self.cloning_path = cloning_path
+        self.repo = None
+
+    @property
+    def latest_release(self) -> str:
+        """Returns the latest release for the examples repository."""
+        tags = sorted(self.repo.tags, key=lambda t: t.commit.committed_datetime)
+        latest_tag = parse(tags[-1].name)
+        if type(latest_tag) is not Version:
+            return "main"
+        return tags[-1].name
+
+    def clone(self) -> None:
+        """Clones repo to cloning_path"""
+        self.cloning_path.mkdir(parents=True, exist_ok=False)
+        try:
+            self.repo = Repo.clone_from(
+                GIT_REPO_URL, self.cloning_path, branch="main"
+            )
+        except KeyboardInterrupt:
+            self.delete()
+            logger.error("Cancelled download of repository.. Rolled back.")
+
+    def delete(self) -> None:
+        """Delete `cloning_path` if it exists."""
+        if self.cloning_path.exists():
+            shutil.rmtree(self.cloning_path)
+        else:
+            raise AssertionError(
+                f"Cannot delete the examples repository from {self.cloning_path} as it does not exist."
+            )
+
+    def checkout(self, branch: str) -> None:
+        """Checks out a specific branch or tag of the examples repository
+
+        Raises:
+            GitCommandError: if branch doesn't exist.
+        """
+        self.repo.git.checkout(branch)
+
+    def checkout_latest_release(self) -> None:
+        """Checks out the latest release of the examples repository."""
+        self.checkout(self.latest_release)
+
+
+class GitExamplesHandler(object):
+    pass
 
 
 class GitExamplesHandler(object):
