@@ -39,10 +39,11 @@ class BaseMaterializerMeta(type):
                 "You should specify a list of ASSOCIATED_TYPES when creating a "
                 "Materializer!"
             )
-            [
-                default_materializer_registry.register_materializer_type(x, cls)
-                for x in cls.ASSOCIATED_TYPES
-            ]
+            for associated_type in cls.ASSOCIATED_TYPES:
+                default_materializer_registry.register_materializer_type(
+                    associated_type, cls
+                )
+
         return cls
 
 

@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 class MaterializerRegistry:
     """Matches a python type to a default materializer."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.materializer_types: Dict[Type[Any], Type["BaseMaterializer"]] = {}
 
     def register_materializer_type(

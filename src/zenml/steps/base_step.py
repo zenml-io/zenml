@@ -184,7 +184,7 @@ class BaseStep(metaclass=BaseStepMeta):
         self._verify_arguments(*args, **kwargs)
 
     def get_materializers(
-        self, ensure_complete=False
+        self, ensure_complete: bool = False
     ) -> Dict[str, Type[BaseMaterializer]]:
         """Returns available materializers for the outputs of this step.
 
@@ -471,8 +471,9 @@ class BaseStep(metaclass=BaseStepMeta):
 
         # If its one return we just return the one channel not as a list
         if len(returns) == 1:
-            returns = returns[0]
-        return returns
+            return returns[0]
+        else:
+            return returns
 
     @property
     def component(self) -> _ZenMLSimpleComponent:
