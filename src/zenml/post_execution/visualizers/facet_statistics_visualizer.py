@@ -52,7 +52,14 @@ class FacetStatisticsVisualizer(BaseStepVisualizer):
         datasets = []
         for output_name, artifact_view in step.outputs.items():
             df = artifact_view.read()
-            datasets.append({"name": output_name, "table": df})
+            if type(df) is not pd.DataFrame:
+                logger.warning(
+                    "`%s` is not a pd.DataFrame. You can only visualize "
+                    "statistics of steps that output pandas dataframes. "
+                    "Skipping this output.." % output_name
+                )
+            else:
+                datasets.append({"name": output_name, "table": df})
         h = self.generate_html(datasets)
         self.generate_facet(h, magic)
 
