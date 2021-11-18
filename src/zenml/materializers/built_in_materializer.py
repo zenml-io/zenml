@@ -41,7 +41,7 @@ class BuiltInMaterializer(BaseMaterializer):
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         contents = yaml_utils.read_json(filepath)
         if type(contents) != data_type:
-            # TODO [LOW]: Raise error or try to coerce
+            # TODO [ENG-142]: Raise error or try to coerce
             logger.debug(
                 f"Contents {contents} was type {type(contents)} but expected "
                 f"{data_type}"

@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """File utilities"""
-# TODO: [TFX] [LOW] Unnecessary dependency here
+# TODO [ENG-170]: Unnecessary dependency here
 
 import fnmatch
 import os
@@ -70,7 +70,7 @@ def is_dir(dir_path: str) -> bool:
 
 
 def find_files(dir_path: PathType, pattern: str) -> Iterable[str]:
-    # TODO [LOW]: correct docstring since 'None' is never returned
+    # TODO [ENG-171]: correct docstring since 'None' is never returned
     """Find files in a directory that match pattern.
 
     Args:

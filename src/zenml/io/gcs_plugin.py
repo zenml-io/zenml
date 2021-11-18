@@ -69,7 +69,7 @@ class ZenGCS(filesystem.Filesystem):
                 f"file already exists. Set `overwrite=True` to copy anyway."
             )
 
-        # TODO: [LOW] Check if it works with overwrite=True or if we need to
+        # TODO [ENG-151]: Check if it works with overwrite=True or if we need to
         #  manually remove it first
         ZenGCS.fs.copy(path1=src, path2=dst)
 
@@ -139,7 +139,7 @@ class ZenGCS(filesystem.Filesystem):
                 f"file already exists. Set `overwrite=True` to rename anyway."
             )
 
-        # TODO: [LOW] Check if it works with overwrite=True or if we need
+        # TODO [ENG-152]: Check if it works with overwrite=True or if we need
         #  to manually remove it first
         ZenGCS.fs.rename(path1=src, path2=dst)
 
@@ -173,10 +173,10 @@ class ZenGCS(filesystem.Filesystem):
             directory path, a list of directories inside the current directory
             and a list of files inside the current directory.
         """
-        # TODO: [LOW] Additional params
+        # TODO [ENG-153]: Additional params
         return ZenGCS.fs.walk(path=top)  # type: ignore[no-any-return]
 
 
-# TODO: [LOW] The registration of the filesystem should happen probably at an
-#   artifact store basis
+# TODO [ENG-154]: The registration of the filesystem should happen probably at an
+#  artifact store basis
 filesystem_registry.DEFAULT_FILESYSTEM_REGISTRY.register(ZenGCS, priority=15)

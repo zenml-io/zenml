@@ -19,7 +19,7 @@ class Output(object):
     """A named tuple with a default name that cannot be overriden."""
 
     def __init__(self, **kwargs: Type[Any]):
-        # TODO [MEDIUM]: do we even need the named tuple here or is
+        # TODO [ENG-161]: do we even need the named tuple here or is
         #  a list of tuples (name, Type) sufficient?
         self.outputs = NamedTuple("ZenOutput", **kwargs)  # type: ignore[misc]
 

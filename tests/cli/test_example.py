@@ -290,7 +290,7 @@ def test_info_echos_out_readme_content(
     example: str, monkey_patch_clone_repo
 ) -> None:
     """Check that info subcommand displays readme content"""
-    # TODO: [LOW] make test handle rich markdown output
+    # TODO [LOW]: make test handle rich markdown output
     runner = CliRunner()
     with runner.isolated_filesystem():
         # setup the test

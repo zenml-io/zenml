@@ -153,7 +153,7 @@ def test_list_dir_returns_empty_list_when_dir_doesnt_exist(
 
 
 # @pytest.mark.xfail()
-# TODO: [HIGH] write this test
+# TODO [HIGH]: write this test
 # def test_logging_takes_place_on_fail_of_list_dir(caplog):
 #     """logger should output a debug statement on failure to find directory"""
 #     not_a_real_dir = "./not_a_dir"
