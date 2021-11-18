@@ -81,7 +81,7 @@ class BaseStepMeta(type):
         if bases:
             # We're not creating the abstract `BaseStep` class
             # but a concrete implementation. Make sure the step function
-            # signature does not contain variable **args or **kwargs
+            # signature does not contain variable *args or **kwargs
             variable_arguments = None
             if step_function_signature.varargs:
                 variable_arguments = f"*{step_function_signature.varargs}"
