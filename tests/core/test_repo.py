@@ -15,6 +15,7 @@
 # TODO: [MEDIUM] add basic CRUD tests back in
 
 import os
+from contextlib import ExitStack as does_not_raise
 from pathlib import Path
 
 import pytest
@@ -52,9 +53,11 @@ def test_initializing_repository_from_root_sets_cwd_as_repo_path() -> None:
 def test_initializing_repository_without_git_repo_does_not_raise_error(
     tmp_path: str,
 ) -> None:
-    """Check initializing repository without git repository does not raise error"""
-    repo = Repository(str(tmp_path))
-    assert repo.git_wrapper is None
+    """Check initializing repository without git repository does not raise
+    error"""
+    with does_not_raise():
+        repo = Repository(str(tmp_path))
+        assert repo.git_wrapper is None
 
 
 def test_initializing_repo_with_git_repo_present_sets_git_wrapper(
