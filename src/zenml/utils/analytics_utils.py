@@ -15,7 +15,6 @@
 
 import os
 import platform
-import sys
 from typing import Any, Callable, Dict, Optional
 
 import distro
@@ -94,14 +93,14 @@ def get_system_info() -> Dict[str, Any]:
     system = platform.system()
 
     if system == "Windows":
-        version = sys.getwindowsversion()  # type: ignore[attr-defined]
+        release, version, csd, ptype = platform.win32_ver()
 
         return {
             "os": "windows",
-            "windows_version_build": version.build,
-            "windows_version_major": version.major,
-            "windows_version_minor": version.minor,
-            "windows_version_service_pack": version.service_pack,
+            "windows_version_release": release,
+            "windows_version": version,
+            "windows_version_service_pack": csd,
+            "windows_version_os_type": ptype,
         }
 
     if system == "Darwin":
