@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any, List
 
 import click
-from git.exc import GitCommandError
+from git.exc import GitCommandError, NoSuchPathError
 from git.repo.base import Repo
 from packaging.version import Version, parse
 
@@ -38,13 +38,22 @@ EXAMPLES_GITHUB_REPO = "zenml_examples"
 
 
 class Example:
-    pass
+    def __init__(self, name: str, path: Path) -> None:
+        self.name = name
+        self.path = path
 
 
 class ExamplesRepo:
     def __init__(self, cloning_path: Path) -> None:
         self.cloning_path = cloning_path
-        self.repo = None
+        try:
+            self.repo = Repo(self.cloning_path)
+        except NoSuchPathError:
+            self.repo = None
+            logger.debug(
+                f"`cloning_path`: {self.cloning_path} was empty, but ExamplesRepo was created. "
+                "Ensure a pull is performed before doing any other operations."
+            )
 
     @property
     def latest_release(self) -> str:
@@ -54,6 +63,18 @@ class ExamplesRepo:
         if type(latest_tag) is not Version:
             return "main"
         return tags[-1].name
+
+    @property
+    def is_cloned(self) -> bool:
+        """Returns whether we have already cloned the examples repository."""
+        return self.cloning_path.exists()
+
+    @property
+    def examples_dir(self) -> str:
+        """Returns the path for the examples directory."""
+        return os.path.join(
+            click.get_app_dir(APP_NAME), EXAMPLES_GITHUB_REPO, "examples"
+        )
 
     def clone(self) -> None:
         """Clones repo to cloning_path"""
@@ -89,109 +110,17 @@ class ExamplesRepo:
 
 
 class GitExamplesHandler(object):
-    pass
-
-
-class GitExamplesHandler(object):
-    """Handles logic related to cloning and checking out the ZenML Git
-    repository, in relation to the `examples` dir."""
-
-    def __init__(self, redownload: str = "") -> None:
-        """Initialize the GitExamplesHandler class."""
-        self.clone_repo(redownload)
-
-    def clone_repo(self, redownload_version: str = "") -> None:
-        """Clone ZenML git repo into global config directory if not already
-        cloned"""
-        installed_version = zenml_version_installed
+    def __init__(self) -> None:
         repo_dir = click.get_app_dir(APP_NAME)
-        examples_dir = os.path.join(repo_dir, EXAMPLES_GITHUB_REPO)
-        # delete source directory if force redownload is set
-        if redownload_version:
-            self.delete_example_source_dir(examples_dir)
-            installed_version = redownload_version
+        examples_dir = Path(os.path.join(repo_dir, EXAMPLES_GITHUB_REPO))
+        self.examples_repo = ExamplesRepo(examples_dir)
 
-        config_directory_files = os.listdir(repo_dir)
-
-        if (
-            redownload_version
-            or EXAMPLES_GITHUB_REPO not in config_directory_files
-        ):
-            self.clone_from_zero(GIT_REPO_URL, examples_dir)
-            repo = Repo(examples_dir)
-            self.checkout_repository(repo, installed_version)
-
-    def clone_from_zero(self, git_repo_url: str, local_dir: str) -> None:
-        """Basic functionality to clone a repo."""
-        try:
-            Repo.clone_from(git_repo_url, local_dir, branch="main")
-        except KeyboardInterrupt:
-            self.delete_example_source_dir(local_dir)
-            error("Cancelled download of repository.. Rolled back.")
-            return
-
-    def checkout_repository(
-        self,
-        repository: Repo,
-        desired_version: str,
-        fallback_to_latest: bool = True,
-    ) -> None:
-        """Checks out a branch or tag of a git repository
-
-        Args:
-            repository: a Git repository reference.
-            desired_version: a valid ZenML release version number.
-            fallback_to_latest: Whether to default to the latest released
-            version or not if `desired_version` does not exist.
-        """
-        try:
-            repository.git.checkout(desired_version)
-        except GitCommandError:
-            if fallback_to_latest:
-                last_release = parse(repository.tags[-1].name)
-                repository.git.checkout(last_release)
-                warning(
-                    f"You just tried to download examples for version "
-                    f"{desired_version}. "
-                    f"There is no corresponding release or version. We are "
-                    f"going to "
-                    f"default to the last release: {last_release}"
-                )
-            else:
-                error(
-                    f"You just tried to checkout the repository for version "
-                    f"{desired_version}. "
-                    f"There is no corresponding release or version. Please try "
-                    f"again with a version number corresponding to an actual "
-                    f"release."
-                )
-                raise
-
-    def clone_when_examples_already_cloned(
-        self, local_dir: str, version: str
-    ) -> None:
-        """Basic functionality to clone the ZenML examples
-        into the global config directory if they are already cloned."""
-        local_dir_path = Path(local_dir)
-        repo = Repo(str(local_dir_path))
-        desired_version = parse(version)
-        self.delete_example_source_dir(str(local_dir_path))
-        self.clone_from_zero(GIT_REPO_URL, local_dir)
-        self.checkout_repository(
-            repo, str(desired_version), fallback_to_latest=False
-        )
-
-    def get_examples_dir(self) -> str:
-        """Return the examples dir"""
-        return os.path.join(
-            click.get_app_dir(APP_NAME), EXAMPLES_GITHUB_REPO, "examples"
-        )
-
-    def get_all_examples(self) -> List[str]:
-        """Get all the examples"""
+    @property
+    def examples(self) -> List[Example]:
+        """Returns a list of examples"""
         return [
-            name
-            for name in sorted(os.listdir(self.get_examples_dir()))
+            Example(name, os.path.join(self.examples_repo.examples_dir, name))
+            for name in sorted(os.listdir(self.examples_repo.examples_dir))
             if (
                 not name.startswith(".")
                 and not name.startswith("__")
@@ -199,43 +128,178 @@ class GitExamplesHandler(object):
             )
         ]
 
-    def get_example_readme(self, example_path: str) -> str:
-        """Get the example README file contents.
+    def pull(self, version: str = None, force: bool = False) -> None:
+        if version is None:
+            version = self.examples_repo.latest_release
 
-        Raises:
-            FileNotFoundError: if the file doesn't exist.
-        """
-        with open(os.path.join(example_path, "README.md")) as readme:
-            readme_content = readme.read()
-        return readme_content
+        if not self.examples_repo.is_cloned:
+            self.examples_repo.clone()
+        elif force:
+            self.examples_repo.delete()
+            self.examples_repo.clone()
 
-    def delete_example_source_dir(self, source_path: str) -> None:
-        """Clean the example directory. This method checks that we are
-        inside the ZenML config directory before performing its deletion.
-
-        Args:
-            source_path (str): The path to the example source directory.
-
-        Raises:
-            ValueError: If the source_path is not the ZenML config directory.
-        """
-        config_directory_path = str(
-            os.path.join(click.get_app_dir(APP_NAME), EXAMPLES_GITHUB_REPO)
-        )
-        if source_path == config_directory_path:
-            path_utils.rm_dir(source_path)
-        else:
-            raise ValueError(
-                "You can only delete the source directory from your ZenML "
-                "config directory"
+        try:
+            self.examples_repo.checkout(version)
+        except GitCommandError:
+            logger.warning(
+                f"Version {version} does not exist in remote repository. Reverting to `main`."
             )
+            self.examples_repo.checkout("main")
 
-    def delete_working_directory_examples_folder(self) -> None:
-        """Delete the zenml_examples folder from the current working
-        directory."""
-        cwd_directory_path = os.path.join(os.getcwd(), EXAMPLES_GITHUB_REPO)
-        if os.path.exists(cwd_directory_path):
-            path_utils.rm_dir(str(cwd_directory_path))
+    def pull_latest_examples(self) -> None:
+        """Pulls the latest examples from the examples repository."""
+        self.pull(version=self.examples_repo.latest_release, force=True)
+
+    def copy_example(self, example: Example, destination_dir: str) -> None:
+        """Copies an example to the destination_dir."""
+        path_utils.create_dir_if_not_exists(destination_dir)
+        path_utils.copy_dir(str(example.path), destination_dir, overwrite=True)
+
+
+# class GitExamplesHandler(object):
+#     """Handles logic related to cloning and checking out the ZenML Git
+#     repository, in relation to the `examples` dir."""
+
+#     def __init__(self, redownload: str = "") -> None:
+#         """Initialize the GitExamplesHandler class."""
+#         self.clone_repo(redownload)
+
+#     def clone_repo(self, redownload_version: str = "") -> None:
+#         """Clone ZenML git repo into global config directory if not already
+#         cloned"""
+#         installed_version = zenml_version_installed
+#         repo_dir = click.get_app_dir(APP_NAME)
+#         examples_dir = os.path.join(repo_dir, EXAMPLES_GITHUB_REPO)
+#         # delete source directory if force redownload is set
+#         if redownload_version:
+#             self.delete_example_source_dir(examples_dir)
+#             installed_version = redownload_version
+
+#         config_directory_files = os.listdir(repo_dir)
+
+#         if (
+#             redownload_version
+#             or EXAMPLES_GITHUB_REPO not in config_directory_files
+#         ):
+#             self.clone_from_zero(GIT_REPO_URL, examples_dir)
+#             repo = Repo(examples_dir)
+#             self.checkout_repository(repo, installed_version)
+
+#     def clone_from_zero(self, git_repo_url: str, local_dir: str) -> None:
+#         """Basic functionality to clone a repo."""
+#         try:
+#             Repo.clone_from(git_repo_url, local_dir, branch="main")
+#         except KeyboardInterrupt:
+#             self.delete_example_source_dir(local_dir)
+#             error("Cancelled download of repository.. Rolled back.")
+#             return
+
+#     def checkout_repository(
+#         self,
+#         repository: Repo,
+#         desired_version: str,
+#         fallback_to_latest: bool = True,
+#     ) -> None:
+#         """Checks out a branch or tag of a git repository
+
+#         Args:
+#             repository: a Git repository reference.
+#             desired_version: a valid ZenML release version number.
+#             fallback_to_latest: Whether to default to the latest released
+#             version or not if `desired_version` does not exist.
+#         """
+#         try:
+#             repository.git.checkout(desired_version)
+#         except GitCommandError:
+#             if fallback_to_latest:
+#                 last_release = parse(repository.tags[-1].name)
+#                 repository.git.checkout(last_release)
+#                 warning(
+#                     f"You just tried to download examples for version "
+#                     f"{desired_version}. "
+#                     f"There is no corresponding release or version. We are "
+#                     f"going to "
+#                     f"default to the last release: {last_release}"
+#                 )
+#             else:
+#                 error(
+#                     f"You just tried to checkout the repository for version "
+#                     f"{desired_version}. "
+#                     f"There is no corresponding release or version. Please try "
+#                     f"again with a version number corresponding to an actual "
+#                     f"release."
+#                 )
+#                 raise
+
+#     def clone_when_examples_already_cloned(
+#         self, local_dir: str, version: str
+#     ) -> None:
+#         """Basic functionality to clone the ZenML examples
+#         into the global config directory if they are already cloned."""
+#         local_dir_path = Path(local_dir)
+#         repo = Repo(str(local_dir_path))
+#         desired_version = parse(version)
+#         self.delete_example_source_dir(str(local_dir_path))
+#         self.clone_from_zero(GIT_REPO_URL, local_dir)
+#         self.checkout_repository(
+#             repo, str(desired_version), fallback_to_latest=False
+#         )
+
+#     def get_examples_dir(self) -> str:
+#         """Return the examples dir"""
+#         return os.path.join(
+#             click.get_app_dir(APP_NAME), EXAMPLES_GITHUB_REPO, "examples"
+#         )
+
+#     def get_all_examples(self) -> List[str]:
+#         """Get all the examples"""
+#         return [
+#             name
+#             for name in sorted(os.listdir(self.get_examples_dir()))
+#             if (
+#                 not name.startswith(".")
+#                 and not name.startswith("__")
+#                 and not name.startswith("README")
+#             )
+#         ]
+
+#     def get_example_readme(self, example_path: str) -> str:
+#         """Get the example README file contents.
+
+#         Raises:
+#             FileNotFoundError: if the file doesn't exist.
+#         """
+#         with open(os.path.join(example_path, "README.md")) as readme:
+#             readme_content = readme.read()
+#         return readme_content
+
+#     def delete_example_source_dir(self, source_path: str) -> None:
+#         """Clean the example directory. This method checks that we are
+#         inside the ZenML config directory before performing its deletion.
+
+#         Args:
+#             source_path (str): The path to the example source directory.
+
+#         Raises:
+#             ValueError: If the source_path is not the ZenML config directory.
+#         """
+#         config_directory_path = str(
+#             os.path.join(click.get_app_dir(APP_NAME), EXAMPLES_GITHUB_REPO)
+#         )
+#         if source_path == config_directory_path:
+#             path_utils.rm_dir(source_path)
+#         else:
+#             raise ValueError(
+#                 "You can only delete the source directory from your ZenML "
+#                 "config directory"
+#             )
+
+#     def delete_working_directory_examples_folder(self) -> None:
+#         """Delete the zenml_examples folder from the current working
+#         directory."""
+#         cwd_directory_path = os.path.join(os.getcwd(), EXAMPLES_GITHUB_REPO)
+#         if os.path.exists(cwd_directory_path):
+#             path_utils.rm_dir(str(cwd_directory_path))
 
 
 pass_git_examples_handler = click.make_pass_decorator(
@@ -316,41 +380,31 @@ def pull(
     Add the flag --force or -f to redownload all the examples afresh.
     Use the flag --version or -v and the version number to specify
     which version of ZenML you wish to use for the examples."""
-    if force:
-        repo_dir = click.get_app_dir(APP_NAME)
-        examples_dir = os.path.join(repo_dir, EXAMPLES_GITHUB_REPO)
-        declare(f"Recloning ZenML repo for version {version}...")
-        git_examples_handler.clone_when_examples_already_cloned(
-            examples_dir, version
-        )
-        warning("Deleting examples from current working directory...")
-        git_examples_handler.delete_working_directory_examples_folder()
+    git_examples_handler.pull(force=force, version=version)
+    destination_dir = os.path.join(os.getcwd(), "zenml_examples")
+    path_utils.create_dir_if_not_exists(destination_dir)
 
-    examples_dir = git_examples_handler.get_examples_dir()
     examples = (
-        git_examples_handler.get_all_examples()
-        if not example_name
-        else [example_name]
+        git_examples_handler.examples if not example_name else [example_name]
     )
-    # Create destination dir.
-    dst = os.path.join(os.getcwd(), "zenml_examples")
-    path_utils.create_dir_if_not_exists(dst)
 
-    # Pull specified examples.
     for example in examples:
-        dst_dir = os.path.join(dst, example)
-        # Check if example has already been pulled before.
-        if path_utils.file_exists(dst_dir) and confirmation(
-            f"Example {example} is already pulled. "
+        example_destination_dir = os.path.join(destination_dir, example.name)
+        if path_utils.file_exists(example_destination_dir) and confirmation(
+            f"Example {example.name} is already pulled. "
             f"Do you wish to overwrite the directory?"
         ):
-            path_utils.rm_dir(dst_dir)
+            path_utils.rm_dir(example_destination_dir)
+            declare(f"Pulling example {example.name}...")
+            git_examples_handler.copy_example(example, example_destination_dir)
+            declare(f"Example pulled in directory: {example_destination_dir}")
+        else:
+            continue
 
-        declare(f"Pulling example {example}...")
-        src_dir = os.path.join(examples_dir, example)
-        path_utils.copy_dir(src_dir, dst_dir)
+        declare(f"Pulling example {example.name}...")
+        git_examples_handler.copy_example(example, example_destination_dir)
 
-        declare(f"Example pulled in directory: {dst_dir}")
+        declare(f"Example pulled in directory: {example_destination_dir}")
 
     declare("")
     declare(
