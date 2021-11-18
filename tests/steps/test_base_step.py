@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from contextlib import ExitStack as does_not_raise
 
 import pytest
 
@@ -123,10 +124,12 @@ def test_initialize_step_with_config():
         step_with_config(wrong_config_key=StepConfig())  # noqa
 
     # initializing with correct key should work
-    step_with_config(config=StepConfig())
+    with does_not_raise():
+        step_with_config(config=StepConfig())
 
     # initializing as non-kwarg should work as well
-    step_with_config(StepConfig())
+    with does_not_raise():
+        step_with_config(StepConfig())
 
     # initializing with multiple args or kwargs should fail
     with pytest.raises(StepInterfaceError):
@@ -160,7 +163,9 @@ def test_access_step_component_after_calling():
 
     step_instance = some_step()
     step_instance()
-    _ = step_instance.component
+
+    with does_not_raise():
+        _ = step_instance.component
 
 
 def test_configure_step_with_wrong_materializer_class():
@@ -196,8 +201,8 @@ def test_configure_step_with_wrong_materializer_class_in_dict():
     def some_step() -> Output(some_output=int):
         pass
 
+    materializers = {"some_output": "not_a_materializer_class"}
     with pytest.raises(StepInterfaceError):
-        materializers = {"some_output": "not_a_materializer_class"}
         some_step().with_return_materializers(materializers)  # noqa
 
 
@@ -378,19 +383,24 @@ def test_materializer_source_execution_parameter_changes_when_materializer_chang
 
 def test_call_step_with_args(int_step_output, step_with_two_int_inputs):
     """Test that a step can be called with args."""
-    step_with_two_int_inputs()(int_step_output, int_step_output)
+    with does_not_raise():
+        step_with_two_int_inputs()(int_step_output, int_step_output)
 
 
 def test_call_step_with_kwargs(int_step_output, step_with_two_int_inputs):
     """Test that a step can be called with kwargs."""
-    step_with_two_int_inputs()(input_1=int_step_output, input_2=int_step_output)
+    with does_not_raise():
+        step_with_two_int_inputs()(
+            input_1=int_step_output, input_2=int_step_output
+        )
 
 
 def test_call_step_with_args_and_kwargs(
     int_step_output, step_with_two_int_inputs
 ):
     """Test that a step can be called with a mix of args and kwargs."""
-    step_with_two_int_inputs()(int_step_output, input_2=int_step_output)
+    with does_not_raise():
+        step_with_two_int_inputs()(int_step_output, input_2=int_step_output)
 
 
 def test_call_step_with_too_many_args(
@@ -480,7 +490,8 @@ def test_call_step_with_default_materializer_registered():
     def some_step() -> MyType:
         return MyType()
 
-    some_step()()
+    with does_not_raise():
+        some_step()()
 
 
 def test_call_step_with_explicit_materializer():
@@ -498,7 +509,8 @@ def test_call_step_with_explicit_materializer():
     def some_step() -> MyType:
         return MyType()
 
-    some_step().with_return_materializers(MyTypeMaterializer)()
+    with does_not_raise():
+        some_step().with_return_materializers(MyTypeMaterializer)()
 
 
 def test_step_uses_config_class_default_values_if_no_config_is_passed():
