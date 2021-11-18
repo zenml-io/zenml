@@ -143,7 +143,7 @@ class BaseStepMeta(type):
 
         # Raise an exception if input and output names of a step overlap as
         # tfx requires them to be unique
-        # TODO [MEDIUM]: Can we prefix inputs and outputs to avoid this
+        # TODO [ENG-155]: Can we prefix inputs and outputs to avoid this
         #  restriction?
         shared_input_output_keys = set(cls.INPUT_SIGNATURE).intersection(
             set(cls.OUTPUT_SIGNATURE)
@@ -165,7 +165,7 @@ class BaseStep(metaclass=BaseStepMeta):
     """The base implementation of a ZenML Step which will be inherited by all
     the other step implementations"""
 
-    # TODO [MEDIUM]: Ensure these are ordered
+    # TODO [ENG-156]: Ensure these are ordered
     INPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
     OUTPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
     CONFIG_PARAMETER_NAME: ClassVar[Optional[str]] = None
@@ -433,7 +433,7 @@ class BaseStep(metaclass=BaseStepMeta):
         self, *artifacts: Channel, **kw_artifacts: Channel
     ) -> Union[Channel, List[Channel]]:
         """Generates a component when called."""
-        # TODO [MEDIUM]: replaces Channels with ZenML class (BaseArtifact?)
+        # TODO [ENG-157]: replaces Channels with ZenML class (BaseArtifact?)
         self._update_and_verify_parameter_spec()
 
         # Right now all artifacts are BaseArtifacts

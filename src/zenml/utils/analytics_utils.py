@@ -62,7 +62,7 @@ def get_segment_key() -> str:
 
 def in_docker() -> bool:
     """Returns: True if running in a Docker container, else False"""
-    # TODO [MEDIUM]: Make this more reliable and add test.
+    # TODO [ENG-167]: Make this more reliable and add test.
     try:
         with open("/proc/1/cgroup", "rt") as ifh:
             info = ifh.read()
@@ -201,7 +201,7 @@ def track(
     """
     # Need to redefine the name for the event here in order for mypy
     # to recognize it's not an optional string anymore
-    # TODO [MEDIUM]: open bug ticket and link here
+    # TODO [ENG-168]: open bug ticket and link here
     event_name = event or func.__name__  # default to name of function
     metadata: Dict[str, Any] = {}
 

@@ -81,7 +81,7 @@ def do_types_match(type_a: Type[Any], type_b: Type[Any]) -> bool:
     Returns:
         True if types match, otherwise False.
     """
-    # TODO [LOW]: Check more complicated cases where type_a can be a sub-type
+    # TODO [ENG-158]: Check more complicated cases where type_a can be a sub-type
     #  of type_b
     return type_a == type_b
 
@@ -220,7 +220,7 @@ class _FunctionExecutor(BaseExecutor):
     """Base TFX Executor class which is compatible with ZenML steps"""
 
     _FUNCTION = staticmethod(lambda: None)
-    # TODO [HIGH]: should this be an instance variable?
+    # TODO [ENG-159]: should this be an instance variable?
     materializers: ClassVar[
         Optional[Dict[str, Type["BaseMaterializer"]]]
     ] = None
@@ -294,7 +294,7 @@ class _FunctionExecutor(BaseExecutor):
         Raises:
             ValueError if types dont match.
         """
-        # TODO [LOW]: Include this check when we figure out the logic of
+        # TODO [ENG-160]: Include this check when we figure out the logic of
         #  slightly different subclasses.
         if not do_types_match(type(output_value), specified_type):
             raise ValueError(

@@ -45,7 +45,7 @@ from zenml.utils.path_utils import get_zenml_config_dir
 logger = get_logger(__name__)
 
 
-# TODO [HIGH]: can we remove this registration?
+# TODO [ENG-132]: can we remove this registration?
 @metadata_store_factory.register(MLMetadataTypes.base)  # type: ignore[misc]
 class BaseMetadataStore(BaseComponent):
     """Metadata store base class to track metadata of zenml first class
@@ -58,7 +58,7 @@ class BaseMetadataStore(BaseComponent):
     @property
     def store(self) -> metadata_store.MetadataStore:
         """General property that hooks into TFX metadata store."""
-        # TODO [MEDIUM]: this always gets recreated, is this intended?
+        # TODO [ENG-133]: this always gets recreated, is this intended?
         return metadata_store.MetadataStore(self.get_tfx_metadata_config())
 
     @abstractmethod
@@ -189,7 +189,7 @@ class BaseMetadataStore(BaseComponent):
         # order from the metadata store
         for execution in reversed(pipeline_run._executions):  # noqa
             step_name = step_type_mapping[execution.type_id]
-            # TODO [HIGH]: why is the name like this?
+            # TODO [ENG-134]: why is the name like this?
             step_prefix = "zenml.steps.base_step."
             if step_name.startswith(step_prefix):
                 step_name = step_name[len(step_prefix) :]

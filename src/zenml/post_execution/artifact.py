@@ -100,7 +100,7 @@ class ArtifactView:
             self._uri,
         )
 
-        # TODO [MEDIUM]: passing in `self` to initialize the materializer only
+        # TODO [ENG-162]: passing in `self` to initialize the materializer only
         #  works because materializers only require a `.uri` property at the
         #  moment.
         materializer = materializer_class(self)  # type: ignore[arg-type]
