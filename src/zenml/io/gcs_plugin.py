@@ -178,5 +178,5 @@ class ZenGCS(filesystem.Filesystem):
 
 
 # TODO [LOW]: The registration of the filesystem should happen probably at an
-#   artifact store basis
+#  artifact store basis
 filesystem_registry.DEFAULT_FILESYSTEM_REGISTRY.register(ZenGCS, priority=15)
