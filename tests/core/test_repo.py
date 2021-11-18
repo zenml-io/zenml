@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-# TODO: [MEDIUM] add basic CRUD tests back in
+# TODO [MEDIUM]: add basic CRUD tests back in
 
 import os
 from contextlib import ExitStack as does_not_raise
@@ -164,8 +164,8 @@ def test_get_pipelines_returns_list(tmp_path: str) -> None:
 
 def test_get_pipelines_returns_same_list_when_stack_specified(tmp_path) -> None:
     """Check get_pipelines returns the same list when stack specified"""
-    # TODO: [Medium] update test once we have custom environments being created
-    # to check with actual pipelines
+    # TODO [MEDIUM]: update test once we have custom environments being created
+    #  to check with actual pipelines
     Repo.init(tmp_path)
     repo = Repository(str(tmp_path))
     repo.set_active_stack("local_stack")

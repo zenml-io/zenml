@@ -74,7 +74,7 @@ def logging() -> None:
 )
 def set_logging_verbosity(verbosity: str) -> None:
     """Set logging level"""
-    # TODO: [Medium] Implement this.
+    # TODO [MEDIUM]: Implement this.
     verbosity = verbosity.upper()
     if verbosity not in LoggingLevels.__members__:
         raise KeyError(

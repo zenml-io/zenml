@@ -201,7 +201,7 @@ def track(
     """
     # Need to redefine the name for the event here in order for mypy
     # to recognize it's not an optional string anymore
-    # TODO[MEDIUM]: open bug ticket and link here
+    # TODO [MEDIUM]: open bug ticket and link here
     event_name = event or func.__name__  # default to name of function
     metadata: Dict[str, Any] = {}
 

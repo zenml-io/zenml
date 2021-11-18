@@ -123,8 +123,6 @@ class AirflowComponent(python.PythonOperator):
 
         super().__init__(
             task_id=component.id,
-            # TODO(b/183172663): Delete `provide_context` when we drop support of
-            # airflow 1.x.
             provide_context=True,
             python_callable=functools.partial(
                 _airflow_component_launcher,

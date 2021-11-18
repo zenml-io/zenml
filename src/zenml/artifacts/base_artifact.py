@@ -31,9 +31,9 @@ class BaseArtifact(Artifact):
     - Upon creation, each artifact class needs to be given a unique TYPE_NAME.
     - Your artifact can feature different properties under the parameter
         PROPERTIES which will be tracked throughout your pipeline runs.
-    - TODO [MEDIUM]: Write about the materializers
     """
 
+    # TODO [MEDIUM]: Write about the materializers
     TYPE_NAME: str = "BaseArtifact"  # type: ignore[assignment]
     PROPERTIES: Dict[str, Property] = {  # type: ignore[assignment]
         MATERIALIZER_PROPERTY_KEY: MATERIALIZER_PROPERTY,

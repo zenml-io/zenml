@@ -28,7 +28,7 @@ from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.constants import APP_NAME, GIT_REPO_URL
 from zenml.utils import path_utils
 
-# TODO: [MEDIUM] Add an example-run command to run an example.
+# TODO [MEDIUM]: Add an example-run command to run an example.
 
 EXAMPLES_GITHUB_REPO = "zenml_examples"
 
@@ -191,7 +191,7 @@ def example() -> None:
 
 @example.command(help="List the available examples.")
 @pass_git_examples_handler
-# TODO: [MEDIUM] Use a better type for the git_examples_handler
+# TODO [MEDIUM]: Use a better type for the git_examples_handler
 def list(git_examples_handler: Any) -> None:
     """List all available examples."""
     declare("Listing examples: \n")
@@ -204,10 +204,10 @@ def list(git_examples_handler: Any) -> None:
 @example.command(help="Find out more about an example.")
 @pass_git_examples_handler
 @click.argument("example_name")
-# TODO: [MEDIUM] Use a better type for the git_examples_handler
+# TODO [MEDIUM]: Use a better type for the git_examples_handler
 def info(git_examples_handler: Any, example_name: str) -> None:
     """Find out more about an example."""
-    # TODO: [MEDIUM] fix markdown formatting so that it looks nicer (not a
+    # TODO [MEDIUM]: fix markdown formatting so that it looks nicer (not a
     #  pure .md dump)
     example_dir = os.path.join(
         git_examples_handler.get_examples_dir(), example_name
@@ -246,7 +246,7 @@ def info(git_examples_handler: Any, example_name: str) -> None:
     default=zenml_version_installed,
     help="The version of ZenML to use for the force-redownloaded examples.",
 )
-# TODO: [MEDIUM] Use a better type for the git_examples_handler
+# TODO [MEDIUM]: Use a better type for the git_examples_handler
 def pull(
     git_examples_handler: Any,
     example_name: str,
