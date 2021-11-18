@@ -3,11 +3,14 @@ import json
 import logging
 import os
 import re
+import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import requests
+from requests.adapters import HTTPAdapter
 from requests.auth import HTTPBasicAuth
+from urllib3.util.retry import Retry
 
 logging.basicConfig(level=logging.INFO)
 
@@ -72,41 +75,43 @@ def issue_payload_for_todo(todo: Todo) -> Dict[str, Any]:
     }
 
 
-def create_jira_issues(todos: List[Todo]) -> None:
+def create_jira_issues(session: requests.Session, todos: List[Todo]) -> None:
     """Creates JIRA issues for the given Todos and updates their issue keys."""
     url = f"{JIRA_BASE_URL}/rest/api/3/issue/bulk"
-    auth = HTTPBasicAuth(JIRA_USERNAME, JIRA_API_TOKEN)
-    headers = {"Accept": "application/json", "Content-Type": "application/json"}
 
-    payload = json.dumps(
+    data = json.dumps(
         {"issueUpdates": [issue_payload_for_todo(todo) for todo in todos]}
     )
 
-    response = requests.request(
-        "POST", url, data=payload, headers=headers, auth=auth
-    )
+    try:
+        response = session.post(url, data=data)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        logging.error("Failed to create JIRA issues: %s", e)
+        sys.exit()
 
     issues = json.loads(response.text)["issues"]
     for todo, issue in zip(todos, issues):
         todo.issue_key = issue["key"]
 
 
-def get_all_jira_todo_issues() -> List[JiraIssue]:
+def get_all_jira_todo_issues(session: requests.Session) -> List[JiraIssue]:
     """Returns a list of all JIRA issues in the board specified by
     `JIRA_BOARD_ID` and the label specified in `JIRA_ISSUE_LABEL`."""
     url = f"{JIRA_BASE_URL}/rest/api/3/search"
-    auth = HTTPBasicAuth(JIRA_USERNAME, JIRA_API_TOKEN)
-    headers = {"Accept": "application/json", "Content-Type": "application/json"}
 
-    query = {
-        "jql": f'project = {JIRA_BOARD_ID} AND labels = "{JIRA_ISSUE_LABEL}"',
+    parameters = {
+        "jql": f'project = "{JIRA_BOARD_ID}" AND labels = "{JIRA_ISSUE_LABEL}"',
         "fields": "status",
         "maxResults": 500,
     }
 
-    response = requests.request(
-        "GET", url, params=query, headers=headers, auth=auth
-    )
+    try:
+        response = session.get(url, params=parameters)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        logging.error("Failed to retrieve JIRA todo issues: %s", e)
+        sys.exit()
 
     issues = []
     for issue_dict in response.json()["issues"]:
@@ -241,7 +246,8 @@ def update_todos(python_files: List[Path]) -> None:
     Args:
         python_files: Python files to search for todos
     """
-    jira_issues = get_all_jira_todo_issues()
+    session = _setup_session()
+    jira_issues = get_all_jira_todo_issues(session)
 
     for file in python_files:
         todos_without_issue, todos_with_issue = find_todos(file)
@@ -250,8 +256,25 @@ def update_todos(python_files: List[Path]) -> None:
             remove_todos_for_closed_issues(file, todos_with_issue, jira_issues)
 
         if todos_without_issue:
-            create_jira_issues(todos_without_issue)
+            create_jira_issues(session, todos_without_issue)
             update_file_with_issue_keys(file, todos_without_issue)
+
+
+def _setup_session() -> requests.Session:
+    """Creates a requests session that handles authentication and retrying."""
+    session = requests.session()
+
+    retries = Retry(
+        total=5, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504]
+    )
+    adapter = HTTPAdapter(max_retries=retries)
+    session.mount(JIRA_BASE_URL, adapter)
+    session.auth = HTTPBasicAuth(JIRA_USERNAME, JIRA_API_TOKEN)
+    session.headers.update(
+        {"Accept": "application/json", "Content-Type": "application/json"}
+    )
+
+    return session
 
 
 def _parse_args() -> argparse.Namespace:
@@ -269,6 +292,8 @@ def _parse_args() -> argparse.Namespace:
 
 
 def main():
+    """Updates todos for all python files in the directory specified as
+    command line argument."""
     root_directory = _parse_args().directory
     python_files = root_directory.rglob("*.py")
     update_todos(python_files)
