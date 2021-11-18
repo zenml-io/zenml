@@ -138,9 +138,9 @@ def remove_todos_for_closed_issues(
         file_content = file.read_text()
 
         regex = re.compile(
-            r"^[ \t]*# TODO ?\[("
+            r"(^[ \t]*#) TODO ?\[("
             + "|".join(todos_to_delete)
-            + r")\] ?:(.*$\n(^[ \t]*# {2}.*$\n)*)",
+            + r")\] ?:(.*$\n(\1 {2}.*$\n)*)",
             flags=re.MULTILINE,
         )
         new_file_content = re.sub(
@@ -167,8 +167,8 @@ def find_todos(file: Path) -> Tuple[List[Todo], List[Todo]]:
     file_content = file.read_text()
 
     matches = re.findall(
-        r"^[ \t]*# TODO ?\[(LOWEST|LOW|MEDIUM|HIGH|HIGHEST|[A-Z]*?-[0-9]*?)\]"
-        r" ?:(.*$\n(^[ \t]*# {2}.*$\n)*)",
+        r"(^[ \t]*#) TODO ?\[(LOWEST|LOW|MEDIUM|HIGH|HIGHEST|[A-Z]*?-[0-9]*?)\]"
+        r" ?:(.*$\n(\1 {2}.*$\n)*)",
         file_content,
         flags=re.MULTILINE,
     )
@@ -176,9 +176,9 @@ def find_todos(file: Path) -> Tuple[List[Todo], List[Todo]]:
     todos_without_issue = []
     todos_with_issue = []
 
-    for priority_or_key, description, _ in matches:
+    for _, priority_or_key, description, _ in matches:
         # remove whitespace and leading '#' from description
-        lines = description.split("\n")
+        lines = description.strip().split("\n")
         lines = [line.strip().lstrip("#").strip() for line in lines]
         description = " ".join(lines)
 
@@ -213,12 +213,12 @@ def update_file_with_issue_keys(file: Path, todos: List[Todo]) -> None:
 
     def _replace(match):
         todo = next(todo_iterator)
-        result = match.group(1) + f"{todo.issue_key}" + match.group(3)
+        result = match.group(1) + f"{todo.issue_key}" + match.group(4)
         return result
 
     new_file_content = re.sub(
-        r"(^[ \t]*# TODO ?\[)(LOWEST|LOW|MEDIUM|HIGH|HIGHEST)(\] ?:"
-        r".*$\n(^[ \t]*# {2}.*$\n)*)",
+        r"((^[ \t]*#) TODO ?\[)(LOWEST|LOW|MEDIUM|HIGH|HIGHEST)(\] ?:"
+        r".*$\n(\2 {2}.*$\n)*)",
         _replace,
         file_content,
         flags=re.MULTILINE,
