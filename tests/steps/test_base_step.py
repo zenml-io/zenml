@@ -210,8 +210,11 @@ def test_setting_a_materializer_for_a_step_with_multiple_outputs():
         pass
 
     step_instance = some_step().with_return_materializers(BaseMaterializer)
-    assert step_instance.materializers["some_output"] is BaseMaterializer
-    assert step_instance.materializers["some_other_output"] is BaseMaterializer
+    assert step_instance.get_materializers()["some_output"] is BaseMaterializer
+    assert (
+        step_instance.get_materializers()["some_other_output"]
+        is BaseMaterializer
+    )
 
 
 def test_overwriting_step_materializers():
@@ -223,30 +226,43 @@ def test_overwriting_step_materializers():
         pass
 
     step_instance = some_step()
-    assert not step_instance.materializers
+    assert not step_instance._explicit_materializers
 
     step_instance = step_instance.with_return_materializers(
         {"some_output": BaseMaterializer}
     )
-    assert step_instance.materializers["some_output"] is BaseMaterializer
-    assert "some_other_output" not in step_instance.materializers
+    assert (
+        step_instance._explicit_materializers["some_output"] is BaseMaterializer
+    )
+    assert "some_other_output" not in step_instance._explicit_materializers
 
     step_instance = step_instance.with_return_materializers(
         {"some_other_output": BuiltInMaterializer}
     )
     assert (
-        step_instance.materializers["some_other_output"] is BuiltInMaterializer
+        step_instance._explicit_materializers["some_other_output"]
+        is BuiltInMaterializer
     )
-    assert step_instance.materializers["some_output"] is BaseMaterializer
+    assert (
+        step_instance._explicit_materializers["some_output"] is BaseMaterializer
+    )
 
     step_instance = step_instance.with_return_materializers(
         {"some_output": BuiltInMaterializer}
     )
-    assert step_instance.materializers["some_output"] is BuiltInMaterializer
+    assert (
+        step_instance._explicit_materializers["some_output"]
+        is BuiltInMaterializer
+    )
 
     step_instance.with_return_materializers(BaseMaterializer)
-    assert step_instance.materializers["some_output"] is BaseMaterializer
-    assert step_instance.materializers["some_other_output"] is BaseMaterializer
+    assert (
+        step_instance._explicit_materializers["some_output"] is BaseMaterializer
+    )
+    assert (
+        step_instance._explicit_materializers["some_other_output"]
+        is BaseMaterializer
+    )
 
 
 def test_step_with_disabled_cache_has_random_string_as_execution_property():
@@ -352,9 +368,6 @@ def test_materializer_source_execution_parameter_changes_when_materializer_chang
 
     step_1 = some_step().with_return_materializers(BuiltInMaterializer)
     step_2 = some_step().with_return_materializers(MyCustomMaterializer)
-
-    step_1._register_materializers()
-    step_2._register_materializers()
 
     key = "zenml-output_materializer_source"
     assert (

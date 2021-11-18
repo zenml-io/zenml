@@ -183,6 +183,54 @@ class BaseStep(metaclass=BaseStepMeta):
 
         self._verify_arguments(*args, **kwargs)
 
+    def get_materializers(
+        self, ensure_complete=False
+    ) -> Dict[str, Type[BaseMaterializer]]:
+        """Returns available materializers for the outputs of this step.
+
+        Args:
+            ensure_complete: If set to `True`, this method will raise a
+                `StepInterfaceError` if no materializer can be found for an
+                output.
+
+        Returns:
+            A dictionary mapping output names to `BaseMaterializer` subclasses.
+                If no explicit materializer was set using
+                `step.with_return_materializers(...)`, this checks the
+                default materializer registry to find a materializer for the
+                type of the output. If no materializer is registered, the
+                output of this method will not contain an entry for this output.
+
+        Raises:
+            StepInterfaceError: (Only if `ensure_complete` is set to `True`)
+                If an output does not have an explicit materializer assigned
+                to it and we there is no default materializer registered for
+                the output type.
+        """
+        materializers = self._explicit_materializers
+
+        for output_name, output_type in self.OUTPUT_SIGNATURE.items():
+            if output_name in materializers:
+                # Materializer for this output was set explicitly
+                pass
+            elif default_materializer_registry.is_registered(output_type):
+                materializer = default_materializer_registry[output_type]
+                materializers[output_name] = materializer
+            else:
+                if ensure_complete:
+                    raise StepInterfaceError(
+                        f"Unable to find materializer for output "
+                        f"'{output_name}' of type `{output_type}` in step "
+                        f"'{self.step_name}'. Please make sure to either "
+                        f"explicitly set a materializer for step outputs "
+                        f"using `step.with_return_materializers(...)` or "
+                        f"registering a default materializer for specific "
+                        f"types by subclassing `BaseMaterializer` and setting "
+                        f"its `ASSOCIATED_TYPES` class variable."
+                    )
+
+        return materializers
+
     @property
     def _internal_execution_parameters(self) -> Dict[str, str]:
         """ZenML internal execution parameters for this step."""
@@ -456,6 +504,9 @@ class BaseStep(metaclass=BaseStepMeta):
         Args:
             materializers: The materializers for the outputs of this step.
 
+        Returns:
+            The object that this method was called on.
+
         Raises:
             StepInterfaceError: If a materializer is not a `BaseMaterializer`
                 subclass or a materializer for a non-existent output is given.
@@ -504,42 +555,3 @@ class BaseStep(metaclass=BaseStepMeta):
             )
 
         return self
-
-    def get_materializers(
-        self, ensure_complete=False
-    ) -> Dict[str, Type[BaseMaterializer]]:
-        """Returns available materializers for the outputs of this step.
-
-        Args:
-            ensure_complete: If set to `True`, this method will raise a
-                `StepInterfaceError` if no materializer can be found for an
-                output.
-        Raises:
-            StepInterfaceError: (Only if `ensure_complete` is set to `True`)
-                If an output does not have an explicit materializer assigned
-                to it and we there is no default materializer registered for
-                the output type.
-        """
-        materializers = self._explicit_materializers
-
-        for output_name, output_type in self.OUTPUT_SIGNATURE.items():
-            if output_name in materializers:
-                # Materializer for this output was set explicitly
-                pass
-            elif default_materializer_registry.is_registered(output_type):
-                materializer = default_materializer_registry[output_type]
-                materializers[output_name] = materializer
-            else:
-                if ensure_complete:
-                    raise StepInterfaceError(
-                        f"Unable to find materializer for output "
-                        f"'{output_name}' of type `{output_type}` in step "
-                        f"'{self.step_name}'. Please make sure to either "
-                        f"explicitly set a materializer for step outputs "
-                        f"using `step.with_return_materializers(...)` or "
-                        f"registering a default materializer for specific "
-                        f"types by subclassing `BaseMaterializer` and setting "
-                        f"its `ASSOCIATED_TYPES` class variable."
-                    )
-
-        return materializers
