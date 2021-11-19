@@ -26,7 +26,7 @@ from tfx.dsl.compiler.constants import (
     PIPELINE_RUN_CONTEXT_TYPE_NAME,
 )
 
-from zenml.artifacts.base_artifact import (
+from zenml.artifacts.constants import (
     DATATYPE_PROPERTY_KEY,
     MATERIALIZER_PROPERTY_KEY,
 )
