@@ -16,7 +16,7 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Any, List
+from typing import List
 
 import click
 from git.exc import GitCommandError, NoSuchPathError
@@ -25,12 +25,10 @@ from packaging.version import Version, parse
 
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
-from zenml.cli.utils import confirmation, declare, error, warning
+from zenml.cli.utils import confirmation, declare, error
 from zenml.constants import APP_NAME, GIT_REPO_URL
 from zenml.logger import get_logger
 from zenml.utils import path_utils
-
-# TODO [ENG-145]: Add an example-run command to run an example.
 
 logger = get_logger(__name__)
 
@@ -38,13 +36,45 @@ EXAMPLES_GITHUB_REPO = "zenml_examples"
 
 
 class Example:
+    """Class for all example objects."""
+
     def __init__(self, name: str, path: Path) -> None:
+        """Create a new Example instance."""
         self.name = name
         self.path = path
 
+    @property
+    def readme_content(self) -> None:
+        """Returns the readme content associated with a particular example."""
+        try:
+            with open(os.path.join(self.path, "README.md")) as readme:
+                readme_content = readme.read()
+            click.echo(readme_content)
+        except FileNotFoundError:
+            if path_utils.file_exists(self.path) and path_utils.is_dir(
+                self.path
+            ):
+                error(f"No README.md file found in {self.path}")
+            else:
+                error(
+                    f"Example {self.name} is not one of the available options."
+                    f"\nTo list all available examples, type: `zenml example list`"
+                )
+
+    def run(self) -> None:
+        """Runs the example script.
+
+        Raises:
+            NotImplementedError: This method is not yet implemented."""
+        # TODO [LOW]: Add an example-run command to run an example. (ENG-145)
+        raise NotImplementedError("Functionality is not yet implemented.")
+
 
 class ExamplesRepo:
+    """Class for the examples repository object."""
+
     def __init__(self, cloning_path: Path) -> None:
+        """Create a new ExamplesRepo instance."""
         self.cloning_path = cloning_path
         try:
             self.repo = Repo(self.cloning_path)
@@ -110,7 +140,10 @@ class ExamplesRepo:
 
 
 class GitExamplesHandler(object):
+    """Class for the GitExamplesHandler that interfaces with the CLI tool."""
+
     def __init__(self) -> None:
+        """Create a new GitExamplesHandler instance."""
         repo_dir = click.get_app_dir(APP_NAME)
         examples_dir = Path(os.path.join(repo_dir, EXAMPLES_GITHUB_REPO))
         self.examples_repo = ExamplesRepo(examples_dir)
@@ -129,6 +162,7 @@ class GitExamplesHandler(object):
         ]
 
     def pull(self, version: str = None, force: bool = False) -> None:
+        """Pulls the examples from the main git examples repository."""
         if version is None:
             version = self.examples_repo.latest_release
 
@@ -154,6 +188,114 @@ class GitExamplesHandler(object):
         """Copies an example to the destination_dir."""
         path_utils.create_dir_if_not_exists(destination_dir)
         path_utils.copy_dir(str(example.path), destination_dir, overwrite=True)
+
+
+pass_git_examples_handler = click.make_pass_decorator(
+    GitExamplesHandler, ensure=True
+)
+
+
+@cli.group(help="Access all ZenML examples.")
+def example() -> None:
+    """Examples group"""
+
+
+@example.command(help="List the available examples.")
+@pass_git_examples_handler
+def list(git_examples_handler: GitExamplesHandler) -> None:
+    """List all available examples."""
+    declare("Listing examples: \n")
+    for name in git_examples_handler.get_all_examples():
+        declare(f"{name}")
+    declare("\nTo pull the examples, type: ")
+    declare("zenml example pull EXAMPLE_NAME")
+
+
+@example.command(help="Find out more about an example.")
+@pass_git_examples_handler
+@click.argument("example_name")
+def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
+    """Find out more about an example."""
+    # TODO [ENG-148]: fix markdown formatting so that it looks nicer (not a
+    #  pure .md dump)
+    example_dir = os.path.join(
+        git_examples_handler.get_examples_dir(), example_name
+    )
+    try:
+        readme_content = git_examples_handler.get_example_readme(example_dir)
+        click.echo(readme_content)
+    except FileNotFoundError:
+        if path_utils.file_exists(example_dir) and path_utils.is_dir(
+            example_dir
+        ):
+            error(f"No README.md file found in {example_dir}")
+        else:
+            error(
+                f"Example {example_name} is not one of the available options."
+                f"\nTo list all available examples, type: `zenml example list`"
+            )
+
+
+@example.command(
+    help="Pull examples straight into your current working directory."
+)
+@pass_git_examples_handler
+@click.argument("example_name", required=False, default=None)
+@click.option(
+    "--force",
+    "-f",
+    is_flag=True,
+    help="Force the redownload of the examples folder to the ZenML config "
+    "folder.",
+)
+@click.option(
+    "--version",
+    "-v",
+    type=click.STRING,
+    default=zenml_version_installed,
+    help="The version of ZenML to use for the force-redownloaded examples.",
+)
+def pull(
+    git_examples_handler: GitExamplesHandler,
+    example_name: str,
+    force: bool,
+    version: str,
+) -> None:
+    """Pull examples straight into your current working directory.
+    Add the flag --force or -f to redownload all the examples afresh.
+    Use the flag --version or -v and the version number to specify
+    which version of ZenML you wish to use for the examples."""
+    git_examples_handler.pull(force=force, version=version)
+    destination_dir = os.path.join(os.getcwd(), "zenml_examples")
+    path_utils.create_dir_if_not_exists(destination_dir)
+
+    examples = (
+        git_examples_handler.examples if not example_name else [example_name]
+    )
+
+    for example in examples:
+        example_destination_dir = os.path.join(destination_dir, example.name)
+        if path_utils.file_exists(example_destination_dir) and confirmation(
+            f"Example {example.name} is already pulled. "
+            f"Do you wish to overwrite the directory?"
+        ):
+            path_utils.rm_dir(example_destination_dir)
+            declare(f"Pulling example {example.name}...")
+            git_examples_handler.copy_example(example, example_destination_dir)
+            declare(f"Example pulled in directory: {example_destination_dir}")
+        else:
+            continue
+
+        declare(f"Pulling example {example.name}...")
+        git_examples_handler.copy_example(example, example_destination_dir)
+
+        declare(f"Example pulled in directory: {example_destination_dir}")
+
+    declare("")
+    declare(
+        "Please read the README.md file in the respective example "
+        "directory to find out more about the example"
+    )
 
 
 # class GitExamplesHandler(object):
@@ -300,114 +442,3 @@ class GitExamplesHandler(object):
 #         cwd_directory_path = os.path.join(os.getcwd(), EXAMPLES_GITHUB_REPO)
 #         if os.path.exists(cwd_directory_path):
 #             path_utils.rm_dir(str(cwd_directory_path))
-
-
-pass_git_examples_handler = click.make_pass_decorator(
-    GitExamplesHandler, ensure=True
-)
-
-
-@cli.group(help="Access all ZenML examples.")
-def example() -> None:
-    """Examples group"""
-
-
-@example.command(help="List the available examples.")
-@pass_git_examples_handler
-# TODO [ENG-146]: Use a better type for the git_examples_handler
-def list(git_examples_handler: Any) -> None:
-    """List all available examples."""
-    declare("Listing examples: \n")
-    for name in git_examples_handler.get_all_examples():
-        declare(f"{name}")
-    declare("\nTo pull the examples, type: ")
-    declare("zenml example pull EXAMPLE_NAME")
-
-
-@example.command(help="Find out more about an example.")
-@pass_git_examples_handler
-@click.argument("example_name")
-# TODO [ENG-147]: Use a better type for the git_examples_handler
-def info(git_examples_handler: Any, example_name: str) -> None:
-    """Find out more about an example."""
-    # TODO [ENG-148]: fix markdown formatting so that it looks nicer (not a
-    #  pure .md dump)
-    example_dir = os.path.join(
-        git_examples_handler.get_examples_dir(), example_name
-    )
-    try:
-        readme_content = git_examples_handler.get_example_readme(example_dir)
-        click.echo(readme_content)
-    except FileNotFoundError:
-        if path_utils.file_exists(example_dir) and path_utils.is_dir(
-            example_dir
-        ):
-            error(f"No README.md file found in {example_dir}")
-        else:
-            error(
-                f"Example {example_name} is not one of the available options."
-                f"\nTo list all available examples, type: `zenml example list`"
-            )
-
-
-@example.command(
-    help="Pull examples straight into your current working directory."
-)
-@pass_git_examples_handler
-@click.argument("example_name", required=False, default=None)
-@click.option(
-    "--force",
-    "-f",
-    is_flag=True,
-    help="Force the redownload of the examples folder to the ZenML config "
-    "folder.",
-)
-@click.option(
-    "--version",
-    "-v",
-    type=click.STRING,
-    default=zenml_version_installed,
-    help="The version of ZenML to use for the force-redownloaded examples.",
-)
-# TODO [ENG-149]: Use a better type for the git_examples_handler
-def pull(
-    git_examples_handler: GitExamplesHandler,
-    example_name: str,
-    force: bool,
-    version: str,
-) -> None:
-    """Pull examples straight into your current working directory.
-    Add the flag --force or -f to redownload all the examples afresh.
-    Use the flag --version or -v and the version number to specify
-    which version of ZenML you wish to use for the examples."""
-    git_examples_handler.pull(force=force, version=version)
-    destination_dir = os.path.join(os.getcwd(), "zenml_examples")
-    path_utils.create_dir_if_not_exists(destination_dir)
-
-    examples = (
-        git_examples_handler.examples if not example_name else [example_name]
-    )
-
-    for example in examples:
-        example_destination_dir = os.path.join(destination_dir, example.name)
-        if path_utils.file_exists(example_destination_dir) and confirmation(
-            f"Example {example.name} is already pulled. "
-            f"Do you wish to overwrite the directory?"
-        ):
-            path_utils.rm_dir(example_destination_dir)
-            declare(f"Pulling example {example.name}...")
-            git_examples_handler.copy_example(example, example_destination_dir)
-            declare(f"Example pulled in directory: {example_destination_dir}")
-        else:
-            continue
-
-        declare(f"Pulling example {example.name}...")
-        git_examples_handler.copy_example(example, example_destination_dir)
-
-        declare(f"Example pulled in directory: {example_destination_dir}")
-
-    declare("")
-    declare(
-        "Please read the README.md file in the respective example "
-        "directory to find out more about the example"
-    )
