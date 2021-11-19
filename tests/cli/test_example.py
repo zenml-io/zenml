@@ -66,17 +66,17 @@ def test_check_if_latest_release_works(monkeypatch):
     assert examples_repo.latest_release == "0.5.2"
 
 
-def test_pull(monkeypatch, mocker, cloned_repo_path) -> None:
-    """Check what happens when (valid) desired version for a force redownload
-    is higher than the latest version stored in the global config"""
-    git_examples_handler = GitExamplesHandler()
-    mock_repo = ExamplesRepo(cloning_path="")
-    mocker.patch.object(mock_repo.latest_release, return_value="0.5.2")
-    mocker.patch.object(mock_repo.is_cloned, return_value=True)
-    mocker.patch.object(mock_repo.clone, return_value=None)
-    mocker.patch.object(mock_repo.delete, return_value=None)
-    mocker.patch.object(mock_repo.checkout, return_value=None)
-    monkeypatch.setattr(git_examples_handler, "examples_repo", mock_repo)
+# def test_pull(monkeypatch, mocker, cloned_repo_path) -> None:
+#     """Check what happens when (valid) desired version for a force redownload
+#     is higher than the latest version stored in the global config"""
+#     git_examples_handler = GitExamplesHandler()
+#     mock_repo = ExamplesRepo(cloning_path="")
+#     mocker.patch.object(mock_repo.latest_release, return_value="0.5.2")
+#     mocker.patch.object(mock_repo.is_cloned, return_value=True)
+#     mocker.patch.object(mock_repo.clone, return_value=None)
+#     mocker.patch.object(mock_repo.delete, return_value=None)
+#     mocker.patch.object(mock_repo.checkout, return_value=None)
+#     monkeypatch.setattr(git_examples_handler, "examples_repo", mock_repo)
 
 
 # make a fixture that gives us the path to the repository that is cloned
