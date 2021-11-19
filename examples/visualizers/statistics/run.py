@@ -18,7 +18,7 @@ import tensorflow as tf
 
 from zenml.core.repo import Repository
 from zenml.pipelines import pipeline
-from zenml.post_execution.visualizers.facet_statistics_visualizer import (
+from zenml.post_execution.visualizers.statistics.facet_statistics_visualizer import (
     FacetStatisticsVisualizer,
 )
 from zenml.steps import step

@@ -15,7 +15,7 @@ This visualization is produced with the following code:
 
 ```python
 from zenml.core.repo import Repository
-from zenml.post_execution.visualizers.facet_statistics_visualizer import (
+from zenml.post_execution.visualizers.statistics.facet_statistics_visualizer import (
     FacetStatisticsVisualizer,
 )
 

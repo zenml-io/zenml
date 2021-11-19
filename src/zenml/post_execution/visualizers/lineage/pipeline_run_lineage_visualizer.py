@@ -16,14 +16,14 @@ from abc import abstractmethod
 
 from zenml.logger import get_logger
 from zenml.post_execution.pipeline import PipelineView
-from zenml.post_execution.visualizers.base_pipeline_visualizer import (
-    BasePipelineVisualizer,
+from zenml.post_execution.visualizers.base_pipeline_run_visualizer import (
+    BasePipelineRunVisualizer,
 )
 
 logger = get_logger(__name__)
 
 
-class PipelineLineageVisualizer(BasePipelineVisualizer):
+class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
     """The base implementation of a ZenML Step Visualizer."""
 
     @abstractmethod

@@ -78,7 +78,7 @@ class FacetStatisticsVisualizer(BaseStepVisualizer):
         protostr = base64.b64encode(proto.SerializeToString()).decode("utf-8")
 
         template = os.path.join(
-            os.path.abspath(os.path.dirname(__file__)), "stats.html"
+            os.path.abspath(os.path.dirname(__file__)), "../stats.html"
         )
         html_template = path_utils.read_file_contents_as_string(template)
 

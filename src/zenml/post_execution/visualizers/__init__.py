@@ -18,8 +18,18 @@ logger = get_logger(__name__)
 
 
 try:
-    from zenml.post_execution.visualizers.facet_statistics_visualizer import (  # noqa
+    from zenml.post_execution.visualizers.statistics.facet_statistics_visualizer import (  # noqa
         FacetStatisticsVisualizer,
     )
 except ImportError:
     logger.debug("`facets_overview` not installed.")
+
+try:
+    from zenml.post_execution.visualizers.lineage.pipeline_lineage_visualizer import (  # noqa
+        PipelineLineageVisualizer,
+    )
+    from zenml.post_execution.visualizers.lineage.pipeline_run_lineage_visualizer import (  # noqa
+        PipelineRunLineageVisualizer,
+    )
+except ImportError:
+    logger.debug("`plotly` not installed.")
