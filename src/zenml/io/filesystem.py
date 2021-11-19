@@ -25,13 +25,13 @@ class NotFoundError(IOError):
 
 
 class FileSystemMeta(type):
-    """ Metaclass which is responsible for registering the defined filesystem
+    """Metaclass which is responsible for registering the defined filesystem
     in the default fileio registry."""
 
     def __new__(
-            mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
+        mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
     ) -> "FileSystemMeta":
-        """ Creates the filesystem class and registers it"""
+        """Creates the filesystem class and registers it"""
         cls = cast(Type["Filesystem"], super().__new__(mcs, name, bases, dct))
         if name != "Filesystem":
             assert cls.SUPPORTED_SCHEMES, (
@@ -45,4 +45,3 @@ class FileSystemMeta(type):
 
 class Filesystem(BaseFileSystem, metaclass=FileSystemMeta):
     """Abstract Filesystem class."""
-    pass
