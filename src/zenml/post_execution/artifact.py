@@ -12,11 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Any, Optional, Type
+from typing import TYPE_CHECKING, Any, Optional, Type
 
 from zenml.logger import get_logger
-from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import source_utils
+
+if TYPE_CHECKING:
+    from zenml.materializers.base_materializer import BaseMaterializer
 
 logger = get_logger(__name__)
 
@@ -68,7 +70,7 @@ class ArtifactView:
     def read(
         self,
         output_data_type: Optional[Type[Any]] = None,
-        materializer_class: Optional[Type[BaseMaterializer]] = None,
+        materializer_class: Optional[Type["BaseMaterializer"]] = None,
     ) -> Any:
         """Materializes the data stored in this artifact.
 

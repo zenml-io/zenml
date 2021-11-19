@@ -1,9 +1,13 @@
+from typing import TYPE_CHECKING
+
 from pydantic import BaseSettings
 
-from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.enums import StackTypes
-from zenml.metadata.base_metadata_store import BaseMetadataStore
-from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+
+if TYPE_CHECKING:
+    from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+    from zenml.metadata.base_metadata_store import BaseMetadataStore
+    from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 
 
 class BaseStack(BaseSettings):
@@ -35,21 +39,21 @@ class BaseStack(BaseSettings):
     orchestrator_name: str
 
     @property
-    def orchestrator(self) -> BaseOrchestrator:
+    def orchestrator(self) -> "BaseOrchestrator":
         """Returns the orchestrator of this stack."""
         from zenml.core.repo import Repository
 
         return Repository().service.get_orchestrator(self.orchestrator_name)
 
     @property
-    def artifact_store(self) -> BaseArtifactStore:
+    def artifact_store(self) -> "BaseArtifactStore":
         """Returns the artifact store of this stack."""
         from zenml.core.repo import Repository
 
         return Repository().service.get_artifact_store(self.artifact_store_name)
 
     @property
-    def metadata_store(self) -> BaseMetadataStore:
+    def metadata_store(self) -> "BaseMetadataStore":
         """Returns the metadata store of this stack."""
         from zenml.core.repo import Repository
 
