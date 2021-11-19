@@ -38,6 +38,7 @@ class ArtifactView:
         materializer: str,
         data_type: str,
         metadata_store: "BaseMetadataStore",
+        parent_step_id: int,
     ):
         """Initializes a post-execution artifact object.
 
@@ -55,6 +56,7 @@ class ArtifactView:
                 to read the artifact.
             metadata_store: The metadata store which should be used to fetch
                 additional information related to this pipeline.
+            parent_step_id: The ID of the parent step.
         """
         self._id = id_
         self._type = type_
@@ -63,11 +65,12 @@ class ArtifactView:
         self._data_type = data_type
         self._producer_step = None
         self._metadata_store = metadata_store
+        self._parent_step_id = parent_step_id
 
     @property
     def id(self) -> int:
         """Returns the artifact id."""
-        return self.id
+        return self._id
 
     @property
     def type(self) -> str:
@@ -80,6 +83,12 @@ class ArtifactView:
         return self._uri
 
     @property
+    def parent_step_id(self) -> int:
+        """Returns the ID of the parent step. This need not be equivalent to
+        the ID of the producer step."""
+        return self._parent_step_id
+
+    @property
     def producer_step(self) -> "StepView":
         """Returns the original StepView that produced the artifact."""
         # TODO [LOW]: Replace with artifact.id instead of passing self if
@@ -88,6 +97,12 @@ class ArtifactView:
             self._metadata_store.get_producer_step_from_artifact(self)
         )
         return self._producer_step
+
+    @property
+    def is_cached(self) -> bool:
+        """Returns True if artifact was cached in a previous run, else False."""
+        # self._metadata_store.
+        return self.producer_step.id != self.parent_step_id
 
     def read(
         self,

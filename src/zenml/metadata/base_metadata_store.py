@@ -220,8 +220,8 @@ class BaseMetadataStore(BaseComponent):
         # reverse the executions as they get returned in reverse chronological
         # order from the metadata store
         for execution in reversed(pipeline_run._executions):  # noqa
-            step_name = self.step_type_mapping[execution.type_id]
-            steps[step_name] = self._get_step_view_from_execution(execution)
+            step = self._get_step_view_from_execution(execution)
+            steps[step.name] = step
 
         logger.debug(
             "Fetched %d steps for pipeline run '%s'.",
@@ -236,10 +236,12 @@ class BaseMetadataStore(BaseComponent):
         proto = self.store.get_executions_by_id([step._id])[0]  # noqa
         state = proto.last_known_state
 
-        if state == proto.COMPLETE or state == proto.CACHED:
+        if state == proto.COMPLETE:
             return ExecutionStatus.COMPLETED
         elif state == proto.RUNNING:
             return ExecutionStatus.RUNNING
+        elif state == proto.CACHED:
+            return ExecutionStatus.CACHED
         else:
             return ExecutionStatus.FAILED
 
@@ -288,6 +290,7 @@ class BaseMetadataStore(BaseComponent):
                 materializer=materializer,
                 data_type=data_type,
                 metadata_store=self,
+                parent_step_id=step.id,
             )
 
             if event_proto.type == event_proto.INPUT:
