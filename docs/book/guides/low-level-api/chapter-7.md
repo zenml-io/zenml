@@ -17,7 +17,7 @@ This part is optional, and it would depend on your pre-existing production setti
 For this guide, you'll want to install airflow before continuing:
 
 ```shell
-pip install apache_airflow
+pip install apache_airflow==2.2.0
 ```
 
 ### Creating an Airflow Stack

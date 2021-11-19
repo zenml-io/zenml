@@ -31,6 +31,13 @@ def analytics() -> None:
     """Analytics for opt-in and opt-out"""
 
 
+@analytics.command("get")
+def is_analytics_opted_in() -> None:
+    """Check whether user is opt-in or opt-out of analytics."""
+    gc = GlobalConfig()
+    cli_utils.declare(f"Analytics opt-in: {gc.analytics_opt_in}")
+
+
 @analytics.command("opt-in", context_settings=dict(ignore_unknown_options=True))
 def opt_in() -> None:
     """Opt-in to analytics"""
@@ -67,7 +74,7 @@ def logging() -> None:
 )
 def set_logging_verbosity(verbosity: str) -> None:
     """Set logging level"""
-    # TODO: [Medium] Implement this.
+    # TODO [ENG-150]: Implement this.
     verbosity = verbosity.upper()
     if verbosity not in LoggingLevels.__members__:
         raise KeyError(

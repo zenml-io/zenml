@@ -101,6 +101,7 @@ class AirflowComponent(python.PythonOperator):
         component_config: base_component_config.BaseComponentConfig
     ):
         """Constructs an Airflow implementation of TFX component.
+
         Args:
           parent_dag: An AirflowPipeline instance as the pipeline DAG.
           component: An instance of base_node.BaseNode that holds all
@@ -122,8 +123,6 @@ class AirflowComponent(python.PythonOperator):
 
         super().__init__(
             task_id=component.id,
-            # TODO(b/183172663): Delete `provide_context` when we drop support of
-            # airflow 1.x.
             provide_context=True,
             python_callable=functools.partial(
                 _airflow_component_launcher,

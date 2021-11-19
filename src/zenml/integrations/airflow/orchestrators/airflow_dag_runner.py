@@ -37,10 +37,11 @@ class AirflowPipelineConfig(pipeline_config.PipelineConfig):
         self, airflow_dag_config: Optional[Dict[str, Any]] = None, **kwargs: Any
     ):
         """Creates an instance of AirflowPipelineConfig.
+
         Args:
           airflow_dag_config: Configs of Airflow DAG model. See
             https://airflow.apache.org/_api/airflow/models/dag/index.html#airflow.models.dag.DAG
-              for the full spec.
+            for the full spec.
           **kwargs: keyword args for PipelineConfig.
         """
 

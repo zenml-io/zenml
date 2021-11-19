@@ -55,7 +55,7 @@ class GitWrapper:
             InvalidGitRepositoryError: If repository is not a git repository.
             NoSuchPathError: If the repo_path does not exist.
         """
-        # TODO: [LOW] Raise ZenML exceptions here instead.
+        # TODO [ENG-163]: Raise ZenML exceptions here instead.
         self.repo_path: str = repo_path
         self.git_root_path: str = os.path.join(repo_path, GIT_FOLDER_NAME)
         self.git_repo = GitRepo(self.repo_path)
@@ -155,7 +155,7 @@ class GitWrapper:
                 name of branch
             directory: relative path to directory to scope checkout
         """
-        # TODO: [MEDIUM] Implement exception handling
+        # TODO [ENG-164]: Implement exception handling
         git = self.git_repo.git
         if sha_or_branch is None:
             # Checks out directory at sha_or_branch
@@ -278,7 +278,7 @@ class GitWrapper:
 
         elif "@" in source and is_standard:
             logger.debug(f"Default {APP_NAME} class used. Loading directly.")
-            # TODO: [LOW] Check if ZenML version is installed before loading.
+            # TODO [ENG-165]: Check if ZenML version is installed before loading.
             class_ = source_utils.import_class_by_path(source)
         else:
             logger.debug(
@@ -289,7 +289,7 @@ class GitWrapper:
 
         return class_
 
-    # TODO [HIGH]: should this be calling source_utils.resolve_class?
+    # TODO [ENG-166]: should this be calling source_utils.resolve_class?
     def resolve_class(self, class_: Type[Any]) -> str:
         """Resolves a class into a serializable source string.
 

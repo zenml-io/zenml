@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import platform
+from contextlib import ExitStack as does_not_raise
 
 from zenml.constants import VALID_OPERATING_SYSTEMS
 from zenml.utils.analytics_utils import get_segment_key, get_system_info
@@ -20,10 +21,8 @@ from zenml.utils.analytics_utils import get_segment_key, get_system_info
 
 def test_get_segment_key():
     """Checks the get_segment_key method returns a value"""
-    try:
+    with does_not_raise():
         get_segment_key()
-    except Exception as e:
-        assert False, f"Exception raised: {e}"
 
 
 def test_get_system_info_type():

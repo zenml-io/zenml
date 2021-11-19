@@ -31,6 +31,10 @@ from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
+assert (
+    sys.platform != "win32"
+), "Daemon functionality is currently not supported on Windows."
+
 
 def run_as_daemon(
     daemon_function: Callable[..., Any],

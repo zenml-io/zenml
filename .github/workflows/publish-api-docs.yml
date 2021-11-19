@@ -1,0 +1,45 @@
+# This is a basic workflow that publishes the website
+name: Publish API Docs
+
+# Controls when the action will run.
+on:
+  push:
+    tags:
+      - '*'
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "publish"
+  publish:
+    name: Build and publishes the api docs reference to S3
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+    - run: npm install
+    - run: npm install html-minifier -g
+
+    - name: Install poetry
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install "poetry"
+
+    - name: Install Dependencies and opt-out of analytics
+      run: |
+        python -m poetry install
+        python -m poetry run pip install apache-airflow~=2.2.0 gcsfs~=2021.9.0 click~=8.0.3 torch~=1.10.0
+        python -m poetry run zenml analytics opt-out
+        python -m poetry run pip install awscli
+
+    - name: Runs docs generation
+      run: poetry run bash scripts/generate-docs.sh
+
+    - name: Runs deploy
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_BUCKET: apidocs.zenml.io
+        CLOUDFRONT_DISTRIBUTION_ID: EB0YZNLQR50S5
+      run: poetry run bash scripts/deploy-docs.sh

@@ -21,7 +21,7 @@ class BaseStack(BaseSettings):
     * You can set it via env variables.
     * You can set it through the config yaml file.
     * You can set it in code by initializing an object of this class, and
-    passing it to pipelines as a configuration.
+        passing it to pipelines as a configuration.
 
     In the case where a value is specified for the same Settings field in
     multiple ways, the selected value is determined as follows (in descending

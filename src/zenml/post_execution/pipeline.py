@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Any, List
 
 from zenml.logger import get_logger
 
@@ -95,3 +95,13 @@ class PipelineView:
             f"{self.__class__.__qualname__}(id={self._id}, "
             f"name='{self._name}')"
         )
+
+    def __eq__(self, other: Any) -> bool:
+        """Returns whether the other object is referring to the
+        same pipeline."""
+        if isinstance(other, PipelineView):
+            return (
+                self._id == other._id
+                and self._metadata_store.uuid == other._metadata_store.uuid
+            )
+        return NotImplemented

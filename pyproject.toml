@@ -78,7 +78,8 @@ pyment = "^0.3.3"
 tox = "^3.24.3"
 hypothesis = "^6.23.0"
 Sphinx = "^4.2.0"
-sphinx-bootstrap-theme = "^0.8.0"
+furo = "^2021.10.9" # sphinx theme
+sphinx-copybutton = "^0.4.0"
 typing-extensions = ">=3.7.4"
 pytest-randomly = "^3.10.1"
 

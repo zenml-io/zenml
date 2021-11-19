@@ -33,7 +33,7 @@ class SQLiteMetadataStore(BaseMetadataStore):
         """Constructor for MySQL MetadataStore for ZenML."""
         super().__init__(**data)
 
-        # TODO [LOW]: Replace with proper custom validator.
+        # TODO [ENG-131]: Replace with proper custom validator.
         if fileio.is_remote(self.uri):
             raise Exception(
                 f"URI {self.uri} is a non-local path. A sqlite store "

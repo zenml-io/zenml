@@ -10,7 +10,7 @@ from zenml.io.fileio import get_zenml_config_dir
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
 
-# TODO [MEDIUM]: Can we remove this registration?
+# TODO [ENG-135]: Can we remove this registration?
 @orchestrator_store_factory.register(OrchestratorTypes.base)  # type: ignore[misc] # noqa
 class BaseOrchestrator(BaseComponent):
     """Base Orchestrator class to orchestrate ZenML pipelines."""
@@ -49,7 +49,7 @@ class BaseOrchestrator(BaseComponent):
     @property
     def log_file(self) -> Optional[str]:
         """Returns path to a log file if available."""
-        # TODO [MEDIUM]: make this more generic in case an orchestrator has
+        # TODO [ENG-136]: make this more generic in case an orchestrator has
         #  multiple log files, e.g. change to a monitor() method which yields
         #  new logs to output to the CLI
         return None
