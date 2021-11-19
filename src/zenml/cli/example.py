@@ -43,7 +43,7 @@ class Example:
         self.path = path
 
     @property
-    def readme_content(self) -> None:
+    def readme_content(self) -> str:
         """Returns the readme content associated with a particular example."""
         readme_file = os.path.join(self.path, "README.md")
         try:
@@ -51,8 +51,8 @@ class Example:
                 readme_content = readme.read()
             return readme_content
         except FileNotFoundError:
-            if path_utils.file_exists(self.path) and path_utils.is_dir(
-                self.path
+            if path_utils.file_exists(str(self.path)) and path_utils.is_dir(
+                str(self.path)
             ):
                 raise ValueError(f"No README.md file found in {self.path}")
             else:
@@ -79,7 +79,7 @@ class ExamplesRepo:
         try:
             self.repo = Repo(self.cloning_path)
         except NoSuchPathError:
-            self.repo = None
+            self.repo = None  # type: ignore
             logger.debug(
                 f"`cloning_path`: {self.cloning_path} was empty, but ExamplesRepo was created. "
                 "Ensure a pull is performed before doing any other operations."
@@ -304,7 +304,7 @@ def pull(
     path_utils.create_dir_if_not_exists(destination_dir)
 
     examples = (
-        git_examples_handler.examples if not example_name else [example_name]
+        git_examples_handler.examples if not example_name else [example_name]  # type: ignore
     )
 
     for example in examples:
