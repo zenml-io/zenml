@@ -193,6 +193,12 @@ class GitExamplesHandler(object):
         path_utils.create_dir_if_not_exists(destination_dir)
         path_utils.copy_dir(str(example.path), destination_dir, overwrite=True)
 
+    def clean_current_examples(self) -> None:
+        """Deletes the ZenML examples directory from your current working
+        directory."""
+        examples_directory = os.path.join(os.getcwd(), "zenml_examples")
+        shutil.rmtree(examples_directory)
+
 
 pass_git_examples_handler = click.make_pass_decorator(
     GitExamplesHandler, ensure=True
@@ -213,6 +219,33 @@ def list(git_examples_handler: GitExamplesHandler) -> None:
         declare(f"{example.name}")
     declare("\nTo pull the examples, type: ")
     declare("zenml example pull EXAMPLE_NAME")
+
+
+@example.command(help="Deletes the ZenML examples directory.")
+@pass_git_examples_handler
+def clean(git_examples_handler: GitExamplesHandler) -> None:
+    """Deletes the ZenML examples directory from your current working
+    directory."""
+    examples_directory = os.path.join(os.getcwd(), "zenml_examples")
+    if (
+        path_utils.file_exists(examples_directory)
+        and path_utils.is_dir(examples_directory)
+        and confirmation(
+            "Do you wish to delete the ZenML examples directory? \n"
+            f"{examples_directory}"
+        )
+    ):
+        git_examples_handler.clean_current_examples()
+        declare(
+            "ZenML examples directory was deleted from your current working directory."
+        )
+    elif not path_utils.file_exists(
+        examples_directory
+    ) and not path_utils.is_dir(examples_directory):
+        logger.warning(
+            f"Unable to delete the ZenML examples directory - {examples_directory} - "
+            "as it was not found in your current working directory."
+        )
 
 
 @example.command(help="Find out more about an example.")
