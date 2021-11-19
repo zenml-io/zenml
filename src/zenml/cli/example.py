@@ -88,11 +88,11 @@ class ExamplesRepo:
     @property
     def latest_release(self) -> str:
         """Returns the latest release for the examples repository."""
-        tags = sorted(self.repo.tags, key=lambda t: t.commit.committed_datetime)
+        tags = sorted(self.repo.tags, key=lambda t: t.commit.committed_datetime)  # type: ignore
         latest_tag = parse(tags[-1].name)
         if type(latest_tag) is not Version:
             return "main"
-        return tags[-1].name
+        return tags[-1].name  # type: ignore
 
     @property
     def is_cloned(self) -> bool:
@@ -156,7 +156,9 @@ class GitExamplesHandler(object):
     def examples(self) -> List[Example]:
         """Returns a list of examples"""
         return [
-            Example(name, os.path.join(self.examples_repo.examples_dir, name))
+            Example(
+                name, Path(os.path.join(self.examples_repo.examples_dir, name))
+            )
             for name in sorted(os.listdir(self.examples_repo.examples_dir))
             if (
                 not name.startswith(".")
@@ -165,9 +167,9 @@ class GitExamplesHandler(object):
             )
         ]
 
-    def pull(self, version: str = None, force: bool = False) -> None:
+    def pull(self, version: str = "", force: bool = False) -> None:
         """Pulls the examples from the main git examples repository."""
-        if version is None:
+        if version == "":
             version = self.examples_repo.latest_release
 
         if not self.examples_repo.is_cloned:
