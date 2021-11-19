@@ -71,7 +71,9 @@ class PipelineRunView:
         if any(status == ExecutionStatus.FAILED for status in step_statuses):
             return ExecutionStatus.FAILED
         elif all(
-            status == ExecutionStatus.COMPLETED for status in step_statuses
+            status == ExecutionStatus.COMPLETED
+            or status == ExecutionStatus.CACHED
+            for status in step_statuses
         ):
             return ExecutionStatus.COMPLETED
         else:

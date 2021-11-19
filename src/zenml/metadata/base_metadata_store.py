@@ -44,6 +44,8 @@ from zenml.post_execution import (
 
 logger = get_logger(__name__)
 
+BASE_STEP_PREFIX = "zenml.steps.base_step."
+
 
 # TODO [ENG-132]: can we remove this registration?
 @metadata_store_factory.register(MLMetadataTypes.base)  # type: ignore[misc]
@@ -65,6 +67,57 @@ class BaseMetadataStore(BaseComponent):
     def get_tfx_metadata_config(self) -> metadata_store_pb2.ConnectionConfig:
         """Return tfx metadata config."""
         raise NotImplementedError
+
+    @property
+    def step_type_mapping(self) -> Dict[int, str]:
+        """Maps type_id's to step names."""
+        return {
+            type_.id: type_.name for type_ in self.store.get_execution_types()
+        }
+
+    def _check_if_executions_belong_to_pipeline(
+        self,
+        executions: List[proto.Execution],
+        pipeline: PipelineView,
+    ) -> bool:
+        """Returns `True` if the executions are associated with the pipeline
+        context."""
+        for execution in executions:
+            associated_contexts = self.store.get_contexts_by_execution(
+                execution.id
+            )
+            for context in associated_contexts:
+                if context.id == pipeline._id:  # noqa
+                    return True
+        return False
+
+    def _get_step_view_from_execution(
+        self, execution: proto.Execution
+    ) -> StepView:
+        """Get original StepView from an execution.
+
+        Args:
+            execution: proto.Execution object from mlmd store.
+
+        Returns:
+            Original `StepView` derived from the proto.Execution.
+        """
+        step_name = self.step_type_mapping[execution.type_id]
+        # TODO [ENG-134]: why is the name like this?
+        if step_name.startswith(BASE_STEP_PREFIX):
+            step_name = step_name[len(BASE_STEP_PREFIX) :]
+
+        step_parameters = {
+            k: json.loads(v.string_value)
+            for k, v in execution.custom_properties.items()
+        }
+
+        return StepView(
+            id_=execution.id,
+            name=step_name,
+            parameters=step_parameters,
+            metadata_store=self,
+        )
 
     def get_serialization_dir(self) -> str:
         """Gets the local path where artifacts are stored."""
@@ -103,22 +156,6 @@ class BaseMetadataStore(BaseComponent):
         else:
             logger.info("No pipelines found for name '%s'", pipeline_name)
             return None
-
-    def _check_if_executions_belong_to_pipeline(
-        self,
-        executions: List[proto.Execution],
-        pipeline: PipelineView,
-    ) -> bool:
-        """Returns `True` if the executions are associated with the pipeline
-        context."""
-        for execution in executions:
-            associated_contexts = self.store.get_contexts_by_execution(
-                execution.id
-            )
-            for context in associated_contexts:
-                if context.id == pipeline._id:  # noqa
-                    return True
-        return False
 
     def get_pipeline_runs(
         self, pipeline: PipelineView
@@ -179,33 +216,12 @@ class BaseMetadataStore(BaseComponent):
         self, pipeline_run: PipelineRunView
     ) -> Dict[str, StepView]:
         """Gets all steps for the given pipeline run."""
-        # maps type_id's to step names
-        step_type_mapping: Dict[int, str] = {
-            type_.id: type_.name for type_ in self.store.get_execution_types()
-        }
-
         steps: Dict[str, StepView] = OrderedDict()
         # reverse the executions as they get returned in reverse chronological
         # order from the metadata store
         for execution in reversed(pipeline_run._executions):  # noqa
-            step_name = step_type_mapping[execution.type_id]
-            # TODO [ENG-134]: why is the name like this?
-            step_prefix = "zenml.steps.base_step."
-            if step_name.startswith(step_prefix):
-                step_name = step_name[len(step_prefix) :]
-
-            step_parameters = {
-                k: json.loads(v.string_value)
-                for k, v in execution.custom_properties.items()
-            }
-
-            step = StepView(
-                id_=execution.id,
-                name=step_name,
-                parameters=step_parameters,
-                metadata_store=self,
-            )
-            steps[step_name] = step
+            step = self._get_step_view_from_execution(execution)
+            steps[step.name] = step
 
         logger.debug(
             "Fetched %d steps for pipeline run '%s'.",
@@ -220,10 +236,12 @@ class BaseMetadataStore(BaseComponent):
         proto = self.store.get_executions_by_id([step._id])[0]  # noqa
         state = proto.last_known_state
 
-        if state == proto.COMPLETE or state == proto.CACHED:
+        if state == proto.COMPLETE:
             return ExecutionStatus.COMPLETED
         elif state == proto.RUNNING:
             return ExecutionStatus.RUNNING
+        elif state == proto.CACHED:
+            return ExecutionStatus.CACHED
         else:
             return ExecutionStatus.FAILED
 
@@ -271,6 +289,8 @@ class BaseMetadataStore(BaseComponent):
                 uri=artifact_proto.uri,
                 materializer=materializer,
                 data_type=data_type,
+                metadata_store=self,
+                parent_step_id=step.id,
             )
 
             if event_proto.type == event_proto.INPUT:
@@ -286,6 +306,25 @@ class BaseMetadataStore(BaseComponent):
         )
 
         return inputs, outputs
+
+    def get_producer_step_from_artifact(
+        self, artifact: ArtifactView
+    ) -> StepView:
+        """Returns original StepView from an ArtifactView.
+
+        Args:
+            artifact: ArtifactView to be queried.
+
+        Returns:
+            Original StepView that produced the artifact.
+        """
+        executions_ids = set(
+            event.execution_id
+            for event in self.store.get_events_by_artifact_ids([artifact.id])
+            if event.type == event.OUTPUT
+        )
+        execution = self.store.get_executions_by_id(executions_ids)[0]
+        return self._get_step_view_from_execution(execution)
 
     class Config:
         """Configuration of settings."""

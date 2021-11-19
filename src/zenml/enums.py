@@ -65,6 +65,7 @@ class ExecutionStatus(Enum):
     FAILED = "failed"
     COMPLETED = "completed"
     RUNNING = "running"
+    CACHED = "cached"
 
 
 class LoggingLevels(Enum):
