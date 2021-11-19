@@ -111,3 +111,11 @@ split_pipeline = my_pipeline(
 
 # needed for airflow
 DAG = split_pipeline.run()
+
+
+from zenml.core.repo import Repository
+
+pipeline = Repository().get_pipelines()[-1]
+pipeline.display_types
+display_artifacts
+display_properties
