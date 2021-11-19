@@ -15,21 +15,20 @@
 
 import re
 import threading
-from typing import Type
+from typing import Dict, Type
 
-from tfx.dsl.io import filesystem
-from tfx.dsl.io.filesystem import PathType
+from tfx.dsl.io.filesystem import Filesystem, PathType
 from tfx.dsl.io.plugins.local import LocalFilesystem
 
 
 class FileIORegistry:
     """Registry of pluggable filesystem implementations used in TFX components."""
 
-    def __init__(self):
-        self._filesystems = {}
+    def __init__(self) -> None:
+        self._filesystems: Dict[PathType, Type[Filesystem]] = {}
         self._registration_lock = threading.Lock()
 
-    def register(self, filesystem_cls: Type[filesystem.Filesystem]) -> None:
+    def register(self, filesystem_cls: Type[Filesystem]) -> None:
         """Register a filesystem implementation.
 
         Args:
@@ -44,9 +43,7 @@ class FileIORegistry:
                     pass
                 self._filesystems[scheme] = filesystem_cls
 
-    def get_filesystem_for_scheme(
-        self, scheme: PathType
-    ) -> Type[filesystem.Filesystem]:
+    def get_filesystem_for_scheme(self, scheme: PathType) -> Type[Filesystem]:
         """Get filesystem plugin for given scheme string."""
         if isinstance(scheme, bytes):
             scheme = scheme.decode("utf-8")
@@ -59,9 +56,7 @@ class FileIORegistry:
             )
         return self._filesystems[scheme]
 
-    def get_filesystem_for_path(
-        self, path: PathType
-    ) -> Type[filesystem.Filesystem]:
+    def get_filesystem_for_path(self, path: PathType) -> Type[Filesystem]:
         """Get filesystem plugin for given path."""
         # Assume local path by default, but extract filesystem prefix if available.
         if isinstance(path, str):
