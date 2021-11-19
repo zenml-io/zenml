@@ -142,10 +142,10 @@ def get_logger(logger_name: str) -> logging.Logger:
     logger.setLevel(get_logging_level().value)
     logger.addHandler(get_console_handler())
 
-    # TODO: [LOW] Add a file handler for persistent handling
-    # logger.addHandler(get_file_handler())
-    # with this pattern, it's rarely necessary to propagate the error up to
-    # parent
+    # TODO [ENG-130]: Add a file handler for persistent handling
+    #  logger.addHandler(get_file_handler())
+    #  with this pattern, it's rarely necessary to propagate the error up to
+    #  parent
     logger.propagate = False
     return logger
 

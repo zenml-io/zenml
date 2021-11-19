@@ -1,0 +1,40 @@
+name: Update TODOs
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  update_todos:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install requests
+
+      - name: Update Todos
+        env:
+          JIRA_BASE_URL: https://zenml.atlassian.net
+          JIRA_USERNAME: codemonkey@zenml.io
+          JIRA_API_TOKEN: ${{ secrets.JIRA_ACCESS_TOKEN }}
+          JIRA_BOARD_ID: 10004
+          JIRA_ISSUE_TYPE_ID: 10017
+          JIRA_DONE_STATUS_CATEGORY_ID: 3
+          JIRA_ISSUE_LABEL: todo_comment
+        run: python scripts/update_todos.py src/zenml
+      - name: Commit report
+        run: |
+          git config --global user.name 'Code Monkey'
+          git config --global user.email 'codemonkey@zenml.io'
+          git commit -am "Update TODO comments" || echo "No TODOS updated"
+          git push

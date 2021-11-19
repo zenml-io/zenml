@@ -27,7 +27,7 @@ class BeamMaterializer(BaseMaterializer):
     def handle_input(self, data_type: Type[Any]) -> Any:
         """Reads all files inside the artifact directory and materializes them
         as a beam compatible output."""
-        # TODO [MEDIUM]: Implement beam reading
+        # TODO [ENG-138]: Implement beam reading
         super().handle_input(data_type)
 
     def handle_return(self, pipeline: beam.Pipeline) -> None:
@@ -37,7 +37,7 @@ class BeamMaterializer(BaseMaterializer):
         Args:
             pipeline: A beam.pipeline object.
         """
-        # TODO [MEDIUM]: Implement beam writing
+        # TODO [ENG-139]: Implement beam writing
         super().handle_return(pipeline)
         pipeline | beam.ParDo()
         pipeline.run()

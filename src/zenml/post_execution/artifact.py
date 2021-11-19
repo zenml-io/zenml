@@ -100,7 +100,7 @@ class ArtifactView:
             self._uri,
         )
 
-        # TODO [MEDIUM]: passing in `self` to initialize the materializer only
+        # TODO [ENG-162]: passing in `self` to initialize the materializer only
         #  works because materializers only require a `.uri` property at the
         #  moment.
         materializer = materializer_class(self)  # type: ignore[arg-type]
@@ -113,3 +113,10 @@ class ArtifactView:
             f"type='{self._type}', uri='{self._uri}', "
             f"materializer='{self._materializer}')"
         )
+
+    def __eq__(self, other: Any) -> bool:
+        """Returns whether the other object is referring to the
+        same artifact."""
+        if isinstance(other, ArtifactView):
+            return self._id == other._id and self._uri == other._uri
+        return NotImplemented

@@ -102,7 +102,7 @@ def echo_component_list(component_list: Mapping[str, BaseComponent]) -> None:
     """Echoes a list of components in a pretty style."""
     list_of_dicts = []
     for key, c in component_list.items():
-        # TODO [LOW]: This will break if component has element called `key`
+        # TODO [ENG-143]: This will break if component has element called `key`
         data = {"key": key}
         data.update(c.dict())
         list_of_dicts.append(data)

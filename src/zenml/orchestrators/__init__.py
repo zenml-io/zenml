@@ -12,13 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import sys
+
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
-try:
-    from zenml.orchestrators.airflow.airflow_orchestrator import (  # noqa
-        AirflowOrchestrator,
+if sys.platform == "win32":
+    logger.debug(
+        "Airflow is not supported on windows, not trying to import it."
     )
-except ImportError:
-    logger.debug("Airflow not installed.")
+else:
+    try:
+        from zenml.orchestrators.airflow.airflow_orchestrator import (  # noqa
+            AirflowOrchestrator,
+        )
+    except ImportError:
+        logger.debug("Airflow not installed.")

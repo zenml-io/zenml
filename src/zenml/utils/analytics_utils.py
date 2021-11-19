@@ -15,7 +15,6 @@
 
 import os
 import platform
-import sys
 from typing import Any, Callable, Dict, Optional
 
 import distro
@@ -62,7 +61,7 @@ def get_segment_key() -> str:
 
 def in_docker() -> bool:
     """Returns: True if running in a Docker container, else False"""
-    # TODO [MEDIUM]: Make this more reliable and add test.
+    # TODO [ENG-167]: Make this more reliable and add test.
     try:
         with open("/proc/1/cgroup", "rt") as ifh:
             info = ifh.read()
@@ -94,14 +93,14 @@ def get_system_info() -> Dict[str, Any]:
     system = platform.system()
 
     if system == "Windows":
-        version = sys.getwindowsversion()  # type: ignore[attr-defined]
+        release, version, csd, ptype = platform.win32_ver()
 
         return {
             "os": "windows",
-            "windows_version_build": version.build,
-            "windows_version_major": version.major,
-            "windows_version_minor": version.minor,
-            "windows_version_service_pack": version.service_pack,
+            "windows_version_release": release,
+            "windows_version": version,
+            "windows_version_service_pack": csd,
+            "windows_version_os_type": ptype,
         }
 
     if system == "Darwin":
@@ -201,7 +200,7 @@ def track(
     """
     # Need to redefine the name for the event here in order for mypy
     # to recognize it's not an optional string anymore
-    # TODO[MEDIUM]: open bug ticket and link here
+    # TODO [ENG-168]: open bug ticket and link here
     event_name = event or func.__name__  # default to name of function
     metadata: Dict[str, Any] = {}
 

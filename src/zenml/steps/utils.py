@@ -55,9 +55,6 @@ from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.exceptions import MissingStepParameterError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.materializers.spec_materializer_registry import (
-    SpecMaterializerRegistry,
-)
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
 from zenml.utils import source_utils
@@ -84,7 +81,7 @@ def do_types_match(type_a: Type[Any], type_b: Type[Any]) -> bool:
     Returns:
         True if types match, otherwise False.
     """
-    # TODO [LOW]: Check more complicated cases where type_a can be a sub-type
+    # TODO [ENG-158]: Check more complicated cases where type_a can be a sub-type
     #  of type_b
     return type_a == type_b
 
@@ -107,7 +104,7 @@ def generate_component(step: "BaseStep") -> Callable[..., Any]:
         spec_outputs[key] = component_spec.ChannelParameter(type=artifact_type)
     for key, prim_type in step.PARAM_SPEC.items():
         spec_params[key] = component_spec.ExecutionParameter(type=str)  # type: ignore[no-untyped-call] # noqa
-    for key in step._internal_execution_properties.keys():  # noqa
+    for key in step._internal_execution_parameters.keys():  # noqa
         spec_params[key] = component_spec.ExecutionParameter(type=str)  # type: ignore[no-untyped-call] # noqa
 
     component_spec_class = type(
@@ -127,7 +124,7 @@ def generate_component(step: "BaseStep") -> Callable[..., Any]:
         {
             "_FUNCTION": staticmethod(getattr(step, STEP_INNER_FUNC_NAME)),
             "__module__": step.__module__,
-            "spec_materializer_registry": step.spec_materializer_registry,
+            "materializers": step.get_materializers(ensure_complete=True),
             PARAM_STEP_NAME: step.step_name,
         },
     )
@@ -223,9 +220,9 @@ class _FunctionExecutor(BaseExecutor):
     """Base TFX Executor class which is compatible with ZenML steps"""
 
     _FUNCTION = staticmethod(lambda: None)
-    # TODO[HIGH]: should this be an instance variable?
-    spec_materializer_registry: ClassVar[
-        Optional[SpecMaterializerRegistry]
+    # TODO [ENG-159]: should this be an instance variable?
+    materializers: ClassVar[
+        Optional[Dict[str, Type["BaseMaterializer"]]]
     ] = None
 
     def resolve_materializer_with_registry(
@@ -241,14 +238,10 @@ class _FunctionExecutor(BaseExecutor):
             The right materializer based on the defaults or optionally the one
             set by the user.
         """
-        if not self.spec_materializer_registry:
-            raise ValueError("Spec Materializer Registry is not set!")
+        if not self.materializers:
+            raise ValueError("Materializers are missing is not set!")
 
-        materializer_class = (
-            self.spec_materializer_registry.get_single_materializer_type(
-                param_name
-            )
-        )
+        materializer_class = self.materializers[param_name]
         return materializer_class
 
     def resolve_input_artifact(
@@ -301,7 +294,7 @@ class _FunctionExecutor(BaseExecutor):
         Raises:
             ValueError if types dont match.
         """
-        # TODO [LOW]: Include this check when we figure out the logic of
+        # TODO [ENG-160]: Include this check when we figure out the logic of
         #  slightly different subclasses.
         if not do_types_match(type(output_value), specified_type):
             raise ValueError(

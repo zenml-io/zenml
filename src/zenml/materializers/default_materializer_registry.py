@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Type
+from typing import TYPE_CHECKING, Any, Dict, Type
 
 from zenml.logger import get_logger
 
@@ -22,14 +22,14 @@ if TYPE_CHECKING:
     from zenml.materializers.base_materializer import BaseMaterializer
 
 
-class DefaultMaterializerRegistry(object):
+class MaterializerRegistry:
     """Matches a python type to a default materializer."""
 
-    materializer_types: ClassVar[Dict[Type[Any], Type["BaseMaterializer"]]] = {}
+    def __init__(self) -> None:
+        self.materializer_types: Dict[Type[Any], Type["BaseMaterializer"]] = {}
 
-    @classmethod
     def register_materializer_type(
-        cls, key: Type[Any], type_: Type["BaseMaterializer"]
+        self, key: Type[Any], type_: Type["BaseMaterializer"]
     ) -> None:
         """Registers a new materializer.
 
@@ -37,13 +37,13 @@ class DefaultMaterializerRegistry(object):
             key: Indicates the type of an object.
             type_: A BaseMaterializer subclass.
         """
-        if key not in cls.materializer_types:
-            cls.materializer_types[key] = type_
+        if key not in self.materializer_types:
+            self.materializer_types[key] = type_
             logger.debug(f"Registered materializer {type_} for {key}")
         else:
             logger.debug(
                 f"{key} already registered with "
-                f"{cls.materializer_types[key]}. Cannot register {type_}."
+                f"{self.materializer_types[key]}. Cannot register {type_}."
             )
 
     def register_and_overwrite_type(
@@ -58,17 +58,14 @@ class DefaultMaterializerRegistry(object):
         self.materializer_types[key] = type_
         logger.debug(f"Registered materializer {type_} for {key}")
 
-    def get_single_materializer_type(
-        self, key: Type[Any]
-    ) -> Type["BaseMaterializer"]:
+    def __getitem__(self, key: Type[Any]) -> Type["BaseMaterializer"]:
         """Get a single materializers based on the key.
 
         Args:
             key: Indicates the type of an object.
 
         Returns:
-            Instance of a `BaseMaterializer` subclass initialized with the
-            artifact of this factory.
+            `BaseMaterializer` subclass that was registered for this key.
         """
         if key in self.materializer_types:
             return self.materializer_types[key]
@@ -81,14 +78,12 @@ class DefaultMaterializerRegistry(object):
     def get_materializer_types(
         self,
     ) -> Dict[Type[Any], Type["BaseMaterializer"]]:
-        """Get all registered materializers."""
+        """Get all registered materializer types."""
         return self.materializer_types
 
     def is_registered(self, key: Type[Any]) -> bool:
-        """Returns true if key type is registered, else returns False."""
-        if key in self.materializer_types:
-            return True
-        return False
+        """Returns if a materializer class is registered for the given type."""
+        return key in self.materializer_types
 
 
-default_materializer_registry = DefaultMaterializerRegistry()
+default_materializer_registry = MaterializerRegistry()

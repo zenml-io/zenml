@@ -108,7 +108,7 @@ def test_pull_without_any_flags_should_exit_without_errors() -> None:
 @pytest.mark.parametrize("example", ZERO_FIVE_RELEASE_EXAMPLES)
 def test_info_echos_out_readme_content(example: str) -> None:
     """Check that info subcommand displays readme content"""
-    # TODO: [LOW] make test handle rich markdown output
+    # TODO [LOW]: make test handle rich markdown output
     runner = CliRunner()
     with runner.isolated_filesystem():
         # setup the test
