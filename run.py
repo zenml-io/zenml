@@ -67,25 +67,33 @@ lineage_pipeline = my_pipeline(
 )
 
 lineage_pipeline.run()
+lineage_pipeline.run()
+lineage_pipeline.run()
+lineage_pipeline.run()
 
 pipeline = Repository().get_pipelines()[-1]
 
-for run in pipeline.runs:
-    try:
-        deployer_step = run.get_step(name="deployer")
-        trainer_step = run.get_step(name="trainer")
-        deployed_model_artifact = deployer_step.inputs["model"]
-        trained_model_artifact = trainer_step.output
+# for run in pipeline.runs:
+#     try:
+#         deployer_step = run.get_step(name="deployer")
+#         trainer_step = run.get_step(name="trainer")
+#         deployed_model_artifact = deployer_step.inputs["model"]
+#         trained_model_artifact = trainer_step.output
+#
+#         # lets do the lineage
+#         print(
+#             f"trained_model_artifact was produced by: "
+#             f"{trained_model_artifact.producer_step.id} and is_cached: "
+#             f"{trained_model_artifact.is_cached} step cached: "
+#             f"{trainer_step.status}"
+#         )
+#     except Exception as e:
+#         if "No step found for name `deployer`" in str(e):
+#             pass
+#         else:
+#             raise e
 
-        # lets do the lineage
-        print(
-            f"trained_model_artifact was produced by: "
-            f"{trained_model_artifact.producer_step.id} and is_cached: "
-            f"{trained_model_artifact.is_cached} step cached: "
-            f"{trainer_step.status}"
-        )
-    except Exception as e:
-        if "No step found for name `deployer`" in str(e):
-            pass
-        else:
-            raise e
+
+from zenml.post_execution.visualizers.lineage.pipeline_lineage_visualizer import PipelineLineageVisualizer
+
+PipelineLineageVisualizer().visualize(pipeline)
