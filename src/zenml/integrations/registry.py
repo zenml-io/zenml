@@ -25,25 +25,31 @@ if TYPE_CHECKING:
 
 
 class IntegrationRegistry(object):
-    integrations: ClassVar[Dict[Type[Any], Type["Integration"]]] = {}
+    _integrations: ClassVar[Dict[Type[Any], Type["Integration"]]] = {}
+
+    @property
+    def integrations(self):
+        self.activate()
+        return self._integrations
 
     @classmethod
     def register_integration(
         cls, key: Type[Any], type_: Type["Integration"]
     ) -> None:
-        cls.integrations[key] = type_
+        cls._integrations[key] = type_
 
     @classmethod
     def activate(cls):
-        for name in cls.integrations.keys():
+        for name in list(cls._integrations.keys()):
             try:
-                integration = cls.integrations.get(name)
+                integration = cls._integrations.get(name)
                 if issubclass(type(integration), LazyLoader):
                     integration.load()
-                    integration = cls.integrations.get(name)
+                    integration = cls._integrations.get(name)
                 integration.activate()
                 logger.info(f"Integration `{name}` is activated.")
             except (ModuleNotFoundError, IntegrationError) as e:
+                cls._integrations.pop(name)
                 logger.warning(
                     f"Integration `{name}` could not be activated. {e}"
                 )
