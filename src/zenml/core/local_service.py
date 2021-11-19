@@ -101,6 +101,14 @@ class LocalService(BaseComponent):
             f"Registering stack with key {key}, details: " f"{stack.dict()}"
         )
 
+        # Check if the individual components actually exist.
+        # TODO [LOW]: Add tests to check cases of registering a stack with a
+        #  non-existing individual component. We can also improve the error
+        #  logging for the CLI while we're at it.
+        self.get_orchestrator(stack.orchestrator_name)
+        self.get_artifact_store(stack.artifact_store_name)
+        self.get_metadata_store(stack.metadata_store_name)
+
         if key in self.stacks:
             raise AlreadyExistsException(
                 message=f"Stack `{key}` already exists!"
