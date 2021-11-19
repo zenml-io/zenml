@@ -21,6 +21,7 @@ PathType = Union[bytes, str]
 
 
 class NotFoundError(IOError):
+    """Auxiliary not found error"""
     pass
 
 
