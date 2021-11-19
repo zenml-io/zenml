@@ -3,15 +3,12 @@ from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Optional
 
 from zenml.core.base_component import BaseComponent
-from zenml.core.component_factory import orchestrator_store_factory
-from zenml.enums import OrchestratorTypes
 from zenml.io.fileio import get_zenml_config_dir
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
 
-# TODO [ENG-135]: Can we remove this registration?
-@orchestrator_store_factory.register(OrchestratorTypes.base)  # type: ignore[misc] # noqa
+
 class BaseOrchestrator(BaseComponent):
     """Base Orchestrator class to orchestrate ZenML pipelines."""
 

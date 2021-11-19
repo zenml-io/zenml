@@ -53,10 +53,10 @@ class IntegrationRegistry(object):
                     integration.load()
                     integration = cls._integrations.get(name)
                 integration.activate()
-                logger.info(f"Integration `{name}` is activated.")
+                logger.debug(f"Integration `{name}` is activated.")
             except (ModuleNotFoundError, IntegrationError) as e:
                 cls._integrations.pop(name)
-                logger.warning(
+                logger.debug(
                     f"Integration `{name}` could not be activated. {e}"
                 )
 

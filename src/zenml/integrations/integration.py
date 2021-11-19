@@ -49,8 +49,12 @@ class Integration(metaclass=IntegrationMeta):
             pkg_resources.require(cls.REQUIREMENTS)
         except pkg_resources.DistributionNotFound:
             raise IntegrationError("Required packages not fully installed.")
-        except pkg_resources.VersionConflict:
-            raise IntegrationError("Version conflicts in required packages.")
+        except pkg_resources.VersionConflict as e:
+            logger.debug(
+                f"VersionConflict error when loading installation {cls.NAME}: "
+                f"{str(e)}"
+            )
+            # raise IntegrationError("Version conflicts in required packages.")
 
     @staticmethod
     def activate():

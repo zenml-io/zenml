@@ -18,7 +18,6 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
-from zenml.core.component_factory import metadata_store_factory
 from zenml.core.repo import Repository
 
 
@@ -53,6 +52,11 @@ def register_metadata_store(
 
     repo: Repository = Repository()
     try:
+        # TODO [HIGH]: Remove when we rework the registry logic
+        from zenml.core.component_factory import metadata_store_factory
+        from zenml.integrations import integration_registry
+
+        integration_registry.activate()
         comp = metadata_store_factory.get_single_component(metadata_store_type)
     except AssertionError as e:
         cli_utils.error(str(e))

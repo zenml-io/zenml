@@ -17,13 +17,10 @@ from ml_metadata.proto import metadata_store_pb2
 from pydantic import validator
 from tfx.orchestration import metadata
 
-from zenml.core.component_factory import metadata_store_factory
-from zenml.enums import MLMetadataTypes
 from zenml.io import fileio
 from zenml.metadata.base_metadata_store import BaseMetadataStore
 
 
-@metadata_store_factory.register(MLMetadataTypes.sqlite)
 class SQLiteMetadataStore(BaseMetadataStore):
     """SQLite backend for ZenML metadata store."""
 

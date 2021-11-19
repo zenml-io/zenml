@@ -31,8 +31,7 @@ from zenml.artifacts.constants import (
     MATERIALIZER_PROPERTY_KEY,
 )
 from zenml.core.base_component import BaseComponent
-from zenml.core.component_factory import metadata_store_factory
-from zenml.enums import ExecutionStatus, MLMetadataTypes
+from zenml.enums import ExecutionStatus
 from zenml.io.fileio import get_zenml_config_dir
 from zenml.logger import get_logger
 from zenml.post_execution import (
@@ -47,8 +46,6 @@ logger = get_logger(__name__)
 BASE_STEP_PREFIX = "zenml.steps.base_step."
 
 
-# TODO [ENG-132]: can we remove this registration?
-@metadata_store_factory.register(MLMetadataTypes.base)  # type: ignore[misc]
 class BaseMetadataStore(BaseComponent):
     """Metadata store base class to track metadata of zenml first class
     citizens."""

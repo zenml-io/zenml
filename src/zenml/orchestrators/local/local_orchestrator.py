@@ -18,8 +18,6 @@ from typing import TYPE_CHECKING, Any, Optional
 import tfx.orchestration.pipeline as tfx_pipeline
 from pydantic import PrivateAttr
 
-from zenml.core.component_factory import orchestrator_store_factory
-from zenml.enums import OrchestratorTypes
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.local.local_dag_runner import LocalDagRunner
 
@@ -27,7 +25,6 @@ if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
 
 
-@orchestrator_store_factory.register(OrchestratorTypes.local)
 class LocalOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines locally."""
 

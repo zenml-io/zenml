@@ -41,3 +41,7 @@ integration_registry.register_integration(constants.PYTORCH, pytorch)
 # Pytorch Lightning
 pytorch_l = LazyLoader("zenml.integrations.pytorch_lightning")
 integration_registry.register_integration(constants.PYTORCH_L, pytorch_l)
+
+# Airflow
+airflow = LazyLoader("zenml.integrations.airflow")
+integration_registry.register_integration(constants.AIRFLOW, airflow)

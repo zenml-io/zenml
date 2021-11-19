@@ -19,7 +19,6 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
-from zenml.core.component_factory import orchestrator_store_factory
 from zenml.core.repo import Repository
 
 if TYPE_CHECKING:
@@ -83,6 +82,12 @@ def register_orchestrator(
         return
 
     repo: Repository = Repository()
+    # TODO [HIGH]: Remove when we rework the registry logic
+    from zenml.core.component_factory import orchestrator_store_factory
+    from zenml.integrations import integration_registry
+
+    integration_registry.activate()
+
     comp = orchestrator_store_factory.get_single_component(orchestrator_type)
     orchestrator_ = comp(**parsed_args)
     service = repo.get_service()
