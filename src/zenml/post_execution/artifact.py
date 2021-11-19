@@ -90,7 +90,7 @@ class ArtifactView:
     @property
     def producer_step(self) -> "StepView":
         """Returns the original StepView that produced the artifact."""
-        # TODO [LOW]: Replace with artifact.id instead of passing self if
+        # TODO [ENG-174]: Replace with artifact.id instead of passing self if
         #  required.
         return self._metadata_store.get_producer_step_from_artifact(self)
 
