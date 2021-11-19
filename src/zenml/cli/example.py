@@ -54,9 +54,9 @@ class Example:
             if path_utils.file_exists(self.path) and path_utils.is_dir(
                 self.path
             ):
-                error(f"No README.md file found in {self.path}")
+                raise ValueError(f"No README.md file found in {self.path}")
             else:
-                error(
+                raise FileNotFoundError(
                     f"Example {self.name} is not one of the available options."
                     f"\nTo list all available examples, type: `zenml example list`"
                 )
