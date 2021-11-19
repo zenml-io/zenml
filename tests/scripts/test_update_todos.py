@@ -13,6 +13,10 @@ def setup_environment():
     os.environ["JIRA_ISSUE_TYPE_ID"] = ""
     os.environ["JIRA_DONE_STATUS_CATEGORY_ID"] = "-1"
     os.environ["JIRA_ISSUE_LABEL"] = ""
+    os.environ["JIRA_GITHUB_URL_FIELD_NAME"] = ""
+
+    os.environ["GITHUB_REPOSITORY"] = ""
+    os.environ["GITHUB_SHA"] = ""
 
 
 def test_todo_detection(tmp_path):
@@ -50,6 +54,8 @@ def test_todo_detection(tmp_path):
     assert todos_with_issue[0].issue_key == "ABC-123"
     assert todos_with_issue[0].filepath == str(file)
     assert todos_with_issue[0].description == "valid issue key"
+    assert todos_with_issue[0].line_number == 14
+    assert todos_with_issue[0].line_count == 1
 
     assert len(todos_without_issue) == 5
     expected_priorities = ["LOW", "MEDIUM", "HIGH", "LOWEST", "HIGHEST"]
@@ -60,13 +66,21 @@ def test_todo_detection(tmp_path):
         "",
         "invalid multiline",
     ]
+    expected_line_numbers = [2, 8, 11, 18, 19]
+    expected_line_counts = [1, 2, 1, 1, 1]
 
-    for todo, expected_priority, expected_description in zip(
-        todos_without_issue, expected_priorities, expected_descriptions
+    for todo, priority, description, line_number, line_count in zip(
+        todos_without_issue,
+        expected_priorities,
+        expected_descriptions,
+        expected_line_numbers,
+        expected_line_counts,
     ):
-        assert todo.priority == expected_priority
+        assert todo.priority == priority
         assert todo.filepath == str(file)
-        assert todo.description == expected_description
+        assert todo.description == description
+        assert todo.line_number == line_number
+        assert todo.line_count == line_count
 
 
 def test_todo_issue_key_insertion(tmp_path):
@@ -92,12 +106,16 @@ def test_todo_issue_key_insertion(tmp_path):
         Todo(
             filepath=str(file),
             description="some valid todo",
+            line_number=2,
+            line_count=1,
             priority="LOW",
             issue_key="TEST-1",
         ),
         Todo(
             filepath=str(file),
             description="another valid todo",
+            line_number=8,
+            line_count=2,
             priority="HIGHEST",
             issue_key="TEST-2",
         ),
@@ -146,11 +164,15 @@ def test_removing_of_closed_todos(tmp_path):
         Todo(
             filepath=str(file),
             description="todo for closed issue",
+            line_number=4,
+            line_count=2,
             issue_key="TEST-1",
         ),
         Todo(
             filepath=str(file),
             description="todo with open issue",
+            line_number=8,
+            line_count=1,
             issue_key="TEST-2",
         ),
     ]
