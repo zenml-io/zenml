@@ -18,9 +18,6 @@ from typing import List
 from zenml.cli.example import ExamplesRepo, GitExamplesHandler
 from zenml.logger import get_logger
 
-# from hypothesis import given
-# from hypothesis.strategies import text
-
 logger = get_logger(__name__)
 
 ZERO_FIVE_ZERO_RELEASE_EXAMPLES = ["legacy", "quickstart"]
