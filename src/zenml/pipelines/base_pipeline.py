@@ -225,6 +225,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Args:
             run_name: Optional name for the run.
         """
+        # Activating the built-in integrations through lazy loading
+        from zenml.integrations import integration_registry
+        integration_registry.activate()
+
         analytics_utils.track_event(
             event=analytics_utils.RUN_PIPELINE,
             metadata={
