@@ -12,30 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os
-from pathlib import Path
 from datetime import datetime
 from typing import List
 
-import click
-import pytest
-from click.testing import CliRunner
-from git.repo.base import Repo
-from packaging.version import parse
-
-from zenml import __version__ as zenml_version_installed
-from zenml.cli.example import (
-    EXAMPLES_GITHUB_REPO,
-    GitExamplesHandler,
-    example,
-    list,
-    pull,
-    ExamplesRepo,
-)
-from zenml.cli.utils import confirmation, declare, error, warning
-from zenml.constants import APP_NAME, GIT_REPO_URL
+from zenml.cli.example import ExamplesRepo, GitExamplesHandler
 from zenml.logger import get_logger
-from zenml.utils import path_utils
 
 # from hypothesis import given
 # from hypothesis.strategies import text
