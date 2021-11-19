@@ -105,39 +105,3 @@ class PipelineView:
                 and self._metadata_store.uuid == other._metadata_store.uuid
             )
         return NotImplemented
-
-    def display_types(self, types):
-        # Helper function to render dataframes for the artifact and execution
-        # types
-        table = {"id": [], "name": []}
-        for a_type in types:
-            table["id"].append(a_type.id)
-            table["name"].append(a_type.name)
-        return table
-
-    def display_artifacts(self, store, artifacts):
-        # Helper function to render dataframes for the input artifacts
-        table = {"artifact id": [], "type": [], "uri": []}
-        for a in artifacts:
-            table["artifact id"].append(a.id)
-            artifact_type = store.get_artifact_types_by_id([a.type_id])[0]
-            table["type"].append(artifact_type.name)
-            table["uri"].append(a.uri)
-        return table
-
-    def display_properties(self, node):
-        # Helper function to render dataframes for artifact and execution
-        # properties
-        table = {"property": [], "value": []}
-        for k, v in node.properties.items():
-            table["property"].append(k)
-            table["value"].append(
-                v.string_value if v.HasField("string_value") else v.int_value
-            )
-        for k, v in node.custom_properties.items():
-            table["property"].append(k)
-            table["value"].append(
-                v.string_value if v.HasField("string_value") else v.int_value
-            )
-        return table
-

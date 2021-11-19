@@ -12,11 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Any, Optional, Type
+from typing import TYPE_CHECKING, Any, Optional, Type
 
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import source_utils
+
+if TYPE_CHECKING:
+    from zenml.metadata.base_metadata_store import BaseMetadataStore
+    from zenml.post_execution.step import StepView
 
 logger = get_logger(__name__)
 
@@ -33,6 +37,7 @@ class ArtifactView:
         uri: str,
         materializer: str,
         data_type: str,
+        metadata_store: "BaseMetadataStore",
     ):
         """Initializes a post-execution artifact object.
 
@@ -48,12 +53,21 @@ class ArtifactView:
             data_type: The type of data that was passed to the materializer
                 when writing that artifact. Will be used as a default type
                 to read the artifact.
+            metadata_store: The metadata store which should be used to fetch
+                additional information related to this pipeline.
         """
         self._id = id_
         self._type = type_
         self._uri = uri
         self._materializer = materializer
         self._data_type = data_type
+        self._producer_step = None
+        self._metadata_store = metadata_store
+
+    @property
+    def id(self) -> int:
+        """Returns the artifact id."""
+        return self.id
 
     @property
     def type(self) -> str:
@@ -64,6 +78,16 @@ class ArtifactView:
     def uri(self) -> str:
         """Returns the URI where the artifact data is stored."""
         return self._uri
+
+    @property
+    def producer_step(self) -> "StepView":
+        """Returns the original StepView that produced the artifact."""
+        # TODO [LOW]: Replace with artifact.id instead of passing self if
+        #  required.
+        self._producer_step = (
+            self._metadata_store.get_producer_step_from_artifact(self)
+        )
+        return self._producer_step
 
     def read(
         self,
