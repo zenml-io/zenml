@@ -18,7 +18,6 @@ from typing import List, Optional
 
 from git import InvalidGitRepositoryError  # type: ignore[attr-defined]
 
-from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
 from zenml.config.global_config import GlobalConfig
 from zenml.core.constants import ZENML_DIR_NAME
 from zenml.core.git_wrapper import GitWrapper
@@ -26,8 +25,6 @@ from zenml.core.local_service import LocalService
 from zenml.exceptions import InitializationException
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
-from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.post_execution.pipeline import PipelineView
 from zenml.stacks.base_stack import BaseStack
 from zenml.utils.analytics_utils import (
@@ -121,6 +118,16 @@ class Repository:
 
         # Create stack if not specified
         if stack is None:
+            from zenml.artifact_stores.local_artifact_store import (
+                LocalArtifactStore,
+            )
+            from zenml.metadata.sqlite_metadata_wrapper import (
+                SQLiteMetadataStore,
+            )
+            from zenml.orchestrators.local.local_orchestrator import (
+                LocalOrchestrator,
+            )
+
             service = LocalService()
 
             service.register_artifact_store(
