@@ -205,8 +205,8 @@ def example() -> None:
 def list(git_examples_handler: GitExamplesHandler) -> None:
     """List all available examples."""
     declare("Listing examples: \n")
-    for name in git_examples_handler.get_all_examples():
-        declare(f"{name}")
+    for example in git_examples_handler.examples:
+        declare(f"{example.name}")
     declare("\nTo pull the examples, type: ")
     declare("zenml example pull EXAMPLE_NAME")
 
