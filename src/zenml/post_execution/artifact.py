@@ -12,11 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Any, Optional, Type
+from typing import TYPE_CHECKING, Any, Optional, Type
 
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import source_utils
+
+if TYPE_CHECKING:
+    from zenml.metadata.base_metadata_store import BaseMetadataStore
+    from zenml.post_execution.step import StepView
 
 logger = get_logger(__name__)
 
@@ -33,6 +37,8 @@ class ArtifactView:
         uri: str,
         materializer: str,
         data_type: str,
+        metadata_store: "BaseMetadataStore",
+        parent_step_id: int,
     ):
         """Initializes a post-execution artifact object.
 
@@ -48,12 +54,22 @@ class ArtifactView:
             data_type: The type of data that was passed to the materializer
                 when writing that artifact. Will be used as a default type
                 to read the artifact.
+            metadata_store: The metadata store which should be used to fetch
+                additional information related to this pipeline.
+            parent_step_id: The ID of the parent step.
         """
         self._id = id_
         self._type = type_
         self._uri = uri
         self._materializer = materializer
         self._data_type = data_type
+        self._metadata_store = metadata_store
+        self._parent_step_id = parent_step_id
+
+    @property
+    def id(self) -> int:
+        """Returns the artifact id."""
+        return self._id
 
     @property
     def type(self) -> str:
@@ -64,6 +80,25 @@ class ArtifactView:
     def uri(self) -> str:
         """Returns the URI where the artifact data is stored."""
         return self._uri
+
+    @property
+    def parent_step_id(self) -> int:
+        """Returns the ID of the parent step. This need not be equivalent to
+        the ID of the producer step."""
+        return self._parent_step_id
+
+    @property
+    def producer_step(self) -> "StepView":
+        """Returns the original StepView that produced the artifact."""
+        # TODO [LOW]: Replace with artifact.id instead of passing self if
+        #  required.
+        return self._metadata_store.get_producer_step_from_artifact(self)
+
+    @property
+    def is_cached(self) -> bool:
+        """Returns True if artifact was cached in a previous run, else False."""
+        # self._metadata_store.
+        return self.producer_step.id != self.parent_step_id
 
     def read(
         self,

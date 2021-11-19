@@ -13,101 +13,87 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import Type
+
+from zenml.core.repo import Repository
 
 os.environ["ZENML_DEBUG"] = "true"
 import pandas as pd
-import tensorflow as tf
 
-from zenml.materializers.pandas_materializer import PandasMaterializer
 from zenml.pipelines import pipeline
 from zenml.steps import step
-from zenml.steps.base_step_config import BaseStepConfig
-from zenml.steps.step_output import Output
-
-
-class StepConfig(BaseStepConfig):
-    basic_param_1: int = 1
-    basic_param_2: str = 2
-
-
-class PandasJSONMaterializer(PandasMaterializer):
-    DATA_FILENAME = "data.json"
-
-    def handle_input(self, data_type: Type) -> pd.DataFrame:
-        """Reads all files inside the artifact directory and concatenates
-        them to a pandas dataframe."""
-        return pd.read_json(os.path.join(self.artifact.uri, self.DATA_FILENAME))
-
-    def handle_return(self, df: pd.DataFrame):
-        """Writes a pandas dataframe to the specified filename.
-
-        Args:
-            df: The pandas dataframe to write.
-        """
-        filepath = os.path.join(self.artifact.uri, self.DATA_FILENAME)
-        df.to_json(filepath)
 
 
 @step
-def number_returner(
-    config: StepConfig,
-) -> Output(number=int, non_number=int):
-    return config.basic_param_1 + int(config.basic_param_2), "test"
+def importer() -> pd.DataFrame:
+    return pd.DataFrame({"X_train": [1, 2, 3], "y_train": [0, 0, 0]})
 
 
 @step
-def import_dataframe_csv(sum: int) -> pd.DataFrame:
-    return pd.DataFrame({"sum": [sum]})
-
-
-@step
-def import_dataframe_json(sum: int) -> pd.DataFrame:
-    return pd.DataFrame({"sum": [sum]})
-
-
-@step
-def tf_dataset_step() -> tf.data.Dataset:
-    return tf.data.Dataset.from_tensor_slices([8, 3, 0, 8, 2, 1])
-
-
-@step
-def last_step_1(df: pd.DataFrame, dataset: tf.data.Dataset) -> pd.DataFrame:
+def preprocesser(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
 @step
-def last_step_2(df: pd.DataFrame) -> pd.DataFrame:
-    return df
+def trainer(df: pd.DataFrame) -> int:
+    return 2
 
 
-@pipeline(enable_cache=False)
-def my_pipeline(
-    step_1,
-    step_2_1,
-    step_2_2,
-    step_3_1,
-    step_3_2,
-    tf_dataset,
-):
-    number, non_number = step_1()
-    df_csv = step_2_1(sum=number)
-    df_json = step_2_2(sum=number)
+@step
+def evaluator(df: pd.DataFrame, model: int) -> int:
+    return 2
 
-    dataset = tf_dataset()
-    step_3_1(df=df_csv, dataset=dataset)
-    step_3_2(df=df_json)
+
+@step
+def deployer(model: int, evaluation_results: int) -> bool:
+    return True
+
+
+@pipeline
+def my_pipeline(importer, preprocesser, trainer, evaluator, deployer):
+    df = importer()
+    preprocessed_df = preprocesser(df=df)
+    model = trainer(df=preprocessed_df)
+    evaluation_results = evaluator(df=df, model=model)
+    deployer(model=model, evaluation_results=evaluation_results)
 
 
 # Pipeline
-split_pipeline = my_pipeline(
-    step_1=number_returner(config=StepConfig(basic_param_2="2")),
-    step_2_1=import_dataframe_csv(),
-    step_2_2=import_dataframe_json(),
-    step_3_1=last_step_1(),
-    step_3_2=last_step_2(),
-    tf_dataset=tf_dataset_step(),
+lineage_pipeline = my_pipeline(
+    importer=importer(),
+    preprocesser=preprocesser(),
+    trainer=trainer(),
+    evaluator=evaluator(),
+    deployer=deployer(),
 )
 
-# needed for airflow
-DAG = split_pipeline.run()
+lineage_pipeline.run()
+lineage_pipeline.run()
+lineage_pipeline.run()
+lineage_pipeline.run()
+
+pipeline = Repository().get_pipelines()[-1]
+
+# for run in pipeline.runs:
+#     try:
+#         deployer_step = run.get_step(name="deployer")
+#         trainer_step = run.get_step(name="trainer")
+#         deployed_model_artifact = deployer_step.inputs["model"]
+#         trained_model_artifact = trainer_step.output
+#
+#         # lets do the lineage
+#         print(
+#             f"trained_model_artifact was produced by: "
+#             f"{trained_model_artifact.producer_step.id} and is_cached: "
+#             f"{trained_model_artifact.is_cached} step cached: "
+#             f"{trainer_step.status}"
+#         )
+#     except Exception as e:
+#         if "No step found for name `deployer`" in str(e):
+#             pass
+#         else:
+#             raise e
+
+
+from zenml.post_execution.visualizers.lineage.pipeline_lineage_visualizer import PipelineLineageVisualizer
+
+PipelineLineageVisualizer().visualize(pipeline)
