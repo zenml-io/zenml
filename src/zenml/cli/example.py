@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-
 import os
 import shutil
 from pathlib import Path
@@ -108,7 +107,11 @@ class ExamplesRepo:
         )
 
     def clone(self) -> None:
-        """Clones repo to cloning_path"""
+        """Clones repo to cloning_path.
+
+        If you break off the operation with a `KeyBoardInterrupt` before the
+        cloning is completed, this method will delete whatever was partially
+        downloaded from your system."""
         self.cloning_path.mkdir(parents=True, exist_ok=False)
         try:
             self.repo = Repo.clone_from(
