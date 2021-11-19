@@ -14,41 +14,17 @@
 
 from datetime import datetime, timedelta
 
-import click
-import pytest
-from click.testing import CliRunner
 from hypothesis import given
-from hypothesis.strategies import datetimes, text
+from hypothesis.strategies import datetimes
 from hypothesis.strategies._internal.datetime import timedeltas
 
-from zenml.cli.utils import (
-    format_date,
-    format_timedelta,
-    parse_unknown_options,
-    title,
-)
+from zenml.cli.utils import format_date, format_timedelta, parse_unknown_options
 
 SAMPLE_CUSTOM_ARGUMENTS = [
     '--custom_argument="value"',
     '--food="chicken biryani"',
     '--best_cat="aria"',
 ]
-
-
-@pytest.mark.xfail()
-@given(sample_text=text(min_size=1))
-def test_title_formats_a_string_properly(sample_text: str) -> None:
-    """Check that title function capitalizes text and adds newline"""
-
-    @click.command()
-    @click.argument("text")
-    def title_trial(text: str) -> None:
-        """wrapper function to run title"""
-        title(text)
-
-    runner = CliRunner()
-    result = runner.invoke(title_trial, [sample_text])
-    assert result.output == sample_text.upper() + "\n"
 
 
 @given(sample_datetime=datetimes(allow_imaginary=False))
