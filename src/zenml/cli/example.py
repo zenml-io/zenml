@@ -328,7 +328,8 @@ def pull(
         declare(f"Example pulled in directory: {example_destination_dir}")
 
     declare("")
+    declare("All examples are pulled and ready for use.")
     declare(
         "Please read the README.md file in the respective example "
-        "directory to find out more about the example"
+        "directory to find out more about the example."
     )
