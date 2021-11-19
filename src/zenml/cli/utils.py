@@ -13,13 +13,14 @@
 #  permissions and limitations under the License.
 import datetime
 from datetime import timedelta
-from typing import Any, Dict, List, Mapping
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping
 
 import click
 from dateutil import tz
 from tabulate import tabulate
 
-from zenml.core.base_component import BaseComponent
+if TYPE_CHECKING:
+    from zenml.core.base_component import BaseComponent
 
 
 def title(text: str) -> None:
@@ -98,7 +99,7 @@ def pretty_print(obj: Any) -> None:
     click.echo(str(obj))
 
 
-def echo_component_list(component_list: Mapping[str, BaseComponent]) -> None:
+def echo_component_list(component_list: Mapping[str, "BaseComponent"]) -> None:
     """Echoes a list of components in a pretty style."""
     list_of_dicts = []
     for key, c in component_list.items():
