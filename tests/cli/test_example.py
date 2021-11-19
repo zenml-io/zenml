@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import tempfile
 from datetime import datetime
 from typing import List
 
@@ -45,10 +46,11 @@ class MockRepo:
 
 
 @pytest.fixture(scope="session")
-def cloned_repo(tmp_path) -> ExamplesRepo:
+def cloned_repo() -> ExamplesRepo:
     """Returns a temporary cloned repository"""
+    temporary_dir = tempfile.mkdtemp()
     examples_repo_dir = GitExamplesHandler().examples_repo.examples_dir
-    path_utils.copy_dir(examples_repo_dir, tmp_path)
+    path_utils.copy_dir(examples_repo_dir, temporary_dir)
     return GitExamplesHandler().examples_repo
 
 
@@ -66,9 +68,8 @@ def test_check_if_latest_release_works(monkeypatch):
     assert examples_repo.latest_release == "0.5.2"
 
 
-# def test_pull(monkeypatch, mocker, cloned_repo_path) -> None:
-#     """Check what happens when (valid) desired version for a force redownload
-#     is higher than the latest version stored in the global config"""
+# def test_pull(monkeypatch, mocker, cloned_repo) -> None:
+#     """"""
 #     git_examples_handler = GitExamplesHandler()
 #     mock_repo = ExamplesRepo(cloning_path="")
 #     mocker.patch.object(mock_repo.latest_release, return_value="0.5.2")
@@ -76,7 +77,7 @@ def test_check_if_latest_release_works(monkeypatch):
 #     mocker.patch.object(mock_repo.clone, return_value=None)
 #     mocker.patch.object(mock_repo.delete, return_value=None)
 #     mocker.patch.object(mock_repo.checkout, return_value=None)
-#     monkeypatch.setattr(git_examples_handler, "examples_repo", mock_repo)
+#     monkeypatch.setattr(git_examples_handler, "examples_repo", cloned_repo)
 
 
 # make a fixture that gives us the path to the repository that is cloned
@@ -84,17 +85,21 @@ def test_check_if_latest_release_works(monkeypatch):
 # monkey patch the cloning_path + the cloning + is_cloned
 
 
+# # @pytest.mark.xfail
 # @pytest.mark.parametrize("example", ZERO_FIVE_ZERO_RELEASE_EXAMPLES)
 # def test_list_returns_three_examples_for_0_5_release(
-#     example: str, monkey_patch_clone_repo
+#     example: str, monkeypatch, cloned_repo
 # ) -> None:
 #     """Check the examples returned from zenml example list"""
-#     runner = CliRunner()
-#     with runner.isolated_filesystem():
-#         runner.invoke(mock_pull, ["-f", "-v", "0.5.0"])
-#         result = runner.invoke(list)
-#         assert result.exit_code == 0
-#         assert example in result.output
+#     git_examples_handler = GitExamplesHandler()
+#     mock_repo = cloned_repo
+#     monkeypatch.setattr(mock_repo, "latest_release", "0.5.0")
+#     monkeypatch.setattr(mock_repo, "is_cloned", True)
+#     monkeypatch.setattr(mock_repo, "clone", None)
+#     monkeypatch.setattr(mock_repo, "delete", None)
+#     monkeypatch.setattr(mock_repo, "checkout", None)
+#     monkeypatch.setattr(git_examples_handler, "examples_repo", cloned_repo)
+#     assert example in git_examples_handler.examples
 
 
 # @pytest.mark.parametrize("example", ZERO_FIVE_ZERO_RELEASE_EXAMPLES)
