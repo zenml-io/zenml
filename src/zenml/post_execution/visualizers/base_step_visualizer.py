@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 from abc import abstractmethod
+from typing import Any
 
 from zenml.logger import get_logger
 from zenml.post_execution.step import StepView
@@ -25,5 +26,5 @@ class BaseStepVisualizer(BaseVisualizer):
     """The base implementation of a ZenML Step Visualizer."""
 
     @abstractmethod
-    def visualize(self, step: StepView, *args, **kwargs) -> None:
+    def visualize(self, object: StepView, *args: Any, **kwargs: Any) -> Any:
         """Method to visualize steps."""

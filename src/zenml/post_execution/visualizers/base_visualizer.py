@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 from abc import abstractmethod
+from typing import Any
 
 from zenml.logger import get_logger
 
@@ -23,5 +24,5 @@ class BaseVisualizer:
     """Base class for all ZenML Visualizers."""
 
     @abstractmethod
-    def visualize(self, *args, **kwargs) -> None:
+    def visualize(self, object: Any, *args: Any, **kwargs: Any) -> None:
         """Method to visualize objects."""

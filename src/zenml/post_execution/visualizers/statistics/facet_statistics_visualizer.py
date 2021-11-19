@@ -18,7 +18,7 @@ import sys
 import tempfile
 import webbrowser
 from abc import abstractmethod
-from typing import Dict, List, Text
+from typing import Any, Dict, List, Text
 
 import pandas as pd
 from facets_overview.generic_feature_statistics_generator import (
@@ -41,16 +41,16 @@ class FacetStatisticsVisualizer(BaseStepVisualizer):
 
     @abstractmethod
     def visualize(
-        self, step: StepView, magic: bool = False, *args, **kwargs
+        self, object: StepView, magic: bool = False, *args: Any, **kwargs: Any
     ) -> None:
         """Method to visualize components
 
         Args:
-            step: StepView fetched from run.get_step().
+            object: StepView fetched from run.get_step().
             magic: Whether to render in a Jupyter notebook or not.
         """
         datasets = []
-        for output_name, artifact_view in step.outputs.items():
+        for output_name, artifact_view in object.outputs.items():
             df = artifact_view.read()
             if type(df) is not pd.DataFrame:
                 logger.warning(

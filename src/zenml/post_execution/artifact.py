@@ -63,7 +63,6 @@ class ArtifactView:
         self._uri = uri
         self._materializer = materializer
         self._data_type = data_type
-        self._producer_step = None
         self._metadata_store = metadata_store
         self._parent_step_id = parent_step_id
 
@@ -93,10 +92,7 @@ class ArtifactView:
         """Returns the original StepView that produced the artifact."""
         # TODO [LOW]: Replace with artifact.id instead of passing self if
         #  required.
-        self._producer_step = (
-            self._metadata_store.get_producer_step_from_artifact(self)
-        )
-        return self._producer_step
+        return self._metadata_store.get_producer_step_from_artifact(self)
 
     @property
     def is_cached(self) -> bool:

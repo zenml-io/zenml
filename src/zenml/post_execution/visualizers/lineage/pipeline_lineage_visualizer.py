@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 from abc import abstractmethod
+from typing import Any
 
 from zenml.logger import get_logger
 from zenml.post_execution.pipeline import PipelineView
@@ -32,7 +33,9 @@ class PipelineLineageVisualizer(BasePipelineVisualizer):
     """Visualize the lineage of runs in a pipeline."""
 
     @abstractmethod
-    def visualize(self, pipeline: PipelineView, *args, **kwargs) -> None:
+    def visualize(
+        self, object: PipelineView, *args: Any, **kwargs: Any
+    ) -> None:
         """Creates a pipeline lineage diagram using plotly.
 
         Args:

@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 from abc import abstractmethod
+from typing import Any
 
 from zenml.logger import get_logger
 from zenml.post_execution.pipeline import PipelineView
@@ -25,5 +26,5 @@ class BasePipelineVisualizer(BaseVisualizer):
     """The base implementation of a ZenML Pipeline Visualizer."""
 
     @abstractmethod
-    def visualize(self, pipeline: PipelineView, *args, **kwargs) -> None:
+    def visualize(self, object: PipelineView, *args: Any, **kwargs: Any) -> Any:
         """Method to visualize pipelines."""
