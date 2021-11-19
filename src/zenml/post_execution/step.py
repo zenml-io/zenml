@@ -54,6 +54,11 @@ class StepView:
         self._outputs: Dict[str, ArtifactView] = {}
 
     @property
+    def id(self) -> int:
+        """Returns the step id."""
+        return self._id
+
+    @property
     def name(self) -> str:
         """Returns the step name.
 

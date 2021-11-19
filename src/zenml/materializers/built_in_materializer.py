@@ -33,6 +33,7 @@ class BuiltInMaterializer(BaseMaterializer):
         float,
         list,
         tuple,
+        bool,
     ]
 
     def handle_input(self, data_type: Type[Any]) -> Any:

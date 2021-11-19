@@ -182,6 +182,8 @@ module = [
     "pytorch_lightning.*",
     "sklearn.*",
     "numpy.*",
+    "facets_overview.*",
+    "IPython.core.*"
 ]
 ignore_missing_imports = true
 

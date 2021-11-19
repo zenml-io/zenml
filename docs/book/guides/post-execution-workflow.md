@@ -65,30 +65,36 @@ output = step.output
 output.read()  
 ```
 
-## Visuals
-
 ### Materializing outputs (or inputs)
 
-Once an output artifact is acquired from history, one can visualize it with any chosen `Materializer`.
+Once an output artifact is acquired from history, one can visualize it with any chosen `Visualizer`.
 
 ```python
-df = output.read(materializer=PandasMaterializer)
+df = output.read(materializer_class=PandasMaterializer)
 df.head()
 ```
 
-### Seeing statistics and schema
-
-```python
-stats = output.read(materializer=StatisticsMaterializer)
-stats  # visualize stats
-
-schema = output.read(materializer=SchemaMaterializer)
-schema # visualize schema
-```
 
 ### Retrieving Model
 
 ```python
-model = output.read(materializer=KerasModelMaterializer)
-model  # visualize model
+model = output.read(materializer_class=KerasModelMaterializer)
+model  # read keras.Model
 ```
+
+## Visuals
+
+### Seeing statistics
+
+```python
+from zenml.post_execution.visualizers.statistics.facet_statistics_visualizer import (
+    FacetStatisticsVisualizer,
+)
+
+FacetStatisticsVisualizer().visualize(output)
+```
+
+It produces the following visualization:
+
+![Statistics for boston housing dataset](../.gitbook/assets/statistics_boston_housing.png)
+

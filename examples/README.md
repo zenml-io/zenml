@@ -6,6 +6,7 @@ Here you can find a list of practical examples on how you can use ZenML with bri
 - **low_level_guide**: All the code for the low-level API guide found in the [docs](https://docs.zenml.io).
 - **not_so_quickstart**: Shows of the modularity of the pipelines with hot-swapping of Tensorflow, PyTorch, and scikit-learn trainers.
 - **quickstart**: The official quickstart tutorial.
+- **visualizers**: A set of examples to show-case standard `Visualizers` for ZenML.
 
 For each of these examples, ZenML provides a handly CLI command to pull them directly into your local environment. First install `zenml`:
 

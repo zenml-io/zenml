@@ -37,9 +37,9 @@
 ## What is ZenML?
 
 
-Before: Sam struggles to productionalize ML |  After: Sam finds Zen in her MLOps with ZenML.
+Before: Sam struggles to productionalize ML |  After: Sam finds Zen in her MLOps with ZenML
 :-------------------------:|:-------------------------:
-![](docs/readme/sam_frustrated.jpg)  |  ![](docs/readme/sam_zen_mode.jpg)
+![Sam is frustrated](docs/readme/sam_frustrated.jpg)  |  ![Sam is happy](docs/readme/sam_zen_mode.jpg)
 
 
 
@@ -78,24 +78,8 @@ It is created for data science / machine learning teams that are engaged in not 
 - If you are using models as a software service to serve predictions and are consistently improving the model over time.
 - If you are trying to understand patterns using machine learning for any business process.
 
-- In all of the above, there will be team that is engaged with creating, deploying, managing and improving the entire process. You always want the best results, the best models, and the most robust and reliable results. This is where ZenML can help.
-  In terms of user persona, ZenML is created for producers of the models. This role is classically known as 'data scientist' in the industry and can range from research-minded individuals to more engineering-driven people. The goal of ZenML is to enable these practitioners to own their models until deployment and beyond.
-
-## Release 0.5.0 and what lies ahead
-
-The current release is bare bones (as it is a complete rewrite).
-We are missing some basic features which used to be part of ZenML 0.3.8 (the previous release):
-
-- Standard interfaces for `TrainingPipeline`.
-- Individual step interfaces like `PreprocessorStep`, `TrainerStep`, `DeployerStep` etc. need to be rewritten from within the new paradigm. They should
-  be included in the non-RC version of this release.
-- A proper production setup with an orchestrator like Airflow.
-- A post-execution workflow to analyze and inspect pipeline runs.
-- The concept of `Backends` will evolve into a simple mechanism of transitioning individual steps into different runners.
-- Support for `KubernetesOrchestrator`, `KubeflowOrchestrator`, `GCPOrchestrator` and `AWSOrchestrator` are also planned.
-- Dependency management including Docker support is planned.
-
-However, bare with us: Adding those features back in should be relatively faster as we now have a solid foundation to build on. Look out for the next email!
+In all of the above, there will be team that is engaged with creating, deploying, managing and improving the entire process. You always want the best results, the best models, and the most robust and reliable results. This is where ZenML can help.
+In terms of user persona, ZenML is created for producers of the models. This role is classically known as 'data scientist' in the industry and can range from research-minded individuals to more engineering-driven people. The goal of ZenML is to enable these practitioners to own their models until deployment and beyond.
 
 ## Roadmap and Community
 
@@ -106,30 +90,6 @@ ZenML is managed by a [core team](https://zenml.io/team) of developers that are 
 - Vote on your most wanted feature on the [Discussion board](https://zenml.io/discussion).
 - Create a [Feature Request](https://github.com/zenml-io/zenml/issues/new/choose) in the [GitHub board](https://github.com/zenml-io/zenml/issues).
 - Start a thread in the [Slack channel](https://zenml.io/slack-invite).
-
-## Contributing
-
-We would love to receive your contributions! Check our [Contributing Guide](CONTRIBUTING.md) for more details on how best to contribute.
-
-<br>
-
-![Repobeats analytics image](https://repobeats.axiom.co/api/embed/635c57b743efe649cadceba6a2e6a956663f96dd.svg "Repobeats analytics image")
-
-## Copyright
-
-ZenML is distributed under the terms of the Apache License Version 2.0. A complete version of the license is available in the [LICENSE.md](LICENSE.md) in this repository.
-
-Any contribution made to this project will be licensed under the Apache License Version 2.0.
-
-## Credit
-
-ZenML is built on the shoulders of giants: we leverage, and would like to give credit to, existing open-source libraries like [TFX](https://github.com/tensorflow/tfx/). The goal of our framework is neither to replace these libraries, nor to diminish their usage. ZenML is simply an opinionated, higher-level interface with the focus being purely on easy-of-use and coherent intuitive design.
-You can read more about why we actually started building ZenML at our [blog](https://blog.zenml.io/why-zenml/).
-
-## Legacy [Updated Soon Q4 2021]
-
-From this point onwards, the README is intended to give a glimpse as to what lies ahead. We have redesigned our [public roadmap](https://zenml.io/roadmap)
-to showcase better the timeline in which these features will be complete.
 
 ## Quickstart
 
@@ -230,60 +190,74 @@ pipeline.run()
 ```
 
 ## Leverage powerful integrations
-
 Once code is organized into a ZenML pipeline, you can supercharge your ML development with powerful integrations and
 on multiple [MLOps stacks](https://docs.zenml.io/core-concepts).
+
+### View statistics
+
+```python
+# See statistics of train and eval [COMING SOON]
+from zenml.core.repo import Repository
+from zenml.post_execution.visualizers.statistics.facet_statistics_visualizer import (
+    FacetStatisticsVisualizer,
+)
+
+repo = Repository()
+pipe = repo.get_pipelines()[-1]
+importer_outputs = pipe.runs[-1].get_step(name="importer")
+FacetStatisticsVisualizer().visualize(importer_outputs)
+```
+
+![Boston Housing Dataset Statistics Visualization](docs/book/.gitbook/assets/statistics_boston_housing.png)
+
+### Use Caching across (Pipelines As) Experiments
+
+ZenML makes sure for every pipeline you can trust that:
+
+✅ Code is versioned   
+✅ Data is versioned  
+✅ Models are versioned  
+✅ Configurations are versioned
+
+You can utilize caching to help iterate quickly through ML experiments.
+
 
 ### Work locally but switch seamlessly to the cloud
 
 Switching from local experiments to cloud-based pipelines doesn't need to be complex.
 
 ```
-pipeline.run('airflow_gcp_stack')
+[COMING SOON]
 ```
 
-### Versioning galore: Use caching across experiments
+![Development and production stack](docs/book/.gitbook/assets/stacks.png)
 
-ZenML makes sure for every pipeline you can trust that:
 
-✅ Code is versioned  
-✅ Data is versioned  
-✅ Models are versioned  
-✅ Configurations are versioned
 
-Use caching to help iterate quickly through ML experiments.
 
 ### Automatically detect schema
 
 ```python
-# See the schema of your data [COMING SOON]
-pipeline.view_schema()
+[COMING SOON]
 ```
 
 ![Automatic schema dection](docs/schema.png)
 
-### View statistics
-
-```python
-# See statistics of train and eval [COMING SOON]
-pipeline.view_statistics()
-```
-
-<img src="docs/statistics.png" alt="ZenML statistics visualization" />
 
 ### Evaluate the model using built-in evaluators
 
 ```python
-# Creates a notebook for evaluation [COMING SOON]
-training_pipeline.evaluate()
+[COMING SOON]
 ```
 
-<img src="docs/tensorboard_inline.png" alt="Tensorboard built-in"   />
+
+![ZenML built-in pipeline comparison](docs/tensorboard_inline.png)
+
 
 ### Compare training pipelines
 
 ```python
-# COMING SOON
+[COMING SOON]
 ```
 
 ![ZenML built-in pipeline comparison](docs/compare.png)
@@ -293,17 +267,53 @@ training_pipeline.evaluate()
 Leverage distributed compute powered by [Apache Beam](https://beam.apache.org/):
 
 ```python
-# COMING SOON
+[COMING SOON]
 ```
 
-<img src="docs/zenml_distribute.png" alt="ZenML distributed processing"   />
+![ZenML distributed processing](docs/zenml_distribute.png)
+
 
 ### Deploy models automatically
 
 Automatically deploy each model with powerful Deployment integrations like [Ray](https://docs.ray.io/en/latest/serve/index.html).
 
 ```python
-# COMING SOON
+[COMING SOON]
 ```
 
 The best part is that ZenML is extensible easily, and can be molded to your use-case. You can create your own custom logic or create a PR and contribute to the ZenML community, so that everyone can benefit.
+
+## Release 0.5.0 and what lies ahead
+
+The current release is bare bones (as it is a complete rewrite).
+We are missing some basic features which used to be part of ZenML 0.3.8 (the previous release):
+
+- Standard interfaces for `TrainingPipeline`.
+- Individual step interfaces like `PreprocessorStep`, `TrainerStep`, `DeployerStep` etc. need to be rewritten from within the new paradigm. They should
+  be included in the non-RC version of this release.
+- A proper production setup with an orchestrator like Airflow.
+- A post-execution workflow to analyze and inspect pipeline runs.
+- The concept of `Backends` will evolve into a simple mechanism of transitioning individual steps into different runners.
+- Support for `KubernetesOrchestrator`, `KubeflowOrchestrator`, `GCPOrchestrator` and `AWSOrchestrator` are also planned.
+- Dependency management including Docker support is planned.
+
+However, bare with us: Adding those features back in should be relatively faster as we now have a solid foundation to build on. Look out for the next email!
+
+## Contributing
+
+We would love to receive your contributions! Check our [Contributing Guide](CONTRIBUTING.md) for more details on how best to contribute.
+
+<br>
+
+![Repobeats analytics image](https://repobeats.axiom.co/api/embed/635c57b743efe649cadceba6a2e6a956663f96dd.svg "Repobeats analytics image")
+
+## Copyright
+
+ZenML is distributed under the terms of the Apache License Version 2.0. A complete version of the license is available in the [LICENSE.md](LICENSE.md) in this repository.
+
+Any contribution made to this project will be licensed under the Apache License Version 2.0.
+
+## Credit
+
+ZenML is built on the shoulders of giants: we leverage, and would like to give credit to, existing open-source libraries like [TFX](https://github.com/tensorflow/tfx/). The goal of our framework is neither to replace these libraries, nor to diminish their usage. ZenML is simply an opinionated, higher-level interface with the focus being purely on easy-of-use and coherent intuitive design.
+You can read more about why we actually started building ZenML at our [blog](https://blog.zenml.io/why-zenml/).

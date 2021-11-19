@@ -158,6 +158,10 @@ zenml stack register STACK_NAME \
 
 Backends are the infrastructure and environments on which your steps run. There are different kinds of backends depending on the particular use case. COMING SOON
 
+**Visualizers**
+
+Visualizers contain logic to create visualizations within the ZenML ecosystem.
+
 **Tying Things All Together**
 
 ZenML's core abstractions are either close to or replicate completely the commonly-found abstractions found in the industry for pipeline-style workflows. As a data scientist, it perhaps isn't natural to think of your work from within this 'pipeline' abstraction, but we think you'll see the benefits if you try it out with some examples. Check out our Get Started guide to see an example of what ZenML will add to your current workflow!
