@@ -82,10 +82,10 @@ class FacetStatisticsVisualizer(BaseStepVisualizer):
         )
         html_template = path_utils.read_file_contents_as_string(template)
 
-        h = html_template.replace("protostr", protostr)
-        return h
+        html_ = html_template.replace("protostr", protostr)
+        return html_
 
-    def generate_facet(self, h: str, magic: bool = False) -> None:
+    def generate_facet(self, html_: str, magic: bool = False) -> None:
         """Generate a Facet Overview
 
         Args:
@@ -97,10 +97,10 @@ class FacetStatisticsVisualizer(BaseStepVisualizer):
                 raise EnvironmentError(
                     "The magic functions are only usable in a Jupyter notebook."
                 )
-            display(HTML(h))
+            display(HTML(html_))
         else:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as f:
-                path_utils.write_file_contents_as_string(f.name, h)
+                path_utils.write_file_contents_as_string(f.name, html_)
                 url = f"file:///{f.name}"
                 logger.info("Opening %s in a new browser.." % f.name)
                 webbrowser.open(url, new=2)

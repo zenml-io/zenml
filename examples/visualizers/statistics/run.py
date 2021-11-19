@@ -38,7 +38,6 @@ FEATURE_COLS = [
     "PTRATIO",
     "B",
     "STAT",
-    # "MEDV",
 ]
 TARGET_COL_NAME = "target"
 
