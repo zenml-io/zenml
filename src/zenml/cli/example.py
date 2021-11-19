@@ -24,7 +24,7 @@ from packaging.version import Version, parse
 
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
-from zenml.cli.utils import confirmation, declare, error
+from zenml.cli.utils import confirmation, declare, error, pretty_print, title
 from zenml.constants import APP_NAME, GIT_REPO_URL
 from zenml.logger import get_logger
 from zenml.utils import path_utils
@@ -242,7 +242,7 @@ def clean(git_examples_handler: GitExamplesHandler) -> None:
     elif not path_utils.file_exists(
         examples_directory
     ) and not path_utils.is_dir(examples_directory):
-        logger.warning(
+        logger.error(
             f"Unable to delete the ZenML examples directory - {examples_directory} - "
             "as it was not found in your current working directory."
         )
@@ -266,7 +266,8 @@ def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
             f"\nTo list all available examples, type: `zenml example list`"
         )
     else:
-        click.echo(example_obj.readme_content)
+        title(example_obj.name)
+        pretty_print(example_obj.readme_content)
 
 
 @example.command(
