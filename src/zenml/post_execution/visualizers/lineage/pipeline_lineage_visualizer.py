@@ -14,15 +14,16 @@
 
 from abc import abstractmethod
 
-import pandas as pd
-import plotly.express as px
-from plotly.graph_objs import Figure
-
 from zenml.logger import get_logger
 from zenml.post_execution.pipeline import PipelineView
 from zenml.post_execution.visualizers.base_pipeline_visualizer import (
     BasePipelineVisualizer,
 )
+
+# import pandas as pd
+# import plotly.express as px
+# from plotly.graph_objs import Figure
+
 
 logger = get_logger(__name__)
 
@@ -31,7 +32,7 @@ class PipelineLineageVisualizer(BasePipelineVisualizer):
     """Visualize the lineage of runs in a pipeline."""
 
     @abstractmethod
-    def visualize(self, pipeline: PipelineView, *args, **kwargs) -> Figure:
+    def visualize(self, pipeline: PipelineView, *args, **kwargs) -> None:
         """Creates a pipeline lineage diagram using plotly.
 
         Args:
@@ -41,6 +42,10 @@ class PipelineLineageVisualizer(BasePipelineVisualizer):
 
         Returns:
 
+        """
+        raise NotImplementedError
+
+        # WIP:
         """
         category_df = {}
         dimensions = ["run"]
@@ -69,3 +74,4 @@ class PipelineLineageVisualizer(BasePipelineVisualizer):
 
         fig.show()
         return fig
+        """

@@ -29,3 +29,4 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
     @abstractmethod
     def visualize(self, pipeline: PipelineView, *args, **kwargs) -> None:
         """Method to visualize pipelines"""
+        raise NotImplementedError
