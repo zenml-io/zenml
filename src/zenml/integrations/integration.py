@@ -23,6 +23,9 @@ logger = get_logger(__name__)
 
 
 class IntegrationMeta(type):
+    """Metaclass responsible for registering different Integration
+    subclasses"""
+
     def __new__(
         mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
     ) -> "IntegrationMeta":
@@ -33,12 +36,15 @@ class IntegrationMeta(type):
 
 
 class Integration(metaclass=IntegrationMeta):
+    """Base class for integration in ZenML"""
+
     NAME = "base_integration"
 
     REQUIREMENTS = []
 
     @classmethod
     def check_installation(cls):
+        """Method to check whether the required packages are installed"""
         try:
             pkg_resources.require(cls.REQUIREMENTS)
         except pkg_resources.DistributionNotFound:
@@ -48,4 +54,4 @@ class Integration(metaclass=IntegrationMeta):
 
     @staticmethod
     def activate():
-        """ """
+        """Abstract method to activate the integration"""

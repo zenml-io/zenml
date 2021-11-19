@@ -25,10 +25,13 @@ if TYPE_CHECKING:
 
 
 class IntegrationRegistry(object):
+    """Registry to keep track of ZenML Integrations"""
+
     _integrations: ClassVar[Dict[Type[Any], Type["Integration"]]] = {}
 
     @property
     def integrations(self):
+        """Method to get integrations dictionary"""
         self.activate()
         return self._integrations
 
@@ -36,10 +39,13 @@ class IntegrationRegistry(object):
     def register_integration(
         cls, key: Type[Any], type_: Type["Integration"]
     ) -> None:
+        """Method to register an integration with a given name"""
         cls._integrations[key] = type_
 
     @classmethod
     def activate(cls):
+        """Method to activate the integrations with are registered in the
+        registry"""
         for name in list(cls._integrations.keys()):
             try:
                 integration = cls._integrations.get(name)
