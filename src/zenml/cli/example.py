@@ -46,10 +46,11 @@ class Example:
     @property
     def readme_content(self) -> None:
         """Returns the readme content associated with a particular example."""
+        readme_file = os.path.join(self.path, "README.md")
         try:
-            with open(os.path.join(self.path, "README.md")) as readme:
+            with open(readme_file) as readme:
                 readme_content = readme.read()
-            click.echo(readme_content)
+            return readme_content
         except FileNotFoundError:
             if path_utils.file_exists(self.path) and path_utils.is_dir(
                 self.path
@@ -218,22 +219,34 @@ def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
     """Find out more about an example."""
     # TODO [ENG-148]: fix markdown formatting so that it looks nicer (not a
     #  pure .md dump)
-    example_dir = os.path.join(
-        git_examples_handler.get_examples_dir(), example_name
-    )
-    try:
-        readme_content = git_examples_handler.get_example_readme(example_dir)
-        click.echo(readme_content)
-    except FileNotFoundError:
-        if path_utils.file_exists(example_dir) and path_utils.is_dir(
-            example_dir
-        ):
-            error(f"No README.md file found in {example_dir}")
-        else:
-            error(
-                f"Example {example_name} is not one of the available options."
-                f"\nTo list all available examples, type: `zenml example list`"
-            )
+    example_obj = None
+    for example in git_examples_handler.examples:
+        if example.name == example_name:
+            example_obj = example
+
+    if example_obj is None:
+        error(
+            f"Example {example_name} is not one of the available options."
+            f"\nTo list all available examples, type: `zenml example list`"
+        )
+    else:
+        click.echo(example_obj.readme_content)
+    # example_dir = os.path.join(
+    #     git_examples_handler.get_examples_dir(), example_name
+    # )
+    # try:
+    #     readme_content = git_examples_handler.get_example_readme(example_dir)
+    #     click.echo(readme_content)
+    # except FileNotFoundError:
+    #     if path_utils.file_exists(example_dir) and path_utils.is_dir(
+    #         example_dir
+    #     ):
+    #         error(f"No README.md file found in {example_dir}")
+    #     else:
+    #         error(
+    #             f"Example {example_name} is not one of the available options."
+    #             f"\nTo list all available examples, type: `zenml example list`"
+    #         )
 
 
 @example.command(
