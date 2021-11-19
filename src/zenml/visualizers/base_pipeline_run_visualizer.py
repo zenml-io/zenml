@@ -12,24 +12,21 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from abc import abstractmethod
+from typing import Any
+
 from zenml.logger import get_logger
+from zenml.post_execution.pipeline_run import PipelineRunView
+from zenml.visualizers.base_visualizer import BaseVisualizer
 
 logger = get_logger(__name__)
 
 
-try:
-    from zenml.post_execution.visualizers.statistics.facet_statistics_visualizer import (  # noqa
-        FacetStatisticsVisualizer,
-    )
-except ImportError:
-    logger.debug("`facets_overview` not installed.")
+class BasePipelineRunVisualizer(BaseVisualizer):
+    """The base implementation of a ZenML Pipeline Run Visualizer."""
 
-try:
-    from zenml.post_execution.visualizers.lineage.pipeline_lineage_visualizer import (  # noqa
-        PipelineLineageVisualizer,
-    )
-    from zenml.post_execution.visualizers.lineage.pipeline_run_lineage_visualizer import (  # noqa
-        PipelineRunLineageVisualizer,
-    )
-except ImportError:
-    logger.debug("`plotly` not installed.")
+    @abstractmethod
+    def visualize(
+        self, object: PipelineRunView, *args: Any, **kwargs: Any
+    ) -> None:
+        """Method to visualize pipeline runs."""

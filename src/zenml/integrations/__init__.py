@@ -45,3 +45,11 @@ integration_registry.register_integration(constants.PYTORCH_L, pytorch_l)
 # Airflow
 airflow = LazyLoader("zenml.integrations.airflow")
 integration_registry.register_integration(constants.AIRFLOW, airflow)
+
+# Facets
+facets = LazyLoader("zenml.integrations.facets")
+integration_registry.register_integration(constants.FACETS, facets)
+
+# Plotly
+plotly = LazyLoader("zenml.integrations.plotly")
+integration_registry.register_integration(constants.PLOTLY, plotly)

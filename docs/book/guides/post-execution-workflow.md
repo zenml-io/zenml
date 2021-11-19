@@ -87,7 +87,7 @@ model  # read keras.Model
 ### Seeing statistics
 
 ```python
-from zenml.post_execution.visualizers.statistics.facet_statistics_visualizer import (
+from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
     FacetStatisticsVisualizer,
 )
 

@@ -11,13 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from zenml.integrations.constants import PLOTLY
+from zenml.integrations.integration import Integration
 
-AIRFLOW = "airflow"
-BEAM = "beam"
-GCP = "gcp"
-PYTORCH = "pytorch"
-PYTORCH_L = "pytorch_lightning"
-SKLEARN = "sklearn"
-TENSORFLOW = "tensorflow"
-PLOTLY = "plotly"
-FACETS = "facets"
+
+class PlotlyIntegration(Integration):
+    """Plotly integration registration."""
+
+    NAME = PLOTLY
+    REQUIREMENTS = ["plotly >= 5.4.0"]
+
+
+PlotlyIntegration.check_installation()

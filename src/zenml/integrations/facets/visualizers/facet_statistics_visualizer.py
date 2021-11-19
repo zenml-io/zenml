@@ -29,9 +29,7 @@ from IPython.core.display import HTML, display
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.post_execution.step import StepView
-from zenml.post_execution.visualizers.base_step_visualizer import (
-    BaseStepVisualizer,
-)
+from zenml.visualizers.base_step_visualizer import BaseStepVisualizer
 
 logger = get_logger(__name__)
 
@@ -78,7 +76,8 @@ class FacetStatisticsVisualizer(BaseStepVisualizer):
         protostr = base64.b64encode(proto.SerializeToString()).decode("utf-8")
 
         template = os.path.join(
-            os.path.abspath(os.path.dirname(__file__)), "../stats.html"
+            os.path.abspath(os.path.dirname(__file__)),
+            "../../../visualizers/stats.html",
         )
         html_template = fileio.read_file_contents_as_string(template)
 

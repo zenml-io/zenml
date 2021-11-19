@@ -11,22 +11,3 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
-from abc import abstractmethod
-from typing import Any
-
-from zenml.logger import get_logger
-from zenml.post_execution.pipeline_run import PipelineRunView
-from zenml.post_execution.visualizers.base_visualizer import BaseVisualizer
-
-logger = get_logger(__name__)
-
-
-class BasePipelineRunVisualizer(BaseVisualizer):
-    """The base implementation of a ZenML Pipeline Run Visualizer."""
-
-    @abstractmethod
-    def visualize(
-        self, object: PipelineRunView, *args: Any, **kwargs: Any
-    ) -> None:
-        """Method to visualize pipeline runs."""

@@ -17,9 +17,7 @@ from typing import Any
 
 from zenml.logger import get_logger
 from zenml.post_execution.pipeline import PipelineView
-from zenml.post_execution.visualizers.base_pipeline_visualizer import (
-    BasePipelineVisualizer,
-)
+from zenml.visualizers.base_pipeline_visualizer import BasePipelineVisualizer
 
 # import pandas as pd
 # import plotly.express as px

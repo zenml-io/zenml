@@ -12,19 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from abc import abstractmethod
-from typing import Any
-
-from zenml.logger import get_logger
-from zenml.post_execution.pipeline import PipelineView
-from zenml.post_execution.visualizers.base_visualizer import BaseVisualizer
-
-logger = get_logger(__name__)
+from zenml.integrations.constants import FACETS
+from zenml.integrations.integration import Integration
 
 
-class BasePipelineVisualizer(BaseVisualizer):
-    """The base implementation of a ZenML Pipeline Visualizer."""
+class FacetsIntegration(Integration):
+    """[Facet integration](https://pair-code.github.io/facets/) registry."""
 
-    @abstractmethod
-    def visualize(self, object: PipelineView, *args: Any, **kwargs: Any) -> Any:
-        """Method to visualize pipelines."""
+    NAME = FACETS
+    REQUIREMENTS = ["facets-overview >= 1.0.0"]
+
+
+FacetsIntegration.check_installation()

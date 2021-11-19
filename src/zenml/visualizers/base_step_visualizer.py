@@ -12,12 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-AIRFLOW = "airflow"
-BEAM = "beam"
-GCP = "gcp"
-PYTORCH = "pytorch"
-PYTORCH_L = "pytorch_lightning"
-SKLEARN = "sklearn"
-TENSORFLOW = "tensorflow"
-PLOTLY = "plotly"
-FACETS = "facets"
+from abc import abstractmethod
+from typing import Any
+
+from zenml.logger import get_logger
+from zenml.post_execution.step import StepView
+from zenml.visualizers.base_visualizer import BaseVisualizer
+
+logger = get_logger(__name__)
+
+
+class BaseStepVisualizer(BaseVisualizer):
+    """The base implementation of a ZenML Step Visualizer."""
+
+    @abstractmethod
+    def visualize(self, object: StepView, *args: Any, **kwargs: Any) -> Any:
+        """Method to visualize steps."""
