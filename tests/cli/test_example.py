@@ -45,11 +45,11 @@ class MockRepo:
 
 
 @pytest.fixture(scope="session")
-def cloned_repo_path(tmp_path) -> None:
-    """Returns the path of a temporary cloned repository"""
+def cloned_repo(tmp_path) -> ExamplesRepo:
+    """Returns a temporary cloned repository"""
     examples_repo_dir = GitExamplesHandler().examples_repo.examples_dir
     path_utils.copy_dir(examples_repo_dir, tmp_path)
-    return tmp_path
+    return GitExamplesHandler().examples_repo
 
 
 def test_check_if_latest_release_works(monkeypatch):
