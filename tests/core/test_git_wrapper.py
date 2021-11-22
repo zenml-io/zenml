@@ -18,6 +18,7 @@ from git.exc import InvalidGitRepositoryError, NoSuchPathError
 from git.repo.base import Repo
 
 from zenml.core import git_wrapper
+from zenml.io import fileio
 
 
 def test_no_exception_raised_if_repository_is_valid_git_repository(
@@ -28,7 +29,7 @@ def test_no_exception_raised_if_repository_is_valid_git_repository(
     git_instance = git_wrapper.GitWrapper(tmp_path)
     assert git_instance.repo_path == tmp_path
     assert git_instance.repo_path.exists()
-    assert git_instance.repo_path.is_dir()
+    assert fileio.is_dir(str(git_instance.repo_path))
     assert git_instance.git_root_path == str(
         tmp_path / git_wrapper.GIT_FOLDER_NAME
     )

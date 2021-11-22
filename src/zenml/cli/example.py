@@ -26,7 +26,7 @@ from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.constants import APP_NAME, GIT_REPO_URL
-from zenml.utils import path_utils
+from zenml.io import fileio
 
 # TODO [ENG-145]: Add an example-run command to run an example.
 
@@ -164,7 +164,7 @@ class GitExamplesHandler(object):
             os.path.join(click.get_app_dir(APP_NAME), EXAMPLES_GITHUB_REPO)
         )
         if source_path == config_directory_path:
-            path_utils.rm_dir(source_path)
+            fileio.rm_dir(source_path)
         else:
             raise ValueError(
                 "You can only delete the source directory from your ZenML "
@@ -176,7 +176,7 @@ class GitExamplesHandler(object):
         directory."""
         cwd_directory_path = os.path.join(os.getcwd(), EXAMPLES_GITHUB_REPO)
         if os.path.exists(cwd_directory_path):
-            path_utils.rm_dir(str(cwd_directory_path))
+            fileio.rm_dir(str(cwd_directory_path))
 
 
 pass_git_examples_handler = click.make_pass_decorator(
@@ -216,9 +216,7 @@ def info(git_examples_handler: Any, example_name: str) -> None:
         readme_content = git_examples_handler.get_example_readme(example_dir)
         click.echo(readme_content)
     except FileNotFoundError:
-        if path_utils.file_exists(example_dir) and path_utils.is_dir(
-            example_dir
-        ):
+        if fileio.file_exists(example_dir) and fileio.is_dir(example_dir):
             error(f"No README.md file found in {example_dir}")
         else:
             error(
@@ -275,22 +273,22 @@ def pull(
     )
     # Create destination dir.
     dst = os.path.join(os.getcwd(), "zenml_examples")
-    path_utils.create_dir_if_not_exists(dst)
+    fileio.create_dir_if_not_exists(dst)
 
     # Pull specified examples.
     for example in examples:
         dst_dir = os.path.join(dst, example)
         # Check if example has already been pulled before.
-        if path_utils.file_exists(dst_dir):
+        if fileio.file_exists(dst_dir):
             if confirmation(
                 f"Example {example} is already pulled. "
                 f"Do you wish to overwrite the directory?"
             ):
-                path_utils.rm_dir(dst_dir)
+                fileio.rm_dir(dst_dir)
 
         declare(f"Pulling example {example}...")
         src_dir = os.path.join(examples_dir, example)
-        path_utils.copy_dir(src_dir, dst_dir)
+        fileio.copy_dir(src_dir, dst_dir)
 
         declare(f"Example pulled in directory: {dst_dir}")
 

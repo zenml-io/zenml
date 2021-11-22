@@ -198,8 +198,8 @@ on multiple [MLOps stacks](https://docs.zenml.io/core-concepts).
 ```python
 # See statistics of train and eval [COMING SOON]
 from zenml.core.repo import Repository
-from zenml.post_execution.visualizers.statistics.facet_statistics_visualizer import (
-    FacetStatisticsVisualizer,
+from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
+  FacetStatisticsVisualizer,
 )
 
 repo = Repository()

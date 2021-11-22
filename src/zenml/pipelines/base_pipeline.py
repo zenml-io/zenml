@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 import inspect
 from abc import abstractmethod
+from datetime import datetime
 from typing import (
     Any,
     ClassVar,
@@ -35,10 +36,11 @@ from zenml.exceptions import (
     PipelineConfigurationError,
     PipelineInterfaceError,
 )
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.stacks.base_stack import BaseStack
 from zenml.steps.base_step import BaseStep
-from zenml.utils import analytics_utils, path_utils, yaml_utils
+from zenml.utils import analytics_utils, yaml_utils
 
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
@@ -224,6 +226,17 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Args:
             run_name: Optional name for the run.
         """
+        # Activating the built-in integrations through lazy loading
+        from zenml.integrations.registry import integration_registry
+
+        integration_registry.activate()
+
+        if run_name is None:
+            run_name = (
+                f"{self.pipeline_name} + -"
+                f'{datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")}'
+            )
+
         analytics_utils.track_event(
             event=analytics_utils.RUN_PIPELINE,
             metadata={
@@ -238,7 +251,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
 
         # filepath of the file where pipeline.run() was called
-        caller_filepath = path_utils.resolve_relative_path(
+        caller_filepath = fileio.resolve_relative_path(
             inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr] # noqa
         )
 

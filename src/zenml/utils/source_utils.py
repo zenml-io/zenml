@@ -30,13 +30,39 @@ import pathlib
 import site
 import sys
 import types
-from typing import Any, Optional, Type, Union
+from typing import Any, List, Optional, Type, Union
 
 from zenml import __version__
 from zenml.constants import APP_NAME
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+class LazyLoader(types.ModuleType):
+    """Lazily loads modules."""
+
+    def __init__(self, name: str) -> None:
+        """Initializes a lazy loader."""
+        self.module: Optional[types.ModuleType] = None
+        super(LazyLoader, self).__init__(name)
+
+    def load(self) -> types.ModuleType:
+        """Loads a module and returns it."""
+        if self.module is None:
+            self.module = importlib.import_module(self.__name__)
+            self.__dict__.update(self.module.__dict__)
+        return self.module
+
+    def __getattr__(self, item: str) -> Any:
+        """Overrides the __getattr__ method with loading logic."""
+        self.module = self.load()
+        return getattr(self.module, item)
+
+    def __dir__(self) -> List[str]:
+        """Overrides the __dir__ method with loading logic."""
+        self.module = self.load()
+        return dir(self.module)
 
 
 def is_standard_pin(pin: str) -> bool:
@@ -232,6 +258,10 @@ def resolve_class(class_: Type[Any]) -> str:
     # Regular user file inside the repository -> get the full module
     # path relative to the repository
     module_source = get_module_source_from_file_path(file_path)
+
+    # ENG-123 Sanitize for Windows OS
+    module_source = module_source.replace("\\", ".")
+
     return module_source + "." + class_.__name__
 
 

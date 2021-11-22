@@ -17,13 +17,10 @@ from ml_metadata.proto import metadata_store_pb2
 from pydantic import validator
 from tfx.orchestration import metadata
 
-from zenml.core.component_factory import metadata_store_factory
-from zenml.enums import MLMetadataTypes
+from zenml.io import fileio
 from zenml.metadata.base_metadata_store import BaseMetadataStore
-from zenml.utils import path_utils
 
 
-@metadata_store_factory.register(MLMetadataTypes.sqlite)
 class SQLiteMetadataStore(BaseMetadataStore):
     """SQLite backend for ZenML metadata store."""
 
@@ -34,14 +31,14 @@ class SQLiteMetadataStore(BaseMetadataStore):
         super().__init__(**data)
 
         # TODO [ENG-131]: Replace with proper custom validator.
-        if path_utils.is_remote(self.uri):
+        if fileio.is_remote(self.uri):
             raise Exception(
                 f"URI {self.uri} is a non-local path. A sqlite store "
                 f"can only be local paths"
             )
 
         # Resolve URI if relative URI provided
-        # self.uri = path_utils.resolve_relative_path(uri)
+        # self.uri = fileio.resolve_relative_path(uri)
 
     def get_tfx_metadata_config(self) -> metadata_store_pb2.ConnectionConfig:
         """Return tfx metadata config for sqlite metadata store."""
@@ -50,7 +47,7 @@ class SQLiteMetadataStore(BaseMetadataStore):
     @validator("uri")
     def uri_must_be_local(cls, v: str) -> str:
         """Validator to ensure uri is local"""
-        if path_utils.is_remote(v):
+        if fileio.is_remote(v):
             raise ValueError(
                 f"URI {v} is a non-local path. A sqlite store "
                 f"can only be local paths"

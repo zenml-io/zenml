@@ -15,10 +15,10 @@
 from typing import TYPE_CHECKING, Any, List
 
 from zenml.logger import get_logger
-from zenml.post_execution.pipeline_run import PipelineRunView
 
 if TYPE_CHECKING:
     from zenml.metadata.base_metadata_store import BaseMetadataStore
+    from zenml.post_execution.pipeline_run import PipelineRunView
 
 logger = get_logger(__name__)
 
@@ -53,7 +53,7 @@ class PipelineView:
         return self._name
 
     @property
-    def runs(self) -> List[PipelineRunView]:
+    def runs(self) -> List["PipelineRunView"]:
         """Returns all stored runs of this pipeline.
 
         The runs are returned in chronological order, so the latest
@@ -71,7 +71,7 @@ class PipelineView:
         runs = self._metadata_store.get_pipeline_runs(self)
         return list(runs.keys())
 
-    def get_run(self, name: str) -> PipelineRunView:
+    def get_run(self, name: str) -> "PipelineRunView":
         """Returns a run for the given name.
 
         Args:

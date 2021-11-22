@@ -19,8 +19,8 @@ from uuid import UUID, uuid4
 from pydantic import BaseSettings, Field
 
 from zenml.core.utils import generate_customise_sources
+from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.utils import path_utils
 
 logger = get_logger(__name__)
 
@@ -72,15 +72,15 @@ class BaseComponent(BaseSettings):
         self._create_serialization_file_if_not_exists()
         f = self.get_serialization_full_path()
 
-        path_utils.write_file_contents_as_string(
+        fileio.write_file_contents_as_string(
             f, self.json(indent=2, sort_keys=True)
         )
 
     def _create_serialization_file_if_not_exists(self) -> None:
         """Creates the serialization file if it does not exist."""
         f = self.get_serialization_full_path()
-        if not path_utils.file_exists(str(f)):
-            path_utils.create_file_if_not_exists(str(f))
+        if not fileio.file_exists(str(f)):
+            fileio.create_file_if_not_exists(str(f))
 
     @abstractmethod
     def get_serialization_dir(self) -> str:
@@ -113,7 +113,7 @@ class BaseComponent(BaseSettings):
 
     def delete(self) -> None:
         """Deletes the persisted state of this object."""
-        path_utils.rm_file(self.get_serialization_full_path())
+        fileio.remove(self.get_serialization_full_path())
 
     class Config:
         """Configuration of settings."""

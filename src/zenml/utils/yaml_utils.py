@@ -18,7 +18,7 @@ from typing import Any, Dict
 
 import yaml
 
-from zenml.utils import path_utils
+from zenml.io import fileio
 
 
 def write_yaml(file_path: str, contents: Dict[Any, Any]) -> None:
@@ -31,11 +31,11 @@ def write_yaml(file_path: str, contents: Dict[Any, Any]) -> None:
     Raises:
         FileNotFoundError if directory does not exist.
     """
-    if not path_utils.is_remote(file_path):
+    if not fileio.is_remote(file_path):
         dir_ = str(Path(file_path).parent)
-        if not path_utils.is_dir(dir_):
+        if not fileio.is_dir(dir_):
             raise FileNotFoundError(f"Directory {dir_} does not exist.")
-    path_utils.write_file_contents_as_string(file_path, yaml.dump(contents))
+    fileio.write_file_contents_as_string(file_path, yaml.dump(contents))
 
 
 def read_yaml(file_path: str) -> Any:
@@ -50,8 +50,8 @@ def read_yaml(file_path: str) -> Any:
     Raises:
         FileNotFoundError if file does not exist.
     """
-    if path_utils.file_exists(file_path):
-        contents = path_utils.read_file_contents_as_string(file_path)
+    if fileio.file_exists(file_path):
+        contents = fileio.read_file_contents_as_string(file_path)
         return yaml.load(contents, Loader=yaml.FullLoader)
     else:
         raise FileNotFoundError(f"{file_path} does not exist.")
@@ -84,12 +84,12 @@ def write_json(file_path: str, contents: Dict[str, Any]) -> None:
     Raises:
         FileNotFoundError if directory does not exist.
     """
-    if not path_utils.is_remote(file_path):
+    if not fileio.is_remote(file_path):
         dir_ = str(Path(file_path).parent)
-        if not path_utils.is_dir(dir_):
+        if not fileio.is_dir(dir_):
             # If it is a local path and it doesnt exist, raise Exception.
             raise FileNotFoundError(f"Directory {dir_} does not exist.")
-    path_utils.write_file_contents_as_string(file_path, json.dumps(contents))
+    fileio.write_file_contents_as_string(file_path, json.dumps(contents))
 
 
 def read_json(file_path: str) -> Any:
@@ -98,8 +98,8 @@ def read_json(file_path: str) -> Any:
     Args:
         file_path: Path to JSON file.
     """
-    if path_utils.file_exists(file_path):
-        contents = path_utils.read_file_contents_as_string(file_path)
+    if fileio.file_exists(file_path):
+        contents = fileio.read_file_contents_as_string(file_path)
         return json.loads(contents)
     else:
         raise FileNotFoundError(f"{file_path} does not exist.")

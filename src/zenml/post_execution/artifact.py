@@ -15,10 +15,10 @@
 from typing import TYPE_CHECKING, Any, Optional, Type
 
 from zenml.logger import get_logger
-from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
+    from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.metadata.base_metadata_store import BaseMetadataStore
     from zenml.post_execution.step import StepView
 
@@ -103,7 +103,7 @@ class ArtifactView:
     def read(
         self,
         output_data_type: Optional[Type[Any]] = None,
-        materializer_class: Optional[Type[BaseMaterializer]] = None,
+        materializer_class: Optional[Type["BaseMaterializer"]] = None,
     ) -> Any:
         """Materializes the data stored in this artifact.
 

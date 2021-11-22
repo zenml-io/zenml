@@ -313,7 +313,6 @@ def test_delete_orchestrator_works(tmp_path: str) -> None:
 #     """Test basic service crud."""
 #     # TODO [LOW]: Need to improve this logic, potentially with
 #     #  physically checking the FS us `path_utils`.
-
 #     ls = LocalService()
 #     METADATA_KEY = "metadata_test_local"
 #     ARTIFACT_KEY = "artifact_test_local"
