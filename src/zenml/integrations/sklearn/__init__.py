@@ -21,7 +21,8 @@ class SklearnIntegration(Integration):
     REQUIREMENTS = ["sklearn==0.24.2"]
 
     @classmethod
-    def activate(cls):
+    def activate(cls) -> None:
+        """Activates the integration."""
         import_class_by_path(
             "zenml.integrations.sklearn.materializers.sklearn_materializer.SklearnMaterializer"
         )

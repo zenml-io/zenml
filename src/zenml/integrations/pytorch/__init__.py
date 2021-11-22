@@ -11,17 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
 from zenml.integrations.constants import PYTORCH
 from zenml.integrations.integration import Integration
 from zenml.utils.source_utils import import_class_by_path
 
 
 class PytorchIntegration(Integration):
-    NAME = "pytorch"
-    REQUIREMENTS = ["pytorch"]
+    """Definition of PyTorch integration for ZenML."""
+
+    NAME = PYTORCH
+    REQUIREMENTS = ["torch"]
 
     @classmethod
-    def activate(cls):
+    def activate(cls) -> None:
+        """Activates the integration."""
         import_class_by_path(
             "zenml.integrations.pytorch.materializers.pytorch_materializer.PytorchMaterializer"
         )

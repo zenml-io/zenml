@@ -227,7 +227,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             run_name: Optional name for the run.
         """
         # Activating the built-in integrations through lazy loading
-        from zenml.integrations import integration_registry
+        from zenml.integrations.registry import integration_registry
 
         integration_registry.activate()
 
@@ -252,8 +252,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         # filepath of the file where pipeline.run() was called
         caller_filepath = fileio.resolve_relative_path(
-            inspect.currentframe().f_back.f_code.co_filename
-            # type: ignore[union-attr] # noqa
+            inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr] # noqa
         )
 
         self.stack.orchestrator.pre_run(caller_filepath=caller_filepath)

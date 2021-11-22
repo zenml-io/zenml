@@ -53,7 +53,7 @@ def register_artifact_store(
     repo: Repository = Repository()
     # TODO [HIGH]: Remove when we rework the registry logic
     from zenml.core.component_factory import artifact_store_factory
-    from zenml.integrations import integration_registry
+    from zenml.integrations.registry import integration_registry
 
     integration_registry.activate()
 

@@ -17,11 +17,14 @@ from zenml.utils.source_utils import import_class_by_path
 
 
 class PytorchLightningIntegration(Integration):
+    """Definition of PyTorch Lightning integration for ZenML."""
+
     NAME = PYTORCH_L
     REQUIREMENTS = ["pytorch_lightning"]
 
     @classmethod
-    def activate(cls):
+    def activate(cls) -> None:
+        """Activates the integration."""
         import_class_by_path(
             "zenml.integrations.pytorch_lightning.materializers.pytorch_lightning_materializer.PytorchLightningMaterializer"
         )

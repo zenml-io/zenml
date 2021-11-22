@@ -17,11 +17,14 @@ from zenml.utils.source_utils import import_class_by_path
 
 
 class GcpIntegration(Integration):
+    """Definition of Google Cloud Platform integration for ZenML."""
+
     NAME = GCP
     REQUIREMENTS = ["gcsfs"]
 
     @classmethod
-    def activate(cls):
+    def activate(cls) -> None:
+        """Activates the integration."""
         from tfx.dsl.io.filesystem_registry import DEFAULT_FILESYSTEM_REGISTRY
 
         gcs_fs = import_class_by_path(

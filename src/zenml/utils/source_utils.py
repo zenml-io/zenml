@@ -30,7 +30,7 @@ import pathlib
 import site
 import sys
 import types
-from typing import Any, Optional, Type, Union
+from typing import Any, List, Optional, Type, Union
 
 from zenml import __version__
 from zenml.constants import APP_NAME
@@ -44,7 +44,7 @@ class LazyLoader(types.ModuleType):
 
     def __init__(self, name: str) -> None:
         """Initializes a lazy loader."""
-        self.module = None
+        self.module: Optional[types.ModuleType] = None
         super(LazyLoader, self).__init__(name)
 
     def load(self) -> types.ModuleType:
@@ -54,12 +54,12 @@ class LazyLoader(types.ModuleType):
             self.__dict__.update(self.module.__dict__)
         return self.module
 
-    def __getattr__(self, item: str):
+    def __getattr__(self, item: str) -> Any:
         """Overrides the __getattr__ method with loading logic."""
         self.module = self.load()
         return getattr(self.module, item)
 
-    def __dir__(self):
+    def __dir__(self) -> List[str]:
         """Overrides the __dir__ method with loading logic."""
         self.module = self.load()
         return dir(self.module)

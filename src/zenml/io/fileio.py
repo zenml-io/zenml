@@ -16,7 +16,7 @@ import fnmatch
 import os
 import tarfile
 from pathlib import Path
-from typing import Any, Callable, Iterable, List, Optional, Tuple, Type
+from typing import Any, Callable, Iterable, List, Optional, Tuple, Type, Union
 
 from tfx.dsl.io.filesystem import Filesystem, PathType
 
@@ -58,7 +58,7 @@ def copy(src: PathType, dst: PathType, overwrite: bool = False) -> None:
         open(dst, mode="wb").write(contents)
 
 
-def file_exists(path: str) -> bool:
+def file_exists(path: Union[bytes, str]) -> bool:
     """Returns true if file exists at path.
 
     Args:
@@ -73,7 +73,7 @@ def file_exists(path: str) -> bool:
 def remove(path: PathType) -> None:
     """Remove the file at the given path. Dangerous operation."""
     if not file_exists(path):
-        raise FileNotFoundError(f"{path} does not exist!")
+        raise FileNotFoundError(f"{convert_to_str(path)} does not exist!")
     _get_filesystem(path).remove(path)
 
 

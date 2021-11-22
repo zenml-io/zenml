@@ -18,8 +18,8 @@ from typing import Any, Type, Union
 import torch
 from torch.nn import Module  # type: ignore[attr-defined]
 
+from zenml.integrations.pytorch.materializers.pytorch_types import TorchDict
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.types.pytorch_types import TorchDict
 
 DEFAULT_FILENAME = "entire_model.pt"
 

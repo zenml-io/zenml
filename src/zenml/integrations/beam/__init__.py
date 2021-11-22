@@ -17,11 +17,14 @@ from zenml.utils.source_utils import import_class_by_path
 
 
 class BeamIntegration(Integration):
+    """Definition of Apache Beam integration for ZenML."""
+
     NAME = BEAM
     REQUIREMENTS = ["apache-beam"]
 
     @classmethod
-    def activate(cls):
+    def activate(cls) -> None:
+        """Activates the integration."""
         import_class_by_path(
             "zenml.integrations.beam.materializers.beam_materializer.BeamMaterializer"
         )

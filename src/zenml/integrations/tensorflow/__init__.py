@@ -21,7 +21,8 @@ class TensorflowIntegration(Integration):
     REQUIREMENTS = ["tensorflow==2.6.0"]
 
     @classmethod
-    def activate(cls):
+    def activate(cls) -> None:
+        """Activates the integration."""
         import_class_by_path(
             "zenml.integrations.tensorflow.materializers.keras_materializer.KerasMaterializer"
         )

@@ -12,50 +12,67 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Type
+from typing import Dict, Type, Union
 
 from zenml.exceptions import IntegrationError
+from zenml.integrations.integration import Integration
 from zenml.logger import get_logger
 from zenml.utils.source_utils import LazyLoader
 
 logger = get_logger(__name__)
 
-if TYPE_CHECKING:
-    from zenml.integrations.integration import Integration
-
 
 class IntegrationRegistry(object):
     """Registry to keep track of ZenML Integrations"""
 
-    _integrations: ClassVar[Dict[Type[Any], Type["Integration"]]] = {}
+    def __init__(self) -> None:
+        self._integrations: Dict[
+            str, Union[Type["Integration"], LazyLoader]
+        ] = {}
 
     @property
-    def integrations(self):
-        """Method to get integrations dictionary"""
+    def integrations(self) -> Dict[str, Union[Type["Integration"], LazyLoader]]:
+        """Method to get integrations dictionary.
+
+        Returns:
+            A dict of integration key to type of `Integration`.
+        """
         self.activate()
         return self._integrations
 
-    @classmethod
     def register_integration(
-        cls, key: Type[Any], type_: Type["Integration"]
+        self, key: str, type_: Union[Type["Integration"], LazyLoader]
     ) -> None:
         """Method to register an integration with a given name"""
-        cls._integrations[key] = type_
+        self._integrations[key] = type_
 
-    @classmethod
-    def activate(cls):
+    def activate(self) -> None:
         """Method to activate the integrations with are registered in the
         registry"""
-        for name in list(cls._integrations.keys()):
+        for name in list(self._integrations.keys()):
             try:
-                integration = cls._integrations.get(name)
-                if issubclass(type(integration), LazyLoader):
+                integration = self._integrations.get(name)
+                if isinstance(integration, LazyLoader):
                     integration.load()
-                    integration = cls._integrations.get(name)
-                integration.activate()
+                    integration = self._integrations.get(name)
+
+                # TODO [LOW]: Figure out a better method to load integration
+                #  from LazyLoader. Maybe we can use the LazyLoader not to
+                #  load the module but the class itself. But we're not sure
+                #  what kind of a follow up affect this might have on the
+                #  actual thing.
+                if integration is not None:
+                    integration.activate()
+                else:
+                    raise ValueError(
+                        f"Integration {name} is not present in "
+                        f"self._integrations. Available integrations: "
+                        f"{list(self._integrations.keys())}."
+                    )
+
                 logger.debug(f"Integration `{name}` is activated.")
             except (ModuleNotFoundError, IntegrationError) as e:
-                cls._integrations.pop(name)
+                self._integrations.pop(name)
                 logger.debug(
                     f"Integration `{name}` could not be activated. {e}"
                 )

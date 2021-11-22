@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Any, Dict, Tuple, Type, cast
+from typing import Any, Dict, List, Tuple, Type, cast
 
 import pkg_resources
 
@@ -41,10 +41,10 @@ class Integration(metaclass=IntegrationMeta):
 
     NAME = "base_integration"
 
-    REQUIREMENTS = []
+    REQUIREMENTS: List[str] = []
 
     @classmethod
-    def check_installation(cls):
+    def check_installation(cls) -> None:
         """Method to check whether the required packages are installed"""
         try:
             pkg_resources.require(cls.REQUIREMENTS)
@@ -58,5 +58,5 @@ class Integration(metaclass=IntegrationMeta):
             # raise IntegrationError("Version conflicts in required packages.")
 
     @staticmethod
-    def activate():
+    def activate() -> None:
         """Abstract method to activate the integration"""
