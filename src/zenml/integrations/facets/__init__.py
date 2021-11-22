@@ -17,7 +17,8 @@ from zenml.integrations.integration import Integration
 
 
 class FacetsIntegration(Integration):
-    """[Facet integration](https://pair-code.github.io/facets/) registry."""
+    """Definition of [Facet](https://pair-code.github.io/facets/) integration
+    for ZenML."""
 
     NAME = FACETS
     REQUIREMENTS = ["facets-overview >= 1.0.0"]

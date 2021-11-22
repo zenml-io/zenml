@@ -17,7 +17,7 @@ from zenml.utils.source_utils import import_class_by_path
 
 
 class AirflowIntegration(Integration):
-    """Creates an Airflow integration."""
+    """Definition of Airflow Integration for ZenML."""
 
     NAME = AIRFLOW
     REQUIREMENTS = ["apache_airflow"]

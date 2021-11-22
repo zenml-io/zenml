@@ -16,7 +16,7 @@ from zenml.integrations.integration import Integration
 
 
 class PlotlyIntegration(Integration):
-    """Plotly integration registration."""
+    """Definition of Plotly integration for ZenML."""
 
     NAME = PLOTLY
     REQUIREMENTS = ["plotly >= 5.4.0"]

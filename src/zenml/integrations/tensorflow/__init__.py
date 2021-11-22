@@ -17,6 +17,8 @@ from zenml.utils.source_utils import import_class_by_path
 
 
 class TensorflowIntegration(Integration):
+    """Definition of Tensorflow integration for ZenML."""
+
     NAME = TENSORFLOW
     REQUIREMENTS = ["tensorflow==2.6.0"]
 

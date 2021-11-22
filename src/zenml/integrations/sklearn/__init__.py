@@ -17,6 +17,8 @@ from zenml.utils.source_utils import import_class_by_path
 
 
 class SklearnIntegration(Integration):
+    """Definition of sklearn integration for ZenML."""
+
     NAME = SKLEARN
     REQUIREMENTS = ["sklearn==0.24.2"]
 
