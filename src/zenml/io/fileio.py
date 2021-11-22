@@ -16,7 +16,7 @@ import fnmatch
 import os
 import tarfile
 from pathlib import Path
-from typing import Any, Callable, Iterable, List, Optional, Tuple, Type, Union
+from typing import Any, Callable, Iterable, List, Optional, Tuple, Type
 
 from tfx.dsl.io.filesystem import Filesystem, PathType
 
@@ -46,27 +46,17 @@ def copy(src: PathType, dst: PathType, overwrite: bool = False) -> None:
     if src_fs is dst_fs:
         src_fs.copy(src, dst, overwrite=overwrite)
     else:
-        if not overwrite and file_exists(str(dst)):
-            raise OSError(
-                (
-                    "Destination file %r already exists and argument `overwrite` is "
-                    "false."
-                )
-                % dst
+        if not overwrite and file_exists(dst):
+            raise FileExistsError(
+                f"Destination file '{convert_to_str(dst)}' already exists "
+                f"and `overwrite` is false."
             )
         contents = open(src, mode="rb").read()
         open(dst, mode="wb").write(contents)
 
 
-def file_exists(path: Union[bytes, str]) -> bool:
-    """Returns true if file exists at path.
-
-    Args:
-        path: Local path in filesystem.
-
-    Returns:
-        True if file exists, else False.
-    """
+def file_exists(path: PathType) -> bool:
+    """Returns `True` if the given path exists."""
     return _get_filesystem(path).exists(path)
 
 
@@ -83,14 +73,7 @@ def glob(pattern: PathType) -> List[PathType]:
 
 
 def is_dir(path: PathType) -> bool:
-    """Returns true if dir_path points to a dir.
-
-    Args:
-        dir_path: Local path in filesystem.
-
-    Returns:
-        True if is dir, else False.
-    """
+    """Returns whether the given path points to a directory."""
     return _get_filesystem(path).isdir(path)
 
 
@@ -139,18 +122,27 @@ def mkdir(path: PathType) -> None:
 
 
 def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
-    """Rename a source file (or directory) to a destination path."""
+    """Rename source file to destination file.
+
+    Args:
+        src: The path of the file to rename.
+        dst: The path to rename the source file to.
+        overwrite: If a file already exists at the destination, this
+            method will overwrite it if overwrite=`True` and
+            raise a FileExistsError otherwise.
+
+    Raises:
+        FileExistsError: If a file already exists at the destination
+            and overwrite is not set to `True`.
+    """
     src_fs = _get_filesystem(src)
     dst_fs = _get_filesystem(dst)
     if src_fs is dst_fs:
         src_fs.rename(src, dst, overwrite=overwrite)
     else:
         raise NotImplementedError(
-            (
-                "Rename from %r to %r using different filesystems plugins is "
-                "currently not supported."
-            )
-            % (src, dst)
+            f"Renaming from {convert_to_str(src)} to {convert_to_str(dst)} "
+            f"using different filesystems plugins is currently not supported."
         )
 
 
@@ -173,13 +165,17 @@ def walk(
     topdown: bool = True,
     onerror: Optional[Callable[..., None]] = None,
 ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
-    """Walks down the dir_path.
+    """Return an iterator that walks the contents of the given directory.
 
     Args:
-        dir_path: Path of dir to walk down.
+        top: Path of directory to walk.
+        topdown: Whether to walk directories topdown or bottom-up.
+        onerror: Callable that gets called if an error occurs.
 
     Returns:
-        Iterable of tuples to walk down.
+        An Iterable of Tuples, each of which contain the path of the current
+        directory path, a list of directories inside the current directory
+        and a list of files inside the current directory.
     """
     return _get_filesystem(top).walk(top, topdown=topdown, onerror=onerror)
 
