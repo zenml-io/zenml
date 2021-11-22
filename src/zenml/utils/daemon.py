@@ -33,8 +33,11 @@ logger = get_logger(__name__)
 
 # flake8: noqa: C901
 if sys.platform == "win32":
-    logger.warning("Daemon functionality is currently not supported on Windows.")
+    logger.warning(
+        "Daemon functionality is currently not supported on Windows."
+    )
 else:
+
     def run_as_daemon(
         daemon_function: Callable[..., Any],
         pid_file: str,
