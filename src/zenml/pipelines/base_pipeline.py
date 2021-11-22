@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 import inspect
 from abc import abstractmethod
+from datetime import datetime
 from typing import (
     Any,
     ClassVar,
@@ -230,6 +231,12 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         integration_registry.activate()
 
+        if run_name is None:
+            run_name = (
+                f"{self.pipeline_name} + -"
+                f'{datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")}'
+            )
+
         analytics_utils.track_event(
             event=analytics_utils.RUN_PIPELINE,
             metadata={
@@ -245,7 +252,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         # filepath of the file where pipeline.run() was called
         caller_filepath = fileio.resolve_relative_path(
-            inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr] # noqa
+            inspect.currentframe().f_back.f_code.co_filename
+            # type: ignore[union-attr] # noqa
         )
 
         self.stack.orchestrator.pre_run(caller_filepath=caller_filepath)

@@ -100,7 +100,7 @@ class LocalDagRunner(tfx_runner.TfxRunner):
         c = compiler.Compiler()
         pipeline = c.compile(pipeline)
 
-        run_name = run_name or datetime.now().isoformat()
+        run_name = run_name or datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")
         # Substitute the runtime parameter to be a concrete run_id
         runtime_parameter_utils.substitute_runtime_parameter(
             pipeline,
