@@ -26,13 +26,13 @@ from tfx.dsl.compiler.constants import (
     PIPELINE_RUN_CONTEXT_TYPE_NAME,
 )
 
-from zenml.artifacts.base_artifact import (
+from zenml.artifacts.constants import (
     DATATYPE_PROPERTY_KEY,
     MATERIALIZER_PROPERTY_KEY,
 )
 from zenml.core.base_component import BaseComponent
-from zenml.core.component_factory import metadata_store_factory
-from zenml.enums import ExecutionStatus, MLMetadataTypes
+from zenml.enums import ExecutionStatus
+from zenml.io.fileio import get_zenml_config_dir
 from zenml.logger import get_logger
 from zenml.post_execution import (
     ArtifactView,
@@ -41,13 +41,10 @@ from zenml.post_execution import (
     StepView,
 )
 from zenml.steps.utils import INTERNAL_EXECUTION_PARAMETER_PREFIX
-from zenml.utils.path_utils import get_zenml_config_dir
 
 logger = get_logger(__name__)
 
 
-# TODO [ENG-132]: can we remove this registration?
-@metadata_store_factory.register(MLMetadataTypes.base)  # type: ignore[misc]
 class BaseMetadataStore(BaseComponent):
     """Metadata store base class to track metadata of zenml first class
     citizens."""

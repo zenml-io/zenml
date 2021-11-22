@@ -17,10 +17,10 @@ import pandas as pd
 import tensorflow as tf
 
 from zenml.core.repo import Repository
-from zenml.pipelines import pipeline
-from zenml.post_execution.visualizers.statistics.facet_statistics_visualizer import (
+from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
     FacetStatisticsVisualizer,
 )
+from zenml.pipelines import pipeline
 from zenml.steps import step
 from zenml.steps.step_output import Output
 

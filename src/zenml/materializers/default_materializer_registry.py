@@ -40,6 +40,7 @@ class MaterializerRegistry:
         if key not in self.materializer_types:
             self.materializer_types[key] = type_
             logger.debug(f"Registered materializer {type_} for {key}")
+
         else:
             logger.debug(
                 f"{key} already registered with "

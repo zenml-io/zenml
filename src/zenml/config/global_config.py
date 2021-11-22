@@ -21,8 +21,8 @@ from pydantic import Field
 from zenml import constants
 from zenml.config.constants import GLOBAL_CONFIG_NAME
 from zenml.core.base_component import BaseComponent
+from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.utils import path_utils
 
 logger = get_logger(__name__)
 
@@ -47,7 +47,7 @@ class GlobalConfig(BaseComponent):
         # At this point, if the serialization file does not exist we should
         #  create it and dump our data.
         f = self.get_serialization_full_path()
-        if not path_utils.file_exists(str(f)):
+        if not fileio.file_exists(str(f)):
             self._dump()
 
     def get_serialization_dir(self) -> str:

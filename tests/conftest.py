@@ -30,7 +30,7 @@
 # # from zenml.pipelines import BasePipeline
 # # from zenml.repo import Repository, ZenMLConfig
 # # from zenml.steps import BaseStep
-# # from zenml.utils import path_utils
+# # from zenml.io import fileio
 #
 # logger = get_logger(__name__)
 #
@@ -67,7 +67,7 @@
 #     def wrapper():
 #         """ """
 #         pipelines_dir = repo.zenml_config.get_pipelines_dir()
-#         for p_config in path_utils.list_dir(pipelines_dir):
+#         for p_config in fileio.list_dir(pipelines_dir):
 #             try:
 #                 os.remove(p_config)
 #             except Exception as e:
@@ -121,7 +121,7 @@
 #
 #         """
 #         cfg = os.path.join(pipeline_root, filename)
-#         path_utils.rm_file(cfg)
+#         fileio.remove(cfg)
 #
 #     return wrapper
 #

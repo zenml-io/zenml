@@ -1,2 +1,0 @@
-# Scaling to the cloud
-
