@@ -185,7 +185,7 @@ def walk(
 
 
 def find_files(dir_path: PathType, pattern: str) -> Iterable[str]:
-    # TODO [LOW]: correct docstring since 'None' is never returned
+    # TODO [ENG-189]: correct docstring since 'None' is never returned
     """Find files in a directory that match pattern.
 
     Args:

@@ -220,7 +220,6 @@ class _FunctionExecutor(BaseExecutor):
     """Base TFX Executor class which is compatible with ZenML steps"""
 
     _FUNCTION = staticmethod(lambda: None)
-    # TODO [ENG-159]: should this be an instance variable?
     materializers: ClassVar[
         Optional[Dict[str, Type["BaseMaterializer"]]]
     ] = None

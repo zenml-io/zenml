@@ -52,7 +52,7 @@ def register_metadata_store(
 
     repo: Repository = Repository()
     try:
-        # TODO [HIGH]: Remove when we rework the registry logic
+        # TODO [ENG-187]: Remove when we rework the registry logic
         from zenml.core.component_factory import metadata_store_factory
         from zenml.integrations.registry import integration_registry
 

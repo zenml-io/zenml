@@ -58,7 +58,7 @@ class IntegrationRegistry(object):
                     integration.load()
                     integration = self._integrations.get(name)
 
-                # TODO [LOW]: Figure out a better method to load integration
+                # TODO [ENG-185]: Figure out a better method to load integration
                 #  from LazyLoader. Maybe we can use the LazyLoader not to
                 #  load the module but the class itself. But we're not sure
                 #  what kind of a follow up affect this might have on the
