@@ -24,7 +24,14 @@ from packaging.version import Version, parse
 
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
-from zenml.cli.utils import confirmation, declare, error, pretty_print, title
+from zenml.cli.utils import (
+    confirmation,
+    declare,
+    error,
+    pretty_print,
+    title,
+    warning,
+)
 from zenml.constants import APP_NAME, GIT_REPO_URL
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -58,7 +65,8 @@ class Example:
             else:
                 raise FileNotFoundError(
                     f"Example {self.name} is not one of the available options."
-                    f"\nTo list all available examples, type: `zenml example list`"
+                    f"\nTo list all available examples, type: `zenml example "
+                    f"list`"
                 )
 
     def run(self) -> None:
@@ -81,14 +89,17 @@ class ExamplesRepo:
         except NoSuchPathError:
             self.repo = None  # type: ignore
             logger.debug(
-                f"`cloning_path`: {self.cloning_path} was empty, but ExamplesRepo was created. "
+                f"`cloning_path`: {self.cloning_path} was empty, "
+                f"but ExamplesRepo was created. "
                 "Ensure a pull is performed before doing any other operations."
             )
 
     @property
     def latest_release(self) -> str:
         """Returns the latest release for the examples repository."""
-        tags = sorted(self.repo.tags, key=lambda t: t.commit.committed_datetime)  # type: ignore
+        tags = sorted(
+            self.repo.tags, key=lambda t: t.commit.committed_datetime
+        )  # type: ignore
         latest_tag = parse(tags[-1].name)
         if type(latest_tag) is not Version:
             return "main"
@@ -112,6 +123,7 @@ class ExamplesRepo:
         downloaded from your system."""
         self.cloning_path.mkdir(parents=True, exist_ok=False)
         try:
+            logger.info(f"Cloning repo {GIT_REPO_URL} to {self.cloning_path}")
             self.repo = Repo.clone_from(
                 GIT_REPO_URL, self.cloning_path, branch="main"
             )
@@ -125,7 +137,8 @@ class ExamplesRepo:
             shutil.rmtree(self.cloning_path)
         else:
             raise AssertionError(
-                f"Cannot delete the examples repository from {self.cloning_path} as it does not exist."
+                f"Cannot delete the examples repository from "
+                f"{self.cloning_path} as it does not exist."
             )
 
     def checkout(self, branch: str) -> None:
@@ -134,6 +147,7 @@ class ExamplesRepo:
         Raises:
             GitCommandError: if branch doesn't exist.
         """
+        logger.info(f"Checking out branch: {branch}")
         self.repo.git.checkout(branch)
 
     def checkout_latest_release(self) -> None:
@@ -180,7 +194,8 @@ class GitExamplesHandler(object):
             self.examples_repo.checkout(version)
         except GitCommandError:
             logger.warning(
-                f"Version {version} does not exist in remote repository. Reverting to `main`."
+                f"Version {version} does not exist in remote repository. "
+                f"Reverting to `main`."
             )
             self.examples_repo.checkout("main")
 
@@ -237,13 +252,15 @@ def clean(git_examples_handler: GitExamplesHandler) -> None:
     ):
         git_examples_handler.clean_current_examples()
         declare(
-            "ZenML examples directory was deleted from your current working directory."
+            "ZenML examples directory was deleted from your current working "
+            "directory."
         )
     elif not fileio.file_exists(examples_directory) and not fileio.is_dir(
         examples_directory
     ):
         logger.error(
-            f"Unable to delete the ZenML examples directory - {examples_directory} - "
+            f"Unable to delete the ZenML examples directory - "
+            f"{examples_directory} - "
             "as it was not found in your current working directory."
         )
 
@@ -304,30 +321,41 @@ def pull(
     fileio.create_dir_if_not_exists(destination_dir)
 
     examples = (
-        git_examples_handler.examples if not example_name else [example_name]  # type: ignore
+        git_examples_handler.examples
+        if not example_name
+        else [
+            Example(
+                example_name,
+                Path(
+                    os.path.join(
+                        git_examples_handler.examples_repo.examples_dir,
+                        example_name,
+                    )
+                ),
+            )
+        ]
     )
 
     for example in examples:
+        if not fileio.file_exists(str(example.path)):
+            error(
+                f"Example {example.name} does not exist! Available examples: "
+                f"{[e.name for e in git_examples_handler.examples]}"
+            )
+            return
+
         example_destination_dir = os.path.join(destination_dir, example.name)
-        if fileio.file_exists(example_destination_dir) and confirmation(
-            f"Example {example.name} is already pulled. "
-            f"Do you wish to overwrite the directory?"
-        ):
-            fileio.rm_dir(example_destination_dir)
-            declare(f"Pulling example {example.name}...")
-            git_examples_handler.copy_example(example, example_destination_dir)
-            declare(f"Example pulled in directory: {example_destination_dir}")
-        else:
-            continue
+        if fileio.file_exists(example_destination_dir):
+            if confirmation(
+                f"Example {example.name} is already pulled. "
+                f"Do you wish to overwrite the directory?"
+            ):
+                fileio.rm_dir(example_destination_dir)
+            else:
+                warning(f"Example {example.name} not overwritten.")
+                continue
 
         declare(f"Pulling example {example.name}...")
         git_examples_handler.copy_example(example, example_destination_dir)
 
         declare(f"Example pulled in directory: {example_destination_dir}")
-
-    declare("")
-    declare("All examples are pulled and ready for use.")
-    declare(
-        "Please read the README.md file in the respective example "
-        "directory to find out more about the example."
-    )
