@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Wrapper class to handle Git integration"""
-import inspect
 import os
 from typing import Any, Optional, Type, cast
 
@@ -25,7 +24,6 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import source_utils
 from zenml.utils.source_utils import (
-    get_module_source_from_file_path,
     get_module_source_from_source,
     get_relative_path_from_module_source,
     is_standard_pin,
@@ -289,7 +287,6 @@ class GitWrapper:
 
         return class_
 
-    # TODO [ENG-166]: should this be calling source_utils.resolve_class?
     def resolve_class(self, class_: Type[Any]) -> str:
         """Resolves a class into a serializable source string.
 
@@ -298,13 +295,5 @@ class GitWrapper:
 
         Returns: source_path e.g. this.module.Class[@pin].
         """
-        initial_source = class_.__module__ + "." + class_.__name__
-        if is_standard_source(initial_source):
-            return resolve_standard_source(initial_source)
-
-        # Get the full module path relative to the repository
-        file_path = inspect.getfile(class_)
-        module_source = get_module_source_from_file_path(file_path)
-
-        class_source = module_source + "." + class_.__name__
+        class_source = source_utils.resolve_class(class_)
         return self.resolve_class_source(class_source)

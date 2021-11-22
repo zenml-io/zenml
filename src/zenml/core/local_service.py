@@ -102,7 +102,7 @@ class LocalService(BaseComponent):
         )
 
         # Check if the individual components actually exist.
-        # TODO [LOW]: Add tests to check cases of registering a stack with a
+        # TODO [ENG-190]: Add tests to check cases of registering a stack with a
         #  non-existing individual component. We can also improve the error
         #  logging for the CLI while we're at it.
         self.get_orchestrator(stack.orchestrator_name)

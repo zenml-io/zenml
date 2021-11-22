@@ -82,7 +82,7 @@ def register_orchestrator(
         return
 
     repo: Repository = Repository()
-    # TODO [HIGH]: Remove when we rework the registry logic
+    # TODO [ENG-186]: Remove when we rework the registry logic
     from zenml.core.component_factory import orchestrator_store_factory
     from zenml.integrations.registry import integration_registry
 
