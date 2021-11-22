@@ -15,7 +15,9 @@
 import pytest
 from pydantic import ValidationError
 
-from zenml.artifact_stores.gcp_artifact_store import GCPArtifactStore
+from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (
+    GCPArtifactStore,
+)
 
 
 def test_must_be_gcs_path():

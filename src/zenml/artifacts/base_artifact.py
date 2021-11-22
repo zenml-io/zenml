@@ -15,9 +15,12 @@ from typing import Dict
 
 from tfx.types.artifact import Artifact, Property, PropertyType
 
-MATERIALIZER_PROPERTY_KEY = "materializer"
+from zenml.artifacts.constants import (
+    DATATYPE_PROPERTY_KEY,
+    MATERIALIZER_PROPERTY_KEY,
+)
+
 MATERIALIZER_PROPERTY = Property(type=PropertyType.STRING)  # type: ignore[no-untyped-call] # noqa
-DATATYPE_PROPERTY_KEY = "datatype"
 DATATYPE_PROPERTY = Property(type=PropertyType.STRING)  # type: ignore[no-untyped-call] # noqa
 
 

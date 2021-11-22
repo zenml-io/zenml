@@ -19,7 +19,8 @@ import click
 from zenml import constants
 from zenml.config.constants import GLOBAL_CONFIG_NAME
 from zenml.config.global_config import GlobalConfig
-from zenml.utils import path_utils, yaml_utils
+from zenml.io import fileio
+from zenml.utils import yaml_utils
 
 APP_DIR = click.get_app_dir(constants.APP_NAME)
 
@@ -29,7 +30,7 @@ def test_global_config_file_creation():
     GlobalConfig()
 
     # Raw config should now exist
-    assert path_utils.file_exists(os.path.join(APP_DIR, GLOBAL_CONFIG_NAME))
+    assert fileio.file_exists(os.path.join(APP_DIR, GLOBAL_CONFIG_NAME))
 
 
 def test_global_config_persistence():

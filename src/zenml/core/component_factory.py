@@ -14,8 +14,13 @@
 """Factory to register all components."""
 from typing import Callable, Dict, Type
 
+from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
 from zenml.core.base_component import BaseComponent
+from zenml.enums import ArtifactStoreTypes, MLMetadataTypes, OrchestratorTypes
 from zenml.logger import get_logger
+from zenml.metadata.mysql_metadata_wrapper import MySQLMetadataStore
+from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
+from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 
 logger = get_logger(__name__)
 BaseComponentType = Type[BaseComponent]
@@ -85,8 +90,24 @@ class ComponentFactory:
         return inner_wrapper
 
 
+# Register the base stacks
 artifact_store_factory: ComponentFactory = ComponentFactory(name="artifact")
+artifact_store_factory.register_component(
+    ArtifactStoreTypes.local, LocalArtifactStore
+)
+
 metadata_store_factory: ComponentFactory = ComponentFactory(name="metadata")
+metadata_store_factory.register_component(
+    MLMetadataTypes.mysql, MySQLMetadataStore
+)
+metadata_store_factory.register_component(
+    MLMetadataTypes.sqlite, SQLiteMetadataStore
+)
+
 orchestrator_store_factory: ComponentFactory = ComponentFactory(
     name="orchestrator"
+)
+
+orchestrator_store_factory.register_component(
+    OrchestratorTypes.local, LocalOrchestrator
 )

@@ -26,8 +26,8 @@ from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error, pretty_print, title
 from zenml.constants import APP_NAME, GIT_REPO_URL
+from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.utils import path_utils
 
 logger = get_logger(__name__)
 
@@ -51,7 +51,7 @@ class Example:
                 readme_content = readme.read()
             return readme_content
         except FileNotFoundError:
-            if path_utils.file_exists(str(self.path)) and path_utils.is_dir(
+            if fileio.file_exists(str(self.path)) and fileio.is_dir(
                 str(self.path)
             ):
                 raise ValueError(f"No README.md file found in {self.path}")
@@ -190,8 +190,8 @@ class GitExamplesHandler(object):
 
     def copy_example(self, example: Example, destination_dir: str) -> None:
         """Copies an example to the destination_dir."""
-        path_utils.create_dir_if_not_exists(destination_dir)
-        path_utils.copy_dir(str(example.path), destination_dir, overwrite=True)
+        fileio.create_dir_if_not_exists(destination_dir)
+        fileio.copy_dir(str(example.path), destination_dir, overwrite=True)
 
     def clean_current_examples(self) -> None:
         """Deletes the ZenML examples directory from your current working
@@ -228,8 +228,8 @@ def clean(git_examples_handler: GitExamplesHandler) -> None:
     directory."""
     examples_directory = os.path.join(os.getcwd(), "zenml_examples")
     if (
-        path_utils.file_exists(examples_directory)
-        and path_utils.is_dir(examples_directory)
+        fileio.file_exists(examples_directory)
+        and fileio.is_dir(examples_directory)
         and confirmation(
             "Do you wish to delete the ZenML examples directory? \n"
             f"{examples_directory}"
@@ -239,9 +239,9 @@ def clean(git_examples_handler: GitExamplesHandler) -> None:
         declare(
             "ZenML examples directory was deleted from your current working directory."
         )
-    elif not path_utils.file_exists(
+    elif not fileio.file_exists(examples_directory) and not fileio.is_dir(
         examples_directory
-    ) and not path_utils.is_dir(examples_directory):
+    ):
         logger.error(
             f"Unable to delete the ZenML examples directory - {examples_directory} - "
             "as it was not found in your current working directory."
@@ -301,7 +301,7 @@ def pull(
     which version of ZenML you wish to use for the examples."""
     git_examples_handler.pull(force=force, version=version)
     destination_dir = os.path.join(os.getcwd(), "zenml_examples")
-    path_utils.create_dir_if_not_exists(destination_dir)
+    fileio.create_dir_if_not_exists(destination_dir)
 
     examples = (
         git_examples_handler.examples if not example_name else [example_name]  # type: ignore
@@ -309,11 +309,11 @@ def pull(
 
     for example in examples:
         example_destination_dir = os.path.join(destination_dir, example.name)
-        if path_utils.file_exists(example_destination_dir) and confirmation(
+        if fileio.file_exists(example_destination_dir) and confirmation(
             f"Example {example.name} is already pulled. "
             f"Do you wish to overwrite the directory?"
         ):
-            path_utils.rm_dir(example_destination_dir)
+            fileio.rm_dir(example_destination_dir)
             declare(f"Pulling example {example.name}...")
             git_examples_handler.copy_example(example, example_destination_dir)
             declare(f"Example pulled in directory: {example_destination_dir}")

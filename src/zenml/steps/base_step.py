@@ -337,11 +337,13 @@ class BaseStep(metaclass=BaseStepMeta):
                     # a value for this parameter has been set already
                     continue
 
-                if field.default is not None:
+                if field.required:
+                    # this field has no default value set and therefore needs
+                    # to be passed via an initialized config object
+                    missing_keys.append(name)
+                else:
                     # use default value from the pydantic config class
                     self.PARAM_SPEC[name] = field.default
-                else:
-                    missing_keys.append(name)
 
             if missing_keys:
                 raise MissingStepParameterError(

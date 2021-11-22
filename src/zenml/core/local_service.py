@@ -1,15 +1,13 @@
-from typing import Dict
+from typing import TYPE_CHECKING, Dict
 
-from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.core import mapping_utils
 from zenml.core.base_component import BaseComponent
 from zenml.core.mapping_utils import UUIDSourceTuple
 from zenml.exceptions import AlreadyExistsException, DoesNotExistException
+from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.metadata.base_metadata_store import BaseMetadataStore
-from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.stacks.base_stack import BaseStack
-from zenml.utils import path_utils, source_utils
+from zenml.utils import source_utils
 from zenml.utils.analytics_utils import (
     REGISTERED_ARTIFACT_STORE,
     REGISTERED_METADATA_STORE,
@@ -17,6 +15,11 @@ from zenml.utils.analytics_utils import (
     REGISTERED_STACK,
     track,
 )
+
+if TYPE_CHECKING:
+    from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+    from zenml.metadata.base_metadata_store import BaseMetadataStore
+    from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 
 logger = get_logger(__name__)
 
@@ -35,29 +38,35 @@ class LocalService(BaseComponent):
 
     def get_serialization_dir(self) -> str:
         """The local service stores everything in the zenml config dir."""
-        return path_utils.get_zenml_config_dir()
+        return fileio.get_zenml_config_dir()
 
     def get_serialization_file_name(self) -> str:
         """Return the name of the file where object is serialized."""
         return self._LOCAL_SERVICE_FILE_NAME
 
     @property
-    def metadata_stores(self) -> Dict[str, BaseMetadataStore]:
+    def metadata_stores(self) -> Dict[str, "BaseMetadataStore"]:
         """Returns all registered metadata stores."""
+        from zenml.metadata.base_metadata_store import BaseMetadataStore
+
         return mapping_utils.get_components_from_store(  # type: ignore[return-value] # noqa
             BaseMetadataStore._METADATA_STORE_DIR_NAME, self.metadata_store_map
         )
 
     @property
-    def artifact_stores(self) -> Dict[str, BaseArtifactStore]:
+    def artifact_stores(self) -> Dict[str, "BaseArtifactStore"]:
         """Returns all registered artifact stores."""
+        from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+
         return mapping_utils.get_components_from_store(  # type: ignore[return-value] # noqa
             BaseArtifactStore._ARTIFACT_STORE_DIR_NAME, self.artifact_store_map
         )
 
     @property
-    def orchestrators(self) -> Dict[str, BaseOrchestrator]:
+    def orchestrators(self) -> Dict[str, "BaseOrchestrator"]:
         """Returns all registered orchestrators."""
+        from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+
         return mapping_utils.get_components_from_store(  # type: ignore[return-value] # noqa
             BaseOrchestrator._ORCHESTRATOR_STORE_DIR_NAME,
             self.orchestrator_map,
@@ -92,6 +101,14 @@ class LocalService(BaseComponent):
             f"Registering stack with key {key}, details: " f"{stack.dict()}"
         )
 
+        # Check if the individual components actually exist.
+        # TODO [LOW]: Add tests to check cases of registering a stack with a
+        #  non-existing individual component. We can also improve the error
+        #  logging for the CLI while we're at it.
+        self.get_orchestrator(stack.orchestrator_name)
+        self.get_artifact_store(stack.artifact_store_name)
+        self.get_metadata_store(stack.metadata_store_name)
+
         if key in self.stacks:
             raise AlreadyExistsException(
                 message=f"Stack `{key}` already exists!"
@@ -119,7 +136,7 @@ class LocalService(BaseComponent):
             "to set a not active stack via `zenml stack set`."
         )
 
-    def get_artifact_store(self, key: str) -> BaseArtifactStore:
+    def get_artifact_store(self, key: str) -> "BaseArtifactStore":
         """Return a single artifact store based on key.
 
         Args:
@@ -140,7 +157,7 @@ class LocalService(BaseComponent):
 
     @track(event=REGISTERED_ARTIFACT_STORE)
     def register_artifact_store(
-        self, key: str, artifact_store: BaseArtifactStore
+        self, key: str, artifact_store: "BaseArtifactStore"
     ) -> None:
         """Register an artifact store.
 
@@ -177,7 +194,7 @@ class LocalService(BaseComponent):
         self.update()
         logger.debug(f"Deleted artifact_store with key: {key}.")
 
-    def get_metadata_store(self, key: str) -> BaseMetadataStore:
+    def get_metadata_store(self, key: str) -> "BaseMetadataStore":
         """Return a single metadata store based on key.
 
         Args:
@@ -198,7 +215,7 @@ class LocalService(BaseComponent):
 
     @track(event=REGISTERED_METADATA_STORE)
     def register_metadata_store(
-        self, key: str, metadata_store: BaseMetadataStore
+        self, key: str, metadata_store: "BaseMetadataStore"
     ) -> None:
         """Register a metadata store.
 
@@ -235,7 +252,7 @@ class LocalService(BaseComponent):
         self.update()
         logger.debug(f"Deleted metadata store with key: {key}.")
 
-    def get_orchestrator(self, key: str) -> BaseOrchestrator:
+    def get_orchestrator(self, key: str) -> "BaseOrchestrator":
         """Return a single orchestrator based on key.
 
         Args:
@@ -256,7 +273,7 @@ class LocalService(BaseComponent):
 
     @track(event=REGISTERED_ORCHESTRATOR)
     def register_orchestrator(
-        self, key: str, orchestrator: BaseOrchestrator
+        self, key: str, orchestrator: "BaseOrchestrator"
     ) -> None:
         """Register an orchestrator.
 
