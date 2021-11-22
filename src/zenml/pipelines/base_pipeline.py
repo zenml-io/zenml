@@ -233,7 +233,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         if run_name is None:
             run_name = (
-                f"{self.pipeline_name} + -"
+                f"{self.pipeline_name}-"
                 f'{datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")}'
             )
 
