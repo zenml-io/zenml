@@ -102,9 +102,7 @@ class ExamplesRepo:
     @property
     def examples_dir(self) -> str:
         """Returns the path for the examples directory."""
-        return os.path.join(
-            click.get_app_dir(APP_NAME), EXAMPLES_GITHUB_REPO, "examples"
-        )
+        return os.path.join(self.cloning_path, "examples")
 
     def clone(self) -> None:
         """Clones repo to cloning_path.

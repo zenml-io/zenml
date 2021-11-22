@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+import os
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
 from pathlib import Path
@@ -21,6 +21,7 @@ import pytest
 
 from zenml.cli.example import Example, ExamplesRepo, GitExamplesHandler
 from zenml.logger import get_logger
+from zenml.utils import path_utils
 
 logger = get_logger(__name__)
 
@@ -45,7 +46,23 @@ class MockRepo:
         self.tags = tags
 
 
-def test_check_if_latest_release_works(monkeypatch):
+@pytest.fixture
+def examples_repo(tmp_path, mocker):
+    path_utils.copy_dir(os.getcwd(), str(tmp_path))
+    examples_repo = ExamplesRepo(cloning_path=Path())
+    mocker.patch.object(examples_repo, "clone", return_value=None)
+    return examples_repo
+
+
+@pytest.fixture
+def git_examples_handler(monkeypatch, examples_repo):
+    handler = GitExamplesHandler()
+
+    monkeypatch.setattr(handler, "examples_repo", examples_repo)
+    return handler
+
+
+def test_check_if_latest_release_works(examples_repo, monkeypatch):
     """Tests to see that latest_release gets the latest_release"""
     mock_tags = [
         MockTag("0.5.0", MockCommit(datetime(2021, 5, 17))),
@@ -53,16 +70,16 @@ def test_check_if_latest_release_works(monkeypatch):
         MockTag("0.5.2", MockCommit(datetime(2021, 9, 17))),
     ]
     mock_repo = MockRepo(tags=mock_tags)
-    examples_repo = ExamplesRepo(cloning_path="")
     monkeypatch.setattr(examples_repo, "repo", mock_repo)
 
     assert examples_repo.latest_release == "0.5.2"
 
 
 @pytest.mark.parametrize("example", ZERO_FIVE_ZERO_RELEASE_EXAMPLES)
-def test_list_returns_three_examples_for_0_5_0_release(example: str) -> None:
+def test_list_returns_three_examples_for_0_5_0_release(
+    example: str, git_examples_handler: GitExamplesHandler
+) -> None:
     """Check the examples returned from zenml example list"""
-    git_examples_handler = GitExamplesHandler()
     git_examples_handler.pull(version="0.5.0")
     assert example in [
         example_instance.name
