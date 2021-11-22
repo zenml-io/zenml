@@ -46,23 +46,39 @@ class MockRepo:
         self.tags = tags
 
 
-@pytest.fixture
-def examples_repo(tmp_path, mocker):
+@pytest.fixture(scope="session")
+def monkeypatch_session():
+    from _pytest.monkeypatch import MonkeyPatch
+
+    m = MonkeyPatch()
+    yield m
+    m.undo()
+
+
+@pytest.fixture(scope="session")
+def examples_repo(tmpdir_factory, monkeypatch_session):
+    tmp_path = tmpdir_factory.mktemp("zenml_examples")
     fileio.copy_dir(os.getcwd(), str(tmp_path))
     examples_repo = ExamplesRepo(cloning_path=tmp_path)
-    mocker.patch.object(examples_repo, "clone", return_value=None)
-    mocker.patch.object(examples_repo, "delete", return_value=None)
+
+    def empty():
+        return None
+
+    monkeypatch_session.setattr(examples_repo, "clone", empty)
+    monkeypatch_session.setattr(examples_repo, "delete", empty)
     # Once you copy with fileio some scripts change their modes and get
     # `modified`. We need to stash these changes to get the tests working.
     examples_repo.repo.git.stash()
-    return examples_repo
+    yield examples_repo
 
 
-@pytest.fixture
-def git_examples_handler(monkeypatch, examples_repo):
+@pytest.fixture(scope="session")
+def git_examples_handler(monkeypatch_session, examples_repo):
     handler = GitExamplesHandler()
-    monkeypatch.setattr(handler, "examples_repo", examples_repo)
-    return handler
+    monkeypatch_session.setattr(handler, "examples_repo", examples_repo)
+    yield handler
+    handler.examples_repo.repo.git.stash()
+    handler.examples_repo.checkout("main")
 
 
 def test_check_if_latest_release_works(examples_repo, monkeypatch):
