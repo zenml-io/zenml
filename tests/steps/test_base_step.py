@@ -24,6 +24,17 @@ from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
 
 
+def test_step_decorator_creates_class_in_same_module_as_decorated_function():
+    """Tests that the `BaseStep` subclass created by our step decorator
+    creates the class in the same module as the decorated function."""
+
+    @step
+    def some_step():
+        pass
+
+    assert some_step.__module__ == __name__
+
+
 def test_define_step_with_shared_input_and_output_name():
     """Tests that defining a step with a shared input and output name raises
     a StepInterfaceError."""
