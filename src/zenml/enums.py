@@ -19,7 +19,6 @@ from enum import Enum
 class ArtifactStoreTypes(str, Enum):
     """All supported Artifact Store types."""
 
-    base = "base"
     local = "local"
     gcp = "gcp"
 
@@ -31,10 +30,8 @@ class ArtifactStoreTypes(str, Enum):
 class MLMetadataTypes(str, Enum):
     """All supported ML Metadata types."""
 
-    base = "base"
     sqlite = "sqlite"
     mysql = "mysql"
-    mock = "mock"
 
     def __str__(self) -> str:
         """Returns the enum string value."""
@@ -44,7 +41,6 @@ class MLMetadataTypes(str, Enum):
 class OrchestratorTypes(str, Enum):
     """All supported Orchestrator types"""
 
-    base = "base"
     local = "local"
     airflow = "airflow"
 
