@@ -98,8 +98,8 @@ class ExamplesRepo:
     def latest_release(self) -> str:
         """Returns the latest release for the examples repository."""
         tags = sorted(
-            self.repo.tags, key=lambda t: t.commit.committed_datetime
-        )  # type: ignore
+            self.repo.tags, key=lambda t: t.commit.committed_datetime  # type: ignore
+        )
         latest_tag = parse(tags[-1].name)
         if type(latest_tag) is not Version:
             return "main"
