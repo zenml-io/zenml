@@ -98,6 +98,7 @@ types-six = "^1.16.2"
 types-tabulate = "^0.8.3"
 types-termcolor = "^1.1.2"
 types-psutil = "^5.8.13"
+pytest-mock = "^3.6.1"
 
 [build-system]
 requires = ["poetry-core"]
@@ -130,6 +131,7 @@ filterwarnings = [
 log_cli = true
 log_cli_level = "INFO"
 testpaths = "tests"
+xfail_strict = true
 
 [tool.coverage.run]
 parallel = true
