@@ -51,13 +51,16 @@ def examples_repo(tmp_path, mocker):
     fileio.copy_dir(os.getcwd(), str(tmp_path))
     examples_repo = ExamplesRepo(cloning_path=tmp_path)
     mocker.patch.object(examples_repo, "clone", return_value=None)
+    mocker.patch.object(examples_repo, "delete", return_value=None)
+    # Once you copy with fileio some scripts change their modes and get
+    # `modified`. We need to stash these changes to get the tests working.
+    examples_repo.repo.git.stash()
     return examples_repo
 
 
 @pytest.fixture
 def git_examples_handler(monkeypatch, examples_repo):
     handler = GitExamplesHandler()
-
     monkeypatch.setattr(handler, "examples_repo", examples_repo)
     return handler
 
@@ -87,24 +90,27 @@ def test_list_returns_three_examples_for_0_5_0_release(
     ]
 
 
-def test_pull_earlier_version_does_not_fail() -> None:
+def test_pull_earlier_version_does_not_fail(
+    git_examples_handler: GitExamplesHandler,
+) -> None:
     """Check pull of earlier version exits without errors"""
-    git_examples_handler = GitExamplesHandler()
     with does_not_raise():
         git_examples_handler.pull(version="0.3.8")
 
 
-def test_pull_of_higher_version_than_currently_in_global_config_store() -> None:
+def test_pull_of_higher_version_than_currently_in_global_config_store(
+    git_examples_handler: GitExamplesHandler,
+) -> None:
     """Check what happens when (valid) desired version for a force redownload
     is higher than the latest version stored in the global config"""
-    git_examples_handler = GitExamplesHandler()
     with does_not_raise():
         git_examples_handler.pull(version="5.1")
 
 
-def test_info_echos_out_readme_content() -> None:
+def test_info_echos_out_readme_content(
+    git_examples_handler: GitExamplesHandler,
+) -> None:
     """Check that info subcommand displays readme content"""
-    git_examples_handler = GitExamplesHandler()
     examples = git_examples_handler.examples
     for example_instance in examples:
         with does_not_raise():
