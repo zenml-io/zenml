@@ -20,8 +20,8 @@ from typing import List
 import pytest
 
 from zenml.cli.example import Example, ExamplesRepo, GitExamplesHandler
+from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.utils import path_utils
 
 logger = get_logger(__name__)
 
@@ -48,8 +48,8 @@ class MockRepo:
 
 @pytest.fixture
 def examples_repo(tmp_path, mocker):
-    path_utils.copy_dir(os.getcwd(), str(tmp_path))
-    examples_repo = ExamplesRepo(cloning_path=Path())
+    fileio.copy_dir(os.getcwd(), str(tmp_path))
+    examples_repo = ExamplesRepo(cloning_path=tmp_path)
     mocker.patch.object(examples_repo, "clone", return_value=None)
     return examples_repo
 
