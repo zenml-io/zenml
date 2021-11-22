@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
+from typing import Optional
 
 import pytest
 
@@ -546,4 +547,22 @@ def test_step_fails_if_config_parameter_value_is_missing():
     step_instance = some_step()
 
     with pytest.raises(MissingStepParameterError):
+        step_instance._update_and_verify_parameter_spec()
+
+
+def test_step_config_allows_none_as_default_value():
+    """Tests that `None` is allowed as a default value for a
+    step config field."""
+
+    class ConfigWithNoneDefaultValue(BaseStepConfig):
+        some_parameter: Optional[int] = None
+
+    @step
+    def some_step(config: ConfigWithNoneDefaultValue):
+        pass
+
+    # don't pass the config when initializing the step
+    step_instance = some_step()
+
+    with does_not_raise():
         step_instance._update_and_verify_parameter_spec()
