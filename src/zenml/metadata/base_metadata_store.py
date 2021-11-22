@@ -40,11 +40,10 @@ from zenml.post_execution import (
     PipelineView,
     StepView,
 )
+from zenml.steps.utils import INTERNAL_EXECUTION_PARAMETER_PREFIX
 from zenml.utils.path_utils import get_zenml_config_dir
 
 logger = get_logger(__name__)
-
-BASE_STEP_PREFIX = "zenml.steps.base_step."
 
 
 # TODO [ENG-132]: can we remove this registration?
@@ -103,13 +102,13 @@ class BaseMetadataStore(BaseComponent):
             Original `StepView` derived from the proto.Execution.
         """
         step_name = self.step_type_mapping[execution.type_id]
-        # TODO [ENG-134]: why is the name like this?
-        if step_name.startswith(BASE_STEP_PREFIX):
-            step_name = step_name[len(BASE_STEP_PREFIX) :]
+        # Remove the module name
+        step_name = step_name.split(".")[-1]
 
         step_parameters = {
             k: json.loads(v.string_value)
             for k, v in execution.custom_properties.items()
+            if not k.startswith(INTERNAL_EXECUTION_PARAMETER_PREFIX)
         }
 
         return StepView(

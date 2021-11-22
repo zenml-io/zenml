@@ -72,6 +72,7 @@ def step(
             {
                 STEP_INNER_FUNC_NAME: staticmethod(func),
                 PARAM_ENABLE_CACHE: enable_cache,
+                "__module__": func.__module__,
             },
         )
 

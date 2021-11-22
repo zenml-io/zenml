@@ -108,7 +108,7 @@ def generate_component(step: "BaseStep") -> Callable[..., Any]:
         spec_params[key] = component_spec.ExecutionParameter(type=str)  # type: ignore[no-untyped-call] # noqa
 
     component_spec_class = type(
-        "%s_Spec" % step.__class__.__name__,
+        f"{step.__class__.__name__}_Spec",
         (component_spec.ComponentSpec,),
         {
             "INPUTS": spec_inputs,
@@ -118,8 +118,9 @@ def generate_component(step: "BaseStep") -> Callable[..., Any]:
     )
 
     # Defining a executor class bu utilizing the process function
+    executor_class_name = f"{step.__class__.__name__}_Executor"
     executor_class = type(
-        "%s_Executor" % step.__class__.__name__,
+        executor_class_name,
         (_FunctionExecutor,),
         {
             "_FUNCTION": staticmethod(getattr(step, STEP_INNER_FUNC_NAME)),
@@ -130,7 +131,7 @@ def generate_component(step: "BaseStep") -> Callable[..., Any]:
     )
 
     module = sys.modules[step.__module__]
-    setattr(module, "%s_Executor" % step.__class__.__name__, executor_class)
+    setattr(module, executor_class_name, executor_class)
     executor_spec_instance = ExecutorClassSpec(executor_class=executor_class)
 
     # Defining the component with the corresponding executor and spec
@@ -220,7 +221,6 @@ class _FunctionExecutor(BaseExecutor):
     """Base TFX Executor class which is compatible with ZenML steps"""
 
     _FUNCTION = staticmethod(lambda: None)
-    # TODO [ENG-159]: should this be an instance variable?
     materializers: ClassVar[
         Optional[Dict[str, Type["BaseMaterializer"]]]
     ] = None
@@ -318,7 +318,7 @@ class _FunctionExecutor(BaseExecutor):
         """
         # remove all ZenML internal execution properties
         exec_properties = {
-            k: v
+            k: json.loads(v)
             for k, v in exec_properties.items()
             if not k.startswith(INTERNAL_EXECUTION_PARAMETER_PREFIX)
         }
@@ -332,13 +332,8 @@ class _FunctionExecutor(BaseExecutor):
         for arg in args:
             arg_type = spec.annotations.get(arg, None)
             if issubclass(arg_type, BaseStepConfig):
-                # Resolving the execution parameters
-                new_exec = {
-                    k: json.loads(v) for k, v in exec_properties.items()
-                }
-
                 try:
-                    config_object = arg_type.parse_obj(new_exec)
+                    config_object = arg_type.parse_obj(exec_properties)
                 except pydantic.ValidationError as e:
                     missing_fields = [
                         field
