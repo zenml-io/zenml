@@ -12,12 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Dict, Type, Union
+from typing import TYPE_CHECKING, Dict, Type, Union
 
 from zenml.exceptions import IntegrationError
-from zenml.integrations.integration import Integration
 from zenml.logger import get_logger
 from zenml.utils.source_utils import LazyLoader
+
+if TYPE_CHECKING:
+    from zenml.integrations.integration import Integration
 
 logger = get_logger(__name__)
 
