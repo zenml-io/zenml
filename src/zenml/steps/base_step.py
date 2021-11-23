@@ -65,7 +65,6 @@ class BaseStepMeta(type):
         mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
     ) -> "BaseStepMeta":
         """Set up a new class with a qualified spec."""
-        logger.debug(f"Registering class {name}, bases: {bases}, dct: {dct}")
         cls = cast(Type["BaseStep"], super().__new__(mcs, name, bases, dct))
 
         cls.INPUT_SIGNATURE = {}
