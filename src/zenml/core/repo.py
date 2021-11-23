@@ -184,7 +184,10 @@ class Repository:
         """
         gc = GlobalConfig()
         if self.path not in gc.repo_active_stacks:
-            raise AssertionError(f"No active stack set for repo: {self.path}!")
+            raise KeyError(
+                f"No active stack set for repo: {self.path}! Available "
+                f"stacks: {[(a, b) for a, b in gc.repo_active_stacks.items()]}."
+            )
         return gc.repo_active_stacks[self.path]
 
     def get_active_stack(self) -> BaseStack:
