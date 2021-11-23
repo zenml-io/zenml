@@ -29,6 +29,10 @@ JIRA_GITHUB_URL_FIELD_NAME = os.environ["JIRA_GITHUB_URL_FIELD_NAME"]
 GITHUB_REPOSITORY = os.environ["GITHUB_REPOSITORY"]
 GITHUB_SHA = os.environ["GITHUB_SHA"]
 
+# set the env vars to avoud analytics
+os.environ["ZENML_DEBUG"] = "true"
+os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
+
 
 class Todo:
     """Represents a TODO comment in code."""
