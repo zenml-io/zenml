@@ -323,12 +323,12 @@ def update_todos(python_files: List[Path]) -> None:
         todos_without_issue, todos_with_issue = find_todos(file)
         old_todos.extend(todos_with_issue)
 
-        # if todos_with_issue:
-        #     remove_todos_for_closed_issues(file, todos_with_issue, jira_issues)
-        #
-        # if todos_without_issue:
-        #     create_jira_issues(session, todos_without_issue)
-        #     update_file_with_issue_keys(file, todos_without_issue)
+        if todos_with_issue:
+            remove_todos_for_closed_issues(file, todos_with_issue, jira_issues)
+
+        if todos_without_issue:
+            create_jira_issues(session, todos_without_issue)
+            update_file_with_issue_keys(file, todos_without_issue)
 
     tag_issues_without_todo(session, old_todos, jira_issues)
 
