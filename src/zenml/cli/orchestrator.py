@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 
 
+@cli_utils.activate_integrations
 def _get_orchestrator(
     orchestrator_name: Optional[str] = None,
 ) -> Tuple["BaseOrchestrator", str]:
@@ -70,6 +71,7 @@ def get_active_orchestrator() -> None:
 @click.argument("orchestrator_name", type=str)
 @click.argument("orchestrator_type", type=str)
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
+@cli_utils.activate_integrations
 def register_orchestrator(
     orchestrator_name: str, orchestrator_type: str, args: List[str]
 ) -> None:
@@ -84,9 +86,6 @@ def register_orchestrator(
     repo: Repository = Repository()
     # TODO [ENG-186]: Remove when we rework the registry logic
     from zenml.core.component_factory import orchestrator_store_factory
-    from zenml.integrations.registry import integration_registry
-
-    integration_registry.activate()
 
     comp = orchestrator_store_factory.get_single_component(orchestrator_type)
     orchestrator_ = comp(**parsed_args)

@@ -15,7 +15,6 @@
 import datetime
 import os
 import time
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import click
@@ -147,12 +146,10 @@ class AirflowOrchestrator(BaseOrchestrator):
             )
             if fileio.file_exists(destination_path):
                 logger.info(
-                    "File '{%s}' already exists, overwriting with new DAG file",
+                    "File '%s' already exists, overwriting with new DAG file",
                     destination_path,
                 )
-            fileio.copy(
-                Path(dag_filepath), Path(destination_path), overwrite=True
-            )
+            fileio.copy(dag_filepath, destination_path, overwrite=True)
 
     def _log_webserver_credentials(self):
         """Logs URL and credentials to login to the airflow webserver.
