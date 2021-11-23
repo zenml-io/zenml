@@ -31,3 +31,6 @@ class TensorflowIntegration(Integration):
         import_class_by_path(
             "zenml.integrations.tensorflow.materializers.tf_dataset_materializer.TensorflowDatasetMaterializer"
         )
+
+
+TensorflowIntegration.check_installation()

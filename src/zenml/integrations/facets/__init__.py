@@ -22,3 +22,6 @@ class FacetsIntegration(Integration):
 
     NAME = FACETS
     REQUIREMENTS = ["facets-overview>=1.0.0"]
+
+
+FacetsIntegration.check_installation()

@@ -20,3 +20,6 @@ class PlotlyIntegration(Integration):
 
     NAME = PLOTLY
     REQUIREMENTS = ["plotly>=5.4.0"]
+
+
+PlotlyIntegration.check_installation()

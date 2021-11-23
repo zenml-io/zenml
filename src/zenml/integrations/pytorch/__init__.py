@@ -29,3 +29,6 @@ class PytorchIntegration(Integration):
         import_class_by_path(
             "zenml.integrations.pytorch.materializers.pytorch_materializer.PyTorchMaterializer"
         )
+
+
+PytorchIntegration.check_installation()
