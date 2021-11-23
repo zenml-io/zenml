@@ -12,12 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import datetime
+import sys
 from datetime import timedelta
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping
 
 import click
 from dateutil import tz
 from tabulate import tabulate
+
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from zenml.core.base_component import BaseComponent
@@ -124,10 +129,16 @@ def format_date(
     """
     if dt is None:
         return ""
-    # make sure this is UTC, then use astimezone to get local zone.
+    # make sure this is UTC
     dt = dt.replace(tzinfo=tz.tzutc())
-    local_time = dt.astimezone()
-    return local_time.strftime(format)
+
+    if sys.platform == "win32":
+        # On non-windows get local time zone.
+        dt = dt.astimezone()
+    else:
+        logger.warning("On Windows, all times are displayed in UTC timezone.")
+
+    return dt.strftime(format)
 
 
 def format_timedelta(td: timedelta) -> str:
