@@ -20,7 +20,7 @@ class SklearnIntegration(Integration):
     """Definition of sklearn integration for ZenML."""
 
     NAME = SKLEARN
-    REQUIREMENTS = ["scikit-learn==1.0.1"]
+    REQUIREMENTS = ["scikit-learn"]
 
     @classmethod
     def activate(cls) -> None:
