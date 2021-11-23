@@ -25,11 +25,11 @@ If you wish to disable this automation, you may remove the GitHub actions workfl
 - Navigating to your local build; and running,
 - `ghp-import -n -p -f book/_build/html`
 
-This will automatically push your build to the `gh-pages` branch. More information on this hosting process can be found [here](https://book.org/publish/gh-pages.html#manually-host-your-book-with-github-pages).
+This will automatically push your build to the `gh-pages` branch. More information on this hosting process can be found [here](https://galdin.dev/blog/publishing-gitbook-to-github-pages/).
 
 ## Contributors
 
-We welcome and recognize all contributions. You can see a list of current contributors in the [contributors tab](https://github.com/zenml-io/zenml_docs/graphs/contributors).
+We welcome and recognize all contributions. You can see a list of current contributors in the [contributors tab](https://github.com/zenml-io/zenml/graphs/contributors).
 
 ## Credits
 
