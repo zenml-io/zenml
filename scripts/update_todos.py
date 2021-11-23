@@ -24,6 +24,7 @@ JIRA_BOARD_ID = os.environ["JIRA_BOARD_ID"]
 JIRA_ISSUE_TYPE_ID = os.environ["JIRA_ISSUE_TYPE_ID"]
 JIRA_DONE_STATUS_CATEGORY_ID = int(os.environ["JIRA_DONE_STATUS_CATEGORY_ID"])
 JIRA_ISSUE_LABEL = os.environ["JIRA_ISSUE_LABEL"]
+JIRA_REMOVED_TODO_LABEL = os.environ["JIRA_REMOVED_TODO_LABEL"]
 JIRA_GITHUB_URL_FIELD_NAME = os.environ["JIRA_GITHUB_URL_FIELD_NAME"]
 
 GITHUB_REPOSITORY = os.environ["GITHUB_REPOSITORY"]
@@ -140,6 +141,39 @@ def get_all_jira_todo_issues(session: requests.Session) -> List[JiraIssue]:
         issues.append(JiraIssue(key=issue_dict["key"], done=is_done))
 
     return issues
+
+
+def tag_issue(session: requests.Session, issue: JiraIssue) -> None:
+    """Tags an issue with `JIRA_REMOVED_TODO_LABEL`."""
+    url = f"{JIRA_BASE_URL}/rest/api/3/issue/{issue.key}"
+    data = json.dumps(
+        {"update": {"labels": [{"add": JIRA_REMOVED_TODO_LABEL}]}}
+    )
+
+    try:
+        response = session.put(url, data=data)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        logging.error("Failed to tag JIRA todo issue '%s': %s", issue.key, e)
+        sys.exit()
+
+
+def tag_issues_without_todo(
+    session: requests.Session, todos: List[Todo], issues: List[JiraIssue]
+) -> None:
+    """Tags all open issues for which the todo was deleted."""
+    todo_issue_keys = {todo.issue_key for todo in todos}
+
+    for issue in issues:
+        if issue.done or issue.key in todo_issue_keys:
+            # issue is closed or the todo comment for it still exists
+            continue
+
+        tag_issue(session, issue)
+
+    logging.info(
+        "Finished tagging issues for which the TODO comment was deleted."
+    )
 
 
 def remove_todos_for_closed_issues(
@@ -283,9 +317,11 @@ def update_todos(python_files: List[Path]) -> None:
     """
     session = _setup_session()
     jira_issues = get_all_jira_todo_issues(session)
+    old_todos = []
 
     for file in python_files:
         todos_without_issue, todos_with_issue = find_todos(file)
+        old_todos.extend(todos_with_issue)
 
         if todos_with_issue:
             remove_todos_for_closed_issues(file, todos_with_issue, jira_issues)
@@ -293,6 +329,8 @@ def update_todos(python_files: List[Path]) -> None:
         if todos_without_issue:
             create_jira_issues(session, todos_without_issue)
             update_file_with_issue_keys(file, todos_without_issue)
+
+    tag_issues_without_todo(session, old_todos, jira_issues)
 
 
 def _setup_session() -> requests.Session:
