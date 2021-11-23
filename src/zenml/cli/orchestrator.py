@@ -86,7 +86,7 @@ def register_orchestrator(
     from zenml.core.component_factory import orchestrator_store_factory
     from zenml.integrations.registry import integration_registry
 
-    integration_registry.activate()
+    integration_registry.activate_integrations()
 
     comp = orchestrator_store_factory.get_single_component(orchestrator_type)
     orchestrator_ = comp(**parsed_args)

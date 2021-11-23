@@ -55,7 +55,7 @@ def register_artifact_store(
     from zenml.core.component_factory import artifact_store_factory
     from zenml.integrations.registry import integration_registry
 
-    integration_registry.activate()
+    integration_registry.activate_integrations()
 
     comp = artifact_store_factory.get_single_component(artifact_store_type)
     artifact_store = comp(**parsed_args)
