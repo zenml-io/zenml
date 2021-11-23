@@ -4,8 +4,8 @@ name: Publish API Docs
 # Controls when the action will run.
 on:
   push:
-    tags:
-      - '*'
+    branches:
+      - main
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -29,7 +29,7 @@ jobs:
     - name: Install Dependencies
       run: |
         python -m poetry install
-        python -m poetry run pip install apache-airflow~=2.2.0 gcsfs~=2021.9.0 click~=8.0.3 torch~=1.10.0
+        python -m poetry run pip install apache-airflow~=2.2.0 gcsfs~=2021.9.0 click~=8.0.3 torch~=1.10.0 facets-overview~=1.0.0 plotly~=5.4.0
         python -m poetry run pip install awscli
 
     - name: Opt-out of analytics
