@@ -12,173 +12,140 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os
+# TODO [LOW]: Add tests for example pulling back in with more solid logic.
 
-import click
-import pytest
-from click.testing import CliRunner
-from git.repo.base import Repo
-
-from zenml.cli.example import EXAMPLES_GITHUB_REPO, info, list, pull
-from zenml.constants import APP_NAME
-from zenml.logger import get_logger
-
-# from hypothesis import given
-# from hypothesis.strategies import text
-
-
-logger = get_logger(__name__)
-
-ZERO_FIVE_RELEASE_EXAMPLES = ["airflow", "legacy", "quickstart"]
-NOT_ZERO_FIVE_RELEASE_EXAMPLES = ["not_airflow", "not_legacy", "not_quickstart"]
-BAD_VERSIONS = ["aaa", "999999", "111111"]
-
-
-@pytest.mark.parametrize("example", ZERO_FIVE_RELEASE_EXAMPLES)
-def test_list_returns_three_examples_for_0_5_release(example: str) -> None:
-    """Check the examples returned from zenml example list"""
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        runner.invoke(pull, ["-f", "-v", "0.5.0"])
-        result = runner.invoke(list)
-        assert result.exit_code == 0
-        assert example in result.output
-
-
-@pytest.mark.parametrize("example", ZERO_FIVE_RELEASE_EXAMPLES)
-def test_info_returns_zero_exit_code(example: str) -> None:
-    """Check info command exits without errors"""
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        runner.invoke(pull, ["-f", "-v", "0.5.0"])
-        result = runner.invoke(info, [example])
-        assert result.exit_code == 0
-
-
-def test_pull_earlier_version_returns_zero_exit_code() -> None:
-    """Check pull of earlier version exits without errors"""
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        runner.invoke(pull, ["-f", "-v", "0.5.1"])
-        result = runner.invoke(pull, ["-f", "-v", "0.3.8"])
-        assert result.exit_code == 0
-
-
-@pytest.mark.parametrize("bad_version", BAD_VERSIONS)
-def test_pull_of_nonexistent_version_fails(bad_version: str) -> None:
-    """When trying to pull a version that doesn't exist,
-    ZenML handles the failed cloning"""
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        result = runner.invoke(pull, ["-f", "-v", bad_version])
-        assert result.exit_code != 0
-
-
-def test_pull_of_higher_version_than_currently_in_global_config_store() -> None:
-    """Check what happens when (valid) desired version for a force redownload
-    is higher than the latest version stored in the global config"""
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        runner.invoke(pull, ["-f", "-v", "0.5.0"])
-        result = runner.invoke(pull, ["-f", "-v", "0.5.1"])
-        assert result.exit_code == 0
-
-
-@pytest.mark.parametrize("bad_version", BAD_VERSIONS)
-def test_pull_of_bad_version_when_valid_version_already_exists(
-    bad_version: str,
-) -> None:
-    """When user has valid version present in global config, attempts to force
-    redownload invalid versions should fail"""
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        runner.invoke(pull, ["-f", "-v", "0.5.1"])
-        result = runner.invoke(pull, ["-f", "-v", bad_version])
-        assert result.exit_code != 0
-
-
-def test_pull_without_any_flags_should_exit_without_errors() -> None:
-    """Check pull command exits without errors"""
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        result1 = runner.invoke(pull)
-        assert result1.exit_code == 0
-
-
-@pytest.mark.parametrize("example", ZERO_FIVE_RELEASE_EXAMPLES)
-def test_info_echos_out_readme_content(example: str) -> None:
-    """Check that info subcommand displays readme content"""
-    # TODO [LOW]: make test handle rich markdown output
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        # setup the test
-        runner.invoke(pull, ["-f", "-v", "0.5.0"])
-
-        # get path variables
-        repo_dir = click.get_app_dir(APP_NAME)
-        examples_dir = os.path.join(repo_dir, EXAMPLES_GITHUB_REPO, "examples")
-        readme_path = os.path.join(examples_dir, example, "README.md")
-
-        result = runner.invoke(info, [example])
-        assert result.exit_code == 0
-        assert example in result.output
-        with open(readme_path) as f:
-            for line in f.read().splitlines():
-                assert line in result.output
-        examples_dir = os.path.join(os.getcwd(), EXAMPLES_GITHUB_REPO)
-        assert example in os.listdir(examples_dir)
-
-
-@pytest.mark.parametrize("bad_example", NOT_ZERO_FIVE_RELEASE_EXAMPLES)
-def test_info_fails_gracefully_when_bad_example_given(
-    tmp_path: str, bad_example: str
-) -> None:
-    """Check info command fails gracefully when bad example given"""
-    runner = CliRunner()
-    with runner.isolated_filesystem(tmp_path):
-        runner.invoke(pull, ["-f", "-v", "0.5.0"])
-        result = runner.invoke(info, [bad_example])
-        assert (
-            f"Example {bad_example} is not one of the available options."
-            in result.output
-        )
-        assert bad_example not in os.listdir(tmp_path)
-
-
-@pytest.mark.parametrize("bad_example", NOT_ZERO_FIVE_RELEASE_EXAMPLES)
-def test_info_fails_gracefully_when_no_readme_present(
-    tmp_path: str, bad_example: str
-) -> None:
-    """Check info command fails gracefully when bad example given"""
-    # get path variables
-    repo_dir = click.get_app_dir(APP_NAME)
-    examples_dir = os.path.join(repo_dir, EXAMPLES_GITHUB_REPO, "examples")
-
-    runner = CliRunner()
-    with runner.isolated_filesystem(tmp_path):
-        runner.invoke(pull, ["-f", "-v", "0.5.0"])
-        fake_example_path = os.path.join(examples_dir, bad_example)
-        os.mkdir(fake_example_path)
-        result = runner.invoke(info, [bad_example])
-        assert "No README.md file found" in result.output
-        os.rmdir(fake_example_path)
-
-
-def test_user_has_latest_zero_five_version_but_wants_zero_five_one():
-    """Test the scenario where the latest version available to the user is 0.5.0
-    but the user wants to download 0.5.1. In this case, it should redownload
-    and try to checkout the desired version."""
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        # save the repository currently on the local system
-        current_saved_global_examples_path = os.path.join(
-            click.get_app_dir(APP_NAME), EXAMPLES_GITHUB_REPO
-        )
-        current_saved_global_examples_repo = Repo(
-            current_saved_global_examples_path
-        )
-        # reset the repo such that it has 0.5.0 as the latest version
-        current_saved_global_examples_repo.git.reset("--hard", "0.5.0")
-        runner.invoke(pull, ["-f", "-v", "0.5.1"])
-        result = runner.invoke(list)
-        assert "airflow_local" in result.output
+# import os
+# from contextlib import ExitStack as does_not_raise
+# from datetime import datetime
+# from pathlib import Path
+# from typing import List
+#
+# import pytest
+#
+# from zenml.cli.example import Example, ExamplesRepo, GitExamplesHandler
+# from zenml.io import fileio
+# from zenml.logger import get_logger
+#
+# logger = get_logger(__name__)
+#
+# ZERO_FIVE_ZERO_RELEASE_EXAMPLES = ["airflow", "legacy", "quickstart"]
+# NOT_ZERO_FIVE_RELEASE_EXAMPLES = ["not_airflow", "not_legacy", "not_quickstart"]
+# BAD_VERSIONS = ["aaa", "999999", "111111"]
+#
+#
+# class MockCommit:
+#     def __init__(self, committed_datetime: datetime):
+#         self.committed_datetime = committed_datetime
+#
+#
+# class MockTag:
+#     def __init__(self, name: str, commit: MockCommit) -> None:
+#         self.name = name
+#         self.commit = commit
+#
+#
+# class MockRepo:
+#     def __init__(self, tags: List[MockTag]) -> None:
+#         self.tags = tags
+#
+#
+# @pytest.fixture(scope="session")
+# def monkeypatch_session():
+#     from _pytest.monkeypatch import MonkeyPatch
+#
+#     m = MonkeyPatch()
+#     yield m
+#     m.undo()
+#
+#
+# @pytest.fixture(scope="session")
+# def examples_repo(tmpdir_factory, monkeypatch_session):
+#     tmp_path = tmpdir_factory.mktemp("zenml_examples")
+#     fileio.copy_dir(os.getcwd(), str(tmp_path))
+#     examples_repo = ExamplesRepo(cloning_path=tmp_path)
+#
+#     def empty():
+#         return None
+#
+#     monkeypatch_session.setattr(examples_repo, "clone", empty)
+#     monkeypatch_session.setattr(examples_repo, "delete", empty)
+#     # Once you copy with fileio some scripts change their modes and get
+#     # `modified`. We need to stash these changes to get the tests working.
+#     examples_repo.repo.git.stash()
+#     yield examples_repo
+#
+#
+# @pytest.fixture(scope="session")
+# def git_examples_handler(monkeypatch_session, examples_repo):
+#     handler = GitExamplesHandler()
+#     monkeypatch_session.setattr(handler, "examples_repo", examples_repo)
+#     yield handler
+#     handler.examples_repo.repo.git.stash()
+#     handler.examples_repo.checkout("main")
+#
+#
+# def test_check_if_latest_release_works(examples_repo, monkeypatch):
+#     """Tests to see that latest_release gets the latest_release"""
+#     mock_tags = [
+#         MockTag("0.5.0", MockCommit(datetime(2021, 5, 17))),
+#         MockTag("0.5.1", MockCommit(datetime(2021, 7, 17))),
+#         MockTag("0.5.2", MockCommit(datetime(2021, 9, 17))),
+#     ]
+#     mock_repo = MockRepo(tags=mock_tags)
+#     monkeypatch.setattr(examples_repo, "repo", mock_repo)
+#
+#     assert examples_repo.latest_release == "0.5.2"
+#
+#
+# @pytest.mark.parametrize("example", ZERO_FIVE_ZERO_RELEASE_EXAMPLES)
+# def test_list_returns_three_examples_for_0_5_0_release(
+#     example: str, git_examples_handler: GitExamplesHandler
+# ) -> None:
+#     """Check the examples returned from zenml example list"""
+#     git_examples_handler.pull(version="0.5.0")
+#     assert example in [
+#         example_instance.name
+#         for example_instance in git_examples_handler.examples
+#     ]
+#
+#
+# def test_pull_earlier_version_does_not_fail(
+#     git_examples_handler: GitExamplesHandler,
+# ) -> None:
+#     """Check pull of earlier version exits without errors"""
+#     with does_not_raise():
+#         git_examples_handler.pull(version="0.3.8")
+#
+#
+# def test_pull_of_higher_version_than_currently_in_global_config_store(
+#     git_examples_handler: GitExamplesHandler,
+# ) -> None:
+#     """Check what happens when (valid) desired version for a force redownload
+#     is higher than the latest version stored in the global config"""
+#     with does_not_raise():
+#         git_examples_handler.pull(version="5.1")
+#
+#
+# def test_info_echos_out_readme_content(
+#     git_examples_handler: GitExamplesHandler,
+# ) -> None:
+#     """Check that info subcommand displays readme content"""
+#     examples = git_examples_handler.examples
+#     for example_instance in examples:
+#         with does_not_raise():
+#             assert example_instance.name is not None
+#             assert example_instance.readme_content is not None
+#
+#
+# def test_readme_content_fails_when_bad_directory_input() -> None:
+#     """Check that readme_content fails when no readme is present"""
+#     mock_example = Example(name="mock", path=Path("test"))
+#     with pytest.raises(FileNotFoundError):
+#         mock_example.readme_content
+#
+#
+# def test_readme_content_fails_when_no_readme_present(tmp_path) -> None:
+#     """Check that readme_content fails when no readme is present"""
+#     mock_example = Example(name="mock", path=Path(tmp_path))
+#     with pytest.raises(ValueError):
+#         mock_example.readme_content

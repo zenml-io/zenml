@@ -39,6 +39,7 @@ def get_active_metadata_store() -> None:
 @click.argument("metadata_store_name", type=str)
 @click.argument("metadata_store_type", type=str)
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
+@cli_utils.activate_integrations
 def register_metadata_store(
     metadata_store_name: str, metadata_store_type: str, args: List[str]
 ) -> None:
@@ -54,9 +55,6 @@ def register_metadata_store(
     try:
         # TODO [ENG-187]: Remove when we rework the registry logic
         from zenml.core.component_factory import metadata_store_factory
-        from zenml.integrations.registry import integration_registry
-
-        integration_registry.activate_integrations()
         comp = metadata_store_factory.get_single_component(metadata_store_type)
     except AssertionError as e:
         cli_utils.error(str(e))

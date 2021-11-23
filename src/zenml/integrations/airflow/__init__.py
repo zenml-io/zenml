@@ -20,7 +20,7 @@ class AirflowIntegration(Integration):
     """Definition of Airflow Integration for ZenML."""
 
     NAME = AIRFLOW
-    REQUIREMENTS = ["apache_airflow"]
+    REQUIREMENTS = ["apache-airflow==2.2.0"]
 
     @classmethod
     def activate(cls):

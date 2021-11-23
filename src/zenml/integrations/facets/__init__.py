@@ -21,4 +21,4 @@ class FacetsIntegration(Integration):
     for ZenML."""
 
     NAME = FACETS
-    REQUIREMENTS = ["facets-overview >= 1.0.0"]
+    REQUIREMENTS = ["facets-overview>=1.0.0"]

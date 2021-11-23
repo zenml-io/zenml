@@ -19,4 +19,4 @@ class PlotlyIntegration(Integration):
     """Definition of Plotly integration for ZenML."""
 
     NAME = PLOTLY
-    REQUIREMENTS = ["plotly >= 5.4.0"]
+    REQUIREMENTS = ["plotly>=5.4.0"]

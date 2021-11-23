@@ -38,10 +38,13 @@ jobs:
         run: |
           rm.exe "C:/WINDOWS/system32/bash.EXE"
 
-      - name: Install Dependencies and opt-out of analytics
+      - name: Install Dependencies
         run: |
           python -m poetry install
           python -m poetry run pip install apache-airflow~=2.2.0 gcsfs~=2021.9.0 click~=8.0.3 torch~=1.10.0
+
+      - name: Opt-out of analytics
+        run: |
           python -m poetry run zenml analytics opt-out
 
       - name: Lint

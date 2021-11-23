@@ -11,7 +11,7 @@ on:
 jobs:
   # This workflow contains a single job called "publish"
   publish:
-    name: Build and publishes the api docs reference to S3
+    name: Build and publish the api docs to S3
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -26,12 +26,15 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install "poetry"
 
-    - name: Install Dependencies and opt-out of analytics
+    - name: Install Dependencies
       run: |
         python -m poetry install
-        python -m poetry run pip install apache-airflow~=2.2.0 gcsfs~=2021.9.0 click~=8.0.3 torch~=1.10.0
-        python -m poetry run zenml analytics opt-out
+        python -m poetry run pip install apache-airflow~=2.2.0 gcsfs~=2021.9.0 click~=8.0.3 torch~=1.10.0 facets-overview~=1.0.0 plotly~=5.4.0 pytorch_lightning scikit-learn tensorflow ipython
         python -m poetry run pip install awscli
+
+    - name: Opt-out of analytics
+      run: |
+        python -m poetry run zenml analytics opt-out
 
     - name: Runs docs generation
       run: poetry run bash scripts/generate-docs.sh

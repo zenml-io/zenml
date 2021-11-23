@@ -120,11 +120,7 @@ Best of all, the Orchestrator is capable of launching preemtible VMs, saving a b
 
 Coming Soon!
 
-The KubernetesOrchestrator can be found at [`OrchestratorGCPBackend`](https://docs.zenml.io/reference/core/backends/orchestrator/kubernetes/index.html). It launches a Job on your Kubernetes cluster, zips up your local code to the Pod, and executes the ZenML pipeline with a Docker Image of your choice.
-
-**NOTE:** This Orchestrator requires you to ensure a successful connection between your Kubernetes Cluster and your Metadata Store.
-
-A more extensive guide on creating pipelines with Kubernetes can be found in the [Kubernetes Tutorial](https://github.com/zenml-io/zenml/blob/1b32b50007ef781b39c2525c3ca31ee03026c2b5/tutorials/running-a-pipeline-on-kubernetes.md).
+The KubernetesOrchestrator launches a Job on your Kubernetes cluster, zips up your local code to the Pod, and executes the ZenML pipeline with a Docker Image of your choice.
 
 #### AWS Orchestrator
 

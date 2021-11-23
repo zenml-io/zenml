@@ -260,7 +260,7 @@ def resolve_class(class_: Type[Any]) -> str:
     module_source = get_module_source_from_file_path(file_path)
 
     # ENG-123 Sanitize for Windows OS
-    module_source = module_source.replace("\\", ".")
+    # module_source = module_source.replace("\\", ".")
 
     return module_source + "." + class_.__name__
 

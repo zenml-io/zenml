@@ -15,7 +15,6 @@ from typing import Any, Dict, List, Tuple, Type, cast
 
 import pkg_resources
 
-from zenml.exceptions import IntegrationError
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 
@@ -49,9 +48,10 @@ class Integration(metaclass=IntegrationMeta):
         try:
             pkg_resources.require(cls.REQUIREMENTS)
             return True
-        except pkg_resources.DistributionNotFound:
+        except pkg_resources.DistributionNotFound as e:
             logger.warning(
-                "Required packages not fully installed."
+                f"Unable to find required package '{e.req}' for "
+                f"integration {cls.NAME}."
             )
             return False
         except pkg_resources.VersionConflict as e:

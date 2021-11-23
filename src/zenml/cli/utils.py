@@ -12,12 +12,27 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import datetime
+import functools
+import sys
 from datetime import timedelta
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Mapping,
+    TypeVar,
+    cast,
+)
 
 import click
 from dateutil import tz
 from tabulate import tabulate
+
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from zenml.core.base_component import BaseComponent
@@ -124,11 +139,17 @@ def format_date(
     """
     if dt is None:
         return ""
-    local_zone = tz.tzlocal()
     # make sure this is UTC
     dt = dt.replace(tzinfo=tz.tzutc())
-    local_time = dt.astimezone(local_zone)
-    return local_time.strftime(format)
+
+    if sys.platform != "win32":
+        # On non-windows get local time zone.
+        local_zone = tz.tzlocal()
+        dt = dt.astimezone(local_zone)
+    else:
+        logger.warning("On Windows, all times are displayed in UTC timezone.")
+
+    return dt.strftime(format)
 
 
 def format_timedelta(td: timedelta) -> str:
@@ -173,3 +194,20 @@ def parse_unknown_options(args: List[str]) -> Dict[str, Any]:
     assert len(p_args) == len(r_args), "Replicated arguments!"
 
     return r_args
+
+
+F = TypeVar("F", bound=Callable[..., Any])
+
+
+def activate_integrations(func: F) -> F:
+    """Decorator that activates all ZenML integrations."""
+
+    @functools.wraps(func)
+    def _wrapper(*args: Any, **kwargs: Any) -> Any:
+        """Inner decorator function"""
+        from zenml.integrations.registry import integration_registry
+
+        integration_registry.activate_integrations()
+        return func(*args, **kwargs)
+
+    return cast(F, _wrapper)

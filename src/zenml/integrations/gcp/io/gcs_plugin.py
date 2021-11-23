@@ -81,13 +81,19 @@ class ZenGCS(Filesystem):
     def glob(pattern: PathType) -> List[PathType]:
         """Return all paths that match the given glob pattern.
 
+        The glob pattern may include:
+
+        - '*' to match any number of characters
+        - '?' to match a single character
+        - '[...]' to match one of the characters inside the brackets
+        - '**' as the full name of a path component to match to search
+          in subdirectories of any depth (e.g. '/some_dir/**/some_file)
+
         Args:
-            pattern: The glob pattern to match, which may include
-                - '*' to match any number of characters
-                - '?' to match a single character
-                - '[...]' to match one of the characters inside the brackets
-                - '**' as the full name of a path component to match to search
-                  in subdirectories of any depth (e.g. '/some_dir/**/some_file)
+            pattern: The glob pattern to match, see details above.
+
+        Returns:
+            A list of paths that match the given glob pattern.
         """
         return ZenGCS.fs.glob(path=pattern)  # type: ignore[no-any-return]
 

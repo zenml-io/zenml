@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
         python-version: [3.6, 3.7, 3.8]
       fail-fast: false
 
@@ -25,10 +26,14 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install "poetry"
 
-      - name: Install Dependencies and opt-out of analytics
+      - name: Install Dependencies
         run: |
           python -m poetry install
           python -m poetry run pip install apache-airflow~=2.2.0 gcsfs~=2021.9.0 click~=8.0.3 torch~=1.10.0
+          python -m poetry run pip install awscli
+
+      - name: Opt-out of analytics
+        run: |
           python -m poetry run zenml analytics opt-out
 
       - name: Lint
@@ -39,5 +44,5 @@ jobs:
 
       - name: Upload coverage
         # only do it for python 3.6, we don't need to do it for every version
-        if: ${{ matrix.python-version == '3.8' }}
+        if: ${{ matrix.python-version == '3.8' && matrix.os == 'ubuntu-latest' }}
         uses: codecov/codecov-action@v2

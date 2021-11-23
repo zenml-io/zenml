@@ -11,20 +11,23 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.integrations.constants import SKLEARN
-from zenml.integrations.integration import Integration
-from zenml.utils.source_utils import import_class_by_path
 
 
-class SklearnIntegration(Integration):
-    """Definition of sklearn integration for ZenML."""
+import pytest
+from pydantic import ValidationError
 
-    NAME = SKLEARN
-    REQUIREMENTS = ["scikit-learn"]
+from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (
+    GCPArtifactStore,
+)
 
-    @classmethod
-    def activate(cls) -> None:
-        """Activates the integration."""
-        import_class_by_path(
-            "zenml.integrations.sklearn.materializers.sklearn_materializer.SklearnMaterializer"
-        )
+
+def test_must_be_gcs_path():
+    """Checks must_be_gcs_path validator"""
+    with pytest.raises(ValidationError):
+        GCPArtifactStore(path="/local/path")
+
+    with pytest.raises(ValidationError):
+        GCPArtifactStore(path="s3://local/path")
+
+    gcp_as = GCPArtifactStore(path="gs://mybucket")
+    assert gcp_as.path == "gs://mybucket"
