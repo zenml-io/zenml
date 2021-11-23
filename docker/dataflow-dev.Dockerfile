@@ -50,4 +50,4 @@ RUN echo 'alias zenml="poetry run zenml"' >> ~/.bashrc
 COPY . /zenml
 
 # install zenml
-RUN poetry install
+RUN poetry update && poetry install
