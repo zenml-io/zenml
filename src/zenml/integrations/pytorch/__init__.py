@@ -27,7 +27,7 @@ class PytorchIntegration(Integration):
     def activate(cls) -> None:
         """Activates the integration."""
         import_class_by_path(
-            "zenml.integrations.pytorch.materializers.pytorch_materializer.PytorchMaterializer"
+            "zenml.integrations.pytorch.materializers.pytorch_materializer.PyTorchMaterializer"
         )
 
 

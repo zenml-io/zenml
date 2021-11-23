@@ -39,6 +39,7 @@ def get_active_artifact_store() -> None:
 @click.argument("artifact_store_name", type=str)
 @click.argument("artifact_store_type", type=str)
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
+@cli_utils.activate_integrations
 def register_artifact_store(
     artifact_store_name: str, artifact_store_type: str, args: List[str]
 ) -> None:
@@ -53,9 +54,6 @@ def register_artifact_store(
     repo: Repository = Repository()
     # TODO [ENG-188]: Remove when we rework the registry logic
     from zenml.core.component_factory import artifact_store_factory
-    from zenml.integrations.registry import integration_registry
-
-    integration_registry.activate()
 
     comp = artifact_store_factory.get_single_component(artifact_store_type)
     artifact_store = comp(**parsed_args)
