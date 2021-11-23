@@ -28,6 +28,3 @@ class SklearnIntegration(Integration):
         import_class_by_path(
             "zenml.integrations.sklearn.materializers.sklearn_materializer.SklearnMaterializer"
         )
-
-
-SklearnIntegration.check_installation()

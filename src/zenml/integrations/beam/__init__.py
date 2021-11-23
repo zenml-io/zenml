@@ -28,6 +28,3 @@ class BeamIntegration(Integration):
         import_class_by_path(
             "zenml.integrations.beam.materializers.beam_materializer.BeamMaterializer"
         )
-
-
-BeamIntegration.check_installation()

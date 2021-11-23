@@ -29,6 +29,3 @@ class AirflowIntegration(Integration):
             "zenml.integrations.airflow.orchestrators.airflow_orchestrator."
             "AirflowOrchestrator"
         )
-
-
-AirflowIntegration.check_installation()

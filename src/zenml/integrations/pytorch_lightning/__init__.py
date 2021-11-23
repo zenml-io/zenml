@@ -28,6 +28,3 @@ class PytorchLightningIntegration(Integration):
         import_class_by_path(
             "zenml.integrations.pytorch_lightning.materializers.pytorch_lightning_materializer.PytorchLightningMaterializer"
         )
-
-
-PytorchLightningIntegration.check_installation()

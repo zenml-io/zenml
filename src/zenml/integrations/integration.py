@@ -55,7 +55,6 @@ class Integration(metaclass=IntegrationMeta):
                 f"VersionConflict error when loading installation {cls.NAME}: "
                 f"{str(e)}"
             )
-            # raise IntegrationError("Version conflicts in required packages.")
 
     @staticmethod
     def activate() -> None:
