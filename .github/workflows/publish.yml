@@ -37,7 +37,7 @@ jobs:
       - name: Install Dependencies and opt-out of analytics
         run: |
           python -m poetry install
-          python -m poetry run pip install apache-airflow~=2.2.0 gcsfs~=2021.9.0 click~=8.0.3 torch~=1.10.0
+          python -m poetry run pip install apache-airflow~=2.2.0 gcsfs~=2021.9.0 click~=8.0.3 torch~=1.10.0 facets-overview >= 1.0.0 plotly >= 5.4.0
           python -m poetry run zenml analytics opt-out
 
       # This should be unnecessary, but good to run it.
