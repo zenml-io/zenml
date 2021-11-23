@@ -29,7 +29,7 @@ This will automatically push your build to the `gh-pages` branch. More informati
 
 ## Contributors
 
-We welcome and recognize all contributions. You can see a list of current contributors in the [contributors tab](https://github.com/zenml-io/zenml_docs/graphs/contributors).
+We welcome and recognize all contributions. You can see a list of current contributors in the [contributors tab](https://github.com/zenml-io/zenml/graphs/contributors).
 
 ## Credits
 
