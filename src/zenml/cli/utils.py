@@ -142,7 +142,7 @@ def format_date(
     # make sure this is UTC
     dt = dt.replace(tzinfo=tz.tzutc())
 
-    if sys.platform == "win32":
+    if sys.platform != "win32":
         # On non-windows get local time zone.
         dt = dt.astimezone()
     else:
