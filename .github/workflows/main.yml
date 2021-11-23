@@ -28,14 +28,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - uses: actions/cache@v2
-        id: cache
-        with:
-          path: ${{ env.pythonLocation }}
-          key: ${{ matrix.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}-root
-
       - name: Install poetry
-        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           python -m pip install --upgrade pip
           python -m pip install "poetry"
@@ -45,12 +38,13 @@ jobs:
         run: |
           rm.exe "C:/WINDOWS/system32/bash.EXE"
 
-      - name: Install Dependencies and opt-out of analytics
-        if: steps.cache.outputs.cache-hit != 'true'
+      - name: Install Dependencies
         run: |
           python -m poetry install
-          python -m poetry run pip install apache-airflow~=2.2.0 gcsfs~=2021.9.0 click~=8.0.3 torch~=1.10.0 facets-overview >= 1.0.0 plotly >= 5.4.0
-          python -m poetry run zenml analytics opt-out
+
+      - name: Opt-out of analytics
+        run: |
+          python -m poetry run zenml analytics opt-ou
 
       - name: Lint
         run: python -m poetry run bash scripts/lint.sh
