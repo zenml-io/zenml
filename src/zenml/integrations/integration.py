@@ -48,8 +48,11 @@ class Integration(metaclass=IntegrationMeta):
         """Method to check whether the required packages are installed"""
         try:
             pkg_resources.require(cls.REQUIREMENTS)
-        except pkg_resources.DistributionNotFound:
-            raise IntegrationError("Required packages not fully installed.")
+        except pkg_resources.DistributionNotFound as e:
+            raise IntegrationError(
+                f"Unable to find required package '{e.req}' for "
+                f"integration {cls.NAME}."
+            )
         except pkg_resources.VersionConflict as e:
             logger.debug(
                 f"VersionConflict error when loading installation {cls.NAME}: "
