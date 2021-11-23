@@ -57,7 +57,7 @@ apache-beam = "^2.30.0"
 pyyaml = "^5.4.1"
 python-dateutil = "^2.8.1"
 gitpython = "^3.1.18"
-click = "^7.1.2"
+click = "^8.0.1"
 pydantic = "^1.8.2"
 analytics-python = "^1.4.0"
 distro = "^1.6.0"
@@ -80,7 +80,7 @@ hypothesis = "^6.23.0"
 Sphinx = "^4.2.0"
 furo = "^2021.10.9" # sphinx theme
 sphinx-copybutton = "^0.4.0"
-typing-extensions = ">=3.10.0.0"
+typing-extensions = ">=3.7.4"
 pytest-randomly = "^3.10.1"
 
 # mypy type stubs
