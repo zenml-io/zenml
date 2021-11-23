@@ -1,3 +1,40 @@
+# 0.5.3
+
+Version 0.5.3 adds [statistics visualizations](https://github.com/zenml-io/zenml/blob/main/examples/visualizers/statistics/README.md), greatly improved speed for CLI commands as well as lots of small improvements to the pipeline and step interface. 
+
+## What's Changed
+* Make tests run in a random order by @alex-zenml in https://github.com/zenml-io/zenml/pull/160
+* Connect steps using *args by @schustmi in https://github.com/zenml-io/zenml/pull/162
+* Move location of repobeats image by @alex-zenml in https://github.com/zenml-io/zenml/pull/163
+* Hamza/add sam by @htahir1 in https://github.com/zenml-io/zenml/pull/165
+* Pipeline initialization with *args by @schustmi in https://github.com/zenml-io/zenml/pull/164
+* Improve detection of third party modules during class resolving by @schustmi in https://github.com/zenml-io/zenml/pull/167
+* Merge path_utils into fileio & refactor what was left by @alex-zenml in https://github.com/zenml-io/zenml/pull/168
+* Update docker files by @schustmi in https://github.com/zenml-io/zenml/pull/169
+* Hamza/deploy api reference by @htahir1 in https://github.com/zenml-io/zenml/pull/171
+* API Reference by @schustmi in https://github.com/zenml-io/zenml/pull/172
+* Add colour back into our github actions by @alex-zenml in https://github.com/zenml-io/zenml/pull/176
+* Refactor tests not raising by @alex-zenml in https://github.com/zenml-io/zenml/pull/177
+* Improve step and pipeline interface by @schustmi in https://github.com/zenml-io/zenml/pull/175
+* Alex/eng 27 windows bug again by @htahir1 in https://github.com/zenml-io/zenml/pull/178
+* Automated todo tracking by @schustmi in https://github.com/zenml-io/zenml/pull/173
+* Fix mypy issues related to windows by @schustmi in https://github.com/zenml-io/zenml/pull/179
+* Include Github URL to TODO comment in issue by @schustmi in https://github.com/zenml-io/zenml/pull/181
+* Create Visualizers logic by @htahir1 in https://github.com/zenml-io/zenml/pull/182
+* Add README for visualizers examples by @alex-zenml in https://github.com/zenml-io/zenml/pull/184
+* Allow None as default value for BaseStep configs by @schustmi in https://github.com/zenml-io/zenml/pull/185
+* Baris/eng 37 standard import check by @bcdurak in https://github.com/zenml-io/zenml/pull/183
+* Replace duplicated code by call to source_utils.resolve_class by @schustmi in https://github.com/zenml-io/zenml/pull/186
+* Remove unused base enum cases by @schustmi in https://github.com/zenml-io/zenml/pull/187
+* Testing mocks for CLI `examples` command by @alex-zenml in https://github.com/zenml-io/zenml/pull/180
+* Set the correct module for steps created using our decorator by @schustmi in https://github.com/zenml-io/zenml/pull/188
+* Fix some cli commands by @schustmi in https://github.com/zenml-io/zenml/pull/189
+* Tag jira issues for which the todo was deleted by @schustmi in https://github.com/zenml-io/zenml/pull/190
+* Remove deadlinks by @alex-zenml in https://github.com/zenml-io/zenml/pull/191
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.5.2...0.5.3
+
 # 0.5.2
 
 0.5.2 brings an improved post-execution workflow and lots of minor changes and upgrades for the developer experience when 
