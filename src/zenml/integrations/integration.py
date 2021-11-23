@@ -46,10 +46,15 @@ class Integration(metaclass=IntegrationMeta):
     def check_installation(cls) -> bool:
         """Method to check whether the required packages are installed"""
         try:
-            pkg_resources.require(cls.REQUIREMENTS)
+            for r in cls.REQUIREMENTS:
+                pkg_resources.get_distribution(r)
+            logger.debug(
+                f"Integration {cls.NAME} is installed correctly with "
+                f"requirements {cls.REQUIREMENTS}."
+            )
             return True
         except pkg_resources.DistributionNotFound as e:
-            logger.warning(
+            logger.debug(
                 f"Unable to find required package '{e.req}' for "
                 f"integration {cls.NAME}."
             )
