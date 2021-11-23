@@ -13,6 +13,7 @@ def setup_environment():
     os.environ["JIRA_ISSUE_TYPE_ID"] = ""
     os.environ["JIRA_DONE_STATUS_CATEGORY_ID"] = "-1"
     os.environ["JIRA_ISSUE_LABEL"] = ""
+    os.environ["JIRA_REMOVED_TODO_LABEL"] = ""
     os.environ["JIRA_GITHUB_URL_FIELD_NAME"] = ""
 
     os.environ["GITHUB_REPOSITORY"] = ""
