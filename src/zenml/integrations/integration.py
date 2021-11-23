@@ -44,17 +44,22 @@ class Integration(metaclass=IntegrationMeta):
     REQUIREMENTS: List[str] = []
 
     @classmethod
-    def check_installation(cls) -> None:
+    def check_installation(cls) -> bool:
         """Method to check whether the required packages are installed"""
         try:
             pkg_resources.require(cls.REQUIREMENTS)
+            return True
         except pkg_resources.DistributionNotFound:
-            raise IntegrationError("Required packages not fully installed.")
+            logger.warning(
+                "Required packages not fully installed."
+            )
+            return False
         except pkg_resources.VersionConflict as e:
             logger.debug(
                 f"VersionConflict error when loading installation {cls.NAME}: "
                 f"{str(e)}"
             )
+            return False
 
     @staticmethod
     def activate() -> None:

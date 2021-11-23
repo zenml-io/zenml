@@ -41,6 +41,7 @@ class IntegrationRegistry(object):
 
     @integrations.setter
     def integrations(self, i):
+        """Setter method for the integrations property"""
         raise IntegrationError(
             "Please do not manually change the integrations within the "
             "registry. If you would like to register a new integration "
@@ -58,14 +59,11 @@ class IntegrationRegistry(object):
         """Method to activate the integrations with are registered in the
         registry"""
         for name, integration in self._integrations.items():
-            try:
-                integration.check_installation()
+            if integration.check_installation():
                 integration.activate()
                 logger.debug(f"Integration `{name}` is activated.")
-            except (ModuleNotFoundError, IntegrationError) as e:
-                logger.debug(
-                    f"Integration `{name}` could not be activated. {e}"
-                )
+            else:
+                logger.debug(f"Integration `{name}` could not be activated.")
 
 
 integration_registry = IntegrationRegistry()
