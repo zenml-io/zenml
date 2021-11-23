@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+import sys
 from typing import Optional
 
 import click
@@ -21,7 +22,10 @@ import git
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error
 from zenml.core.repo import Repository
+from zenml.logger import get_logger
 from zenml.utils.analytics_utils import INITIALIZE_REPO, track
+
+logger = get_logger(__name__)
 
 
 @cli.command("init", help="Initialize zenml on a given path.")
@@ -42,6 +46,12 @@ def init(
         InvalidGitRepositoryError: If repo is not a git repo.
         AssertionError
     """
+    if sys.version_info.minor == 6:
+        logger.warning(
+            "ZenML support for Python 3.6 will be deprecated soon. Please "
+            "consider upgrading your Python version to ensure ZenML works "
+            "properly in the future."
+        )
     if repo_path is None:
         repo_path = os.getcwd()
 
