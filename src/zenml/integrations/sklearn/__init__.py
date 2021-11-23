@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 from zenml.integrations.constants import SKLEARN
 from zenml.integrations.integration import Integration
-from zenml.utils.source_utils import import_class_by_path
 
 
 class SklearnIntegration(Integration):
@@ -25,8 +24,8 @@ class SklearnIntegration(Integration):
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        import_class_by_path(
-            "zenml.integrations.sklearn.materializers.sklearn_materializer.SklearnMaterializer"
+        from zenml.integrations.sklearn.materializers.sklearn_materializer import (  # noqa
+            SklearnMaterializer,
         )
 
 

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 from zenml.integrations.constants import GCP
 from zenml.integrations.integration import Integration
-from zenml.utils.source_utils import import_class_by_path
 
 
 class GcpIntegration(Integration):
@@ -27,15 +26,12 @@ class GcpIntegration(Integration):
         """Activates the integration."""
         from tfx.dsl.io.filesystem_registry import DEFAULT_FILESYSTEM_REGISTRY
 
-        gcs_fs = import_class_by_path(
-            "zenml.integrations.gcp.io.gcs_plugin.ZenGCS"
+        from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (  # noqa
+            GCPArtifactStore,
         )
+        from zenml.integrations.gcp.io.gcs_plugin import ZenGCS
 
-        DEFAULT_FILESYSTEM_REGISTRY.register(gcs_fs, 15)
-
-        import_class_by_path(
-            "zenml.integrations.gcp.artifact_stores.gcp_artifact_store.GCPArtifactStore"
-        )
+        DEFAULT_FILESYSTEM_REGISTRY.register(ZenGCS, 15)
 
 
 GcpIntegration.check_installation()
