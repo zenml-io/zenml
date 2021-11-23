@@ -55,6 +55,7 @@ def register_metadata_store(
     try:
         # TODO [ENG-187]: Remove when we rework the registry logic
         from zenml.core.component_factory import metadata_store_factory
+
         comp = metadata_store_factory.get_single_component(metadata_store_type)
     except AssertionError as e:
         cli_utils.error(str(e))
