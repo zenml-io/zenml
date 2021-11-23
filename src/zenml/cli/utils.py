@@ -144,7 +144,8 @@ def format_date(
 
     if sys.platform != "win32":
         # On non-windows get local time zone.
-        dt = dt.astimezone()
+        local_zone = tz.tzlocal()
+        dt = dt.astimezone(local_zone)
     else:
         logger.warning("On Windows, all times are displayed in UTC timezone.")
 
