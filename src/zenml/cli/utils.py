@@ -124,10 +124,9 @@ def format_date(
     """
     if dt is None:
         return ""
-    local_zone = tz.tzlocal()
-    # make sure this is UTC
+    # make sure this is UTC, then use astimezone to get local zone.
     dt = dt.replace(tzinfo=tz.tzutc())
-    local_time = dt.astimezone(local_zone)
+    local_time = dt.astimezone()
     return local_time.strftime(format)
 
 
