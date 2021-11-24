@@ -34,7 +34,7 @@ class ZenGCS(Filesystem):
 
     SUPPORTED_SCHEMES = ["gs://"]
 
-    fs = gcsfs.GCSFileSystem()
+    fs = gcsfs.GCSFileSystem
 
     @staticmethod
     def open(path: PathType, mode: str = "r") -> Any:
@@ -45,7 +45,7 @@ class ZenGCS(Filesystem):
             mode: Mode in which to open the file. Currently only
                 'rb' and 'wb' to read and write binary files are supported.
         """
-        return ZenGCS.fs.open(path=path, mode=mode)
+        return ZenGCS.fs().open(path=path, mode=mode)
 
     @staticmethod
     def copy(src: PathType, dst: PathType, overwrite: bool = False) -> None:
@@ -62,7 +62,7 @@ class ZenGCS(Filesystem):
             FileExistsError: If a file already exists at the destination
                 and overwrite is not set to `True`.
         """
-        if not overwrite and ZenGCS.fs.exists(dst):
+        if not overwrite and ZenGCS.fs().exists(dst):
             raise FileExistsError(
                 f"Unable to copy to destination '{convert_to_str(dst)}', "
                 f"file already exists. Set `overwrite=True` to copy anyway."
@@ -70,12 +70,12 @@ class ZenGCS(Filesystem):
 
         # TODO [ENG-151]: Check if it works with overwrite=True or if we need to
         #  manually remove it first
-        ZenGCS.fs.copy(path1=src, path2=dst)
+        ZenGCS.fs().copy(path1=src, path2=dst)
 
     @staticmethod
     def exists(path: PathType) -> bool:
         """Check whether a path exists."""
-        return ZenGCS.fs.exists(path=path)  # type: ignore[no-any-return]
+        return ZenGCS.fs().exists(path=path)  # type: ignore[no-any-return]
 
     @staticmethod
     def glob(pattern: PathType) -> List[PathType]:
@@ -89,33 +89,33 @@ class ZenGCS(Filesystem):
                 - '**' as the full name of a path component to match to search
                   in subdirectories of any depth (e.g. '/some_dir/**/some_file)
         """
-        return ZenGCS.fs.glob(path=pattern)  # type: ignore[no-any-return]
+        return ZenGCS.fs().glob(path=pattern)  # type: ignore[no-any-return]
 
     @staticmethod
     def isdir(path: PathType) -> bool:
         """Check whether a path is a directory."""
-        return ZenGCS.fs.isdir(path=path)  # type: ignore[no-any-return]
+        return ZenGCS.fs().isdir(path=path)  # type: ignore[no-any-return]
 
     @staticmethod
     def listdir(path: PathType) -> List[PathType]:
         """Return a list of files in a directory."""
-        return ZenGCS.fs.listdir(path=path)  # type: ignore[no-any-return]
+        return ZenGCS.fs().listdir(path=path)  # type: ignore[no-any-return]
 
     @staticmethod
     def makedirs(path: PathType) -> None:
         """Create a directory at the given path. If needed also
         create missing parent directories."""
-        ZenGCS.fs.makedirs(path=path, exist_ok=True)
+        ZenGCS.fs().makedirs(path=path, exist_ok=True)
 
     @staticmethod
     def mkdir(path: PathType) -> None:
         """Create a directory at the given path."""
-        ZenGCS.fs.makedir(path=path)
+        ZenGCS.fs().makedir(path=path)
 
     @staticmethod
     def remove(path: PathType) -> None:
         """Remove the file at the given path."""
-        ZenGCS.fs.rm_file(path=path)
+        ZenGCS.fs().rm_file(path=path)
 
     @staticmethod
     def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
@@ -132,7 +132,7 @@ class ZenGCS(Filesystem):
             FileExistsError: If a file already exists at the destination
                 and overwrite is not set to `True`.
         """
-        if not overwrite and ZenGCS.fs.exists(dst):
+        if not overwrite and ZenGCS.fs().exists(dst):
             raise FileExistsError(
                 f"Unable to rename file to '{convert_to_str(dst)}', "
                 f"file already exists. Set `overwrite=True` to rename anyway."
@@ -140,20 +140,20 @@ class ZenGCS(Filesystem):
 
         # TODO [ENG-152]: Check if it works with overwrite=True or if we need
         #  to manually remove it first
-        ZenGCS.fs.rename(path1=src, path2=dst)
+        ZenGCS.fs().rename(path1=src, path2=dst)
 
     @staticmethod
     def rmtree(path: PathType) -> None:
         """Remove the given directory."""
         try:
-            ZenGCS.fs.delete(path=path, recursive=True)
+            ZenGCS.fs().delete(path=path, recursive=True)
         except FileNotFoundError as e:
             raise NotFoundError() from e
 
     @staticmethod
     def stat(path: PathType) -> Dict[str, Any]:
         """Return stat info for the given path."""
-        return ZenGCS.fs.stat(path=path)  # type: ignore[no-any-return]
+        return ZenGCS.fs().stat(path=path)  # type: ignore[no-any-return]
 
     @staticmethod
     def walk(
@@ -173,4 +173,4 @@ class ZenGCS(Filesystem):
             and a list of files inside the current directory.
         """
         # TODO [ENG-153]: Additional params
-        return ZenGCS.fs.walk(path=top)  # type: ignore[no-any-return]
+        return ZenGCS.fs().walk(path=top)  # type: ignore[no-any-return]
