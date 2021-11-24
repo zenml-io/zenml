@@ -45,7 +45,7 @@ class Repository:
 
     def __init__(self, path: Optional[str] = None):
         """
-        Construct reference a ZenML repository.
+        Construct reference to a ZenML repository.
 
         Args:
             path (str): Path to root of repository
