@@ -17,6 +17,7 @@ from typing import Any
 
 import pandas as pd
 import plotly.express as px
+from plotly.graph_objs import Figure
 
 from zenml.logger import get_logger
 from zenml.post_execution.pipeline import PipelineView
@@ -31,7 +32,7 @@ class PipelineLineageVisualizer(BasePipelineVisualizer):
     @abstractmethod
     def visualize(
         self, object: PipelineView, *args: Any, **kwargs: Any
-    ) -> None:
+    ) -> Figure:
         """Creates a pipeline lineage diagram using plotly.
 
         Args:

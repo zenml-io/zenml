@@ -108,8 +108,48 @@ class BaseMetadataStore(BaseComponent):
             if not k.startswith(INTERNAL_EXECUTION_PARAMETER_PREFIX)
         }
 
+        # TODO [MEDIUM]: This is a lot of querying to the metadata store. We
+        #  should refactor and make it nicer.
+        # Core logic here is that we get the event of this particular execution
+        # id that gives us the artifacts of this execution. We then go through
+        # all `input` artifacts of this execution and get all events related to
+        # that artifact. This in turn gives us other events for which this
+        # artifact was an `output` artifact. Then we simply need to sort by
+        # time to get the most recent execution (i.e. step) that produced that
+        # particular artifact.
+        events_for_execution = self.store.get_events_by_execution_ids(
+            [execution.id]
+        )
+        current_event = [
+            e for e in events_for_execution if e.execution_id == execution.id
+        ][0]
+        parents_step_ids = set()
+        for event_for_execution in events_for_execution:
+            if event_for_execution.type == event_for_execution.INPUT:
+                # this means the artifact is an input artifact
+                events_for_input_artifact = [
+                    e
+                    for e in self.store.get_events_by_artifact_ids(
+                        [event_for_execution.artifact_id]
+                    )
+                    # should be output type and should NOT be the same id as
+                    # the execution we are querying and it should be BEFORE
+                    # the time of the current event.
+                    if e.type == e.OUTPUT
+                    and e.execution_id != event_for_execution.execution_id
+                    and e.milliseconds_since_epoch
+                    < current_event.milliseconds_since_epoch
+                ]
+                # sort by time
+                events_for_input_artifact.sort(
+                    key=lambda x: x.milliseconds_since_epoch
+                )
+                # take the latest one and add execution to the parents.
+                parents_step_ids.add(events_for_input_artifact[-1].execution_id)
+
         return StepView(
             id_=execution.id,
+            parents_step_ids=list(parents_step_ids),
             name=step_name,
             parameters=step_parameters,
             metadata_store=self,

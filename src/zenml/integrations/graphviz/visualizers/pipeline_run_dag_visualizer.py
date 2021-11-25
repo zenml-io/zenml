@@ -12,22 +12,25 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import tempfile
 from abc import abstractmethod
 from typing import Any
 
+import graphviz
+
 from zenml.logger import get_logger
-from zenml.post_execution.pipeline import PipelineView
+from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.visualizers.base_pipeline_visualizer import BasePipelineVisualizer
 
 logger = get_logger(__name__)
 
 
-class PipelineGraphVisualizer(BasePipelineVisualizer):
+class PipelineRunDagVisualizer(BasePipelineVisualizer):
     """Visualize the lineage of runs in a pipeline."""
 
     @abstractmethod
     def visualize(
-        self, object: PipelineView, *args: Any, **kwargs: Any
+        self, object: PipelineRunView, *args: Any, **kwargs: Any
     ) -> None:
         """Creates a pipeline lineage diagram using plotly.
 
@@ -39,3 +42,11 @@ class PipelineGraphVisualizer(BasePipelineVisualizer):
         Returns:
 
         """
+        dot = graphviz.Digraph(comment=object.name)
+        for step in object.steps:
+            dot.node(str(step.id), step.name)
+            for parent_step_id in step.parents_step_ids:
+                dot.edge(str(parent_step_id), str(step.id))
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as f:
+            dot.render(filename=f.name, view=True)
