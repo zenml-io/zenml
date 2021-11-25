@@ -109,7 +109,9 @@ class BaseMetadataStore(BaseComponent):
         }
 
         # TODO [MEDIUM]: This is a lot of querying to the metadata store. We
-        #  should refactor and make it nicer.
+        #  should refactor and make it nicer. Probably it makes more sense
+        #  to first get `executions_ids_for_current_run` and then filter on
+        #  `event.execution_id in execution_ids_for_current_run`.
         # Core logic here is that we get the event of this particular execution
         # id that gives us the artifacts of this execution. We then go through
         # all `input` artifacts of this execution and get all events related to
