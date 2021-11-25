@@ -24,7 +24,7 @@ actually steps that produce artifacts, which are then stored in the artifact sto
         return 1
 
 Artifacts can be serialized and deserialized (i.e. written and read from the
-Artifact Store) in many different ways like TFRecords or saved model pickles,
-depending on what the step produces.The serialization and deserialization logic
-of artifacts is defined by the appropriate Materializer.
+Artifact Store) in many different ways like ``TFRecords`` or saved model
+pickles, depending on what the step produces.The serialization and
+deserialization logic of artifacts is defined by the appropriate Materializer.
 """
