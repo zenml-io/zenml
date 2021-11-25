@@ -53,3 +53,7 @@ integration_registry.register_integration(constants.FACETS, facets)
 # Plotly
 plotly = LazyLoader("zenml.integrations.plotly")
 integration_registry.register_integration(constants.PLOTLY, plotly)
+
+# Plotly
+graphviz = LazyLoader("zenml.integrations.graphviz")
+integration_registry.register_integration(constants.GRAPHVIZ, graphviz)
