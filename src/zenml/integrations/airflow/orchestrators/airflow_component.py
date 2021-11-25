@@ -14,70 +14,35 @@
 """Definition for Airflow component for TFX."""
 
 import functools
-from typing import Any, Dict, List, Type
+from typing import Optional
 
 import airflow
 from airflow.operators import python
-from ml_metadata.proto import metadata_store_pb2
-from tfx.dsl.components.base import base_node
-from tfx.orchestration import data_types, metadata
-from tfx.orchestration.config import base_component_config
-from tfx.orchestration.launcher import base_component_launcher
-from tfx.utils import telemetry_utils
+from google.protobuf import message
+from tfx.orchestration import metadata
+from tfx.orchestration.portable import launcher
+from tfx.proto.orchestration import pipeline_pb2
 
 
 def _airflow_component_launcher(
-    component: base_node.BaseNode,
-    component_launcher_class: Type[
-        base_component_launcher.BaseComponentLauncher
-    ],
-    pipeline_info: data_types.PipelineInfo,
-    driver_args: data_types.DriverArgs,
-    metadata_connection_config: metadata_store_pb2.ConnectionConfig,
-    beam_pipeline_args: List[str],
-    additional_pipeline_args: Dict[str, Any],
-    component_config: base_component_config.BaseComponentConfig,
-    exec_properties: Dict[str, Any],
-    **kwargs: Any
+    pipeline_node: pipeline_pb2.PipelineNode,
+    mlmd_connection: metadata.Metadata,
+    pipeline_info: pipeline_pb2.PipelineInfo,
+    pipeline_runtime_spec: pipeline_pb2.PipelineRuntimeSpec,
+    executor_spec: Optional[message.Message] = None,
+    custom_driver_spec: Optional[message.Message] = None,
 ) -> None:
-    """Helper function to launch TFX component execution.
-    This helper function will be called with Airflow env objects which contains
-    run_id that we need to pass into TFX ComponentLauncher.
-    Args:
-      component: TFX BaseComponent instance. This instance holds all inputs and
-        outputs placeholders as well as component properties.
-      component_launcher_class: The class of the launcher to launch the component.
-      pipeline_info: A data_types.PipelineInfo instance that holds pipeline
-        properties
-      driver_args: Component specific args for driver.
-      metadata_connection_config: Configuration for how to connect to metadata.
-      beam_pipeline_args: Pipeline arguments for Beam powered Components.
-      additional_pipeline_args: A dict of additional pipeline args.
-      component_config: Component config to launch the component.
-      exec_properties: Execution properties from the ComponentSpec.
-      **kwargs: Context arguments that will be passed in by Airflow, including:
-        - ti: TaskInstance object from which we can get run_id of the running
-          pipeline.
-        For more details, please refer to the code:
-        https://github.com/apache/airflow/blob/master/airflow/operators/python_operator.py
-    """
-    component.exec_properties.update(exec_properties)
-
-    # Populate run id from Airflow task instance.
-    pipeline_info.run_id = kwargs["ti"].get_dagrun().run_id
-    launcher = component_launcher_class.create(
-        component=component,
+    """Helper function to launch TFX component execution."""
+    component_launcher = launcher.Launcher(
+        pipeline_node=pipeline_node,
+        mlmd_connection=metadata.Metadata(mlmd_connection),
         pipeline_info=pipeline_info,
-        driver_args=driver_args,
-        metadata_connection=metadata.Metadata(metadata_connection_config),
-        beam_pipeline_args=beam_pipeline_args,
-        additional_pipeline_args=additional_pipeline_args,
-        component_config=component_config,
+        pipeline_runtime_spec=pipeline_runtime_spec,
+        executor_spec=executor_spec,
+        custom_driver_spec=custom_driver_spec,
     )
-    with telemetry_utils.scoped_labels(
-        {telemetry_utils.LABEL_TFX_RUNNER: "airflow"}
-    ):
-        launcher.launch()
+
+    component_launcher.launch()
 
 
 class AirflowComponent(python.PythonOperator):
@@ -89,54 +54,27 @@ class AirflowComponent(python.PythonOperator):
         self,
         *,
         parent_dag: airflow.DAG,
-        component: base_node.BaseNode,
-        component_launcher_class: Type[
-            base_component_launcher.BaseComponentLauncher
-        ],
-        pipeline_info: data_types.PipelineInfo,
-        enable_cache: bool,
-        metadata_connection_config: metadata_store_pb2.ConnectionConfig,
-        beam_pipeline_args: List[str],
-        additional_pipeline_args: Dict[str, Any],
-        component_config: base_component_config.BaseComponentConfig
-    ):
-        """Constructs an Airflow implementation of TFX component.
-
-        Args:
-          parent_dag: An AirflowPipeline instance as the pipeline DAG.
-          component: An instance of base_node.BaseNode that holds all
-            properties of a logical component.
-          component_launcher_class: The class of the launcher to launch the
-            component.
-          pipeline_info: An instance of data_types.PipelineInfo that holds pipeline
-            properties.
-          enable_cache: Whether or not cache is enabled for this component run.
-          metadata_connection_config: A config proto for metadata connection.
-          beam_pipeline_args: Pipeline arguments for Beam powered Components.
-          additional_pipeline_args: Additional pipeline args.
-          component_config: Component config to launch the component.
-        """
-        # Prepare parameters to create TFX worker.
-        driver_args = data_types.DriverArgs(enable_cache=enable_cache)
-
-        exec_properties = component.exec_properties
+        pipeline_node: pipeline_pb2.PipelineNode,
+        mlmd_connection: metadata.Metadata,
+        pipeline_info: pipeline_pb2.PipelineInfo,
+        pipeline_runtime_spec: pipeline_pb2.PipelineRuntimeSpec,
+        executor_spec: Optional[message.Message] = None,
+        custom_driver_spec: Optional[message.Message] = None
+    ) -> None:
+        """Constructs an Airflow implementation of TFX component."""
+        launcher_callable = functools.partial(
+            _airflow_component_launcher,
+            pipeline_node=pipeline_node,
+            mlmd_connection=mlmd_connection,
+            pipeline_info=pipeline_info,
+            pipeline_runtime_spec=pipeline_runtime_spec,
+            executor_spec=executor_spec,
+            custom_driver_spec=custom_driver_spec,
+        )
 
         super().__init__(
-            task_id=component.id,
+            task_id=pipeline_node.node_info.id,
             provide_context=True,
-            python_callable=functools.partial(
-                _airflow_component_launcher,
-                component=component,
-                component_launcher_class=component_launcher_class,
-                pipeline_info=pipeline_info,
-                driver_args=driver_args,
-                metadata_connection_config=metadata_connection_config,
-                beam_pipeline_args=beam_pipeline_args,
-                additional_pipeline_args=additional_pipeline_args,
-                component_config=component_config,
-            ),
-            # op_kwargs is a templated field for PythonOperator, which means Airflow
-            # will inspect the dictionary and resolve any templated fields.
-            op_kwargs={"exec_properties": exec_properties},
+            python_callable=launcher_callable,
             dag=parent_dag,
         )

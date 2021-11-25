@@ -268,4 +268,4 @@ class AirflowOrchestrator(BaseOrchestrator):
             enable_cache=zenml_pipeline.enable_cache,
         )
 
-        return runner.run(created_pipeline)
+        return runner.run(created_pipeline, run_name=run_name)
