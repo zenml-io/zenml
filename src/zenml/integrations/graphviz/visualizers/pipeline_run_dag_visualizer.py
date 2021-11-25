@@ -34,16 +34,7 @@ class PipelineRunDagVisualizer(BasePipelineRunVisualizer):
     def visualize(
         self, object: PipelineRunView, *args: Any, **kwargs: Any
     ) -> graphviz.Digraph:
-        """Creates a pipeline lineage diagram using plotly.
-
-        Args:
-            pipeline:
-            *args:
-            **kwargs:
-
-        Returns:
-
-        """
+        """Creates a pipeline lineage diagram using plotly."""
         dot = graphviz.Digraph(comment=object.name)
         for step in object.steps:
             dot.node(str(step.id), step.name)
