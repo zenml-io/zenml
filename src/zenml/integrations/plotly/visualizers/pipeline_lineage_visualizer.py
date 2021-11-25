@@ -15,14 +15,12 @@
 from abc import abstractmethod
 from typing import Any
 
+import pandas as pd
+import plotly.express as px
+
 from zenml.logger import get_logger
 from zenml.post_execution.pipeline import PipelineView
 from zenml.visualizers.base_pipeline_visualizer import BasePipelineVisualizer
-
-# import pandas as pd
-# import plotly.express as px
-# from plotly.graph_objs import Figure
-
 
 logger = get_logger(__name__)
 
@@ -44,13 +42,9 @@ class PipelineLineageVisualizer(BasePipelineVisualizer):
         Returns:
 
         """
-        raise NotImplementedError
-
-        # WIP:
-        """
         category_df = {}
         dimensions = ["run"]
-        for run in pipeline.runs:
+        for run in object.runs:
             category_df[run.name] = {"run": run.name}
             for step in run.steps:
                 # for artifact_name, artifact in step.outputs.items():
@@ -75,4 +69,3 @@ class PipelineLineageVisualizer(BasePipelineVisualizer):
 
         fig.show()
         return fig
-        """
