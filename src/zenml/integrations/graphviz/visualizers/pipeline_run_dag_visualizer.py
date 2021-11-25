@@ -20,18 +20,20 @@ import graphviz
 
 from zenml.logger import get_logger
 from zenml.post_execution.pipeline_run import PipelineRunView
-from zenml.visualizers.base_pipeline_visualizer import BasePipelineVisualizer
+from zenml.visualizers.base_pipeline_run_visualizer import (
+    BasePipelineRunVisualizer,
+)
 
 logger = get_logger(__name__)
 
 
-class PipelineRunDagVisualizer(BasePipelineVisualizer):
+class PipelineRunDagVisualizer(BasePipelineRunVisualizer):
     """Visualize the lineage of runs in a pipeline."""
 
     @abstractmethod
     def visualize(
         self, object: PipelineRunView, *args: Any, **kwargs: Any
-    ) -> None:
+    ) -> graphviz.Digraph:
         """Creates a pipeline lineage diagram using plotly.
 
         Args:
@@ -50,3 +52,4 @@ class PipelineRunDagVisualizer(BasePipelineVisualizer):
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as f:
             dot.render(filename=f.name, view=True)
+        return dot

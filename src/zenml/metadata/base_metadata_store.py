@@ -120,23 +120,21 @@ class BaseMetadataStore(BaseComponent):
         events_for_execution = self.store.get_events_by_execution_ids(
             [execution.id]
         )
-        current_event = [
-            e for e in events_for_execution if e.execution_id == execution.id
-        ][0]
+
         parents_step_ids = set()
-        for event_for_execution in events_for_execution:
-            if event_for_execution.type == event_for_execution.INPUT:
+        for current_event in events_for_execution:
+            if current_event.type == current_event.INPUT:
                 # this means the artifact is an input artifact
                 events_for_input_artifact = [
                     e
                     for e in self.store.get_events_by_artifact_ids(
-                        [event_for_execution.artifact_id]
+                        [current_event.artifact_id]
                     )
                     # should be output type and should NOT be the same id as
                     # the execution we are querying and it should be BEFORE
                     # the time of the current event.
                     if e.type == e.OUTPUT
-                    and e.execution_id != event_for_execution.execution_id
+                    and e.execution_id != current_event.execution_id
                     and e.milliseconds_since_epoch
                     < current_event.milliseconds_since_epoch
                 ]
