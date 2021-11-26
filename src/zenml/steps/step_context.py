@@ -40,6 +40,8 @@ class StepContext:
             raise StepInterfaceError()
 
         if output_name:
+            if output_name not in self._outputs:
+                raise StepInterfaceError()
             return self._outputs[output_name]
         else:
             return next(iter(self._outputs.values()))
