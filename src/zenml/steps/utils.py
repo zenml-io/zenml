@@ -222,9 +222,7 @@ class _FunctionExecutor(BaseExecutor):
     """Base TFX Executor class which is compatible with ZenML steps"""
 
     _FUNCTION = staticmethod(lambda: None)
-    materializers: ClassVar[
-        Optional[Dict[str, Type["BaseMaterializer"]]]
-    ] = None
+    materializers: ClassVar[Dict[str, Type["BaseMaterializer"]]] = {}
 
     def resolve_materializer_with_registry(
         self, param_name: str, artifact: BaseArtifact
@@ -349,6 +347,7 @@ class _FunctionExecutor(BaseExecutor):
             elif issubclass(arg_type, StepContext):
                 output_artifacts = {k: v[0] for k, v in output_dict.items()}
                 context = StepContext(
+                    step_name=getattr(self, PARAM_STEP_NAME),
                     output_materializers=self.materializers,
                     output_artifacts=output_artifacts,
                 )

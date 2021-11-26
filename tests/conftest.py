@@ -444,7 +444,9 @@ def step_with_two_int_inputs():
 
 @pytest.fixture
 def step_context_with_no_output():
-    return StepContext(output_materializers={}, output_artifacts={})
+    return StepContext(
+        step_name="", output_materializers={}, output_artifacts={}
+    )
 
 
 @pytest.fixture
@@ -453,7 +455,9 @@ def step_context_with_single_output():
     artifacts = {"output_1": BaseArtifact()}
 
     return StepContext(
-        output_materializers=materializers, output_artifacts=artifacts
+        step_name="",
+        output_materializers=materializers,
+        output_artifacts=artifacts,
     )
 
 
@@ -463,5 +467,7 @@ def step_context_with_two_outputs():
     artifacts = {"output_1": BaseArtifact(), "output_2": BaseArtifact()}
 
     return StepContext(
-        output_materializers=materializers, output_artifacts=artifacts
+        step_name="",
+        output_materializers=materializers,
+        output_artifacts=artifacts,
     )

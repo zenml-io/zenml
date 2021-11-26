@@ -16,7 +16,7 @@ from contextlib import ExitStack as does_not_raise
 import pytest
 
 from zenml.artifacts.base_artifact import BaseArtifact
-from zenml.exceptions import StepInterfaceError
+from zenml.exceptions import StepContextError
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.built_in_materializer import BuiltInMaterializer
 from zenml.steps.step_context import StepContext
@@ -29,9 +29,11 @@ def test_initialize_step_context_with_mismatched_keys():
     materializers = {"some_output_name": BaseMaterializer}
     artifacts = {"some_different_output_name": BaseArtifact()}
 
-    with pytest.raises(StepInterfaceError):
+    with pytest.raises(StepContextError):
         StepContext(
-            output_materializers=materializers, output_artifacts=artifacts
+            step_name="",
+            output_materializers=materializers,
+            output_artifacts=artifacts,
         )
 
 
@@ -44,7 +46,9 @@ def test_initialize_step_context_with_matching_keys():
 
     with does_not_raise():
         StepContext(
-            output_materializers=materializers, output_artifacts=artifacts
+            step_name="",
+            output_materializers=materializers,
+            output_artifacts=artifacts,
         )
 
 
@@ -54,10 +58,10 @@ def test_get_step_context_output_for_step_with_no_outputs(
     """Tests that getting the artifact uri or materializer for a step context
     with no outputs raises an exception."""
 
-    with pytest.raises(StepInterfaceError):
+    with pytest.raises(StepContextError):
         step_context_with_no_output.get_output_artifact_uri()
 
-    with pytest.raises(StepInterfaceError):
+    with pytest.raises(StepContextError):
         step_context_with_no_output.get_output_materializer()
 
 
@@ -78,10 +82,10 @@ def test_get_step_context_output_for_step_with_multiple_outputs(
     """Tests that getting the artifact uri or materializer for a step context
     with multiple outputs raises an exception."""
 
-    with pytest.raises(StepInterfaceError):
+    with pytest.raises(StepContextError):
         step_context_with_two_outputs.get_output_artifact_uri()
 
-    with pytest.raises(StepInterfaceError):
+    with pytest.raises(StepContextError):
         step_context_with_two_outputs.get_output_materializer()
 
 
@@ -91,12 +95,12 @@ def test_get_step_context_output_for_non_existent_output_key(
     """Tests that getting the artifact uri or materializer for a non-existent
     output raises an exception."""
 
-    with pytest.raises(StepInterfaceError):
+    with pytest.raises(StepContextError):
         step_context_with_single_output.get_output_artifact_uri(
             "some_non_existent_output_name"
         )
 
-    with pytest.raises(StepInterfaceError):
+    with pytest.raises(StepContextError):
         step_context_with_single_output.get_output_materializer(
             "some_non_existent_output_name"
         )
