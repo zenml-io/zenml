@@ -36,10 +36,19 @@ class PipelineRunDagVisualizer(BasePipelineRunVisualizer):
     ) -> graphviz.Digraph:
         """Creates a pipeline lineage diagram using plotly."""
         dot = graphviz.Digraph(comment=object.name)
+
+        # link the steps together
         for step in object.steps:
+            # add each step as a node
             dot.node(str(step.id), step.name)
+            # for each parent of a step, add an edge
             for parent_step_id in step.parents_step_ids:
-                dot.edge(str(parent_step_id), str(step.id))
+                # dot.edge(str(parent_step_id), str(step.id))
+                # go through each artifact and visualize it
+                for artifact_name, artifact in step.outputs.items():
+                    dot.node(str(artifact.id), artifact_name)
+                    dot.edge(str(artifact.id), str(step.id))
+                    dot.edge(str(parent_step_id), str(artifact.id))
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as f:
             dot.render(filename=f.name, view=True)
