@@ -374,10 +374,13 @@ import os
 
 import pytest
 
+from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.constants import ENV_ZENML_DEBUG
 from zenml.core.repo import Repository
+from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
 from zenml.steps import step
+from zenml.steps.step_context import StepContext
 
 
 def pytest_sessionstart(session):
@@ -437,3 +440,34 @@ def step_with_two_int_inputs():
         pass
 
     return _step
+
+
+@pytest.fixture
+def step_context_with_no_output():
+    return StepContext(
+        step_name="", output_materializers={}, output_artifacts={}
+    )
+
+
+@pytest.fixture
+def step_context_with_single_output():
+    materializers = {"output_1": BaseMaterializer}
+    artifacts = {"output_1": BaseArtifact()}
+
+    return StepContext(
+        step_name="",
+        output_materializers=materializers,
+        output_artifacts=artifacts,
+    )
+
+
+@pytest.fixture
+def step_context_with_two_outputs():
+    materializers = {"output_1": BaseMaterializer, "output_2": BaseMaterializer}
+    artifacts = {"output_1": BaseArtifact(), "output_2": BaseArtifact()}
+
+    return StepContext(
+        step_name="",
+        output_materializers=materializers,
+        output_artifacts=artifacts,
+    )
