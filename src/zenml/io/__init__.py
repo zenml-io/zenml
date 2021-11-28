@@ -11,3 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""
+The `io` module handles file operations for the ZenML package. It offers a
+standard interface for reading, writing and manipulating files and directories.
+It is heavily influenced and inspired by the `io` module of `tfx`.
+"""
