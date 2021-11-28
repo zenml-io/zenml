@@ -11,6 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""
+The GCP integration submodule provides a way to run ZenML pipelines in a cloud
+environment. Specifically, it allows the use of cloud artifact stores, metadata
+stores, and an `io` module to handle file operations on Google Cloud Storage (GCS).
+"""
+
 from zenml.integrations.constants import GCP
 from zenml.integrations.integration import Integration
 from zenml.utils.source_utils import import_class_by_path
