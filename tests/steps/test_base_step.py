@@ -21,6 +21,7 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.built_in_materializer import BuiltInMaterializer
 from zenml.steps import step
 from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps.step_context import StepContext
 from zenml.steps.step_output import Output
 
 
@@ -54,6 +55,16 @@ def test_define_step_with_multiple_configs():
         def some_step(
             first_config: BaseStepConfig, second_config: BaseStepConfig
         ):
+            pass
+
+
+def test_define_step_with_multiple_contexts():
+    """Tests that defining a step with multiple contexts raises
+    a StepInterfaceError."""
+    with pytest.raises(StepInterfaceError):
+
+        @step
+        def some_step(first_context: StepContext, second_context: StepContext):
             pass
 
 

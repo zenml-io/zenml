@@ -40,6 +40,7 @@ from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
 )
 from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps.step_context import StepContext
 from zenml.steps.step_output import Output
 from zenml.steps.utils import (
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
@@ -72,6 +73,7 @@ class BaseStepMeta(type):
         cls.OUTPUT_SIGNATURE = {}
         cls.CONFIG_PARAMETER_NAME = None
         cls.CONFIG_CLASS = None
+        cls.CONTEXT_PARAMETER_NAME = None
 
         # Get the signature of the step function
         step_function_signature = inspect.getfullargspec(
@@ -127,6 +129,16 @@ class BaseStepMeta(type):
                     )
                 cls.CONFIG_PARAMETER_NAME = arg
                 cls.CONFIG_CLASS = arg_type
+            elif issubclass(arg_type, StepContext):
+                if cls.CONTEXT_PARAMETER_NAME is not None:
+                    raise StepInterfaceError(
+                        f"Found multiple context arguments "
+                        f"('{cls.CONTEXT_PARAMETER_NAME}' and '{arg}') when "
+                        f"trying to create step '{name}'. Please make sure to "
+                        f"only have one `StepContext` as input "
+                        f"argument for a step."
+                    )
+                cls.CONTEXT_PARAMETER_NAME = arg
             else:
                 # Can't do any check for existing materializers right now
                 # as they might get passed later, so we simply store the
@@ -170,10 +182,12 @@ class BaseStep(metaclass=BaseStepMeta):
     OUTPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
     CONFIG_PARAMETER_NAME: ClassVar[Optional[str]] = None
     CONFIG_CLASS: ClassVar[Optional[Type[BaseStepConfig]]] = None
+    CONTEXT_PARAMETER_NAME: ClassVar[Optional[str]] = None
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.step_name = self.__class__.__name__
         self.enable_cache = getattr(self, PARAM_ENABLE_CACHE)
+        self.requires_context = bool(self.CONTEXT_PARAMETER_NAME)
 
         self.PARAM_SPEC: Dict[str, Any] = {}
         self.INPUT_SPEC: Dict[str, Type[BaseArtifact]] = {}
