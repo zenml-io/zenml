@@ -32,12 +32,12 @@ class BaseComponent(BaseSettings):
     of various components used in ZenML. The logic of the serialization /
     deserialization is as follows:
 
-    * If a `uuid` is passed in, then the object is read from a file, so the
-    constructor becomes a query for an object that is assumed to already been
-    serialized.
+    * If a `uuid` is passed in, then the object is read from a file, so
+      theconstructor becomes a query for an object that is assumed to already
+      been serialized.
     * If a 'uuid` is NOT passed, then a new object is created with the default
-    args (and any other args that are passed), and therefore a fresh
-    serialization takes place.
+      args (and any other args that are passed), and therefore a fresh
+      serialization takes place.
     """
 
     uuid: Optional[UUID] = Field(default_factory=uuid4)

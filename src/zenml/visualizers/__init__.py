@@ -11,3 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""
+The `visualizers` module offers a way of constructing and displaying
+visualizations of steps and pipeline results. The `BaseVisualizer` class is at
+the root of all the other visualizers, including options to view the results of
+pipeline runs, steps and pipelines themselves.
+"""
