@@ -24,12 +24,7 @@ class TensorflowIntegration(Integration):
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        from zenml.integrations.tensorflow.materializers.keras_materializer import (  # noqa
-            KerasMaterializer,
-        )
-        from zenml.integrations.tensorflow.materializers.tf_dataset_materializer import (  # noqa
-            TensorflowDatasetMaterializer,
-        )
+        from zenml.integrations.tensorflow import materializers  # noqa
 
 
 TensorflowIntegration.check_installation()

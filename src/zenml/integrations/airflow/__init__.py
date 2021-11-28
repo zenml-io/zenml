@@ -25,9 +25,7 @@ class AirflowIntegration(Integration):
     @classmethod
     def activate(cls):
         """Activates all classes required for the airflow integration."""
-        from zenml.integrations.airflow.orchestrators.airflow_orchestrator import (  # noqa
-            AirflowOrchestrator,
-        )
+        from zenml.integrations.airflow import orchestrators  # noqa
 
 
 AirflowIntegration.check_installation()

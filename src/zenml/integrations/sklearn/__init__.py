@@ -24,9 +24,7 @@ class SklearnIntegration(Integration):
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        from zenml.integrations.sklearn.materializers.sklearn_materializer import (  # noqa
-            SklearnMaterializer,
-        )
+        from zenml.integrations.sklearn import materializers  # noqa
 
 
 SklearnIntegration.check_installation()

@@ -25,9 +25,7 @@ class BeamIntegration(Integration):
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        from zenml.integrations.beam.materializers.beam_materializer import (  # noqa
-            BeamMaterializer,
-        )
+        from zenml.integrations.beam import materializers  # noqa
 
 
 BeamIntegration.check_installation()

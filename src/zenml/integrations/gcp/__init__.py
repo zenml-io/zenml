@@ -24,14 +24,8 @@ class GcpIntegration(Integration):
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        from tfx.dsl.io.filesystem_registry import DEFAULT_FILESYSTEM_REGISTRY
-
-        from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (  # noqa
-            GCPArtifactStore,
-        )
-        from zenml.integrations.gcp.io.gcs_plugin import ZenGCS
-
-        DEFAULT_FILESYSTEM_REGISTRY.register(ZenGCS, 15)
+        from zenml.integrations.gcp import artifact_stores  # noqa
+        from zenml.integrations.gcp import io  # noqa
 
 
 GcpIntegration.check_installation()

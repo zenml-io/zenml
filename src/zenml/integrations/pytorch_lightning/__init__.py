@@ -24,9 +24,7 @@ class PytorchLightningIntegration(Integration):
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        from zenml.integrations.pytorch_lightning.materializers.pytorch_lightning_materializer import (  # noqa
-            PyTorchLightningMaterializer,
-        )
+        from zenml.integrations.pytorch_lightning import materializers  # noqa
 
 
 PytorchLightningIntegration.check_installation()
