@@ -12,7 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-
+The Apache Beam integration sub-module allows you to use beam in your pipeline
+workflows. It provides a `BeamMaterializer` class that allows you to pass data
+to and from beam throughout the steps of your pipeline.
 """
 from zenml.integrations.constants import BEAM
 from zenml.integrations.integration import Integration
