@@ -32,7 +32,17 @@ def _airflow_component_launcher(
     executor_spec: Optional[message.Message] = None,
     custom_driver_spec: Optional[message.Message] = None,
 ) -> None:
-    """Helper function to launch TFX component execution."""
+    """Helper function to launch TFX component execution.
+
+    Args:
+        pipeline_node: The specification of the node to launch.
+        mlmd_connection: ML metadata connection info.
+        pipeline_info: The information of the pipeline that this node runs in.
+        pipeline_runtime_spec: The runtime information of the pipeline that this
+            node runs in.
+        executor_spec: Specification for the executor of the node.
+        custom_driver_spec: Specification for custom driver.
+    """
     component_launcher = launcher.Launcher(
         pipeline_node=pipeline_node,
         mlmd_connection=metadata.Metadata(mlmd_connection),
@@ -61,7 +71,19 @@ class AirflowComponent(python.PythonOperator):
         executor_spec: Optional[message.Message] = None,
         custom_driver_spec: Optional[message.Message] = None
     ) -> None:
-        """Constructs an Airflow implementation of TFX component."""
+        """Constructs an Airflow implementation of TFX component.
+
+        Args:
+            parent_dag: The airflow DAG that this component is contained in.
+            pipeline_node: The specification of the node to launch.
+            mlmd_connection: ML metadata connection info.
+            pipeline_info: The information of the pipeline that this node
+                runs in.
+            pipeline_runtime_spec: The runtime information of the pipeline
+                that this node runs in.
+            executor_spec: Specification for the executor of the node.
+            custom_driver_spec: Specification for custom driver.
+        """
         launcher_callable = functools.partial(
             _airflow_component_launcher,
             pipeline_node=pipeline_node,
