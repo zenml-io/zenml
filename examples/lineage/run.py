@@ -157,3 +157,4 @@ if __name__ == "__main__":
     p.run()
 
     visualize_lineage()
+    print_lineage()

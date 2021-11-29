@@ -40,15 +40,27 @@ class PipelineRunDagVisualizer(BasePipelineRunVisualizer):
         # link the steps together
         for step in object.steps:
             # add each step as a node
-            dot.node(str(step.id), step.name)
+            dot.node("step_" + str(step.id), step.name)
             # for each parent of a step, add an edge
-            for parent_step_id in step.parents_step_ids:
+            for parent_step in step.parent_steps:
                 # dot.edge(str(parent_step_id), str(step.id))
                 # go through each artifact and visualize it
-                for artifact_name, artifact in step.outputs.items():
-                    dot.node(str(artifact.id), artifact_name)
-                    dot.edge(str(artifact.id), str(step.id))
-                    dot.edge(str(parent_step_id), str(artifact.id))
+                print(step.id, step.name, parent_step.id, parent_step.name)
+                for artifact_name, artifact in step.inputs.items():
+                    if artifact in parent_step.outputs.values():
+                        dot.node(
+                            "artifact_" + str(artifact.id),
+                            f"{artifact_name} ({artifact._data_type}) ({artifact.producer_step.id}) ({artifact.parent_step_id}) {artifact.is_cached})",
+                        )
+                        dot.edge(
+                            "artifact_" + str(artifact.id),
+                            "step_" + str(step.id),
+                        )
+                        dot.edge(
+                            "step_" + str(parent_step.id),
+                            "artifact_" + str(artifact.id),
+                        )
+                        # time.sleep(1)
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as f:
             dot.render(filename=f.name, view=True)
