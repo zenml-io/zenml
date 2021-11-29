@@ -256,7 +256,7 @@ class BaseStep(metaclass=BaseStepMeta):
         return materializers
 
     @property
-    def _internal_execution_parameters(self) -> Dict[str, str]:
+    def _internal_execution_parameters(self) -> Dict[str, Any]:
         """ZenML internal execution parameters for this step."""
         parameters = {
             PARAM_PIPELINE_PARAMETER_NAME: self.pipeline_parameter_name
