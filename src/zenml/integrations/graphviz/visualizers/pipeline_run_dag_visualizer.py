@@ -42,25 +42,24 @@ class PipelineRunDagVisualizer(BasePipelineRunVisualizer):
             # add each step as a node
             dot.node("step_" + str(step.id), step.name)
             # for each parent of a step, add an edge
-            for parent_step in step.parent_steps:
-                # dot.edge(str(parent_step_id), str(step.id))
-                # go through each artifact and visualize it
-                print(step.id, step.name, parent_step.id, parent_step.name)
-                for artifact_name, artifact in step.inputs.items():
-                    if artifact in parent_step.outputs.values():
-                        dot.node(
-                            "artifact_" + str(artifact.id),
-                            f"{artifact_name} ({artifact._data_type}) ({artifact.producer_step.id}) ({artifact.parent_step_id}) {artifact.is_cached})",
-                        )
-                        dot.edge(
-                            "artifact_" + str(artifact.id),
-                            "step_" + str(step.id),
-                        )
-                        dot.edge(
-                            "step_" + str(parent_step.id),
-                            "artifact_" + str(artifact.id),
-                        )
-                        # time.sleep(1)
+
+            for artifact_name, artifact in step.outputs.items():
+                dot.node(
+                    "artifact_" + str(artifact.id),
+                    f"{artifact_name} ({artifact._data_type}) ("
+                    f"{artifact.producer_step.id}) ("
+                    f"{artifact.parent_step_id}) {artifact.is_cached})",
+                )
+                dot.edge(
+                    "step_" + str(step.id),
+                    "artifact_" + str(artifact.id),
+                )
+
+            for artifact_name, artifact in step.inputs.items():
+                dot.edge(
+                    "artifact_" + str(artifact.id),
+                    "step_" + str(step.id),
+                )
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as f:
             dot.render(filename=f.name, view=True)
