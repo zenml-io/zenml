@@ -267,6 +267,11 @@ class BaseMetadataStore(BaseComponent):
 
         return steps
 
+    def get_step_by_id(self, step_id: int) -> StepView:
+        """Gets a `StepView` by its ID"""
+        execution = self.store.get_executions_by_id([step_id])[0]
+        return self._get_step_view_from_execution(execution)
+
     def get_step_status(self, step: StepView) -> ExecutionStatus:
         """Gets the execution status of a single step."""
         proto = self.store.get_executions_by_id([step._id])[0]  # noqa
@@ -307,6 +312,10 @@ class BaseMetadataStore(BaseComponent):
         inputs: Dict[str, ArtifactView] = {}
         outputs: Dict[str, ArtifactView] = {}
 
+        # sort them according to artifact_id's so that the zip works.
+        events.sort(key=lambda x: x.artifact_id)
+        artifacts.sort(key=lambda x: x.id)
+
         for event_proto, artifact_proto in zip(events, artifacts):
             artifact_type = artifact_type_mapping[artifact_proto.type_id]
             artifact_name = event_proto.path.steps[0].key
@@ -326,6 +335,9 @@ class BaseMetadataStore(BaseComponent):
                 materializer=materializer,
                 data_type=data_type,
                 metadata_store=self,
+                # TODO [HIGH]: Get correct parent_step_id even if its an `input`
+                #  artifact. Currently, if its an `input`, the same current step
+                #  is the parent of the artifact.
                 parent_step_id=step.id,
             )
 
