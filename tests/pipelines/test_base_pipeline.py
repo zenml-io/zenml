@@ -193,3 +193,14 @@ def test_yaml_configuration_with_invalid_parameter_name(tmp_path):
     )
     with pytest.raises(PipelineConfigurationError):
         _ = pipeline_instance.with_config(yaml_path)
+
+
+def test_setting_pipeline_parameter_name_when_initializing_pipeline(
+    one_step_pipeline, empty_step
+):
+    """Tests that initializing a pipeline with a step sets the attribute
+    `pipeline_parameter_name` of the step."""
+    step_instance = empty_step()
+    assert step_instance.pipeline_parameter_name is None
+    one_step_pipeline(step_instance)
+    assert step_instance.pipeline_parameter_name == "step_"

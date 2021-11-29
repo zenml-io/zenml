@@ -69,6 +69,7 @@ STEP_INNER_FUNC_NAME: str = "process"
 SINGLE_RETURN_OUT_NAME: str = "output"
 PARAM_STEP_NAME: str = "step_name"
 PARAM_ENABLE_CACHE: str = "enable_cache"
+PARAM_PIPELINE_PARAMETER_NAME: str = "pipeline_parameter_name"
 INTERNAL_EXECUTION_PARAMETER_PREFIX: str = "zenml-"
 
 
