@@ -36,6 +36,11 @@ class ZenGCS(Filesystem):
 
     fs = None
 
+    @classmethod
+    def _ensure_filesystem_set(cls):
+        if ZenGCS.fs is None:
+            ZenGCS.fs = gcsfs.GCSFileSystem()
+
     @staticmethod
     def open(path: PathType, mode: str = "r") -> Any:
         """Open a file at the given path.
@@ -45,9 +50,7 @@ class ZenGCS(Filesystem):
             mode: Mode in which to open the file. Currently only
                 'rb' and 'wb' to read and write binary files are supported.
         """
-        if ZenGCS.fs is None:
-            ZenGCS.fs = gcsfs.GCSFileSystem()
-
+        ZenGCS._ensure_filesystem_set()
         return ZenGCS.fs.open(path=path, mode=mode)
 
     @staticmethod
@@ -65,9 +68,7 @@ class ZenGCS(Filesystem):
             FileExistsError: If a file already exists at the destination
                 and overwrite is not set to `True`.
         """
-        if ZenGCS.fs is None:
-            ZenGCS.fs = gcsfs.GCSFileSystem()
-
+        ZenGCS._ensure_filesystem_set()
         if not overwrite and ZenGCS.fs.exists(dst):
             raise FileExistsError(
                 f"Unable to copy to destination '{convert_to_str(dst)}', "
@@ -81,9 +82,7 @@ class ZenGCS(Filesystem):
     @staticmethod
     def exists(path: PathType) -> bool:
         """Check whether a path exists."""
-        if ZenGCS.fs is None:
-            ZenGCS.fs = gcsfs.GCSFileSystem()
-
+        ZenGCS._ensure_filesystem_set()
         return ZenGCS.fs.exists(path=path)  # type: ignore[no-any-return]
 
     @staticmethod
@@ -104,49 +103,38 @@ class ZenGCS(Filesystem):
         Returns:
             A list of paths that match the given glob pattern.
         """
-        if ZenGCS.fs is None:
-            ZenGCS.fs = gcsfs.GCSFileSystem()
-
+        ZenGCS._ensure_filesystem_set()
         return ZenGCS.fs.glob(path=pattern)  # type: ignore[no-any-return]
 
     @staticmethod
     def isdir(path: PathType) -> bool:
         """Check whether a path is a directory."""
-        if ZenGCS.fs is None:
-            ZenGCS.fs = gcsfs.GCSFileSystem()
-
+        ZenGCS._ensure_filesystem_set()
         return ZenGCS.fs.isdir(path=path)  # type: ignore[no-any-return]
 
     @staticmethod
     def listdir(path: PathType) -> List[PathType]:
         """Return a list of files in a directory."""
-        if ZenGCS.fs is None:
-            ZenGCS.fs = gcsfs.GCSFileSystem()
-
+        ZenGCS._ensure_filesystem_set()
         return ZenGCS.fs.listdir(path=path)  # type: ignore[no-any-return]
 
     @staticmethod
     def makedirs(path: PathType) -> None:
         """Create a directory at the given path. If needed also
         create missing parent directories."""
-        if ZenGCS.fs is None:
-            ZenGCS.fs = gcsfs.GCSFileSystem()
-
+        ZenGCS._ensure_filesystem_set()
         ZenGCS.fs.makedirs(path=path, exist_ok=True)
 
     @staticmethod
     def mkdir(path: PathType) -> None:
         """Create a directory at the given path."""
-        if ZenGCS.fs is None:
-            ZenGCS.fs = gcsfs.GCSFileSystem()
+        ZenGCS._ensure_filesystem_set()
         ZenGCS.fs.makedir(path=path)
 
     @staticmethod
     def remove(path: PathType) -> None:
         """Remove the file at the given path."""
-        if ZenGCS.fs is None:
-            ZenGCS.fs = gcsfs.GCSFileSystem()
-
+        ZenGCS._ensure_filesystem_set()
         ZenGCS.fs.rm_file(path=path)
 
     @staticmethod
@@ -164,9 +152,7 @@ class ZenGCS(Filesystem):
             FileExistsError: If a file already exists at the destination
                 and overwrite is not set to `True`.
         """
-        if ZenGCS.fs is None:
-            ZenGCS.fs = gcsfs.GCSFileSystem()
-
+        ZenGCS._ensure_filesystem_set()
         if not overwrite and ZenGCS.fs.exists(dst):
             raise FileExistsError(
                 f"Unable to rename file to '{convert_to_str(dst)}', "
@@ -180,9 +166,7 @@ class ZenGCS(Filesystem):
     @staticmethod
     def rmtree(path: PathType) -> None:
         """Remove the given directory."""
-        if ZenGCS.fs is None:
-            ZenGCS.fs = gcsfs.GCSFileSystem()
-
+        ZenGCS._ensure_filesystem_set()
         try:
             ZenGCS.fs.delete(path=path, recursive=True)
         except FileNotFoundError as e:
@@ -191,9 +175,7 @@ class ZenGCS(Filesystem):
     @staticmethod
     def stat(path: PathType) -> Dict[str, Any]:
         """Return stat info for the given path."""
-        if ZenGCS.fs is None:
-            ZenGCS.fs = gcsfs.GCSFileSystem()
-
+        ZenGCS._ensure_filesystem_set()
         return ZenGCS.fs.stat(path=path)  # type: ignore[no-any-return]
 
     @staticmethod
@@ -213,8 +195,6 @@ class ZenGCS(Filesystem):
             directory path, a list of directories inside the current directory
             and a list of files inside the current directory.
         """
-        if ZenGCS.fs is None:
-            ZenGCS.fs = gcsfs.GCSFileSystem()
-
+        ZenGCS._ensure_filesystem_set()
         # TODO [ENG-153]: Additional params
         return ZenGCS.fs.walk(path=top)  # type: ignore[no-any-return]
