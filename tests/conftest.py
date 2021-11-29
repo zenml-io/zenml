@@ -413,6 +413,18 @@ def empty_step():
 
 
 @pytest.fixture
+def one_step_pipeline():
+    """Pytest fixture that returns a pipeline which takes a single step
+    named `step_`."""
+
+    @pipeline
+    def _pipeline(step_):
+        pass
+
+    return _pipeline
+
+
+@pytest.fixture
 def unconnected_two_step_pipeline():
     """Pytest fixture that returns a pipeline which takes two steps
     `step_1` and `step_2`. The steps are not connected to each other."""

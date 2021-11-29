@@ -45,6 +45,7 @@ from zenml.steps.step_output import Output
 from zenml.steps.utils import (
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_ENABLE_CACHE,
+    PARAM_PIPELINE_PARAMETER_NAME,
     SINGLE_RETURN_OUT_NAME,
     STEP_INNER_FUNC_NAME,
     _ZenMLSimpleComponent,
@@ -174,8 +175,16 @@ T = TypeVar("T", bound="BaseStep")
 
 
 class BaseStep(metaclass=BaseStepMeta):
-    """The base implementation of a ZenML Step which will be inherited by all
-    the other step implementations"""
+    """Abstract base class for all ZenML steps.
+
+    Attributes:
+        step_name: The name of this step.
+        pipeline_parameter_name: The name of the pipeline parameter for which
+            this step was passed as an argument.
+        enable_cache: A boolean indicating if caching is enabled for this step.
+        requires_context: A boolean indicating if this step requires a
+            `StepContext` object during execution.
+    """
 
     # TODO [ENG-156]: Ensure these are ordered
     INPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
@@ -186,6 +195,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.step_name = self.__class__.__name__
+        self.pipeline_parameter_name: Optional[str] = None
         self.enable_cache = getattr(self, PARAM_ENABLE_CACHE)
         self.requires_context = bool(self.CONTEXT_PARAMETER_NAME)
 
@@ -248,7 +258,10 @@ class BaseStep(metaclass=BaseStepMeta):
     @property
     def _internal_execution_parameters(self) -> Dict[str, str]:
         """ZenML internal execution parameters for this step."""
-        properties = {}
+        parameters = {
+            PARAM_PIPELINE_PARAMETER_NAME: self.pipeline_parameter_name
+        }
+
         if self.enable_cache:
             # Caching is enabled so we compute a hash of the step function code
             # and materializers to catch changes in the step behavior
@@ -258,19 +271,19 @@ class BaseStep(metaclass=BaseStepMeta):
                 source_code = inspect.getsource(value)
                 return hashlib.sha256(source_code.encode("utf-8")).hexdigest()
 
-            properties["step_source"] = _get_hashed_source(self.process)
+            parameters["step_source"] = _get_hashed_source(self.process)
 
             for name, materializer in self.get_materializers().items():
                 key = f"{name}_materializer_source"
-                properties[key] = _get_hashed_source(materializer)
+                parameters[key] = _get_hashed_source(materializer)
         else:
             # Add a random string to the execution properties to disable caching
             random_string = f"{random.getrandbits(128):032x}"
-            properties["disable_cache"] = random_string
+            parameters["disable_cache"] = random_string
 
         return {
             INTERNAL_EXECUTION_PARAMETER_PREFIX + key: value
-            for key, value in properties.items()
+            for key, value in parameters.items()
         }
 
     def _verify_arguments(self, *args: Any, **kwargs: Any) -> None:

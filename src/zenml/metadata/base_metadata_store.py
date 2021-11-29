@@ -40,7 +40,10 @@ from zenml.post_execution import (
     PipelineView,
     StepView,
 )
-from zenml.steps.utils import INTERNAL_EXECUTION_PARAMETER_PREFIX
+from zenml.steps.utils import (
+    INTERNAL_EXECUTION_PARAMETER_PREFIX,
+    PARAM_PIPELINE_PARAMETER_NAME,
+)
 
 logger = get_logger(__name__)
 
@@ -98,9 +101,12 @@ class BaseMetadataStore(BaseComponent):
         Returns:
             Original `StepView` derived from the proto.Execution.
         """
-        step_name = self.step_type_mapping[execution.type_id]
-        # Remove the module name
-        step_name = step_name.split(".")[-1]
+        step_name = json.loads(
+            execution.custom_properties[
+                INTERNAL_EXECUTION_PARAMETER_PREFIX
+                + PARAM_PIPELINE_PARAMETER_NAME
+            ].string_value
+        )
 
         step_parameters = {
             k: json.loads(v.string_value)
