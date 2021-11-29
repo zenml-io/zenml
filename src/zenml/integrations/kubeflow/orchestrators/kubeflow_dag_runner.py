@@ -14,6 +14,8 @@
 """Credit to this version of the Kubeflow DAG runner:
 https://github.com/tensorflow/tfx/blob/master/tfx/orchestration/kubeflow/v2/kubeflow_v2_dag_runner.py
 
+This is an unmodified  copy from the TFX source code (outside of superficial, stylistic changes)
+
 V2 Kubeflow DAG Runner."""
 
 import datetime
