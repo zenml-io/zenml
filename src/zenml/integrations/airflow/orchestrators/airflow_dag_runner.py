@@ -17,13 +17,17 @@ source code (outside of superficial, stylistic changes)"""
 import os
 import typing
 import warnings
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union, cast
 
 import tfx.orchestration.pipeline as tfx_pipeline
+from tfx.dsl.compiler import compiler
 from tfx.dsl.components.base import base_component, base_node
 from tfx.orchestration import tfx_runner
-from tfx.orchestration.config import config_utils, pipeline_config
+from tfx.orchestration.config import pipeline_config
 from tfx.orchestration.data_types import RuntimeParameter
+from tfx.orchestration.local import runner_utils
+from tfx.orchestration.portable import runtime_parameter_utils
 from tfx.utils.json_utils import json  # type: ignore[attr-defined]
 
 if TYPE_CHECKING:
@@ -71,11 +75,14 @@ class AirflowDagRunner(tfx_runner.TfxRunner):
             config = AirflowPipelineConfig(airflow_dag_config=config)
         super().__init__(config)
 
-    def run(self, pipeline: tfx_pipeline.Pipeline) -> "airflow.DAG":
+    def run(
+        self, pipeline: tfx_pipeline.Pipeline, run_name: Optional[str] = None
+    ) -> "airflow.DAG":
         """Deploys given logical pipeline on Airflow.
 
         Args:
           pipeline: Logical pipeline containing pipeline args and comps.
+          run_name: Optional name for the run.
 
         Returns:
           An Airflow DAG.
@@ -103,34 +110,52 @@ class AirflowDagRunner(tfx_runner.TfxRunner):
             )
             pipeline.additional_pipeline_args["tmp_dir"] = tmp_dir
 
-        component_impl_map = {}
-        for tfx_component in pipeline.components:
-            if isinstance(tfx_component, base_component.BaseComponent):
-                tfx_component._resolve_pip_dependencies(  # noqa
+        for component in pipeline.components:
+            if isinstance(component, base_component.BaseComponent):
+                component._resolve_pip_dependencies(
                     pipeline.pipeline_info.pipeline_root
                 )
+            self._replace_runtime_params(component)
 
-            tfx_component = self._replace_runtime_params(tfx_component)
+        c = compiler.Compiler()
+        pipeline = c.compile(pipeline)
 
-            (
-                component_launcher_class,
-                component_config,
-            ) = config_utils.find_component_launch_info(
-                self._config, tfx_component
+        run_name = run_name or datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")
+        # Substitute the runtime parameter to be a concrete run_id
+        runtime_parameter_utils.substitute_runtime_parameter(
+            pipeline,
+            {
+                "pipeline-run-id": run_name,
+            },
+        )
+        deployment_config = runner_utils.extract_local_deployment_config(
+            pipeline
+        )
+        connection_config = deployment_config.metadata_connection_config  # type: ignore[attr-defined] # noqa
+
+        component_impl_map = {}
+
+        for node in pipeline.nodes:
+            pipeline_node = node.pipeline_node
+            node_id = pipeline_node.node_info.id
+            executor_spec = runner_utils.extract_executor_spec(
+                deployment_config, node_id
             )
+            custom_driver_spec = runner_utils.extract_custom_driver_spec(
+                deployment_config, node_id
+            )
+
             current_airflow_component = airflow_component.AirflowComponent(
                 parent_dag=airflow_dag,
-                component=tfx_component,
-                component_launcher_class=component_launcher_class,
+                pipeline_node=pipeline_node,
+                mlmd_connection=connection_config,
                 pipeline_info=pipeline.pipeline_info,
-                enable_cache=pipeline.enable_cache,  # type: ignore[arg-type]
-                metadata_connection_config=pipeline.metadata_connection_config,
-                beam_pipeline_args=pipeline.beam_pipeline_args,
-                additional_pipeline_args=pipeline.additional_pipeline_args,
-                component_config=component_config,  # type: ignore[arg-type]
+                pipeline_runtime_spec=pipeline.runtime_spec,
+                executor_spec=executor_spec,
+                custom_driver_spec=custom_driver_spec,
             )
-            component_impl_map[tfx_component] = current_airflow_component
-            for upstream_node in tfx_component.upstream_nodes:
+            component_impl_map[node_id] = current_airflow_component
+            for upstream_node in node.pipeline_node.upstream_nodes:
                 assert (
                     upstream_node in component_impl_map
                 ), "Components is not in topological order"
