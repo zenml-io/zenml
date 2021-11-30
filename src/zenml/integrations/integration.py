@@ -15,7 +15,6 @@ from typing import Any, Dict, List, Tuple, Type, cast
 
 import pkg_resources
 
-from zenml.exceptions import IntegrationError
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 
@@ -44,21 +43,28 @@ class Integration(metaclass=IntegrationMeta):
     REQUIREMENTS: List[str] = []
 
     @classmethod
-    def check_installation(cls) -> None:
+    def check_installation(cls) -> bool:
         """Method to check whether the required packages are installed"""
         try:
-            pkg_resources.require(cls.REQUIREMENTS)
+            for r in cls.REQUIREMENTS:
+                pkg_resources.get_distribution(r)
+            logger.debug(
+                f"Integration {cls.NAME} is installed correctly with "
+                f"requirements {cls.REQUIREMENTS}."
+            )
+            return True
         except pkg_resources.DistributionNotFound as e:
-            raise IntegrationError(
+            logger.debug(
                 f"Unable to find required package '{e.req}' for "
                 f"integration {cls.NAME}."
             )
+            return False
         except pkg_resources.VersionConflict as e:
             logger.debug(
                 f"VersionConflict error when loading installation {cls.NAME}: "
                 f"{str(e)}"
             )
-            # raise IntegrationError("Version conflicts in required packages.")
+            return False
 
     @staticmethod
     def activate() -> None:
