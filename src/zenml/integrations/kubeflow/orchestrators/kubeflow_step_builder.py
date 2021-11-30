@@ -1,17 +1,19 @@
-# Copyright 2020 Google LLC. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#       http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-"""Builder for Kubeflow pipelines StepSpec proto."""
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""This is an unmodified copy from the TFX source code (outside of superficial, stylistic changes)
+
+Builder for Kubeflow pipelines StepSpec proto."""
 
 import itertools
 from typing import Any, Dict, List, Optional, Tuple
@@ -19,22 +21,21 @@ from typing import Any, Dict, List, Optional, Tuple
 from absl import logging
 from kfp.pipeline_spec import pipeline_spec_pb2 as pipeline_pb2
 from ml_metadata.proto import metadata_store_pb2
-from tfx import components
-from tfx.components.evaluator import constants
 from tfx.dsl.compiler import compiler_utils as tfx_compiler_utils
 from tfx.dsl.component.experimental import executor_specs, placeholders
 from tfx.dsl.components.base import base_component, base_node, executor_spec
-from tfx.dsl.components.common import importer, resolver
+from tfx.dsl.components.common import resolver
 from tfx.dsl.experimental.conditionals import conditional
 from tfx.dsl.input_resolution.strategies import (
     latest_artifact_strategy,
     latest_blessed_model_strategy,
 )
 from tfx.orchestration import data_types
-from tfx.types import artifact_utils, standard_artifacts
+from tfx.types import standard_artifacts
 from tfx.types.channel import Channel
 from tfx.utils import deprecation_utils
 
+from zenml.integrations.kubeflow import constants
 from zenml.integrations.kubeflow.orchestrators import (
     kubeflow_compiler_utils as compiler_utils,
 )
@@ -422,20 +423,7 @@ class StepBuilder:
 
         # 4. Build the executor body for other common tasks.
         executor = pipeline_pb2.PipelineDeploymentConfig.ExecutorSpec()
-        if isinstance(self._node, importer.Importer):
-            executor.importer.CopyFrom(self._build_importer_spec())
-        elif isinstance(self._node, components.FileBasedExampleGen):
-            executor.container.CopyFrom(
-                self._build_file_based_example_gen_spec()
-            )
-        elif isinstance(self._node, (components.InfraValidator)):
-            raise NotImplementedError(
-                'The componet type "{}" is not supported'.format(
-                    type(self._node)
-                )
-            )
-        else:
-            executor.container.CopyFrom(self._build_container_spec())
+        executor.container.CopyFrom(self._build_container_spec())
         self._deployment_config.executors[executor_label].CopyFrom(executor)
 
         return {self._name: task_spec}
@@ -488,103 +476,6 @@ class StepBuilder:
         result.args.append("--json_serialized_invocation_args")
         result.args.append("{{$}}")
         result.args.extend(self._beam_pipeline_args)
-
-        return result
-
-    def _build_file_based_example_gen_spec(self) -> ContainerSpec:
-        """Builds FileBasedExampleGen into a PipelineContainerSpec.
-        Returns:
-          The PipelineContainerSpec represents the container execution of the
-          component, which should includes both the driver execution, and the
-          executor execution.
-        Raises:
-          ValueError: When the node is a FileBasedExampleGen but tfx image was not
-            specified.
-        """
-        assert isinstance(self._node, components.FileBasedExampleGen)
-        if not self._tfx_image:
-            raise ValueError("TFX image is required for FileBasedExampleGen.")
-
-        # 1. Build the driver container execution by setting the pre_cache_check
-        # hook.
-        result = ContainerSpec()
-        driver_hook = ContainerSpec.Lifecycle(
-            pre_cache_check=ContainerSpec.Lifecycle.Exec(
-                command=_DRIVER_COMMANDS,
-                args=[
-                    "--json_serialized_invocation_args",
-                    "{{$}}",
-                ],
-            )
-        )
-        driver_hook.pre_cache_check.args.extend(self._beam_pipeline_args)
-        result.lifecycle.CopyFrom(driver_hook)
-
-        # 2. Build the executor container execution in the same way as a regular
-        # component.
-        result.image = self._tfx_image
-        if self._image_cmds:
-            for cmd in self._image_cmds:
-                result.command.append(cmd)
-        executor_path = "%s.%s" % (
-            self._node.executor_spec.executor_class.__module__,
-            self._node.executor_spec.executor_class.__name__,
-        )
-        # Resolve container arguments.
-        result.args.append("--executor_class_path")
-        result.args.append(executor_path)
-        result.args.append("--json_serialized_invocation_args")
-        result.args.append("{{$}}")
-        result.args.extend(self._beam_pipeline_args)
-        return result
-
-    def _build_importer_spec(self) -> ImporterSpec:
-        """Builds ImporterSpec."""
-        assert isinstance(self._node, importer.Importer)
-        output_channel = self._node.outputs[importer.IMPORT_RESULT_KEY]
-        result = ImporterSpec()
-
-        # Importer's output channel contains one artifact instance with
-        # additional properties.
-        artifact_instance = list(output_channel.get())[0]
-        struct_proto = compiler_utils.pack_artifact_properties(
-            artifact_instance
-        )
-        if struct_proto:
-            result.metadata.CopyFrom(struct_proto)
-
-        result.reimport = bool(
-            self._exec_properties[importer.REIMPORT_OPTION_KEY]
-        )
-
-        # 'artifact_uri' property of Importer node should be string, but the type
-        # is not checked (except the pytype hint) in Importer node.
-        # It is possible to escape the type constraint and pass a RuntimeParameter.
-        # If that happens, we need to overwrite the runtime parameter name to
-        # 'artifact_uri', instead of using the name of user-provided runtime
-        # parameter.
-        if isinstance(
-            self._exec_properties[importer.SOURCE_URI_KEY],
-            data_types.RuntimeParameter,
-        ):
-            result.artifact_uri.runtime_parameter = importer.SOURCE_URI_KEY
-        else:
-            result.artifact_uri.CopyFrom(
-                compiler_utils.value_converter(
-                    self._exec_properties[importer.SOURCE_URI_KEY]
-                )
-            )
-
-        single_artifact = artifact_utils.get_single_instance(
-            list(output_channel.get())
-        )
-        result.type_schema.CopyFrom(
-            pipeline_pb2.ArtifactTypeSchema(
-                instance_schema=compiler_utils.get_artifact_schema(
-                    single_artifact
-                )
-            )
-        )
 
         return result
 

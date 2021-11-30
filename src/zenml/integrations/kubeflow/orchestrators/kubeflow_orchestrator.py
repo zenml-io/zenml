@@ -12,14 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, Any, Optional, Dict
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import tfx.orchestration.pipeline as tfx_pipeline
 
 from zenml.core.component_factory import orchestrator_store_factory
 from zenml.enums import OrchestratorTypes
-from zenml.integrations.kubeflow.orchestrators.kubeflow_dag_runner import \
-    KubeflowV2DagRunner
+from zenml.integrations.kubeflow.orchestrators.kubeflow_dag_runner import (
+    KubeflowV2DagRunner,
+)
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 
 if TYPE_CHECKING:
@@ -31,10 +32,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Kubeflow."""
 
     def run(
-            self,
-            zenml_pipeline: "BasePipeline",
-            run_name: Optional[str] = None,
-            **kwargs: Any,
+        self,
+        zenml_pipeline: "BasePipeline",
+        run_name: Optional[str] = None,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """Prepares the pipeline to be run on Kubeflow"""
         # Set up the kubeflow dag runner
@@ -61,4 +62,5 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
     @property
     def is_running(self) -> bool:
+        """Returns true if the orchestrator is running."""
         return True
