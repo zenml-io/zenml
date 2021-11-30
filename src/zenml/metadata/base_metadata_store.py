@@ -334,6 +334,15 @@ class BaseMetadataStore(BaseComponent):
                 DATATYPE_PROPERTY_KEY
             ].string_value
 
+            parent_step_id = step.id
+            if event_proto.type == event_proto.INPUT:
+                # In the case that this is an input event, we actually need
+                # to resolve it via its parents outputs.
+                for parent in step.parent_steps:
+                    for a in parent.outputs.values():
+                        if artifact_proto.id == a.id:
+                            parent_step_id = parent.id
+
             artifact = ArtifactView(
                 id_=event_proto.artifact_id,
                 type_=artifact_type,
@@ -341,10 +350,7 @@ class BaseMetadataStore(BaseComponent):
                 materializer=materializer,
                 data_type=data_type,
                 metadata_store=self,
-                # TODO [HIGH]: Get correct parent_step_id even if its an `input`
-                #  artifact. Currently, if its an `input`, the same current step
-                #  is the parent of the artifact.
-                parent_step_id=step.id,
+                parent_step_id=parent_step_id,
             )
 
             if event_proto.type == event_proto.INPUT:
