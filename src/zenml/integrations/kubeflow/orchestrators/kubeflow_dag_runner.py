@@ -36,7 +36,6 @@ from tfx.orchestration import data_types
 from tfx.orchestration import pipeline as tfx_pipeline
 from tfx.orchestration import tfx_runner
 from tfx.orchestration.config import pipeline_config
-from tfx.orchestration.kubeflow.proto import kubeflow_pb2
 from tfx.orchestration.launcher import (
     base_component_launcher,
     in_process_component_launcher,
@@ -129,7 +128,7 @@ def get_default_pipeline_operator_funcs(
         return [mount_config_map_op]
 
 
-def get_default_kubeflow_metadata_config() -> kubeflow_pb2.KubeflowMetadataConfig:
+def get_default_kubeflow_metadata_config() -> Dict:
     """Returns the default metadata connection config for Kubeflow.
     Returns:
       A config proto that will be serialized as JSON and passed to the running
@@ -139,21 +138,16 @@ def get_default_kubeflow_metadata_config() -> kubeflow_pb2.KubeflowMetadataConfi
     # The default metadata configuration for a Kubeflow Pipelines cluster is
     # codified as a Kubernetes ConfigMap
     # https://github.com/kubeflow/pipelines/blob/master/manifests/kustomize/base/metadata/metadata-grpc-configmap.yaml
-
-    config = kubeflow_pb2.KubeflowMetadataConfig()
-    # The environment variable to use to obtain the Metadata gRPC service host in
-    # the cluster that is backing Kubeflow Metadata. Note that the key in the
-    # config map and therefore environment variable used, are lower-cased.
-    config.grpc_config.grpc_service_host.environment_variable = (
-        "METADATA_GRPC_SERVICE_HOST"
-    )
-    # The environment variable to use to obtain the Metadata grpc service port in
-    # the cluster that is backing Kubeflow Metadata.
-    config.grpc_config.grpc_service_port.environment_variable = (
-        "METADATA_GRPC_SERVICE_PORT"
-    )
-
-    return config
+    return {
+        "grpc_config": {
+            "grpc_service_host": {
+                "environment_variable": "METADATA_GRPC_SERVICE_HOST"
+            },
+            "grpc_service_port": {
+                "environment_variable": "METADATA_GRPC_SERVICE_PORT"
+            },
+        }
+    }
 
 
 def get_default_pod_labels() -> Dict[str, str]:
@@ -176,9 +170,7 @@ class KubeflowDagRunnerConfig(pipeline_config.PipelineConfig):
         self,
         pipeline_operator_funcs: Optional[List[OpFunc]] = None,
         tfx_image: Optional[str] = None,
-        kubeflow_metadata_config: Optional[
-            kubeflow_pb2.KubeflowMetadataConfig
-        ] = None,
+        kubeflow_metadata_config: Optional[Dict] = None,
         # TODO(b/143883035): Figure out the best practice to put the
         # SUPPORTED_LAUNCHER_CLASSES
         supported_launcher_classes: Optional[
@@ -412,7 +404,8 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
             # TODO(b/187122662): Pass through pip dependencies as a first-class
             # component flag.
             if isinstance(component, tfx_base_component.BaseComponent):
-                component._resolve_pip_dependencies(  # pylint: disable=protected-access
+                component._resolve_pip_dependencies(
+                    # pylint: disable=protected-access
                     pipeline.pipeline_info.pipeline_root
                 )
 
@@ -438,7 +431,8 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
             pipeline.pipeline_info.pipeline_name
         )
         # Create workflow spec and write out to package.
-        self._compiler._create_and_write_workflow(  # pylint: disable=protected-access
+        self._compiler._create_and_write_workflow(
+            # pylint: disable=protected-access
             pipeline_func=_construct_pipeline,
             pipeline_name=pipeline.pipeline_info.pipeline_name,
             params_list=self._params,

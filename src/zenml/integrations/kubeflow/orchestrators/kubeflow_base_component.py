@@ -20,7 +20,7 @@ components, thus ensuring that both types of pipeline definitions are
 compatible.
 Note: This requires Kubeflow Pipelines SDK to be installed.
 """
-
+import json
 from typing import Dict, List, Set
 
 from absl import logging
@@ -30,7 +30,6 @@ from kubernetes import client as k8s_client
 from tfx.dsl.components.base import base_node as tfx_base_node
 from tfx.orchestration import data_types
 from tfx.orchestration import pipeline as tfx_pipeline
-from tfx.orchestration.kubeflow.proto import kubeflow_pb2
 from tfx.proto.orchestration import pipeline_pb2
 
 from zenml.integrations.kubeflow.orchestrators import kubeflow_utils as utils
@@ -68,7 +67,7 @@ class BaseComponent:
         pipeline: tfx_pipeline.Pipeline,
         pipeline_root: dsl.PipelineParam,
         tfx_image: str,
-        kubeflow_metadata_config: kubeflow_pb2.KubeflowMetadataConfig,
+        kubeflow_metadata_config: Dict,
         tfx_ir: pipeline_pb2.Pipeline,
         pod_labels_to_attach: Dict[str, str],
         runtime_parameters: List[data_types.RuntimeParameter],
@@ -98,10 +97,7 @@ class BaseComponent:
             "--pipeline_root",
             pipeline_root,
             "--kubeflow_metadata_config",
-            json_format.MessageToJson(
-                message=kubeflow_metadata_config,
-                preserving_proto_field_name=True,
-            ),
+            json.dumps(kubeflow_metadata_config),
             "--node_id",
             component.id,
             # TODO(b/182220464): write IR to pipeline_root and let
