@@ -20,6 +20,7 @@ from zenml.core.component_factory import orchestrator_store_factory
 from zenml.enums import OrchestratorTypes
 from zenml.integrations.kubeflow.orchestrators.kubeflow_dag_runner import (
     KubeflowV2DagRunner,
+    KubeflowV2DagRunnerConfig,
 )
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 
@@ -39,7 +40,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
     ) -> Dict[str, Any]:
         """Prepares the pipeline to be run on Kubeflow"""
         # Set up the kubeflow dag runner
-        runner = KubeflowV2DagRunner()
+        runner = KubeflowV2DagRunner(KubeflowV2DagRunnerConfig())
 
         # Establish the connections between the components
         zenml_pipeline.connect(**zenml_pipeline.steps)
