@@ -30,6 +30,15 @@ logger = get_logger(__name__)
 class PipelineRunDagVisualizer(BasePipelineRunVisualizer):
     """Visualize the lineage of runs in a pipeline."""
 
+    ARTIFACT_DEFAULT_COLOR = "blue"
+    ARTIFACT_CACHED_COLOR = "green"
+    ARTIFACT_SHAPE = "box"
+    ARTIFACT_PREFIX = "artifact_"
+    STEP_COLOR = "#431D93"
+    STEP_SHAPE = "ellipse"
+    STEP_PREFIX = "step_"
+    FONT = "Roboto"
+
     @abstractmethod
     def visualize(
         self, object: PipelineRunView, *args: Any, **kwargs: Any
@@ -40,27 +49,39 @@ class PipelineRunDagVisualizer(BasePipelineRunVisualizer):
         # link the steps together
         for step in object.steps:
             # add each step as a node
-            dot.node("step_" + str(step.id), step.name)
+            dot.node(
+                self.STEP_PREFIX + str(step.id),
+                step.name,
+                shape=self.ARTIFACT_SHAPE,
+                # fillcolor=self.STEP_COLOR,
+                # fontname=self.FONT,
+                # style="filled",
+                # fontcolor="#f2f2f0",
+            )
             # for each parent of a step, add an edge
 
             for artifact_name, artifact in step.outputs.items():
                 dot.node(
-                    "artifact_" + str(artifact.id),
-                    f"{artifact_name} ({artifact._data_type}) ("
-                    f"{artifact.producer_step.id}) ("
-                    f"{artifact.parent_step_id}) {artifact.is_cached})",
+                    self.ARTIFACT_PREFIX + str(artifact.id),
+                    f"{artifact_name} \n" f"({artifact._data_type})",
+                    shape=self.STEP_SHAPE,
+                    # fillcolor=self.ARTIFACT_CACHED_COLOR
+                    # if artifact.is_cached
+                    # else self.ARTIFACT_DEFAULT_COLOR,
+                    # fontname=self.FONT,
+                    # style="filled",
                 )
                 dot.edge(
-                    "step_" + str(step.id),
-                    "artifact_" + str(artifact.id),
+                    self.STEP_PREFIX + str(step.id),
+                    self.ARTIFACT_PREFIX + str(artifact.id),
                 )
 
             for artifact_name, artifact in step.inputs.items():
                 dot.edge(
-                    "artifact_" + str(artifact.id),
-                    "step_" + str(step.id),
+                    self.ARTIFACT_PREFIX + str(artifact.id),
+                    self.STEP_PREFIX + str(step.id),
                 )
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as f:
-            dot.render(filename=f.name, view=True)
+            dot.render(filename=f.name, format="png", view=True, cleanup=True)
         return dot
