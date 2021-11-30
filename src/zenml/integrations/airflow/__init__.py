@@ -11,6 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""
+The Airflow integration sub-module powers an alternative to the local
+orchestrator. You can enable it by registering the Airflow orchestrator with
+the CLI tool, then bootstrap using the ``zenml orchestrator up`` command.
+"""
 from zenml.integrations.constants import AIRFLOW
 from zenml.integrations.integration import Integration
 from zenml.utils.source_utils import import_class_by_path

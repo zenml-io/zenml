@@ -240,7 +240,6 @@ class AirflowOrchestrator(BaseOrchestrator):
             run_name: Optional name for the run.
             **kwargs: Unused argument to conform with base class signature.
         """
-        # TODO [ENG-137]: set the run name
         self.airflow_config = {
             "schedule_interval": datetime.timedelta(
                 minutes=self.schedule_interval_minutes
@@ -268,4 +267,4 @@ class AirflowOrchestrator(BaseOrchestrator):
             enable_cache=zenml_pipeline.enable_cache,
         )
 
-        return runner.run(created_pipeline)
+        return runner.run(created_pipeline, run_name=run_name)

@@ -15,7 +15,7 @@ One of the biggest questions often left unasked when designing a new framework i
 
 When designing a framework as broad as ZenML, the team is probably making hundreds of micro-decisions weekly. While all of these are impossible to capture, we have decided to capture the most key decisions here, and hopefully illuminate why we built ZenML this way.
 
-## Pipelines and Pipeline runs: Separating Configuration From Implementation
+## Pipelines and Pipeline Runs: Separating Configuration From Implementation
 
 We decided early on that we wanted to clearly define what a Pipeline and a Pipeline Run were. Here is the key:
 

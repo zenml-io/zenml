@@ -28,6 +28,7 @@ RUN apt-get update && \
   libsnappy-dev \
   protobuf-compiler \
   libprotobuf-dev \
+  python3.6-venv \
   wget \
   unzip \
   git && \
@@ -57,4 +58,4 @@ RUN echo 'alias zenml="poetry run zenml"' >> ~/.bashrc
 COPY . /zenml
 
 # install zenml
-RUN poetry install
+RUN poetry update && poetry install

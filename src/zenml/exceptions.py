@@ -97,6 +97,11 @@ class StepInterfaceError(Exception):
     in an unsupported way."""
 
 
+class StepContextError(Exception):
+    """Raises exception when interacting with a StepContext
+    in an unsupported way."""
+
+
 class PipelineInterfaceError(Exception):
     """Raises exception when interacting with the Pipeline interface
     in an unsupported way."""

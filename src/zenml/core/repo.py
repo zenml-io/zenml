@@ -27,12 +27,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.post_execution.pipeline import PipelineView
 from zenml.stacks.base_stack import BaseStack
-from zenml.utils.analytics_utils import (
-    FETCHED_STACK,
-    GET_PIPELINES,
-    SET_STACK,
-    track,
-)
+from zenml.utils.analytics_utils import GET_PIPELINES, SET_STACK, track
 
 logger = get_logger(__name__)
 
@@ -45,7 +40,7 @@ class Repository:
 
     def __init__(self, path: Optional[str] = None):
         """
-        Construct reference a ZenML repository.
+        Construct reference to a ZenML repository.
 
         Args:
             path (str): Path to root of repository
@@ -175,7 +170,6 @@ class Repository:
         self.service.get_stack(stack_key)  # check if it exists
         gc.make_stack_active_for_repo(self.path, stack_key)
 
-    @track(event=FETCHED_STACK)
     def get_active_stack_key(self) -> str:
         """Get the active stack key from global config.
 

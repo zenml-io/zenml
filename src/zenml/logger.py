@@ -157,8 +157,14 @@ def init_logging() -> None:
     set_root_verbosity()
 
     # Mute apache_beam
-    logging.getLogger("apache_beam").setLevel(logging.WARNING)
-    logging.getLogger("rdbms_metadata_access_object").setLevel(logging.WARNING)
+    muted_logger_names = [
+        "apache_beam",
+        "rdbms_metadata_access_object",
+        "apache_beam.io.gcp.bigquery",
+    ]
+    for logger_name in muted_logger_names:
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
+        logging.getLogger(logger_name).disabled = True
 
     # set absl logging
     absl_logging.set_verbosity(ABSL_LOGGING_VERBOSITY)

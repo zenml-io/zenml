@@ -11,6 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""
+After executing a pipeline, the user needs to be able to fetch it from history
+and perform certain tasks. The post_execution submodule provides a set of
+interfaces with which the user can interact with artifacts, the pipeline, steps,
+and the post-run pipeline object.
+"""
 
 from zenml.post_execution.artifact import ArtifactView
 from zenml.post_execution.pipeline import PipelineView

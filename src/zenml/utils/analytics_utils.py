@@ -44,7 +44,6 @@ REGISTERED_ORCHESTRATOR = "Orchestrator registered"
 # Stack
 REGISTERED_STACK = "Stack registered"
 SET_STACK = "Stack set"
-FETCHED_STACK = "Stack fetched"
 
 
 def get_segment_key() -> str:

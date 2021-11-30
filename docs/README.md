@@ -8,13 +8,25 @@ ZenML is an extensible, open-source MLOps framework for creating production-read
 
 If you'd like to develop on and build the ZenML Docs, you should:
 
-- Clone this repository and run
+- Clone this repository
 - Run `pip install -r requirements.txt` (it is recommended you do this within a virtual environment)
 - `cd docs`
 - (Recommended) Remove the existing `book/_build/` directory
 - Run `jupyter-book build book/`
 
 A fully-rendered HTML version of the docs will be built in `book/_build/html/`.
+
+### Building the Sphinx API docs
+
+If you'd like to generate a local build of the Sphinx API docs, you should:
+
+- Clone this repository
+- Run `pip install apache-airflow~=2.2.0 gcsfs~=2021.9.0 click~=8.0.3
+  torch~=1.10.0 facets-overview~=1.0.0 plotly~=5.4.0 pytorch_lightning
+  scikit-learn tensorflow ipython`
+- Run `poetry run bash scripts/generate-docs.sh` from the root of the `zenml`
+  repository.
+
 
 ### Hosting the book
 

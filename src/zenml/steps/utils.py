@@ -56,6 +56,7 @@ from zenml.exceptions import MissingStepParameterError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps.step_context import StepContext
 from zenml.steps.step_output import Output
 from zenml.utils import source_utils
 
@@ -68,6 +69,7 @@ STEP_INNER_FUNC_NAME: str = "process"
 SINGLE_RETURN_OUT_NAME: str = "output"
 PARAM_STEP_NAME: str = "step_name"
 PARAM_ENABLE_CACHE: str = "enable_cache"
+PARAM_PIPELINE_PARAMETER_NAME: str = "pipeline_parameter_name"
 INTERNAL_EXECUTION_PARAMETER_PREFIX: str = "zenml-"
 
 
@@ -345,6 +347,14 @@ class _FunctionExecutor(BaseExecutor):
                         getattr(self, PARAM_STEP_NAME), missing_fields, arg_type
                     ) from None
                 function_params[arg] = config_object
+            elif issubclass(arg_type, StepContext):
+                output_artifacts = {k: v[0] for k, v in output_dict.items()}
+                context = StepContext(
+                    step_name=getattr(self, PARAM_STEP_NAME),
+                    output_materializers=self.materializers or {},
+                    output_artifacts=output_artifacts,
+                )
+                function_params[arg] = context
             else:
                 # At this point, it has to be an artifact, so we resolve
                 function_params[arg] = self.resolve_input_artifact(
