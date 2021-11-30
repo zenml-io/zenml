@@ -18,7 +18,6 @@ the CLI tool, then bootstrap using the ``zenml orchestrator up`` command.
 """
 from zenml.integrations.constants import AIRFLOW
 from zenml.integrations.integration import Integration
-from zenml.utils.source_utils import import_class_by_path
 
 
 class AirflowIntegration(Integration):
