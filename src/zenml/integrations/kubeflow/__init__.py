@@ -11,3 +11,27 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""
+The Kubeflow integration sub-module powers an alternative to the local
+orchestrator. You can enable it by registering the Kubeflow orchestrator with
+the CLI tool.
+"""
+from zenml.integrations.constants import KUBEFLOW
+from zenml.integrations.integration import Integration
+
+
+class KubeflowIntegration(Integration):
+    """Definition of Kubeflow Integration for ZenML."""
+
+    NAME = KUBEFLOW
+    REQUIREMENTS = ["kfp==1.8.9"]
+    # TODO [HIGH]: Figure out the dependencies for the Kubeflow integration
+    #   to work
+
+    @classmethod
+    def activate(cls):
+        """Activates all classes required for the airflow integration."""
+        from zenml.integrations.kubeflow import orchestrators  # noqa
+
+
+KubeflowIntegration.check_installation()
