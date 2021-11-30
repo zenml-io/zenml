@@ -104,15 +104,16 @@ def build_docker_image(
     logger.info(
         "Building docker image '%s', this might take a while...", image_name
     )
-    docker_client = docker.from_env()
-    docker_client.images.build(
-        path=build_context_path,
-        dockerfile=dockerfile_path,
-        tag=image_name,
-        rm=True,  # remove intermediate containers
-    )
-    logger.info("Finished building docker image.")
-
-    if temporary_dockerfile:
-        logger.debug("Removing temporary dockerfile '%s'", dockerfile_path)
-        os.remove(dockerfile_path)
+    try:
+        docker_client = docker.from_env()
+        docker_client.images.build(
+            path=build_context_path,
+            dockerfile=dockerfile_path,
+            tag=image_name,
+            rm=True,  # remove intermediate containers
+        )
+        logger.info("Finished building docker image.")
+    finally:
+        if temporary_dockerfile:
+            logger.debug("Removing temporary dockerfile '%s'", dockerfile_path)
+            os.remove(dockerfile_path)
