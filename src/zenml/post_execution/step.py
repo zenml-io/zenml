@@ -104,6 +104,11 @@ class StepView:
         return self._metadata_store.get_step_status(self)
 
     @property
+    def is_cached(self) -> bool:
+        """Returns whether the step is cached or not."""
+        return self.status == ExecutionStatus.CACHED
+
+    @property
     def inputs(self) -> Dict[str, ArtifactView]:
         """Returns all input artifacts that were used to run this step."""
         self._ensure_inputs_outputs_fetched()
