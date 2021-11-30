@@ -18,7 +18,6 @@ the CLI tool, then bootstrap using the ``zenml orchestrator up`` command.
 """
 from zenml.integrations.constants import AIRFLOW
 from zenml.integrations.integration import Integration
-from zenml.utils.source_utils import import_class_by_path
 
 
 class AirflowIntegration(Integration):
@@ -30,10 +29,7 @@ class AirflowIntegration(Integration):
     @classmethod
     def activate(cls):
         """Activates all classes required for the airflow integration."""
-        import_class_by_path(
-            "zenml.integrations.airflow.orchestrators.airflow_orchestrator."
-            "AirflowOrchestrator"
-        )
+        from zenml.integrations.airflow import orchestrators  # noqa
 
 
 AirflowIntegration.check_installation()

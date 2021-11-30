@@ -19,7 +19,6 @@ stores, and an `io` module to handle file operations on Google Cloud Storage (GC
 
 from zenml.integrations.constants import GCP
 from zenml.integrations.integration import Integration
-from zenml.utils.source_utils import import_class_by_path
 
 
 class GcpIntegration(Integration):
@@ -31,17 +30,8 @@ class GcpIntegration(Integration):
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        from tfx.dsl.io.filesystem_registry import DEFAULT_FILESYSTEM_REGISTRY
-
-        gcs_fs = import_class_by_path(
-            "zenml.integrations.gcp.io.gcs_plugin.ZenGCS"
-        )
-
-        DEFAULT_FILESYSTEM_REGISTRY.register(gcs_fs, 15)
-
-        import_class_by_path(
-            "zenml.integrations.gcp.artifact_stores.gcp_artifact_store.GCPArtifactStore"
-        )
+        from zenml.integrations.gcp import artifact_stores  # noqa
+        from zenml.integrations.gcp import io  # noqa
 
 
 GcpIntegration.check_installation()

@@ -229,7 +229,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         # Activating the built-in integrations through lazy loading
         from zenml.integrations.registry import integration_registry
 
-        integration_registry.activate()
+        integration_registry.activate_integrations()
 
         if run_name is None:
             run_name = (

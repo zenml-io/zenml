@@ -43,6 +43,7 @@ class OrchestratorTypes(str, Enum):
 
     local = "local"
     airflow = "airflow"
+    kubeflow = "kubeflow"
 
     def __str__(self) -> str:
         """Returns the enum string value."""
