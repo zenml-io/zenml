@@ -26,10 +26,7 @@ from tfx.dsl.component.experimental import executor_specs, placeholders
 from tfx.dsl.components.base import base_component, base_node, executor_spec
 from tfx.dsl.components.common import resolver
 from tfx.dsl.experimental.conditionals import conditional
-from tfx.dsl.input_resolution.strategies import (
-    latest_artifact_strategy,
-    latest_blessed_model_strategy,
-)
+from tfx.dsl.input_resolution.strategies import latest_artifact_strategy
 from tfx.orchestration import data_types
 from tfx.types import standard_artifacts
 from tfx.types.channel import Channel
@@ -41,6 +38,9 @@ from zenml.integrations.kubeflow.orchestrators import (
 )
 from zenml.integrations.kubeflow.orchestrators import (
     kubeflow_decorators as decorators,
+)
+from zenml.integrations.kubeflow.orchestrators import (
+    kubeflow_latest_blessed_model_strategy as latest_blessed_model_strategy,
 )
 from zenml.integrations.kubeflow.orchestrators import (
     kubeflow_parameter_utils as parameter_utils,
