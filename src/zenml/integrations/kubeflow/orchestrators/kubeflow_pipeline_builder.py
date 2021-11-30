@@ -23,10 +23,15 @@ from google.protobuf import json_format
 from kfp.pipeline_spec import pipeline_spec_pb2 as pipeline_pb2
 from tfx.dsl.components.base import base_node
 from tfx.orchestration import data_types, pipeline
-from tfx.orchestration.kubeflow.v2 import (
-    compiler_utils,
-    parameter_utils,
-    step_builder,
+
+from zenml.integrations.kubeflow.orchestrators import (
+    kubeflow_compiler_utils as compiler_utils,
+)
+from zenml.integrations.kubeflow.orchestrators import (
+    kubeflow_parameter_utils as parameter_utils,
+)
+from zenml.integrations.kubeflow.orchestrators import (
+    kubeflow_step_builder as step_builder,
 )
 
 _LEGAL_NAME_PATTERN = re.compile(r"[a-z0-9][a-z0-9-]{0,127}")

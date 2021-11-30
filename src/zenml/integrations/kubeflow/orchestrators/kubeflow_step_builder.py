@@ -31,14 +31,19 @@ from tfx.dsl.input_resolution.strategies import (
     latest_blessed_model_strategy,
 )
 from tfx.orchestration import data_types
-from tfx.orchestration.kubeflow.v2 import (
-    compiler_utils,
-    decorators,
-    parameter_utils,
-)
 from tfx.types import artifact_utils, standard_artifacts
 from tfx.types.channel import Channel
 from tfx.utils import deprecation_utils
+
+from zenml.integrations.kubeflow.orchestrators import (
+    kubeflow_compiler_utils as compiler_utils,
+)
+from zenml.integrations.kubeflow.orchestrators import (
+    kubeflow_decorators as decorators,
+)
+from zenml.integrations.kubeflow.orchestrators import (
+    kubeflow_parameter_utils as parameter_utils,
+)
 
 _EXECUTOR_LABEL_PATTERN = "{}_executor"
 

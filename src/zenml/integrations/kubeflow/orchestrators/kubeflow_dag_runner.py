@@ -32,8 +32,11 @@ from tfx.dsl.io import fileio
 from tfx.orchestration import pipeline as tfx_pipeline
 from tfx.orchestration import tfx_runner
 from tfx.orchestration.config import pipeline_config
-from tfx.orchestration.kubeflow.v2 import pipeline_builder
 from tfx.utils import telemetry_utils, version_utils
+
+from zenml.integrations.kubeflow.orchestrators import (
+    kubeflow_pipeline_builder as pipeline_builder,
+)
 
 _KUBEFLOW_TFX_CMD = (
     "python",
