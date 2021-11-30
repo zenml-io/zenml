@@ -101,7 +101,7 @@ repo = Repository()
 pipeline = repo.get_pipelines()[0]
 print("***********************OUTPUT************************")
 for r in pipeline.runs[0:3]:
-    eval_step = r.steps[3]
+    eval_step = r.get_step("evaluator")
     print(
         f"For {eval_step.name}, the accuracy is: "
         f"{eval_step.output.read():.2f}"

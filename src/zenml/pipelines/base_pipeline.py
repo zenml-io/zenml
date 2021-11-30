@@ -139,6 +139,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 )
 
             key = input_step_keys[i]
+            step.pipeline_parameter_name = key
             combined_steps[key] = step
 
         for key, step in kw_steps.items():
@@ -160,6 +161,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"a pipeline."
                 )
 
+            step.pipeline_parameter_name = key
             combined_steps[key] = step
 
         # check if there are any missing or unexpected steps

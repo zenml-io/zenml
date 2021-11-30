@@ -165,6 +165,17 @@ def test_initialize_step_with_config():
         step_with_config(config=StepConfig(), config2=StepConfig())
 
 
+def test_pipeline_parameter_name_is_empty_when_initializing_a_step():
+    """Tests that the `pipeline_parameter_name` attribute is `None` when
+    a step is initialized."""
+
+    @step
+    def some_step():
+        pass
+
+    assert some_step().pipeline_parameter_name is None
+
+
 def test_access_step_component_before_calling():
     """Tests that accessing a steps component before calling it raises
     a StepInterfaceError."""

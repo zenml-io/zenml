@@ -81,7 +81,7 @@ runs = p.runs
 print(f"Pipeline `load_mnist_pipeline` has {len(runs)} run(s)")
 run = runs[-1]
 print(f"The run you just made has {len(run.steps)} step(s).")
-step = run.get_step('importer_mnist')
+step = run.get_step('importer')
 print(f"That step has {len(step.outputs)} output artifacts.")
 for k, o in step.outputs.items():
     arr = o.read()
