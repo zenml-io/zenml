@@ -17,8 +17,8 @@ import pandas as pd
 import tensorflow as tf
 
 from zenml.core.repo import Repository
-from zenml.integrations.plotly.visualizers.pipeline_lineage_visualizer import (
-    PipelineLineageVisualizer,
+from zenml.integrations.dash.visualizers.pipeline_run_lineage_visualizer import (
+    PipelineRunLineageVisualizer,
 )
 from zenml.pipelines import pipeline
 from zenml.steps import step
@@ -116,7 +116,7 @@ def boston_housing_pipeline(importer, trainer, evaluator, deployer):
     deployer(model=model)
 
 
-def visualize_lineage():
+def print_lineage():
     repo = Repository()
     pipeline = repo.get_pipelines()[-1]
     for run in pipeline.runs:
@@ -140,10 +140,10 @@ def visualize_lineage():
                 raise e
 
 
-def print_lineage():
+def visualize_lineage():
     repo = Repository()
-    pipeline = repo.get_pipelines()[-1]
-    PipelineLineageVisualizer().visualize(pipeline)
+    latest_run = repo.get_pipelines()[-1].runs[-1]
+    PipelineRunLineageVisualizer().visualize(latest_run)
 
 
 if __name__ == "__main__":

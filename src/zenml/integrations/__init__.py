@@ -61,6 +61,10 @@ integration_registry.register_integration(constants.FACETS, facets)
 plotly = LazyLoader("zenml.integrations.plotly")
 integration_registry.register_integration(constants.PLOTLY, plotly)
 
-# Plotly
+# Graphiz
 graphviz = LazyLoader("zenml.integrations.graphviz")
 integration_registry.register_integration(constants.GRAPHVIZ, graphviz)
+
+# Dash
+dash = LazyLoader("zenml.integrations.dash")
+integration_registry.register_integration(constants.DASH, dash)
