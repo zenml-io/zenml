@@ -28,3 +28,7 @@ Artifact Store) in many different ways like ``TFRecords`` or saved model
 pickles, depending on what the step produces.The serialization and
 deserialization logic of artifacts is defined by the appropriate Materializer.
 """
+from zenml.artifacts.data_artifact import DataArtifact
+from zenml.artifacts.model_artifact import ModelArtifact
+from zenml.artifacts.schema_artifact import SchemaArtifact
+from zenml.artifacts.statistics_artifact import StatisticsArtifact
