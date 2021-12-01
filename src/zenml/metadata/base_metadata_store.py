@@ -101,12 +101,19 @@ class BaseMetadataStore(BaseComponent):
         Returns:
             Original `StepView` derived from the proto.Execution.
         """
-        step_name = json.loads(
-            execution.custom_properties[
-                INTERNAL_EXECUTION_PARAMETER_PREFIX
-                + PARAM_PIPELINE_PARAMETER_NAME
-            ].string_value
+        step_name_property = execution.custom_properties.get(
+            INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_PIPELINE_PARAMETER_NAME,
+            None,
         )
+        if step_name_property:
+            step_name = json.loads(step_name_property.string_value)
+        else:
+            raise KeyError(
+                f"Step name missing for execution with ID {execution.id}. "
+                f"This error probably occurs because you're using ZenML "
+                f"version 0.5.4 or newer but your metadata store contains "
+                f"data from previous versions."
+            )
 
         step_parameters = {
             k: json.loads(v.string_value)
