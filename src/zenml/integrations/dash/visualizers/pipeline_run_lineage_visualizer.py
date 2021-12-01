@@ -32,7 +32,7 @@ logger = get_logger(__name__)
 
 class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
     """Implementation of a lineage diagram via the [dash](
-    https://plotly.com/dash/) and [dash-cycotscape](
+    https://plotly.com/dash/) and [dash-cyctoscape](
     https://dash.plotly.com/cytoscape) library."""
 
     ARTIFACT_PREFIX = "artifact_"
@@ -48,16 +48,16 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
     def visualize(
         self, object: PipelineRunView, *args: Any, **kwargs: Any
     ) -> dash.Dash:
-        """Method to visualize pipeline runs via the Dash library."""
+        """Method to visualize pipeline runs via the Dash library. The layout
+        puts every layer of the dag in a column.
+        """
 
         app = dash.Dash(__name__)
         nodes = []
         edges = []
-        start_x, start_y = 50, 50
+        start_x, start_y = 0, 0
         x, y = start_x, start_y
-        # link the steps together
         for step in object.steps:
-            # add each step as a node
             step_output_artifacts = list(step.outputs.values())
             execution_id = (
                 step_output_artifacts[0].producer_step.id
@@ -83,7 +83,7 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
                     "classes": self.STATUS_CLASS_MAPPING[step.status],
                 }
             )
-            x += 20
+            y += 1
 
             for artifact_name, artifact in step.outputs.items():
                 nodes.append(
@@ -106,20 +106,22 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
                             "x": x,
                             "y": y,
                         },
-                        "classes": f"rectangle {self.STATUS_CLASS_MAPPING[step.status]}",  # Single class
+                        "classes": f"rectangle "
+                        f"{self.STATUS_CLASS_MAPPING[step.status]}",
                     }
                 )
+                x += 1
                 edges.append(
                     {
                         "data": {
                             "source": self.STEP_PREFIX + str(step.id),
                             "target": self.ARTIFACT_PREFIX + str(artifact.id),
                         },
-                        "classes": f"edge-arrow {self.STATUS_CLASS_MAPPING[step.status]}"
+                        "classes": f"edge-arrow "
+                        f"{self.STATUS_CLASS_MAPPING[step.status]}"
                         + (" dashed" if artifact.is_cached else " solid"),
                     }
                 )
-                y += 20
 
             for artifact_name, artifact in step.inputs.items():
                 edges.append(
@@ -128,11 +130,13 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
                             "source": self.ARTIFACT_PREFIX + str(artifact.id),
                             "target": self.STEP_PREFIX + str(step.id),
                         },
-                        "classes": f"edge-arrow {self.STATUS_CLASS_MAPPING[step.status]}"
+                        "classes": f"edge-arrow "
+                        f"{self.STATUS_CLASS_MAPPING[step.status]}"
                         + (" dashed" if artifact.is_cached else " solid"),
                     }
                 )
-
+            y += 1
+            x = 0
         default_stylesheet = [
             # Group selectors
             {
@@ -144,27 +148,40 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
             {
                 "selector": "edge",
                 "style": {
-                    "curve-style": "bezier",
+                    "curve-style": "unbundled-bezier",
                 },
             },
             # Class selectors
             {
                 "selector": ".red",
-                "style": {"background-color": "red", "line-color": "red"},
+                "style": {
+                    "background-color": "#AD5D4E",
+                    "line-color": "#AD5D4E",
+                    "target-arrow-color": "#AD5D4E",
+                },
             },
             {
                 "selector": ".blue",
-                "style": {"background-color": "blue", "line-color": "blue"},
+                "style": {
+                    "background-color": "#22577A",
+                    "line-color": "#22577A",
+                    "target-arrow-color": "#22577A",
+                },
             },
             {
                 "selector": ".yellow",
-                "style": {"background-color": "yellow", "line-color": "yellow"},
+                "style": {
+                    "background-color": "#FFB100",
+                    "line-color": "#FFB100",
+                    "target-arrow-color": "#FFB100",
+                },
             },
             {
                 "selector": ".green",
                 "style": {
                     "background-color": "#BFD7B5",
                     "line-color": "#BFD7B5",
+                    "target-arrow-color": "#BFD7B5",
                 },
             },
             {"selector": ".rectangle", "style": {"shape": "rectangle"}},
@@ -181,10 +198,11 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
                 html.Button("Reset", id="bt-reset"),
                 cyto.Cytoscape(
                     id="cytoscape",
-                    layout={"name": "grid"},
+                    layout={"name": "grid", "cols": y + 1},
+                    # position=position,
                     elements=edges + nodes,
                     stylesheet=default_stylesheet,
-                    style={"width": "100%", "height": "500px"},
+                    style={"width": "100%", "height": "600px"},
                     zoom=1,
                 ),
                 dcc.Markdown(id="markdown-selected-node-data"),
