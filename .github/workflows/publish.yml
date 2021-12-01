@@ -58,9 +58,9 @@ jobs:
       # Setup gcloud CLI
       - uses: google-github-actions/setup-gcloud@master
         with:
-          service_account_email: ${{ secrets.RUN_SA_EMAIL }}
-          service_account_key: ${{ secrets.RUN_SA_KEY }}
-          project_id: ${{ secrets.RUN_PROJECT }}
+          service_account_email: ${{ secrets.GCP_CLOUDBUILD_EMAIL }}
+          service_account_key: ${{ secrets.GCP_CLOUDBUILD_KEY }}
+          project_id: ${{ secrets.GCP_CLOUDBUILD_PROJECT }}
 
       # Cloudbuild
       - name: Build docker images
