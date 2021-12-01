@@ -16,6 +16,7 @@ steps:
     secretEnv: ['USERNAME']
   # push base development image
   - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-base-dev'
     waitFor: ['build-base-dev']
     entrypoint: 'bash'
     args: ['-c', 'docker push $$USERNAME/zenml:$TAG_NAME-dev']
@@ -31,6 +32,7 @@ steps:
     secretEnv: ['USERNAME']
   # push CUDA development image
   - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-cuda-dev'
     waitFor: [ 'build-cuda-dev' ]
     entrypoint: 'bash'
     args: ['-c', 'docker push $$USERNAME/zenml:$TAG_NAME-cuda-dev']
@@ -46,6 +48,7 @@ steps:
     secretEnv: ['USERNAME']
   # push base image
   - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-base'
     waitFor: ['build-base']
     entrypoint: 'bash'
     args: ['-c', 'docker push $$USERNAME/zenml:$TAG_NAME']
@@ -61,6 +64,7 @@ steps:
     secretEnv: ['USERNAME']
   # push CUDA image
   - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-cuda'
     waitFor: ['build-cuda']
     entrypoint: 'bash'
     args: ['-c', 'docker push $$USERNAME/zenml:$TAG_NAME-cuda']
