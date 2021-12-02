@@ -43,13 +43,13 @@ class PipelineLineageVisualizer(BasePipelineVisualizer):
         Returns:
 
         """
-        category_df = {}
+        category_dict = {}
         dimensions = ["run"]
         for run in object.runs:
-            category_df[run.name] = {"run": run.name}
+            category_dict[run.name] = {"run": run.name}
             for step in run.steps:
                 # for artifact_name, artifact in step.outputs.items():
-                category_df[run.name].update(
+                category_dict[run.name].update(
                     {
                         step.name: step.id,
                     }
@@ -57,7 +57,7 @@ class PipelineLineageVisualizer(BasePipelineVisualizer):
                 if step.name not in dimensions:
                     dimensions.append(f"{step.name}")
 
-        category_df = pd.DataFrame.from_dict(category_df, orient="index")
+        category_df = pd.DataFrame.from_dict(category_dict, orient="index")
 
         category_df = category_df.reset_index()
 
