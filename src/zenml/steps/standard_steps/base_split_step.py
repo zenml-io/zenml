@@ -26,8 +26,8 @@ class BaseSplitStepConfig(BaseStepConfig):
 
 
 class BaseSplitStep(BaseStep):
-    """Base step implementation for any split step implementation on ZenML
-    """
+    """Base step implementation for any split step implementation on ZenML"""
+
     STEP_INNER_FUNC_NAME = "entrypoint"
 
     def process(self, *args: Any, **kwargs: Any) -> Any:
@@ -35,11 +35,9 @@ class BaseSplitStep(BaseStep):
 
     @abstractmethod
     def entrypoint(
-            self,
-            dataset: DataArtifact,
-            config: BaseSplitStepConfig,
-            context: StepContext,
-    ) -> Output(train=DataArtifact,
-                test=DataArtifact,
-                validation=DataArtifact):
-        """ Entrypoint for a function for the split steps to run """
+        self,
+        dataset: DataArtifact,
+        config: BaseSplitStepConfig,
+        context: StepContext,
+    ) -> Output(train=DataArtifact, test=DataArtifact, validation=DataArtifact):
+        """Entrypoint for a function for the split steps to run"""

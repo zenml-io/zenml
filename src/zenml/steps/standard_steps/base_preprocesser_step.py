@@ -30,15 +30,18 @@ class BasePreprocesserStep(BaseStep):
     ZenML"""
 
     @abstractmethod
-    def entrypoint(self,
-                   train_dataset: DataArtifact,
-                   test_dataset: DataArtifact,
-                   validation_dataset: DataArtifact,
-                   statistics: StatisticsArtifact,
-                   schema: SchemaArtifact,
-                   config: BasePreprocesserConfig,
-                   context: StepContext,
-                   ) -> Output(train_transformed=DataArtifact,
-                               test_transformed=DataArtifact,
-                               valdation_transformed=DataArtifact):
+    def entrypoint(
+        self,
+        train_dataset: DataArtifact,
+        test_dataset: DataArtifact,
+        validation_dataset: DataArtifact,
+        statistics: StatisticsArtifact,
+        schema: SchemaArtifact,
+        config: BasePreprocesserConfig,
+        context: StepContext,
+    ) -> Output(
+        train_transformed=DataArtifact,
+        test_transformed=DataArtifact,
+        valdation_transformed=DataArtifact,
+    ):
         """Base entrypoint for any Preprocesser implementation"""

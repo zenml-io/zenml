@@ -29,10 +29,11 @@ class BaseTrainerStep(BaseStep):
     ZenML"""
 
     @abstractmethod
-    def entrypoint(self,
-                   train_dataset: DataArtifact,
-                   validation_dataset: DataArtifact,
-                   config: BaseTrainerConfig,
-                   context: StepContext,
-                   ) -> ModelArtifact:
+    def entrypoint(
+        self,
+        train_dataset: DataArtifact,
+        validation_dataset: DataArtifact,
+        config: BaseTrainerConfig,
+        context: StepContext,
+    ) -> ModelArtifact:
         """Base entrypoint for any Trainer implementation"""

@@ -25,12 +25,12 @@ class BaseDatasourceConfig(BaseStepConfig):
 
 
 class BaseDatasourceStep(BaseStep):
-    """Base step implementation for any datasource step implementation on ZenML
-    """
+    """Base step implementation for any datasource step implementation on ZenML"""
 
     @abstractmethod
-    def entrypoint(self,
-                   config: BaseDatasourceConfig,
-                   context: StepContext,
-                   ) -> DataArtifact:
+    def entrypoint(
+        self,
+        config: BaseDatasourceConfig,
+        context: StepContext,
+    ) -> DataArtifact:
         """Base entrypoint for any datasource implementation"""

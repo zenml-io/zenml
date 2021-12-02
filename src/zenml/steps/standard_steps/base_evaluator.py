@@ -26,14 +26,13 @@ class BaseEvaluatorConfig(BaseStepConfig):
 
 
 class BaseEvaluatorStep(BaseStep):
-    """Base step implementation for any evaluator step implementation on ZenML
-    """
+    """Base step implementation for any evaluator step implementation on ZenML"""
 
     @abstractmethod
-    def entrypoint(self,
-                   dataset: DataArtifact,
-                   config: BaseEvaluatorConfig,
-                   context: StepContext,
-                   ) -> Output(statitics=StatisticsArtifact,
-                               schema=SchemaArtifact):
+    def entrypoint(
+        self,
+        dataset: DataArtifact,
+        config: BaseEvaluatorConfig,
+        context: StepContext,
+    ) -> Output(statitics=StatisticsArtifact, schema=SchemaArtifact):
         """Base entrypoint for any evaluator implementation"""
