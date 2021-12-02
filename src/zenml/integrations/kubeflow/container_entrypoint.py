@@ -137,9 +137,10 @@ def _get_grpc_metadata_connection_config(
   Returns:
     A metadata_store_pb2.MetadataStoreClientConfig object.
   """
+    grpc_config = kubeflow_metadata_config["grpc_config"]
     connection_config = metadata_store_pb2.MetadataStoreClientConfig()
-    connection_config.host = os.getenv(kubeflow_metadata_config["grpc_service_host"])
-    connection_config.port = int(os.getenv(kubeflow_metadata_config["grpc_service_port"]))
+    connection_config.host = os.getenv(grpc_config["grpc_service_host"])
+    connection_config.port = int(os.getenv(grpc_config["grpc_service_port"]))
     return connection_config
 
 
