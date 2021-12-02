@@ -45,14 +45,13 @@ class BaseMaterializerMeta(type):
                 )
 
                 if cls.ASSOCIATED_ARTIFACT_TYPES:
-                    from zenml.artifacts.base_artifact import BaseArtifact
-
-                    type_registry.register_integration(
-                        associated_type, BaseArtifact
-                    )
-                else:
                     type_registry.register_integration(
                         associated_type, cls.ASSOCIATED_ARTIFACT_TYPES
+                    )
+                else:
+                    from zenml.artifacts.base_artifact import BaseArtifact
+                    type_registry.register_integration(
+                        associated_type, [BaseArtifact]
                     )
         return cls
 
