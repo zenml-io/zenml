@@ -265,7 +265,6 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
                                                 "name": "breadthfirst",
                                                 "roots": f'[id = "{first_step_id}"]',
                                             },
-                                            # position=position,
                                             elements=edges + nodes,
                                             stylesheet=STYLESHEET,
                                             style={
@@ -276,71 +275,6 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
                                         )
                                     ]
                                 ),
-                                # dbc.Row(
-                                #     [
-                                #         cyto.Cytoscape(
-                                #             id="cytoscape-legend",
-                                #             layout={"name": "preset"},
-                                #             # position=position,
-                                #             elements=[
-                                #                 {
-                                #                     "data": {
-                                #                         "id": "cache-one",
-                                #                         "label": "",
-                                #                     },
-                                #                     "position": {
-                                #                         "x": 75,
-                                #                         "y": 75,
-                                #                     },
-                                #                 },
-                                #                 {
-                                #                     "data": {
-                                #                         "id": "cache-two",
-                                #                         "label": "",
-                                #                     },
-                                #                     "position": {
-                                #                         "x": 200,
-                                #                         "y": 75,
-                                #                     },
-                                #                 },
-                                #                 {
-                                #                     "data": {
-                                #                         "id": "step",
-                                #                         "label": "Step",
-                                #                     },
-                                #                     "position": {
-                                #                         "x": 100,
-                                #                         "y": 100,
-                                #                     },
-                                #                     "classes": ".red",
-                                #                 },
-                                #                 {
-                                #                     "data": {
-                                #                         "id": "artifact",
-                                #                         "label": "Artifact",
-                                #                     },
-                                #                     "position": {
-                                #                         "x": 100,
-                                #                         "y": 140,
-                                #                     },
-                                #                     "classes": ".red",
-                                #                 },
-                                #                 {
-                                #                     "data": {
-                                #                         "source": "cache-one",
-                                #                         "target": "cache-two",
-                                #                         "label": "Test",
-                                #                     }
-                                #                 },
-                                #             ],
-                                #             stylesheet=STYLESHEET,
-                                #             style={
-                                #                 "width": "100%",
-                                #                 "height": "200px",
-                                #             },
-                                #         )
-                                #     ]
-                                # ),
                                 dbc.Row(
                                     [
                                         dbc.Button(
