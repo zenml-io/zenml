@@ -16,8 +16,9 @@ from abc import abstractmethod
 from typing import Any
 
 import dash
+import dash_bootstrap_components as dbc
 import dash_cytoscape as cyto
-from dash import dcc, html
+from dash import dcc
 from dash.dependencies import Input, Output
 
 from zenml.enums import ExecutionStatus
@@ -29,6 +30,68 @@ from zenml.visualizers.base_pipeline_run_visualizer import (
 
 logger = get_logger(__name__)
 
+OVERALL_STYLE = {"fontFamily": "sans-serif"}
+
+STYLESHEET = [
+    # Group selectors
+    {
+        "selector": "node",
+        "style": {
+            "content": "data(label)",
+            "width": "70%",
+            "height": "70%",
+            "font-size": "24px",
+        },
+    },
+    {
+        "selector": "edge",
+        "style": {
+            "curve-style": "bezier",
+            "content": "data(label)",
+        },
+    },
+    # Class selectors
+    {
+        "selector": ".red",
+        "style": {
+            "background-color": "#AD5D4E",
+            "line-color": "#AD5D4E",
+            "target-arrow-color": "#AD5D4E",
+        },
+    },
+    {
+        "selector": ".blue",
+        "style": {
+            "background-color": "#22577A",
+            "line-color": "#22577A",
+            "target-arrow-color": "#22577A",
+        },
+    },
+    {
+        "selector": ".yellow",
+        "style": {
+            "background-color": "#FFB100",
+            "line-color": "#FFB100",
+            "target-arrow-color": "#FFB100",
+        },
+    },
+    {
+        "selector": ".green",
+        "style": {
+            "background-color": "#BFD7B5",
+            "line-color": "#BFD7B5",
+            "target-arrow-color": "#BFD7B5",
+        },
+    },
+    {"selector": ".rectangle", "style": {"shape": "rectangle"}},
+    {
+        "selector": ".edge-arrow",
+        "style": {"target-arrow-shape": "triangle"},
+    },
+    {"selector": ".solid", "style": {"line-style": "solid"}},
+    {"selector": ".dashed", "style": {"line-style": "dashed"}},
+]
+
 
 class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
     """Implementation of a lineage diagram via the [dash](
@@ -38,10 +101,10 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
     ARTIFACT_PREFIX = "artifact_"
     STEP_PREFIX = "step_"
     STATUS_CLASS_MAPPING = {
-        ExecutionStatus.CACHED: "blue",
+        ExecutionStatus.CACHED: "green",
         ExecutionStatus.FAILED: "red",
         ExecutionStatus.RUNNING: "yellow",
-        ExecutionStatus.COMPLETED: "green",
+        ExecutionStatus.COMPLETED: "blue",
     }
 
     @abstractmethod
@@ -52,11 +115,9 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
         puts every layer of the dag in a column.
         """
 
-        app = dash.Dash(__name__)
-        nodes = []
-        edges = []
-        start_x, start_y = 0, 0
-        x, y = start_x, start_y
+        app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+        nodes, edges, first_step_id = [], [], None
+        first_step_id = None
         for step in object.steps:
             step_output_artifacts = list(step.outputs.values())
             execution_id = (
@@ -64,10 +125,13 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
                 if step_output_artifacts
                 else step.id
             )
+            step_id = self.STEP_PREFIX + str(step.id)
+            if first_step_id is None:
+                first_step_id = step_id
             nodes.append(
                 {
                     "data": {
-                        "id": self.STEP_PREFIX + str(step.id),
+                        "id": step_id,
                         "execution_id": execution_id,
                         "label": f"{execution_id} / {step.name}",
                         "name": step.name,  # redundant for consistency
@@ -76,14 +140,9 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
                         "inputs": {k: v.uri for k, v in step.inputs.items()},
                         "outputs": {k: v.uri for k, v in step.outputs.items()},
                     },
-                    "position": {
-                        "x": x,
-                        "y": y,
-                    },
                     "classes": self.STATUS_CLASS_MAPPING[step.status],
                 }
             )
-            y += 1
 
             for artifact_name, artifact in step.outputs.items():
                 nodes.append(
@@ -102,15 +161,10 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
                             "producer_step_id": artifact.producer_step.id,
                             "uri": artifact.uri,
                         },
-                        "position": {
-                            "x": x,
-                            "y": y,
-                        },
                         "classes": f"rectangle "
                         f"{self.STATUS_CLASS_MAPPING[step.status]}",
                     }
                 )
-                x += 1
                 edges.append(
                     {
                         "data": {
@@ -130,83 +184,127 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
                             "source": self.ARTIFACT_PREFIX + str(artifact.id),
                             "target": self.STEP_PREFIX + str(step.id),
                         },
-                        "classes": f"edge-arrow "
-                        f"{self.STATUS_CLASS_MAPPING[step.status]}"
-                        + (" dashed" if artifact.is_cached else " solid"),
+                        "classes": "edge-arrow "
+                        + (
+                            f"{self.STATUS_CLASS_MAPPING[ExecutionStatus.CACHED]} dashed"
+                            if artifact.is_cached
+                            else f"{self.STATUS_CLASS_MAPPING[step.status]} solid"
+                        ),
                     }
                 )
-            y += 1
-            x = 0
-        default_stylesheet = [
-            # Group selectors
-            {
-                "selector": "node",
-                "style": {
-                    "content": "data(label)",
-                },
-            },
-            {
-                "selector": "edge",
-                "style": {
-                    "curve-style": "unbundled-bezier",
-                },
-            },
-            # Class selectors
-            {
-                "selector": ".red",
-                "style": {
-                    "background-color": "#AD5D4E",
-                    "line-color": "#AD5D4E",
-                    "target-arrow-color": "#AD5D4E",
-                },
-            },
-            {
-                "selector": ".blue",
-                "style": {
-                    "background-color": "#22577A",
-                    "line-color": "#22577A",
-                    "target-arrow-color": "#22577A",
-                },
-            },
-            {
-                "selector": ".yellow",
-                "style": {
-                    "background-color": "#FFB100",
-                    "line-color": "#FFB100",
-                    "target-arrow-color": "#FFB100",
-                },
-            },
-            {
-                "selector": ".green",
-                "style": {
-                    "background-color": "#BFD7B5",
-                    "line-color": "#BFD7B5",
-                    "target-arrow-color": "#BFD7B5",
-                },
-            },
-            {"selector": ".rectangle", "style": {"shape": "rectangle"}},
-            {
-                "selector": ".edge-arrow",
-                "style": {"target-arrow-shape": "triangle"},
-            },
-            {"selector": ".solid", "style": {"line-style": "solid"}},
-            {"selector": ".dashed", "style": {"line-style": "dashed"}},
-        ]
 
-        app.layout = html.Div(
+        app.layout = dbc.Row(
             [
-                html.Button("Reset", id="bt-reset"),
-                cyto.Cytoscape(
-                    id="cytoscape",
-                    layout={"name": "grid", "cols": y + 1},
-                    # position=position,
-                    elements=edges + nodes,
-                    stylesheet=default_stylesheet,
-                    style={"width": "100%", "height": "600px"},
-                    zoom=1,
+                dbc.Container(f"Run: {object.name}", class_name="h1"),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            [
+                                dbc.Row(
+                                    [
+                                        cyto.Cytoscape(
+                                            id="cytoscape",
+                                            layout={
+                                                "name": "breadthfirst",
+                                                "roots": f'[id = "{first_step_id}"]',
+                                            },
+                                            # position=position,
+                                            elements=edges + nodes,
+                                            stylesheet=STYLESHEET,
+                                            style={
+                                                "width": "100%",
+                                                "height": "800px",
+                                            },
+                                            zoom=1,
+                                        )
+                                    ]
+                                ),
+                                # dbc.Row(
+                                #     [
+                                #         cyto.Cytoscape(
+                                #             id="cytoscape-legend",
+                                #             layout={"name": "preset"},
+                                #             # position=position,
+                                #             elements=[
+                                #                 {
+                                #                     "data": {
+                                #                         "id": "cache-one",
+                                #                         "label": "",
+                                #                     },
+                                #                     "position": {
+                                #                         "x": 75,
+                                #                         "y": 75,
+                                #                     },
+                                #                 },
+                                #                 {
+                                #                     "data": {
+                                #                         "id": "cache-two",
+                                #                         "label": "",
+                                #                     },
+                                #                     "position": {
+                                #                         "x": 200,
+                                #                         "y": 75,
+                                #                     },
+                                #                 },
+                                #                 {
+                                #                     "data": {
+                                #                         "id": "step",
+                                #                         "label": "Step",
+                                #                     },
+                                #                     "position": {
+                                #                         "x": 100,
+                                #                         "y": 100,
+                                #                     },
+                                #                     "classes": ".red",
+                                #                 },
+                                #                 {
+                                #                     "data": {
+                                #                         "id": "artifact",
+                                #                         "label": "Artifact",
+                                #                     },
+                                #                     "position": {
+                                #                         "x": 100,
+                                #                         "y": 140,
+                                #                     },
+                                #                     "classes": ".red",
+                                #                 },
+                                #                 {
+                                #                     "data": {
+                                #                         "source": "cache-one",
+                                #                         "target": "cache-two",
+                                #                         "label": "Test",
+                                #                     }
+                                #                 },
+                                #             ],
+                                #             stylesheet=STYLESHEET,
+                                #             style={
+                                #                 "width": "100%",
+                                #                 "height": "200px",
+                                #             },
+                                #         )
+                                #     ]
+                                # ),
+                                dbc.Row(
+                                    [
+                                        dbc.Button(
+                                            "Reset",
+                                            id="bt-reset",
+                                            color="primary",
+                                            className="me-1",
+                                        )
+                                    ]
+                                ),
+                            ]
+                        ),
+                        dbc.Col(
+                            [
+                                dcc.Markdown(id="markdown-selected-node-data"),
+                            ]
+                        ),
+                    ]
                 ),
-                dcc.Markdown(id="markdown-selected-node-data"),
-            ]
+            ],
+            className="p-2",
         )
 
         @app.callback(
@@ -216,11 +314,11 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
         def display_data(data_list):
             """Callback for the text area below the graph"""
             if data_list is None:
-                return "Nothing Selected."
+                return "Click on a node in the diagram."
 
             text = ""
             for data in data_list:
-                text += f'# {data["execution_id"]} / {data["name"]}' + "\n\n"
+                text += f'## {data["execution_id"]} / {data["name"]}' + "\n\n"
                 if data["type"] == "artifact":
                     for item in [
                         "artifact_data_type",
@@ -231,13 +329,13 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
                     ]:
                         text += f"**{item}**: {data[item]}" + "\n\n"
                 elif data["type"] == "step":
-                    text += "## Inputs:" + "\n\n"
+                    text += "### Inputs:" + "\n\n"
                     for k, v in data["inputs"].items():
                         text += f"**{k}** / {v}" + "\n\n"
-                    text += "## Outputs:" + "\n\n"
+                    text += "### Outputs:" + "\n\n"
                     for k, v in data["outputs"].items():
                         text += f"**{k}** / {v}" + "\n\n"
-                    text += "## Params:"
+                    text += "### Params:"
                     for k, v in data["parameters"].items():
                         text += f"**{k}** / {v}" + "\n\n"
             return text
