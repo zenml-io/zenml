@@ -20,7 +20,7 @@ from typing import Any, Callable, Iterable, List, Optional, Tuple, Type
 
 from tfx.dsl.io.filesystem import Filesystem, PathType
 
-from zenml.constants import REMOTE_FS_PREFIX
+from zenml.constants import ENV_ZENML_REPOSITORY_PATH, REMOTE_FS_PREFIX
 from zenml.core.constants import ZENML_DIR_NAME
 from zenml.exceptions import InitializationException
 from zenml.io.fileio_registry import default_fileio_registry
@@ -448,31 +448,65 @@ def is_zenml_dir(path: str) -> bool:
     return bool(is_dir(config_dir_path))
 
 
-def get_zenml_dir(path: str = os.getcwd()) -> str:
-    """Recursive function to find the zenml config starting from path.
+def get_zenml_dir(path: Optional[str] = None) -> str:
+    """Returns path to a ZenML repository directory.
 
     Args:
-        path (Default value = os.getcwd()): Path to check.
+        path: Optional path to look for the repository. If no path is given,
+            this function tries to find the repository using the environment
+            variable `ZENML_REPOSITORY_PATH` (if set) and recursively searching
+            in the parent directories of the current working directory.
 
     Returns:
-        The full path with the resolved zenml directory.
+        Absolute path to a ZenML repository directory.
 
     Raises:
-        InitializationException if directory not found until root of OS.
+        InitializationException: If no ZenML repository is found.
     """
-    if is_zenml_dir(path):
-        return path
+    if not path:
+        # try to get path from the environment variable
+        path = os.getenv(ENV_ZENML_REPOSITORY_PATH, None)
 
-    if is_root(path):
-        raise InitializationException(
-            "Looks like you used ZenML outside of a ZenML repo. "
-            "Please init a ZenML repo first before you using "
-            "the framework."
+    if path:
+        # explicit path via parameter or environment variable, don't search
+        # parent directories
+        search_parent_directories = False
+        error_message = (
+            f"Unable to find ZenML repository at path '{path}'. Make sure to "
+            f"create a ZenML repository by calling `zenml init` when "
+            f"specifying an explicit repository path in code or via the "
+            f"environment variable '{ENV_ZENML_REPOSITORY_PATH}'."
         )
-    return get_zenml_dir(str(Path(path).parent))
+    else:
+        # try to find the repo in the parent directories of the
+        # current working directory
+        path = os.getcwd()
+        search_parent_directories = True
+        error_message = (
+            f"Unable to find ZenML repository in your current working "
+            f"directory ({os.getcwd()}) or any parent directories. If you "
+            f"want to use an existing repository which is in a different "
+            f"location, set the environment variable "
+            f"'{ENV_ZENML_REPOSITORY_PATH}'. If you want to create a new "
+            f"repository, run `zenml init`."
+        )
+
+    def _find_repo_helper(repo_path: str) -> str:
+        """Helper function to recursively search parent directories for a
+        ZenML repository."""
+        if is_zenml_dir(repo_path):
+            return repo_path
+
+        if not search_parent_directories or is_root(repo_path):
+            raise InitializationException(error_message)
+
+        return _find_repo_helper(str(Path(repo_path).parent))
+
+    path = _find_repo_helper(path)
+    return str(Path(path).resolve())
 
 
-def get_zenml_config_dir(path: str = os.getcwd()) -> str:
+def get_zenml_config_dir(path: Optional[str] = None) -> str:
     """Recursive function to find the zenml config starting from path.
 
     Args:
@@ -484,7 +518,7 @@ def get_zenml_config_dir(path: str = os.getcwd()) -> str:
     Raises:
         InitializationException if directory not found until root of OS.
     """
-    return os.path.join(get_zenml_dir(str(Path(path))), ZENML_DIR_NAME)
+    return os.path.join(get_zenml_dir(path), ZENML_DIR_NAME)
 
 
 def convert_to_str(path: PathType) -> str:

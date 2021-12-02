@@ -54,3 +54,18 @@ jobs:
           PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         run: |
           if [ "$(cat src/zenml/VERSION)" = "$(echo ${GITHUB_REF} | sed 's|refs/tags/||g')" ]; then ./scripts/publish.sh; else exit 1; fi
+
+      # Setup gcloud CLI
+      - uses: google-github-actions/setup-gcloud@master
+        with:
+          service_account_email: ${{ secrets.GCP_CLOUDBUILD_EMAIL }}
+          service_account_key: ${{ secrets.GCP_CLOUDBUILD_KEY }}
+          project_id: ${{ secrets.GCP_CLOUDBUILD_PROJECT }}
+
+      # Cloudbuild
+      - name: Build docker images
+        run: |-
+          gcloud builds submit \
+            --quiet \
+            --config=cloudbuild.yaml \
+            --substitutions=TAG_NAME=${{github.ref_name}} .

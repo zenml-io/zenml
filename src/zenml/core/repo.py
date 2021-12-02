@@ -47,8 +47,7 @@ class Repository:
         """
         if path is None:
             try:
-                # Start from cwd and traverse up until find zenml config.
-                path = fileio.get_zenml_dir(os.getcwd())
+                path = fileio.get_zenml_dir()
             except InitializationException:
                 # If there isn't a zenml.config, use the cwd
                 path = os.getcwd()
