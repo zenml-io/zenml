@@ -35,7 +35,7 @@ from tfx.proto.orchestration import pipeline_pb2
 from zenml.integrations.kubeflow.orchestrators import kubeflow_utils as utils
 
 # TODO(b/166202742): Consolidate container entrypoint with TFX image's default.
-_COMMAND = ["python", "-m", "tfx.orchestration.kubeflow.container_entrypoint"]
+_COMMAND = ["python", "-m", "zenml.integrations.kubeflow.container_entrypoint"]
 
 _WORKFLOW_ID_KEY = "WORKFLOW_ID"
 
@@ -70,6 +70,8 @@ class BaseComponent:
         kubeflow_metadata_config: Dict,
         tfx_ir: pipeline_pb2.Pipeline,
         pod_labels_to_attach: Dict[str, str],
+        step_module: str,
+        step_function_name: str,
         runtime_parameters: List[data_types.RuntimeParameter],
         metadata_ui_path: str = "/mlpipeline-ui-metadata.json",
     ):
@@ -107,6 +109,10 @@ class BaseComponent:
             json_format.MessageToJson(tfx_ir),
             "--metadata_ui_path",
             metadata_ui_path,
+            "--step_module",
+            step_module,
+            "--step_function_name",
+            step_function_name
         ]
 
         for param in runtime_parameters:

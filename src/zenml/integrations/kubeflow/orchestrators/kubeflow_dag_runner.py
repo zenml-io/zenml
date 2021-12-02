@@ -16,6 +16,7 @@
 import collections
 import copy
 import os
+import sys
 from typing import (
     Any,
     Callable,
@@ -334,7 +335,17 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
             # remove the extra pipeline node information
             tfx_node_ir = self._dehydrate_tfx_ir(tfx_ir, component.id)
 
+            step_module = component.component_type.split(".")[:-1]
+            if step_module[0] == "__main__":
+                from zenml.utils import source_utils
+                main_module_file = sys.modules["__main__"].__file__
+                step_module = source_utils.get_module_source_from_file_path(main_module_file)
+            else:
+                step_module = ".".join(step_module)
+
             kfp_component = base_component.BaseComponent(
+                step_module=step_module,
+                step_function_name=component.id,
                 component=component,
                 depends_on=depends_on,
                 pipeline=pipeline,
