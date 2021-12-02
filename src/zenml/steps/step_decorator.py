@@ -15,7 +15,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    List,
+    Dict,
     Optional,
     Type,
     TypeVar,
@@ -52,8 +52,8 @@ def step(
     *,
     name: Optional[str] = None,
     enable_cache: bool = True,
-    input_types: List[str, Type["BaseArtifact"]] = None,
-    output_types: List[str, Type["BaseArtifact"]] = None,
+    input_types: Dict[str, Type["BaseArtifact"]] = None,
+    output_types: Dict[str, Type["BaseArtifact"]] = None,
 ) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
     """Outer decorator function for the creation of a ZenML step
 
