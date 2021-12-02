@@ -469,12 +469,12 @@ class BaseStep(metaclass=BaseStepMeta):
         self._update_and_verify_parameter_spec()
 
         # Make sure that the input/output artifact types exist in the signature
-        if not all(k in self.INPUT_SPEC for k in self.INPUT_SIGNATURE):
+        if not all(k in self.INPUT_SIGNATURE for k in self.INPUT_SPEC):
             raise StepInterfaceError(
                 f"Failed to create the step. The predefined artifact types"
                 f"for the input does not match the input signature."
             )
-        if not all(k in self.OUTPUT_SPEC for k in self.OUTPUT_SIGNATURE):
+        if not all(k in self.OUTPUT_SIGNATURE for k in self.OUTPUT_SPEC):
             raise StepInterfaceError(
                 f"Failed to create the step. The predefined artifact types"
                 f"for the input does not match the input signature."
@@ -486,10 +486,24 @@ class BaseStep(metaclass=BaseStepMeta):
         for key, value in self.INPUT_SIGNATURE.items():
             if key not in self.INPUT_SPEC:
                 self.INPUT_SPEC[key] = type_registry.get_artifact_type(value)
+            else:
+                verified_types = type_registry.get_artifact_type(value)
+                if self.INPUT_SPEC[key] not in verified_types:
+                    raise StepInterfaceError(
+                        f"Type {key} can not be interpreted as a "
+                        f"{self.INPUT_SPEC[key]}"
+                    )
 
         for key, value in self.OUTPUT_SIGNATURE.items():
             if key not in self.OUTPUT_SPEC:
                 self.OUTPUT_SPEC[key] = type_registry.get_artifact_type(value)
+            else:
+                verified_types = type_registry.get_artifact_type(value)
+                if self.OUTPUT_SPEC[key] not in verified_types:
+                    raise StepInterfaceError(
+                        f"Type {key} can not be interpreted as a "
+                        f"{self.OUTPUT_SPEC[key]}"
+                    )
 
         # Prepare input artifact and exec params
         input_artifacts = self._prepare_input_artifacts(
