@@ -19,7 +19,11 @@ class DashIntegration(Integration):
     """Definition of Plotly integration for ZenML."""
 
     NAME = DASH
-    REQUIREMENTS = ["dash>=2.0.0", "dash-cytoscape>=0.3.0"]
+    REQUIREMENTS = [
+        "dash>=2.0.0",
+        "dash-cytoscape>=0.3.0",
+        "dash-bootstrap-components>=1.0.1",
+    ]
 
 
 DashIntegration.check_installation()
