@@ -41,7 +41,7 @@ def step(
 ) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
     """Outer decorator function for the creation of a ZenML step
 
-    In order to be able work with parameters such as `name`, it features a
+    In order to be able to work with parameters such as `name`, it features a
     nested decorator structure.
 
     Args:
