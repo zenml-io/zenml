@@ -18,6 +18,7 @@ from typing import Any, Type, Union
 import torch
 from torch.nn import Module  # type: ignore[attr-defined]
 
+from zenml.artifacts import ModelArtifact
 from zenml.integrations.pytorch.materializers.pytorch_types import TorchDict
 from zenml.materializers.base_materializer import BaseMaterializer
 
@@ -28,6 +29,7 @@ class PyTorchMaterializer(BaseMaterializer):
     """Materializer to read/write Pytorch models."""
 
     ASSOCIATED_TYPES = [Module, TorchDict]
+    ASSOCIATED_ARTIFACT_TYPES = [ModelArtifact]
 
     def handle_input(self, data_type: Type[Any]) -> Union[Module, TorchDict]:
         """Reads and returns a PyTorch model.

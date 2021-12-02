@@ -16,6 +16,7 @@ from typing import Any, Type
 
 import apache_beam as beam
 
+from zenml.artifacts import DataArtifact
 from zenml.materializers.base_materializer import BaseMaterializer
 
 
@@ -23,6 +24,7 @@ class BeamMaterializer(BaseMaterializer):
     """Materializer to read data to and from beam."""
 
     ASSOCIATED_TYPES = [beam.PCollection]
+    ASSOCIATED_ARTIFACT_TYPES = [DataArtifact]
 
     def handle_input(self, data_type: Type[Any]) -> Any:
         """Reads all files inside the artifact directory and materializes them

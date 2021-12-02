@@ -17,6 +17,7 @@ from typing import Any, Type
 
 from pytorch_lightning.trainer import Trainer
 
+from zenml.artifacts import ModelArtifact
 from zenml.materializers.base_materializer import BaseMaterializer
 
 CHECKPOINT_NAME = "final_checkpoint.ckpt"
@@ -26,6 +27,7 @@ class PyTorchLightningMaterializer(BaseMaterializer):
     """Materializer to read/write Pytorch models."""
 
     ASSOCIATED_TYPES = [Trainer]
+    ASSOCIATED_ARTIFACT_TYPES = [ModelArtifact]
 
     def handle_input(self, data_type: Type[Any]) -> Trainer:
         """Reads and returns a PyTorch Lightning trainer.

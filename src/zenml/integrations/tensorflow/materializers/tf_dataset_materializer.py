@@ -16,6 +16,7 @@ from typing import Any, Type
 
 import tensorflow as tf
 
+from zenml.artifacts import DataArtifact
 from zenml.materializers.base_materializer import BaseMaterializer
 
 DEFAULT_FILENAME = "saved_data"
@@ -25,6 +26,7 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
     """Materializer to read data to and from beam."""
 
     ASSOCIATED_TYPES = [tf.data.Dataset]
+    ASSOCIATED_ARTIFACT_TYPES = [DataArtifact]
 
     def handle_input(self, data_type: Type[Any]) -> Any:
         """Reads data into tf.data.Dataset"""
