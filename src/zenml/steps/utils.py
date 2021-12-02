@@ -119,7 +119,7 @@ def generate_component(step: "BaseStep") -> Callable[..., Any]:
         },
     )
 
-    # Defining a executor class bu utilizing the process function
+    # Defining an executor class for utilizing the process function
     executor_class_name = f"{step.__class__.__name__}_Executor"
     executor_class = type(
         executor_class_name,
