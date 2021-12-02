@@ -29,7 +29,6 @@ import inspect
 import json
 import sys
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     ClassVar,
@@ -39,6 +38,7 @@ from typing import (
     KeysView,
     List,
     Optional,
+    Set,
     Type,
     ValuesView,
 )
@@ -59,9 +59,6 @@ from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_output import Output
 from zenml.utils import source_utils
-
-if TYPE_CHECKING:
-    from zenml.steps.base_step import BaseStep
 
 logger = get_logger(__name__)
 
@@ -88,62 +85,100 @@ def do_types_match(type_a: Type[Any], type_b: Type[Any]) -> bool:
     return type_a == type_b
 
 
-def generate_component(step: "BaseStep") -> Callable[..., Any]:
-    """Utility function which converts a ZenML step into a TFX Component
+def generate_component_spec_class(
+    step_name: str,
+    input_spec: Dict[str, Type[BaseArtifact]],
+    output_spec: Dict[str, Type[BaseArtifact]],
+    execution_parameter_names: Set[str],
+) -> Type[component_spec.ComponentSpec]:
+    """Generates a TFX component spec class for a ZenML step.
 
     Args:
-        step: a ZenML step instance
+        step_name: Name of the step for which the component will be created.
+        input_spec: Input artifacts of the step.
+        output_spec: Output artifacts of the step
+        execution_parameter_names: Execution parameter names of the step.
 
     Returns:
-        component: the class of the corresponding TFX component
+        A TFX component spec class.
     """
-
-    # Managing the parameters for component spec creation
-    spec_inputs, spec_outputs, spec_params = {}, {}, {}
-    for key, artifact_type in step.INPUT_SPEC.items():
-        spec_inputs[key] = component_spec.ChannelParameter(type=artifact_type)
-    for key, artifact_type in step.OUTPUT_SPEC.items():
-        spec_outputs[key] = component_spec.ChannelParameter(type=artifact_type)
-    for key, prim_type in step.PARAM_SPEC.items():
-        spec_params[key] = component_spec.ExecutionParameter(type=str)  # type: ignore[no-untyped-call] # noqa
-    for key in step._internal_execution_parameters.keys():  # noqa
-        spec_params[key] = component_spec.ExecutionParameter(type=str)  # type: ignore[no-untyped-call] # noqa
-
-    component_spec_class = type(
-        f"{step.__class__.__name__}_Spec",
+    inputs = {
+        key: component_spec.ChannelParameter(type=artifact_type)
+        for key, artifact_type in input_spec.items()
+    }
+    outputs = {
+        key: component_spec.ChannelParameter(type=artifact_type)
+        for key, artifact_type in output_spec.items()
+    }
+    parameters = {
+        key: component_spec.ExecutionParameter(type=str)  # type: ignore[no-untyped-call] # noqa
+        for key in execution_parameter_names
+    }
+    return type(
+        f"{step_name}_Spec",
         (component_spec.ComponentSpec,),
         {
-            "INPUTS": spec_inputs,
-            "OUTPUTS": spec_outputs,
-            "PARAMETERS": spec_params,
+            "INPUTS": inputs,
+            "OUTPUTS": outputs,
+            "PARAMETERS": parameters,
         },
     )
 
-    # Defining a executor class bu utilizing the process function
-    executor_class_name = f"{step.__class__.__name__}_Executor"
+
+def generate_component_class(
+    step_name: str,
+    step_module: str,
+    input_spec: Dict[str, Type[BaseArtifact]],
+    output_spec: Dict[str, Type[BaseArtifact]],
+    execution_parameter_names: Set[str],
+    step_function: Callable[..., Any],
+    materializers: Dict[str, Type[BaseMaterializer]],
+) -> Type["_ZenMLSimpleComponent"]:
+    """Generates a TFX component class for a ZenML step.
+
+    Args:
+        step_name: Name of the step for which the component will be created.
+        step_module: Module in which the step class is defined.
+        input_spec: Input artifacts of the step.
+        output_spec: Output artifacts of the step
+        execution_parameter_names: Execution parameter names of the step.
+        step_function: The actual function to execute when running the step.
+        materializers: Materializer classes for all outputs of the step.
+
+    Returns:
+        A TFX component class.
+    """
+    component_spec_class = generate_component_spec_class(
+        step_name=step_name,
+        input_spec=input_spec,
+        output_spec=output_spec,
+        execution_parameter_names=execution_parameter_names,
+    )
+
+    # Create executor class
+    executor_class_name = f"{step_name}_Executor"
     executor_class = type(
         executor_class_name,
         (_FunctionExecutor,),
         {
-            "_FUNCTION": staticmethod(getattr(step, STEP_INNER_FUNC_NAME)),
-            "__module__": step.__module__,
-            "materializers": step.get_materializers(ensure_complete=True),
-            PARAM_STEP_NAME: step.step_name,
+            "_FUNCTION": staticmethod(step_function),
+            "__module__": step_module,
+            "materializers": materializers,
+            PARAM_STEP_NAME: step_name,
         },
     )
 
-    module = sys.modules[step.__module__]
+    # Add the executor class to the module in which the step was defined
+    module = sys.modules[step_module]
     setattr(module, executor_class_name, executor_class)
-    executor_spec_instance = ExecutorClassSpec(executor_class=executor_class)
 
-    # Defining the component with the corresponding executor and spec
     return type(
-        step.__class__.__name__,
+        step_name,
         (_ZenMLSimpleComponent,),
         {
             "SPEC_CLASS": component_spec_class,
-            "EXECUTOR_SPEC": executor_spec_instance,
-            "__module__": step.__module__,
+            "EXECUTOR_SPEC": ExecutorClassSpec(executor_class=executor_class),
+            "__module__": step_module,
         },
     )
 
