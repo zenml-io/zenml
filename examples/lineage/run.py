@@ -121,9 +121,7 @@ def print_lineage():
     pipeline = repo.get_pipelines()[-1]
     for run in pipeline.runs:
         try:
-            deployer_step = run.get_step(name="deployer")
             trainer_step = run.get_step(name="trainer")
-            deployer_step.inputs["model"]
             trained_model_artifact = trainer_step.output
 
             # lets do the lineage
@@ -157,4 +155,3 @@ if __name__ == "__main__":
     p.run()
 
     visualize_lineage()
-    print_lineage()
