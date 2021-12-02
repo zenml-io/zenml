@@ -484,10 +484,10 @@ class BaseStep(metaclass=BaseStepMeta):
         from zenml.artifacts.type_registery import type_registry
 
         for key, value in self.INPUT_SIGNATURE.items():
+            verified_types = type_registry.get_artifact_type(value)
             if key not in self.INPUT_SPEC:
-                self.INPUT_SPEC[key] = type_registry.get_artifact_type(value)
+                self.INPUT_SPEC[key] = verified_types[0]
             else:
-                verified_types = type_registry.get_artifact_type(value)
                 if self.INPUT_SPEC[key] not in verified_types:
                     raise StepInterfaceError(
                         f"Type {key} can not be interpreted as a "
@@ -495,10 +495,10 @@ class BaseStep(metaclass=BaseStepMeta):
                     )
 
         for key, value in self.OUTPUT_SIGNATURE.items():
+            verified_types = type_registry.get_artifact_type(value)
             if key not in self.OUTPUT_SPEC:
-                self.OUTPUT_SPEC[key] = type_registry.get_artifact_type(value)
+                self.OUTPUT_SPEC[key] = verified_types[0]
             else:
-                verified_types = type_registry.get_artifact_type(value)
                 if self.OUTPUT_SPEC[key] not in verified_types:
                     raise StepInterfaceError(
                         f"Type {key} can not be interpreted as a "
