@@ -62,8 +62,8 @@ OpFunc = Callable[[dsl.ContainerOp], dsl.ContainerOp]
 _KUBEFLOW_GCP_SECRET_NAME = "user-gcp-sa"
 
 # Default TFX container image to use in KubeflowDagRunner.
-DEFAULT_KUBEFLOW_TFX_IMAGE = "tensorflow/tfx:%s" % (version.__version__,)
-
+# DEFAULT_KUBEFLOW_TFX_IMAGE = "tensorflow/tfx:%s" % (version.__version__,)
+DEFAULT_KUBEFLOW_ZENML_IMAGE = "gcr.io/zenml-core/kubeflow-test:latest"
 
 def _mount_config_map_op(config_map_name: str) -> OpFunc:
     """Mounts all key-value pairs found in the named Kubernetes ConfigMap.
@@ -216,7 +216,7 @@ class KubeflowDagRunnerConfig(pipeline_config.PipelineConfig):
         self.pipeline_operator_funcs = (
             pipeline_operator_funcs or get_default_pipeline_operator_funcs()
         )
-        self.tfx_image = tfx_image or DEFAULT_KUBEFLOW_TFX_IMAGE
+        self.tfx_image = tfx_image or DEFAULT_KUBEFLOW_ZENML_IMAGE
         self.kubeflow_metadata_config = (
             kubeflow_metadata_config or get_default_kubeflow_metadata_config()
         )
