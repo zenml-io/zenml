@@ -50,6 +50,7 @@ class BaseMaterializerMeta(type):
                     )
                 else:
                     from zenml.artifacts.base_artifact import BaseArtifact
+
                     type_registry.register_integration(
                         associated_type, [BaseArtifact]
                     )
