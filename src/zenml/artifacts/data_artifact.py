@@ -17,4 +17,5 @@ from zenml.artifacts.base_artifact import BaseArtifact
 
 class DataArtifact(BaseArtifact):
     """Class for all ZenML data artifacts."""
+
     TYPE_NAME = "DataArtifact"
