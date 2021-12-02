@@ -186,21 +186,25 @@ class BaseStep(metaclass=BaseStepMeta):
     """
 
     # TODO [ENG-156]: Ensure these are ordered
-    INPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
-    OUTPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
+    INPUT_SIGNATURE: ClassVar[
+        Dict[str, Type[Any]]
+    ] = None  # type: ignore[assignment] # noqa
+    OUTPUT_SIGNATURE: ClassVar[
+        Dict[str, Type[Any]]
+    ] = None  # type: ignore[assignment] # noqa
     CONFIG_PARAMETER_NAME: ClassVar[Optional[str]] = None
     CONFIG_CLASS: ClassVar[Optional[Type[BaseStepConfig]]] = None
     CONTEXT_PARAMETER_NAME: ClassVar[Optional[str]] = None
+
+    PARAM_SPEC: Dict[str, Any] = {}
+    INPUT_SPEC: Dict[str, Type[BaseArtifact]] = {}
+    OUTPUT_SPEC: Dict[str, Type[BaseArtifact]] = {}
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.step_name = self.__class__.__name__
         self.pipeline_parameter_name: Optional[str] = None
         self.enable_cache = getattr(self, PARAM_ENABLE_CACHE)
         self.requires_context = bool(self.CONTEXT_PARAMETER_NAME)
-
-        self.PARAM_SPEC: Dict[str, Any] = {}
-        self.INPUT_SPEC: Dict[str, Type[BaseArtifact]] = {}
-        self.OUTPUT_SPEC: Dict[str, Type[BaseArtifact]] = {}
         self._explicit_materializers: Dict[str, Type[BaseMaterializer]] = {}
         self.__component = None
 
@@ -464,10 +468,30 @@ class BaseStep(metaclass=BaseStepMeta):
         # TODO [ENG-157]: replaces Channels with ZenML class (BaseArtifact?)
         self._update_and_verify_parameter_spec()
 
-        # Right now all artifacts are BaseArtifacts
-        self.INPUT_SPEC = {key: BaseArtifact for key in self.INPUT_SIGNATURE}
-        self.OUTPUT_SPEC = {key: BaseArtifact for key in self.OUTPUT_SIGNATURE}
+        # Make sure that the input/output artifact types exist in the signature
+        if not all(k in self.INPUT_SPEC for k in self.INPUT_SIGNATURE):
+            raise StepInterfaceError(
+                f"Failed to create the step. The predefined artifact types"
+                f"for the input does not match the input signature."
+            )
+        if not all(k in self.OUTPUT_SPEC for k in self.OUTPUT_SIGNATURE):
+            raise StepInterfaceError(
+                f"Failed to create the step. The predefined artifact types"
+                f"for the input does not match the input signature."
+            )
 
+        # Build the input and output spec
+        from zenml.artifacts.type_registery import type_registry
+
+        for key, value in self.INPUT_SIGNATURE.items():
+            if key not in self.INPUT_SPEC:
+                self.INPUT_SPEC[key] = type_registry.get_artifact_type(value)
+
+        for key, value in self.OUTPUT_SIGNATURE.items():
+            if key not in self.OUTPUT_SPEC:
+                self.OUTPUT_SPEC[key] = type_registry.get_artifact_type(value)
+
+        # Prepare input artifact and exec params
         input_artifacts = self._prepare_input_artifacts(
             *artifacts, **kw_artifacts
         )
@@ -477,7 +501,7 @@ class BaseStep(metaclass=BaseStepMeta):
             **self._internal_execution_parameters,
         }
 
-        # convert execution parameter values to strings
+        # Convert execution parameter values to strings
         try:
             execution_parameters = {
                 k: json.dumps(v) for k, v in execution_parameters.items()
@@ -527,7 +551,7 @@ class BaseStep(metaclass=BaseStepMeta):
         """Register materializers for step outputs.
 
         If a single materializer is passed, it will be used for all step
-        outputs. Otherwise the dictionary keys specify the output names
+        outputs. Otherwise, the dictionary keys specify the output names
         for which the materializers will be used.
 
         Args:
