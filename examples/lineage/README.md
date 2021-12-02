@@ -1,5 +1,5 @@
 # Visualize statistics
-This examples show-cases the built-in `PipelineLineageVisualizer` using the [Plotly]() integration.
+This examples show-cases the built-in `PipelineLineageVisualizer` using the [Dash](https://dash.plotly.com/) integration. 
 
 ## Visualizers
 Visualizers are Python classes that take post-execution view objects (e.g. `PipelineView`, `PipelineRunView`, `StepView`, etc.) and create 
@@ -14,18 +14,18 @@ This visualization is produced with the following code:
 
 ```python
 from zenml.core.repo import Repository
-from zenml.integrations.plotly.visualizers.pipeline_lineage_visualizer import (
-    PipelineLineageVisualizer,
+from zenml.integrations.dash.visualizers.pipeline_run_lineage_visualizer import (
+    PipelineRunLineageVisualizer,
 )
 
 repo = Repository()
 pipeline = repo.get_pipelines()[-1]
-PipelineLineageVisualizer().visualize(pipeline)
+PipelineRunLineageVisualizer().visualize(pipeline)
 ```
 
 It produces the following visualization:
 
-![Statistics for boston housing dataset](../../../docs/book/.gitbook/assets/statistics_boston_housing.png)
+![Statistics for boston housing dataset](../../docs/book/.gitbook/assets/zenml_pipeline_run_lineage_dash.png)
 
 
 
@@ -36,7 +36,8 @@ In order to run this example, you need to install and initialize ZenML:
 
 ```shell
 # install CLI
-pip install zenml tensorflow facets-overview
+pip install zenml tensorflow 
+pip install dash dash-cytoscape dash-bootstrap-component
 
 # pull example
 zenml example pull lineage

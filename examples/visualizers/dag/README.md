@@ -29,7 +29,6 @@ It produces the following visualization:
 ![Boston Housing Dataset Pipeline Visualization](../../../docs/book/.gitbook/assets/dag_visualization.png)
 
 
-
 ## Run it locally
 
 ### Pre-requisites

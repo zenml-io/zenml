@@ -60,7 +60,8 @@ def importer() -> Output(train_df=pd.DataFrame, test_df=pd.DataFrame):
     return train_df, test_df
 
 
-@step
+# we disable the cache for the trainer to see the visualization working
+@step(enable_cache=False)
 def trainer(train_df: pd.DataFrame) -> tf.keras.Model:
     """A simple Keras Model to train on the data."""
     model = tf.keras.Sequential()
