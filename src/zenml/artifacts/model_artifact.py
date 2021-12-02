@@ -17,3 +17,4 @@ from zenml.artifacts.base_artifact import BaseArtifact
 
 class ModelArtifact(BaseArtifact):
     """Class for all ZenML model artifacts."""
+    TYPE_NAME = "ModelArtifact"

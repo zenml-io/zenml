@@ -17,3 +17,4 @@ from zenml.artifacts.base_artifact import BaseArtifact
 
 class StatisticsArtifact(BaseArtifact):
     """Class for all ZenML statistics artifacts."""
+    TYPE_NAME = "StatisticsArtifact"
