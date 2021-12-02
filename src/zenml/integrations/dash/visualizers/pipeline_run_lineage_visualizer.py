@@ -18,7 +18,7 @@ from typing import Any
 import dash
 import dash_bootstrap_components as dbc
 import dash_cytoscape as cyto
-from dash import dcc
+from dash import dcc, html
 from dash.dependencies import Input, Output
 
 from zenml.enums import ExecutionStatus
@@ -31,6 +31,10 @@ from zenml.visualizers.base_pipeline_run_visualizer import (
 logger = get_logger(__name__)
 
 OVERALL_STYLE = {"fontFamily": "sans-serif"}
+COLOR_RED = "#AD5D4E"
+COLOR_BLUE = "#22577A"
+COLOR_YELLOW = "#FFB100"
+COLOR_GREEN = "#BFD7B5"
 
 STYLESHEET = [
     # Group selectors
@@ -54,33 +58,33 @@ STYLESHEET = [
     {
         "selector": ".red",
         "style": {
-            "background-color": "#AD5D4E",
-            "line-color": "#AD5D4E",
-            "target-arrow-color": "#AD5D4E",
+            "background-color": COLOR_RED,
+            "line-color": COLOR_RED,
+            "target-arrow-color": COLOR_RED,
         },
     },
     {
         "selector": ".blue",
         "style": {
-            "background-color": "#22577A",
-            "line-color": "#22577A",
-            "target-arrow-color": "#22577A",
+            "background-color": COLOR_BLUE,
+            "line-color": COLOR_BLUE,
+            "target-arrow-color": COLOR_BLUE,
         },
     },
     {
         "selector": ".yellow",
         "style": {
-            "background-color": "#FFB100",
-            "line-color": "#FFB100",
-            "target-arrow-color": "#FFB100",
+            "background-color": COLOR_YELLOW,
+            "line-color": COLOR_YELLOW,
+            "target-arrow-color": COLOR_YELLOW,
         },
     },
     {
         "selector": ".green",
         "style": {
-            "background-color": "#BFD7B5",
-            "line-color": "#BFD7B5",
-            "target-arrow-color": "#BFD7B5",
+            "background-color": COLOR_GREEN,
+            "line-color": COLOR_GREEN,
+            "target-arrow-color": COLOR_GREEN,
         },
     },
     {"selector": ".rectangle", "style": {"shape": "rectangle"}},
@@ -115,7 +119,14 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
         puts every layer of the dag in a column.
         """
 
-        app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+        app = dash.Dash(
+            __name__,
+            external_stylesheets=[
+                dbc.themes.BOOTSTRAP,
+                dbc.icons.FONT_AWESOME,
+                dbc.icons.BOOTSTRAP,
+            ],
+        )
         nodes, edges, first_step_id = [], [], None
         first_step_id = None
         for step in object.steps:
@@ -200,6 +211,52 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
                     [
                         dbc.Col(
                             [
+                                dbc.Row(
+                                    [
+                                        html.Span(
+                                            [
+                                                html.Span(
+                                                    [
+                                                        html.I(
+                                                            className="bi bi-circle-fill me-1"
+                                                        ),
+                                                        "Step",
+                                                    ],
+                                                    className="me-2",
+                                                ),
+                                                html.Span(
+                                                    [
+                                                        html.I(
+                                                            className="bi bi-square-fill me-1"
+                                                        ),
+                                                        "Artifact",
+                                                    ],
+                                                    className="me-4",
+                                                ),
+                                                dbc.Badge(
+                                                    "Completed",
+                                                    color=COLOR_BLUE,
+                                                    className="me-1",
+                                                ),
+                                                dbc.Badge(
+                                                    "Cached",
+                                                    color=COLOR_GREEN,
+                                                    className="me-1",
+                                                ),
+                                                dbc.Badge(
+                                                    "Running",
+                                                    color=COLOR_YELLOW,
+                                                    className="me-1",
+                                                ),
+                                                dbc.Badge(
+                                                    "Failed",
+                                                    color=COLOR_RED,
+                                                    className="me-1",
+                                                ),
+                                            ]
+                                        ),
+                                    ]
+                                ),
                                 dbc.Row(
                                     [
                                         cyto.Cytoscape(
@@ -304,7 +361,7 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
                     ]
                 ),
             ],
-            className="p-2",
+            className="p-5",
         )
 
         @app.callback(
@@ -331,13 +388,13 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
                 elif data["type"] == "step":
                     text += "### Inputs:" + "\n\n"
                     for k, v in data["inputs"].items():
-                        text += f"**{k}** / {v}" + "\n\n"
+                        text += f"**{k}**: {v}" + "\n\n"
                     text += "### Outputs:" + "\n\n"
                     for k, v in data["outputs"].items():
-                        text += f"**{k}** / {v}" + "\n\n"
+                        text += f"**{k}**: {v}" + "\n\n"
                     text += "### Params:"
                     for k, v in data["parameters"].items():
-                        text += f"**{k}** / {v}" + "\n\n"
+                        text += f"**{k}**: {v}" + "\n\n"
             return text
 
         @app.callback(
