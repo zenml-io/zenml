@@ -18,26 +18,17 @@ from zenml.pipelines import BasePipeline
 class TrainingPipeline(BasePipeline):
     """Class for the classic training pipeline implementation"""
 
-    def connect(self,
-                datasource,
-                splitter,
-                analyzer,
-                preprocesser,
-                trainer,
-                evaluator
-                ) -> None:
+    def connect(
+        self, datasource, splitter, analyzer, preprocesser, trainer, evaluator
+    ) -> None:
         # Ingesting the datasource
         dataset = datasource()
 
         # # Splitting the data
-        train, test, validation = splitter(
-            dataset=dataset
-        )
+        train, test, validation = splitter(dataset=dataset)
 
         # Analyzing the train dataset
-        statistics, schema = analyzer(
-            dataset=train
-        )
+        statistics, schema = analyzer(dataset=train)
 
         # Preprocessing the splits
         train_t, test_t, validation_t = preprocesser(
@@ -45,17 +36,11 @@ class TrainingPipeline(BasePipeline):
             test_dataset=test,
             validation_dataset=validation,
             statistics=statistics,
-            schema=schema
+            schema=schema,
         )
 
         # Training the model
-        model = trainer(
-            train_dataset=train,
-            validation_dataset=validation
-        )
+        model = trainer(train_dataset=train, validation_dataset=validation)
 
         # Evaluating the trained model
-        evaluator(
-            model=model,
-            test_dataset=test_t
-        )
+        evaluator(model=model, test_dataset=test_t)
