@@ -153,9 +153,10 @@ class BaseMetadataStore(BaseComponent):
                     and e.milliseconds_since_epoch
                     < current_event.milliseconds_since_epoch
                 ]
+
                 # sort by time
                 events_for_input_artifact.sort(
-                    key=lambda x: x.milliseconds_since_epoch
+                    key=lambda x: x.milliseconds_since_epoch  # type: ignore[no-any-return] # noqa
                 )
                 # take the latest one and add execution to the parents.
                 parents_step_ids.add(events_for_input_artifact[-1].execution_id)
