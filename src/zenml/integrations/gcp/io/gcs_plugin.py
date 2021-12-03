@@ -32,10 +32,10 @@ class ZenGCS(Filesystem):
 
     SUPPORTED_SCHEMES = ["gs://"]
 
-    fs = None
+    fs: gcsfs.GCSFileSystem = None
 
     @classmethod
-    def _ensure_filesystem_set(cls):
+    def _ensure_filesystem_set(cls) -> None:
         """Ensures that the filesystem is set."""
         if ZenGCS.fs is None:
             ZenGCS.fs = gcsfs.GCSFileSystem()
