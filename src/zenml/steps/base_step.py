@@ -398,7 +398,7 @@ class BaseStep(metaclass=BaseStepMeta):
         Raises:
             StepInterfaceError: If there are too many or too few artifacts.
         """
-        input_artifact_keys = list(self.INPUT_SPEC.keys())
+        input_artifact_keys = list(self.INPUT_SIGNATURE.keys())
         if len(artifacts) > len(input_artifact_keys):
             raise StepInterfaceError(
                 f"Too many input artifacts for step '{self.step_name}'. "
@@ -441,7 +441,7 @@ class BaseStep(metaclass=BaseStepMeta):
             combined_artifacts[key] = artifact
 
         # check if there are any missing or unexpected artifacts
-        expected_artifacts = set(self.INPUT_SPEC.keys())
+        expected_artifacts = set(self.INPUT_SIGNATURE.keys())
         actual_artifacts = set(combined_artifacts.keys())
         missing_artifacts = expected_artifacts - actual_artifacts
         unexpected_artifacts = actual_artifacts - expected_artifacts
@@ -469,30 +469,23 @@ class BaseStep(metaclass=BaseStepMeta):
         self._update_and_verify_parameter_spec()
 
         # Make sure that the input/output artifact types exist in the signature
-        if not all(k in self.INPUT_SIGNATURE for k in self.INPUT_SPEC):
-            raise StepInterfaceError(
-                f"Failed to create the step. The predefined artifact types"
-                f"for the input does not match the input signature."
-            )
         if not all(k in self.OUTPUT_SIGNATURE for k in self.OUTPUT_SPEC):
             raise StepInterfaceError(
                 f"Failed to create the step. The predefined artifact types"
                 f"for the input does not match the input signature."
             )
 
-        # Build the input and output spec
-        from zenml.artifacts.type_registery import type_registry
+        # Prepare the input artifacts and spec
+        input_artifacts = self._prepare_input_artifacts(
+            *artifacts, **kw_artifacts
+        )
 
-        for key, value in self.INPUT_SIGNATURE.items():
-            verified_types = type_registry.get_artifact_type(value)
-            if key not in self.INPUT_SPEC:
-                self.INPUT_SPEC[key] = verified_types[0]
-            else:
-                if self.INPUT_SPEC[key] not in verified_types:
-                    raise StepInterfaceError(
-                        f"Type {key} can not be interpreted as a "
-                        f"{self.INPUT_SPEC[key]}"
-                    )
+        self.INPUT_SPEC = {arg_name: artifact_type.type
+                           for arg_name, artifact_type in
+                           input_artifacts.items()}
+
+        # Prepare the output artifacts and spec
+        from zenml.artifacts.type_registery import type_registry
 
         for key, value in self.OUTPUT_SIGNATURE.items():
             verified_types = type_registry.get_artifact_type(value)
@@ -504,11 +497,6 @@ class BaseStep(metaclass=BaseStepMeta):
                         f"Type {key} can not be interpreted as a "
                         f"{self.OUTPUT_SPEC[key]}"
                     )
-
-        # Prepare input artifact and exec params
-        input_artifacts = self._prepare_input_artifacts(
-            *artifacts, **kw_artifacts
-        )
 
         execution_parameters = {
             **self.PARAM_SPEC,
