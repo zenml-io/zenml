@@ -16,7 +16,7 @@ import os
 from typing import Any, Type, Union
 
 import torch
-from torch.nn import Module
+from torch.nn import Module  # type: ignore[no-untyped-call] # noqa
 
 from zenml.integrations.pytorch.materializers.pytorch_types import TorchDict
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -36,7 +36,7 @@ class PyTorchMaterializer(BaseMaterializer):
             A loaded pytorch model.
         """
         super().handle_input(data_type)
-        return torch.load(os.path.join(self.artifact.uri, DEFAULT_FILENAME))
+        return torch.load(os.path.join(self.artifact.uri, DEFAULT_FILENAME))  # type: ignore[no-untyped-call] # noqa
 
     def handle_return(self, model: Union[Module, TorchDict]) -> None:
         """Writes a PyTorch model.
