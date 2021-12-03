@@ -49,7 +49,7 @@ from zenml.steps.utils import (
     SINGLE_RETURN_OUT_NAME,
     STEP_INNER_FUNC_NAME,
     _ZenMLSimpleComponent,
-    generate_component,
+    generate_component_class,
 )
 
 logger = get_logger(__name__)
@@ -206,7 +206,7 @@ class BaseStep(metaclass=BaseStepMeta):
         self.enable_cache = getattr(self, PARAM_ENABLE_CACHE)
         self.requires_context = bool(self.CONTEXT_PARAMETER_NAME)
         self._explicit_materializers: Dict[str, Type[BaseMaterializer]] = {}
-        self.__component = None
+        self._component: Optional[_ZenMLSimpleComponent] = None
 
         self._verify_arguments(*args, **kwargs)
 
@@ -527,9 +527,20 @@ class BaseStep(metaclass=BaseStepMeta):
                 f"json serializable parameter values."
             ) from e
 
-        self.__component = generate_component(self)(
-            **input_artifacts,
-            **execution_parameters,
+        # make sure we have registered materializers for each output
+        materializers = self.get_materializers(ensure_complete=True)
+
+        component_class = generate_component_class(
+            step_name=self.step_name,
+            step_module=self.__module__,
+            input_spec=self.INPUT_SPEC,
+            output_spec=self.OUTPUT_SPEC,
+            execution_parameter_names=set(execution_parameters),
+            step_function=self.process,
+            materializers=materializers,
+        )
+        self._component = component_class(
+            **input_artifacts, **execution_parameters
         )
 
         # Resolve the returns in the right order.
@@ -544,12 +555,12 @@ class BaseStep(metaclass=BaseStepMeta):
     @property
     def component(self) -> _ZenMLSimpleComponent:
         """Returns a TFX component."""
-        if not self.__component:
+        if not self._component:
             raise StepInterfaceError(
                 "Trying to access the step component "
                 "before creating it via calling the step."
             )
-        return self.__component
+        return self._component
 
     @abstractmethod
     def process(self, *args: Any, **kwargs: Any) -> Any:
