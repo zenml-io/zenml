@@ -68,11 +68,6 @@ class PipelineRunDagVisualizer(BasePipelineRunVisualizer):
                     self.ARTIFACT_PREFIX + str(artifact.id),
                     f"{artifact_name} \n" f"({artifact._data_type})",
                     shape=self.STEP_SHAPE,
-                    # fillcolor=self.ARTIFACT_CACHED_COLOR
-                    # if artifact.is_cached
-                    # else self.ARTIFACT_DEFAULT_COLOR,
-                    # fontname=self.FONT,
-                    # style="filled",
                 )
                 dot.edge(
                     self.STEP_PREFIX + str(step.id),
