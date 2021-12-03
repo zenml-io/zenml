@@ -145,9 +145,7 @@ class Repository:
                 ),
             )
 
-            # Make local stack active
-            gc = GlobalConfig()
-            gc.make_stack_active_for_repo(repo_path, "local_stack")
+            service.set_active_stack_key("local_stack")
 
     def get_git_wrapper(self) -> GitWrapper:
         """Returns the git wrapper for the repo."""
@@ -165,9 +163,7 @@ class Repository:
         Args:
             stack_key: Key of the stack to set active.
         """
-        gc = GlobalConfig()
-        self.service.get_stack(stack_key)  # check if it exists
-        gc.make_stack_active_for_repo(self.path, stack_key)
+        self.service.set_active_stack_key(stack_key)
 
     def get_active_stack_key(self) -> str:
         """Get the active stack key from global config.
@@ -175,13 +171,7 @@ class Repository:
         Returns:
             Currently active stacks key.
         """
-        gc = GlobalConfig()
-        if self.path not in gc.repo_active_stacks:
-            raise KeyError(
-                f"No active stack set for repo: {self.path}! Available "
-                f"stacks: {[(a, b) for a, b in gc.repo_active_stacks.items()]}."
-            )
-        return gc.repo_active_stacks[self.path]
+        return self.service.get_active_stack_key()
 
     def get_active_stack(self) -> BaseStack:
         """Get the active stack from global config.

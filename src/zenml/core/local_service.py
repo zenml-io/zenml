@@ -30,6 +30,7 @@ class LocalService(BaseComponent):
     """
 
     stacks: Dict[str, BaseStack] = {}
+    active_stack_key: str = "local_stack"
     metadata_store_map: Dict[str, UUIDSourceTuple] = {}
     artifact_store_map: Dict[str, UUIDSourceTuple] = {}
     orchestrator_map: Dict[str, UUIDSourceTuple] = {}
@@ -71,6 +72,22 @@ class LocalService(BaseComponent):
             BaseOrchestrator._ORCHESTRATOR_STORE_DIR_NAME,
             self.orchestrator_map,
         )
+
+    def get_active_stack_key(self) -> str:
+        """Returns the active stack key."""
+        return self.active_stack_key
+
+    def set_active_stack_key(self, stack_key: str) -> None:
+        """Sets the active stack key."""
+        if stack_key not in self.stacks:
+            raise DoesNotExistException(
+                f"Unable to set active stack for key `{stack_key}` because no "
+                f"stack is registered for this key. Available keys: "
+                f"{set(self.stacks)}"
+            )
+
+        self.active_stack_key = stack_key
+        self.update()
 
     def get_stack(self, key: str) -> BaseStack:
         """Return a single stack based on key.

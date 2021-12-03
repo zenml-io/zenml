@@ -13,16 +13,17 @@
 #  permissions and limitations under the License.
 import os
 from abc import abstractmethod
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 from uuid import UUID, uuid4
 
-from pydantic import BaseSettings, Field
+from pydantic import BaseSettings, Field, root_validator
 
 from zenml.core.utils import generate_customise_sources
 from zenml.io import fileio
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
+SUPERFLUOUS_OPTIONS_ATTRIBUTE_NAME = "_superfluous_options"
 
 
 class BaseComponent(BaseSettings):
@@ -42,6 +43,7 @@ class BaseComponent(BaseSettings):
 
     uuid: Optional[UUID] = Field(default_factory=uuid4)
     _file_suffix = ".json"
+    _superfluous_options: Dict[str, Any] = {}
 
     def __init__(self, **values: Any):
         # Here, we insert monkey patch the `customise_sources` function
@@ -66,15 +68,37 @@ class BaseComponent(BaseSettings):
 
         # Initialize values from the above sources.
         super().__init__(**values)
+        self._save_backup_file_if_required()
+
+    def _save_backup_file_if_required(self) -> None:
+        """Saves a backup of the config file if the schema changed."""
+        if self._superfluous_options:
+            logger.warning(
+                "Found superfluous configuration values for class `%s`: %s",
+                self.__class__.__name__,
+                set(self._superfluous_options),
+            )
+            config_path = self.get_serialization_full_path()
+            if fileio.file_exists(config_path):
+                backup_path = config_path + ".backup"
+                fileio.copy(config_path, backup_path, overwrite=True)
+                logger.warning(
+                    "Saving backup configuration to '%s'.", backup_path
+                )
+
+            # save the updated file without the extra options
+            self.update()
 
     def _dump(self) -> None:
         """Dumps all current values to the serialization file."""
         self._create_serialization_file_if_not_exists()
-        f = self.get_serialization_full_path()
-
-        fileio.write_file_contents_as_string(
-            f, self.json(indent=2, sort_keys=True)
+        file_path = self.get_serialization_full_path()
+        file_content = self.json(
+            indent=2,
+            sort_keys=True,
+            exclude={SUPERFLUOUS_OPTIONS_ATTRIBUTE_NAME},
         )
+        fileio.write_file_contents_as_string(file_path, file_content)
 
     def _create_serialization_file_if_not_exists(self) -> None:
         """Creates the serialization file if it does not exist."""
@@ -115,8 +139,27 @@ class BaseComponent(BaseSettings):
         """Deletes the persisted state of this object."""
         fileio.remove(self.get_serialization_full_path())
 
+    @root_validator(pre=True)
+    def check_superfluous_options(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Detects superfluous config values (usually read from an existing
+        config file after the schema changed) and saves them in the classes
+        `_superfluous_options` attribute."""
+        field_names = {field.alias for field in cls.__fields__.values()}
+
+        superfluous_options: Dict[str, Any] = {}
+        for key in set(values):
+            if key not in field_names:
+                superfluous_options[key] = values.pop(key)
+
+        values[SUPERFLUOUS_OPTIONS_ATTRIBUTE_NAME] = superfluous_options
+        return values
+
     class Config:
         """Configuration of settings."""
 
         arbitrary_types_allowed = True
         env_prefix = "zenml_"
+        # allow extra options so we can detect legacy configuration files
+        extra = "allow"
