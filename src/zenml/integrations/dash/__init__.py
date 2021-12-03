@@ -16,7 +16,7 @@ from zenml.integrations.integration import Integration
 
 
 class DashIntegration(Integration):
-    """Definition of Plotly integration for ZenML."""
+    """Definition of Dash integration for ZenML."""
 
     NAME = DASH
     REQUIREMENTS = [

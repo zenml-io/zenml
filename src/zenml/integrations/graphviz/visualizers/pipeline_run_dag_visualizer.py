@@ -59,7 +59,7 @@ class PipelineRunDagVisualizer(BasePipelineRunVisualizer):
             dot.node(
                 self.STEP_PREFIX + str(step.id),
                 step.name,
-                shape=self.ARTIFACT_SHAPE,
+                shape=self.STEP_SHAPE,
             )
             # for each parent of a step, add an edge
 
@@ -67,7 +67,7 @@ class PipelineRunDagVisualizer(BasePipelineRunVisualizer):
                 dot.node(
                     self.ARTIFACT_PREFIX + str(artifact.id),
                     f"{artifact_name} \n" f"({artifact._data_type})",
-                    shape=self.STEP_SHAPE,
+                    shape=self.ARTIFACT_SHAPE,
                 )
                 dot.edge(
                     self.STEP_PREFIX + str(step.id),

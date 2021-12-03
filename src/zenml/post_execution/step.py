@@ -68,7 +68,7 @@ class StepView:
 
     @property
     def parent_steps(self) -> List["StepView"]:
-        """Returns a list of ID's of all parents of this step."""
+        """Returns a list of all parent steps of this step."""
         steps = [
             self._metadata_store.get_step_by_id(s)
             for s in self.parents_step_ids
