@@ -51,7 +51,7 @@ class PipelineLineageVisualizer(BasePipelineVisualizer):
                 # for artifact_name, artifact in step.outputs.items():
                 category_dict[run.name].update(
                     {
-                        step.name: step.id,
+                        step.name: str(step.id),
                     }
                 )
                 if step.name not in dimensions:
