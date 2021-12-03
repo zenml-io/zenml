@@ -16,7 +16,7 @@ import os
 from typing import Any, Type, Union
 
 import torch
-from torch.nn import Module  # type: ignore[no-untyped-call] # noqa
+from torch.nn import Module  # type: ignore[attr-defined]
 
 from zenml.integrations.pytorch.materializers.pytorch_types import TorchDict
 from zenml.materializers.base_materializer import BaseMaterializer
