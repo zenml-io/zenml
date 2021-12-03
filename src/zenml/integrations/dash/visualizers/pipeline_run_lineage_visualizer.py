@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 from abc import abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Collection, Dict, List, Union
 
 import dash
 import dash_bootstrap_components as dbc
@@ -123,7 +123,6 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
             __name__,
             external_stylesheets=[
                 dbc.themes.BOOTSTRAP,
-                dbc.icons.FONT_AWESOME,
                 dbc.icons.BOOTSTRAP,
             ],
         )
@@ -301,8 +300,8 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
         @app.callback(
             Output("markdown-selected-node-data", "children"),
             Input("cytoscape", "selectedNodeData"),
-        )
-        def display_data(data_list) -> str:
+        )  # type: ignore[misc] # noqa
+        def display_data(data_list: List[Dict[str, Any]]) -> str:
             """Callback for the text area below the graph"""
             if data_list is None:
                 return "Click on a node in the diagram."
@@ -334,8 +333,10 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
         @app.callback(
             [Output("cytoscape", "zoom"), Output("cytoscape", "elements")],
             [Input("bt-reset", "n_clicks")],
-        )
-        def reset_layout(n_clicks) -> List[int, List[Dict, Any]]:
+        )  # type: ignore[misc] # noqa
+        def reset_layout(
+            n_clicks: int,
+        ) -> List[Union[int, List[Dict[str, Collection[str]]]]]:
             """Resets the layout"""
             logger.debug(n_clicks, "clicked in reset button.")
             return [1, edges + nodes]
