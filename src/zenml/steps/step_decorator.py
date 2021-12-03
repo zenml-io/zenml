@@ -52,7 +52,6 @@ def step(
     *,
     name: Optional[str] = None,
     enable_cache: bool = True,
-    input_types: Dict[str, Type["BaseArtifact"]] = None,
     output_types: Dict[str, Type["BaseArtifact"]] = None,
 ) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
     """Outer decorator function for the creation of a ZenML step
@@ -87,7 +86,6 @@ def step(
         """
         step_name = name or func.__name__
         output_spec = output_types or {}
-        input_spec = input_types or {}
 
         return type(  # noqa
             step_name,
@@ -95,7 +93,6 @@ def step(
             {
                 STEP_INNER_FUNC_NAME: staticmethod(func),
                 PARAM_ENABLE_CACHE: enable_cache,
-                "INPUT_SPEC": input_spec,
                 "OUTPUT_SPEC": output_spec,
                 "__module__": func.__module__,
             },
