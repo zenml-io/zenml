@@ -64,8 +64,6 @@ def step(
         name: The name of the step. If left empty, the name of the decorated
             function will be used as a fallback.
         enable_cache: Whether to use caching or not.
-        input_types: A dictionary which sets different inputs to non-default
-            artifact types
         output_types: A dictionary which sets different outputs to non-default
             artifact types
 
