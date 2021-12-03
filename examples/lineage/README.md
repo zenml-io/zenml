@@ -18,9 +18,12 @@ from zenml.integrations.dash.visualizers.pipeline_run_lineage_visualizer import 
     PipelineRunLineageVisualizer,
 )
 
-repo = Repository()
-pipeline = repo.get_pipelines()[-1]
-PipelineRunLineageVisualizer().visualize(pipeline)
+def visualize_lineage():
+    repo = Repository()
+    latest_run = repo.get_pipelines()[-1].runs[-1]
+    PipelineRunLineageVisualizer().visualize(latest_run)
+    
+visualize_lineage()
 ```
 
 It produces the following visualization:
