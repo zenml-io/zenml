@@ -26,6 +26,9 @@ from zenml.visualizers.base_pipeline_run_visualizer import (
 
 logger = get_logger(__name__)
 
+# TODO [MEDIUM]: This integration is working but not really doing much. We
+#  should use graphviz to show the pipeline perhaps (not the run).
+
 
 class PipelineRunDagVisualizer(BasePipelineRunVisualizer):
     """Visualize the lineage of runs in a pipeline."""
@@ -43,7 +46,11 @@ class PipelineRunDagVisualizer(BasePipelineRunVisualizer):
     def visualize(
         self, object: PipelineRunView, *args: Any, **kwargs: Any
     ) -> graphviz.Digraph:
-        """Creates a pipeline lineage diagram using plotly."""
+        """Creates a pipeline lineage diagram using graphviz."""
+        logger.warning(
+            "This integration is not completed yet. Results might be unexpected."
+        )
+
         dot = graphviz.Digraph(comment=object.name)
 
         # link the steps together

@@ -25,30 +25,27 @@ from zenml.visualizers.base_pipeline_visualizer import BasePipelineVisualizer
 
 logger = get_logger(__name__)
 
+# TODO [MEDIUM]: This integration is working but not really doing much. We
+#  should use plotly in more useful ways.
+
 
 class PipelineLineageVisualizer(BasePipelineVisualizer):
-    """Visualize the lineage of runs in a pipeline."""
+    """Visualize the lineage of runs in a pipeline using plotly."""
 
     @abstractmethod
     def visualize(
         self, object: PipelineView, *args: Any, **kwargs: Any
     ) -> Figure:
-        """Creates a pipeline lineage diagram using plotly.
+        """Creates a pipeline lineage diagram using plotly."""
+        logger.warning(
+            "This integration is not completed yet. Results might be unexpected."
+        )
 
-        Args:
-            pipeline:
-            *args:
-            **kwargs:
-
-        Returns:
-
-        """
         category_dict = {}
         dimensions = ["run"]
         for run in object.runs:
             category_dict[run.name] = {"run": run.name}
             for step in run.steps:
-                # for artifact_name, artifact in step.outputs.items():
                 category_dict[run.name].update(
                     {
                         step.name: str(step.id),
