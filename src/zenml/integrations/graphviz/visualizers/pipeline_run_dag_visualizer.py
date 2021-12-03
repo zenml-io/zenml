@@ -60,10 +60,6 @@ class PipelineRunDagVisualizer(BasePipelineRunVisualizer):
                 self.STEP_PREFIX + str(step.id),
                 step.name,
                 shape=self.ARTIFACT_SHAPE,
-                # fillcolor=self.STEP_COLOR,
-                # fontname=self.FONT,
-                # style="filled",
-                # fontcolor="#f2f2f0",
             )
             # for each parent of a step, add an edge
 
