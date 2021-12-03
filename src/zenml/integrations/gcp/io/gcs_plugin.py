@@ -13,10 +13,8 @@
 #  permissions and limitations under the License.
 
 """ Plugin which is created to add Google Cloud Store support to ZenML
-
 It inherits from the base Filesystem created by TFX and overwrites the
 corresponding functions thanks to gcsfs.
-
 Finally, the plugin is registered in the filesystem registry.
 """
 
@@ -34,23 +32,28 @@ class ZenGCS(Filesystem):
 
     SUPPORTED_SCHEMES = ["gs://"]
 
-    fs = gcsfs.GCSFileSystem()
+    fs = None
+
+    @classmethod
+    def _ensure_filesystem_set(cls):
+        """Ensures that the filesystem is set."""
+        if ZenGCS.fs is None:
+            ZenGCS.fs = gcsfs.GCSFileSystem()
 
     @staticmethod
     def open(path: PathType, mode: str = "r") -> Any:
         """Open a file at the given path.
-
         Args:
             path: Path of the file to open.
             mode: Mode in which to open the file. Currently only
                 'rb' and 'wb' to read and write binary files are supported.
         """
+        ZenGCS._ensure_filesystem_set()
         return ZenGCS.fs.open(path=path, mode=mode)
 
     @staticmethod
     def copy(src: PathType, dst: PathType, overwrite: bool = False) -> None:
         """Copy a file.
-
         Args:
             src: The path to copy from.
             dst: The path to copy to.
@@ -62,6 +65,7 @@ class ZenGCS(Filesystem):
             FileExistsError: If a file already exists at the destination
                 and overwrite is not set to `True`.
         """
+        ZenGCS._ensure_filesystem_set()
         if not overwrite and ZenGCS.fs.exists(dst):
             raise FileExistsError(
                 f"Unable to copy to destination '{convert_to_str(dst)}', "
@@ -75,58 +79,60 @@ class ZenGCS(Filesystem):
     @staticmethod
     def exists(path: PathType) -> bool:
         """Check whether a path exists."""
+        ZenGCS._ensure_filesystem_set()
         return ZenGCS.fs.exists(path=path)  # type: ignore[no-any-return]
 
     @staticmethod
     def glob(pattern: PathType) -> List[PathType]:
         """Return all paths that match the given glob pattern.
-
         The glob pattern may include:
-
         - '*' to match any number of characters
         - '?' to match a single character
         - '[...]' to match one of the characters inside the brackets
         - '**' as the full name of a path component to match to search
           in subdirectories of any depth (e.g. '/some_dir/**/some_file)
-
         Args:
             pattern: The glob pattern to match, see details above.
-
         Returns:
             A list of paths that match the given glob pattern.
         """
+        ZenGCS._ensure_filesystem_set()
         return ZenGCS.fs.glob(path=pattern)  # type: ignore[no-any-return]
 
     @staticmethod
     def isdir(path: PathType) -> bool:
         """Check whether a path is a directory."""
+        ZenGCS._ensure_filesystem_set()
         return ZenGCS.fs.isdir(path=path)  # type: ignore[no-any-return]
 
     @staticmethod
     def listdir(path: PathType) -> List[PathType]:
         """Return a list of files in a directory."""
+        ZenGCS._ensure_filesystem_set()
         return ZenGCS.fs.listdir(path=path)  # type: ignore[no-any-return]
 
     @staticmethod
     def makedirs(path: PathType) -> None:
         """Create a directory at the given path. If needed also
         create missing parent directories."""
+        ZenGCS._ensure_filesystem_set()
         ZenGCS.fs.makedirs(path=path, exist_ok=True)
 
     @staticmethod
     def mkdir(path: PathType) -> None:
         """Create a directory at the given path."""
+        ZenGCS._ensure_filesystem_set()
         ZenGCS.fs.makedir(path=path)
 
     @staticmethod
     def remove(path: PathType) -> None:
         """Remove the file at the given path."""
+        ZenGCS._ensure_filesystem_set()
         ZenGCS.fs.rm_file(path=path)
 
     @staticmethod
     def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
         """Rename source file to destination file.
-
         Args:
             src: The path of the file to rename.
             dst: The path to rename the source file to.
@@ -138,6 +144,7 @@ class ZenGCS(Filesystem):
             FileExistsError: If a file already exists at the destination
                 and overwrite is not set to `True`.
         """
+        ZenGCS._ensure_filesystem_set()
         if not overwrite and ZenGCS.fs.exists(dst):
             raise FileExistsError(
                 f"Unable to rename file to '{convert_to_str(dst)}', "
@@ -151,6 +158,7 @@ class ZenGCS(Filesystem):
     @staticmethod
     def rmtree(path: PathType) -> None:
         """Remove the given directory."""
+        ZenGCS._ensure_filesystem_set()
         try:
             ZenGCS.fs.delete(path=path, recursive=True)
         except FileNotFoundError as e:
@@ -159,6 +167,7 @@ class ZenGCS(Filesystem):
     @staticmethod
     def stat(path: PathType) -> Dict[str, Any]:
         """Return stat info for the given path."""
+        ZenGCS._ensure_filesystem_set()
         return ZenGCS.fs.stat(path=path)  # type: ignore[no-any-return]
 
     @staticmethod
@@ -168,7 +177,6 @@ class ZenGCS(Filesystem):
         onerror: Optional[Callable[..., None]] = None,
     ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
         """Return an iterator that walks the contents of the given directory.
-
         Args:
             top: Path of directory to walk.
             topdown: Unused argument to conform to interface.
@@ -178,5 +186,6 @@ class ZenGCS(Filesystem):
             directory path, a list of directories inside the current directory
             and a list of files inside the current directory.
         """
+        ZenGCS._ensure_filesystem_set()
         # TODO [ENG-153]: Additional params
         return ZenGCS.fs.walk(path=top)  # type: ignore[no-any-return]
