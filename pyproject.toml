@@ -183,7 +183,13 @@ module = [
     "sklearn.*",
     "numpy.*",
     "facets_overview.*",
-    "IPython.core.*"
+    "IPython.core.*",
+    "plotly.*",
+    "graphviz.*",
+    "dash.*",
+    "dash_bootstrap_components.*",
+    "dash_cytoscape",
+    "dash.dependencies"
 ]
 ignore_missing_imports = true
 
