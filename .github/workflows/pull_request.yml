@@ -37,13 +37,13 @@ jobs:
           python -m poetry run zenml analytics opt-out
 
       - name: check config 1
-        run: python -c "import os; import click; from zenml import constants; from zenml.config.constants import GLOBAL_CONFIG_NAME; from zenml.utils.yaml_utils import read_json; app_dir = click.get_app_dir(constants.APP_NAME); print(read_json(os.path.join(app_dir, GLOBAL_CONFIG_NAME))['analytics_opt_in'])"
+        run: python -m poetry run python -c "import os; import click; from zenml import constants; from zenml.config.constants import GLOBAL_CONFIG_NAME; from zenml.utils.yaml_utils import read_json; app_dir = click.get_app_dir(constants.APP_NAME); print(read_json(os.path.join(app_dir, GLOBAL_CONFIG_NAME))['analytics_opt_in'])"
 
       - name: Lint
         run: python -m poetry run bash scripts/lint.sh
 
       - name: check config 2
-        run: python -c "import os; import click; from zenml import constants; from zenml.config.constants import GLOBAL_CONFIG_NAME; from zenml.utils.yaml_utils import read_json; app_dir = click.get_app_dir(constants.APP_NAME); print(read_json(os.path.join(app_dir, GLOBAL_CONFIG_NAME))['analytics_opt_in'])"
+        run: python -m poetry run python -c "import os; import click; from zenml import constants; from zenml.config.constants import GLOBAL_CONFIG_NAME; from zenml.utils.yaml_utils import read_json; app_dir = click.get_app_dir(constants.APP_NAME); print(read_json(os.path.join(app_dir, GLOBAL_CONFIG_NAME))['analytics_opt_in'])"
 
       - name: Test
         run: python -m poetry run bash scripts/test-coverage-xml.sh
