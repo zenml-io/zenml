@@ -401,6 +401,21 @@ def pytest_sessionfinish(session, exitstatus):
     """
 
 
+@pytest.fixture(scope="session", autouse=True)
+def check_config():
+    import click
+
+    from zenml import constants
+    from zenml.config.constants import GLOBAL_CONFIG_NAME
+    from zenml.utils.yaml_utils import read_json
+
+    app_dir = click.get_app_dir(constants.APP_NAME)
+    assert (
+        read_json(os.path.join(app_dir, GLOBAL_CONFIG_NAME))["analytics_opt_in"]
+        is False
+    )
+
+
 @pytest.fixture
 def empty_step():
     """Pytest fixture that returns an empty (no input, no output) step."""
