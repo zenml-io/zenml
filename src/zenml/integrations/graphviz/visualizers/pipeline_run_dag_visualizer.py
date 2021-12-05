@@ -26,7 +26,7 @@ from zenml.visualizers.base_pipeline_run_visualizer import (
 
 logger = get_logger(__name__)
 
-# TODO [MEDIUM]: This integration is working but not really doing much. We
+# TODO [ENG-220]: This integration is working but not really doing much. We
 #  should use graphviz to show the pipeline perhaps (not the run).
 
 
