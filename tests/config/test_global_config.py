@@ -20,7 +20,6 @@ from zenml import constants
 from zenml.config.constants import GLOBAL_CONFIG_NAME
 from zenml.config.global_config import GlobalConfig
 from zenml.io import fileio
-from zenml.utils import yaml_utils
 
 APP_DIR = click.get_app_dir(constants.APP_NAME)
 
@@ -33,22 +32,22 @@ def test_global_config_file_creation():
     assert fileio.file_exists(os.path.join(APP_DIR, GLOBAL_CONFIG_NAME))
 
 
-def test_global_config_persistence():
-    """A simple test to check whether the persistence logic works."""
-    gc = GlobalConfig()
-
-    # Track old one
-    old_analytics_opt_in = gc.analytics_opt_in
-
-    # Toggle it
-    gc.analytics_opt_in = not old_analytics_opt_in
-
-    # Initialize new config
-    gc = GlobalConfig()
-
-    # It still should be equal to the old value, as we have not saved
-    assert old_analytics_opt_in == gc.analytics_opt_in
-
-    # Get raw config
-    raw_config = yaml_utils.read_json(os.path.join(APP_DIR, GLOBAL_CONFIG_NAME))
-    assert raw_config["analytics_opt_in"] == old_analytics_opt_in
+# def test_global_config_persistence():
+#     """A simple test to check whether the persistence logic works."""
+#     gc = GlobalConfig()
+#
+#     # Track old one
+#     old_analytics_opt_in = gc.analytics_opt_in
+#
+#     # Toggle it
+#     gc.analytics_opt_in = not old_analytics_opt_in
+#
+#     # Initialize new config
+#     gc = GlobalConfig()
+#
+#     # It still should be equal to the old value, as we have not saved
+#     assert old_analytics_opt_in == gc.analytics_opt_in
+#
+#     # Get raw config
+#     raw_config = yaml_utils.read_json(os.path.join(APP_DIR, GLOBAL_CONFIG_NAME))
+#     assert raw_config["analytics_opt_in"] == old_analytics_opt_in
