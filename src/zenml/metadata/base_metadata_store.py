@@ -121,7 +121,7 @@ class BaseMetadataStore(BaseComponent):
             if not k.startswith(INTERNAL_EXECUTION_PARAMETER_PREFIX)
         }
 
-        # TODO [MEDIUM]: This is a lot of querying to the metadata store. We
+        # TODO [ENG-222]: This is a lot of querying to the metadata store. We
         #  should refactor and make it nicer. Probably it makes more sense
         #  to first get `executions_ids_for_current_run` and then filter on
         #  `event.execution_id in execution_ids_for_current_run`.

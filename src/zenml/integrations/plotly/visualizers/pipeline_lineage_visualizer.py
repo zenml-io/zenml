@@ -25,7 +25,7 @@ from zenml.visualizers.base_pipeline_visualizer import BasePipelineVisualizer
 
 logger = get_logger(__name__)
 
-# TODO [MEDIUM]: This integration is working but not really doing much. We
+# TODO [ENG-221]: This integration is working but not really doing much. We
 #  should use plotly in more useful ways.
 
 
