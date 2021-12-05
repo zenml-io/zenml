@@ -297,10 +297,10 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
             className="p-5",
         )
 
-        @app.callback(
+        @app.callback(  # type: ignore[misc]
             Output("markdown-selected-node-data", "children"),
             Input("cytoscape", "selectedNodeData"),
-        )  # type: ignore[misc] # noqa
+        )
         def display_data(data_list: List[Dict[str, Any]]) -> str:
             """Callback for the text area below the graph"""
             if data_list is None:
@@ -330,10 +330,10 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
                         text += f"**{k}**: {v}" + "\n\n"
             return text
 
-        @app.callback(
+        @app.callback(  # type: ignore[misc]
             [Output("cytoscape", "zoom"), Output("cytoscape", "elements")],
             [Input("bt-reset", "n_clicks")],
-        )  # type: ignore[misc] # noqa
+        )
         def reset_layout(
             n_clicks: int,
         ) -> List[Union[int, List[Dict[str, Collection[str]]]]]:
