@@ -30,7 +30,6 @@ from typing import (
 
 from kfp import compiler, dsl, gcp
 from kubernetes import client as k8s_client
-from tfx import version
 from tfx.dsl.compiler import compiler as tfx_compiler
 from tfx.dsl.components.base import base_component as tfx_base_component
 from tfx.orchestration import data_types
@@ -64,6 +63,7 @@ _KUBEFLOW_GCP_SECRET_NAME = "user-gcp-sa"
 # Default TFX container image to use in KubeflowDagRunner.
 # DEFAULT_KUBEFLOW_TFX_IMAGE = "tensorflow/tfx:%s" % (version.__version__,)
 DEFAULT_KUBEFLOW_ZENML_IMAGE = "gcr.io/zenml-core/kubeflow-test:latest"
+
 
 def _mount_config_map_op(config_map_name: str) -> OpFunc:
     """Mounts all key-value pairs found in the named Kubernetes ConfigMap.
@@ -338,8 +338,11 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
             step_module = component.component_type.split(".")[:-1]
             if step_module[0] == "__main__":
                 from zenml.utils import source_utils
+
                 main_module_file = sys.modules["__main__"].__file__
-                step_module = source_utils.get_module_source_from_file_path(main_module_file)
+                step_module = source_utils.get_module_source_from_file_path(
+                    main_module_file
+                )
             else:
                 step_module = ".".join(step_module)
 

@@ -26,7 +26,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 import gcsfs
 
 from zenml.io.fileio import convert_to_str
-from zenml.io.filesystem import Filesystem, NotFoundError, PathType
+from zenml.io.filesystem import Filesystem, PathType
 
 
 class ZenGCS(Filesystem):
@@ -170,6 +170,8 @@ class ZenGCS(Filesystem):
         try:
             ZenGCS.fs.delete(path=path, recursive=True)
         except FileNotFoundError as e:
+            from tfx.dsl.io.fileio import NotFoundError
+
             raise NotFoundError() from e
 
     @staticmethod

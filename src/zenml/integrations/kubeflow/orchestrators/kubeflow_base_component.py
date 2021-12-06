@@ -112,7 +112,7 @@ class BaseComponent:
             "--step_module",
             step_module,
             "--step_function_name",
-            step_function_name
+            step_function_name,
         ]
 
         for param in runtime_parameters:
