@@ -27,17 +27,14 @@ from zenml.utils.analytics_utils import INITIALIZE_REPO, track
 
 @cli.command("init", help="Initialize zenml on a given path.")
 @click.option("--repo_path", type=click.Path(exists=True))
-@click.option("--analytics_opt_in", "-a", type=click.BOOL)
 @track(event=INITIALIZE_REPO)
 def init(
     repo_path: Optional[str],
-    analytics_opt_in: bool = True,
 ) -> None:
     """Initialize ZenML on given path.
 
     Args:
       repo_path: Path to the repository.
-      analytics_opt_in: (Default value = True)
 
     Raises:
         InvalidGitRepositoryError: If repo is not a git repo.
@@ -55,10 +52,7 @@ def init(
     declare(f"Initializing at {repo_path}")
 
     try:
-        Repository.init_repo(
-            repo_path=repo_path,
-            analytics_opt_in=analytics_opt_in,
-        )
+        Repository.init_repo(repo_path=repo_path)
         declare(f"ZenML repo initialized at {repo_path}")
     except git.InvalidGitRepositoryError:  # type: ignore[attr-defined]
         error(
