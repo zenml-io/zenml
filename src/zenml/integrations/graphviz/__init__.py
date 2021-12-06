@@ -11,16 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from zenml.integrations.constants import GRAPHVIZ
+from zenml.integrations.integration import Integration
 
-AIRFLOW = "airflow"
-BEAM = "beam"
-GCP = "gcp"
-PYTORCH = "pytorch"
-PYTORCH_L = "pytorch_lightning"
-SKLEARN = "sklearn"
-TENSORFLOW = "tensorflow"
-PLOTLY = "plotly"
-FACETS = "facets"
-KUBEFLOW = "kubeflow"
-GRAPHVIZ = "graphviz"
-DASH = "dash"
+
+class GraphvizIntegration(Integration):
+    """Definition of Plotly integration for ZenML."""
+
+    NAME = GRAPHVIZ
+    REQUIREMENTS = ["graphviz>=0.17"]
+
+
+GraphvizIntegration.check_installation()

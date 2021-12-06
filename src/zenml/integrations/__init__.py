@@ -18,13 +18,53 @@ like the ``facets`` library, distributed processing tools like Apache Beam as
 well as deep learning libraries like PyTorch.
 """
 
-from zenml.integrations.airflow import AirflowIntegration
-from zenml.integrations.beam import BeamIntegration
-from zenml.integrations.facets import FacetsIntegration
-from zenml.integrations.gcp import GcpIntegration
-from zenml.integrations.kubeflow import KubeflowIntegration
-from zenml.integrations.plotly import PlotlyIntegration
-from zenml.integrations.pytorch import PytorchIntegration
-from zenml.integrations.pytorch_lightning import PytorchLightningIntegration
-from zenml.integrations.sklearn import SklearnIntegration
-from zenml.integrations.tensorflow import TensorflowIntegration
+from zenml.integrations import constants
+from zenml.integrations.registry import integration_registry
+from zenml.logger import get_logger
+from zenml.utils.source_utils import LazyLoader
+
+logger = get_logger(__name__)
+
+# Google Cloud Platform
+gcp = LazyLoader("zenml.integrations.gcp")
+integration_registry.register_integration(constants.GCP, gcp)
+
+# Tensorflow
+tensorflow = LazyLoader("zenml.integrations.tensorflow")
+integration_registry.register_integration(constants.TENSORFLOW, tensorflow)
+
+# sklearn
+sklearn = LazyLoader("zenml.integrations.sklearn")
+integration_registry.register_integration(constants.SKLEARN, sklearn)
+
+# Beam
+beam = LazyLoader("zenml.integrations.beam")
+integration_registry.register_integration(constants.BEAM, beam)
+
+# Pytorch
+pytorch = LazyLoader("zenml.integrations.pytorch")
+integration_registry.register_integration(constants.PYTORCH, pytorch)
+
+# Pytorch Lightning
+pytorch_l = LazyLoader("zenml.integrations.pytorch_lightning")
+integration_registry.register_integration(constants.PYTORCH_L, pytorch_l)
+
+# Airflow
+airflow = LazyLoader("zenml.integrations.airflow")
+integration_registry.register_integration(constants.AIRFLOW, airflow)
+
+# Facets
+facets = LazyLoader("zenml.integrations.facets")
+integration_registry.register_integration(constants.FACETS, facets)
+
+# Plotly
+plotly = LazyLoader("zenml.integrations.plotly")
+integration_registry.register_integration(constants.PLOTLY, plotly)
+
+# Graphiz
+graphviz = LazyLoader("zenml.integrations.graphviz")
+integration_registry.register_integration(constants.GRAPHVIZ, graphviz)
+
+# Dash
+dash = LazyLoader("zenml.integrations.dash")
+integration_registry.register_integration(constants.DASH, dash)

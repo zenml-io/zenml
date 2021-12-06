@@ -77,6 +77,11 @@ class ArtifactView:
         return self._type
 
     @property
+    def data_type(self) -> str:
+        """Returns the data type of the artifact."""
+        return self._data_type
+
+    @property
     def uri(self) -> str:
         """Returns the URI where the artifact data is stored."""
         return self._uri

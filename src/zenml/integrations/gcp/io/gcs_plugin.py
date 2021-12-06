@@ -13,10 +13,8 @@
 #  permissions and limitations under the License.
 
 """ Plugin which is created to add Google Cloud Store support to ZenML
-
 It inherits from the base Filesystem created by TFX and overwrites the
 corresponding functions thanks to gcsfs.
-
 Finally, the plugin is registered in the filesystem registry.
 """
 
@@ -33,18 +31,17 @@ class ZenGCS(Filesystem):
     """Filesystem that delegates to Google Cloud Store using gcsfs."""
 
     SUPPORTED_SCHEMES = ["gs://"]
-
-    fs = None
+    fs: gcsfs.GCSFileSystem = None
 
     @classmethod
-    def _ensure_filesystem_set(cls):
+    def _ensure_filesystem_set(cls) -> None:
+        """Ensures that the filesystem is set."""
         if ZenGCS.fs is None:
             ZenGCS.fs = gcsfs.GCSFileSystem()
 
     @staticmethod
     def open(path: PathType, mode: str = "r") -> Any:
         """Open a file at the given path.
-
         Args:
             path: Path of the file to open.
             mode: Mode in which to open the file. Currently only
@@ -56,7 +53,6 @@ class ZenGCS(Filesystem):
     @staticmethod
     def copy(src: PathType, dst: PathType, overwrite: bool = False) -> None:
         """Copy a file.
-
         Args:
             src: The path to copy from.
             dst: The path to copy to.
@@ -88,18 +84,14 @@ class ZenGCS(Filesystem):
     @staticmethod
     def glob(pattern: PathType) -> List[PathType]:
         """Return all paths that match the given glob pattern.
-
         The glob pattern may include:
-
         - '*' to match any number of characters
         - '?' to match a single character
         - '[...]' to match one of the characters inside the brackets
         - '**' as the full name of a path component to match to search
           in subdirectories of any depth (e.g. '/some_dir/**/some_file)
-
         Args:
             pattern: The glob pattern to match, see details above.
-
         Returns:
             A list of paths that match the given glob pattern.
         """
@@ -140,7 +132,6 @@ class ZenGCS(Filesystem):
     @staticmethod
     def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
         """Rename source file to destination file.
-
         Args:
             src: The path of the file to rename.
             dst: The path to rename the source file to.
@@ -187,7 +178,6 @@ class ZenGCS(Filesystem):
         onerror: Optional[Callable[..., None]] = None,
     ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
         """Return an iterator that walks the contents of the given directory.
-
         Args:
             top: Path of directory to walk.
             topdown: Unused argument to conform to interface.
