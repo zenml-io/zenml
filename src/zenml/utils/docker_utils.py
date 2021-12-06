@@ -1,6 +1,6 @@
 import os
 import tempfile
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import pkg_resources
 
@@ -58,13 +58,13 @@ def create_dockerfile(
     return output_path
 
 
-def get_current_environment_requirements() -> List[str]:
-    """Returns a list of package requirements for the environment that
+def get_current_environment_requirements() -> Dict[str, str]:
+    """Returns a dict of package requirements for the environment that
     the current python process is running in."""
-    return [
-        f"{distribution.key}=={distribution.version}"
+    return {
+        distribution.key: distribution.version
         for distribution in pkg_resources.working_set
-    ]
+    }
 
 
 def build_docker_image(
@@ -90,7 +90,12 @@ def build_docker_image(
             installed in the docker image.
     """
     if not requirements and use_local_requirements:
-        requirements = get_current_environment_requirements()
+        local_requirements = get_current_environment_requirements()
+        requirements = [
+            f"{package}=={version}"
+            for package, version in local_requirements.items()
+            if package != "zenml"  # exclude ZenML
+        ]
         logger.info(
             "Using requirements from local environment to build "
             "docker image: %s",
