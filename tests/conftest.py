@@ -389,7 +389,7 @@ def pytest_sessionstart(session):
     """
     os.environ[ENV_ZENML_DEBUG] = "true"
     try:
-        Repository.init_repo()
+        Repository.init_repo(analytics_opt_in=False)
     except AssertionError:
         # already initialized
         logging.info("Repo already initialized for testing.")
