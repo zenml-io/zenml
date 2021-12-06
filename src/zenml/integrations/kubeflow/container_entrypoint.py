@@ -50,9 +50,11 @@ from tfx.orchestration.portable import (
 )
 from tfx.proto.orchestration import executable_spec_pb2, pipeline_pb2
 from tfx.types import artifact, channel, standard_artifacts
-from tfx.utils import telemetry_utils
 
+from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.integrations.kubeflow.orchestrators import kubeflow_metadata_adapter
+from zenml.integrations.registry import integration_registry
+from zenml.steps.utils import generate_component_class
 
 _KFP_POD_NAME_ENV_KEY = "KFP_POD_NAME"
 _KFP_POD_NAME_PROPERTY_KEY = "kfp_pod_name"
@@ -460,6 +462,57 @@ def _resolve_runtime_parameters(
     )
 
 
+def _create_executor_class(
+    step_source_module_name: str,
+    step_function_name: str,
+    executor_class_target_module_name: str,
+) -> None:
+    """Creates an executor class for a given step and adds it to the target
+    module.
+
+    Args:
+        step_source_module_name: Name of the module in which the step function
+            is defined.
+        step_function_name: Name of the step function.
+        executor_class_target_module_name: Name of the module to which the
+            executor class should be added.
+    """
+    step_module = importlib.import_module(step_source_module_name)
+    step_class = getattr(step_module, step_function_name)
+    step_instance = step_class()
+
+    # TODO [HIGH]: This needs to be refactored when our standard interface
+    #  implementation is finished
+    input_spec = {key: BaseArtifact for key in step_instance.INPUT_SIGNATURE}
+    output_spec = {key: BaseArtifact for key in step_instance.OUTPUT_SIGNATURE}
+
+    execution_parameters = {
+        **step_instance.PARAM_SPEC,
+        **step_instance._internal_execution_parameters,
+    }
+
+    materializers = step_instance.get_materializers(ensure_complete=True)
+
+    generate_component_class(
+        step_name=step_instance.step_name,
+        step_module=executor_class_target_module_name,
+        input_spec=input_spec,
+        output_spec=output_spec,
+        execution_parameter_names=set(execution_parameters),
+        step_function=step_instance.process,
+        materializers=materializers,
+    )
+
+    # if step_source_module_name != executor_class_target_module_name:
+    #     executor_class_name = f"{step_instance.step_name}_Executor"
+    #     target_module = sys.modules[executor_class_target_module_name]
+    #     setattr(
+    #         target_module,
+    #         executor_class_name,
+    #         getattr(step_module, executor_class_name),
+    #     )
+
+
 def main(argv):
     # Log to the container's stdout so Kubeflow Pipelines UI can display logs to
     # the user.
@@ -497,8 +550,6 @@ def main(argv):
 
     deployment_config = runner_utils.extract_local_deployment_config(tfx_ir)
 
-    import json
-
     kubeflow_metadata_config = json.loads(args.kubeflow_metadata_config)
     metadata_connection_config = _get_grpc_metadata_connection_config(
         kubeflow_metadata_config
@@ -516,79 +567,43 @@ def main(argv):
     # Attach necessary labels to distinguish different runner and DSL.
     # TODO(zhitaoli): Pass this from KFP runner side when the same container
     # entrypoint can be used by a different runner.
-    with telemetry_utils.scoped_labels(
-        {
-            telemetry_utils.LABEL_TFX_RUNNER: "kfp",
-        }
-    ):
-        custom_executor_operators = {
-            executable_spec_pb2.ContainerExecutableSpec: kubernetes_executor_operator.KubernetesExecutorOperator
-        }
 
-        executor_spec = runner_utils.extract_executor_spec(
-            deployment_config, node_id
-        )
-        custom_driver_spec = runner_utils.extract_custom_driver_spec(
-            deployment_config, node_id
-        )
+    custom_executor_operators = {
+        executable_spec_pb2.ContainerExecutableSpec: kubernetes_executor_operator.KubernetesExecutorOperator
+    }
 
-        ###
-        from zenml.artifacts.base_artifact import BaseArtifact
-        from zenml.integrations.gcp import GcpIntegration
-        from zenml.steps.utils import generate_component_class
+    executor_spec = runner_utils.extract_executor_spec(
+        deployment_config, node_id
+    )
+    custom_driver_spec = runner_utils.extract_custom_driver_spec(
+        deployment_config, node_id
+    )
 
-        GcpIntegration.activate()
+    # make sure all integrations are activated so all materializers etc. are
+    # available
+    integration_registry.activate_integrations()
 
-        step_module = importlib.import_module(args.step_module)
-        step_class = getattr(step_module, args.step_function_name)
-        step_instance = step_class()
+    executor_module_parts = executor_spec.class_path.split(".")[:-1]
+    executor_class_target_module_name = ".".join(executor_module_parts)
+    _create_executor_class(
+        step_source_module_name=args.step_module,
+        step_function_name=args.step_function_name,
+        executor_class_target_module_name=executor_class_target_module_name,
+    )
 
-        input_spec = {
-            key: BaseArtifact for key in step_instance.INPUT_SIGNATURE
-        }
-        output_spec = {
-            key: BaseArtifact for key in step_instance.OUTPUT_SIGNATURE
-        }
-
-        execution_parameters = {
-            **step_instance.PARAM_SPEC,
-            **step_instance._internal_execution_parameters,
-        }
-
-        materializers = step_instance.get_materializers(ensure_complete=True)
-
-        generate_component_class(
-            step_name=step_instance.step_name,
-            step_module=step_instance.__module__,
-            input_spec=input_spec,
-            output_spec=output_spec,
-            execution_parameter_names=set(execution_parameters),
-            step_function=step_instance.process,
-            materializers=materializers,
-        )
-
-        executor_class_name = f"{step_instance.step_name}_Executor"
-        main_module = sys.modules["__main__"]
-        setattr(
-            main_module,
-            executor_class_name,
-            getattr(step_module, executor_class_name),
-        )
-
-        ###
-        pipeline_node = _get_pipeline_node(tfx_ir, node_id)
-        component_launcher = launcher.Launcher(
-            pipeline_node=pipeline_node,
-            mlmd_connection=metadata_connection,
-            pipeline_info=tfx_ir.pipeline_info,
-            pipeline_runtime_spec=tfx_ir.runtime_spec,
-            executor_spec=executor_spec,
-            custom_driver_spec=custom_driver_spec,
-            custom_executor_operators=custom_executor_operators,
-        )
-        logging.info("Component %s is running.", node_id)
-        execution_info = component_launcher.launch()
-        logging.info("Component %s is finished.", node_id)
+    pipeline_node = _get_pipeline_node(tfx_ir, node_id)
+    component_launcher = launcher.Launcher(
+        pipeline_node=pipeline_node,
+        mlmd_connection=metadata_connection,
+        pipeline_info=tfx_ir.pipeline_info,
+        pipeline_runtime_spec=tfx_ir.runtime_spec,
+        executor_spec=executor_spec,
+        custom_driver_spec=custom_driver_spec,
+        custom_executor_operators=custom_executor_operators,
+    )
+    logging.info("Component %s is running.", node_id)
+    execution_info = component_launcher.launch()
+    logging.info("Component %s is finished.", node_id)
 
     # Dump the UI metadata.
     _dump_ui_metadata(pipeline_node, execution_info, args.metadata_ui_path)
