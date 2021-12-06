@@ -410,10 +410,12 @@ def check_config():
     from zenml.utils.yaml_utils import read_json
 
     app_dir = click.get_app_dir(constants.APP_NAME)
-    assert (
-        read_json(os.path.join(app_dir, GLOBAL_CONFIG_NAME))["analytics_opt_in"]
-        is False
-    )
+    logging.warning(app_dir)
+    logging.warning(os.listdir(app_dir))
+    raw_config = read_json(os.path.join(app_dir, GLOBAL_CONFIG_NAME))
+    logging.warning(raw_config)
+
+    assert raw_config["analytics_opt_in"] is False
 
 
 @pytest.fixture
