@@ -4,7 +4,7 @@ description: Train some models.
 
 If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low_level_guide/chapter_3.py).
 
-# Train and evaluate the model.
+# Train and evaluate the model
 
 Finally we can train and evaluate our model.
 

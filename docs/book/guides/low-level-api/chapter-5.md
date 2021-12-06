@@ -4,7 +4,7 @@ description: Materialize artifacts as you want.
 
 If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low_level_guide/chapter_5.py).
 
-# Materialize artifacts the way you want to consume them.
+# Materialize artifacts the way you want to consume them
 
 At this point, the precise way that data passes between the steps has been a bit of a mystery to us. There is, of course, a mechanism to serialize and deserialize stuff flowing between steps. We can now take control of this mechanism if we require further control.
 

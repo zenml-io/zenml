@@ -4,7 +4,7 @@ description: Add some normalization
 
 If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low_level_guide/chapter_2.py).
 
-# Normalize the data.
+# Normalize the data
 
 Now before writing any trainers we can actually normalize our data to make sure we get better results. To do this let's add another step and make the pipeline a bit more complex.
 
