@@ -82,7 +82,12 @@ class KubeflowOrchestrator(BaseOrchestrator):
         **kwargs: Any,
     ) -> None:
         """Prepares the pipeline to be run on Kubeflow"""
-        config = KubeflowDagRunnerConfig(image=self.full_docker_image_name)
+        from zenml.utils.docker_utils import get_image_digest
+
+        image_name = self.full_docker_image_name
+        image_name = get_image_digest(image_name) or image_name
+
+        config = KubeflowDagRunnerConfig(image=image_name)
         runner = KubeflowDagRunner(config=config)
 
         # Establish the connections between the components

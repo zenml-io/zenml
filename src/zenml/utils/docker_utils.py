@@ -139,3 +139,27 @@ def push_docker_image(image_name: str) -> None:
     docker_client = docker.from_env()
     docker_client.images.push(image_name)
     logger.info("Finished pushing docker image.")
+
+
+def get_image_digest(image_name: str) -> Optional[str]:
+    """Gets the digest of a docker image.
+
+    Args:
+        image_name: Name of the image to get the digest for.
+
+    Returns:
+        Returns the repo digest for the given image if there exists exactly one.
+        If there are zero or multiple repo digests, returns `None`.
+    """
+    docker_client = docker.from_env()
+    image = docker_client.images.get(image_name)
+    repo_digests = image.attrs["RepoDigests"]
+    if len(repo_digests) == 1:
+        return repo_digests[0]
+    else:
+        logger.debug(
+            "Found zero or more repo digests for docker image '%s': %s",
+            image_name,
+            repo_digests,
+        )
+        return None
