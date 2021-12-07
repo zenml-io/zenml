@@ -28,11 +28,13 @@ class BaseAnalyzerConfig(BaseStepConfig):
 class BaseAnalyzerStep(BaseStep):
     """Base step implementation for any analyzer step implementation on ZenML"""
 
+    STEP_INNER_FUNC_NAME = "entrypoint"
+
     @abstractmethod
     def entrypoint(
         self,
         dataset: DataArtifact,
         config: BaseAnalyzerConfig,
         context: StepContext,
-    ) -> Output(statitics=StatisticsArtifact, schema=SchemaArtifact):
+    ) -> Output(statistics=StatisticsArtifact, schema=SchemaArtifact):
         """Base entrypoint for any analyzer implementation"""

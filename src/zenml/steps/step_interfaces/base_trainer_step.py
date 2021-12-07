@@ -28,6 +28,8 @@ class BaseTrainerStep(BaseStep):
     """Base step implementation for any Trainer step implementation on
     ZenML"""
 
+    STEP_INNER_FUNC_NAME = "entrypoint"
+
     @abstractmethod
     def entrypoint(
         self,
