@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
-import shutil
 from abc import abstractmethod
 from typing import Any, Dict, Optional
 from uuid import UUID, uuid4
@@ -80,9 +79,9 @@ class BaseComponent(BaseSettings):
                 set(self._superfluous_options),
             )
             config_path = self.get_serialization_full_path()
-            if os.path.exists(config_path):
+            if fileio.file_exists(config_path):
                 backup_path = config_path + ".backup"
-                shutil.copyfile(config_path, backup_path)
+                fileio.copy(config_path, backup_path, overwrite=True)
                 logger.warning(
                     "Saving backup configuration to '%s'.", backup_path
                 )

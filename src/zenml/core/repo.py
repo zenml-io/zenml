@@ -18,7 +18,6 @@ from typing import List, Optional
 
 from git import InvalidGitRepositoryError  # type: ignore[attr-defined]
 
-from zenml.config.global_config import GlobalConfig
 from zenml.core.constants import ZENML_DIR_NAME
 from zenml.core.git_wrapper import GitWrapper
 from zenml.core.local_service import LocalService
@@ -70,7 +69,6 @@ class Repository:
     def init_repo(
         repo_path: str = os.getcwd(),
         stack: Optional[BaseStack] = None,
-        analytics_opt_in: bool = True,
     ) -> None:
         """
         Initializes a git repo with zenml.
@@ -78,7 +76,6 @@ class Repository:
         Args:
             repo_path (str): path to root of a git repo
             stack: Initial stack.
-            analytics_opt_in: opt-in flag for analytics code.
 
         Raises:
             InvalidGitRepositoryError: If repository is not a git repository.
@@ -87,12 +84,6 @@ class Repository:
         # First check whether it already exists or not
         if fileio.is_zenml_dir(repo_path):
             raise AssertionError(f"{repo_path} is already initialized!")
-
-        # Edit global config
-        if analytics_opt_in is not None:
-            gc = GlobalConfig()
-            gc.analytics_opt_in = analytics_opt_in
-            gc.update()
 
         try:
             GitWrapper(repo_path)
@@ -145,9 +136,7 @@ class Repository:
                 ),
             )
 
-            # Make local stack active
-            gc = GlobalConfig()
-            gc.make_stack_active_for_repo(repo_path, "local_stack")
+            service.set_active_stack_key("local_stack")
 
     def get_git_wrapper(self) -> GitWrapper:
         """Returns the git wrapper for the repo."""
@@ -165,9 +154,7 @@ class Repository:
         Args:
             stack_key: Key of the stack to set active.
         """
-        gc = GlobalConfig()
-        self.service.get_stack(stack_key)  # check if it exists
-        gc.make_stack_active_for_repo(self.path, stack_key)
+        self.service.set_active_stack_key(stack_key)
 
     def get_active_stack_key(self) -> str:
         """Get the active stack key from global config.
@@ -175,13 +162,7 @@ class Repository:
         Returns:
             Currently active stacks key.
         """
-        gc = GlobalConfig()
-        if self.path not in gc.repo_active_stacks:
-            raise KeyError(
-                f"No active stack set for repo: {self.path}! Available "
-                f"stacks: {[(a, b) for a, b in gc.repo_active_stacks.items()]}."
-            )
-        return gc.repo_active_stacks[self.path]
+        return self.service.get_active_stack_key()
 
     def get_active_stack(self) -> BaseStack:
         """Get the active stack from global config.

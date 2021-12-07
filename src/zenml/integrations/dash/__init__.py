@@ -11,25 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
-from abc import abstractmethod
-from typing import Any
-
-from zenml.logger import get_logger
-from zenml.post_execution.pipeline_run import PipelineRunView
-from zenml.visualizers.base_pipeline_run_visualizer import (
-    BasePipelineRunVisualizer,
-)
-
-logger = get_logger(__name__)
+from zenml.integrations.constants import DASH
+from zenml.integrations.integration import Integration
 
 
-class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
-    """The base implementation of a ZenML Step Visualizer."""
+class DashIntegration(Integration):
+    """Definition of Dash integration for ZenML."""
 
-    @abstractmethod
-    def visualize(
-        self, object: PipelineRunView, *args: Any, **kwargs: Any
-    ) -> Any:
-        """Method to visualize pipelines"""
-        raise NotImplementedError
+    NAME = DASH
+    REQUIREMENTS = [
+        "dash>=2.0.0",
+        "dash-cytoscape>=0.3.0",
+        "dash-bootstrap-components>=1.0.1",
+    ]
+
+
+DashIntegration.check_installation()

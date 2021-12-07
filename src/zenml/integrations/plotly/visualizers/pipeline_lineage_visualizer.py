@@ -15,54 +15,46 @@
 from abc import abstractmethod
 from typing import Any
 
+import pandas as pd
+import plotly.express as px
+from plotly.graph_objs import Figure
+
 from zenml.logger import get_logger
 from zenml.post_execution.pipeline import PipelineView
 from zenml.visualizers.base_pipeline_visualizer import BasePipelineVisualizer
 
-# import pandas as pd
-# import plotly.express as px
-# from plotly.graph_objs import Figure
-
-
 logger = get_logger(__name__)
+
+# TODO [ENG-221]: This integration is working but not really doing much. We
+#  should use plotly in more useful ways.
 
 
 class PipelineLineageVisualizer(BasePipelineVisualizer):
-    """Visualize the lineage of runs in a pipeline."""
+    """Visualize the lineage of runs in a pipeline using plotly."""
 
     @abstractmethod
     def visualize(
         self, object: PipelineView, *args: Any, **kwargs: Any
-    ) -> None:
-        """Creates a pipeline lineage diagram using plotly.
+    ) -> Figure:
+        """Creates a pipeline lineage diagram using plotly."""
+        logger.warning(
+            "This integration is not completed yet. Results might be unexpected."
+        )
 
-        Args:
-            pipeline:
-            *args:
-            **kwargs:
-
-        Returns:
-
-        """
-        raise NotImplementedError
-
-        # WIP:
-        """
-        category_df = {}
+        category_dict = {}
         dimensions = ["run"]
-        for run in pipeline.runs:
-            category_df[run.name] = {"run": run.name}
+        for run in object.runs:
+            category_dict[run.name] = {"run": run.name}
             for step in run.steps:
-                # for artifact_name, artifact in step.outputs.items():
-                category_df[run.name].update(
+                category_dict[run.name].update(
                     {
-                        step.name: step.id,
+                        step.name: str(step.id),
                     }
                 )
                 if step.name not in dimensions:
                     dimensions.append(f"{step.name}")
 
-        category_df = pd.DataFrame.from_dict(category_df, orient="index")
+        category_df = pd.DataFrame.from_dict(category_dict, orient="index")
 
         category_df = category_df.reset_index()
 
@@ -75,4 +67,3 @@ class PipelineLineageVisualizer(BasePipelineVisualizer):
 
         fig.show()
         return fig
-        """

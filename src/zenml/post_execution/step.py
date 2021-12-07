@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from zenml.enums import ExecutionStatus
 from zenml.post_execution.artifact import ArtifactView
@@ -29,6 +29,7 @@ class StepView:
     def __init__(
         self,
         id_: int,
+        parents_step_ids: List[int],
         name: str,
         parameters: Dict[str, Any],
         metadata_store: "BaseMetadataStore",
@@ -40,12 +41,14 @@ class StepView:
 
         Args:
             id_: The execution id of this step.
+            parents_step_ids: The execution ids of the parents of this step.
             name: The name of this step.
             parameters: Parameters that were used to run this step.
             metadata_store: The metadata store which should be used to fetch
                 additional information related to this step.
         """
         self._id = id_
+        self._parents_step_ids = parents_step_ids
         self._name = name
         self._parameters = parameters
         self._metadata_store = metadata_store
@@ -57,6 +60,20 @@ class StepView:
     def id(self) -> int:
         """Returns the step id."""
         return self._id
+
+    @property
+    def parents_step_ids(self) -> List[int]:
+        """Returns a list of ID's of all parents of this step."""
+        return self._parents_step_ids
+
+    @property
+    def parent_steps(self) -> List["StepView"]:
+        """Returns a list of all parent steps of this step."""
+        steps = [
+            self._metadata_store.get_step_by_id(s)
+            for s in self.parents_step_ids
+        ]
+        return steps
 
     @property
     def name(self) -> str:
@@ -85,6 +102,11 @@ class StepView:
     def status(self) -> ExecutionStatus:
         """Returns the current status of the step."""
         return self._metadata_store.get_step_status(self)
+
+    @property
+    def is_cached(self) -> bool:
+        """Returns whether the step is cached or not."""
+        return self.status == ExecutionStatus.CACHED
 
     @property
     def inputs(self) -> Dict[str, ArtifactView]:

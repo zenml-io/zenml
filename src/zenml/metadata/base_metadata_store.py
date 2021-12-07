@@ -121,8 +121,49 @@ class BaseMetadataStore(BaseComponent):
             if not k.startswith(INTERNAL_EXECUTION_PARAMETER_PREFIX)
         }
 
+        # TODO [ENG-222]: This is a lot of querying to the metadata store. We
+        #  should refactor and make it nicer. Probably it makes more sense
+        #  to first get `executions_ids_for_current_run` and then filter on
+        #  `event.execution_id in execution_ids_for_current_run`.
+        # Core logic here is that we get the event of this particular execution
+        # id that gives us the artifacts of this execution. We then go through
+        # all `input` artifacts of this execution and get all events related to
+        # that artifact. This in turn gives us other events for which this
+        # artifact was an `output` artifact. Then we simply need to sort by
+        # time to get the most recent execution (i.e. step) that produced that
+        # particular artifact.
+        events_for_execution = self.store.get_events_by_execution_ids(
+            [execution.id]
+        )
+
+        parents_step_ids = set()
+        for current_event in events_for_execution:
+            if current_event.type == current_event.INPUT:
+                # this means the artifact is an input artifact
+                events_for_input_artifact = [
+                    e
+                    for e in self.store.get_events_by_artifact_ids(
+                        [current_event.artifact_id]
+                    )
+                    # should be output type and should NOT be the same id as
+                    # the execution we are querying and it should be BEFORE
+                    # the time of the current event.
+                    if e.type == e.OUTPUT
+                    and e.execution_id != current_event.execution_id
+                    and e.milliseconds_since_epoch
+                    < current_event.milliseconds_since_epoch
+                ]
+
+                # sort by time
+                events_for_input_artifact.sort(
+                    key=lambda x: x.milliseconds_since_epoch  # type: ignore[no-any-return] # noqa
+                )
+                # take the latest one and add execution to the parents.
+                parents_step_ids.add(events_for_input_artifact[-1].execution_id)
+
         return StepView(
             id_=execution.id,
+            parents_step_ids=list(parents_step_ids),
             name=step_name,
             parameters=step_parameters,
             metadata_store=self,
@@ -240,6 +281,11 @@ class BaseMetadataStore(BaseComponent):
 
         return steps
 
+    def get_step_by_id(self, step_id: int) -> StepView:
+        """Gets a `StepView` by its ID"""
+        execution = self.store.get_executions_by_id([step_id])[0]
+        return self._get_step_view_from_execution(execution)
+
     def get_step_status(self, step: StepView) -> ExecutionStatus:
         """Gets the execution status of a single step."""
         proto = self.store.get_executions_by_id([step._id])[0]  # noqa
@@ -280,6 +326,10 @@ class BaseMetadataStore(BaseComponent):
         inputs: Dict[str, ArtifactView] = {}
         outputs: Dict[str, ArtifactView] = {}
 
+        # sort them according to artifact_id's so that the zip works.
+        events.sort(key=lambda x: x.artifact_id)
+        artifacts.sort(key=lambda x: x.id)
+
         for event_proto, artifact_proto in zip(events, artifacts):
             artifact_type = artifact_type_mapping[artifact_proto.type_id]
             artifact_name = event_proto.path.steps[0].key
@@ -292,6 +342,15 @@ class BaseMetadataStore(BaseComponent):
                 DATATYPE_PROPERTY_KEY
             ].string_value
 
+            parent_step_id = step.id
+            if event_proto.type == event_proto.INPUT:
+                # In the case that this is an input event, we actually need
+                # to resolve it via its parents outputs.
+                for parent in step.parent_steps:
+                    for a in parent.outputs.values():
+                        if artifact_proto.id == a.id:
+                            parent_step_id = parent.id
+
             artifact = ArtifactView(
                 id_=event_proto.artifact_id,
                 type_=artifact_type,
@@ -299,7 +358,7 @@ class BaseMetadataStore(BaseComponent):
                 materializer=materializer,
                 data_type=data_type,
                 metadata_store=self,
-                parent_step_id=step.id,
+                parent_step_id=parent_step_id,
             )
 
             if event_proto.type == event_proto.INPUT:

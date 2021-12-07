@@ -11,22 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
-import os
-
-import click
-
-from zenml import constants
-from zenml.config.constants import GLOBAL_CONFIG_NAME
-from zenml.config.global_config import GlobalConfig
-from zenml.io import fileio
-
-APP_DIR = click.get_app_dir(constants.APP_NAME)
+from zenml.integrations.constants import GRAPHVIZ
+from zenml.integrations.integration import Integration
 
 
-def test_global_config_file_creation():
-    """A simple test to check whether the global config is created."""
-    GlobalConfig()
+class GraphvizIntegration(Integration):
+    """Definition of Plotly integration for ZenML."""
 
-    # Raw config should now exist
-    assert fileio.file_exists(os.path.join(APP_DIR, GLOBAL_CONFIG_NAME))
+    NAME = GRAPHVIZ
+    REQUIREMENTS = ["graphviz>=0.17"]
+
+
+GraphvizIntegration.check_installation()

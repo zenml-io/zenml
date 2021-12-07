@@ -77,7 +77,7 @@ class FacetStatisticsVisualizer(BaseStepVisualizer):
 
         template = os.path.join(
             os.path.abspath(os.path.dirname(__file__)),
-            "../../../visualizers/stats.html",
+            "stats.html",
         )
         html_template = fileio.read_file_contents_as_string(template)
 
