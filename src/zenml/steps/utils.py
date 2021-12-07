@@ -68,6 +68,8 @@ PARAM_STEP_NAME: str = "step_name"
 PARAM_ENABLE_CACHE: str = "enable_cache"
 PARAM_PIPELINE_PARAMETER_NAME: str = "pipeline_parameter_name"
 INTERNAL_EXECUTION_PARAMETER_PREFIX: str = "zenml-"
+INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
+OUTPUT_SPEC = "OUTPUT_SPEC"
 
 
 def do_types_match(type_a: Type[Any], type_b: Type[Any]) -> bool:
