@@ -16,6 +16,7 @@ import hashlib
 import inspect
 import json
 import random
+from abc import abstractmethod
 from typing import (
     Any,
     ClassVar,
@@ -47,6 +48,7 @@ from zenml.steps.utils import (
     PARAM_ENABLE_CACHE,
     PARAM_PIPELINE_PARAMETER_NAME,
     SINGLE_RETURN_OUT_NAME,
+    STEP_INNER_FUNC_NAME,
     _ZenMLSimpleComponent,
     generate_component_class,
 )
@@ -79,7 +81,7 @@ class BaseStepMeta(type):
 
         # Get the signature of the step function
         step_function_signature = inspect.getfullargspec(
-            getattr(cls, cls.STEP_INNER_FUNC_NAME)
+            getattr(cls, STEP_INNER_FUNC_NAME)
         )
 
         if bases:
@@ -143,7 +145,7 @@ class BaseStepMeta(type):
                 cls.CONTEXT_PARAMETER_NAME = arg
             else:
                 # Can't do any check for existing materializers right now
-                # as they might get passed later, so we simply store the
+                # as they might get be defined later, so we simply store the
                 # argument name and type for later use.
                 cls.INPUT_SIGNATURE.update({arg: arg_type})
 
@@ -188,12 +190,8 @@ class BaseStep(metaclass=BaseStepMeta):
     """
 
     # TODO [ENG-156]: Ensure these are ordered
-    INPUT_SIGNATURE: ClassVar[
-        Dict[str, Type[Any]]
-    ] = None  # type: ignore[assignment] # noqa
-    OUTPUT_SIGNATURE: ClassVar[
-        Dict[str, Type[Any]]
-    ] = None  # type: ignore[assignment] # noqa
+    INPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
+    OUTPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
     CONFIG_PARAMETER_NAME: ClassVar[Optional[str]] = None
     CONFIG_CLASS: ClassVar[Optional[Type[BaseStepConfig]]] = None
     CONTEXT_PARAMETER_NAME: ClassVar[Optional[str]] = None
@@ -202,7 +200,6 @@ class BaseStep(metaclass=BaseStepMeta):
     INPUT_SPEC: Dict[str, Type[BaseArtifact]] = {}
     OUTPUT_SPEC: Dict[str, Type[BaseArtifact]] = {}
 
-    STEP_INNER_FUNC_NAME = "process"
     INSTANCE_CONFIGURATION = {}
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -217,6 +214,10 @@ class BaseStep(metaclass=BaseStepMeta):
         self._component: Optional[_ZenMLSimpleComponent] = None
 
         self._verify_arguments(*args, **kwargs)
+
+    @abstractmethod
+    def entrypoint(self, *args: Any, **kwargs: Any) -> Any:
+        """Abstract method for core step logic."""
 
     def get_materializers(
         self, ensure_complete: bool = False
@@ -282,7 +283,8 @@ class BaseStep(metaclass=BaseStepMeta):
                 source_code = inspect.getsource(value)
                 return hashlib.sha256(source_code.encode("utf-8")).hexdigest()
 
-            parameters["step_source"] = _get_hashed_source(self.process)
+            source_fn = getattr(self, STEP_INNER_FUNC_NAME)
+            parameters["step_source"] = _get_hashed_source(source_fn)
 
             for name, materializer in self.get_materializers().items():
                 key = f"{name}_materializer_source"
@@ -527,13 +529,14 @@ class BaseStep(metaclass=BaseStepMeta):
         # make sure we have registered materializers for each output
         materializers = self.get_materializers(ensure_complete=True)
 
+        source_fn = getattr(self, STEP_INNER_FUNC_NAME)
         component_class = generate_component_class(
             step_name=self.step_name,
             step_module=self.__module__,
             input_spec=self.INPUT_SPEC,
             output_spec=self.OUTPUT_SPEC,
             execution_parameter_names=set(execution_parameters),
-            step_function=self.process,
+            step_function=source_fn,
             materializers=materializers,
         )
         self._component = component_class(
@@ -558,10 +561,6 @@ class BaseStep(metaclass=BaseStepMeta):
                 "before creating it via calling the step."
             )
         return self._component
-
-    def process(self, *args: Any, **kwargs: Any) -> Any:
-        """Abstract method for core step logic."""
-        raise NotImplementedError
 
     def with_return_materializers(
         self: T,

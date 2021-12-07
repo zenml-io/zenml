@@ -62,14 +62,14 @@ from zenml.utils import source_utils
 
 logger = get_logger(__name__)
 
-STEP_INNER_FUNC_NAME: str = "process"
+STEP_INNER_FUNC_NAME: str = "entrypoint"
 SINGLE_RETURN_OUT_NAME: str = "output"
 PARAM_STEP_NAME: str = "step_name"
 PARAM_ENABLE_CACHE: str = "enable_cache"
 PARAM_PIPELINE_PARAMETER_NAME: str = "pipeline_parameter_name"
 INTERNAL_EXECUTION_PARAMETER_PREFIX: str = "zenml-"
-INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
-OUTPUT_SPEC = "OUTPUT_SPEC"
+INSTANCE_CONFIGURATION: str = "INSTANCE_CONFIGURATION"
+OUTPUT_SPEC: str = "OUTPUT_SPEC"
 
 
 def do_types_match(type_a: Type[Any], type_b: Type[Any]) -> bool:
@@ -362,7 +362,7 @@ class _FunctionExecutor(BaseExecutor):
             if not k.startswith(INTERNAL_EXECUTION_PARAMETER_PREFIX)
         }
 
-        # Building the args for the process function
+        # Building the args for the entrypoint function
         function_params = {}
 
         # First, we parse the inputs, i.e., params and input artifacts.
