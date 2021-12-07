@@ -305,3 +305,4 @@ from zenml.cli.orchestrator import *  # noqa
 from zenml.cli.pipeline import *  # noqa
 from zenml.cli.stack import *  # noqa
 from zenml.cli.version import *  # noqa
+from zenml.cli.integration import *  # noqa
