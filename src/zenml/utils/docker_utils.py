@@ -14,14 +14,15 @@ logger = get_logger(__name__)
 
 
 def create_dockerfile(
+    base_image: str,
     command: Optional[str] = None,
     requirements: Optional[List[str]] = None,
     output_path: Optional[str] = None,
-    base_image: str = DEFAULT_BASE_IMAGE,
 ) -> str:
     """Creates a dockerfile.
 
     Args:
+        base_image: The image to use as base for the dockerfile.
         command: The default command that gets executed when running a
             container of an image created by this dockerfile.
         requirements: Optional list of pip requirements to install.
@@ -29,7 +30,6 @@ def create_dockerfile(
             If this is not set, a filepath inside the temp directory will be
             used instead. **IMPORTANT**: Whoever uses this function is
             responsible for removing the created dockerfile.
-        base_image: The image to use as base for the dockerfile.
 
     Returns:
         A path to the dockerfile.
@@ -73,6 +73,7 @@ def build_docker_image(
     dockerfile_path: Optional[str] = None,
     requirements: Optional[List[str]] = None,
     use_local_requirements: bool = False,
+    base_image: Optional[str] = None,
 ) -> None:
     """Builds a docker image.
 
@@ -88,6 +89,7 @@ def build_docker_image(
             `dockerfile_path` and `requirements`, then the packages installed
             in the environment of the current python processed will be
             installed in the docker image.
+        base_image: The image to use as base for the docker image.
     """
     if not requirements and use_local_requirements:
         local_requirements = get_current_environment_requirements()
@@ -104,7 +106,10 @@ def build_docker_image(
 
     temporary_dockerfile = not dockerfile_path
     if not dockerfile_path:
-        dockerfile_path = create_dockerfile(requirements=requirements)
+        dockerfile_path = create_dockerfile(
+            requirements=requirements,
+            base_image=base_image or DEFAULT_BASE_IMAGE,
+        )
 
     logger.info(
         "Building docker image '%s', this might take a while...", image_name
@@ -122,3 +127,15 @@ def build_docker_image(
         if temporary_dockerfile:
             logger.debug("Removing temporary dockerfile '%s'", dockerfile_path)
             os.remove(dockerfile_path)
+
+
+def push_docker_image(image_name: str) -> None:
+    """Pushes a docker image to a container registry.
+
+    Args:
+        image_name: The full name (including a tag) of the image to push.
+    """
+    logger.info("Pushing docker image '%s'.", image_name)
+    docker_client = docker.from_env()
+    docker_client.images.push(image_name)
+    logger.info("Finished pushing docker image.")

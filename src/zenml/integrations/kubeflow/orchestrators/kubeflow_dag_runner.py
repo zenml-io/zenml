@@ -60,10 +60,6 @@ OpFunc = Callable[[dsl.ContainerOp], dsl.ContainerOp]
 # a typical Kubeflow installation when the component is GKE.
 _KUBEFLOW_GCP_SECRET_NAME = "user-gcp-sa"
 
-# Default TFX container image to use in KubeflowDagRunner.
-# DEFAULT_KUBEFLOW_TFX_IMAGE = "tensorflow/tfx:%s" % (version.__version__,)
-DEFAULT_KUBEFLOW_ZENML_IMAGE = "gcr.io/zenml-core/kubeflow-test:latest"
-
 
 def _mount_config_map_op(config_map_name: str) -> OpFunc:
     """Mounts all key-value pairs found in the named Kubernetes ConfigMap.
@@ -169,11 +165,9 @@ class KubeflowDagRunnerConfig(pipeline_config.PipelineConfig):
 
     def __init__(
         self,
+        image: str,
         pipeline_operator_funcs: Optional[List[OpFunc]] = None,
-        tfx_image: Optional[str] = None,
         kubeflow_metadata_config: Optional[Dict] = None,
-        # TODO(b/143883035): Figure out the best practice to put the
-        # SUPPORTED_LAUNCHER_CLASSES
         supported_launcher_classes: Optional[
             List[Type[base_component_launcher.BaseComponentLauncher]]
         ] = None,
@@ -195,9 +189,9 @@ class KubeflowDagRunnerConfig(pipeline_config.PipelineConfig):
             pipeline_operator_funcs=[mount_secret_op, mount_volume_op]
           )
         Args:
+          image: The docker image to use in the pipeline.
           pipeline_operator_funcs: A list of ContainerOp modifying functions that
             will be applied to every container step in the pipeline.
-          tfx_image: The TFX container image to use in the pipeline.
           kubeflow_metadata_config: Runtime configuration to use to connect to
             Kubeflow metadata.
           supported_launcher_classes: A list of component launcher classes that are
@@ -216,7 +210,7 @@ class KubeflowDagRunnerConfig(pipeline_config.PipelineConfig):
         self.pipeline_operator_funcs = (
             pipeline_operator_funcs or get_default_pipeline_operator_funcs()
         )
-        self.tfx_image = tfx_image or DEFAULT_KUBEFLOW_ZENML_IMAGE
+        self.image = image
         self.kubeflow_metadata_config = (
             kubeflow_metadata_config or get_default_kubeflow_metadata_config()
         )
@@ -230,13 +224,15 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
 
     def __init__(
         self,
+        config: KubeflowDagRunnerConfig,
         output_dir: Optional[str] = None,
         output_filename: Optional[str] = None,
-        config: Optional[KubeflowDagRunnerConfig] = None,
         pod_labels_to_attach: Optional[Dict[str, str]] = None,
     ):
         """Initializes KubeflowDagRunner for compiling a Kubeflow Pipeline.
         Args:
+          config: A KubeflowDagRunnerConfig object to specify runtime
+            configuration when running the pipeline under Kubeflow.
           output_dir: An optional output directory into which to output the pipeline
             definition files. Defaults to the current working directory.
           output_filename: An optional output file name for the pipeline definition
@@ -244,8 +240,6 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
             Currently supports .tar.gz, .tgz, .zip, .yaml, .yml formats. See
             https://github.com/kubeflow/pipelines/blob/181de66cf9fa87bcd0fe9291926790c400140783/sdk/python/kfp/compiler/compiler.py#L851
               for format restriction.
-          config: An optional KubeflowDagRunnerConfig object to specify runtime
-            configuration when running the pipeline under Kubeflow.
           pod_labels_to_attach: Optional set of pod labels to attach to GKE pod
             spinned up for this pipeline. Default to the 3 labels:
             1. add-pod-env: true,
@@ -253,9 +247,7 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
             3. pipeline unique ID,
             where 2 and 3 are instrumentation of usage tracking.
         """
-        if config and not isinstance(config, KubeflowDagRunnerConfig):
-            raise TypeError("config must be type of KubeflowDagRunnerConfig.")
-        super().__init__(config or KubeflowDagRunnerConfig())
+        super().__init__(config)
         self._config = cast(KubeflowDagRunnerConfig, self._config)
         self._output_dir = output_dir or os.getcwd()
         self._output_filename = output_filename
@@ -341,7 +333,7 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
 
                 main_module_file = sys.modules["__main__"].__file__
                 step_module = source_utils.get_module_source_from_file_path(
-                    main_module_file
+                    os.path.abspath(main_module_file)
                 )
             else:
                 step_module = ".".join(step_module)
@@ -353,7 +345,7 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
                 depends_on=depends_on,
                 pipeline=pipeline,
                 pipeline_root=pipeline_root,
-                tfx_image=self._config.tfx_image,
+                tfx_image=self._config.image,
                 kubeflow_metadata_config=self._config.kubeflow_metadata_config,
                 pod_labels_to_attach=self._pod_labels_to_attach,
                 tfx_ir=tfx_node_ir,
@@ -444,11 +436,14 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
         file_name = self._output_filename or get_default_output_filename(
             pipeline.pipeline_info.pipeline_name
         )
+        output_path = os.path.join(self._output_dir, file_name)
         # Create workflow spec and write out to package.
         self._compiler._create_and_write_workflow(
             # pylint: disable=protected-access
             pipeline_func=_construct_pipeline,
             pipeline_name=pipeline.pipeline_info.pipeline_name,
             params_list=self._params,
-            package_path=os.path.join(self._output_dir, file_name),
+            package_path=output_path,
         )
+
+        return output_path
