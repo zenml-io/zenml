@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from pydantic import BaseSettings
 
@@ -6,6 +6,9 @@ from zenml.enums import StackTypes
 
 if TYPE_CHECKING:
     from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+    from zenml.container_registry.base_container_registry import (
+        BaseContainerRegistry,
+    )
     from zenml.metadata.base_metadata_store import BaseMetadataStore
     from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 
@@ -37,6 +40,7 @@ class BaseStack(BaseSettings):
     metadata_store_name: str
     artifact_store_name: str
     orchestrator_name: str
+    container_registry_name: Optional[str] = None
 
     @property
     def orchestrator(self) -> "BaseOrchestrator":
@@ -58,6 +62,18 @@ class BaseStack(BaseSettings):
         from zenml.core.repo import Repository
 
         return Repository().service.get_metadata_store(self.metadata_store_name)
+
+    @property
+    def container_registry(self) -> Optional["BaseContainerRegistry"]:
+        """Returns the optional container registry of this stack."""
+        if self.container_registry_name:
+            from zenml.core.repo import Repository
+
+            return Repository().service.get_container_registry(
+                self.container_registry_name
+            )
+        else:
+            return None
 
     class Config:
         """Configuration of settings."""

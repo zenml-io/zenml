@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
 
+from typing import Optional
+
 import click
 
 from zenml.cli import utils as cli_utils
@@ -32,11 +34,13 @@ def stack() -> None:
 @click.option("-m", "--metadata-store", type=str, required=True)
 @click.option("-a", "--artifact-store", type=str, required=True)
 @click.option("-o", "--orchestrator", type=str, required=True)
+@click.option("-c", "--container_registry", type=str, required=False)
 def register_stack(
     stack_name: str,
     metadata_store: str,
     artifact_store: str,
     orchestrator: str,
+    container_registry: Optional[str] = None,
 ) -> None:
     """Register a stack."""
 
@@ -45,6 +49,7 @@ def register_stack(
         artifact_store_name=artifact_store,
         orchestrator_name=orchestrator,
         metadata_store_name=metadata_store,
+        container_registry_name=container_registry,
     )
     service.register_stack(stack_name, stack)
     cli_utils.declare(f"Stack `{stack_name}` successfully registered!")

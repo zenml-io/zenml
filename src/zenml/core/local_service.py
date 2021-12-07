@@ -10,6 +10,7 @@ from zenml.stacks.base_stack import BaseStack
 from zenml.utils import source_utils
 from zenml.utils.analytics_utils import (
     REGISTERED_ARTIFACT_STORE,
+    REGISTERED_CONTAINER_REGISTRY,
     REGISTERED_METADATA_STORE,
     REGISTERED_ORCHESTRATOR,
     REGISTERED_STACK,
@@ -18,6 +19,9 @@ from zenml.utils.analytics_utils import (
 
 if TYPE_CHECKING:
     from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+    from zenml.container_registry.base_container_registry import (
+        BaseContainerRegistry,
+    )
     from zenml.metadata.base_metadata_store import BaseMetadataStore
     from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 
@@ -34,6 +38,7 @@ class LocalService(BaseComponent):
     metadata_store_map: Dict[str, UUIDSourceTuple] = {}
     artifact_store_map: Dict[str, UUIDSourceTuple] = {}
     orchestrator_map: Dict[str, UUIDSourceTuple] = {}
+    container_registry_map: Dict[str, UUIDSourceTuple] = {}
 
     _LOCAL_SERVICE_FILE_NAME = "zenservice.json"
 
@@ -71,6 +76,18 @@ class LocalService(BaseComponent):
         return mapping_utils.get_components_from_store(  # type: ignore[return-value] # noqa
             BaseOrchestrator._ORCHESTRATOR_STORE_DIR_NAME,
             self.orchestrator_map,
+        )
+
+    @property
+    def container_registries(self) -> Dict[str, "BaseContainerRegistry"]:
+        """Returns all registered container registries."""
+        from zenml.container_registry.base_container_registry import (
+            BaseContainerRegistry,
+        )
+
+        return mapping_utils.get_components_from_store(  # type: ignore[return-value] # noqa
+            BaseContainerRegistry._CONTAINER_REGISTRY_DIR_NAME,
+            self.container_registry_map,
         )
 
     def get_active_stack_key(self) -> str:
@@ -125,6 +142,8 @@ class LocalService(BaseComponent):
         self.get_orchestrator(stack.orchestrator_name)
         self.get_artifact_store(stack.artifact_store_name)
         self.get_metadata_store(stack.metadata_store_name)
+        if stack.container_registry_name:
+            self.get_container_registry(stack.container_registry_name)
 
         if key in self.stacks:
             raise AlreadyExistsException(
@@ -295,7 +314,7 @@ class LocalService(BaseComponent):
         """Register an orchestrator.
 
         Args:
-            orchestrator: Metadata store to be registered.
+            orchestrator: Orchestrator to be registered.
             key: Unique key for the orchestrator.
         """
         logger.debug(
@@ -327,6 +346,64 @@ class LocalService(BaseComponent):
         self.update()
         logger.debug(f"Deleted orchestrator with key: {key}.")
 
+    def get_container_registry(self, key: str) -> "BaseContainerRegistry":
+        """Return a single container registry based on key.
+
+        Args:
+            key: Unique key of a container registry.
+
+        Returns:
+            Container registry specified by key.
+        """
+        logger.debug(f"Fetching container registry with key {key}")
+        if key not in self.container_registry_map:
+            raise DoesNotExistException(
+                f"Container registry of key `{key}` does not exist. "
+                f"Available keys: {list(self.container_registry_map.keys())}"
+            )
+        return mapping_utils.get_component_from_key(  # type: ignore[return-value] # noqa
+            key, self.container_registry_map
+        )
+
+    @track(event=REGISTERED_CONTAINER_REGISTRY)
+    def register_container_registry(
+        self, key: str, container_registry: "BaseContainerRegistry"
+    ) -> None:
+        """Register a container registry.
+
+        Args:
+            container_registry: Container registry to be registered.
+            key: Unique key for the container registry.
+        """
+        logger.debug(
+            f"Registering container registry with key {key}, details: "
+            f"{container_registry.dict()}"
+        )
+        if key in self.container_registry_map:
+            raise AlreadyExistsException(
+                message=f"Container registry `{key}` already exists!"
+            )
+
+        # Add the mapping.
+        container_registry.update()
+        source = source_utils.resolve_class(container_registry.__class__)
+        self.container_registry_map[key] = UUIDSourceTuple(
+            uuid=container_registry.uuid, source=source
+        )
+        self.update()
+
+    def delete_container_registry(self, key: str) -> None:
+        """Delete a container registry.
+
+        Args:
+            key: Unique key of the container registry.
+        """
+        container_registry = self.get_container_registry(key)
+        container_registry.delete()
+        del self.container_registry_map[key]
+        self.update()
+        logger.debug(f"Deleted container registry with key: {key}.")
+
     def delete(self) -> None:
         """Deletes the entire service. Dangerous operation"""
         for m in self.metadata_stores.values():
@@ -335,4 +412,6 @@ class LocalService(BaseComponent):
             a.delete()
         for o in self.orchestrators.values():
             o.delete()
+        for c in self.container_registries.values():
+            c.delete()
         super().delete()
