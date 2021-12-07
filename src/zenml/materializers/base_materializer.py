@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Tuple, Type, cast
 
 if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
-
+from zenml.artifacts.type_registery import type_registry
 from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
 )
@@ -44,12 +44,23 @@ class BaseMaterializerMeta(type):
                     associated_type, cls
                 )
 
+                if cls.ASSOCIATED_ARTIFACT_TYPES:
+                    type_registry.register_integration(
+                        associated_type, cls.ASSOCIATED_ARTIFACT_TYPES
+                    )
+                else:
+                    from zenml.artifacts.base_artifact import BaseArtifact
+
+                    type_registry.register_integration(
+                        associated_type, [BaseArtifact]
+                    )
         return cls
 
 
 class BaseMaterializer(metaclass=BaseMaterializerMeta):
     """Base Materializer to realize artifact data."""
 
+    ASSOCIATED_ARTIFACT_TYPES: ClassVar[List[Type["BaseArtifact"]]] = []
     ASSOCIATED_TYPES: ClassVar[List[Type[Any]]] = []
 
     def __init__(self, artifact: "BaseArtifact"):

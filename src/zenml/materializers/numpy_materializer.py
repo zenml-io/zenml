@@ -19,6 +19,7 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from zenml.artifacts import DataArtifact
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import yaml_utils
 
@@ -31,6 +32,7 @@ class NumpyMaterializer(BaseMaterializer):
     """Materializer to read data to and from pandas."""
 
     ASSOCIATED_TYPES = [np.ndarray]
+    ASSOCIATED_ARTIFACT_TYPES = [DataArtifact]
 
     def handle_input(self, data_type: Type[Any]) -> np.ndarray:
         """Reads numpy array from parquet file."""

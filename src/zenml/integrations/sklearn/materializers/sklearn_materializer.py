@@ -29,6 +29,7 @@ from sklearn.base import (
     TransformerMixin,
 )
 
+from zenml.artifacts import ModelArtifact
 from zenml.materializers.base_materializer import BaseMaterializer
 
 DEFAULT_FILENAME = "model"
@@ -49,6 +50,7 @@ class SklearnMaterializer(BaseMaterializer):
         DensityMixin,
         TransformerMixin,
     ]
+    ASSOCIATED_ARTIFACT_TYPES = [ModelArtifact]
 
     def handle_input(
         self, data_type: Type[Any]

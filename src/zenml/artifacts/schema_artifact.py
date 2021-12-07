@@ -11,6 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.integrations.sklearn.materializers.sklearn_materializer import (  # noqa
-    SklearnMaterializer,
-)
+
+from zenml.artifacts.base_artifact import BaseArtifact
+
+
+class SchemaArtifact(BaseArtifact):
+    """Class for all ZenML schema artifacts."""
+
+    TYPE_NAME = "SchemaArtifact"

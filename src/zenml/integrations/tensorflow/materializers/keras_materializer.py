@@ -15,6 +15,7 @@ from typing import Any, Type
 
 from tensorflow import keras
 
+from zenml.artifacts import ModelArtifact
 from zenml.materializers.base_materializer import BaseMaterializer
 
 DEFAULT_FILENAME = "model.hdf5"
@@ -24,6 +25,7 @@ class KerasMaterializer(BaseMaterializer):
     """Materializer to read/write Keras models."""
 
     ASSOCIATED_TYPES = [keras.Model]
+    ASSOCIATED_ARTIFACT_TYPES = [ModelArtifact]
 
     def handle_input(self, data_type: Type[Any]) -> keras.Model:
         """Reads and returns a Keras model.

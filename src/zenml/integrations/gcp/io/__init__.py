@@ -11,3 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
+from tfx.dsl.io.filesystem_registry import DEFAULT_FILESYSTEM_REGISTRY
+
+from zenml.integrations.gcp.io.gcs_plugin import ZenGCS
+
+DEFAULT_FILESYSTEM_REGISTRY.register(ZenGCS, 15)
