@@ -43,4 +43,4 @@ class TrainingPipeline(BasePipeline):
         model = trainer(train_dataset=train, validation_dataset=validation)
 
         # Evaluating the trained model
-        evaluator(model=model, test_dataset=test_t)
+        evaluator(model=model, dataset=test_t)

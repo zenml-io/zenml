@@ -14,9 +14,9 @@
 from typing import Callable, Optional, Type, TypeVar, Union, overload
 
 from zenml.pipelines.base_pipeline import (
+    INSTANCE_CONFIGURATION,
     PARAM_ENABLE_CACHE,
     PIPELINE_INNER_FUNC_NAME,
-    INSTANCE_CONFIGURATION,
     BasePipeline,
 )
 
