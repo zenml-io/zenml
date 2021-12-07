@@ -16,7 +16,6 @@ import hashlib
 import inspect
 import json
 import random
-from abc import abstractmethod
 from typing import (
     Any,
     ClassVar,
@@ -43,11 +42,11 @@ from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_output import Output
 from zenml.steps.utils import (
+    INSTANCE_CONFIGURATION,
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_ENABLE_CACHE,
     PARAM_PIPELINE_PARAMETER_NAME,
     SINGLE_RETURN_OUT_NAME,
-    STEP_INNER_FUNC_NAME,
     _ZenMLSimpleComponent,
     generate_component_class,
 )
@@ -56,7 +55,7 @@ logger = get_logger(__name__)
 
 
 class BaseStepMeta(type):
-    """Meta class for `BaseStep`.
+    """Metaclass for `BaseStep`.
 
     Checks whether everything passed in:
     * Has a matching materializer.
@@ -67,6 +66,9 @@ class BaseStepMeta(type):
         mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
     ) -> "BaseStepMeta":
         """Set up a new class with a qualified spec."""
+        dct.setdefault("PARAM_SPEC", {})
+        dct.setdefault("INPUT_SPEC", {})
+        dct.setdefault("OUTPUT_SPEC", {})
         cls = cast(Type["BaseStep"], super().__new__(mcs, name, bases, dct))
 
         cls.INPUT_SIGNATURE = {}
@@ -77,7 +79,7 @@ class BaseStepMeta(type):
 
         # Get the signature of the step function
         step_function_signature = inspect.getfullargspec(
-            getattr(cls, STEP_INNER_FUNC_NAME)
+            getattr(cls, cls.STEP_INNER_FUNC_NAME)
         )
 
         if bases:
@@ -200,10 +202,16 @@ class BaseStep(metaclass=BaseStepMeta):
     INPUT_SPEC: Dict[str, Type[BaseArtifact]] = {}
     OUTPUT_SPEC: Dict[str, Type[BaseArtifact]] = {}
 
+    STEP_INNER_FUNC_NAME = "process"
+    INSTANCE_CONFIGURATION = {}
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.step_name = self.__class__.__name__
         self.pipeline_parameter_name: Optional[str] = None
-        self.enable_cache = getattr(self, PARAM_ENABLE_CACHE)
+
+        kwargs.update(getattr(self, INSTANCE_CONFIGURATION))
+        self.enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, True)
+
         self.requires_context = bool(self.CONTEXT_PARAMETER_NAME)
         self._explicit_materializers: Dict[str, Type[BaseMaterializer]] = {}
         self._component: Optional[_ZenMLSimpleComponent] = None
@@ -471,7 +479,7 @@ class BaseStep(metaclass=BaseStepMeta):
         # Make sure that the input/output artifact types exist in the signature
         if not all(k in self.OUTPUT_SIGNATURE for k in self.OUTPUT_SPEC):
             raise StepInterfaceError(
-                f"Failed to create the step. The predefined artifact types"
+                f"Failed to create the step. The predefined artifact types "
                 f"for the input does not match the input signature."
             )
 
@@ -480,9 +488,10 @@ class BaseStep(metaclass=BaseStepMeta):
             *artifacts, **kw_artifacts
         )
 
-        self.INPUT_SPEC = {arg_name: artifact_type.type
-                           for arg_name, artifact_type in
-                           input_artifacts.items()}
+        self.INPUT_SPEC = {
+            arg_name: artifact_type.type
+            for arg_name, artifact_type in input_artifacts.items()
+        }
 
         # Prepare the output artifacts and spec
         from zenml.artifacts.type_registery import type_registry
@@ -550,7 +559,6 @@ class BaseStep(metaclass=BaseStepMeta):
             )
         return self._component
 
-    @abstractmethod
     def process(self, *args: Any, **kwargs: Any) -> Any:
         """Abstract method for core step logic."""
         raise NotImplementedError
