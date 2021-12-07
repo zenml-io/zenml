@@ -16,6 +16,7 @@ from typing import Callable, Optional, Type, TypeVar, Union, overload
 from zenml.pipelines.base_pipeline import (
     PARAM_ENABLE_CACHE,
     PIPELINE_INNER_FUNC_NAME,
+    INSTANCE_CONFIGURATION,
     BasePipeline,
 )
 
@@ -74,6 +75,7 @@ def pipeline(
             (BasePipeline,),
             {
                 PIPELINE_INNER_FUNC_NAME: staticmethod(func),
+                INSTANCE_CONFIGURATION: {PARAM_ENABLE_CACHE: enable_cache},
                 PARAM_ENABLE_CACHE: enable_cache,
             },
         )

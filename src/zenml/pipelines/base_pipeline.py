@@ -20,6 +20,7 @@ from typing import (
     Dict,
     NoReturn,
     Optional,
+    Text,
     Tuple,
     Type,
     TypeVar,
@@ -45,6 +46,7 @@ from zenml.utils import analytics_utils, yaml_utils
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
 PARAM_ENABLE_CACHE: str = "enable_cache"
+INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
 
 
 class BasePipelineMeta(type):
@@ -82,8 +84,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
     NAME: ClassVar[str] = ""
     STEP_SPEC: ClassVar[Dict[str, Any]] = None  # type: ignore[assignment]
 
-    def __init__(self, *args: BaseStep, **kwargs: BaseStep) -> None:
+    INSTANCE_CONFIGURATION: Dict[Text, Any] = {}
 
+    def __init__(self, *args: BaseStep, **kwargs: BaseStep) -> None:
         try:
             self.__stack = Repository().get_active_stack()
         except DoesNotExistException as exc:
@@ -92,7 +95,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 "stack active via `zenml stack set STACK_NAME`"
             ) from exc
 
-        self.enable_cache = getattr(self, PARAM_ENABLE_CACHE)
+        kwargs.update(getattr(self, INSTANCE_CONFIGURATION))
+        self.enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, True)
+
         self.pipeline_name = self.__class__.__name__
         logger.info(f"Creating pipeline: {self.pipeline_name}")
         logger.info(
