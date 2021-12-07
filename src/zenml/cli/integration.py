@@ -29,6 +29,11 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
+# To be replaced by zenml impl of Subprocess
+def install_package(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+
 class IntegrationsHandler:
 
     def __init__(self) -> None:
@@ -74,10 +79,13 @@ def integration() -> None:
 def list() -> None:
     """List all available integrations."""
     declare("Listing integrations: \n")
+
     for name, integration_impl in integration_registry.integrations.items():
         is_installed = integration_impl.check_installation()
+        # Formatting could be improved to be uniform and straightforward
         declare(f"{name} - {integration_impl.REQUIREMENTS}"
                 f"{' - installed' if is_installed else ''}")
+
     declare("\nTo install the dependencies of a specific integration, type: ")
     declare("zenml integration install EXAMPLE_NAME")
 
@@ -114,10 +122,6 @@ def install(integrations_handler: IntegrationsHandler, integration_name: str):
         declare(f"Installing all required packages for {integration_name}")
         for requirement in requirements:
             install_package(requirement)
-
-
-def install_package(package):
-    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
 
 if __name__ == '__main__':
