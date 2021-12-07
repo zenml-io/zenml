@@ -331,7 +331,7 @@ class _FunctionExecutor(BaseExecutor):
             signature.
 
         Raises:
-            ValueError if types dont match.
+            ValueError if types do not match.
         """
         # TODO [ENG-160]: Include this check when we figure out the logic of
         #  slightly different subclasses.
@@ -368,6 +368,10 @@ class _FunctionExecutor(BaseExecutor):
         # First, we parse the inputs, i.e., params and input artifacts.
         spec = inspect.getfullargspec(self._FUNCTION)
         args = spec.args
+
+        if args and args[0] == "self":
+            args.pop(0)
+
         for arg in args:
             arg_type = spec.annotations.get(arg, None)
             if issubclass(arg_type, BaseStepConfig):
