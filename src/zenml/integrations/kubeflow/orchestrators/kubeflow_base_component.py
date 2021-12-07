@@ -35,7 +35,7 @@ from tfx.proto.orchestration import pipeline_pb2
 from zenml.integrations.kubeflow.orchestrators import kubeflow_utils as utils
 
 # TODO(b/166202742): Consolidate container entrypoint with TFX image's default.
-_COMMAND = ["python", "-m", "zenml.container_entrypoints.kubeflow_entrypoint"]
+_COMMAND = ["python", "-m", "zenml.integrations.kubeflow.container_entrypoint"]
 
 _WORKFLOW_ID_KEY = "WORKFLOW_ID"
 

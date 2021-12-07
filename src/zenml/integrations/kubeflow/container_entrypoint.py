@@ -50,7 +50,7 @@ from tfx.proto.orchestration import executable_spec_pb2, pipeline_pb2
 from tfx.types import artifact, channel, standard_artifacts
 
 from zenml.artifacts.base_artifact import BaseArtifact
-from zenml.integrations.kubeflow.orchestrators import kubeflow_metadata_adapter
+from zenml.integrations.kubeflow import kubeflow_metadata_adapter
 from zenml.integrations.registry import integration_registry
 from zenml.steps.utils import generate_component_class
 
