@@ -14,11 +14,10 @@
 
 from abc import abstractmethod
 
-from zenml.artifacts import DataArtifact, SchemaArtifact, StatisticsArtifact
+from zenml.artifacts import DataArtifact, ModelArtifact
 from zenml.steps.base_step import BaseStep
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
-from zenml.steps.step_output import Output
 
 
 class BaseEvaluatorConfig(BaseStepConfig):
@@ -34,7 +33,8 @@ class BaseEvaluatorStep(BaseStep):
     def entrypoint(
         self,
         dataset: DataArtifact,
+        model: ModelArtifact,
         config: BaseEvaluatorConfig,
         context: StepContext,
-    ) -> Output(statitics=StatisticsArtifact, schema=SchemaArtifact):
+    ) -> DataArtifact:
         """Base entrypoint for any evaluator implementation"""
