@@ -38,8 +38,6 @@ from ml_metadata.proto import metadata_store_pb2
 from tfx import types
 from tfx.dsl.compiler import constants
 from tfx.orchestration import metadata
-
-# from tfx.orchestration.kubeflow.proto import kubeflow_pb2
 from tfx.orchestration.local import runner_utils
 from tfx.orchestration.portable import (
     data_types,
@@ -85,59 +83,6 @@ def _register_execution(
     )
 
 
-# def _get_config_value(config_value: kubeflow_pb2.ConfigValue) -> Optional[str]:
-#     value_from = config_value.WhichOneof('value_from')
-#
-#     if value_from is None:
-#         raise ValueError(
-#             'No value set in config value: {}'.format(config_value))
-#
-#     if value_from == 'value':
-#         return config_value.value
-#
-#     return os.getenv(config_value.environment_variable)
-#
-#
-# def _get_metadata_connection_config(
-#         kubeflow_metadata_config: kubeflow_pb2.KubeflowMetadataConfig
-# ) -> Union[metadata_store_pb2.ConnectionConfig,
-#            metadata_store_pb2.MetadataStoreClientConfig]:
-#     """Constructs a metadata connection config.
-#
-#   Args:
-#     kubeflow_metadata_config: Configuration parameters to use for constructing a
-#       valid metadata connection config in a Kubeflow cluster.
-#
-#   Returns:
-#     A Union of metadata_store_pb2.ConnectionConfig and
-#     metadata_store_pb2.MetadataStoreClientConfig object.
-#   """
-#     config_type = kubeflow_metadata_config.WhichOneof('connection_config')
-#
-#     if config_type is None:
-#         logging.warning(
-#             'Providing mysql configuration through KubeflowMetadataConfig will be '
-#             'deprecated soon. Use one of KubeflowGrpcMetadataConfig or'
-#             'KubeflowMySqlMetadataConfig instead')
-#         connection_config = metadata_store_pb2.ConnectionConfig()
-#         connection_config.mysql.host = _get_config_value(
-#             kubeflow_metadata_config.mysql_db_service_host)
-#         connection_config.mysql.port = int(
-#             _get_config_value(kubeflow_metadata_config.mysql_db_service_port))
-#         connection_config.mysql.database = _get_config_value(
-#             kubeflow_metadata_config.mysql_db_name)
-#         connection_config.mysql.user = _get_config_value(
-#             kubeflow_metadata_config.mysql_db_user)
-#         connection_config.mysql.password = _get_config_value(
-#             kubeflow_metadata_config.mysql_db_password)
-#         return connection_config
-#
-#     assert config_type == 'grpc_config', ('expected oneof grpc_config')
-#
-#     return _get_grpc_metadata_connection_config(
-#         kubeflow_metadata_config.grpc_config)
-
-
 def _get_grpc_metadata_connection_config(
     kubeflow_metadata_config: Dict[str, Any]
 ) -> metadata_store_pb2.MetadataStoreClientConfig:
@@ -159,6 +104,19 @@ def _get_grpc_metadata_connection_config(
         os.getenv(grpc_config["grpc_service_port"]["environment_variable"])
     )
     return connection_config
+
+
+def _get_metadata_connection(
+    connection_info: str,
+) -> kubeflow_metadata_adapter.KubeflowMetadataAdapter:
+    """Constructs a Kubeflow metadata adapter."""
+    kubeflow_metadata_config = json.loads(connection_info)
+    metadata_connection_config = _get_grpc_metadata_connection_config(
+        kubeflow_metadata_config
+    )
+    return kubeflow_metadata_adapter.KubeflowMetadataAdapter(
+        metadata_connection_config
+    )
 
 
 def _sanitize_underscore(name: str) -> Optional[str]:
@@ -513,12 +471,8 @@ def _create_executor_class(
     #     )
 
 
-def main(argv):
-    # Log to the container's stdout so Kubeflow Pipelines UI can display logs to
-    # the user.
-    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-    logging.getLogger().setLevel(logging.DEBUG)
-
+def _parse_command_line_arguments() -> argparse.Namespace:
+    """Parses the command line input arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--pipeline_root", type=str, required=True)
     parser.add_argument(
@@ -536,48 +490,43 @@ def main(argv):
     parser.add_argument("--step_module", type=str, required=True)
     parser.add_argument("--step_function_name", type=str, required=True)
 
-    # TODO(b/196892362): Replace hooking with a more straightforward mechanism.
-    launcher._register_execution = (
-        _register_execution  # pylint: disable=protected-access
-    )
+    return parser.parse_args()
 
-    args = parser.parse_args(argv)
 
-    tfx_ir = pipeline_pb2.Pipeline()
-    json_format.Parse(args.tfx_ir, tfx_ir)
+def main():
+    """Runs a single step defined by the command line arguments."""
+    # Log to the container's stdout so Kubeflow Pipelines UI can display logs to
+    # the user.
+    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+    logging.getLogger().setLevel(logging.DEBUG)
 
-    _resolve_runtime_parameters(tfx_ir, args.runtime_parameter)
+    args = _parse_command_line_arguments()
 
-    deployment_config = runner_utils.extract_local_deployment_config(tfx_ir)
+    launcher._register_execution = _register_execution
 
-    kubeflow_metadata_config = json.loads(args.kubeflow_metadata_config)
-    metadata_connection_config = _get_grpc_metadata_connection_config(
-        kubeflow_metadata_config
-    )
-    metadata_connection = kubeflow_metadata_adapter.KubeflowMetadataAdapter(
-        metadata_connection_config
-    )
-
-    # kubeflow_metadata_config = kubeflow_pb2.KubeflowMetadataConfig()
-    # json_format.Parse(args.kubeflow_metadata_config, kubeflow_metadata_config)
-    # metadata_connection = kubeflow_metadata_adapter.KubeflowMetadataAdapter(
-    #     _get_metadata_connection_config(kubeflow_metadata_config))
+    tfx_pipeline = pipeline_pb2.Pipeline()
+    json_format.Parse(args.tfx_ir, tfx_pipeline)
+    _resolve_runtime_parameters(tfx_pipeline, args.runtime_parameter)
 
     node_id = args.node_id
-    # Attach necessary labels to distinguish different runner and DSL.
-    # TODO(zhitaoli): Pass this from KFP runner side when the same container
-    # entrypoint can be used by a different runner.
+    pipeline_node = _get_pipeline_node(tfx_pipeline, node_id)
 
-    custom_executor_operators = {
-        executable_spec_pb2.ContainerExecutableSpec: kubernetes_executor_operator.KubernetesExecutorOperator
-    }
+    metadata_connection = _get_metadata_connection(
+        args.kubeflow_metadata_config
+    )
 
+    deployment_config = runner_utils.extract_local_deployment_config(
+        tfx_pipeline
+    )
     executor_spec = runner_utils.extract_executor_spec(
         deployment_config, node_id
     )
     custom_driver_spec = runner_utils.extract_custom_driver_spec(
         deployment_config, node_id
     )
+    custom_executor_operators = {
+        executable_spec_pb2.ContainerExecutableSpec: kubernetes_executor_operator.KubernetesExecutorOperator
+    }
 
     # make sure all integrations are activated so all materializers etc. are
     # available
@@ -591,12 +540,11 @@ def main(argv):
         executor_class_target_module_name=executor_class_target_module_name,
     )
 
-    pipeline_node = _get_pipeline_node(tfx_ir, node_id)
     component_launcher = launcher.Launcher(
         pipeline_node=pipeline_node,
         mlmd_connection=metadata_connection,
-        pipeline_info=tfx_ir.pipeline_info,
-        pipeline_runtime_spec=tfx_ir.runtime_spec,
+        pipeline_info=tfx_pipeline.pipeline_info,
+        pipeline_runtime_spec=tfx_pipeline.runtime_spec,
         executor_spec=executor_spec,
         custom_driver_spec=custom_driver_spec,
         custom_executor_operators=custom_executor_operators,
@@ -610,4 +558,4 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()
