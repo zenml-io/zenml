@@ -13,19 +13,16 @@
 #  permissions and limitations under the License.
 import pandas as pd
 
-from zenml.steps.step_interfaces.base_datasource_step import (
-    BaseDatasourceConfig,
-    BaseDatasourceStep,
-)
+from zenml.artifacts import SchemaArtifact, StatisticsArtifact
+from zenml.steps import Output
+from zenml.steps.step_interfaces.base_analyzer_step import BaseAnalyzerStep
 
 
-class PandasDatasourceConfig(BaseDatasourceConfig):
-    path: str
+class PandasAnalyzer(BaseAnalyzerStep):
+    OUTPUT_SPEC = {"statistics": StatisticsArtifact, "schema": SchemaArtifact}
 
-
-class PandasDatasource(BaseDatasourceStep):
     def entrypoint(
         self,
-        config: PandasDatasourceConfig,
-    ) -> pd.DataFrame:
-        return pd.read_csv(config.path)
+        dataset: pd.DataFrame,
+    ) -> Output(statistics=pd.DataFrame, schema=pd.DataFrame):
+        return dataset.describe(), dataset.dtypes.to_frame().T.astype(str)
