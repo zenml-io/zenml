@@ -13,147 +13,122 @@
 #  permissions and limitations under the License.
 
 
-import pandas as pd
+import numpy as np
 import tensorflow as tf
 
-from zenml.core.repo import Repository
-from zenml.integrations.dash.visualizers.pipeline_run_lineage_visualizer import (
-    PipelineRunLineageVisualizer,
-)
 from zenml.pipelines import pipeline
 from zenml.steps import step
+from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
 
-FEATURE_COLS = [
-    "CRIM",
-    "ZN",
-    "INDUS",
-    "CHAS",
-    "NOX",
-    "RM",
-    "AGE",
-    "DIS",
-    "RAD",
-    "TAX",
-    "PTRATIO",
-    "B",
-    "STAT",
-]
-TARGET_COL_NAME = "target"
 
+class TrainerConfig(BaseStepConfig):
+    """Trainer params"""
 
-def convert_np_to_pandas(X, y):
-    df = pd.DataFrame(X, columns=FEATURE_COLS)
-    df[TARGET_COL_NAME] = y
-    return df
+    epochs: int = 1
+    gamma: float = 0.7
+    lr: float = 0.001
 
 
 @step
-def importer() -> Output(train_df=pd.DataFrame, test_df=pd.DataFrame):
-    """Download the Boston housing price dataset as numpy arrays.
-    Pass the data onto the next step as a Pandas dataframe."""
+def importer_mnist() -> Output(
+    X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
+):
+    """Download the MNIST data store it as an artifact"""
     (X_train, y_train), (
         X_test,
         y_test,
-    ) = tf.keras.datasets.boston_housing.load_data()
-    train_df = convert_np_to_pandas(X_train, y_train)
-    test_df = convert_np_to_pandas(X_test, y_test)
-    return train_df, test_df
+    ) = tf.keras.datasets.mnist.load_data()
+    return X_train, y_train, X_test, y_test
 
 
-# we disable the cache for the trainer to see the visualization working
-@step(enable_cache=False)
-def trainer(train_df: pd.DataFrame) -> tf.keras.Model:
-    """A simple Keras Model to train on the data."""
-    model = tf.keras.Sequential()
-    model.add(
-        tf.keras.layers.Dense(
-            64,
-            activation="relu",
-            input_shape=(len(FEATURE_COLS),),
-        )
+@step
+def normalizer(
+    X_train: np.ndarray, X_test: np.ndarray
+) -> Output(X_train_normed=np.ndarray, X_test_normed=np.ndarray):
+    """Normalize the values for all the images so they are between 0 and 1"""
+    X_train_normed = X_train / 255.0
+    X_test_normed = X_test / 255.0
+    return X_train_normed, X_test_normed
+
+
+@step
+def tf_trainer(
+    config: TrainerConfig,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+) -> tf.keras.Model:
+    """Train a neural net from scratch to recognise MNIST digits return our
+    model or the learner"""
+    model = tf.keras.Sequential(
+        [
+            tf.keras.layers.Flatten(input_shape=(28, 28)),
+            tf.keras.layers.Dense(10, activation="relu"),
+            tf.keras.layers.Dense(10),
+        ]
     )
-    model.add(tf.keras.layers.Dense(64, activation="relu"))
-    model.add(tf.keras.layers.Dense(1))
 
     model.compile(
         optimizer=tf.keras.optimizers.Adam(0.001),
-        loss=tf.keras.losses.MeanSquaredError(),
-        metrics=["mae"],
+        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+        metrics=["accuracy"],
     )
 
-    model.fit(train_df[FEATURE_COLS], train_df[TARGET_COL_NAME])
+    model.fit(
+        X_train,
+        y_train,
+        epochs=config.epochs,
+    )
 
     # write model
     return model
 
 
 @step
-def evaluator(
-    test_df: pd.DataFrame,
+def tf_evaluator(
+    X_test: np.ndarray,
+    y_test: np.ndarray,
     model: tf.keras.Model,
 ) -> float:
-    """Calculate the accuracy on the test set"""
-    test_acc = model.evaluate(
-        test_df[FEATURE_COLS].values, test_df[TARGET_COL_NAME].values, verbose=2
-    )
+    """Calculate the loss for the model for each epoch in a graph"""
+
+    _, test_acc = model.evaluate(X_test, y_test, verbose=2)
     return test_acc
 
 
-@step
-def deployer(
-    model: tf.keras.Model,
-) -> bool:
-    """Mock deploys the model."""
-    print("Model deployed!")
-    return True
-
-
+# Define the pipeline
 @pipeline
-def boston_housing_pipeline(importer, trainer, evaluator, deployer):
-    """Links all the steps together in a pipeline"""
-    train_df, test_df = importer()
-    model = trainer(train_df=train_df)
-    evaluator(test_df=test_df, model=model)
-    deployer(model=model)
+def mnist_pipeline(
+    importer,
+    normalizer,
+    trainer,
+    evaluator,
+):
+    # Link all the steps artifacts together
+    X_train, y_train, X_test, y_test = importer()
+    X_trained_normed, X_test_normed = normalizer(X_train=X_train, X_test=X_test)
+    model = trainer(X_train=X_trained_normed, y_train=y_train)
+    evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 
 
-def print_lineage():
-    repo = Repository()
-    pipeline = repo.get_pipelines()[-1]
-    for run in pipeline.runs:
-        try:
-            trainer_step = run.get_step(name="trainer")
-            trained_model_artifact = trainer_step.output
+# Initialise a pipeline run
+run_1 = mnist_pipeline(
+    importer=importer_mnist(),
+    normalizer=normalizer(),
+    trainer=tf_trainer(config=TrainerConfig(epochs=1)),
+    evaluator=tf_evaluator(),
+)
 
-            # lets do the lineage
-            print(
-                f"trained_model_artifact was produced by: "
-                f"{trained_model_artifact.producer_step.id} and is_cached: "
-                f"{trained_model_artifact.is_cached} step cached: "
-                f"{trainer_step.status}"
-            )
-        except Exception as e:
-            if "No step found for name `deployer`" in str(e):
-                pass
-            else:
-                raise e
+# Run the pipeline
+run_1.run()
 
+# Initialise a pipeline run again
+run_2 = mnist_pipeline(
+    importer=importer_mnist(),
+    normalizer=normalizer(),
+    trainer=tf_trainer(config=TrainerConfig(epochs=2)),
+    evaluator=tf_evaluator(),
+)
 
-def visualize_lineage():
-    repo = Repository()
-    latest_run = repo.get_pipelines()[-1].runs[-1]
-    PipelineRunLineageVisualizer().visualize(latest_run)
-
-
-if __name__ == "__main__":
-    # Run the pipeline
-    p = boston_housing_pipeline(
-        importer=importer(),
-        trainer=trainer(),
-        evaluator=evaluator(),
-        deployer=deployer(),
-    )
-    p.run()
-
-    visualize_lineage()
+# Run the pipeline again
+run_2.run()
