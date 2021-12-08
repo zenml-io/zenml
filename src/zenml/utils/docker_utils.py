@@ -120,6 +120,7 @@ def build_docker_image(
             path=build_context_path,
             dockerfile=dockerfile_path,
             tag=image_name,
+            pull=True,  # pull changes to base image
             rm=True,  # remove intermediate containers
         )
         logger.info("Finished building docker image.")

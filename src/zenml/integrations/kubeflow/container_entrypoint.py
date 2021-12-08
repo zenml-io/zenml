@@ -400,7 +400,9 @@ def _parse_runtime_parameter_str(param: str) -> Tuple[str, types.Property]:
 
 
 def _resolve_runtime_parameters(
-    tfx_ir: pipeline_pb2.Pipeline, parameters: Optional[List[str]]
+    tfx_ir: pipeline_pb2.Pipeline,
+    run_name: str,
+    parameters: Optional[List[str]],
 ) -> None:
     """Resolve runtime parameters in the pipeline proto inplace."""
     if parameters is None:
@@ -408,7 +410,7 @@ def _resolve_runtime_parameters(
 
     parameter_bindings = {
         # Substitute the runtime parameter to be a concrete run_id
-        constants.PIPELINE_RUN_ID_PARAMETER_NAME: os.environ["WORKFLOW_ID"],
+        constants.PIPELINE_RUN_ID_PARAMETER_NAME: run_name,
     }
     # Argo will fill runtime parameter values in the parameters.
     for param in parameters:
@@ -465,7 +467,6 @@ def _create_executor_class(
 def _parse_command_line_arguments() -> argparse.Namespace:
     """Parses the command line input arguments."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("--pipeline_root", type=str, required=True)
     parser.add_argument(
         "--metadata_ui_path",
         type=str,
@@ -480,6 +481,7 @@ def _parse_command_line_arguments() -> argparse.Namespace:
     parser.add_argument("--runtime_parameter", type=str, action="append")
     parser.add_argument("--step_module", type=str, required=True)
     parser.add_argument("--step_function_name", type=str, required=True)
+    parser.add_argument("--run_name", type=str, required=True)
 
     return parser.parse_args()
 
@@ -497,7 +499,9 @@ def main():
 
     tfx_pipeline = pipeline_pb2.Pipeline()
     json_format.Parse(args.tfx_ir, tfx_pipeline)
-    _resolve_runtime_parameters(tfx_pipeline, args.runtime_parameter)
+    _resolve_runtime_parameters(
+        tfx_pipeline, args.run_name, args.runtime_parameter
+    )
 
     node_id = args.node_id
     pipeline_node = _get_pipeline_node(tfx_pipeline, node_id)

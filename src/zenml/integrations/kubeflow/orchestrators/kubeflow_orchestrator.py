@@ -12,10 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
 from typing import TYPE_CHECKING, Any, Optional
 
+import click
+import kfp
 import tfx.orchestration.pipeline as tfx_pipeline
+import urllib3
+from kubernetes import config
 
+from zenml.constants import APP_NAME
 from zenml.core.component_factory import orchestrator_store_factory
 from zenml.core.repo import Repository
 from zenml.enums import OrchestratorTypes
@@ -23,6 +29,7 @@ from zenml.integrations.kubeflow.orchestrators.kubeflow_dag_runner import (
     KubeflowDagRunner,
     KubeflowDagRunnerConfig,
 )
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 
@@ -49,6 +56,16 @@ class KubeflowOrchestrator(BaseOrchestrator):
             return f"{registry_uri}/{self.docker_image_name}"
         else:
             return self.docker_image_name
+
+    @property
+    def pipeline_directory(self) -> str:
+        """Returns path to a directory in which the kubeflow pipeline files
+        are stored."""
+        directory = os.path.join(
+            click.get_app_dir(APP_NAME), "kubeflow_pipelines", str(self.uuid)
+        )
+        fileio.make_dirs(directory)
+        return directory
 
     def pre_run(self, caller_filepath: str) -> None:
         """Builds a docker image for the current environment and uploads it to
@@ -82,14 +99,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
         **kwargs: Any,
     ) -> None:
         """Prepares the pipeline to be run on Kubeflow"""
-        from zenml.utils.docker_utils import get_image_digest
-
-        image_name = self.full_docker_image_name
-        image_name = get_image_digest(image_name) or image_name
-
-        config = KubeflowDagRunnerConfig(image=image_name)
-        runner = KubeflowDagRunner(config=config)
-
         # Establish the connections between the components
         zenml_pipeline.connect(**zenml_pipeline.steps)
 
@@ -107,12 +116,36 @@ class KubeflowOrchestrator(BaseOrchestrator):
             enable_cache=zenml_pipeline.enable_cache,
         )
 
-        output_file = runner.run(created_pipeline)
+        from zenml.utils.docker_utils import get_image_digest
 
-        import kfp
-        import urllib3
-        from kubernetes import config
+        image_name = self.full_docker_image_name
+        image_name = get_image_digest(image_name) or image_name
 
+        pipeline_file_path = os.path.join(
+            self.pipeline_directory, f"{zenml_pipeline.name}.yaml"
+        )
+        runner_config = KubeflowDagRunnerConfig(image=image_name)
+        runner = KubeflowDagRunner(
+            config=runner_config, output_path=pipeline_file_path
+        )
+        runner.run(created_pipeline)
+
+        self._upload_and_run_pipeline(
+            pipeline_file_path=pipeline_file_path,
+            run_name=run_name,
+            enable_cache=zenml_pipeline.enable_cache,
+        )
+
+    def _upload_and_run_pipeline(
+        self, pipeline_file_path: str, run_name: str, enable_cache: bool
+    ):
+        """Tries to upload and run a KFP pipeline.
+
+        Args:
+            pipeline_file_path: Path to the pipeline definition file.
+            run_name: A name for the pipeline run that will be started.
+            enable_cache: Whether caching is enabled for this pipeline run.
+        """
         try:
             # load kubeflow config to authorize the KFP client
             config.load_kube_config()
@@ -120,10 +153,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
             # upload the pipeline to Kubeflow and start it
             client = kfp.Client()
             result = client.create_run_from_pipeline_package(
-                output_file,
+                pipeline_file_path,
                 arguments={},
                 run_name=run_name,
-                enable_caching=zenml_pipeline.enable_cache,
+                enable_caching=enable_cache,
             )
             logger.info("Started pipeline run with ID '%s'.", result.run_id)
         except urllib3.exceptions.HTTPError as error:
@@ -132,7 +165,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 "If you still want to run this pipeline, upload the file '%s' "
                 "manually.",
                 error,
-                output_file,
+                pipeline_file_path,
             )
 
     @property

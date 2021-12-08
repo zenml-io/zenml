@@ -155,11 +155,6 @@ def get_default_pod_labels() -> Dict[str, str]:
     return result
 
 
-def get_default_output_filename(pipeline_name: str) -> str:
-    """Returns the default output filename for Kubeflow."""
-    return pipeline_name + ".tar.gz"
-
-
 class KubeflowDagRunnerConfig(pipeline_config.PipelineConfig):
     """Runtime configuration parameters specific to execution on Kubeflow."""
 
@@ -225,8 +220,7 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
     def __init__(
         self,
         config: KubeflowDagRunnerConfig,
-        output_dir: Optional[str] = None,
-        output_filename: Optional[str] = None,
+        output_path: str,
         pod_labels_to_attach: Optional[Dict[str, str]] = None,
     ):
         """Initializes KubeflowDagRunner for compiling a Kubeflow Pipeline.
@@ -249,8 +243,7 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
         """
         super().__init__(config)
         self._config = cast(KubeflowDagRunnerConfig, self._config)
-        self._output_dir = output_dir or os.getcwd()
-        self._output_filename = output_filename
+        self._output_path = output_path
         self._compiler = compiler.Compiler()
         self._tfx_compiler = tfx_compiler.Compiler()
         self._params = []  # List of dsl.PipelineParam used in this pipeline.
@@ -432,18 +425,11 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
         # Need to run this first to get self._params populated. Then KFP compiler
         # can correctly match default value with PipelineParam.
         self._parse_parameter_from_pipeline(pipeline)
-
-        file_name = self._output_filename or get_default_output_filename(
-            pipeline.pipeline_info.pipeline_name
-        )
-        output_path = os.path.join(self._output_dir, file_name)
         # Create workflow spec and write out to package.
         self._compiler._create_and_write_workflow(
             # pylint: disable=protected-access
             pipeline_func=_construct_pipeline,
             pipeline_name=pipeline.pipeline_info.pipeline_name,
             params_list=self._params,
-            package_path=output_path,
+            package_path=self._output_path,
         )
-
-        return output_path

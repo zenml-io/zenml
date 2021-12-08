@@ -97,8 +97,6 @@ class BaseComponent:
         utils.replace_placeholder(component)
 
         arguments = [
-            "--pipeline_root",
-            pipeline_root,
             "--kubeflow_metadata_config",
             json.dumps(kubeflow_metadata_config),
             "--node_id",
@@ -114,6 +112,8 @@ class BaseComponent:
             step_module,
             "--step_function_name",
             step_function_name,
+            "--run_name",
+            "{{workflow.annotations.pipelines.kubeflow.org/run_name}}",
         ]
 
         for param in runtime_parameters:
@@ -164,7 +164,7 @@ class BaseComponent:
 
         self.container_op.container.add_env_variable(
             k8s_client.V1EnvVar(
-                name=ENV_ZENML_PREVENT_PIPELINE_EXECUTION, value=True
+                name=ENV_ZENML_PREVENT_PIPELINE_EXECUTION, value="True"
             )
         )
 
