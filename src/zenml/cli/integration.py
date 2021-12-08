@@ -15,12 +15,17 @@
 from typing import List, Dict
 import subprocess
 import sys
+from tabulate import tabulate
 
 import click
 from zenml.cli.cli import cli
 from zenml.cli.utils import (
+    confirmation,
     declare,
-    error
+    error,
+    pretty_print,
+    title,
+    warning,
 )
 from zenml.integrations.registry import integration_registry
 
@@ -31,7 +36,16 @@ logger = get_logger(__name__)
 
 # To be replaced by zenml impl of Subprocess
 def install_package(package):
-    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "install",  package]
+    )
+
+
+# To be replaced by zenml impl of Subprocess
+def uninstall_package(package):
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "uninstall", "-y", package]
+    )
 
 
 class IntegrationsHandler:
@@ -44,25 +58,38 @@ class IntegrationsHandler:
     def list_integration_names(self) -> List[str]:
         return [name for name in self.integrations]
 
-    def select_integration_requirements(self, integration_name: str = None):
+    def select_integration_requirements(
+            self, integration_name: str = None
+    ) -> List[str]:
         if integration_name:
             if integration_name in self.list_integration_names:
                 return self.integrations[integration_name].REQUIREMENTS
             else:
-                # If the github action executes this,
-                # it might make sense to raise an error as well as logging
-                error(
+                raise KeyError(
                     f"Version {integration_name} does not exist. "
-                    f"Currently the following integrations are implemented. \n"
-                    f"{self.list_integration_names}"
-                )
-                return
+                    f"Currently the following integrations are implemented. "
+                    f"{self.list_integration_names}")
         else:
             return [
                 requirement
                 for name in self.list_integration_names
                 for requirement in self.integrations[name].REQUIREMENTS
             ]
+
+    def is_installed(self, integration_name) -> bool:
+        if integration_name in self.list_integration_names:
+            return self.integrations[integration_name].check_installation()
+        elif not integration_name:
+            all_installed = [
+                self.integrations[item].check_installation()
+                for item in self.list_integration_names
+            ]
+            return all(all_installed)
+        else:
+            raise KeyError(
+                f"Version {integration_name} does not exist. "
+                f"Currently the following integrations are available. "
+                f"{self.list_integration_names}")
 
 
 pass_integrations_handler = click.make_pass_decorator(
@@ -77,17 +104,21 @@ def integration() -> None:
 
 @integration.command(help="List the available integration .")
 def list() -> None:
-    """List all available integrations."""
-    declare("Listing integrations: \n")
+    """List all available integrations with their installation status."""
+    title("Integrations:\n")
 
+    table_rows = []
     for name, integration_impl in integration_registry.integrations.items():
         is_installed = integration_impl.check_installation()
-        # Formatting could be improved to be uniform and straightforward
-        declare(f"{name} - {integration_impl.REQUIREMENTS}"
-                f"{' - installed' if is_installed else ''}")
+        table_rows.append({
+            'Integration': name,
+            'Required Packages': integration_impl.REQUIREMENTS,
+            'Installed': is_installed
+        })
+    declare(tabulate(table_rows, headers="keys"))
 
-    declare("\nTo install the dependencies of a specific integration, type: ")
-    declare("zenml integration install EXAMPLE_NAME")
+    warning("\nTo install the dependencies of a specific integration, type: ")
+    warning("zenml integration install EXAMPLE_NAME")
 
 
 @integration.command(help="List the available integration .")
@@ -96,36 +127,113 @@ def list() -> None:
 def get_requirements(integrations_handler: IntegrationsHandler,
                      integration_name: str) -> None:
     """List all requirements for the chosen integration."""
-    requirements = integrations_handler.select_integration_requirements(
-        integration_name
-    )
+    try:
+        requirements = integrations_handler.select_integration_requirements(
+            integration_name
+        )
+    except KeyError as e:
+        error(str(e))
 
     if requirements:
-        declare("Listing requirements for {integration_name}: \n")
+        title(f"Requirements for "
+              f"{integration_name if integration_name else 'all integrations'}"
+              f":\n")
         declare(f"{requirements}")
-        declare("\nTo install the dependencies of a "
+        warning("\nTo install the dependencies of a "
                 "specific integration, type: ")
-        declare("zenml integration install EXAMPLE_NAME")
+        warning("zenml integration install EXAMPLE_NAME")
 
 
 @integration.command(help="Install the required packages "
-                          "for your integration of choice.")
+                          "for the integration of choice.")
 @pass_integrations_handler
 @click.argument("integration_name", required=False, default=None)
-def install(integrations_handler: IntegrationsHandler, integration_name: str):
-    requirements = integrations_handler.select_integration_requirements(
-        integration_name
-    )
+@click.option(
+    "--force",
+    "-f",
+    is_flag=True,
+    help="Force the installation of the required packages. This will skip the "
+         "confirmation step and reinstall existing packages as well",
+)
+def install(
+        integrations_handler: IntegrationsHandler,
+        integration_name: str,
+        force: bool = False
+):
+    """Installs the required packages for a given integration. If no integration
+    is specified all required packages for all integrations are installed
+    using pip"""
+    try:
+        if not integrations_handler.is_installed(integration_name) or force:
+            requirements = integrations_handler.select_integration_requirements(
+                integration_name
+            )
+        else:
+            warning(f"All required packages are already installed. "
+                    f"Nothing will be done.")
+            requirements = []
+    except KeyError as e:
+        error(str(e))
 
     if requirements:
-        ## should this rerun if already installed?
-        declare(f"Installing all required packages for {integration_name}")
-        for requirement in requirements:
-            install_package(requirement)
+        if force:
+            declare(f"Installing all required packages for {integration_name}")
+            for requirement in requirements:
+                install_package(requirement)
+        else:
+            confirmation("Are you sure you want to install the following "
+                         "packages to the current environment?\n"
+                         f"{requirements}")
+            for requirement in requirements:
+                install_package(requirement)
+
+
+@integration.command(help="Uninstall the required packages "
+                          "for the integration of choice.")
+@pass_integrations_handler
+@click.argument("integration_name", required=False, default=None)
+@click.option(
+    "--force",
+    "-f",
+    is_flag=True,
+    help="Force the uninstallation of the required packages. This will skip "
+         "the confirmation step",
+)
+def uninstall(
+        integrations_handler: IntegrationsHandler,
+        integration_name: str,
+        force: bool = False
+):
+    """Installs the required packages for a given integration. If no integration
+    is specified all required packages for all integrations are installed
+    using pip"""
+    try:
+        if integrations_handler.is_installed(integration_name):
+            requirements = integrations_handler.select_integration_requirements(
+                integration_name
+            )
+        else:
+            warning(f"The specified requirements already not installed."
+                    f" Nothing will be done.")
+            requirements = []
+    except KeyError as e:
+        error(str(e))
+
+    if requirements:
+        if force:
+            declare(f"Installing all required packages for {integration_name}")
+            for requirement in requirements:
+                uninstall_package(requirement)
+        else:
+            confirmation("Are you sure you want to uninstall the following "
+                         "packages from the current environment?\n"
+                         f"{requirements}")
+            for requirement in requirements:
+                uninstall_package(requirement)
 
 
 if __name__ == '__main__':
     from click.testing import CliRunner
 
     runner = CliRunner()
-    result = runner.invoke(integration, ['get-requirements'])
+    result = runner.invoke(integration, ['install', 'airflow'])
