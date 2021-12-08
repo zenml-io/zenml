@@ -65,3 +65,4 @@ In order to clean up, delete the remaining zenml references.
 rm -rf zenml_examples
 ```
 
+To see a visual representation of caching, check out the [lineage](../lineage) example. It show-cases how different steps in a pipeline run are cached!
