@@ -471,8 +471,8 @@ class BaseStep(metaclass=BaseStepMeta):
         # Make sure that the input/output artifact types exist in the signature
         if not all(k in self.OUTPUT_SIGNATURE for k in self.OUTPUT_SPEC):
             raise StepInterfaceError(
-                f"Failed to create the step. The predefined artifact types"
-                f"for the input does not match the input signature."
+                "Failed to create the step. The predefined artifact types"
+                "for the input does not match the input signature."
             )
 
         # Prepare the input artifacts and spec
@@ -480,9 +480,10 @@ class BaseStep(metaclass=BaseStepMeta):
             *artifacts, **kw_artifacts
         )
 
-        self.INPUT_SPEC = {arg_name: artifact_type.type
-                           for arg_name, artifact_type in
-                           input_artifacts.items()}
+        self.INPUT_SPEC = {
+            arg_name: artifact_type.type
+            for arg_name, artifact_type in input_artifacts.items()
+        }
 
         # Prepare the output artifacts and spec
         from zenml.artifacts.type_registery import type_registry
