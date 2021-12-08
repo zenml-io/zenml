@@ -24,7 +24,7 @@ class TrainingPipeline(BasePipeline):
         # Ingesting the datasource
         dataset = datasource()
 
-        # # Splitting the data
+        # Splitting the data
         train, test, validation = splitter(dataset=dataset)
 
         # Analyzing the train dataset
