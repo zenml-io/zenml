@@ -34,25 +34,15 @@
     <b>NEW: </b> <a href="https://zenml.io/discussion" target="_blank"><img width="25" src="https://cdn1.iconfinder.com/data/icons/social-17/48/like-512.png" alt="Vote"/><b> Vote</b></a> on the next ZenML features 
 </div>
 
-## What is ZenML?
+# What is ZenML?
 
+![](docs/readme/sam-side-by-side-full-text.png)
 
-Before: Sam struggles to productionalize ML |  After: Sam finds Zen in her MLOps with ZenML
-:-------------------------:|:-------------------------:
-![Sam is frustrated](docs/readme/sam_frustrated.jpg)  |  ![Sam is happy](docs/readme/sam_zen_mode.jpg)
+**ZenML** is an extensible, open-source MLOps framework to create production-ready machine learning pipelines. It has a simple, flexible syntax, is cloud and tool agnostic, and has interfaces/abstractions that are catered towards ML workflows.
 
+At its core, ZenML pipelines execute ML-specific workflows from sourcing data to splitting, preprocessing, training, all the way to the evaluation of results and even serving. There are many built-in batteries as things progress in ML development. ZenML is not here to replace the great tools that solve these individual problems. Rather, it integrates natively with many popular ML tooling, and gives standard abstraction to write your workflows.
 
-
-**ZenML** is an extensible, open-source MLOps framework to create production-ready machine learning pipelines. It has a simple, flexible syntax,
-is cloud and tool agnostic, and has interfaces/abstractions that are catered towards ML workflows.
-
-At its core, ZenML pipelines execute ML-specific workflows from sourcing data to splitting, preprocessing, training, all the way to the evaluation of
-results and even serving. There are many built-in batteries as things progress in ML development. ZenML is not here to replace the great tools that
-solve these individual problems. Rather, it integrates natively with many popular ML tooling, and gives standard abstraction to write your workflows.
-
-## Why do I need it?
-
-_**Ichi Wa Zen, Zen Wa Ichi.**_
+## Why use ZenML?
 
 We built ZenML because we could not find an easy framework that translates the patterns observed in the research phase with Jupyter notebooks into a production-ready ML environment.
 ZenML follows the paradigm of [`Pipelines As Experiments` (PaE)](https://docs.zenml.io/why-zenml), meaning ZenML pipelines are designed to be written early on the development lifecycle, where the users can explore their
