@@ -461,15 +461,6 @@ def _create_executor_class(
         materializers=materializers,
     )
 
-    # if step_source_module_name != executor_class_target_module_name:
-    #     executor_class_name = f"{step_instance.step_name}_Executor"
-    #     target_module = sys.modules[executor_class_target_module_name]
-    #     setattr(
-    #         target_module,
-    #         executor_class_name,
-    #         getattr(step_module, executor_class_name),
-    #     )
-
 
 def _parse_command_line_arguments() -> argparse.Namespace:
     """Parses the command line input arguments."""
@@ -497,8 +488,8 @@ def main():
     """Runs a single step defined by the command line arguments."""
     # Log to the container's stdout so Kubeflow Pipelines UI can display logs to
     # the user.
-    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-    logging.getLogger().setLevel(logging.DEBUG)
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    logging.getLogger().setLevel(logging.INFO)
 
     args = _parse_command_line_arguments()
 

@@ -30,6 +30,10 @@ from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,
 )
+from zenml.constants import (
+    ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
+    SHOULD_PREVENT_PIPELINE_EXECUTION,
+)
 from zenml.core.repo import Repository
 from zenml.exceptions import (
     DoesNotExistException,
@@ -228,6 +232,20 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Args:
             run_name: Optional name for the run.
         """
+        if SHOULD_PREVENT_PIPELINE_EXECUTION:
+            # An environment variable was set to stop the execution of
+            # pipelines. This is done to prevent execution of module-level
+            # pipeline.run() calls inside docker containers which should only
+            # run a single step.
+            logger.info(
+                "Preventing execution of pipeline '%s'. If this is not "
+                "intended behaviour, make sure to unset the environment "
+                "variable '%s'.",
+                self.pipeline_name,
+                ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
+            )
+            return
+
         # Activating the built-in integrations through lazy loading
         from zenml.integrations.registry import integration_registry
 

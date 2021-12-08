@@ -32,6 +32,7 @@ from tfx.orchestration import data_types
 from tfx.orchestration import pipeline as tfx_pipeline
 from tfx.proto.orchestration import pipeline_pb2
 
+from zenml.constants import ENV_ZENML_PREVENT_PIPELINE_EXECUTION
 from zenml.integrations.kubeflow.orchestrators import kubeflow_utils as utils
 
 # TODO(b/166202742): Consolidate container entrypoint with TFX image's default.
@@ -160,6 +161,12 @@ class BaseComponent:
                     ),
                 )
             )
+
+        self.container_op.container.add_env_variable(
+            k8s_client.V1EnvVar(
+                name=ENV_ZENML_PREVENT_PIPELINE_EXECUTION, value=True
+            )
+        )
 
         if pod_labels_to_attach:
             for k, v in pod_labels_to_attach.items():
