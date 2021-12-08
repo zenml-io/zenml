@@ -237,10 +237,3 @@ def uninstall(
             )
             for requirement in requirements:
                 uninstall_package(requirement)
-
-
-if __name__ == "__main__":
-    from click.testing import CliRunner
-
-    runner = CliRunner()
-    result = runner.invoke(integration, ["install", "airflow"])
