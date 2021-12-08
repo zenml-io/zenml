@@ -29,7 +29,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m poetry install
-          python -m poetry run pip install apache-airflow~=2.2.0 gcsfs~=2021.9.0 click~=8.0.3 torch~=1.10.0
+          zenml integration install -f
           python -m poetry run pip install awscli
 
       - name: Opt-out of analytics
