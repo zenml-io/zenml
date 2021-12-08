@@ -13,29 +13,56 @@
 #  permissions and limitations under the License.
 import os
 
-from zenml.steps.builtin_steps import PandasDatasource, PandasDatasourceConfig
-from zenml.steps.builtin_steps import PandasAnalyzer
-
-from zenml.integrations.tensorflow.steps import TensorflowTrainer
-from zenml.integrations.tensorflow.steps import TensorflowEvaluator
-
-from zenml.integrations.sklearn.steps import SklearnSplitter, SklearnSplitterConfig
-from zenml.integrations.sklearn.steps import SklearnPreprocesser
-
+from zenml.integrations.sklearn import steps as sklearn_steps
+from zenml.integrations.tensorflow import steps as tf_steps
 from zenml.pipelines.builtin_pipelines import TrainingPipeline
+from zenml.steps import builtin_steps
 
+# Configuring the datasource
+datasource = builtin_steps.PandasDatasource(
+    builtin_steps.PandasDatasourceConfig(
+        path=os.getenv("test_data")
+    ))
+
+# Configuring the split step
+splitter = sklearn_steps.SklearnSplitter(
+    sklearn_steps.SklearnSplitterConfig(
+        ratios={"train": 0.7,
+                "test": 0.15,
+                "validation": 0.15}
+    ))
+
+# Configuring the analyzer step
+analyzer = builtin_steps.PandasAnalyzer(
+    builtin_steps.PandasAnalyzerConfig(
+    ))
+
+# Configuring the preprocessing step
+preprocesser = sklearn_steps.SklearnPreprocesser(
+    sklearn_steps.SklearnPreprocesserConfig(
+
+    ))
+
+# Configuring the training step
+trainer = tf_steps.TensorflowBinaryClassifier(
+    tf_steps.TensorflowBinaryClassifierConfig(
+        target_column="has_diabetes"
+    ))
+
+# Configuring the evaluation step
+evaluator = sklearn_steps.SklearnEvaluator(
+    sklearn_steps.SklearnEvaluatorConfig(
+
+    ))
+
+# Create the pipeline and run it
 pipeline_instance = TrainingPipeline(
-    datasource=PandasDatasource(
-        config=PandasDatasourceConfig(path=os.getenv("test_data")),
-        ),
-    splitter=SklearnSplitter(
-        config=SklearnSplitterConfig(ratios={"train": 0.7,
-                                             "test": 0.15,
-                                             "validation": 0.15})
-    ),
-    analyzer=PandasAnalyzer(),
-    preprocesser=SklearnPreprocesser(),
-    trainer=TensorflowTrainer(),
-    evaluator=TensorflowEvaluator()
+    datasource=datasource,
+    splitter=splitter,
+    analyzer=analyzer,
+    preprocesser=preprocesser,
+    trainer=trainer,
+    evaluator=evaluator,
+    enable_cache=False,
 )
 pipeline_instance.run()
