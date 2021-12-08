@@ -12,23 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import List, Dict
 import subprocess
 import sys
-from tabulate import tabulate
+from typing import List
 
 import click
-from zenml.cli.cli import cli
-from zenml.cli.utils import (
-    confirmation,
-    declare,
-    error,
-    pretty_print,
-    title,
-    warning,
-)
-from zenml.integrations.registry import integration_registry
+from tabulate import tabulate
 
+from zenml.cli.cli import cli
+from zenml.cli.utils import confirmation, declare, error, title, warning
+from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -36,9 +29,7 @@ logger = get_logger(__name__)
 
 # To be replaced by zenml impl of Subprocess
 def install_package(package):
-    subprocess.check_call(
-        [sys.executable, "-m", "pip", "install",  package]
-    )
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
 
 # To be replaced by zenml impl of Subprocess
@@ -49,17 +40,15 @@ def uninstall_package(package):
 
 
 class IntegrationsHandler:
-
     def __init__(self) -> None:
         self.integrations = integration_registry.integrations
-        pass
 
     @property
     def list_integration_names(self) -> List[str]:
         return [name for name in self.integrations]
 
     def select_integration_requirements(
-            self, integration_name: str = None
+        self, integration_name: str = None
     ) -> List[str]:
         if integration_name:
             if integration_name in self.list_integration_names:
@@ -68,7 +57,8 @@ class IntegrationsHandler:
                 raise KeyError(
                     f"Version {integration_name} does not exist. "
                     f"Currently the following integrations are implemented. "
-                    f"{self.list_integration_names}")
+                    f"{self.list_integration_names}"
+                )
         else:
             return [
                 requirement
@@ -89,7 +79,8 @@ class IntegrationsHandler:
             raise KeyError(
                 f"Version {integration_name} does not exist. "
                 f"Currently the following integrations are available. "
-                f"{self.list_integration_names}")
+                f"{self.list_integration_names}"
+            )
 
 
 pass_integrations_handler = click.make_pass_decorator(
@@ -110,11 +101,13 @@ def list() -> None:
     table_rows = []
     for name, integration_impl in integration_registry.integrations.items():
         is_installed = integration_impl.check_installation()
-        table_rows.append({
-            'Integration': name,
-            'Required Packages': integration_impl.REQUIREMENTS,
-            'Installed': is_installed
-        })
+        table_rows.append(
+            {
+                "Integration": name,
+                "Required Packages": integration_impl.REQUIREMENTS,
+                "Installed": is_installed,
+            }
+        )
     declare(tabulate(table_rows, headers="keys"))
 
     warning("\nTo install the dependencies of a specific integration, type: ")
@@ -124,8 +117,9 @@ def list() -> None:
 @integration.command(help="List the available integration .")
 @pass_integrations_handler
 @click.argument("integration_name", required=False, default=None)
-def get_requirements(integrations_handler: IntegrationsHandler,
-                     integration_name: str) -> None:
+def get_requirements(
+    integrations_handler: IntegrationsHandler, integration_name: str
+) -> None:
     """List all requirements for the chosen integration."""
     try:
         requirements = integrations_handler.select_integration_requirements(
@@ -135,17 +129,21 @@ def get_requirements(integrations_handler: IntegrationsHandler,
         error(str(e))
 
     if requirements:
-        title(f"Requirements for "
-              f"{integration_name if integration_name else 'all integrations'}"
-              f":\n")
+        title(
+            f"Requirements for "
+            f"{integration_name if integration_name else 'all integrations'}"
+            f":\n"
+        )
         declare(f"{requirements}")
-        warning("\nTo install the dependencies of a "
-                "specific integration, type: ")
+        warning(
+            "\nTo install the dependencies of a " "specific integration, type: "
+        )
         warning("zenml integration install EXAMPLE_NAME")
 
 
-@integration.command(help="Install the required packages "
-                          "for the integration of choice.")
+@integration.command(
+    help="Install the required packages " "for the integration of choice."
+)
 @pass_integrations_handler
 @click.argument("integration_name", required=False, default=None)
 @click.option(
@@ -153,12 +151,12 @@ def get_requirements(integrations_handler: IntegrationsHandler,
     "-f",
     is_flag=True,
     help="Force the installation of the required packages. This will skip the "
-         "confirmation step and reinstall existing packages as well",
+    "confirmation step and reinstall existing packages as well",
 )
 def install(
-        integrations_handler: IntegrationsHandler,
-        integration_name: str,
-        force: bool = False
+    integrations_handler: IntegrationsHandler,
+    integration_name: str,
+    force: bool = False,
 ):
     """Installs the required packages for a given integration. If no integration
     is specified all required packages for all integrations are installed
@@ -169,8 +167,10 @@ def install(
                 integration_name
             )
         else:
-            warning(f"All required packages are already installed. "
-                    f"Nothing will be done.")
+            warning(
+                "All required packages are already installed. "
+                "Nothing will be done."
+            )
             requirements = []
     except KeyError as e:
         error(str(e))
@@ -181,15 +181,18 @@ def install(
             for requirement in requirements:
                 install_package(requirement)
         else:
-            confirmation("Are you sure you want to install the following "
-                         "packages to the current environment?\n"
-                         f"{requirements}")
+            confirmation(
+                "Are you sure you want to install the following "
+                "packages to the current environment?\n"
+                f"{requirements}"
+            )
             for requirement in requirements:
                 install_package(requirement)
 
 
-@integration.command(help="Uninstall the required packages "
-                          "for the integration of choice.")
+@integration.command(
+    help="Uninstall the required packages " "for the integration of choice."
+)
 @pass_integrations_handler
 @click.argument("integration_name", required=False, default=None)
 @click.option(
@@ -197,12 +200,12 @@ def install(
     "-f",
     is_flag=True,
     help="Force the uninstallation of the required packages. This will skip "
-         "the confirmation step",
+    "the confirmation step",
 )
 def uninstall(
-        integrations_handler: IntegrationsHandler,
-        integration_name: str,
-        force: bool = False
+    integrations_handler: IntegrationsHandler,
+    integration_name: str,
+    force: bool = False,
 ):
     """Installs the required packages for a given integration. If no integration
     is specified all required packages for all integrations are installed
@@ -213,8 +216,10 @@ def uninstall(
                 integration_name
             )
         else:
-            warning(f"The specified requirements already not installed."
-                    f" Nothing will be done.")
+            warning(
+                "The specified requirements already not installed."
+                " Nothing will be done."
+            )
             requirements = []
     except KeyError as e:
         error(str(e))
@@ -225,15 +230,17 @@ def uninstall(
             for requirement in requirements:
                 uninstall_package(requirement)
         else:
-            confirmation("Are you sure you want to uninstall the following "
-                         "packages from the current environment?\n"
-                         f"{requirements}")
+            confirmation(
+                "Are you sure you want to uninstall the following "
+                "packages from the current environment?\n"
+                f"{requirements}"
+            )
             for requirement in requirements:
                 uninstall_package(requirement)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from click.testing import CliRunner
 
     runner = CliRunner()
-    result = runner.invoke(integration, ['install', 'airflow'])
+    result = runner.invoke(integration, ["install", "airflow"])
