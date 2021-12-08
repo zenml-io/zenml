@@ -66,8 +66,7 @@ class BaseComponent:
         component: tfx_base_node.BaseNode,
         depends_on: Set[dsl.ContainerOp],
         pipeline: tfx_pipeline.Pipeline,
-        pipeline_root: dsl.PipelineParam,
-        tfx_image: str,
+        image: str,
         kubeflow_metadata_config: Dict,
         tfx_ir: pipeline_pb2.Pipeline,
         pod_labels_to_attach: Dict[str, str],
@@ -84,8 +83,7 @@ class BaseComponent:
           depends_on: The set of upstream KFP ContainerOp components that this
             component will depend on.
           pipeline: The logical TFX pipeline to which this component belongs.
-          pipeline_root: The pipeline root specified, as a dsl.PipelineParam
-          tfx_image: The container image to use for this component.
+          image: The container image to use for this component.
           kubeflow_metadata_config: Configuration settings for connecting to the
             MLMD store in a Kubeflow cluster.
           tfx_ir: The TFX intermedia representation of the pipeline.
@@ -123,7 +121,7 @@ class BaseComponent:
         self.container_op = dsl.ContainerOp(
             name=component.id,
             command=_COMMAND,
-            image=tfx_image,
+            image=image,
             arguments=arguments,
             output_artifact_paths={
                 "mlpipeline-ui-metadata": metadata_ui_path,

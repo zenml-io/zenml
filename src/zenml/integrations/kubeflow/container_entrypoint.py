@@ -406,7 +406,7 @@ def _resolve_runtime_parameters(
 ) -> None:
     """Resolve runtime parameters in the pipeline proto inplace."""
     if parameters is None:
-        return
+        parameters = []
 
     parameter_bindings = {
         # Substitute the runtime parameter to be a concrete run_id

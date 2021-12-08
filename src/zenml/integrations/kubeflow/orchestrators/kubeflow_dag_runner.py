@@ -296,9 +296,7 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
         for component in pipeline.components:
             self._parse_parameter_from_component(component)
 
-    def _construct_pipeline_graph(
-        self, pipeline: tfx_pipeline.Pipeline, pipeline_root: dsl.PipelineParam
-    ):
+    def _construct_pipeline_graph(self, pipeline: tfx_pipeline.Pipeline):
         """Constructs a Kubeflow Pipeline graph.
         Args:
           pipeline: The logical TFX pipeline to base the construction on.
@@ -337,16 +335,12 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
                 component=component,
                 depends_on=depends_on,
                 pipeline=pipeline,
-                pipeline_root=pipeline_root,
-                tfx_image=self._config.image,
+                image=self._config.image,
                 kubeflow_metadata_config=self._config.kubeflow_metadata_config,
                 pod_labels_to_attach=self._pod_labels_to_attach,
                 tfx_ir=tfx_node_ir,
                 metadata_ui_path=self._config.metadata_ui_path,
-                runtime_parameters=(
-                    self._params_by_component_id[component.id]
-                    + [tfx_pipeline.ROOT_PARAMETER]
-                ),
+                runtime_parameters=self._params_by_component_id[component.id],
             )
 
             for operator in self._config.pipeline_operator_funcs:
@@ -408,19 +402,12 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
                     pipeline.pipeline_info.pipeline_root
                 )
 
-        # KFP DSL representation of pipeline root parameter.
-        dsl_pipeline_root = dsl.PipelineParam(
-            name=tfx_pipeline.ROOT_PARAMETER.name,
-            value=pipeline.pipeline_info.pipeline_root,
-        )
-        self._params.append(dsl_pipeline_root)
-
         def _construct_pipeline():
             """Constructs a Kubeflow pipeline.
             Creates Kubeflow ContainerOps for each TFX component encountered in the
             logical pipeline definition.
             """
-            self._construct_pipeline_graph(pipeline, dsl_pipeline_root)
+            self._construct_pipeline_graph(pipeline)
 
         # Need to run this first to get self._params populated. Then KFP compiler
         # can correctly match default value with PipelineParam.
