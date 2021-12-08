@@ -86,7 +86,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
     INSTANCE_CONFIGURATION: Dict[Text, Any] = {}
 
-    def __init__(self, *args: BaseStep, **kwargs: BaseStep) -> None:
+    def __init__(self, *args: BaseStep, **kwargs: Any) -> None:
         try:
             self.__stack = Repository().get_active_stack()
         except DoesNotExistException as exc:
