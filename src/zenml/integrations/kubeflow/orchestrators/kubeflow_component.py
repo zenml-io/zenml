@@ -35,7 +35,6 @@ from tfx.proto.orchestration import pipeline_pb2
 from zenml.constants import ENV_ZENML_PREVENT_PIPELINE_EXECUTION
 from zenml.integrations.kubeflow.orchestrators import kubeflow_utils as utils
 
-# TODO(b/166202742): Consolidate container entrypoint with TFX image's default.
 _COMMAND = ["python", "-m", "zenml.integrations.kubeflow.container_entrypoint"]
 
 _WORKFLOW_ID_KEY = "WORKFLOW_ID"
@@ -53,8 +52,7 @@ def _encode_runtime_parameter(param: data_types.RuntimeParameter) -> str:
     return f"{param.name}={type_str}:{str(dsl.PipelineParam(name=param.name))}"
 
 
-# TODO(hongyes): renaming the name to KubeflowComponent.
-class BaseComponent:
+class KubeflowComponent:
     """Base component for all Kubeflow pipelines TFX components.
     Returns a wrapper around a KFP DSL ContainerOp class, and adds named output
     attributes that match the output names for the corresponding native TFX
@@ -99,9 +97,6 @@ class BaseComponent:
             json.dumps(kubeflow_metadata_config),
             "--node_id",
             component.id,
-            # TODO(b/182220464): write IR to pipeline_root and let
-            # container_entrypoint.py read it back to avoid future issue that IR
-            # exeeds the flag size limit.
             "--tfx_ir",
             json_format.MessageToJson(tfx_ir),
             "--metadata_ui_path",

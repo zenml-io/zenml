@@ -25,6 +25,7 @@ from typing import (
     MutableMapping,
     Optional,
     Type,
+    Union,
     cast,
 )
 
@@ -44,9 +45,12 @@ from tfx.orchestration.launcher import (
 from tfx.proto.orchestration import pipeline_pb2
 from tfx.utils import telemetry_utils
 
-from zenml.integrations.kubeflow.orchestrators import (
-    kubeflow_base_component as base_component,
+from zenml.integrations.kubeflow.orchestrators.kubeflow_component import (
+    KubeflowComponent,
 )
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 # OpFunc represents the type of a function that takes as input a
 # dsl.ContainerOp and returns the same object. Common operations such as adding
@@ -54,7 +58,7 @@ from zenml.integrations.kubeflow.orchestrators import (
 # specified as an OpFunc.
 # See example usage here:
 # https://github.com/kubeflow/pipelines/blob/master/sdk/python/kfp/gcp.py
-OpFunc = Callable[[dsl.ContainerOp], dsl.ContainerOp]
+OpFunc = Callable[[dsl.ContainerOp], Union[dsl.ContainerOp, None]]
 
 # Default secret name for GCP credentials. This secret is installed as part of
 # a typical Kubeflow installation when the component is GKE.
@@ -227,13 +231,7 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
         Args:
           config: A KubeflowDagRunnerConfig object to specify runtime
             configuration when running the pipeline under Kubeflow.
-          output_dir: An optional output directory into which to output the pipeline
-            definition files. Defaults to the current working directory.
-          output_filename: An optional output file name for the pipeline definition
-            file. Defaults to pipeline_name.tar.gz when compiling a TFX pipeline.
-            Currently supports .tar.gz, .tgz, .zip, .yaml, .yml formats. See
-            https://github.com/kubeflow/pipelines/blob/181de66cf9fa87bcd0fe9291926790c400140783/sdk/python/kfp/compiler/compiler.py#L851
-              for format restriction.
+          output_path: Path where the pipeline definition file will be stored.
           pod_labels_to_attach: Optional set of pod labels to attach to GKE pod
             spinned up for this pipeline. Default to the 3 labels:
             1. add-pod-env: true,
@@ -329,7 +327,7 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
             else:
                 step_module = ".".join(step_module)
 
-            kfp_component = base_component.BaseComponent(
+            kfp_component = KubeflowComponent(
                 step_module=step_module,
                 step_function_name=component.id,
                 component=component,
@@ -419,4 +417,8 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
             pipeline_name=pipeline.pipeline_info.pipeline_name,
             params_list=self._params,
             package_path=self._output_path,
+        )
+        logger.info(
+            "Finished writing kubeflow pipeline definition file '%s'.",
+            self._output_path,
         )
