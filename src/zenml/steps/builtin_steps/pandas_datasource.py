@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import List, Union
+
 import pandas as pd
 
 from zenml.steps.step_interfaces.base_datasource_step import (
@@ -21,6 +23,10 @@ from zenml.steps.step_interfaces.base_datasource_step import (
 
 class PandasDatasourceConfig(BaseDatasourceConfig):
     path: str
+    sep: str = ","
+    header: Union[int, List[int], str] = "infer"
+    names: List[str] = None
+    index_col: Union[int, str, List[Union[int, str]], bool] = None
 
 
 class PandasDatasource(BaseDatasourceStep):
@@ -28,4 +34,10 @@ class PandasDatasource(BaseDatasourceStep):
         self,
         config: PandasDatasourceConfig,
     ) -> pd.DataFrame:
-        return pd.read_csv(config.path)
+        return pd.read_csv(
+            filepath_or_buffer=config.path,
+            sep=config.sep,
+            header=config.header,
+            names=config.names,
+            index_col=config.index_col,
+        )
