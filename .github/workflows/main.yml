@@ -42,7 +42,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m poetry install
-          zenml integration install -f
+          python -m poetry run zenml integration install -f
 
       - name: Opt-out of analytics
         run: |
