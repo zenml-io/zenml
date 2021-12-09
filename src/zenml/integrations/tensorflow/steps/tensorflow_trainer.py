@@ -21,13 +21,13 @@ from zenml.steps.step_interfaces.base_trainer_step import (
 
 
 class TensorflowBinaryClassifierConfig(BaseTrainerConfig):
-    layers = [32, 64, 1]
-    input_shape = [8]
+    layers = [256, 64, 1]
+    input_shape = (8,)
     learning_rate = 0.001
     metrics = ["accuracy"]
     epochs = 50
     target_column: str = None
-    batch_size = 32
+    batch_size = 8
 
 
 class TensorflowBinaryClassifier(BaseTrainerStep):
@@ -38,14 +38,17 @@ class TensorflowBinaryClassifier(BaseTrainerStep):
         config: TensorflowBinaryClassifierConfig,
     ) -> tf.keras.Model:
         model = tf.keras.Sequential()
-        model.add(tf.keras.layers.Flatten(input_shape=config.input_shape))
+        model.add(tf.keras.layers.InputLayer(input_shape=config.input_shape))
+        model.add(tf.keras.layers.Flatten())
 
-        for layer in config.layers:
-            model.add(tf.keras.layers.Dense(layer))
+        last_layer = config.layers.pop()
+        for i, layer in enumerate(config.layers):
+            model.add(tf.keras.layers.Dense(layer, activation="relu"))
+        model.add(tf.keras.layers.Dense(last_layer, activation="sigmoid"))
 
         model.compile(
             optimizer=tf.keras.optimizers.Adam(config.learning_rate),
-            loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
+            loss=tf.keras.losses.BinaryCrossentropy(),
             metrics=config.metrics,
         )
 
@@ -58,5 +61,6 @@ class TensorflowBinaryClassifier(BaseTrainerStep):
             batch_size=config.batch_size,
             epochs=config.epochs,
         )
+        model.summary()
 
         return model
