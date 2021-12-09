@@ -182,13 +182,13 @@ def install(
             for requirement in requirements:
                 install_package(requirement)
         else:
-            confirmation(
+            if confirmation(
                 "Are you sure you want to install the following "
                 "packages to the current environment?\n"
                 f"{requirements}"
-            )
-            for requirement in requirements:
-                install_package(requirement)
+            ):
+                for requirement in requirements:
+                    install_package(requirement)
 
 
 @integration.command(
@@ -231,10 +231,10 @@ def uninstall(
             for requirement in requirements:
                 uninstall_package(requirement)
         else:
-            confirmation(
+            if confirmation(
                 "Are you sure you want to uninstall the following "
                 "packages from the current environment?\n"
                 f"{requirements}"
-            )
-            for requirement in requirements:
-                uninstall_package(requirement)
+            ):
+                for requirement in requirements:
+                    uninstall_package(requirement)
