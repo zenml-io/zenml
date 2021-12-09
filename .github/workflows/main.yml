@@ -42,10 +42,10 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m poetry install
-          python -m poetry run pip install click~=8.0.3
           python -m poetry run zenml integration install airflow -f
           python -m poetry run zenml integration install pytorch -f
           python -m poetry run zenml integration install gcp -f
+          python -m poetry run pip install click~=8.0.3
           
 
       - name: Opt-out of analytics
@@ -54,7 +54,6 @@ jobs:
 
       - name: Lint
         run: |
-          python -m poetry run pip list
           python -m poetry run bash scripts/lint.sh
 
       - name: Test
