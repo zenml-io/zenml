@@ -49,6 +49,7 @@ jobs:
           python -m poetry run zenml analytics opt-out
 
       - name: Lint
+        run: python -m pip list
         run: python -m poetry run bash scripts/lint.sh
 
       - name: Test
