@@ -50,7 +50,7 @@ jobs:
 
       - name: Lint
         run: |
-          python -m pip list
+          python -m poetry run pip list
           python -m poetry run bash scripts/lint.sh
 
       - name: Test
