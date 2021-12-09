@@ -24,7 +24,7 @@ from zenml.steps.step_interfaces.base_analyzer_step import (
 
 
 class PandasAnalyzerConfig(BaseAnalyzerConfig):
-    percentiles: List[Union[int, float]] = [0.25, 0.5, 0.75]
+    percentiles: List[float] = [0.25, 0.5, 0.75]
     include: Union[str, List[Type]] = None
     exclude: Union[str, List[Type]] = None
 
