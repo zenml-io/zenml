@@ -12,19 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os
+import sys
 
 import pytest
 from click.testing import CliRunner
+from pytest_mock import MockFixture
+
+from zenml.cli.integration import integration
 from zenml.integrations.registry import integration_registry
 
-from zenml.cli.integration import (
-    integration,
-    install_package,
-    uninstall_package
-)
-
 NOT_AN_INTEGRATIONS = ["zenflow", "Anti-Tensorflow", "123"]
+INTEGRATIONS = ["airflow", "plotly", "tensorflow"]
 
 
 def test_integration_list() -> None:
@@ -40,14 +38,13 @@ def test_integration_list() -> None:
 
 @pytest.mark.parametrize("not_an_integration", NOT_AN_INTEGRATIONS)
 def test_integration_get_requirements_inexistent_integration(
-        not_an_integration: str,
+    not_an_integration: str,
 ) -> None:
     """Tests that the get-requirements sub-command works as expected"""
     runner = CliRunner()
 
     result = runner.invoke(
-        integration,
-        ["get-requirements", not_an_integration]
+        integration, ["get-requirements", not_an_integration]
     )
     assert result.exit_code == 1
 
@@ -70,7 +67,7 @@ def test_integration_get_requirements_all() -> None:
 
 @pytest.mark.parametrize("not_an_integration", NOT_AN_INTEGRATIONS)
 def test_integration_install_inexistent_integration(
-        not_an_integration: str,
+    not_an_integration: str,
 ) -> None:
     """Tests that the install command behaves as expected when supplied with
     no specific integration. This should lead to all packages for all
@@ -81,27 +78,33 @@ def test_integration_install_inexistent_integration(
     assert result.exit_code == 1
 
 
-# TODO[HIGH] mock the install_package and uninstall_package functions
-@pytest.mark.skip(reason="During testing no changes should be made to the"
-                         "environment. The subprocess running pip install"
-                         "should be mocked away")
-def test_integration_install_specific_integration() -> None:
+@pytest.mark.parametrize("integration_name", INTEGRATIONS)
+def test_integration_install_specific_integration(
+    integration_name: str, mocker: MockFixture
+) -> None:
     """Tests that the install command behaves as expected when supplied with
     a specific integration"""
     runner = CliRunner()
+    mocker.patch.object(
+        sys.modules["zenml.cli.integration"],
+        "install_package",
+        return_value=None,
+    )
 
-    result = runner.invoke(integration, ["install", "airflow"])
+    result = runner.invoke(integration, ["install", integration_name])
     assert result.exit_code == 0
 
 
-@pytest.mark.skip(reason="During testing no changes should be made to the"
-                         "environment. The subprocess running pip install"
-                         "should be mocked away")
-def test_integration_install_all() -> None:
+def test_integration_install_all(mocker: MockFixture) -> None:
     """Tests that the install command behaves as expected when supplied with
     no specific integration. This should lead to all packages for all
     integrations to be installed"""
     runner = CliRunner()
+    mocker.patch.object(
+        sys.modules["zenml.cli.integration"],
+        "install_package",
+        return_value=None,
+    )
 
     result = runner.invoke(integration, ["install"])
     assert result.exit_code == 0
@@ -109,7 +112,7 @@ def test_integration_install_all() -> None:
 
 @pytest.mark.parametrize("not_an_integration", NOT_AN_INTEGRATIONS)
 def test_integration_uninstall_inexistent_integration(
-        not_an_integration: str,
+    not_an_integration: str,
 ) -> None:
     """Tests that the install command behaves as expected when supplied with
     no specific integration. This should lead to all packages for all
@@ -120,29 +123,33 @@ def test_integration_uninstall_inexistent_integration(
     assert result.exit_code == 1
 
 
-@pytest.mark.skip(reason="During testing no changes should be made to the"
-                         "environment. The subprocess running pip uninstall"
-                         "should be mocked away")
-def test_integration_uninstall_specific_integration(mocker) -> None:
+@pytest.mark.parametrize("integration_name", INTEGRATIONS)
+def test_integration_uninstall_specific_integration(
+    integration_name: str, mocker: MockFixture
+) -> None:
     """Tests that the uninstall command behaves as expected when supplied with
     a specific integration"""
     runner = CliRunner()
-    mocker.patch('tests.cli.test_integration.uninstall_package',
-                 return_value=None)
-    result = runner.invoke(integration, ["uninstall", "airflow"])
+    mocker.patch.object(
+        sys.modules["zenml.cli.integration"],
+        "uninstall_package",
+        return_value=None,
+    )
+
+    result = runner.invoke(integration, ["uninstall", integration_name])
     assert result.exit_code == 0
 
 
-@pytest.mark.skip(reason="During testing no changes should be made to the"
-                         "environment. The subprocess running pip uninstall"
-                         "should be mocked away")
-def test_integration_uninstall_all(mocker) -> None:
+def test_integration_uninstall_all(mocker: MockFixture) -> None:
     """Tests that the uninstall command behaves as expected when supplied with
     no specific integration. This should lead to all packages for all
     integrations to be uninstalled"""
     runner = CliRunner()
-    mocker.patch('tests.cli.test_integration.uninstall_package',
-                 return_value=None)
+    mocker.patch.object(
+        sys.modules["zenml.cli.integration"],
+        "uninstall_package",
+        return_value=None,
+    )
 
     result = runner.invoke(integration, ["uninstall"])
     assert result.exit_code == 0

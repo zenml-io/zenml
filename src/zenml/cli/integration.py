@@ -12,31 +12,25 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import subprocess
-import sys
 from typing import List
 
 import click
 from tabulate import tabulate
 
 from zenml.cli.cli import cli
-from zenml.cli.utils import confirmation, declare, error, title, warning
+from zenml.cli.utils import (
+    confirmation,
+    declare,
+    error,
+    install_package,
+    title,
+    uninstall_package,
+    warning,
+)
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
-
-
-# To be replaced by zenml impl of Subprocess
-def install_package(package):
-    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-
-
-# To be replaced by zenml impl of Subprocess
-def uninstall_package(package):
-    subprocess.check_call(
-        [sys.executable, "-m", "pip", "uninstall", "-y", package]
-    )
 
 
 class IntegrationsHandler:
