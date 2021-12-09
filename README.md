@@ -65,8 +65,7 @@ By using ZenML at the early stages of development, you get the following feature
 
 # 📖 Learn More
 
-| Documentation |   |
-| ------------- | - |
+| - | - |
 | 🧘‍♀️ **[ZenML 101]** | New to ZenML? Here's everything you need to know! |
 | ⚛️ **[Core Concepts]** | Some key terms and concepts we use. |
 | 🗃 **[Low Level API Guide]** | Build production ML pipelines from the simple step interface. |
