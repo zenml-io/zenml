@@ -214,11 +214,13 @@ def activate_integrations(func: F) -> F:
     return cast(F, _wrapper)
 
 
-def install_package(package):
+def install_package(package: str) -> None:
+    """Installs pypi package into the current environment with pip"""
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
 
-def uninstall_package(package):
+def uninstall_package(package: str) -> None:
+    """Uninstalls pypi package from the current environment with pip"""
     subprocess.check_call(
         [sys.executable, "-m", "pip", "uninstall", "-y", package]
     )

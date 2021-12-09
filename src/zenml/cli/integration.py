@@ -60,7 +60,7 @@ class IntegrationsHandler:
                 for requirement in self.integrations[name].REQUIREMENTS
             ]
 
-    def is_installed(self, integration_name) -> bool:
+    def is_installed(self, integration_name: str) -> bool:
         if integration_name in self.list_integration_names:
             return self.integrations[integration_name].check_installation()
         elif not integration_name:
@@ -151,7 +151,7 @@ def install(
     integrations_handler: IntegrationsHandler,
     integration_name: str,
     force: bool = False,
-):
+) -> None:
     """Installs the required packages for a given integration. If no integration
     is specified all required packages for all integrations are installed
     using pip"""
@@ -200,7 +200,7 @@ def uninstall(
     integrations_handler: IntegrationsHandler,
     integration_name: str,
     force: bool = False,
-):
+) -> None:
     """Installs the required packages for a given integration. If no integration
     is specified all required packages for all integrations are installed
     using pip"""
