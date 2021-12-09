@@ -2,23 +2,21 @@
     <img src="https://zenml.io/assets/social/github.svg">
 </div>
 
-# What is ZenML?
+# 👀 What is ZenML?
 
-**ZenML** is an extensible, open-source MLOps framework to create production-ready machine learning pipelines. It has a simple, flexible syntax, is cloud and tool agnostic, and has interfaces/abstractions that are catered towards ML workflows.
+**ZenML** is an extensible, open-source MLOps framework to create production-ready machine learning pipelines. Built for data scientists, it has a simple, flexible syntax, is cloud- and tool-agnostic, and has interfaces/abstractions that are catered towards ML workflows.
 
-At its core, ZenML pipelines execute ML-specific workflows from sourcing data to splitting, preprocessing, training, all the way to the evaluation of results and even serving. There are many built-in batteries as things progress in ML development. ZenML is not here to replace the great tools that solve these individual problems. Rather, it integrates natively with many popular ML tooling, and gives standard abstraction to write your workflows.
+At its core, **ZenML pipelines execute ML-specific workflows** from sourcing data to splitting, preprocessing, training, all the way to the evaluation of results and even serving. There are many built-in batteries to support common ML development tasks. ZenML is not here to replace the great tools that solve these individual problems. Rather, it **integrates natively with popular ML tooling** and gives standard abstraction to write your workflows.
 
 🎉 **Version 0.5.4 out now!** [Check out the release notes here](https://blog.zenml.io/zero-five-four-release/).
 
 ![Before and after ZenML](docs/readme/sam-side-by-side-full-text.png)
 
-# Why use ZenML?
+# 🤖 Why use ZenML?
 
-We built ZenML because we could not find an easy framework that translates the patterns observed in the research phase with Jupyter notebooks into a production-ready ML environment.
-ZenML follows the paradigm of [`Pipelines As Experiments` (PaE)](https://docs.zenml.io/why-zenml), meaning ZenML pipelines are designed to be written early on the development lifecycle, where the users can explore their
-pipelines as they develop towards production.
+We built ZenML because we could not find an easy framework that translates the patterns observed in the research phase with Jupyter notebooks into a production-ready ML environment. ZenML follows the paradigm of [`Pipelines As Experiments` (PaE)](https://docs.zenml.io/why-zenml), meaning ZenML pipelines are designed to be written early on the development lifecycle, where data scientists can explore their pipelines as they develop towards production.
 
-By using ZenML at the early stages of development, you get the following features:
+By using ZenML in the early stages of your project, you get the following features:
 
 - **Reproducibility** of training and inference workflows.
 - Managing ML **metadata**, including versioning data, code, and models.
@@ -85,14 +83,34 @@ By using ZenML at the early stages of development, you get the following feature
 
 # 🎮 Features
 
-- Write reproducible training experiment code
-- Use caching across pipelines
-- Integrate with your favorite tools (Airflow & Kubeflow)
-- Distribute processing to the cloud
-- Introspect your pipeline results
-- Visualize the steps of your pipeline
-- Visualize statistics
-- Configure pipeline runs with YAML code
+### 1. 🗃 Use Caching across (Pipelines As) Experiments
+
+ZenML makes sure for every pipeline you can trust that:
+
+✅ Code is versioned
+✅ Data is versioned
+✅ Models are versioned
+✅ Configurations are versioned
+
+You can utilize caching to help iterate quickly through ML experiments. (Read [our blogpost](https://blog.zenml.io/caching-ml-pipelines/) for more!)
+
+### 2. ♻️ Leverage powerful integrations
+
+Once code is organized into a ZenML pipeline, you can supercharge your ML development with powerful integrations on multiple [MLOps stacks](https://docs.zenml.io/core-concepts).
+
+We currently support Airflow and Kubeflow as third-party orchestrators for your ML pipeline code. ZenML steps can be built from any of the other tools you usually use in your ML workflows, from `scikit-learn` to `PyTorch` or `TensorFlow`.
+
+### 3. ☁️ Distribute processing to the cloud
+
+Switching from local experiments to cloud-based pipelines doesn't need to be complex.
+
+### 4. 🧩 Visualize the steps of your pipeline
+
+### 5. 📊 Visualize statistics
+
+### 6. 🧐 Introspect your pipeline results
+
+### 7. 🛠 Configure pipeline runs with YAML code
 
 # 🤸 Getting Started
 
@@ -200,27 +218,20 @@ pipeline.run()
 
 ZenML is being built in public. The [roadmap](https://zenml.io/roadmap) is a regularly updated source of truth for the ZenML community to understand where the product is going in the short, medium, and long term.
 
-ZenML is managed by a [core team](https://zenml.io/team) of developers that are responsible for making key decisions and incorporating feedback from the community. The team oversee's feedback via various channels, but you can directly influence the roadmap as follows:
+ZenML is managed by a [core team](https://zenml.io/team) of developers that are responsible for making key decisions and incorporating feedback from the community. The team oversees feedback via various channels, and you can directly influence the roadmap as follows:
 
-- Vote on your most wanted feature on the [Discussion board](https://zenml.io/discussion).
+- Vote on your most wanted feature on our [Discussion board](https://zenml.io/discussion).
 - Create a [Feature Request](https://github.com/zenml-io/zenml/issues/new/choose) in the [GitHub board](https://github.com/zenml-io/zenml/issues).
-- Start a thread in the [Slack channel](https://zenml.io/slack-invite).
+- Start a thread in our [Slack channel](https://zenml.io/slack-invite).
 
 ## 🚧 What we're working on
 
-The current release is bare bones (as it is a complete rewrite).
-We are missing some basic features which used to be part of ZenML 0.3.8 (the previous release):
+We recently rewrote the entire code base, and are now incrementally adding back in some of the features we previously supported. Get a full overview of what's coming by checking out the Roadmap, but in the short term we're currently working hard to support:
 
-- Standard interfaces for `TrainingPipeline`.
-- Individual step interfaces like `PreprocessorStep`, `TrainerStep`, `DeployerStep` etc. need to be rewritten from within the new paradigm. They should
-  be included in the non-RC version of this release.
-- A proper production setup with an orchestrator like Airflow.
-- A post-execution workflow to analyze and inspect pipeline runs.
-- The concept of `Backends` will evolve into a simple mechanism of transitioning individual steps into different runners.
-- Support for `KubernetesOrchestrator`, `KubeflowOrchestrator`, `GCPOrchestrator` and `AWSOrchestrator` are also planned.
-- Dependency management including Docker support is planned.
-
-However, bare with us: Adding those features back in should be relatively faster as we now have a solid foundation to build on. Look out for the next email!
+- Standard interfaces aka our higher-level API.
+- Individual step interfaces like `PreprocessorStep`, `TrainerStep`, `DeployerStep` etc. need to be rewritten from within the new paradigm.
+- A proper production setup with Kubeflow running in the cloud.
+- A simple way to switch between your local environment and the cloud.
 
 # ❓ FAQ
 
@@ -246,7 +257,7 @@ Then connect with us using Slack - simply [join us via this invite](https://zenm
 
 # 🙋‍♀️ Contributing & Community
 
-We would love to receive your contributions! Check our [Contributing Guide](CONTRIBUTING.md) for more details on how best to contribute.
+We would love to develop ZenML together with our community! Check our [Contributing Guide](CONTRIBUTING.md) for more details on how best to contribute.
 
 <br>
 
