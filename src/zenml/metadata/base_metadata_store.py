@@ -16,6 +16,7 @@ import json
 import os
 from abc import abstractmethod
 from collections import OrderedDict
+from json import JSONDecodeError
 from typing import Dict, List, Optional, Tuple
 
 from ml_metadata import proto
@@ -60,7 +61,9 @@ class BaseMetadataStore(BaseComponent):
     def store(self) -> metadata_store.MetadataStore:
         """General property that hooks into TFX metadata store."""
         # TODO [ENG-133]: this always gets recreated, is this intended?
-        return metadata_store.MetadataStore(self.get_tfx_metadata_config())
+        return metadata_store.MetadataStore(
+            self.get_tfx_metadata_config(), enable_upgrade_migration=True
+        )
 
     @abstractmethod
     def get_tfx_metadata_config(self) -> metadata_store_pb2.ConnectionConfig:
@@ -115,11 +118,16 @@ class BaseMetadataStore(BaseComponent):
                 f"data from previous versions."
             )
 
-        step_parameters = {
-            k: json.loads(v.string_value)
-            for k, v in execution.custom_properties.items()
-            if not k.startswith(INTERNAL_EXECUTION_PARAMETER_PREFIX)
-        }
+        step_parameters = {}
+        for k, v in execution.custom_properties.items():
+            if not k.startswith(INTERNAL_EXECUTION_PARAMETER_PREFIX):
+                try:
+                    step_parameters[k] = json.loads(v.string_value)
+                except JSONDecodeError:
+                    # this means there is a property in there that is neither
+                    # an internal one or one created by zenml. Therefore, we can
+                    # ignore it
+                    pass
 
         # TODO [ENG-222]: This is a lot of querying to the metadata store. We
         #  should refactor and make it nicer. Probably it makes more sense
