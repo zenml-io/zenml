@@ -62,12 +62,14 @@ from zenml.utils import source_utils
 
 logger = get_logger(__name__)
 
-STEP_INNER_FUNC_NAME: str = "process"
+STEP_INNER_FUNC_NAME: str = "entrypoint"
 SINGLE_RETURN_OUT_NAME: str = "output"
 PARAM_STEP_NAME: str = "step_name"
 PARAM_ENABLE_CACHE: str = "enable_cache"
 PARAM_PIPELINE_PARAMETER_NAME: str = "pipeline_parameter_name"
 INTERNAL_EXECUTION_PARAMETER_PREFIX: str = "zenml-"
+INSTANCE_CONFIGURATION: str = "INSTANCE_CONFIGURATION"
+OUTPUT_SPEC: str = "OUTPUT_SPEC"
 
 
 def do_types_match(type_a: Type[Any], type_b: Type[Any]) -> bool:
@@ -329,7 +331,7 @@ class _FunctionExecutor(BaseExecutor):
             signature.
 
         Raises:
-            ValueError if types dont match.
+            ValueError if types do not match.
         """
         # TODO [ENG-160]: Include this check when we figure out the logic of
         #  slightly different subclasses.
@@ -360,12 +362,16 @@ class _FunctionExecutor(BaseExecutor):
             if not k.startswith(INTERNAL_EXECUTION_PARAMETER_PREFIX)
         }
 
-        # Building the args for the process function
+        # Building the args for the entrypoint function
         function_params = {}
 
         # First, we parse the inputs, i.e., params and input artifacts.
         spec = inspect.getfullargspec(self._FUNCTION)
         args = spec.args
+
+        if args and args[0] == "self":
+            args.pop(0)
+
         for arg in args:
             arg_type = spec.annotations.get(arg, None)
             if issubclass(arg_type, BaseStepConfig):

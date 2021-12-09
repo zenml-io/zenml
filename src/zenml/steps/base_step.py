@@ -43,6 +43,7 @@ from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_output import Output
 from zenml.steps.utils import (
+    INSTANCE_CONFIGURATION,
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_ENABLE_CACHE,
     PARAM_PIPELINE_PARAMETER_NAME,
@@ -56,7 +57,7 @@ logger = get_logger(__name__)
 
 
 class BaseStepMeta(type):
-    """Meta class for `BaseStep`.
+    """Metaclass for `BaseStep`.
 
     Checks whether everything passed in:
     * Has a matching materializer.
@@ -67,6 +68,9 @@ class BaseStepMeta(type):
         mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
     ) -> "BaseStepMeta":
         """Set up a new class with a qualified spec."""
+        dct.setdefault("PARAM_SPEC", {})
+        dct.setdefault("INPUT_SPEC", {})
+        dct.setdefault("OUTPUT_SPEC", {})
         cls = cast(Type["BaseStep"], super().__new__(mcs, name, bases, dct))
 
         cls.INPUT_SIGNATURE = {}
@@ -141,7 +145,7 @@ class BaseStepMeta(type):
                 cls.CONTEXT_PARAMETER_NAME = arg
             else:
                 # Can't do any check for existing materializers right now
-                # as they might get passed later, so we simply store the
+                # as they might get be defined later, so we simply store the
                 # argument name and type for later use.
                 cls.INPUT_SIGNATURE.update({arg: arg_type})
 
@@ -186,12 +190,8 @@ class BaseStep(metaclass=BaseStepMeta):
     """
 
     # TODO [ENG-156]: Ensure these are ordered
-    INPUT_SIGNATURE: ClassVar[
-        Dict[str, Type[Any]]
-    ] = None  # type: ignore[assignment] # noqa
-    OUTPUT_SIGNATURE: ClassVar[
-        Dict[str, Type[Any]]
-    ] = None  # type: ignore[assignment] # noqa
+    INPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
+    OUTPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
     CONFIG_PARAMETER_NAME: ClassVar[Optional[str]] = None
     CONFIG_CLASS: ClassVar[Optional[Type[BaseStepConfig]]] = None
     CONTEXT_PARAMETER_NAME: ClassVar[Optional[str]] = None
@@ -200,15 +200,24 @@ class BaseStep(metaclass=BaseStepMeta):
     INPUT_SPEC: Dict[str, Type[BaseArtifact]] = {}
     OUTPUT_SPEC: Dict[str, Type[BaseArtifact]] = {}
 
+    INSTANCE_CONFIGURATION: Dict[str, Any] = {}
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.step_name = self.__class__.__name__
         self.pipeline_parameter_name: Optional[str] = None
-        self.enable_cache = getattr(self, PARAM_ENABLE_CACHE)
+
+        kwargs.update(getattr(self, INSTANCE_CONFIGURATION))
+        self.enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, True)
+
         self.requires_context = bool(self.CONTEXT_PARAMETER_NAME)
         self._explicit_materializers: Dict[str, Type[BaseMaterializer]] = {}
         self._component: Optional[_ZenMLSimpleComponent] = None
 
         self._verify_arguments(*args, **kwargs)
+
+    @abstractmethod
+    def entrypoint(self, *args: Any, **kwargs: Any) -> Any:
+        """Abstract method for core step logic."""
 
     def get_materializers(
         self, ensure_complete: bool = False
@@ -274,7 +283,8 @@ class BaseStep(metaclass=BaseStepMeta):
                 source_code = inspect.getsource(value)
                 return hashlib.sha256(source_code.encode("utf-8")).hexdigest()
 
-            parameters["step_source"] = _get_hashed_source(self.process)
+            source_fn = getattr(self, STEP_INNER_FUNC_NAME)
+            parameters["step_source"] = _get_hashed_source(source_fn)
 
             for name, materializer in self.get_materializers().items():
                 key = f"{name}_materializer_source"
@@ -471,7 +481,7 @@ class BaseStep(metaclass=BaseStepMeta):
         # Make sure that the input/output artifact types exist in the signature
         if not all(k in self.OUTPUT_SIGNATURE for k in self.OUTPUT_SPEC):
             raise StepInterfaceError(
-                "Failed to create the step. The predefined artifact types"
+                "Failed to create the step. The predefined artifact types "
                 "for the input does not match the input signature."
             )
 
@@ -519,13 +529,14 @@ class BaseStep(metaclass=BaseStepMeta):
         # make sure we have registered materializers for each output
         materializers = self.get_materializers(ensure_complete=True)
 
+        source_fn = getattr(self, STEP_INNER_FUNC_NAME)
         component_class = generate_component_class(
             step_name=self.step_name,
             step_module=self.__module__,
             input_spec=self.INPUT_SPEC,
             output_spec=self.OUTPUT_SPEC,
             execution_parameter_names=set(execution_parameters),
-            step_function=self.process,
+            step_function=source_fn,
             materializers=materializers,
         )
         self._component = component_class(
@@ -550,11 +561,6 @@ class BaseStep(metaclass=BaseStepMeta):
                 "before creating it via calling the step."
             )
         return self._component
-
-    @abstractmethod
-    def process(self, *args: Any, **kwargs: Any) -> Any:
-        """Abstract method for core step logic."""
-        raise NotImplementedError
 
     def with_return_materializers(
         self: T,

@@ -20,8 +20,10 @@ well as deep learning libraries like PyTorch.
 
 from zenml.integrations.airflow import AirflowIntegration
 from zenml.integrations.beam import BeamIntegration
+from zenml.integrations.dash import DashIntegration
 from zenml.integrations.facets import FacetsIntegration
 from zenml.integrations.gcp import GcpIntegration
+from zenml.integrations.graphviz import GraphvizIntegration
 from zenml.integrations.plotly import PlotlyIntegration
 from zenml.integrations.pytorch import PytorchIntegration
 from zenml.integrations.pytorch_lightning import PytorchLightningIntegration

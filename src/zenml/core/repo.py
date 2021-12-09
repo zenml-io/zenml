@@ -18,7 +18,6 @@ from typing import List, Optional
 
 from git import InvalidGitRepositoryError  # type: ignore[attr-defined]
 
-from zenml.config.global_config import GlobalConfig
 from zenml.core.constants import ZENML_DIR_NAME
 from zenml.core.git_wrapper import GitWrapper
 from zenml.core.local_service import LocalService
@@ -70,7 +69,6 @@ class Repository:
     def init_repo(
         repo_path: str = os.getcwd(),
         stack: Optional[BaseStack] = None,
-        analytics_opt_in: bool = True,
     ) -> None:
         """
         Initializes a git repo with zenml.
@@ -78,7 +76,6 @@ class Repository:
         Args:
             repo_path (str): path to root of a git repo
             stack: Initial stack.
-            analytics_opt_in: opt-in flag for analytics code.
 
         Raises:
             InvalidGitRepositoryError: If repository is not a git repository.
@@ -87,12 +84,6 @@ class Repository:
         # First check whether it already exists or not
         if fileio.is_zenml_dir(repo_path):
             raise AssertionError(f"{repo_path} is already initialized!")
-
-        # Edit global config
-        if analytics_opt_in is not None:
-            gc = GlobalConfig()
-            gc.analytics_opt_in = analytics_opt_in
-            gc.update()
 
         try:
             GitWrapper(repo_path)

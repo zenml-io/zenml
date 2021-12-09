@@ -2,13 +2,16 @@
 
 Here you can find a list of practical examples on how you can use ZenML with brief descriptions for each example:
 
-- **airflow**: Running pipelines with airflow.
+- **airflow_local**: Running pipelines with airflow locally.
+- **caching**: Using caching to skip data-intensive tasks and save costs.
+- **dag_visualizer**: Visualizing a pipeline.
+- **lineage**: Visualizing a pipeline run and showcasing artifact lineage.
 - **low_level_guide**: All the code for the low-level API guide found in the [docs](https://docs.zenml.io).
 - **not_so_quickstart**: Shows of the modularity of the pipelines with hot-swapping of Tensorflow, PyTorch, and scikit-learn trainers.
 - **quickstart**: The official quickstart tutorial.
-- **visualizers**: A set of examples to show-case standard `Visualizers` for ZenML.
+- **statistics**: Show-cases how ZenML can automatically extract statistics using facets.
 
-For each of these examples, ZenML provides a handly CLI command to pull them directly into your local environment. First install `zenml`:
+For each of these examples, ZenML provides a handy CLI command to pull them directly into your local environment. First install `zenml`:
 
 ```shell
 pip install zenml

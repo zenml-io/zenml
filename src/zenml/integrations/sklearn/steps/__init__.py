@@ -12,21 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os
-
-import click
-
-from zenml import constants
-from zenml.config.constants import GLOBAL_CONFIG_NAME
-from zenml.config.global_config import GlobalConfig
-from zenml.io import fileio
-
-APP_DIR = click.get_app_dir(constants.APP_NAME)
-
-
-def test_global_config_file_creation():
-    """A simple test to check whether the global config is created."""
-    GlobalConfig()
-
-    # Raw config should now exist
-    assert fileio.file_exists(os.path.join(APP_DIR, GLOBAL_CONFIG_NAME))
+from zenml.integrations.sklearn.steps.sklearn_evaluator import (
+    SklearnEvaluator,
+    SklearnEvaluatorConfig,
+)
+from zenml.integrations.sklearn.steps.sklearn_splitter import (
+    SklearnSplitter,
+    SklearnSplitterConfig,
+)
+from zenml.integrations.sklearn.steps.sklearn_standard_scaler import (
+    SklearnStandardScaler,
+    SklearnStandardScalerConfig,
+)

@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, Dict, List, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Type
 
 from zenml.logger import get_logger
 
@@ -24,14 +24,14 @@ if TYPE_CHECKING:
 
 class ArtifactTypeRegistry(object):
     def __init__(self) -> None:
-        self._artifact_types: Dict[str, List[Type["BaseArtifact"]]] = {}
+        self._artifact_types: Dict[Type[Any], List[Type["BaseArtifact"]]] = {}
 
     def register_integration(
-        self, key: str, type_: List[Type["BaseArtifact"]]
+        self, key: Type[Any], type_: List[Type["BaseArtifact"]]
     ) -> None:
         self._artifact_types[key] = type_
 
-    def get_artifact_type(self, key: str) -> List[Type["BaseArtifact"]]:
+    def get_artifact_type(self, key: Type[Any]) -> List[Type["BaseArtifact"]]:
         return self._artifact_types[key]
 
 

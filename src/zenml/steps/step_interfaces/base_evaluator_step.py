@@ -14,25 +14,27 @@
 
 from abc import abstractmethod
 
-from zenml.artifacts import DataArtifact, SchemaArtifact, StatisticsArtifact
+from zenml.artifacts import DataArtifact, ModelArtifact
 from zenml.steps.base_step import BaseStep
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
-from zenml.steps.step_output import Output
 
 
-class BaseAnalyzerConfig(BaseStepConfig):
-    """Base class for analyzer step configurations"""
+class BaseEvaluatorConfig(BaseStepConfig):
+    """Base class for evaluator step configurations"""
 
 
-class BaseAnalyzerStep(BaseStep):
-    """Base step implementation for any analyzer step implementation on ZenML"""
+class BaseEvaluatorStep(BaseStep):
+    """Base step implementation for any evaluator step implementation on ZenML"""
+
+    STEP_INNER_FUNC_NAME = "entrypoint"
 
     @abstractmethod
     def entrypoint(
         self,
         dataset: DataArtifact,
-        config: BaseAnalyzerConfig,
+        model: ModelArtifact,
+        config: BaseEvaluatorConfig,
         context: StepContext,
-    ) -> Output(statitics=StatisticsArtifact, schema=SchemaArtifact):
-        """Base entrypoint for any analyzer implementation"""
+    ) -> DataArtifact:
+        """Base entrypoint for any evaluator implementation"""

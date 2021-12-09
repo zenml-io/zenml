@@ -14,23 +14,28 @@
 
 from abc import abstractmethod
 
-from zenml.artifacts import DataArtifact
+from zenml.artifacts import DataArtifact, ModelArtifact
 from zenml.steps.base_step import BaseStep
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
 
 
-class BaseDatasourceConfig(BaseStepConfig):
-    """Base class for datasource configs to inherit from"""
+class BaseTrainerConfig(BaseStepConfig):
+    """Base class for Trainer step configurations"""
 
 
-class BaseDatasourceStep(BaseStep):
-    """Base step implementation for any datasource step implementation on ZenML"""
+class BaseTrainerStep(BaseStep):
+    """Base step implementation for any Trainer step implementation on
+    ZenML"""
+
+    STEP_INNER_FUNC_NAME = "entrypoint"
 
     @abstractmethod
     def entrypoint(
         self,
-        config: BaseDatasourceConfig,
+        train_dataset: DataArtifact,
+        validation_dataset: DataArtifact,
+        config: BaseTrainerConfig,
         context: StepContext,
-    ) -> DataArtifact:
-        """Base entrypoint for any datasource implementation"""
+    ) -> ModelArtifact:
+        """Base entrypoint for any Trainer implementation"""

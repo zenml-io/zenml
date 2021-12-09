@@ -24,11 +24,15 @@ from typing import (
 )
 
 from zenml.steps.base_step import BaseStep
-from zenml.steps.utils import PARAM_ENABLE_CACHE, STEP_INNER_FUNC_NAME
+from zenml.steps.utils import (
+    INSTANCE_CONFIGURATION,
+    OUTPUT_SPEC,
+    PARAM_ENABLE_CACHE,
+    STEP_INNER_FUNC_NAME,
+)
 
 if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
-
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -52,7 +56,7 @@ def step(
     *,
     name: Optional[str] = None,
     enable_cache: bool = True,
-    output_types: Dict[str, Type["BaseArtifact"]] = None,
+    output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
 ) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
     """Outer decorator function for the creation of a ZenML step
 
@@ -90,8 +94,8 @@ def step(
             (BaseStep,),
             {
                 STEP_INNER_FUNC_NAME: staticmethod(func),
-                PARAM_ENABLE_CACHE: enable_cache,
-                "OUTPUT_SPEC": output_spec,
+                INSTANCE_CONFIGURATION: {PARAM_ENABLE_CACHE: enable_cache},
+                OUTPUT_SPEC: output_spec,
                 "__module__": func.__module__,
             },
         )
