@@ -29,7 +29,6 @@ By using ZenML at the early stages of development, you get the following feature
 - **Reusing** code/data and reducing waste.
 - Keeping up with the **ML tooling landscape** with standard abstractions and interfaces.
 
-<div align="center">
 [![PyPI - ZenML Version](https://img.shields.io/pypi/v/zenml.svg?label=pip&logo=PyPI&logoColor=white)](https://pypi.org/project/zenml/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zenml)](https://pypi.org/project/zenml/)
 [![PyPI Status](https://pepy.tech/badge/zenml)](https://pepy.tech/project/zenml)
@@ -37,17 +36,16 @@ By using ZenML at the early stages of development, you get the following feature
 [![Codecov](https://codecov.io/gh/zenml-io/zenml/branch/main/graph/badge.svg)](https://codecov.io/gh/zenml-io/zenml)
 [![Interrogate](docs/interrogate.svg)](https://interrogate.readthedocs.io/en/latest/)
 ![Main Workflow Tests](https://github.com/zenml-io/zenml/actions/workflows/main.yml/badge.svg)
-</div>
 
 <div align="center">
 
 <p align="center">
-  <a href="https://zenml.io">Website</a> •
-  <a href="https://docs.zenml.io">Docs</a> •
-  <a href="https://zenml.io/roadmap">Roadmap</a> •
-  <a href="https://zenml.io/discussion">Vote For Features</a> •
-  <a href="https://zenml.io/slack-invite/">Join Slack</a>
-  <a href="https://zenml.io/newsletter/">Newsletter</a>
+<a href="https://zenml.io">Website</a> •
+<a href="https://docs.zenml.io">Docs</a> •
+<a href="https://zenml.io/roadmap">Roadmap</a> •
+<a href="https://zenml.io/discussion">Vote For Features</a> •
+<a href="https://zenml.io/slack-invite/">Join Slack</a>
+<a href="https://zenml.io/newsletter/">Newsletter</a>
 </p>
 
 </div>
