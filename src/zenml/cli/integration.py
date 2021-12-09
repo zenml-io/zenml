@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import List
+from typing import List, Optional
 
 import click
 from tabulate import tabulate
@@ -34,16 +34,22 @@ logger = get_logger(__name__)
 
 
 class IntegrationsHandler:
+    """Handling the different integrations from the integration
+    registry"""
+
     def __init__(self) -> None:
         self.integrations = integration_registry.integrations
 
     @property
     def list_integration_names(self) -> List[str]:
+        """Get a list of all possible integrations"""
         return [name for name in self.integrations]
 
     def select_integration_requirements(
-        self, integration_name: str = None
+        self, integration_name: Optional[str] = None
     ) -> List[str]:
+        """Select the requirements for a given integration
+        or all integrations"""
         if integration_name:
             if integration_name in self.list_integration_names:
                 return self.integrations[integration_name].REQUIREMENTS
@@ -61,6 +67,7 @@ class IntegrationsHandler:
             ]
 
     def is_installed(self, integration_name: str) -> bool:
+        """Checks if all requirements for an integration are installed"""
         if integration_name in self.list_integration_names:
             return self.integrations[integration_name].check_installation()
         elif not integration_name:
