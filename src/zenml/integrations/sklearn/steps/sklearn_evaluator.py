@@ -26,7 +26,7 @@ from zenml.steps.step_interfaces.base_evaluator_step import (
 class SklearnEvaluatorConfig(BaseEvaluatorConfig):
     """"""
 
-    label_class_column: str = None
+    label_class_column: str
 
 
 class SklearnEvaluator(BaseEvaluatorStep):

@@ -13,13 +13,20 @@
 #  permissions and limitations under the License.
 
 from zenml.pipelines import BasePipeline
+from zenml.steps import BaseStep
 
 
 class TrainingPipeline(BasePipeline):
     """Class for the classic training pipeline implementation"""
 
     def connect(
-        self, datasource, splitter, analyzer, preprocesser, trainer, evaluator
+        self,
+        datasource: BaseStep,
+        splitter: BaseStep,
+        analyzer: BaseStep,
+        preprocesser: BaseStep,
+        trainer: BaseStep,
+        evaluator: BaseStep,
     ) -> None:
         # Ingesting the datasource
         dataset = datasource()
