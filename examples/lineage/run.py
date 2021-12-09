@@ -50,7 +50,8 @@ def convert_np_to_pandas(X, y):
 
 @step
 def importer() -> Output(train_df=pd.DataFrame, test_df=pd.DataFrame):
-    """Download the MNIST data store it as numpy arrays."""
+    """Download the Boston housing price dataset as numpy arrays.
+    Pass the data onto the next step as a Pandas dataframe."""
     (X_train, y_train), (
         X_test,
         y_test,
