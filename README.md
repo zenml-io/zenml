@@ -53,20 +53,20 @@ By using ZenML at the early stages of development, you get the following feature
 
 | ZenML Resources |   |
 | ------------- | - |
-| 🧘‍♀️  **[ZenML 101]** | New to ZenML? Here's everything you need to know! |
-| ⚛️  **[Core Concepts]** | Some key terms and concepts we use. |
-| 🗃  **[Low Level API Guide]** | Build production ML pipelines from the simple step interface. |
-| 🚀  **[New in v1.5.4]** | New features, bug fixes. |
-| 🗳  **[Vote for Features]** | Pick what we work on next! |
-| 📓  **[Docs]** | Full documentation for creating your own ZenML pipelines. |
-| 📒  **[API Reference]** | The detailed reference for ZenML's API. |
-| ⚽️  **[Examples]** | Learn best through examples where ZenML is used? We've got you covered. |
-| 📬  **[Blog]** | Use cases of ZenML and technical deep dives on how we built it. |
-| 🔈  **[Podcast]** | Conversations with leaders in ML, released every 2 weeks. |
-| 📣  **[Newsletter]** | We build ZenML in public. Subscribe to learn how we work. |
-| 💬  **[Join Slack]** | Need help with your specific use case? Say hi on Slack! |
-| 🗺  **[Roadmap]** | See where ZenML is working to build new features. |
-| 🙋‍♀️  **[Contribute]** | How to contribute to the ZenML project and code base. |
+| 🧘‍♀️ **[ZenML 101]** | New to ZenML? Here's everything you need to know! |
+| ⚛️ **[Core Concepts]** | Some key terms and concepts we use. |
+| 🗃 **[Low Level API Guide]** | Build production ML pipelines from the simple step interface. |
+| 🚀 **[New in v1.5.4]** | New features, bug fixes. |
+| 🗳 **[Vote for Features]** | Pick what we work on next! |
+| 📓 **[Docs]** | Full documentation for creating your own ZenML pipelines. |
+| 📒 **[API Reference]** | The detailed reference for ZenML's API. |
+| ⚽️ **[Examples]** | Learn best through examples where ZenML is used? We've got you covered. |
+| 📬 **[Blog]** | Use cases of ZenML and technical deep dives on how we built it. |
+| 🔈 **[Podcast]** | Conversations with leaders in ML, released every 2 weeks. |
+| 📣 **[Newsletter]** | We build ZenML in public. Subscribe to learn how we work. |
+| 💬 **[Join Slack]** | Need help with your specific use case? Say hi on Slack! |
+| 🗺 **[Roadmap]** | See where ZenML is working to build new features. |
+| 🙋‍♀️ **[Contribute]** | How to contribute to the ZenML project and code base. |
 
 [ZenML 101]: https://docs.zenml.io/
 [Core Concepts]: https://docs.zenml.io/core-concepts
@@ -85,8 +85,9 @@ By using ZenML at the early stages of development, you get the following feature
 
 # 🎮 Features
 
-- Integrate with your favourite tools (Airflow & Kubeflow)
+- Write reproducible training experiment code
 - Use caching across pipelines
+- Integrate with your favorite tools (Airflow & Kubeflow)
 - Distribute processing to the cloud
 - Introspect your pipeline results
 - Visualize the steps of your pipeline
