@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Any, Dict, Text
+from typing import Any, Dict, cast
 
 import pandas as pd
 import tensorflow as tf
@@ -35,13 +35,15 @@ class SklearnEvaluator(BaseEvaluatorStep):
         dataset: pd.DataFrame,
         model: tf.keras.Model,
         config: SklearnEvaluatorConfig,
-    ) -> Dict[Text, Any]:
+    ) -> Dict[str, Any]:
         """"""
         labels = dataset.pop(config.label_class_column)
 
         predictions = model.predict(dataset)
         predicted_classes = [1 if v > 0.5 else 0 for v in predictions]
 
-        return classification_report(
+        report = classification_report(
             labels, predicted_classes, output_dict=True
         )
+
+        return cast(Dict[str, Any], report)

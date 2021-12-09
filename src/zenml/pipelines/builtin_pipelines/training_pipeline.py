@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 from zenml.pipelines import BasePipeline
-from zenml.steps import BaseStep
+from zenml.steps import step_interfaces
 
 
 class TrainingPipeline(BasePipeline):
@@ -21,24 +21,24 @@ class TrainingPipeline(BasePipeline):
 
     def connect(
         self,
-        datasource: BaseStep,
-        splitter: BaseStep,
-        analyzer: BaseStep,
-        preprocesser: BaseStep,
-        trainer: BaseStep,
-        evaluator: BaseStep,
+        datasource: step_interfaces.BaseSplitStep,
+        splitter: step_interfaces.BaseSplitStep,
+        analyzer: step_interfaces.BaseAnalyzerStep,
+        preprocesser: step_interfaces.BasePreprocesserStep,
+        trainer: step_interfaces.BaseTrainerStep,
+        evaluator: step_interfaces.BaseEvaluatorStep,
     ) -> None:
         # Ingesting the datasource
         dataset = datasource()
 
         # Splitting the data
-        train, test, validation = splitter(dataset=dataset)
+        train, test, validation = splitter(dataset=dataset)  # type:ignore[misc]
 
         # Analyzing the train dataset
-        statistics, schema = analyzer(dataset=train)
+        statistics, schema = analyzer(dataset=train)  # type:ignore[misc]
 
         # Preprocessing the splits
-        train_t, test_t, validation_t = preprocesser(
+        train_t, test_t, validation_t = preprocesser(  # type:ignore[misc]
             train_dataset=train,
             test_dataset=test,
             validation_dataset=validation,
