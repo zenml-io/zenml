@@ -36,19 +36,6 @@ By using ZenML at the early stages of development, you get the following feature
 [![Interrogate](docs/interrogate.svg)](https://interrogate.readthedocs.io/en/latest/)
 ![Main Workflow Tests](https://github.com/zenml-io/zenml/actions/workflows/main.yml/badge.svg)
 
-<div align="center">
-
-<p align="center">
-<a href="https://zenml.io">Website</a> •
-<a href="https://docs.zenml.io">Docs</a> •
-<a href="https://zenml.io/roadmap">Roadmap</a> •
-<a href="https://zenml.io/discussion">Vote For Features</a> •
-<a href="https://zenml.io/slack-invite/">Join Slack</a>
-<a href="https://zenml.io/newsletter/">Newsletter</a>
-</p>
-
-</div>
-
 <div align="center"> Join our
 <a href="https://zenml.io/slack-invite" target="_blank">
     <img width="25" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
