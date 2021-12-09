@@ -87,30 +87,44 @@ By using ZenML in the early stages of your project, you get the following featur
 
 ZenML makes sure for every pipeline you can trust that:
 
-✅ Code is versioned
-✅ Data is versioned
-✅ Models are versioned
-✅ Configurations are versioned
+- Code is versioned
+- Data is versioned
+- Models are versioned
+- Configurations are versioned
 
-You can utilize caching to help iterate quickly through ML experiments. (Read [our blogpost](https://blog.zenml.io/caching-ml-pipelines/) for more!)
+You can utilize caching to help iterate quickly through ML experiments. (Read [our blogpost](https://blog.zenml.io/caching-ml-pipelines/) to learn more!)
 
-### 2. ♻️ Leverage powerful integrations
+### 2. ♻️ Leverage Powerful Integrations
 
 Once code is organized into a ZenML pipeline, you can supercharge your ML development with powerful integrations on multiple [MLOps stacks](https://docs.zenml.io/core-concepts).
 
-We currently support Airflow and Kubeflow as third-party orchestrators for your ML pipeline code. ZenML steps can be built from any of the other tools you usually use in your ML workflows, from `scikit-learn` to `PyTorch` or `TensorFlow`.
+We currently support [Airflow](https://airflow.apache.org/) and [Kubeflow](https://www.kubeflow.org/) as third-party orchestrators for your ML pipeline code. ZenML steps can be built from any of the other tools you usually use in your ML workflows, from [`scikit-learn`](https://scikit-learn.org/stable/) to [`PyTorch`](https://pytorch.org/) or [`TensorFlow`](https://www.tensorflow.org/).
 
-### 3. ☁️ Distribute processing to the cloud
+### 3. ☁️ Distribute Processing to the Cloud
 
-Switching from local experiments to cloud-based pipelines doesn't need to be complex.
+Switching from local experiments to cloud-based pipelines doesn't need to be complex. ZenML supports running pipelines on Kubernetes clusters in the cloud through our [Kubeflow](https://www.kubeflow.org/) integration. Switching from your local stack to a cloud stack is easy to do with our CLI tool.
 
-### 4. 🧩 Visualize the steps of your pipeline
+### 4. 🧩 Visualize the Steps of your Pipeline
 
-### 5. 📊 Visualize statistics
+It’s not uncommon for pipelines to be made up of many steps, and those steps can interact and intersect with one another in often complex patterns. We’ve built a way for you to inspect what’s going on with your ZenML pipeline:
 
-### 6. 🧐 Introspect your pipeline results
+![Here's what the pipeline lineage tracking visualizer looks like](https://blog.zenml.io/assets/posts/release_0_5_4/zenml_lineage.gif)
 
-### 7. 🛠 Configure pipeline runs with YAML code
+### 5. 📊 Visualize Statistics
+
+Now you can use awesome third-party libraries to visualize ZenML steps and artifacts. We support the facets visualization for statistics out of the box, to find data drift between your training and test sets.
+
+We use the built-in FacetStatisticsVisualizer using the [Facets Overview](https://pypi.org/project/facets-overview/) integration.
+
+![Here’s what the statistics visualizer looks like](https://blog.zenml.io/assets/posts/release_0_5_3/stats.gif)
+
+### 6. 🧐 Introspect your Pipeline Results
+
+Once you've run your experiment, you need a way of seeing what was produced and how it was produced. We offer a flexible interface to support [post-execution workflows](https://docs.zenml.io/guides/post-execution-workflow). This allows you to access any of the artifacts produced by pipeline steps as well as any associated metadata.
+
+### 7. 🛠 Configure Pipeline Runs with YAML Code
+
+Not everyone wants to keep their configuration of pipeline runs in the same place as the active code defining steps. You can define the particular customization of runs with YAML code if that's your jam!
 
 # 🤸 Getting Started
 
@@ -264,6 +278,8 @@ We would love to develop ZenML together with our community! Check our [Contribut
 ![Repobeats analytics image](https://repobeats.axiom.co/api/embed/635c57b743efe649cadceba6a2e6a956663f96dd.svg "Repobeats analytics image")
 
 # 🆘 Where to get help
+
+First point of call should be [our Slack group](https://zenml.io/slack-invite/). Ask your questions about bugs or specific use cases and someone from the core team will respond.
 
 # 📜 License
 
