@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import Any, Dict, Text
+
 import pandas as pd
 import tensorflow as tf
 from sklearn.metrics import classification_report
@@ -33,7 +35,7 @@ class SklearnEvaluator(BaseEvaluatorStep):
         dataset: pd.DataFrame,
         model: tf.keras.Model,
         config: SklearnEvaluatorConfig,
-    ) -> dict:
+    ) -> Dict[Text, Any]:
         """"""
         labels = dataset.pop(config.label_class_column)
 

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import List, Union
+from typing import List, Optional, Union
 
 import pandas as pd
 
@@ -25,8 +25,8 @@ class PandasDatasourceConfig(BaseDatasourceConfig):
     path: str
     sep: str = ","
     header: Union[int, List[int], str] = "infer"
-    names: List[str] = None
-    index_col: Union[int, str, List[Union[int, str]], bool] = None
+    names: Optional[List[str]] = None
+    index_col: Optional[Union[int, str, List[Union[int, str]], bool]] = None
 
 
 class PandasDatasource(BaseDatasourceStep):

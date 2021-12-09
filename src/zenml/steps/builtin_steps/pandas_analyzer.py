@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import List, Type, Union
+from typing import Any, List, Optional, Type, Union
 
 import pandas as pd
 
@@ -25,8 +25,8 @@ from zenml.steps.step_interfaces.base_analyzer_step import (
 
 class PandasAnalyzerConfig(BaseAnalyzerConfig):
     percentiles: List[float] = [0.25, 0.5, 0.75]
-    include: Union[str, List[Type]] = None
-    exclude: Union[str, List[Type]] = None
+    include: Optional[Union[str, List[Type[Any]]]] = None
+    exclude: Optional[Union[str, List[Type[Any]]]] = None
 
 
 class PandasAnalyzer(BaseAnalyzerStep):
