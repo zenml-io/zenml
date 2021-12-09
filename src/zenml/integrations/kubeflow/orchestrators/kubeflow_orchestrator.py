@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 
 import click
 import kfp
@@ -29,6 +29,7 @@ from zenml.integrations.kubeflow.orchestrators.kubeflow_dag_runner import (
     KubeflowDagRunner,
     KubeflowDagRunnerConfig,
 )
+from zenml.integrations.utils import get_requirements_for_module
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
@@ -44,7 +45,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Kubeflow."""
 
     docker_image_name: str
-    docker_base_image_name: Optional[str] = None
+    custom_docker_base_image_name: Optional[str] = None
 
     @property
     def full_docker_image_name(self) -> str:
@@ -79,14 +80,13 @@ class KubeflowOrchestrator(BaseOrchestrator):
         image_name = self.full_docker_image_name
 
         repository_root = Repository().path
+        requirements = ["kubernetes"] + self._get_stack_requirements()
+
         build_docker_image(
             build_context_path=repository_root,
             image_name=image_name,
-            requirements=[
-                "kubernetes",
-                "gcsfs",
-            ],  # TODO [HIGH]: get from active artifact store etc.
-            base_image=self.docker_base_image_name,
+            requirements=requirements,
+            base_image=self.custom_docker_base_image_name,
         )
 
         if Repository().get_active_stack().container_registry:
@@ -167,6 +167,19 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 error,
                 pipeline_file_path,
             )
+
+    def _get_stack_requirements(self) -> List[str]:
+        """Gets list of requirements for the current active stack."""
+        stack = Repository().get_active_stack()
+        requirements = []
+
+        artifact_store_module = stack.artifact_store.__module__
+        requirements += get_requirements_for_module(artifact_store_module)
+
+        metadata_store_module = stack.metadata_store.__module__
+        requirements += get_requirements_for_module(metadata_store_module)
+
+        return requirements
 
     @property
     def is_running(self) -> bool:
