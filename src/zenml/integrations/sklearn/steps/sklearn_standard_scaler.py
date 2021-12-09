@@ -14,7 +14,6 @@
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-from zenml.artifacts import SchemaArtifact, StatisticsArtifact
 from zenml.logger import get_logger
 from zenml.steps import Output
 from zenml.steps.step_interfaces.base_preprocesser_step import (
@@ -36,8 +35,8 @@ class SklearnStandardScaler(BasePreprocesserStep):
         train_dataset: pd.DataFrame,
         test_dataset: pd.DataFrame,
         validation_dataset: pd.DataFrame,
-        statistics: StatisticsArtifact,
-        schema: SchemaArtifact,
+        statistics: pd.DataFrame,
+        schema: pd.DataFrame,
         config: SklearnStandardScalerConfig,
     ) -> Output(
         train_transformed=pd.DataFrame,

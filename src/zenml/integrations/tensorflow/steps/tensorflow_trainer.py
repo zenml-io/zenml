@@ -21,12 +21,12 @@ from zenml.steps.step_interfaces.base_trainer_step import (
 
 
 class TensorflowBinaryClassifierConfig(BaseTrainerConfig):
+    target_column: str
     layers = [256, 64, 1]
     input_shape = (8,)
     learning_rate = 0.001
     metrics = ["accuracy"]
     epochs = 50
-    target_column: str = None
     batch_size = 8
 
 
