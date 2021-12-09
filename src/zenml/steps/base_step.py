@@ -200,7 +200,7 @@ class BaseStep(metaclass=BaseStepMeta):
     INPUT_SPEC: Dict[str, Type[BaseArtifact]] = {}
     OUTPUT_SPEC: Dict[str, Type[BaseArtifact]] = {}
 
-    INSTANCE_CONFIGURATION = {}
+    INSTANCE_CONFIGURATION: Dict[str, Any] = {}
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.step_name = self.__class__.__name__
