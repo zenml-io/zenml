@@ -21,6 +21,7 @@ from zenml.steps import step
 from zenml.steps.step_output import Output
 
 
+@step
 def importer() -> Output(
     X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
 ):
