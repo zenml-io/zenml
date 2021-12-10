@@ -31,7 +31,7 @@ class BaseAnalyzerStep(BaseStep):
     STEP_INNER_FUNC_NAME = "entrypoint"
 
     @abstractmethod
-    def entrypoint(  # type: ignore
+    def entrypoint(  # type: ignore[override]
         self,
         dataset: DataArtifact,
         config: BaseAnalyzerConfig,

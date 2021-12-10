@@ -31,7 +31,7 @@ class BaseTrainerStep(BaseStep):
     STEP_INNER_FUNC_NAME = "entrypoint"
 
     @abstractmethod
-    def entrypoint(  # type: ignore
+    def entrypoint(  # type: ignore[override]
         self,
         train_dataset: DataArtifact,
         validation_dataset: DataArtifact,

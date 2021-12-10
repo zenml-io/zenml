@@ -37,7 +37,7 @@ class PandasAnalyzer(BaseAnalyzerStep):
     # Manually defining the type of the output artifacts
     OUTPUT_SPEC = {"statistics": StatisticsArtifact, "schema": SchemaArtifact}
 
-    def entrypoint(  # type: ignore
+    def entrypoint(  # type: ignore[override]
         self,
         dataset: pd.DataFrame,
         config: PandasAnalyzerConfig,

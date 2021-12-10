@@ -48,7 +48,7 @@ class TensorflowBinaryClassifier(BaseTrainerStep):
     neural network and trains it on a given pd.DataFrame dataset
     """
 
-    def entrypoint(  # type: ignore
+    def entrypoint(  # type: ignore[override]
         self,
         train_dataset: pd.DataFrame,
         validation_dataset: pd.DataFrame,

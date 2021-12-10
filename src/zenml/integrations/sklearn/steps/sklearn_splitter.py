@@ -33,7 +33,7 @@ class SklearnSplitter(BaseSplitStep):
     """A simple step implementation which utilizes sklearn to split a given
     dataset into train, test and validation splits"""
 
-    def entrypoint(  # type: ignore
+    def entrypoint(  # type: ignore[override]
         self,
         dataset: pd.DataFrame,
         config: SklearnSplitterConfig,

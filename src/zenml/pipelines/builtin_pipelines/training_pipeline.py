@@ -19,7 +19,7 @@ from zenml.steps import step_interfaces
 class TrainingPipeline(BasePipeline):
     """Class for the classic training pipeline implementation"""
 
-    def connect(
+    def connect(  # type: ignore[override]
         self,
         datasource: step_interfaces.BaseSplitStep,
         splitter: step_interfaces.BaseSplitStep,

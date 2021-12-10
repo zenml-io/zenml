@@ -41,7 +41,7 @@ class SklearnStandardScaler(BasePreprocesserStep):
     """Simple step implementation which utilizes the StandardScaler from sklearn
     to transform the numeric columns of a pd.DataFrame"""
 
-    def entrypoint(  # type: ignore
+    def entrypoint(  # type: ignore[override]
         self,
         train_dataset: pd.DataFrame,
         test_dataset: pd.DataFrame,

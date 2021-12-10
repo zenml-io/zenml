@@ -34,7 +34,7 @@ class PandasDatasourceConfig(BaseDatasourceConfig):
 class PandasDatasource(BaseDatasourceStep):
     """Simple step implementation to ingest from a csv file using pandas"""
 
-    def entrypoint(  # type: ignore
+    def entrypoint(  # type: ignore[override]
         self,
         config: PandasDatasourceConfig,
     ) -> pd.DataFrame:
