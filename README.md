@@ -29,7 +29,9 @@ Join our <a href="https://zenml.io/slack-invite" target="_blank">
 <div align="center"> 
     <b>NEW: </b> <a href="https://zenml.io/discussion" target="_blank"><img width="25" src="https://cdn1.iconfinder.com/data/icons/social-17/48/like-512.png" alt="Vote"/><b> Vote</b></a> on the next ZenML features 
 </div>
+
 <br>
+
 ![Before and after ZenML](docs/readme/sam-side-by-side-full-text.png)
 
 # 🤖 Why use ZenML?
