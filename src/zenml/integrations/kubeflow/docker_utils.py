@@ -1,7 +1,7 @@
 import json
 import os
 import tempfile
-from typing import Dict, Generator, List, Optional
+from typing import Dict, Iterable, List, Optional
 
 import pkg_resources
 
@@ -170,7 +170,7 @@ def get_image_digest(image_name: str) -> Optional[str]:
         return None
 
 
-def _process_stream(stream: Generator[bytes]):
+def _process_stream(stream: Iterable[bytes]):
     """Processes the output stream of a docker command call."""
 
     for element in stream:
