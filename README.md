@@ -10,23 +10,6 @@ At its core, **ZenML pipelines execute ML-specific workflows** from sourcing dat
 
 🎉 **Version 0.5.4 out now!** [Check out the release notes here](https://blog.zenml.io/zero-five-four-release/).
 
-![Before and after ZenML](docs/readme/sam-side-by-side-full-text.png)
-
-# 🤖 Why use ZenML?
-
-We built ZenML because we could not find an easy framework that translates the patterns observed in the research phase with Jupyter notebooks into a production-ready ML environment. ZenML follows the paradigm of [`Pipelines As Experiments` (PaE)](https://docs.zenml.io/why-zenml), meaning ZenML pipelines are designed to be written early on the development lifecycle, where data scientists can explore their pipelines as they develop towards production.
-
-By using ZenML in the early stages of your project, you get the following features:
-
-- **Reproducibility** of training and inference workflows.
-- Managing ML **metadata**, including versioning data, code, and models.
-- Getting an **overview** of your ML development, with a reliable link between training and deployment.
-- Maintaining **comparability** between ML models.
-- **Scaling** ML training/inference to large datasets.
-- Retaining code **quality** alongside development velocity.
-- **Reusing** code/data and reducing waste.
-- Keeping up with the **ML tooling landscape** with standard abstractions and interfaces.
-
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zenml)](https://pypi.org/project/zenml/)
 [![PyPI Status](https://pepy.tech/badge/zenml)](https://pepy.tech/project/zenml)
 ![GitHub](https://img.shields.io/github/license/zenml-io/zenml)
@@ -47,6 +30,23 @@ By using ZenML in the early stages of your project, you get the following featur
     <b>NEW: </b> <a href="https://zenml.io/discussion" target="_blank"><img width="25" src="https://cdn1.iconfinder.com/data/icons/social-17/48/like-512.png" alt="Vote"/><b> Vote</b></a> on the next ZenML features 
 </div>
 
+![Before and after ZenML](docs/readme/sam-side-by-side-full-text.png)
+
+# 🤖 Why use ZenML?
+
+We built ZenML because we could not find an easy framework that translates the patterns observed in the research phase with Jupyter notebooks into a production-ready ML environment. ZenML follows the paradigm of [`Pipelines As Experiments` (PaE)](https://docs.zenml.io/why-zenml), meaning ZenML pipelines are designed to be written early on the development lifecycle, where data scientists can explore their pipelines as they develop towards production.
+
+By using ZenML in the early stages of your project, you get the following features:
+
+- **Reproducibility** of training and inference workflows.
+- Managing ML **metadata**, including versioning data, code, and models.
+- Getting an **overview** of your ML development, with a reliable link between training and deployment.
+- Maintaining **comparability** between ML models.
+- **Scaling** ML training/inference to large datasets.
+- Retaining code **quality** alongside development velocity.
+- **Reusing** code/data and reducing waste.
+- Keeping up with the **ML tooling landscape** with standard abstractions and interfaces.
+
 # 📖 Learn More
 
 | ZenML Resources |   |
@@ -54,7 +54,7 @@ By using ZenML in the early stages of your project, you get the following featur
 | 🧘‍♀️ **[ZenML 101]** | New to ZenML? Here's everything you need to know! |
 | ⚛️ **[Core Concepts]** | Some key terms and concepts we use. |
 | 🗃 **[Low Level API Guide]** | Build production ML pipelines from the simple step interface. |
-| 🚀 **[New in v1.5.4]** | New features, bug fixes. |
+| 🚀 **[New in v0.5.4]** | New features, bug fixes. |
 | 🗳 **[Vote for Features]** | Pick what we work on next! |
 | 📓 **[Docs]** | Full documentation for creating your own ZenML pipelines. |
 | 📒 **[API Reference]** | The detailed reference for ZenML's API. |
@@ -69,7 +69,7 @@ By using ZenML in the early stages of your project, you get the following featur
 [ZenML 101]: https://docs.zenml.io/
 [Core Concepts]: https://docs.zenml.io/core-concepts
 [Low Level API Guide]: https://docs.zenml.io/guides/low-level-api
-[New in v1.5.4]: https://blog.zenml.io/zero-five-four-release/
+[New in v0.5.4]: https://blog.zenml.io/zero-five-four-release/
 [Vote for Features]: https://zenml.io/discussion
 [Docs]: https://docs.zenml.io/
 [API Reference]: https://apidocs.zenml.io/
