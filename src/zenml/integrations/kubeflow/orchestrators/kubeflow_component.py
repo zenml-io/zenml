@@ -20,7 +20,6 @@ components, thus ensuring that both types of pipeline definitions are
 compatible.
 Note: This requires Kubeflow Pipelines SDK to be installed.
 """
-import json
 from typing import Any, Dict, List, Set
 
 from absl import logging
@@ -68,7 +67,6 @@ class KubeflowComponent:
         depends_on: Set[dsl.ContainerOp],
         pipeline: tfx_pipeline.Pipeline,
         image: str,
-        kubeflow_metadata_config: Dict[str, Any],
         tfx_ir: pipeline_pb2.Pipeline,  # type: ignore[valid-type]
         pod_labels_to_attach: Dict[str, str],
         step_module: str,
@@ -85,8 +83,6 @@ class KubeflowComponent:
             component will depend on.
           pipeline: The logical TFX pipeline to which this component belongs.
           image: The container image to use for this component.
-          kubeflow_metadata_config: Configuration settings for connecting to the
-            MLMD store in a Kubeflow cluster.
           tfx_ir: The TFX intermedia representation of the pipeline.
           pod_labels_to_attach: Dict of pod labels to attach to the GKE pod.
           runtime_parameters: Runtime parameters of the pipeline.
@@ -96,8 +92,6 @@ class KubeflowComponent:
         utils.replace_placeholder(component)
 
         arguments = [
-            "--kubeflow_metadata_config",
-            json.dumps(kubeflow_metadata_config),
             "--node_id",
             component.id,
             "--tfx_ir",

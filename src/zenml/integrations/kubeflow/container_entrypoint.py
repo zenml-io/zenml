@@ -20,7 +20,7 @@ import logging
 import os
 import sys
 import textwrap
-from typing import Any, Dict, List, MutableMapping, Optional, Tuple
+from typing import Dict, List, MutableMapping, Optional, Tuple
 
 from google.protobuf import json_format
 from ml_metadata.proto import metadata_store_pb2
@@ -38,6 +38,8 @@ from tfx.types import artifact, channel, standard_artifacts
 from tfx.types.channel import Property
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.core.repo import Repository
+from zenml.integrations.kubeflow.metadata import KubeflowMetadataStore
 from zenml.integrations.registry import integration_registry
 from zenml.steps.utils import generate_component_class
 
@@ -45,38 +47,12 @@ _KFP_POD_NAME_ENV_KEY = "KFP_POD_NAME"
 _KFP_POD_NAME_PROPERTY_KEY = "kfp_pod_name"
 
 
-def _get_grpc_metadata_connection_config(
-    kubeflow_metadata_config: Dict[str, Any]
-) -> metadata_store_pb2.MetadataStoreClientConfig:
-    """Constructs a metadata grpc connection config.
-
-    Args:
-      kubeflow_metadata_config: Configuration parameters to use for constructing a
-        valid metadata connection config in a Kubeflow cluster.
-
-    Returns:
-      A metadata_store_pb2.MetadataStoreClientConfig object.
-    """
-    grpc_config = kubeflow_metadata_config["grpc_config"]
+def _get_grpc_metadata_connection_config() -> metadata_store_pb2.MetadataStoreClientConfig:
+    """Constructs a metadata grpc connection config."""
     connection_config = metadata_store_pb2.MetadataStoreClientConfig()
-    connection_config.host = os.environ[
-        grpc_config["grpc_service_host"]["environment_variable"]
-    ]
-    connection_config.port = int(
-        os.environ[grpc_config["grpc_service_port"]["environment_variable"]]
-    )
+    connection_config.host = os.environ["METADATA_GRPC_SERVICE_HOST"]
+    connection_config.port = int(os.environ["METADATA_GRPC_SERVICE_PORT"])
     return connection_config
-
-
-def _get_metadata_connection(
-    connection_info: str,
-) -> metadata.Metadata:
-    """Constructs a Kubeflow metadata adapter."""
-    kubeflow_metadata_config = json.loads(connection_info)
-    metadata_connection_config = _get_grpc_metadata_connection_config(
-        kubeflow_metadata_config
-    )
-    return metadata.Metadata(metadata_connection_config)
 
 
 def _sanitize_underscore(name: str) -> Optional[str]:
@@ -441,7 +417,6 @@ def _parse_command_line_arguments() -> argparse.Namespace:
         required=False,
         default="/mlpipeline-ui-metadata.json",
     )
-    parser.add_argument("--kubeflow_metadata_config", type=str, required=True)
     parser.add_argument("--tfx_ir", type=str, required=True)
     parser.add_argument("--node_id", type=str, required=True)
     # There might be multiple runtime parameters.
@@ -485,16 +460,19 @@ def main() -> None:
         executable_spec_pb2.ContainerExecutableSpec: kubernetes_executor_operator.KubernetesExecutorOperator
     }
 
-    metadata_connection = _get_metadata_connection(
-        args.kubeflow_metadata_config
-    )
-
-    # connection_config = deployment_config.metadata_connection_config  # type: ignore[attr-defined] # noqa
-    # metadata_connection = metadata.Metadata(connection_config)
-
     # make sure all integrations are activated so all materializers etc. are
     # available
     integration_registry.activate_integrations()
+
+    metadata_store = Repository().get_active_stack().metadata_store
+    if isinstance(metadata_store, KubeflowMetadataStore):
+        # setup the metadata connection so it connects to the internal kubeflow
+        # mysql database
+        connection_config = _get_grpc_metadata_connection_config()
+    else:
+        connection_config = deployment_config.metadata_connection_config  # type: ignore[attr-defined] # noqa
+
+    metadata_connection = metadata.Metadata(connection_config)
 
     if hasattr(executor_spec, "class_path"):
         executor_module_parts = getattr(executor_spec, "class_path").split(".")

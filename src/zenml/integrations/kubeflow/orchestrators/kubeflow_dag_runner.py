@@ -130,28 +130,6 @@ def get_default_pipeline_operator_funcs(
         return [mount_config_map_op]
 
 
-def get_default_kubeflow_metadata_config() -> Dict[str, Any]:
-    """Returns the default metadata connection config for Kubeflow.
-    Returns:
-      A config proto that will be serialized as JSON and passed to the running
-      container so the TFX component driver is able to communicate with MLMD in
-      a Kubeflow cluster.
-    """
-    # The default metadata configuration for a Kubeflow Pipelines cluster is
-    # codified as a Kubernetes ConfigMap
-    # https://github.com/kubeflow/pipelines/blob/master/manifests/kustomize/base/metadata/metadata-grpc-configmap.yaml
-    return {
-        "grpc_config": {
-            "grpc_service_host": {
-                "environment_variable": "METADATA_GRPC_SERVICE_HOST"
-            },
-            "grpc_service_port": {
-                "environment_variable": "METADATA_GRPC_SERVICE_PORT"
-            },
-        }
-    }
-
-
 def get_default_pod_labels() -> Dict[str, str]:
     """Returns the default pod label dict for Kubeflow."""
     # KFP default transformers add pod env:
@@ -167,7 +145,6 @@ class KubeflowDagRunnerConfig(pipeline_config.PipelineConfig):
         self,
         image: str,
         pipeline_operator_funcs: Optional[List[OpFunc]] = None,
-        kubeflow_metadata_config: Optional[Dict[str, Any]] = None,
         supported_launcher_classes: Optional[
             List[Type[base_component_launcher.BaseComponentLauncher]]
         ] = None,
@@ -192,8 +169,6 @@ class KubeflowDagRunnerConfig(pipeline_config.PipelineConfig):
           image: The docker image to use in the pipeline.
           pipeline_operator_funcs: A list of ContainerOp modifying functions that
             will be applied to every container step in the pipeline.
-          kubeflow_metadata_config: Runtime configuration to use to connect to
-            Kubeflow metadata.
           supported_launcher_classes: A list of component launcher classes that are
             supported by the current pipeline. List sequence determines the order in
             which launchers are chosen for each component being run.
@@ -211,9 +186,6 @@ class KubeflowDagRunnerConfig(pipeline_config.PipelineConfig):
             pipeline_operator_funcs or get_default_pipeline_operator_funcs()
         )
         self.image = image
-        self.kubeflow_metadata_config = (
-            kubeflow_metadata_config or get_default_kubeflow_metadata_config()
-        )
         self.metadata_ui_path = metadata_ui_path
 
 
@@ -339,7 +311,6 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
                 depends_on=depends_on,
                 pipeline=pipeline,
                 image=self._kubeflow_config.image,
-                kubeflow_metadata_config=self._kubeflow_config.kubeflow_metadata_config,
                 pod_labels_to_attach=self._pod_labels_to_attach,
                 tfx_ir=tfx_node_ir,
                 metadata_ui_path=self._kubeflow_config.metadata_ui_path,
