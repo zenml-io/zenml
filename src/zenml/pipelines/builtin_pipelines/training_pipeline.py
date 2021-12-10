@@ -21,7 +21,7 @@ class TrainingPipeline(BasePipeline):
 
     def connect(  # type: ignore[override]
         self,
-        datasource: step_interfaces.BaseSplitStep,
+        datasource: step_interfaces.BaseDatasourceStep,
         splitter: step_interfaces.BaseSplitStep,
         analyzer: step_interfaces.BaseAnalyzerStep,
         preprocesser: step_interfaces.BasePreprocesserStep,
@@ -45,13 +45,13 @@ class TrainingPipeline(BasePipeline):
         dataset = datasource()
 
         # Splitting the data
-        train, test, validation = splitter(dataset=dataset)  # type:ignore[misc]
+        train, test, validation = splitter(dataset=dataset)  # type:ignore
 
         # Analyzing the train dataset
-        statistics, schema = analyzer(dataset=train)  # type:ignore[misc]
+        statistics, schema = analyzer(dataset=train)  # type:ignore
 
         # Preprocessing the splits
-        train_t, test_t, validation_t = preprocesser(  # type:ignore[misc]
+        train_t, test_t, validation_t = preprocesser(  # type:ignore
             train_dataset=train,
             test_dataset=test,
             validation_dataset=validation,
@@ -63,4 +63,4 @@ class TrainingPipeline(BasePipeline):
         model = trainer(train_dataset=train_t, validation_dataset=validation_t)
 
         # Evaluating the trained model
-        evaluator(model=model, dataset=test_t)
+        evaluator(model=model, dataset=test_t)  # type:ignore
