@@ -47,13 +47,14 @@ class TensorflowBinaryClassifier(BaseTrainerStep):
     """Simple step implementation which creates a simple tensorflow feedforward
     neural network and trains it on a given pd.DataFrame dataset
     """
+
     def entrypoint(
         self,
         train_dataset: pd.DataFrame,
         validation_dataset: pd.DataFrame,
         config: TensorflowBinaryClassifierConfig,
     ) -> tf.keras.Model:
-        """ Main entrypoint for the trainer
+        """Main entrypoint for the tensorflow trainer
 
         Args:
             train_dataset: pd.DataFrame, the training dataset
