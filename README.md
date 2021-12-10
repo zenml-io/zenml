@@ -36,18 +36,14 @@ Join our <a href="https://zenml.io/slack-invite" target="_blank">
 
 # 🤖 Why use ZenML?
 
-We built ZenML because we could not find an easy framework that translates the patterns observed in the research phase with Jupyter notebooks into a production-ready ML environment. ZenML follows the paradigm of [`Pipelines As Experiments` (PaE)](https://docs.zenml.io/why-zenml), meaning ZenML pipelines are designed to be written early on the development lifecycle, where data scientists can explore their pipelines as they develop towards production.
-
-By using ZenML in the early stages of your project, you get the following features:
+ZenML pipelines are designed to be written early on the development lifecycle. Data scientists can explore their pipelines as they develop towards production, switching stacks from local to cloud deployments with ease. By using ZenML in the early stages of your project, you get the following benefits:
 
 - **Reproducibility** of training and inference workflows.
-- Managing ML **metadata**, including versioning data, code, and models.
-- Getting an **overview** of your ML development, with a reliable link between training and deployment.
-- Maintaining **comparability** between ML models.
-- **Scaling** ML training/inference to large datasets.
-- Retaining code **quality** alongside development velocity.
-- **Reusing** code/data and reducing waste.
-- Keeping up with the **ML tooling landscape** with standard abstractions and interfaces.
+- A **simple and clear** way to represent the steps of your pipeline in code
+- **Plug-and-play integrations**: bring all your favourite tools together
+- Easy switching between local and cloud stacks
+- Painless **deployment and configuration** of infrastructure
+- **Scale up** your stack transparently and logically to suit your training and deployment needs
 
 # 📖 Learn More
 
