@@ -176,25 +176,25 @@ The quickest way to get started is to create a simple pipeline.
 ```bash
 git init
 zenml init
+zenml integration install sklearn # we use scikit-learn for this example
 ```
 
 #### Step 2: Assemble, run, and evaluate your pipeline locally
 
 ```python
 import numpy as np
-import tensorflow as tf
-
 from zenml.pipelines import pipeline
 from zenml.steps import step
 from zenml.steps.step_output import Output
-
+from zenml.utils import get_mnist, get_mnist_model
+from sklearn.base import ClassifierMixin
 
 @step
 def importer() -> Output(
     X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
 ):
     """Download the MNIST data store it as numpy arrays."""
-    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
+    (X_train, y_train), (X_test, y_test) = get_mnist()
     return X_train, y_train, X_test, y_test
 
 
@@ -202,17 +202,9 @@ def importer() -> Output(
 def trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
-) -> tf.keras.Model:
+) -> ClassifierMixin:
     """A simple Keras Model to train on the data."""
-    model = tf.keras.Sequential()
-    model.add(tf.keras.layers.Flatten(input_shape=(28, 28)))
-    model.add(tf.keras.layers.Dense(10))
-
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(0.001),
-        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-        metrics=["accuracy"],
-    )
+    model = get_mnist_model()
 
     model.fit(X_train, y_train)
 
@@ -224,7 +216,7 @@ def trainer(
 def evaluator(
     X_test: np.ndarray,
     y_test: np.ndarray,
-    model: tf.keras.Model,
+    model: ClassifierMixin,
 ) -> float:
     """Calculate the accuracy on the test set"""
     test_acc = model.evaluate(X_test, y_test, verbose=2)
@@ -241,6 +233,7 @@ def mnist_pipeline(
     X_train, y_train, X_test, y_test = importer()
     model = trainer(X_train=X_train, y_train=y_train)
     evaluator(X_test=X_test, y_test=y_test, model=model)
+
 
 pipeline = mnist_pipeline(
     importer=importer(),
