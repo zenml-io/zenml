@@ -33,7 +33,7 @@ class SklearnEvaluator(BaseEvaluatorStep):
     """A simple step implementation which utilizes sklearn to evaluate the
     performance of a given model on a given test dataset"""
 
-    def entrypoint(
+    def entrypoint(  # type: ignore
         self,
         dataset: pd.DataFrame,
         model: tf.keras.Model,

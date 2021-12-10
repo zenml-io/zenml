@@ -30,7 +30,7 @@ class BaseDatasourceStep(BaseStep):
     STEP_INNER_FUNC_NAME = "entrypoint"
 
     @abstractmethod
-    def entrypoint(
+    def entrypoint(  # type: ignore
         self,
         config: BaseDatasourceConfig,
         context: StepContext,

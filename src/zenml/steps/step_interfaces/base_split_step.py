@@ -30,7 +30,7 @@ class BaseSplitStep(BaseStep):
     STEP_INNER_FUNC_NAME = "entrypoint"
 
     @abstractmethod
-    def entrypoint(
+    def entrypoint(  # type: ignore
         self,
         dataset: DataArtifact,
         config: BaseSplitStepConfig,
