@@ -31,6 +31,7 @@ class KubeflowIntegration(Integration):
     @classmethod
     def activate(cls):
         """Activates all classes required for the airflow integration."""
+        from zenml.integrations.kubeflow import metadata  # noqa
         from zenml.integrations.kubeflow import orchestrators  # noqa
 
 

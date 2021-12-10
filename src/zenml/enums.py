@@ -32,6 +32,7 @@ class MLMetadataTypes(str, Enum):
 
     sqlite = "sqlite"
     mysql = "mysql"
+    kubeflow = "kubeflow"
 
     def __str__(self) -> str:
         """Returns the enum string value."""
