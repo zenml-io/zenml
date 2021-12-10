@@ -43,9 +43,6 @@ from zenml.integrations.kubeflow.metadata import KubeflowMetadataStore
 from zenml.integrations.registry import integration_registry
 from zenml.steps.utils import generate_component_class
 
-_KFP_POD_NAME_ENV_KEY = "KFP_POD_NAME"
-_KFP_POD_NAME_PROPERTY_KEY = "kfp_pod_name"
-
 
 def _get_grpc_metadata_connection_config() -> metadata_store_pb2.MetadataStoreClientConfig:
     """Constructs a metadata grpc connection config."""
