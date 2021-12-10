@@ -49,6 +49,7 @@ from zenml.utils import analytics_utils, yaml_utils
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
 PARAM_ENABLE_CACHE: str = "enable_cache"
+PARAM_REQUIREMENTS_FILE: str = "requirements_file"
 
 
 class BasePipelineMeta(type):
@@ -97,6 +98,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             ) from exc
 
         self.enable_cache = getattr(self, PARAM_ENABLE_CACHE)
+        self.requirements_file = getattr(self, PARAM_REQUIREMENTS_FILE)
         self.pipeline_name = self.__class__.__name__
         logger.info(f"Creating pipeline: {self.pipeline_name}")
         logger.info(
@@ -276,7 +278,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
 
         self.stack.orchestrator.pre_run(
-            pipeline_name=self.pipeline_name, caller_filepath=caller_filepath
+            pipeline=self, caller_filepath=caller_filepath
         )
         ret = self.stack.orchestrator.run(self, run_name)
         self.stack.orchestrator.post_run()

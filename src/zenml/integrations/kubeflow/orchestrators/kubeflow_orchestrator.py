@@ -68,7 +68,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         fileio.make_dirs(directory)
         return directory
 
-    def pre_run(self, pipeline_name: str, caller_filepath: str) -> None:
+    def pre_run(self, pipeline: "BasePipeline", caller_filepath: str) -> None:
         """Builds a docker image for the current environment and uploads it to
         a container registry if configured.
         """
@@ -77,10 +77,15 @@ class KubeflowOrchestrator(BaseOrchestrator):
             push_docker_image,
         )
 
-        image_name = self.get_docker_image_name(pipeline_name)
+        image_name = self.get_docker_image_name(pipeline.pipeline_name)
 
         repository_root = Repository().path
-        requirements = ["kubernetes"] + self._get_stack_requirements()
+        requirements = (
+            ["kubernetes"]
+            + self._get_stack_requirements()
+            + self._get_pipeline_requirements(pipeline)
+        )
+        logger.debug("Kubeflow docker container requirements: %s", requirements)
 
         build_docker_image(
             build_context_path=repository_root,
@@ -180,6 +185,21 @@ class KubeflowOrchestrator(BaseOrchestrator):
         requirements += get_requirements_for_module(metadata_store_module)
 
         return requirements
+
+    def _get_pipeline_requirements(self, pipeline: "BasePipeline") -> List[str]:
+        """Gets list of requirements for a pipeline."""
+        if pipeline.requirements_file and fileio.file_exists(
+            pipeline.requirements_file
+        ):
+            logger.debug(
+                "Using requirements from file %s.", pipeline.requirements_file
+            )
+            with fileio.open(pipeline.requirements_file, "r") as f:
+                return [
+                    requirement.strip() for requirement in f.read().split("\n")
+                ]
+        else:
+            return []
 
     @property
     def is_running(self) -> bool:
