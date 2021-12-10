@@ -10,14 +10,12 @@ At its core, **ZenML pipelines execute ML-specific workflows** from sourcing dat
 
 🎉 **Version 0.5.4 out now!** [Check out the release notes here](https://blog.zenml.io/zero-five-four-release/).
 
-<div align="center"> 
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zenml)](https://pypi.org/project/zenml/)
 [![PyPI Status](https://pepy.tech/badge/zenml)](https://pepy.tech/project/zenml)
 ![GitHub](https://img.shields.io/github/license/zenml-io/zenml)
 [![Codecov](https://codecov.io/gh/zenml-io/zenml/branch/main/graph/badge.svg)](https://codecov.io/gh/zenml-io/zenml)
 [![Interrogate](docs/interrogate.svg)](https://interrogate.readthedocs.io/en/latest/)
 ![Main Workflow Tests](https://github.com/zenml-io/zenml/actions/workflows/main.yml/badge.svg)
-</div>
 
 <div align="center">
 Join our <a href="https://zenml.io/slack-invite" target="_blank">
@@ -31,7 +29,7 @@ Join our <a href="https://zenml.io/slack-invite" target="_blank">
 <div align="center"> 
     <b>NEW: </b> <a href="https://zenml.io/discussion" target="_blank"><img width="25" src="https://cdn1.iconfinder.com/data/icons/social-17/48/like-512.png" alt="Vote"/><b> Vote</b></a> on the next ZenML features 
 </div>
-
+<br>
 ![Before and after ZenML](docs/readme/sam-side-by-side-full-text.png)
 
 # 🤖 Why use ZenML?
