@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -25,8 +25,6 @@ class KubeflowIntegration(Integration):
 
     NAME = KUBEFLOW
     REQUIREMENTS = ["kfp==1.8.9"]
-    # TODO [HIGH]: Figure out the dependencies for the Kubeflow integration
-    #   to work
 
     @classmethod
     def activate(cls):

@@ -20,7 +20,7 @@ components, thus ensuring that both types of pipeline definitions are
 compatible.
 Note: This requires Kubeflow Pipelines SDK to be installed.
 """
-from typing import Any, Dict, List, Set
+from typing import Dict, List, Set
 
 from absl import logging
 from google.protobuf import json_format
