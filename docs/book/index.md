@@ -4,9 +4,9 @@ description: Simple, reproducible MLOps.
 
 # ZenML 101
 
-**ZenML** is an extensible, open-source MLOps framework to create production-ready machine learning pipelines. It has a simple, flexible syntax, is cloud and tooling agnostic, and has interfaces/abstractions that are catered towards ML workflows.
+**ZenML** is an extensible, open-source MLOps framework to create production-ready machine learning pipelines. Built for data scientists, it has a simple, flexible syntax, is cloud- and tool-agnostic, and has interfaces/abstractions that are catered towards ML workflows.
 
-At its core, **ZenML** pipelines execute ML-specific workflows from **sourcing data** to **splitting, preprocessing, training**, all the way to the **evaluation of results** and even **serving**. There are many built-in batteries as things progress in ML development. ZenML is not here to replace the great tools that solve the individual problems. Rather, it integrates natively with many popular ML tooling, and gives standard abstraction to write your workflows.
+At its core, **ZenML pipelines execute ML-specific workflows** from sourcing data to splitting, preprocessing, training, all the way to the evaluation of results and even serving. There are many built-in batteries to support common ML development tasks. ZenML is not here to replace the great tools that solve these individual problems. Rather, it **integrates natively with popular ML tooling** and gives standard abstraction to write your workflows.
 
 {% hint style="success" %}
 Read more about Why ZenML exists [here](why-zenml.md).
