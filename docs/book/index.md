@@ -14,32 +14,30 @@ Read more about Why ZenML exists [here](why-zenml.md).
 
 ## Who is ZenML for?
 
-![Before: Sam is a regular data scientist struggling with productionalizing ML models.](.gitbook/assets/sam\_frustrated.jpg)
+![Before: Sam is a regular data scientist struggling with productionizing ML models.](.gitbook/assets/sam\_frustrated.jpg)
 
 ![After: Sam finds Zen in her MLOps with ZenML.](<.gitbook/assets/sam\_zen\_mode (2).jpg>)
 
-ZenML is created for data science / machine learning teams that are engaged in not only training models, but also putting them out in production. Production can mean many things, but examples would be:
+ZenML is created for data science / machine learning teams that are not only engaged in training models, but also in putting them out in production. Production can mean many things, but examples would be:
 
 * If you are using a model to generate analysis periodically for any business process.
 * If you are using models as a software service to serve predictions.
 * If you are trying to understand patterns using machine learning for any business process.
 
-In all of the above, there will be team that is engaged with creating, deploying, managing and improving the entire process. You always want the best results, the best models, and the most robust and reliable results. This is where ZenML can help.
+In all of the above, there will be a team that is engaged with creating, deploying, managing and improving the entire process. You always want the best results, the best models, and the most robust and reliable results. This is where ZenML can help.
 
-In terms of user persona, ZenML is created for **producers of the models.** This role is classically known as 'data scientist' in the industry and can range from research-minded individuals to more engineering-driven people. The goal of ZenML is to enable these practitioners to **own** their models until deployment and beyond.
+In terms of user personas, ZenML is created for **producers of the models.** This role is classically known as 'data scientist' in the industry and can range from research-minded individuals to more engineering-driven people. The goal of ZenML is to enable these practitioners to **own** their models from experimentation phases to deployment and beyond.
 
 ## What do I get out of it?
 
-By using ZenML at the early stages of development, you get the following features:
+By using ZenML in the early stages of your project, you get the following benefits:
 
-* **Reproducibility** of training and inference workflows.
-* Managing ML **metadata**, including versioning data, code, and models.
-* Getting an **overview** of your ML development, with a reliable link between training and deployment.
-* Maintaining **comparability** between ML models.
-* **Scaling** ML training/inference to large datasets.
-* Retaining code **quality** alongside development velocity.
-* **Reusing** code/data and reducing waste.
-* Keeping up with the **ML tooling landscape** with standard abstractions and interfaces.
+- **Reproducibility** of training and inference workflows
+- A **simple and clear** way to represent the steps of your pipeline in code
+- **Plug-and-play integrations**: bring all your favorite tools together
+- Easy switching between local and cloud stacks
+- Painless **deployment and configuration** of infrastructure
+- **Scale up** your stack transparently and logically to suit your training and deployment needs
 
 ## Okay, how can I learn more?
 

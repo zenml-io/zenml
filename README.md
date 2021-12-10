@@ -38,7 +38,7 @@ Join our <a href="https://zenml.io/slack-invite" target="_blank">
 
 ZenML pipelines are designed to be written early on the development lifecycle. Data scientists can explore their pipelines as they develop towards production, switching stacks from local to cloud deployments with ease. You can read more about why we started building ZenML [on our blog](https://blog.zenml.io/why-zenml/). By using ZenML in the early stages of your project, you get the following benefits:
 
-- **Reproducibility** of training and inference workflows.
+- **Reproducibility** of training and inference workflows
 - A **simple and clear** way to represent the steps of your pipeline in code
 - **Plug-and-play integrations**: bring all your favorite tools together
 - Easy switching between local and cloud stacks
