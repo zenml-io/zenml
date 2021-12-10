@@ -27,12 +27,21 @@ logger = get_logger(__name__)
 
 
 class SklearnStandardScalerConfig(BasePreprocesserConfig):
+    """Config class for the sklearn standard scaler
+
+    ignore_columns: a list of column names which should not be scaled
+    exclude_columns: a list of column names to be excluded from the dataset
+    """
+
     ignore_columns: List[str] = []
     exclude_columns: List[str] = []
 
 
 class SklearnStandardScaler(BasePreprocesserStep):
-    def entrypoint(
+    """Simple step implementation which utilizes the StandardScaler from sklearn
+    to transform the numeric columns of a pd.DataFrame"""
+
+    def entrypoint(  # type: ignore[override]
         self,
         train_dataset: pd.DataFrame,
         test_dataset: pd.DataFrame,
@@ -40,13 +49,27 @@ class SklearnStandardScaler(BasePreprocesserStep):
         statistics: pd.DataFrame,
         schema: pd.DataFrame,
         config: SklearnStandardScalerConfig,
-    ) -> Output(
+    ) -> Output(  # type:ignore[valid-type]
         train_transformed=pd.DataFrame,
         test_transformed=pd.DataFrame,
         valdation_transformed=pd.DataFrame,
     ):
+        """Main entrypoint function for the StandardScaler
+
+        Args:
+            train_dataset: pd.DataFrame, the training dataset
+            test_dataset: pd.DataFrame, the test dataset
+            validation_dataset: pd.DataFrame, the validation dataset
+            statistics: pd.DataFrame, the statistics over the train dataset
+            schema: pd.DataFrame, the detected schema of the dataset
+            config: the configuration for the step
+        Returns:
+             the transformed train, test and validation datasets as
+             pd.DataFrames
+        """
         schema_dict = {k: v[0] for k, v in schema.to_dict().items()}
 
+        # Exclude columns
         feature_set = set(train_dataset.columns) - set(config.exclude_columns)
         for feature, feature_type in schema_dict.items():
             if feature_type != "int64" and feature_type != "float64":
@@ -58,6 +81,7 @@ class SklearnStandardScaler(BasePreprocesserStep):
 
         transform_feature_set = feature_set - set(config.ignore_columns)
 
+        # Transform the datasets
         scaler = StandardScaler()
         scaler.mean_ = statistics["mean"][transform_feature_set]
         scaler.scale_ = statistics["std"][transform_feature_set]

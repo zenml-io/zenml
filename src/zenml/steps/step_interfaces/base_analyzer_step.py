@@ -31,10 +31,12 @@ class BaseAnalyzerStep(BaseStep):
     STEP_INNER_FUNC_NAME = "entrypoint"
 
     @abstractmethod
-    def entrypoint(
+    def entrypoint(  # type: ignore[override]
         self,
         dataset: DataArtifact,
         config: BaseAnalyzerConfig,
         context: StepContext,
-    ) -> Output(statistics=StatisticsArtifact, schema=SchemaArtifact):
+    ) -> Output(  # type:ignore[valid-type]
+        statistics=StatisticsArtifact, schema=SchemaArtifact
+    ):
         """Base entrypoint for any analyzer implementation"""

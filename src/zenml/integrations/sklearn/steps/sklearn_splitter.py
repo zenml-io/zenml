@@ -24,15 +24,51 @@ from zenml.steps.step_output import Output
 
 
 class SklearnSplitterConfig(BaseSplitStepConfig):
+    """Config class for the sklearn splitter"""
+
     ratios: Dict[str, float]
 
 
 class SklearnSplitter(BaseSplitStep):
-    def entrypoint(
+    """A simple step implementation which utilizes sklearn to split a given
+    dataset into train, test and validation splits"""
+
+    def entrypoint(  # type: ignore[override]
         self,
         dataset: pd.DataFrame,
         config: SklearnSplitterConfig,
-    ) -> Output(train=pd.DataFrame, test=pd.DataFrame, validation=pd.DataFrame):
+    ) -> Output(  # type:ignore[valid-type]
+        train=pd.DataFrame, test=pd.DataFrame, validation=pd.DataFrame
+    ):
+        """Method which is responsible for the splitting logic
+
+        Args:
+            dataset: a pandas Dataframe which entire dataset
+            config: the configuration for the step
+        Returns:
+            three dataframes representing the splits
+        """
+        if (
+            any(
+                [
+                    split not in config.ratios
+                    for split in ["train", "test", "validation"]
+                ]
+            )
+            or len(config.ratios) != 3
+        ):
+            raise KeyError(
+                f"Make sure that you only use 'train', 'test' and "
+                f"'validation' as keys in the ratios dict. Current keys: "
+                f"{config.ratios.keys()}"
+            )
+
+        if sum(config.ratios.values()) != 1:
+            raise ValueError(
+                f"Make sure that the ratios sum up to 1. Current "
+                f"ratios: {config.ratios}"
+            )
+
         train_dataset, test_dataset = train_test_split(
             dataset, test_size=config.ratios["test"]
         )

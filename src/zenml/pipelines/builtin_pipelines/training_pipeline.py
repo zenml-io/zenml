@@ -13,25 +13,45 @@
 #  permissions and limitations under the License.
 
 from zenml.pipelines import BasePipeline
+from zenml.steps import step_interfaces
 
 
 class TrainingPipeline(BasePipeline):
     """Class for the classic training pipeline implementation"""
 
-    def connect(
-        self, datasource, splitter, analyzer, preprocesser, trainer, evaluator
+    def connect(  # type: ignore[override]
+        self,
+        datasource: step_interfaces.BaseDatasourceStep,
+        splitter: step_interfaces.BaseSplitStep,
+        analyzer: step_interfaces.BaseAnalyzerStep,
+        preprocesser: step_interfaces.BasePreprocesserStep,
+        trainer: step_interfaces.BaseTrainerStep,
+        evaluator: step_interfaces.BaseEvaluatorStep,
     ) -> None:
+        """Main connect method for the standard training pipelines
+
+        Args:
+            datasource: the step responsible for the data ingestion
+            splitter: the step responsible for splitting the dataset into
+                train, test, val
+            analyzer: the step responsible for extracting the statistics and
+                the schema
+            preprocesser: the step responsible for preprocessing the data
+            trainer: the step responsible for training a model
+            evaluator: the step responsible for computing the evaluation of
+                the trained model
+        """
         # Ingesting the datasource
         dataset = datasource()
 
         # Splitting the data
-        train, test, validation = splitter(dataset=dataset)
+        train, test, validation = splitter(dataset=dataset)  # type:ignore
 
         # Analyzing the train dataset
-        statistics, schema = analyzer(dataset=train)
+        statistics, schema = analyzer(dataset=train)  # type:ignore
 
         # Preprocessing the splits
-        train_t, test_t, validation_t = preprocesser(
+        train_t, test_t, validation_t = preprocesser(  # type:ignore
             train_dataset=train,
             test_dataset=test,
             validation_dataset=validation,
@@ -43,4 +63,4 @@ class TrainingPipeline(BasePipeline):
         model = trainer(train_dataset=train_t, validation_dataset=validation_t)
 
         # Evaluating the trained model
-        evaluator(model=model, dataset=test_t)
+        evaluator(model=model, dataset=test_t)  # type:ignore

@@ -491,7 +491,7 @@ class BaseStep(metaclass=BaseStepMeta):
         )
 
         self.INPUT_SPEC = {
-            arg_name: artifact_type.type
+            arg_name: artifact_type.type  # type:ignore[misc]
             for arg_name, artifact_type in input_artifacts.items()
         }
 

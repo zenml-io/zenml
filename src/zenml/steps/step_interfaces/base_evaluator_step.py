@@ -30,7 +30,7 @@ class BaseEvaluatorStep(BaseStep):
     STEP_INNER_FUNC_NAME = "entrypoint"
 
     @abstractmethod
-    def entrypoint(
+    def entrypoint(  # type: ignore[override]
         self,
         dataset: DataArtifact,
         model: ModelArtifact,

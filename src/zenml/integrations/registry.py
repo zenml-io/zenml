@@ -40,7 +40,7 @@ class IntegrationRegistry(object):
         return self._integrations
 
     @integrations.setter
-    def integrations(self, i: Any):
+    def integrations(self, i: Any) -> None:
         """Setter method for the integrations property"""
         raise IntegrationError(
             "Please do not manually change the integrations within the "

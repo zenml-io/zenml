@@ -22,6 +22,8 @@ from zenml.steps.step_interfaces.base_datasource_step import (
 
 
 class PandasDatasourceConfig(BaseDatasourceConfig):
+    """Config class for the pandas csv datasource"""
+
     path: str
     sep: str = ","
     header: Union[int, List[int], str] = "infer"
@@ -30,10 +32,18 @@ class PandasDatasourceConfig(BaseDatasourceConfig):
 
 
 class PandasDatasource(BaseDatasourceStep):
-    def entrypoint(
+    """Simple step implementation to ingest from a csv file using pandas"""
+
+    def entrypoint(  # type: ignore[override]
         self,
         config: PandasDatasourceConfig,
     ) -> pd.DataFrame:
+        """Main entrypoint method for the PandasDatasource
+        Args:
+            config: the configuration of the step
+        Returns:
+            the resulting dataframe
+        """
         return pd.read_csv(
             filepath_or_buffer=config.path,
             sep=config.sep,

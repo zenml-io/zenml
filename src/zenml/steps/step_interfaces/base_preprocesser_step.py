@@ -32,7 +32,7 @@ class BasePreprocesserStep(BaseStep):
     STEP_INNER_FUNC_NAME = "entrypoint"
 
     @abstractmethod
-    def entrypoint(
+    def entrypoint(  # type: ignore[override]
         self,
         train_dataset: DataArtifact,
         test_dataset: DataArtifact,
@@ -41,7 +41,7 @@ class BasePreprocesserStep(BaseStep):
         schema: SchemaArtifact,
         config: BasePreprocesserConfig,
         context: StepContext,
-    ) -> Output(
+    ) -> Output(  # type:ignore[valid-type]
         train_transformed=DataArtifact,
         test_transformed=DataArtifact,
         valdation_transformed=DataArtifact,

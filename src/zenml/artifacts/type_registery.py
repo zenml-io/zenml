@@ -23,16 +23,29 @@ if TYPE_CHECKING:
 
 
 class ArtifactTypeRegistry(object):
+    """A registry to keep track of which datatypes map to which artifact
+    types"""
+
     def __init__(self) -> None:
+        """Initialization with an empty registry"""
         self._artifact_types: Dict[Type[Any], List[Type["BaseArtifact"]]] = {}
 
     def register_integration(
         self, key: Type[Any], type_: List[Type["BaseArtifact"]]
     ) -> None:
+        """Method to register an integration within the registry
+
+        Args:
+            key: any datatype
+            type_: the list of artifact type that the given datatypes is
+                associated with
+        """
         self._artifact_types[key] = type_
 
     def get_artifact_type(self, key: Type[Any]) -> List[Type["BaseArtifact"]]:
+        """Method to extract the list of artifact types given the data type"""
         return self._artifact_types[key]
 
 
+# Creating the global registry
 type_registry = ArtifactTypeRegistry()

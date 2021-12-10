@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import List, Tuple
+
 import pandas as pd
 import tensorflow as tf
 
@@ -21,22 +23,46 @@ from zenml.steps.step_interfaces.base_trainer_step import (
 
 
 class TensorflowBinaryClassifierConfig(BaseTrainerConfig):
+    """Config class for the tensorflow trainer
+
+    target_column: the name of the label column
+    layers: the number of units in the fully connected layers
+    input_shape: the shape of the input
+    learning_rate: the learning rate
+    metrics: the list of metrics to be computed
+    epochs: the number of epochs
+    batch_size: the size of the batch
+    """
+
     target_column: str
-    layers = [256, 64, 1]
-    input_shape = (8,)
-    learning_rate = 0.001
-    metrics = ["accuracy"]
-    epochs = 50
-    batch_size = 8
+    layers: List[int] = [256, 64, 1]
+    input_shape: Tuple[int] = (8,)
+    learning_rate: float = 0.001
+    metrics: List[str] = ["accuracy"]
+    epochs: int = 50
+    batch_size: int = 8
 
 
 class TensorflowBinaryClassifier(BaseTrainerStep):
-    def entrypoint(
+    """Simple step implementation which creates a simple tensorflow feedforward
+    neural network and trains it on a given pd.DataFrame dataset
+    """
+
+    def entrypoint(  # type: ignore[override]
         self,
         train_dataset: pd.DataFrame,
         validation_dataset: pd.DataFrame,
         config: TensorflowBinaryClassifierConfig,
     ) -> tf.keras.Model:
+        """Main entrypoint for the tensorflow trainer
+
+        Args:
+            train_dataset: pd.DataFrame, the training dataset
+            validation_dataset: pd.DataFrame, the validation dataset
+            config: the configuration of the step
+        Returns:
+            the trained tf.keras.Model
+        """
         model = tf.keras.Sequential()
         model.add(tf.keras.layers.InputLayer(input_shape=config.input_shape))
         model.add(tf.keras.layers.Flatten())

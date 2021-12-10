@@ -30,10 +30,12 @@ class BaseSplitStep(BaseStep):
     STEP_INNER_FUNC_NAME = "entrypoint"
 
     @abstractmethod
-    def entrypoint(
+    def entrypoint(  # type: ignore[override]
         self,
         dataset: DataArtifact,
         config: BaseSplitStepConfig,
         context: StepContext,
-    ) -> Output(train=DataArtifact, test=DataArtifact, validation=DataArtifact):
+    ) -> Output(  # type:ignore[valid-type]
+        train=DataArtifact, test=DataArtifact, validation=DataArtifact
+    ):
         """Entrypoint for a function for the split steps to run"""

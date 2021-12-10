@@ -24,19 +24,34 @@ from zenml.steps.step_interfaces.base_analyzer_step import (
 
 
 class PandasAnalyzerConfig(BaseAnalyzerConfig):
+    """Config class for the PandasAnalyzer Config"""
+
     percentiles: List[float] = [0.25, 0.5, 0.75]
     include: Optional[Union[str, List[Type[Any]]]] = None
     exclude: Optional[Union[str, List[Type[Any]]]] = None
 
 
 class PandasAnalyzer(BaseAnalyzerStep):
+    """Simple step implementation which analyzes a given pd.DataFrame"""
+
+    # Manually defining the type of the output artifacts
     OUTPUT_SPEC = {"statistics": StatisticsArtifact, "schema": SchemaArtifact}
 
-    def entrypoint(
+    def entrypoint(  # type: ignore[override]
         self,
         dataset: pd.DataFrame,
         config: PandasAnalyzerConfig,
-    ) -> Output(statistics=pd.DataFrame, schema=pd.DataFrame):
+    ) -> Output(  # type:ignore[valid-type]
+        statistics=pd.DataFrame, schema=pd.DataFrame
+    ):
+        """Main entrypoint function for the pandas analyzer
+
+        Args:
+            dataset: pd.DataFrame, the given dataset
+            config: the configuration of the step
+        Returns:
+            the statistics and the schema of the given dataframe
+        """
         statistics = dataset.describe(
             percentiles=config.percentiles,
             include=config.include,
