@@ -36,18 +36,18 @@ Join our <a href="https://zenml.io/slack-invite" target="_blank">
 
 # 🤖 Why use ZenML?
 
-ZenML pipelines are designed to be written early on the development lifecycle. Data scientists can explore their pipelines as they develop towards production, switching stacks from local to cloud deployments with ease. By using ZenML in the early stages of your project, you get the following benefits:
+ZenML pipelines are designed to be written early on the development lifecycle. Data scientists can explore their pipelines as they develop towards production, switching stacks from local to cloud deployments with ease. You can read more about why we started building ZenML [on our blog](https://blog.zenml.io/why-zenml/). By using ZenML in the early stages of your project, you get the following benefits:
 
 - **Reproducibility** of training and inference workflows.
 - A **simple and clear** way to represent the steps of your pipeline in code
-- **Plug-and-play integrations**: bring all your favourite tools together
+- **Plug-and-play integrations**: bring all your favorite tools together
 - Easy switching between local and cloud stacks
 - Painless **deployment and configuration** of infrastructure
 - **Scale up** your stack transparently and logically to suit your training and deployment needs
 
 # 📖 Learn More
 
-| ZenML Resources |   |
+| ZenML Resources | Description |
 | ------------- | - |
 | 🧘‍♀️ **[ZenML 101]** | New to ZenML? Here's everything you need to know! |
 | ⚛️ **[Core Concepts]** | Some key terms and concepts we use. |
@@ -306,7 +306,3 @@ First point of call should be [our Slack group](https://zenml.io/slack-invite/).
 # 📜 License
 
 ZenML is distributed under the terms of the Apache License Version 2.0. A complete version of the license is available in the [LICENSE.md](LICENSE.md) in this repository. Any contribution made to this project will be licensed under the Apache License Version 2.0.
-
-# 🙏🏻 Acknowledgements
-
-ZenML is built on the shoulders of giants: we leverage, and would like to give credit to, existing open-source libraries like [`tfx`](https://github.com/tensorflow/tfx/). The goal of our framework is neither to replace these libraries, nor to diminish their usage. ZenML is simply an opinionated, higher-level interface with the focus being purely on ease-of-use and coherent intuitive design. You can read more about why we actually started building ZenML on our [blog](https://blog.zenml.io/why-zenml/).
