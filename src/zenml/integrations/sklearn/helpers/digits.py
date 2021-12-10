@@ -15,13 +15,14 @@
 from typing import Tuple
 
 import numpy as np
+from sklearn.base import ClassifierMixin
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 
 
-def get_mnist() -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Returns the mnist digits dataset in the form of a tuple of numpy
+def get_digits() -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Returns the digits dataset in the form of a tuple of numpy
     arrays."""
     digits = load_digits()
     # flatten the images
@@ -35,6 +36,6 @@ def get_mnist() -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     return X_train, X_test, y_train, y_test
 
 
-def get_mnist_model() -> SVC:
-    """Creates a support vector classifier for mnist."""
+def get_digits_model() -> ClassifierMixin:
+    """Creates a support vector classifier for digits dataset."""
     return SVC(gamma=0.001)
