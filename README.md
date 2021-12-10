@@ -253,37 +253,6 @@ ZenML is managed by a [core team](https://zenml.io/team) of developers that are 
 - Create a [Feature Request](https://github.com/zenml-io/zenml/issues/new/choose) in the [GitHub board](https://github.com/zenml-io/zenml/issues).
 - Start a thread in our [Slack channel](https://zenml.io/slack-invite).
 
-## 🚧 What we're working on
-
-We recently rewrote the entire code base, and are now incrementally adding back in some of the features we previously supported. Get a full overview of what's coming by checking out the Roadmap, but in the short term we're currently working hard to support:
-
-- Standard interfaces aka our higher-level API.
-- Individual step interfaces like `PreprocessorStep`, `TrainerStep`, `DeployerStep` etc. need to be rewritten from within the new paradigm.
-- A proper production setup with Kubeflow running in the cloud.
-- A simple way to switch between your local environment and the cloud.
-
-# ❓ FAQ
-
-**Q: Why did you build ZenML?**
-
-We built it because we scratched our own itch while deploying multiple ML models in production for the last 4 years. Our team struggled to find a simple yet production-ready solution whilst developing large-scale ML pipelines, and built a solution for it that we are now proud to share with all of you!
-
-**Q: Can I integrate my own, custom processing backend?**
-
-Absolutely. We have a clever design for [our integration interfaces](https://github.com/zenml-io/zenml/tree/main/src/zenml/integrations), so you can simply add your own!
-
-**Q: I would like a more convenient way to collaborate with my team!**
-
-Fear not, we’re building a [ZenML Cloud](https://zenml.io/cloud/) offering. Workloads will still be running under your control, and we don’t get access to your actual data, but we’ll be your centralized pipeline registry and metadata store. And we’ll throw in a nice UI, too. Sign up for [our newsletter](https://zenml.io/newsletter/) to stay in the loop!
-
-**Q: I would like to contribute to the repo.**
-
-Great to hear! Please check out [our contribution guidelines](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md), or simply hop on over to our Slack and chat us up :).
-
-**Q: My question is not answered yet!**
-
-Then connect with us using Slack - simply [join us via this invite](https://zenml.io/slack-invite/).
-
 # 🙋‍♀️ Contributing & Community
 
 We would love to develop ZenML together with our community! Check our [Contributing Guide](CONTRIBUTING.md) for more details on how best to contribute.
