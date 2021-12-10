@@ -14,73 +14,35 @@
 """Main entrypoint for containers with Kubeflow TFX component executors."""
 
 import argparse
-import copy
 import importlib
 import json
 import logging
 import os
 import sys
 import textwrap
-from typing import (
-    Any,
-    Dict,
-    List,
-    Mapping,
-    MutableMapping,
-    Optional,
-    Sequence,
-    Tuple,
-    cast,
-)
+from typing import Any, Dict, List, MutableMapping, Optional, Tuple
 
 from google.protobuf import json_format
 from ml_metadata.proto import metadata_store_pb2
-from tfx import types
 from tfx.dsl.compiler import constants
 from tfx.orchestration import metadata
 from tfx.orchestration.local import runner_utils
 from tfx.orchestration.portable import (
     data_types,
-    execution_publish_utils,
     kubernetes_executor_operator,
     launcher,
     runtime_parameter_utils,
 )
 from tfx.proto.orchestration import executable_spec_pb2, pipeline_pb2
 from tfx.types import artifact, channel, standard_artifacts
+from tfx.types.channel import Property
 
 from zenml.artifacts.base_artifact import BaseArtifact
-from zenml.integrations.kubeflow import kubeflow_metadata_adapter
 from zenml.integrations.registry import integration_registry
 from zenml.steps.utils import generate_component_class
 
 _KFP_POD_NAME_ENV_KEY = "KFP_POD_NAME"
 _KFP_POD_NAME_PROPERTY_KEY = "kfp_pod_name"
-
-
-def _register_execution(
-    metadata_handler: metadata.Metadata,
-    execution_type: metadata_store_pb2.ExecutionType,
-    contexts: List[metadata_store_pb2.Context],
-    input_artifacts: MutableMapping[str, Sequence[types.Artifact]],
-    exec_properties: Mapping[str, types.Property],
-) -> metadata_store_pb2.Execution:
-    """Registers an execution in MLMD."""
-    kfp_pod_name = os.environ.get(_KFP_POD_NAME_ENV_KEY)
-    execution_properties_copy = copy.deepcopy(exec_properties)
-    execution_properties_copy = cast(
-        MutableMapping[str, types.Property], execution_properties_copy
-    )
-    if kfp_pod_name:
-        logging.info("Adding KFP pod name %s to execution", kfp_pod_name)
-        execution_properties_copy[_KFP_POD_NAME_PROPERTY_KEY] = kfp_pod_name
-    return execution_publish_utils.register_execution(
-        metadata_handler=metadata_handler,
-        execution_type=execution_type,
-        contexts=contexts,
-        input_artifacts=input_artifacts,
-        exec_properties=execution_properties_copy,
-    )
 
 
 def _get_grpc_metadata_connection_config(
@@ -97,26 +59,24 @@ def _get_grpc_metadata_connection_config(
     """
     grpc_config = kubeflow_metadata_config["grpc_config"]
     connection_config = metadata_store_pb2.MetadataStoreClientConfig()
-    connection_config.host = os.getenv(
+    connection_config.host = os.environ[
         grpc_config["grpc_service_host"]["environment_variable"]
-    )
+    ]
     connection_config.port = int(
-        os.getenv(grpc_config["grpc_service_port"]["environment_variable"])
+        os.environ[grpc_config["grpc_service_port"]["environment_variable"]]
     )
     return connection_config
 
 
 def _get_metadata_connection(
     connection_info: str,
-) -> kubeflow_metadata_adapter.KubeflowMetadataAdapter:
+) -> metadata.Metadata:
     """Constructs a Kubeflow metadata adapter."""
     kubeflow_metadata_config = json.loads(connection_info)
     metadata_connection_config = _get_grpc_metadata_connection_config(
         kubeflow_metadata_config
     )
-    return kubeflow_metadata_adapter.KubeflowMetadataAdapter(
-        metadata_connection_config
-    )
+    return metadata.Metadata(metadata_connection_config)
 
 
 def _sanitize_underscore(name: str) -> Optional[str]:
@@ -218,7 +178,7 @@ def _render_artifact_as_mdstr(single_artifact: artifact.Artifact) -> str:
 
 
 def _dump_ui_metadata(
-    node: pipeline_pb2.PipelineNode,
+    node: pipeline_pb2.PipelineNode,  # type: ignore[valid-type]
     execution_info: data_types.ExecutionInfo,
     ui_metadata_path: str = "/mlpipeline-ui-metadata.json",
 ) -> None:
@@ -244,7 +204,7 @@ def _dump_ui_metadata(
     )
 
     def _dump_input_populated_artifacts(
-        node_inputs: MutableMapping[str, pipeline_pb2.InputSpec],
+        node_inputs: MutableMapping[str, pipeline_pb2.InputSpec],  # type: ignore[valid-type] # noqa
         name_to_artifacts: Dict[str, List[artifact.Artifact]],
     ) -> List[str]:
         """Dump artifacts markdown string for inputs.
@@ -265,9 +225,9 @@ def _dump_ui_metadata(
                     for single_artifact in name_to_artifacts.get(name, [])
                 ]
             )
-            # There must be at least a channel in a input, and all channels in a input
-            # share the same artifact type.
-            artifact_type = spec.channels[0].artifact_query.type.name
+            # There must be at least a channel in a input, and all channels in
+            # a input share the same artifact type.
+            artifact_type = spec.channels[0].artifact_query.type.name  # type: ignore[attr-defined] # noqa
             rendered_list.append(
                 "## {name}\n\n**Type**: {channel_type}\n\n{artifacts}".format(
                     name=_sanitize_underscore(name),
@@ -279,7 +239,7 @@ def _dump_ui_metadata(
         return rendered_list
 
     def _dump_output_populated_artifacts(
-        node_outputs: MutableMapping[str, pipeline_pb2.OutputSpec],
+        node_outputs: MutableMapping[str, pipeline_pb2.OutputSpec],  # type: ignore[valid-type] # noqa
         name_to_artifacts: Dict[str, List[artifact.Artifact]],
     ) -> List[str]:
         """Dump artifacts markdown string for outputs.
@@ -300,9 +260,9 @@ def _dump_ui_metadata(
                     for single_artifact in name_to_artifacts.get(name, [])
                 ]
             )
-            # There must be at least a channel in a input, and all channels in a input
-            # share the same artifact type.
-            artifact_type = spec.artifact_spec.type.name
+            # There must be at least a channel in a input, and all channels
+            # in a input share the same artifact type.
+            artifact_type = spec.artifact_spec.type.name  # type: ignore[attr-defined] # noqa
             rendered_list.append(
                 "## {name}\n\n**Type**: {channel_type}\n\n{artifacts}".format(
                     name=_sanitize_underscore(name),
@@ -316,7 +276,7 @@ def _dump_ui_metadata(
     src_str_inputs = "# Inputs:\n{}".format(
         "".join(
             _dump_input_populated_artifacts(
-                node_inputs=node.inputs.inputs,
+                node_inputs=node.inputs.inputs,  # type: ignore[attr-defined] # noqa
                 name_to_artifacts=execution_info.input_dict or {},
             )
         )
@@ -326,7 +286,7 @@ def _dump_ui_metadata(
     src_str_outputs = "# Outputs:\n{}".format(
         "".join(
             _dump_output_populated_artifacts(
-                node_outputs=node.outputs.outputs,
+                node_outputs=node.outputs.outputs,  # type: ignore[attr-defined] # noqa
                 name_to_artifacts=execution_info.output_dict or {},
             )
         )
@@ -345,7 +305,7 @@ def _dump_ui_metadata(
         }
     ]
     # Add Tensorboard view for ModelRun outpus.
-    for name, spec in node.outputs.outputs.items():
+    for name, spec in node.outputs.outputs.items():  # type: ignore[attr-defined] # noqa
         if (
             spec.artifact_spec.type.name
             == standard_artifacts.ModelRun.TYPE_NAME
@@ -365,10 +325,12 @@ def _dump_ui_metadata(
         json.dump(metadata_dict, f)
 
 
-def _get_pipeline_node(pipeline: pipeline_pb2.Pipeline, node_id: str):
+def _get_pipeline_node(
+    pipeline: pipeline_pb2.Pipeline, node_id: str  # type: ignore[valid-type] # noqa
+) -> pipeline_pb2.PipelineNode:  # type: ignore[valid-type]
     """Gets node of a certain node_id from a pipeline."""
-    result = None
-    for node in pipeline.nodes:
+    result: Optional[pipeline_pb2.PipelineNode] = None  # type: ignore[valid-type] # noqa
+    for node in pipeline.nodes:  # type: ignore[attr-defined] # noqa
         if (
             node.WhichOneof("node") == "pipeline_node"
             and node.pipeline_node.node_info.id == node_id
@@ -383,24 +345,30 @@ def _get_pipeline_node(pipeline: pipeline_pb2.Pipeline, node_id: str):
     return result
 
 
-def _parse_runtime_parameter_str(param: str) -> Tuple[str, types.Property]:
+def _parse_runtime_parameter_str(param: str) -> Tuple[str, Property]:
     """Parses runtime parameter string in command line argument."""
     # Runtime parameter format: "{name}=(INT|DOUBLE|STRING):{value}"
     name, value_and_type = param.split("=", 1)
     value_type, value = value_and_type.split(":", 1)
-    if value_type == pipeline_pb2.RuntimeParameter.Type.Name(
-        pipeline_pb2.RuntimeParameter.INT
+    if (
+        value_type
+        == pipeline_pb2.RuntimeParameter.Type.Name(  # type: ignore[attr-defined] # noqa
+            pipeline_pb2.RuntimeParameter.INT  # type: ignore[attr-defined]
+        )
     ):
-        value = int(value)
-    elif value_type == pipeline_pb2.RuntimeParameter.Type.Name(
-        pipeline_pb2.RuntimeParameter.DOUBLE
+        return name, int(value)
+    elif (
+        value_type
+        == pipeline_pb2.RuntimeParameter.Type.Name(  # type: ignore[attr-defined] # noqa
+            pipeline_pb2.RuntimeParameter.DOUBLE  # type: ignore[attr-defined]
+        )
     ):
-        value = float(value)
-    return (name, value)
+        return name, float(value)
+    return name, value
 
 
 def _resolve_runtime_parameters(
-    tfx_ir: pipeline_pb2.Pipeline,
+    tfx_ir: pipeline_pb2.Pipeline,  # type: ignore[valid-type] # noqa
     run_name: str,
     parameters: Optional[List[str]],
 ) -> None:
@@ -408,7 +376,7 @@ def _resolve_runtime_parameters(
     if parameters is None:
         parameters = []
 
-    parameter_bindings = {
+    parameter_bindings: Dict[str, Property] = {
         # Substitute the runtime parameter to be a concrete run_id
         constants.PIPELINE_RUN_ID_PARAMETER_NAME: run_name,
     }
@@ -486,7 +454,7 @@ def _parse_command_line_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main():
+def main() -> None:
     """Runs a single step defined by the command line arguments."""
     # Log to the container's stdout so Kubeflow Pipelines UI can display logs to
     # the user.
@@ -494,8 +462,6 @@ def main():
     logging.getLogger().setLevel(logging.INFO)
 
     args = _parse_command_line_arguments()
-
-    launcher._register_execution = _register_execution
 
     tfx_pipeline = pipeline_pb2.Pipeline()
     json_format.Parse(args.tfx_ir, tfx_pipeline)
@@ -505,10 +471,6 @@ def main():
 
     node_id = args.node_id
     pipeline_node = _get_pipeline_node(tfx_pipeline, node_id)
-
-    metadata_connection = _get_metadata_connection(
-        args.kubeflow_metadata_config
-    )
 
     deployment_config = runner_utils.extract_local_deployment_config(
         tfx_pipeline
@@ -523,17 +485,29 @@ def main():
         executable_spec_pb2.ContainerExecutableSpec: kubernetes_executor_operator.KubernetesExecutorOperator
     }
 
+    metadata_connection = _get_metadata_connection(
+        args.kubeflow_metadata_config
+    )
+
+    # connection_config = deployment_config.metadata_connection_config  # type: ignore[attr-defined] # noqa
+    # metadata_connection = metadata.Metadata(connection_config)
+
     # make sure all integrations are activated so all materializers etc. are
     # available
     integration_registry.activate_integrations()
 
-    executor_module_parts = executor_spec.class_path.split(".")[:-1]
-    executor_class_target_module_name = ".".join(executor_module_parts)
-    _create_executor_class(
-        step_source_module_name=args.step_module,
-        step_function_name=args.step_function_name,
-        executor_class_target_module_name=executor_class_target_module_name,
-    )
+    if hasattr(executor_spec, "class_path"):
+        executor_module_parts = getattr(executor_spec, "class_path").split(".")
+        executor_class_target_module_name = ".".join(executor_module_parts[:-1])
+        _create_executor_class(
+            step_source_module_name=args.step_module,
+            step_function_name=args.step_function_name,
+            executor_class_target_module_name=executor_class_target_module_name,
+        )
+    else:
+        raise RuntimeError(
+            f"No class path found inside executor spec: {executor_spec}."
+        )
 
     component_launcher = launcher.Launcher(
         pipeline_node=pipeline_node,
@@ -548,8 +522,8 @@ def main():
     execution_info = component_launcher.launch()
     logging.info("Component %s is finished.", node_id)
 
-    # Dump the UI metadata.
-    _dump_ui_metadata(pipeline_node, execution_info, args.metadata_ui_path)
+    if execution_info:
+        _dump_ui_metadata(pipeline_node, execution_info, args.metadata_ui_path)
 
 
 if __name__ == "__main__":

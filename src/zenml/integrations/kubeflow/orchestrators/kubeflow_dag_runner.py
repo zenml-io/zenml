@@ -360,32 +360,32 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
                 del message_dict[item]
 
     def _dehydrate_tfx_ir(
-        self, original_pipeline: pipeline_pb2.Pipeline, node_id: str
-    ) -> pipeline_pb2.Pipeline:
+        self, original_pipeline: pipeline_pb2.Pipeline, node_id: str  # type: ignore[valid-type] # noqa
+    ) -> pipeline_pb2.Pipeline:  # type: ignore[valid-type]
         """Dehydrate the TFX IR to remove unused fields."""
         pipeline = copy.deepcopy(original_pipeline)
-        for node in pipeline.nodes:
+        for node in pipeline.nodes:  # type: ignore[attr-defined]
             if (
                 node.WhichOneof("node") == "pipeline_node"
                 and node.pipeline_node.node_info.id == node_id
             ):
-                del pipeline.nodes[:]
-                pipeline.nodes.extend([node])
+                del pipeline.nodes[:]  # type: ignore[attr-defined]
+                pipeline.nodes.extend([node])  # type: ignore[attr-defined]
                 break
 
         deployment_config = pipeline_pb2.IntermediateDeploymentConfig()
-        pipeline.deployment_config.Unpack(deployment_config)
+        pipeline.deployment_config.Unpack(deployment_config)  # type: ignore[attr-defined] # noqa
         self._del_unused_field(node_id, deployment_config.executor_specs)
         self._del_unused_field(node_id, deployment_config.custom_driver_specs)
         self._del_unused_field(
             node_id, deployment_config.node_level_platform_configs
         )
-        pipeline.deployment_config.Pack(deployment_config)
+        pipeline.deployment_config.Pack(deployment_config)  # type: ignore[attr-defined] # noqa
         return pipeline
 
     def _generate_tfx_ir(
         self, pipeline: tfx_pipeline.Pipeline
-    ) -> Optional[pipeline_pb2.Pipeline]:
+    ) -> Optional[pipeline_pb2.Pipeline]:  # type: ignore[valid-type]
         """Generate the TFX IR from the logical TFX pipeline."""
         result = self._tfx_compiler.compile(pipeline)
         return result

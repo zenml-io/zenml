@@ -21,7 +21,7 @@ compatible.
 Note: This requires Kubeflow Pipelines SDK to be installed.
 """
 import json
-from typing import Dict, List, Set
+from typing import Any, Dict, List, Set
 
 from absl import logging
 from google.protobuf import json_format
@@ -43,12 +43,12 @@ _WORKFLOW_ID_KEY = "WORKFLOW_ID"
 def _encode_runtime_parameter(param: data_types.RuntimeParameter) -> str:
     """Encode a runtime parameter into a placeholder for value substitution."""
     if param.ptype is int:
-        type_enum = pipeline_pb2.RuntimeParameter.INT
+        type_enum = pipeline_pb2.RuntimeParameter.INT  # type: ignore[attr-defined] # noqa
     elif param.ptype is float:
-        type_enum = pipeline_pb2.RuntimeParameter.DOUBLE
+        type_enum = pipeline_pb2.RuntimeParameter.DOUBLE  # type: ignore[attr-defined] # noqa
     else:
-        type_enum = pipeline_pb2.RuntimeParameter.STRING
-    type_str = pipeline_pb2.RuntimeParameter.Type.Name(type_enum)
+        type_enum = pipeline_pb2.RuntimeParameter.STRING  # type: ignore[attr-defined] # noqa
+    type_str = pipeline_pb2.RuntimeParameter.Type.Name(type_enum)  # type: ignore[attr-defined] # noqa
     return f"{param.name}={type_str}:{str(dsl.PipelineParam(name=param.name))}"
 
 
@@ -65,8 +65,8 @@ class KubeflowComponent:
         depends_on: Set[dsl.ContainerOp],
         pipeline: tfx_pipeline.Pipeline,
         image: str,
-        kubeflow_metadata_config: Dict,
-        tfx_ir: pipeline_pb2.Pipeline,
+        kubeflow_metadata_config: Dict[str, Any],
+        tfx_ir: pipeline_pb2.Pipeline,  # type: ignore[valid-type]
         pod_labels_to_attach: Dict[str, str],
         step_module: str,
         step_function_name: str,
