@@ -28,6 +28,19 @@ class TrainingPipeline(BasePipeline):
         trainer: step_interfaces.BaseTrainerStep,
         evaluator: step_interfaces.BaseEvaluatorStep,
     ) -> None:
+        """Main connect method for the standard training pipelines
+
+        Args:
+            datasource: the step responsible for the data ingestion
+            splitter: the step responsible for splitting the dataset into
+                train, test, val
+            analyzer: the step responsible for extracting the statistics and
+                the schema
+            preprocesser: the step responsible for preprocessing the data
+            trainer: the step responsible for training a model
+            evaluator: the step responsible for computing the evaluation of
+                the trained model
+        """
         # Ingesting the datasource
         dataset = datasource()
 
