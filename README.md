@@ -98,9 +98,11 @@ Once code is organized into a ZenML pipeline, you can supercharge your ML develo
 
 We currently support [Airflow](https://airflow.apache.org/) and [Kubeflow](https://www.kubeflow.org/) as third-party orchestrators for your ML pipeline code. ZenML steps can be built from any of the other tools you usually use in your ML workflows, from [`scikit-learn`](https://scikit-learn.org/stable/) to [`PyTorch`](https://pytorch.org/) or [`TensorFlow`](https://www.tensorflow.org/).
 
-### 3. ☁️ Distribute Processing to the Cloud
+![ZenML is the glue](docs/readme/zenml-is-the-glue.jpeg)
 
-Switching from local experiments to cloud-based pipelines doesn't need to be complex. ZenML supports running pipelines on Kubernetes clusters in the cloud through our [Kubeflow](https://www.kubeflow.org/) integration. Switching from your local stack to a cloud stack is easy to do with our CLI tool.
+### 3. ☁️ Scale to the Cloud
+
+Switching from local experiments to cloud-based pipelines doesn't need to be complicated. ZenML supports running pipelines on Kubernetes clusters in the cloud through our [Kubeflow](https://www.kubeflow.org/) integration. Switching from your local stack to a cloud stack is easy to do with our CLI tool.
 
 ### 4. 🧩 Visualize the Steps of your Pipeline
 
@@ -120,9 +122,31 @@ We use the built-in FacetStatisticsVisualizer using the [Facets Overview](https:
 
 Once you've run your experiment, you need a way of seeing what was produced and how it was produced. We offer a flexible interface to support [post-execution workflows](https://docs.zenml.io/guides/post-execution-workflow). This allows you to access any of the artifacts produced by pipeline steps as well as any associated metadata.
 
+```python
+pipeline = repo.get_pipeline(pipeline_name=..., stack_key=...) # access a pipeline by name and/or stack key
+runs = pipeline.runs  # all runs of a pipeline chronologically ordered
+run = runs[-1]  # latest run
+steps = run.steps  # all steps of a pipeline
+step = steps[0] 
+output = step.output
+df = output.read(materializer_class=PandasMaterializer)
+df.head()
+```
+
 ### 7. 🛠 Configure Pipeline Runs with YAML Code
 
 Not everyone wants to keep their configuration of pipeline runs in the same place as the active code defining steps. You can define the particular customization of runs with YAML code if that's your jam!
+
+
+```yaml
+steps:
+  step_name:
+    parameters:
+      parameter_name: parameter_value
+      some_other_parameter_name: 2
+  some_other_step_name:
+    ...
+```
 
 # 🤸 Getting Started
 
