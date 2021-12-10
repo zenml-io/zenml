@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 
 import click
@@ -135,6 +136,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         )
         runner.run(created_pipeline)
 
+        run_name = run_name or datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")
         self._upload_and_run_pipeline(
             pipeline_file_path=pipeline_file_path,
             run_name=run_name,
@@ -143,7 +145,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
     def _upload_and_run_pipeline(
         self, pipeline_file_path: str, run_name: str, enable_cache: bool
-    ):
+    ) -> None:
         """Tries to upload and run a KFP pipeline.
 
         Args:
@@ -167,10 +169,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
         except urllib3.exceptions.HTTPError as error:
             logger.warning(
                 "Failed to upload Kubeflow pipeline: %s. "
-                "If you still want to run this pipeline, upload the file '%s' "
-                "manually.",
+                "Please make sure your kube config is configured and the "
+                "current context is set correctly.",
                 error,
-                pipeline_file_path,
             )
 
     def _get_stack_requirements(self) -> List[str]:

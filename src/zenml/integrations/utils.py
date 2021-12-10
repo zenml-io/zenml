@@ -14,7 +14,7 @@
 import importlib
 import inspect
 import sys
-from typing import List, Optional, Type
+from typing import List, Optional, Type, cast
 
 from zenml.integrations.integration import Integration, IntegrationMeta
 
@@ -43,7 +43,7 @@ def get_integration_for_module(module_name: str) -> Optional[Type[Integration]]:
             and isinstance(member, IntegrationMeta)
             and issubclass(member, Integration)
         ):
-            return member
+            return cast(Type[Integration], member)
 
     return None
 

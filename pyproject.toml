@@ -188,7 +188,11 @@ module = [
     "dash.*",
     "dash_bootstrap_components.*",
     "dash_cytoscape",
-    "dash.dependencies"
+    "dash.dependencies",
+    "docker.*",
+    "kfp.*",
+    "kubernetes.*",
+    "urllib3.*"
 ]
 ignore_missing_imports = true
 

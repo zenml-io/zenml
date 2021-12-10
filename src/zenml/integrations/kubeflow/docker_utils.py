@@ -1,11 +1,11 @@
 import json
 import os
 import tempfile
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional, cast
 
 import pkg_resources
+from docker.client import DockerClient
 
-import docker
 import zenml
 from zenml.logger import get_logger
 
@@ -116,7 +116,7 @@ def build_docker_image(
         "Building docker image '%s', this might take a while...", image_name
     )
     try:
-        docker_client = docker.from_env()
+        docker_client = DockerClient.from_env()
         # We use the client api directly here so we can stream the logs
         output_stream = docker_client.images.client.api.build(
             path=build_context_path,
@@ -140,7 +140,7 @@ def push_docker_image(image_name: str) -> None:
         image_name: The full name (including a tag) of the image to push.
     """
     logger.info("Pushing docker image '%s'.", image_name)
-    docker_client = docker.from_env()
+    docker_client = DockerClient.from_env()
     output_stream = docker_client.images.push(image_name, stream=True)
     _process_stream(output_stream)
     logger.info("Finished pushing docker image.")
@@ -156,11 +156,11 @@ def get_image_digest(image_name: str) -> Optional[str]:
         Returns the repo digest for the given image if there exists exactly one.
         If there are zero or multiple repo digests, returns `None`.
     """
-    docker_client = docker.from_env()
+    docker_client = DockerClient.from_env()
     image = docker_client.images.get(image_name)
     repo_digests = image.attrs["RepoDigests"]
     if len(repo_digests) == 1:
-        return repo_digests[0]
+        return cast(str, repo_digests[0])
     else:
         logger.debug(
             "Found zero or more repo digests for docker image '%s': %s",
@@ -170,8 +170,13 @@ def get_image_digest(image_name: str) -> Optional[str]:
         return None
 
 
-def _process_stream(stream: Iterable[bytes]):
-    """Processes the output stream of a docker command call."""
+def _process_stream(stream: Iterable[bytes]) -> None:
+    """Processes the output stream of a docker command call.
+
+    Raises:
+        JSONDecodeError: If a line in the stream is not json decodable.
+        RuntimeError: If there was an error while running the docker command.
+    """
 
     for element in stream:
         lines = element.decode("utf-8").strip().split("\n")
