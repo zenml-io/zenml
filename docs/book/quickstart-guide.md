@@ -16,7 +16,7 @@ pip install zenml tensorflow
 ```
 
 {% hint style="success" %}
-We are just using Tensorflow for illustration principals, ZenML works with any ML library such as PyTorch, HuggingFace, PyTorch Lightning etc.
+We are just using TensorFlow for the purposes of illustration; ZenML works with any ML library such as PyTorch, HuggingFace, PyTorch Lightning etc.
 {% endhint %}
 
 Once the installation is completed, you can go ahead and create your first ZenML repository for your project. As ZenML repositories are built on top of Git repositories, you can create yours in a desired empty directory through:
@@ -140,7 +140,7 @@ Keep reading to learn how all of the above can be achieved.
 
 Normally at this point in a quickstart, you'd like to learn more about what the product has to offer (if the docs have succeeded in making you feel so). So there are essentially two choices you can make:
 
-- If your work involves a use-case that is fairly 'standard' training/inference/deployment, start with the [High Level API ](guides/high-level-api/)guide.
+- If your work involves a use-case that is fairly 'standard' training/inference/deployment, start with the [High Level API](guides/high-level-api/)guide.
 - If you have a more complex workflow that requires more control over your pipelines, start with the [Low Level API](guides/low-level-api/) guide.
 
 If you're not sure, pick any one of the above. They are the easiest way to learn how ZenML enables MLOps.
