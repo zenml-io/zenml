@@ -24,15 +24,16 @@ from typing import (
     List,
     MutableMapping,
     Optional,
+    Set,
     Type,
     Union,
-    cast,
 )
 
 from kfp import compiler, dsl, gcp
 from kubernetes import client as k8s_client
 from tfx.dsl.compiler import compiler as tfx_compiler
 from tfx.dsl.components.base import base_component as tfx_base_component
+from tfx.dsl.components.base import base_node
 from tfx.orchestration import data_types
 from tfx.orchestration import pipeline as tfx_pipeline
 from tfx.orchestration import tfx_runner
@@ -74,7 +75,7 @@ def _mount_config_map_op(config_map_name: str) -> OpFunc:
       An OpFunc for mounting the ConfigMap.
     """
 
-    def mount_config_map(container_op: dsl.ContainerOp):
+    def mount_config_map(container_op: dsl.ContainerOp) -> None:
         """Mounts all key-value pairs found in the named Kubernetes ConfigMap."""
         config_map_ref = k8s_client.V1ConfigMapEnvSource(
             name=config_map_name, optional=True
@@ -95,7 +96,7 @@ def _mount_secret_op(secret_name: str) -> OpFunc:
       An OpFunc for mounting the Secret.
     """
 
-    def mount_secret(container_op: dsl.ContainerOp):
+    def mount_secret(container_op: dsl.ContainerOp) -> None:
         """Mounts all key-value pairs found in the named Kubernetes Secret."""
         secret_ref = k8s_client.V1ConfigMapEnvSource(
             name=secret_name, optional=True
@@ -129,7 +130,7 @@ def get_default_pipeline_operator_funcs(
         return [mount_config_map_op]
 
 
-def get_default_kubeflow_metadata_config() -> Dict:
+def get_default_kubeflow_metadata_config() -> Dict[str, Any]:
     """Returns the default metadata connection config for Kubeflow.
     Returns:
       A config proto that will be serialized as JSON and passed to the running
@@ -166,12 +167,12 @@ class KubeflowDagRunnerConfig(pipeline_config.PipelineConfig):
         self,
         image: str,
         pipeline_operator_funcs: Optional[List[OpFunc]] = None,
-        kubeflow_metadata_config: Optional[Dict] = None,
+        kubeflow_metadata_config: Optional[Dict[str, Any]] = None,
         supported_launcher_classes: Optional[
             List[Type[base_component_launcher.BaseComponentLauncher]]
         ] = None,
         metadata_ui_path: str = "/mlpipeline-ui-metadata.json",
-        **kwargs
+        **kwargs: Any
     ):
         """Creates a KubeflowDagRunnerConfig object.
         The user can use pipeline_operator_funcs to apply modifications to
@@ -240,13 +241,15 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
             where 2 and 3 are instrumentation of usage tracking.
         """
         super().__init__(config)
-        self._config = cast(KubeflowDagRunnerConfig, self._config)
+        self._kubeflow_config = config
         self._output_path = output_path
         self._compiler = compiler.Compiler()
         self._tfx_compiler = tfx_compiler.Compiler()
-        self._params = []  # List of dsl.PipelineParam used in this pipeline.
-        self._params_by_component_id = collections.defaultdict(list)
-        self._deduped_parameter_names = set()  # Set of unique param names used.
+        self._params: List[dsl.PipelineParam] = []
+        self._params_by_component_id: Dict[
+            str, List[data_types.RuntimeParameter]
+        ] = collections.defaultdict(list)
+        self._deduped_parameter_names: Set[str] = set()
         if pod_labels_to_attach is None:
             self._pod_labels_to_attach = get_default_pod_labels()
         else:
@@ -294,13 +297,15 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
         for component in pipeline.components:
             self._parse_parameter_from_component(component)
 
-    def _construct_pipeline_graph(self, pipeline: tfx_pipeline.Pipeline):
+    def _construct_pipeline_graph(
+        self, pipeline: tfx_pipeline.Pipeline
+    ) -> None:
         """Constructs a Kubeflow Pipeline graph.
         Args:
           pipeline: The logical TFX pipeline to base the construction on.
           pipeline_root: dsl.PipelineParam representing the pipeline root.
         """
-        component_to_kfp_op = {}
+        component_to_kfp_op: Dict[base_node.BaseNode, dsl.ContainerOp] = {}
         tfx_ir = self._generate_tfx_ir(pipeline)
 
         # Assumption: There is a partial ordering of components in the list, i.e.,
@@ -333,22 +338,22 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
                 component=component,
                 depends_on=depends_on,
                 pipeline=pipeline,
-                image=self._config.image,
-                kubeflow_metadata_config=self._config.kubeflow_metadata_config,
+                image=self._kubeflow_config.image,
+                kubeflow_metadata_config=self._kubeflow_config.kubeflow_metadata_config,
                 pod_labels_to_attach=self._pod_labels_to_attach,
                 tfx_ir=tfx_node_ir,
-                metadata_ui_path=self._config.metadata_ui_path,
+                metadata_ui_path=self._kubeflow_config.metadata_ui_path,
                 runtime_parameters=self._params_by_component_id[component.id],
             )
 
-            for operator in self._config.pipeline_operator_funcs:
+            for operator in self._kubeflow_config.pipeline_operator_funcs:
                 kfp_component.container_op.apply(operator)
 
             component_to_kfp_op[component] = kfp_component.container_op
 
     def _del_unused_field(
         self, node_id: str, message_dict: MutableMapping[str, Any]
-    ):
+    ) -> None:
         """Remove fields that are not used by the pipeline."""
         for item in list(message_dict.keys()):
             if item != node_id:
@@ -385,7 +390,7 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
         result = self._tfx_compiler.compile(pipeline)
         return result
 
-    def run(self, pipeline: tfx_pipeline.Pipeline):
+    def run(self, pipeline: tfx_pipeline.Pipeline) -> None:
         """Compiles and outputs a Kubeflow Pipeline YAML definition file.
         Args:
           pipeline: The logical TFX pipeline to use when building the Kubeflow
@@ -400,7 +405,7 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
                     pipeline.pipeline_info.pipeline_root
                 )
 
-        def _construct_pipeline():
+        def _construct_pipeline() -> None:
             """Constructs a Kubeflow pipeline.
             Creates Kubeflow ContainerOps for each TFX component encountered in the
             logical pipeline definition.
