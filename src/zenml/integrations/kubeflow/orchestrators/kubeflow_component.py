@@ -32,8 +32,11 @@ from tfx.orchestration import data_types
 from tfx.orchestration import pipeline as tfx_pipeline
 from tfx.proto.orchestration import pipeline_pb2
 
+from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
 from zenml.constants import ENV_ZENML_PREVENT_PIPELINE_EXECUTION
+from zenml.core.repo import Repository
 from zenml.integrations.kubeflow.orchestrators import kubeflow_utils as utils
+from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
 
 _COMMAND = ["python", "-m", "zenml.integrations.kubeflow.container_entrypoint"]
 
@@ -113,6 +116,27 @@ class KubeflowComponent:
             arguments.append("--runtime_parameter")
             arguments.append(_encode_runtime_parameter(param))
 
+        repo = Repository()
+        is_local_artifact_store = isinstance(
+            repo.get_active_stack().artifact_store, LocalArtifactStore
+        )
+        is_local_metadata_store = isinstance(
+            repo.get_active_stack().metadata_store, SQLiteMetadataStore
+        )
+
+        volumes: Dict[str, k8s_client.V1Volume] = {}
+
+        if is_local_artifact_store or is_local_metadata_store:
+            # Only mount the local filesystem if the user has specified a
+            # local artifact or metadata store
+            local_store_path = repo.service.get_serialization_dir()
+            host_path = k8s_client.V1HostPathVolumeSource(
+                path=local_store_path, type="Directory"
+            )
+            volumes[local_store_path] = k8s_client.V1Volume(
+                name="local-store", host_path=host_path
+            )
+
         self.container_op = dsl.ContainerOp(
             name=component.id,
             command=_COMMAND,
@@ -121,6 +145,7 @@ class KubeflowComponent:
             output_artifact_paths={
                 "mlpipeline-ui-metadata": metadata_ui_path,
             },
+            pvolumes=volumes,
         )
 
         logging.info(
