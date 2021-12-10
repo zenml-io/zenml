@@ -1,6 +1,7 @@
+import json
 import os
 import tempfile
-from typing import Dict, List, Optional
+from typing import Dict, Generator, List, Optional
 
 import pkg_resources
 
@@ -116,13 +117,15 @@ def build_docker_image(
     )
     try:
         docker_client = docker.from_env()
-        docker_client.images.build(
+        # We use the client api directly here so we can stream the logs
+        output_stream = docker_client.images.client.api.build(
             path=build_context_path,
             dockerfile=dockerfile_path,
             tag=image_name,
             pull=True,  # pull changes to base image
             rm=True,  # remove intermediate containers
         )
+        _process_stream(output_stream)
         logger.info("Finished building docker image.")
     finally:
         if temporary_dockerfile:
@@ -138,7 +141,8 @@ def push_docker_image(image_name: str) -> None:
     """
     logger.info("Pushing docker image '%s'.", image_name)
     docker_client = docker.from_env()
-    docker_client.images.push(image_name)
+    output_stream = docker_client.images.push(image_name, stream=True)
+    _process_stream(output_stream)
     logger.info("Finished pushing docker image.")
 
 
@@ -164,3 +168,26 @@ def get_image_digest(image_name: str) -> Optional[str]:
             repo_digests,
         )
         return None
+
+
+def _process_stream(stream: Generator[bytes]):
+    """Processes the output stream of a docker command call."""
+
+    for element in stream:
+        lines = element.decode("utf-8").strip().split("\n")
+
+        for line in lines:
+            try:
+                line_json = json.loads(line)
+                if "error" in line_json:
+                    raise RuntimeError(
+                        f"Failed to build docker image: {line_json['error']}."
+                    )
+                elif "stream" in line_json:
+                    logger.info(line_json["stream"].strip())
+                else:
+                    pass
+            except json.JSONDecodeError as error:
+                logger.warning(
+                    "Failed to decode json for line '%s': %s", line, error
+                )
