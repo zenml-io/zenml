@@ -49,7 +49,7 @@ class SklearnStandardScaler(BasePreprocesserStep):
         statistics: pd.DataFrame,
         schema: pd.DataFrame,
         config: SklearnStandardScalerConfig,
-    ) -> Output(
+    ) -> Output(  # type:ignore[valid-type]
         train_transformed=pd.DataFrame,
         test_transformed=pd.DataFrame,
         valdation_transformed=pd.DataFrame,

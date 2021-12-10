@@ -35,5 +35,7 @@ class BaseSplitStep(BaseStep):
         dataset: DataArtifact,
         config: BaseSplitStepConfig,
         context: StepContext,
-    ) -> Output(train=DataArtifact, test=DataArtifact, validation=DataArtifact):
+    ) -> Output(  # type:ignore[valid-type]
+        train=DataArtifact, test=DataArtifact, validation=DataArtifact
+    ):
         """Entrypoint for a function for the split steps to run"""

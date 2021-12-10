@@ -41,7 +41,7 @@ class BasePreprocesserStep(BaseStep):
         schema: SchemaArtifact,
         config: BasePreprocesserConfig,
         context: StepContext,
-    ) -> Output(
+    ) -> Output(  # type:ignore[valid-type]
         train_transformed=DataArtifact,
         test_transformed=DataArtifact,
         valdation_transformed=DataArtifact,

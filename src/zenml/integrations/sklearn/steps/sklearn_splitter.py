@@ -37,7 +37,9 @@ class SklearnSplitter(BaseSplitStep):
         self,
         dataset: pd.DataFrame,
         config: SklearnSplitterConfig,
-    ) -> Output(train=pd.DataFrame, test=pd.DataFrame, validation=pd.DataFrame):
+    ) -> Output(  # type:ignore[valid-type]
+        train=pd.DataFrame, test=pd.DataFrame, validation=pd.DataFrame
+    ):
         """Method which is responsible for the splitting logic
 
         Args:

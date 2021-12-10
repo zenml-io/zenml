@@ -41,7 +41,9 @@ class PandasAnalyzer(BaseAnalyzerStep):
         self,
         dataset: pd.DataFrame,
         config: PandasAnalyzerConfig,
-    ) -> Output(statistics=pd.DataFrame, schema=pd.DataFrame):
+    ) -> Output(  # type:ignore[valid-type]
+        statistics=pd.DataFrame, schema=pd.DataFrame
+    ):
         """Main entrypoint function for the pandas analyzer
 
         Args:

@@ -36,5 +36,7 @@ class BaseAnalyzerStep(BaseStep):
         dataset: DataArtifact,
         config: BaseAnalyzerConfig,
         context: StepContext,
-    ) -> Output(statistics=StatisticsArtifact, schema=SchemaArtifact):
+    ) -> Output(  # type:ignore[valid-type]
+        statistics=StatisticsArtifact, schema=SchemaArtifact
+    ):
         """Base entrypoint for any analyzer implementation"""
