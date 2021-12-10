@@ -275,7 +275,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr] # noqa
         )
 
-        self.stack.orchestrator.pre_run(caller_filepath=caller_filepath)
+        self.stack.orchestrator.pre_run(pipeline_name=self.pipeline_name, caller_filepath=caller_filepath)
         ret = self.stack.orchestrator.run(self, run_name)
         self.stack.orchestrator.post_run()
         return ret

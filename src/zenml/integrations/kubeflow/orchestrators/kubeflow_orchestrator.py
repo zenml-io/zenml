@@ -44,19 +44,19 @@ logger = get_logger(__name__)
 class KubeflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Kubeflow."""
 
-    docker_image_name: str
     custom_docker_base_image_name: Optional[str] = None
 
-    @property
-    def full_docker_image_name(self) -> str:
+    def get_docker_image_name(self, pipeline_name: str) -> str:
         """Returns the full docker image name including registry and tag."""
+
+        base_image_name = f"zenml-kubeflow:{pipeline_name}"
         container_registry = Repository().get_active_stack().container_registry
 
         if container_registry:
             registry_uri = container_registry.uri.rstrip("/")
-            return f"{registry_uri}/{self.docker_image_name}"
+            return f"{registry_uri}/{base_image_name}"
         else:
-            return self.docker_image_name
+            return base_image_name
 
     @property
     def pipeline_directory(self) -> str:
@@ -68,16 +68,16 @@ class KubeflowOrchestrator(BaseOrchestrator):
         fileio.make_dirs(directory)
         return directory
 
-    def pre_run(self, caller_filepath: str) -> None:
+    def pre_run(self, pipeline_name: str, caller_filepath: str) -> None:
         """Builds a docker image for the current environment and uploads it to
         a container registry if configured.
         """
-        from zenml.utils.docker_utils import (
+        from zenml.integrations.kubeflow.docker_utils import (
             build_docker_image,
             push_docker_image,
         )
 
-        image_name = self.full_docker_image_name
+        image_name = self.get_docker_image_name(pipeline_name)
 
         repository_root = Repository().path
         requirements = ["kubernetes"] + self._get_stack_requirements()
@@ -116,9 +116,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
             enable_cache=zenml_pipeline.enable_cache,
         )
 
-        from zenml.utils.docker_utils import get_image_digest
+        from zenml.integrations.kubeflow.docker_utils import get_image_digest
 
-        image_name = self.full_docker_image_name
+        image_name = self.get_docker_image_name(zenml_pipeline.pipeline_name)
         image_name = get_image_digest(image_name) or image_name
 
         pipeline_file_path = os.path.join(
