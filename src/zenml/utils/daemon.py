@@ -31,7 +31,7 @@ from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
-# TODO [HIGH]: Investigate supporting Windows if Windows can run Kubeflow.
+# TODO [ENG-235]: Investigate supporting Windows if Windows can run Kubeflow.
 
 # flake8: noqa: C901
 if sys.platform == "win32":
