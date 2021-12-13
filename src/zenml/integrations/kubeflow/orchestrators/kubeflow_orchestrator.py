@@ -282,7 +282,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
             registry_name=container_registry_name,
             registry_config_path=self._k3d_registry_config_path,
         )
-        local_deployment_utils.deploy_kubeflow_pipelines()
+        kubernetes_context = f"k3d-{self._k3d_cluster_name}"
+        local_deployment_utils.deploy_kubeflow_pipelines(
+            kubernetes_context=kubernetes_context
+        )
         local_deployment_utils.start_kfp_ui_daemon(
             pid_file_path=self._pid_file_path, port=8080
         )

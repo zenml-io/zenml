@@ -87,12 +87,19 @@ def delete_k3d_cluster(cluster_name: str) -> None:
     logger.info("Deleted local k3d cluster '%s'.", cluster_name)
 
 
-def kubeflow_pipelines_ready() -> bool:
-    """Returns whether all Kubeflow Pipelines pods are ready."""
+def kubeflow_pipelines_ready(kubernetes_context: str) -> bool:
+    """Returns whether all Kubeflow Pipelines pods are ready.
+
+    Args:
+        kubernetes_context: The kubernetes context in which the pods
+            should be checked.
+    """
     try:
         subprocess.check_call(
             [
                 "kubectl",
+                "--context",
+                kubernetes_context,
                 "--namespace",
                 "kubeflow",
                 "wait",
@@ -110,12 +117,19 @@ def kubeflow_pipelines_ready() -> bool:
         return False
 
 
-def deploy_kubeflow_pipelines() -> None:
-    """Deploys Kubeflow Pipelines."""
+def deploy_kubeflow_pipelines(kubernetes_context: str) -> None:
+    """Deploys Kubeflow Pipelines.
+
+    Args:
+        kubernetes_context: The kubernetes context on which Kubeflow Pipelines
+            should be deployed.
+    """
     logger.info("Deploying Kubeflow Pipelines.")
     subprocess.check_call(
         [
             "kubectl",
+            "--context",
+            kubernetes_context,
             "apply",
             "-k",
             f"github.com/kubeflow/pipelines/manifests/kustomize/cluster-scoped-resources?ref={KFP_VERSION}",
@@ -124,6 +138,8 @@ def deploy_kubeflow_pipelines() -> None:
     subprocess.check_call(
         [
             "kubectl",
+            "--context",
+            kubernetes_context,
             "wait",
             "--timeout=60s",
             "--for",
@@ -134,6 +150,8 @@ def deploy_kubeflow_pipelines() -> None:
     subprocess.check_call(
         [
             "kubectl",
+            "--context",
+            kubernetes_context,
             "apply",
             "-k",
             f"github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic-pns?ref={KFP_VERSION}",
@@ -149,13 +167,15 @@ def deploy_kubeflow_pipelines() -> None:
         subprocess.check_call(
             [
                 "kubectl",
+                "--context",
+                kubernetes_context,
                 "--namespace",
                 "kubeflow",
                 "get",
                 "pods",
             ]
         )
-        if kubeflow_pipelines_ready():
+        if kubeflow_pipelines_ready(kubernetes_context=kubernetes_context):
             break
 
         logger.info("One or more pods not ready yet, waiting for 30 seconds...")
