@@ -52,7 +52,7 @@ ZenML takes care of locally deploying Kubeflow Pipelines for you, all we need to
 zenml stack up
 ```
 
-This will setup a local Kubernetes cluster, deploy Kubeflow Pipelines and configure all necessary components so you can get started quickly.
+This will set up a local Kubernetes cluster, deploy Kubeflow Pipelines and configure all necessary components so you can get started quickly.
 When the setup is finished, you will see a local URL which you can access in your browser and take a look at the Kubeflow Pipelines UI.
 
 
