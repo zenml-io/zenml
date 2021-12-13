@@ -14,9 +14,7 @@ Read more about Why ZenML exists [here](why-zenml.md).
 
 ## Who is ZenML for?
 
-![Before: Sam is a regular data scientist struggling with productionizing ML models.](.gitbook/assets/sam\_frustrated.jpg)
-
-![After: Sam finds Zen in her MLOps with ZenML.](<.gitbook/assets/sam\_zen\_mode (2).jpg>)
+![Before and after ZenML](.gitbook/assets/sam-side-by-side-full-text.png)
 
 ZenML is created for data science / machine learning teams that are not only engaged in training models, but also in putting them out in production. Production can mean many things, but examples would be:
 
@@ -30,7 +28,7 @@ In terms of user personas, ZenML is created for **producers of the models.** Thi
 
 ## What do I get out of it?
 
-By using ZenML in the early stages of your project, you get the following benefits:
+ZenML pipelines are designed to be written early on the development lifecycle. Data scientists can explore their pipelines as they develop towards production, switching stacks from local to cloud deployments with ease. You can read more about why we started building ZenML [on our blog](https://blog.zenml.io/why-zenml/). By using ZenML in the early stages of your project, you get the following benefits:
 
 - **Reproducibility** of training and inference workflows
 - A **simple and clear** way to represent the steps of your pipeline in code
@@ -45,7 +43,7 @@ A good place to go from this point is to:
 
 * Understand what is so special about [ZenML](why-zenml.md).
 * Take a look at some of the [key decisions that we made while building ZenML.](why/framework-design.md)
-* Get up and running with your [first pipeline](https://github.com/zenml-io/zenml/tree/f912d2d512477e6ed84e839259d42cb73eeedf2b/docs/book/starter-guide/quickstart.md).
+* Get up and running with your [first pipeline](quickstart-guide.md).
 * Read more about [core concepts](core-concepts.md) to inform your decision about using **ZenML.**
 
 ## Get involved!
