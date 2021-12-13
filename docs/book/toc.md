@@ -20,8 +20,13 @@
 * [High Level API](guides/high-level-api/README.md)
   * [Coming Soon](guides/high-level-api/chapter-1.md)
 * [Post Execution Workflow](guides/post-execution-workflow.md)
-* [Pipeline Configuration](guides/pipeline-configuration.md)
 * [Deploy Pipelines to Production](guides/deploy\_to\_production.md)
+
+## Features
+
+* [Pipeline Configuration](guides/pipeline-configuration.md)
+* [Caching](caching.md)
+* [Integrations](integrations.md)
 
 ## Support
 
