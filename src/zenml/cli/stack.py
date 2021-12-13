@@ -90,3 +90,17 @@ def get_active_stack() -> None:
     repo = Repository()
     key = repo.get_active_stack_key()
     cli_utils.declare(f"Active stack: {key}")
+
+
+@stack.command("up")
+def up_stack() -> None:
+    """Provisions resources for the stack."""
+    active_stack = Repository().get_active_stack()
+    orchestrator_name = active_stack.orchestrator_name
+
+    cli_utils.declare(
+        f"Bootstrapping resources for orchestrator: `{orchestrator_name}`. "
+        f"This might take a few seconds..."
+    )
+    active_stack.orchestrator.up()
+    cli_utils.declare(f"Orchestrator: `{orchestrator_name}` is up.")
