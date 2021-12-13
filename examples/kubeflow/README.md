@@ -42,7 +42,7 @@ zenml stack register local_kubeflow_stack \
 zenml stack set local_kubeflow_stack
 ```
 
-**Note:** make sure to use port 5000 here
+**Note:** Make sure to use port 5000 here
 
 ### Deploying Kubeflow Pipelines locally
 
