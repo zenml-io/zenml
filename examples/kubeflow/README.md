@@ -8,7 +8,7 @@ In order to run this example, you need to install and initialize ZenML and Kubef
 * K3D https://k3d.io/v5.2.1/
 * Kubectl
 
-**Note:** The local Kubeflow Pipelines deployment requires more than 2 GB of RAM, so if you're running on a mac make sure to update allowed resources in the Docker Desktop preferences.
+**Note:** The local Kubeflow Pipelines deployment requires more than 2 GB of RAM, so if you're running on a Mac make sure to update allowed resources in the Docker Desktop preferences.
 
 ## Installation
 ```bash
