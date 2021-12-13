@@ -25,7 +25,7 @@ These are the third-party integrations that ZenML currently supports:
 | GCP                | ✅      |                                            |
 | Graphviz           | ✅      |                                            |
 | Great Expectations | ⛏      | Looking for community implementors         |
-| Kserving           | ⛏      | Looking for community implementors         |
+| KServing           | ⛏      | Looking for community implementors         |
 | Kubeflow           | ✅      | Either full Kubeflow or Kubeflow Pipelines |
 | MLFlow             | ⛏      | Looking for community implementors         |
 | numpy              | ✅      |                                            |
@@ -37,3 +37,7 @@ These are the third-party integrations that ZenML currently supports:
 | Seldon             | ⛏      | Looking for community implementors         |
 | Tensorflow         | ✅      |                                            |
 | Whylogs            | ⛏      | Looking for community implementors         |
+
+## Help us with integrations!
+
+There are many tools in the ML / MLOps field. We have made an initial prioritization of which tools to support with integrations, but we also welcome community contributions. Check our [Contributing Guide](CONTRIBUTING.md) for more details on how best to contribute.
