@@ -4,7 +4,7 @@ description: Use higher level pre-made pipelines to quickly create powerful ML w
 
 # High Level API
 
-The High Level API documentation is in-coming. It would roughly look like this:
+The High Level API documentation is being completed. It will look roughly like this:
 
 ```python
 from zenml.pipelines import TrainingPipeline
