@@ -14,17 +14,26 @@ We currently support [Airflow](https://airflow.apache.org/) and [Kubeflow](https
 
 These are the third-party integrations that ZenML currently supports:
 
-| Integration       | Status | Implementation Notes                       |
-| ----------------- | ------ | ------------------------------------------ |
-| Apache Airflow    | ✅      | Works for local environment                |
-| Apache Beam       | ✅      |                                            |
-| Dash              | ✅      |                                            |
-| Facets            | ✅      |                                            |
-| GCP               | ✅      |                                            |
-| Graphviz          | ✅      |                                            |
-| Kubeflow          | ✅      | Either full Kubeflow or Kubeflow Pipelines |
-| Plotly            | ✅      |                                            |
-| PyTorch           | ✅      |                                            |
-| PyTorch Lightning | ✅      |                                            |
-| scikit-learn      | ✅      |                                            |
-| Tensorflow        | ✅      |                                            |
+| Integration        | Status | Implementation Notes                       |
+| ------------------ | ------ | ------------------------------------------ |
+| Apache Airflow     | ✅      | Works for local environment                |
+| Apache Beam        | ✅      |                                            |
+| BentoML            | ⛏      | Looking for community implementors         |
+| Dash               | ✅      |                                            |
+| Evidently          | ⛏      | Looking for community implementors         |
+| Facets             | ✅      |                                            |
+| GCP                | ✅      |                                            |
+| Graphviz           | ✅      |                                            |
+| Great Expectations | ⛏      | Looking for community implementors         |
+| Kserving           | ⛏      | Looking for community implementors         |
+| Kubeflow           | ✅      | Either full Kubeflow or Kubeflow Pipelines |
+| MLFlow             | ⛏      | Looking for community implementors         |
+| numpy              | ✅      |                                            |
+| pandas             | ✅      |                                            |
+| Plotly             | ✅      |                                            |
+| PyTorch            | ✅      |                                            |
+| PyTorch Lightning  | ✅      |                                            |
+| scikit-learn       | ✅      |                                            |
+| Seldon             | ⛏      | Looking for community implementors         |
+| Tensorflow         | ✅      |                                            |
+| Whylogs            | ⛏      | Looking for community implementors         |
