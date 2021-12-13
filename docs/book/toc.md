@@ -19,13 +19,13 @@
 * [Class based API](guides/high-level-api/README.md)
 * [Post Execution Workflow](guides/post-execution-workflow.md)
   * [Naming a pipeline run](guides/post-execution-workflow/naming-a-pipeline-run.md)
-* [Run Deployed Pipelines](guides/deploy\_to\_production.md)
 
 ## Features
 
 * [Pipeline Configuration](guides/pipeline-configuration.md)
 * [Caching](caching.md)
 * [Integrations](integrations.md)
+* [Run Your Pipelines in the Cloud](cloud-pipelines.md)
 
 ## Support
 
