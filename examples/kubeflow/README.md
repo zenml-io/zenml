@@ -74,11 +74,17 @@ zenml stack down
 ```
 
 
-## Running the same pipeline on Kubeflow Pipelines deployed to GCP
+## Running the same pipeline on Kubeflow Pipelines deployed to GCP [WIP]
+
+This section needs a bit of revision. Check back soon for updates!
 
 The steps from now on assume that you have a running deployment of Kubeflow Pipelines on GCP.
-TODO: GCP bucket, access to container registry authorized
 
+Add notes for:
+
+* Creating a service account with access right to create a bucket and access google container registry.
+* Create a GCP bucket
+* Configure `kubectl` to point to the right context
 
 ### Additional setup
 
@@ -98,11 +104,7 @@ Replace $PATH_TO_YOUR_CONTAINER_REGISTRY and $PATH_TO_YOUR_GCP_BUCKET with appro
 zenml container-registry register gcp_registry $PATH_TO_YOUR_CONTAINER_REGISTRY
 zenml metadata register kubeflow_metadata_store kubeflow
 zenml artifact register gcp_artifact_store gcp --path=$PATH_TO_YOUR_GCP_BUCKET
-zenml stack register gcp_kubeflow_stack \
-  -m kubeflow_metadata_store \
-  -a gcp_artifact_store \
-  -o kubeflow_orchestrator \
-  -c gcp_registry
+zenml stack register gcp_kubeflow_stack -m kubeflow_metadata_store -a gcp_artifact_store -o kubeflow_orchestrator -c gcp_registry
 zenml stack set gcp_kubeflow_stack
 ```
 
