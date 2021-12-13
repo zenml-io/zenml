@@ -2,19 +2,19 @@
 description: Deploy pipelines to production
 ---
 
-# Chapter 7
+# Deploy to production
 
 If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low\_level\_guide/chapter\_7.py).
 
 ## Deploy pipelines to production
 
-When developing ML models, your pipelines will, at first, most probably live in your machine with a local [Stack](../../core-concepts.md). However, at a certain point when you are finished with its design, you might want to transition to a more production-ready setting, and deploy the pipeline to a more robust environment.
+When developing ML models, your pipelines will, at first, most probably live on your machine with a local [Stack](../../core-concepts.md). However, at a certain point when you are finished with its design, you might want to transition to a more production-ready setting, and deploy the pipeline to a more robust environment.
 
 ### Install and configure Airflow
 
-This part is optional, and it would depend on your pre-existing production setting. For example, for this guide, Airflow will be set up from scratch and set it to work locally, however you might want to use a managed Airflow instance like [Cloud Composer](https://cloud.google.com/composer) or [Astronomer](https://astronomer.io).
+This part is optional, and it would depend on your pre-existing production setting. For example, for this guide, Airflow will be set up from scratch and set up to work locally, however you might want to use a managed Airflow instance like [Cloud Composer](https://cloud.google.com/composer) or [Astronomer](https://astronomer.io).
 
-For this guide, you'll want to install airflow before continuing:
+For this guide, you'll want to make sure airflow is installed before continuing:
 
 ```shell
 pip install apache_airflow==2.2.0

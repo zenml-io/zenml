@@ -1,10 +1,12 @@
 ---
-description: Swap out local stack for a cloud-based stack to get pipelines running in production.
+description: >-
+  Swap out local stack for a cloud-based stack to get pipelines running in
+  production.
 ---
 
-# Deploy Pipelines to Production
+# Run Deployed Pipelines
 
-When users want to run pipelines in production, all they need to do is swap out their `local` stack with a cloud-based stack, which you can configure.
+When users want to run pipelines on remote architecture, all they need to do is swap out their `local` stack with a cloud-based stack, which you can configure.
 
 A stack is made up of the following three core components:
 
@@ -29,7 +31,7 @@ See [CLI reference](../reference/cli-command-reference.md) for more help.
 After a stack has been set as active, just running a pipeline will run that pipeline on the cloud stack instead of the local stack:
 
 ```python
-python run.py  # will now run in production
+python run.py  # will now run on a different backend
 ```
 
 Let's see what different combinations of stacks exists:

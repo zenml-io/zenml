@@ -6,7 +6,6 @@ After executing a pipeline, the user needs to be able to fetch it from history a
 
 ## Component Hierarchy
 
-
 In the context of a post-execution workflow, there is an implied hierarchy of some basic ZenML components:
 
 ```bash
@@ -70,15 +69,20 @@ output.read()
 Once an output artifact is acquired from history, one can visualize it with any chosen `Visualizer`.
 
 ```python
+from zenml.materializers.pandas_materializer import PandasMaterializer
+
+
 df = output.read(materializer_class=PandasMaterializer)
 df.head()
 ```
 
-
 ### Retrieving Model
 
 ```python
-model = output.read(materializer_class=KerasModelMaterializer)
+from zenml.integrations.tensorflow.materializers.keras_materializer import KerasMaterializer    
+
+
+model = output.read(materializer_class=KerasMaterializer)
 model  # read keras.Model
 ```
 
@@ -96,5 +100,4 @@ FacetStatisticsVisualizer().visualize(output)
 
 It produces the following visualization:
 
-![Statistics for boston housing dataset](../.gitbook/assets/statistics_boston_housing.png)
-
+![Statistics for boston housing dataset](../.gitbook/assets/statistics\_boston\_housing.png)
