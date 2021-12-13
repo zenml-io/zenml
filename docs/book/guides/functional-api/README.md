@@ -4,7 +4,7 @@ description: Build production ML pipelines from the simple step interface.
 
 # Functional API
 
-The Functional ZenML API is defined by the primitive `@step` and `@pipeline` decorators. These make it easy to quickly take your functional code into a zenml pipeline. If you want more control over the different steps the [Class based API](../high-level-api/)  is the way to go.&#x20;
+The Functional ZenML API is defined by the primitive `@step` and `@pipeline` decorators. These make it easy to quickly take your functional code into a zenml pipeline. If you want more control over the different steps the [Class based API](../class-based-api/)  is the way to go.&#x20;
 
 A user may also mix-and-match the Functional API with the Class Based API: All standard data types and steps that are applicable in both of these approaches.
 

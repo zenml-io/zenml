@@ -8,17 +8,17 @@
 
 ## Guides
 
-* [Low Level API](guides/low-level-api/README.md)
-  * [Chapter 1](guides/low-level-api/chapter-1.md)
-  * [Chapter 2](guides/low-level-api/chapter-2.md)
-  * [Chapter 3](guides/low-level-api/chapter-3.md)
-  * [Chapter 4](guides/low-level-api/chapter-4.md)
-  * [Chapter 5](guides/low-level-api/chapter-5.md)
-  * [Chapter 6](guides/low-level-api/chapter-6.md)
-  * [Chapter 7](guides/low-level-api/chapter-7.md)
+* [Low Level API](guides/functional-api/README.md)
+  * [Chapter 1](guides/functional-api/chapter-1.md)
+  * [Chapter 2](guides/functional-api/chapter-2.md)
+  * [Chapter 3](guides/functional-api/chapter-3.md)
+  * [Chapter 4](guides/functional-api/chapter-4.md)
+  * [Chapter 5](guides/functional-api/chapter-5.md)
+  * [Chapter 6](guides/functional-api/chapter-6.md)
+  * [Chapter 7](guides/functional-api/chapter-7.md)
 
-* [High Level API](guides/high-level-api/README.md)
-  * [Chapter 1](guides/high-level-api/chapter-1.md)
+* [High Level API](guides/class-based-api/README.md)
+  * [Chapter 1](guides/class-based-api/chapter-1.md)
 * [Post Execution Workflow](guides/post-execution-workflow.md)
 * [Deploy Pipelines to Production](guides/deploy_to_production.md)
 
