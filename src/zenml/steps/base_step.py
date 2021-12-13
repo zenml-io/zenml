@@ -495,6 +495,9 @@ class BaseStep(metaclass=BaseStepMeta):
             for arg_name, artifact_type in input_artifacts.items()
         }
 
+        # make sure we have registered materializers for each output
+        materializers = self.get_materializers(ensure_complete=True)
+
         # Prepare the output artifacts and spec
         from zenml.artifacts.type_registery import type_registry
 
@@ -525,9 +528,6 @@ class BaseStep(metaclass=BaseStepMeta):
                 f"'{self.step_name}'. Please make sure to only use "
                 f"json serializable parameter values."
             ) from e
-
-        # make sure we have registered materializers for each output
-        materializers = self.get_materializers(ensure_complete=True)
 
         source_fn = getattr(self, STEP_INNER_FUNC_NAME)
         component_class = generate_component_class(
