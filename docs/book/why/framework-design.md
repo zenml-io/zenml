@@ -13,7 +13,7 @@ One of the biggest questions often left unasked when designing a new framework i
 * Why did you select this integration and not another?
 * and many more..
 
-When designing a framework as broad as ZenML, the team is probably making hundreds of micro-decisions weekly. While all of these are impossible to capture, we have decided to capture the most key decisions here, and hopefully illuminate why we built ZenML this way.
+When designing a framework as broad as ZenML, the team is making hundreds of micro-decisions weekly. While all of these are impossible to capture, we have decided to capture the most key decisions here, and hopefully illuminate why we built ZenML this way.
 
 ## Pipelines and Pipeline Runs: Separating Configuration From Implementation
 
@@ -104,7 +104,7 @@ run = pipeline(
 )
 ```
 
-The reason is that ZenML needs to distinguish between `Artifacts` (i.e. data output from an upstream step) and `Parameters` (i.e. data input at run time). 
+The reason is that ZenML needs to distinguish between `Artifacts` (i.e. data output from an upstream step) and `Parameters` (i.e. data input at run time).
 
 The way ZenML solves this is by bundling the params in a special class and passing them in like so:
 
@@ -139,12 +139,11 @@ An artifact data type of course can have many Materializers. Think of them as di
 
 The disadvantage of this design is that one needs to implement Materializers for all different data types, which is hard. Luckily, ZenML comes built-in with many standard Materializers and allows you to easily add your own Materializers for custom workflows.
 
-## Materializers and their role in the Post Execution Workflow
-As said, artifact data types can have many `Materializers`. 
+## Materializers and the Post Execution Workflow
+Artifact data types can have many `Materializers`.
 
-## Stacks and the Ops part MLOps
-Stacks are an important concept in ZenML and they have an implicit relationship to pipelines. Stacks define where a pipeline's steps are storing data, metadata, and where the pipeline is orchestrated.
-
+## Stacks and the Ops part of MLOps
+Stacks are an important concept in ZenML and they have an implicit relationship to pipelines. Stacks define where a pipelines steps are storing data, metadata, and where the pipeline is orchestrated.
 
 ## Integration with Git
 ZenML repositories build on top of Git repositories. Here is why.
