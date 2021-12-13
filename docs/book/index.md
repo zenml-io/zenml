@@ -42,7 +42,6 @@ ZenML pipelines are designed to be written early on the development lifecycle. D
 A good place to go from this point is to:
 
 * Understand what is so special about [ZenML](why-zenml.md).
-* Take a look at some of the [key decisions that we made while building ZenML.](why/framework-design.md)
 * Get up and running with your [first pipeline](quickstart-guide.md).
 * Read more about [core concepts](core-concepts.md) to inform your decision about using **ZenML.**
 

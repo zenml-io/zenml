@@ -5,7 +5,6 @@
 * [Quickstart](quickstart-guide.md)
 * [Core Concepts](core-concepts.md)
 * [Why ZenML?](why-zenml.md)
-* [Framework Design](why/framework-design.md)
 
 ## Guides
 
