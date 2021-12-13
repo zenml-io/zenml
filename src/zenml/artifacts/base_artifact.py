@@ -14,7 +14,7 @@
 from typing import Dict
 
 from tfx.types.artifact import Artifact, Property, PropertyType
-
+from ml_metadata.proto import metadata_store_pb2
 from zenml.artifacts.constants import (
     DATATYPE_PROPERTY_KEY,
     MATERIALIZER_PROPERTY_KEY,
@@ -42,3 +42,37 @@ class BaseArtifact(Artifact):
         MATERIALIZER_PROPERTY_KEY: MATERIALIZER_PROPERTY,
         DATATYPE_PROPERTY_KEY: DATATYPE_PROPERTY,
     }
+
+    def __init__(self, *args, **kwargs):
+        self.set_zenml_artifact_type()
+        super(BaseArtifact, self).__init__(*args, **kwargs)
+
+    @classmethod
+    def set_zenml_artifact_type(cls):
+        type_name = cls.TYPE_NAME
+        if not (type_name and isinstance(type_name, str)):
+            raise ValueError(
+                (
+                    'The Artifact subclass %s must override the TYPE_NAME attribute '
+                    'with a string type name identifier (got %r instead).') %
+                (cls, type_name))
+        artifact_type = metadata_store_pb2.ArtifactType()
+        artifact_type.name = type_name
+        if cls.PROPERTIES:
+            # Perform validation on PROPERTIES dictionary.
+            if not isinstance(cls.PROPERTIES, dict):
+                raise ValueError(
+                    'Artifact subclass %s.PROPERTIES is not a dictionary.' % cls)
+            for key, value in cls.PROPERTIES.items():
+                if not (isinstance(key,
+                                   (str, bytes)) and isinstance(value,
+                                                                Property)):
+                    raise ValueError(
+                        (
+                            'Artifact subclass %s.PROPERTIES dictionary must have keys of '
+                            'type string and values of type artifact.Property.') % cls)
+
+            # Populate ML Metadata artifact properties dictionary.
+            for key, value in cls.PROPERTIES.items():
+                artifact_type.properties[key] = value.mlmd_type()
+        cls._MLMD_ARTIFACT_TYPE = artifact_type
