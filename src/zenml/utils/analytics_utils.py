@@ -40,6 +40,7 @@ INITIALIZE_REPO = "ZenML initialized"
 REGISTERED_METADATA_STORE = "Metadata Store registered"
 REGISTERED_ARTIFACT_STORE = "Artifact Store registered"
 REGISTERED_ORCHESTRATOR = "Orchestrator registered"
+REGISTERED_CONTAINER_REGISTRY = "Container Registry registered"
 
 # Stack
 REGISTERED_STACK = "Stack registered"

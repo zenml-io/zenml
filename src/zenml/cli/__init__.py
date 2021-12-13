@@ -299,6 +299,7 @@ To see which stack is currently set as the default active stack, type:
 from zenml.cli.artifact import *  # noqa
 from zenml.cli.base import *  # noqa
 from zenml.cli.config import *  # noqa
+from zenml.cli.container_registry import *  # noqa
 from zenml.cli.example import *  # noqa
 from zenml.cli.integration import *  # noqa
 from zenml.cli.metadata import *  # noqa

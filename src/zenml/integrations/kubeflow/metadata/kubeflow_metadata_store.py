@@ -12,15 +12,18 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-AIRFLOW = "airflow"
-BEAM = "beam"
-GCP = "gcp"
-PYTORCH = "pytorch"
-PYTORCH_L = "pytorch_lightning"
-SKLEARN = "sklearn"
-TENSORFLOW = "tensorflow"
-PLOTLY = "plotly"
-FACETS = "facets"
-KUBEFLOW = "kubeflow"
-GRAPHVIZ = "graphviz"
-DASH = "dash"
+
+from zenml.core.component_factory import metadata_store_factory
+from zenml.enums import MLMetadataTypes
+from zenml.metadata.mysql_metadata_wrapper import MySQLMetadataStore
+
+
+@metadata_store_factory.register(MLMetadataTypes.kubeflow)
+class KubeflowMetadataStore(MySQLMetadataStore):
+    """Kubeflow MySQL backend for ZenML metadata store."""
+
+    host: str = "127.0.0.1"
+    port: int = 3306
+    database: str = "metadb"
+    username: str = "root"
+    password: str = ""

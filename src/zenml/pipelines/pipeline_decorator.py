@@ -16,6 +16,7 @@ from typing import Callable, Optional, Type, TypeVar, Union, overload
 from zenml.pipelines.base_pipeline import (
     INSTANCE_CONFIGURATION,
     PARAM_ENABLE_CACHE,
+    PARAM_REQUIREMENTS_FILE,
     PIPELINE_INNER_FUNC_NAME,
     BasePipeline,
 )
@@ -31,7 +32,10 @@ def pipeline(_func: F) -> Type[BasePipeline]:
 
 @overload
 def pipeline(
-    *, name: Optional[str] = None, enable_cache: bool = True
+    *,
+    name: Optional[str] = None,
+    enable_cache: bool = True,
+    requirements_file: Optional[str] = None
 ) -> Callable[[F], Type[BasePipeline]]:
     """Type annotations for step decorator in case of arguments."""
     ...
@@ -41,7 +45,8 @@ def pipeline(
     _func: Optional[F] = None,
     *,
     name: Optional[str] = None,
-    enable_cache: bool = True
+    enable_cache: bool = True,
+    requirements_file: Optional[str] = None
 ) -> Union[Type[BasePipeline], Callable[[F], Type[BasePipeline]]]:
     """Outer decorator function for the creation of a ZenML pipeline
 
@@ -53,6 +58,8 @@ def pipeline(
         name: The name of the pipeline. If left empty, the name of the
             decorated function will be used as a fallback.
         enable_cache: Whether to use caching or not.
+        requirements_file: Optional path to a pip requirements file that
+            contains requirements to run the pipeline.
 
     Returns:
         the inner decorator which creates the pipeline class based on the
@@ -75,8 +82,10 @@ def pipeline(
             (BasePipeline,),
             {
                 PIPELINE_INNER_FUNC_NAME: staticmethod(func),
-                INSTANCE_CONFIGURATION: {PARAM_ENABLE_CACHE: enable_cache},
-                PARAM_ENABLE_CACHE: enable_cache,
+                INSTANCE_CONFIGURATION: {
+                    PARAM_ENABLE_CACHE: enable_cache,
+                    PARAM_REQUIREMENTS_FILE: requirements_file,
+                },
             },
         )
 

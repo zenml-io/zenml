@@ -30,6 +30,7 @@ from sklearn.base import (
 )
 
 from zenml.artifacts import ModelArtifact
+from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
 DEFAULT_FILENAME = "model"
@@ -69,7 +70,7 @@ class SklearnMaterializer(BaseMaterializer):
         """Reads a base sklearn model from a pickle file."""
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
-        with open(filepath, "rb") as fid:
+        with fileio.open(filepath, "rb") as fid:
             clf = pickle.load(fid)
         return clf
 
@@ -95,5 +96,5 @@ class SklearnMaterializer(BaseMaterializer):
         """
         super().handle_return(clf)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
-        with open(filepath, "wb") as fid:
+        with fileio.open(filepath, "wb") as fid:
             pickle.dump(clf, fid)

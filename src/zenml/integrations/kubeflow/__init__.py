@@ -12,24 +12,25 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The Airflow integration sub-module powers an alternative to the local
-orchestrator. You can enable it by registering the Airflow orchestrator with
-the CLI tool, then bootstrap using the ``zenml orchestrator up`` command.
+The Kubeflow integration sub-module powers an alternative to the local
+orchestrator. You can enable it by registering the Kubeflow orchestrator with
+the CLI tool.
 """
-from zenml.integrations.constants import AIRFLOW
+from zenml.integrations.constants import KUBEFLOW
 from zenml.integrations.integration import Integration
 
 
-class AirflowIntegration(Integration):
-    """Definition of Airflow Integration for ZenML."""
+class KubeflowIntegration(Integration):
+    """Definition of Kubeflow Integration for ZenML."""
 
-    NAME = AIRFLOW
-    REQUIREMENTS = ["apache-airflow==2.2.0"]
+    NAME = KUBEFLOW
+    REQUIREMENTS = ["kfp==1.8.9"]
 
     @classmethod
-    def activate(cls):
+    def activate(cls) -> None:
         """Activates all classes required for the airflow integration."""
-        from zenml.integrations.airflow import orchestrators  # noqa
+        from zenml.integrations.kubeflow import metadata  # noqa
+        from zenml.integrations.kubeflow import orchestrators  # noqa
 
 
-AirflowIntegration.check_installation()
+KubeflowIntegration.check_installation()

@@ -121,7 +121,7 @@ def echo_component_list(component_list: Mapping[str, "BaseComponent"]) -> None:
     for key, c in component_list.items():
         # TODO [ENG-143]: This will break if component has element called `key`
         data = {"key": key}
-        data.update(c.dict())
+        data.update(c.dict(exclude={"_superfluous_options"}))
         list_of_dicts.append(data)
     click.echo(tabulate(list_of_dicts, headers="keys"))
 

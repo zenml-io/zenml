@@ -31,6 +31,10 @@ from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,
 )
+from zenml.constants import (
+    ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
+    SHOULD_PREVENT_PIPELINE_EXECUTION,
+)
 from zenml.core.repo import Repository
 from zenml.exceptions import (
     DoesNotExistException,
@@ -46,6 +50,7 @@ from zenml.utils import analytics_utils, yaml_utils
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
 PARAM_ENABLE_CACHE: str = "enable_cache"
+PARAM_REQUIREMENTS_FILE: str = "requirements_file"
 INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
 
 
@@ -97,6 +102,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         kwargs.update(getattr(self, INSTANCE_CONFIGURATION))
         self.enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, True)
+        self.requirements_file = kwargs.pop(PARAM_REQUIREMENTS_FILE, None)
 
         self.pipeline_name = self.__class__.__name__
         logger.info(f"Creating pipeline: {self.pipeline_name}")
@@ -233,6 +239,20 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Args:
             run_name: Optional name for the run.
         """
+        if SHOULD_PREVENT_PIPELINE_EXECUTION:
+            # An environment variable was set to stop the execution of
+            # pipelines. This is done to prevent execution of module-level
+            # pipeline.run() calls inside docker containers which should only
+            # run a single step.
+            logger.info(
+                "Preventing execution of pipeline '%s'. If this is not "
+                "intended behaviour, make sure to unset the environment "
+                "variable '%s'.",
+                self.pipeline_name,
+                ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
+            )
+            return
+
         # Activating the built-in integrations through lazy loading
         from zenml.integrations.registry import integration_registry
 
@@ -262,7 +282,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
             inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr] # noqa
         )
 
-        self.stack.orchestrator.pre_run(caller_filepath=caller_filepath)
+        self.stack.orchestrator.pre_run(
+            pipeline=self, caller_filepath=caller_filepath
+        )
         ret = self.stack.orchestrator.run(self, run_name)
         self.stack.orchestrator.post_run()
         return ret

@@ -51,10 +51,11 @@ class BaseOrchestrator(BaseComponent):
         #  new logs to output to the CLI
         return None
 
-    def pre_run(self, caller_filepath: str) -> None:
+    def pre_run(self, pipeline: "BasePipeline", caller_filepath: str) -> None:
         """Should be run before the `run()` function to prepare orchestrator.
 
         Args:
+            pipeline: Pipeline that will be run.
             caller_filepath: Path to the file in which `pipeline.run()` was
                 called. This is necessary for airflow so we know the file in
                 which the DAG is defined.

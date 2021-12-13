@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
 
+from typing import Optional
+
 import click
 
 from zenml.cli import utils as cli_utils
@@ -32,11 +34,13 @@ def stack() -> None:
 @click.option("-m", "--metadata-store", type=str, required=True)
 @click.option("-a", "--artifact-store", type=str, required=True)
 @click.option("-o", "--orchestrator", type=str, required=True)
+@click.option("-c", "--container_registry", type=str, required=False)
 def register_stack(
     stack_name: str,
     metadata_store: str,
     artifact_store: str,
     orchestrator: str,
+    container_registry: Optional[str] = None,
 ) -> None:
     """Register a stack."""
 
@@ -45,6 +49,7 @@ def register_stack(
         artifact_store_name=artifact_store,
         orchestrator_name=orchestrator,
         metadata_store_name=metadata_store,
+        container_registry_name=container_registry,
     )
     service.register_stack(stack_name, stack)
     cli_utils.declare(f"Stack `{stack_name}` successfully registered!")
@@ -85,3 +90,32 @@ def get_active_stack() -> None:
     repo = Repository()
     key = repo.get_active_stack_key()
     cli_utils.declare(f"Active stack: {key}")
+
+
+@stack.command("up")
+def up_stack() -> None:
+    """Provisions resources for the stack."""
+    active_stack = Repository().get_active_stack()
+    orchestrator_name = active_stack.orchestrator_name
+
+    cli_utils.declare(
+        f"Bootstrapping resources for orchestrator: `{orchestrator_name}`. "
+        f"This might take a few seconds..."
+    )
+    active_stack.orchestrator.up()
+    cli_utils.declare(f"Orchestrator: `{orchestrator_name}` is up.")
+
+
+@stack.command("down")
+def down_stack() -> None:
+    """Tears down resources for the stack."""
+    active_stack = Repository().get_active_stack()
+    orchestrator_name = active_stack.orchestrator_name
+
+    cli_utils.declare(
+        f"Tearing down resources for orchestrator: `{orchestrator_name}`."
+    )
+    active_stack.orchestrator.down()
+    cli_utils.declare(
+        f"Orchestrator: `{orchestrator_name}` resources are now torn down."
+    )

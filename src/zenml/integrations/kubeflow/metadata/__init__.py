@@ -12,15 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-AIRFLOW = "airflow"
-BEAM = "beam"
-GCP = "gcp"
-PYTORCH = "pytorch"
-PYTORCH_L = "pytorch_lightning"
-SKLEARN = "sklearn"
-TENSORFLOW = "tensorflow"
-PLOTLY = "plotly"
-FACETS = "facets"
-KUBEFLOW = "kubeflow"
-GRAPHVIZ = "graphviz"
-DASH = "dash"
+from zenml.integrations.kubeflow.metadata.kubeflow_metadata_store import (
+    KubeflowMetadataStore,
+)
+
+__all__ = ["KubeflowMetadataStore"]

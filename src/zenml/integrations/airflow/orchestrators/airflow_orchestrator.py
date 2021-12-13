@@ -170,11 +170,12 @@ class AirflowOrchestrator(BaseOrchestrator):
             password,
         )
 
-    def pre_run(self, caller_filepath: str) -> None:
+    def pre_run(self, pipeline: "BasePipeline", caller_filepath: str) -> None:
         """Checks whether airflow is running and copies the DAG file to the
         airflow DAGs directory.
 
         Args:
+            pipeline: Pipeline that will be run.
             caller_filepath: Path to the file in which `pipeline.run()` was
                 called. This contains the airflow DAG that is returned by
                 the `run()` method.

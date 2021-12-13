@@ -12,26 +12,28 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-""" Plugin which is created to add Google Cloud Store support to ZenML
+""" Plugin which is created to add Google Cloud Store support to ZenML.
 It inherits from the base Filesystem created by TFX and overwrites the
 corresponding functions thanks to gcsfs.
-Finally, the plugin is registered in the filesystem registry.
 """
 
-from builtins import FileNotFoundError
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 import gcsfs
+from tfx.dsl.io.fileio import NotFoundError
 
 from zenml.io.fileio import convert_to_str
-from zenml.io.filesystem import Filesystem, NotFoundError, PathType
+from zenml.io.filesystem import Filesystem, PathType
 
 
 class ZenGCS(Filesystem):
-    """Filesystem that delegates to Google Cloud Store using gcsfs."""
+    """Filesystem that delegates to Google Cloud Store using gcsfs.
+
+    **Note**: To allow TFX to check for various error conditions, we need to
+    raise their custom `NotFoundError` instead of the builtin python
+    FileNotFoundError."""
 
     SUPPORTED_SCHEMES = ["gs://"]
-
     fs: gcsfs.GCSFileSystem = None
 
     @classmethod
@@ -49,7 +51,11 @@ class ZenGCS(Filesystem):
                 'rb' and 'wb' to read and write binary files are supported.
         """
         ZenGCS._ensure_filesystem_set()
-        return ZenGCS.fs.open(path=path, mode=mode)
+
+        try:
+            return ZenGCS.fs.open(path=path, mode=mode)
+        except FileNotFoundError as e:
+            raise NotFoundError() from e
 
     @staticmethod
     def copy(src: PathType, dst: PathType, overwrite: bool = False) -> None:
@@ -74,7 +80,10 @@ class ZenGCS(Filesystem):
 
         # TODO [ENG-151]: Check if it works with overwrite=True or if we need to
         #  manually remove it first
-        ZenGCS.fs.copy(path1=src, path2=dst)
+        try:
+            ZenGCS.fs.copy(path1=src, path2=dst)
+        except FileNotFoundError as e:
+            raise NotFoundError() from e
 
     @staticmethod
     def exists(path: PathType) -> bool:
@@ -109,7 +118,10 @@ class ZenGCS(Filesystem):
     def listdir(path: PathType) -> List[PathType]:
         """Return a list of files in a directory."""
         ZenGCS._ensure_filesystem_set()
-        return ZenGCS.fs.listdir(path=path)  # type: ignore[no-any-return]
+        try:
+            return ZenGCS.fs.listdir(path=path)  # type: ignore[no-any-return]
+        except FileNotFoundError as e:
+            raise NotFoundError() from e
 
     @staticmethod
     def makedirs(path: PathType) -> None:
@@ -128,7 +140,10 @@ class ZenGCS(Filesystem):
     def remove(path: PathType) -> None:
         """Remove the file at the given path."""
         ZenGCS._ensure_filesystem_set()
-        ZenGCS.fs.rm_file(path=path)
+        try:
+            ZenGCS.fs.rm_file(path=path)
+        except FileNotFoundError as e:
+            raise NotFoundError() from e
 
     @staticmethod
     def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
@@ -153,7 +168,10 @@ class ZenGCS(Filesystem):
 
         # TODO [ENG-152]: Check if it works with overwrite=True or if we need
         #  to manually remove it first
-        ZenGCS.fs.rename(path1=src, path2=dst)
+        try:
+            ZenGCS.fs.rename(path1=src, path2=dst)
+        except FileNotFoundError as e:
+            raise NotFoundError() from e
 
     @staticmethod
     def rmtree(path: PathType) -> None:
@@ -168,7 +186,10 @@ class ZenGCS(Filesystem):
     def stat(path: PathType) -> Dict[str, Any]:
         """Return stat info for the given path."""
         ZenGCS._ensure_filesystem_set()
-        return ZenGCS.fs.stat(path=path)  # type: ignore[no-any-return]
+        try:
+            return ZenGCS.fs.stat(path=path)  # type: ignore[no-any-return]
+        except FileNotFoundError as e:
+            raise NotFoundError() from e
 
     @staticmethod
     def walk(
