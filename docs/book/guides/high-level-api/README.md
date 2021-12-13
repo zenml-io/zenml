@@ -2,9 +2,9 @@
 description: Use higher level pre-made pipelines to quickly create powerful ML workflows.
 ---
 
-# High Level API
+# Class-based API
 
-The High Level API documentation is in-coming. It would roughly look like this:
+The High Level or Class-based API documentation is being completed. It will look roughly like this:
 
 ```python
 from zenml.pipelines import TrainingPipeline

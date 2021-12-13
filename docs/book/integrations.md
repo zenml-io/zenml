@@ -38,7 +38,9 @@ These are the third-party integrations that ZenML currently supports:
 | Tensorflow         | ✅      | Training               |                                                                                     | [quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)         |
 | Whylogs            | ⛏      | Logging                | Looking for community implementors                                                  |                                                                                       |
 
-(✅ means the integration is already implemented. ⛏ means we are looking to implement the integration soon.)
+✅ means the integration is already implemented.
+⛏ means we are looking to implement the integration soon.
+
 ## Help us with integrations!
 
 There are many tools in the ML / MLOps field. We have made an initial prioritization of which tools to support with integrations, but we also welcome community contributions. Check our [Contributing Guide](CONTRIBUTING.md) for more details on how best to contribute.
