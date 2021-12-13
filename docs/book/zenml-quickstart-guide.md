@@ -13,7 +13,7 @@ If you want to run this notebook in an interactive environment, feel free to run
 ## Step 0: Install ZenML and Tensorflow
 
 ```text
-pip install zenml=="0.5.0rc2" tensorflow
+pip install zenml tensorflow
 ```
 
 ## Step 1: Initialize git and zenml repository 

@@ -6,7 +6,7 @@ description: A good place to start before diving further into the docs.
 
 **ZenML** consists of the following key components:
 
-![ZenML Architectural Overview](assets/2021-11-02-architecture-overview.png)
+![ZenML Architectural Overview](.gitbook/assets/architecture.png)
 
 **Repository**
 
@@ -24,7 +24,7 @@ zenml init
 Please make sure to be inside a valid git repository before executing the above!
 {% endhint %}
 
-The initialization creates a local `.zen` folder where various information about your local configuration lives, e.g., the active [Stack](guides/deploy_to_production.md) that you are using to run pipelines.
+The initialization creates a local `.zen` folder where various information about your local configuration lives, e.g., the active [Stack](guides/deploy\_to\_production.md) that you are using to run pipelines.
 
 **Pipeline**
 
@@ -61,7 +61,7 @@ p = mnist_pipeline(
 p.run()
 ```
 
-Pipelines consist of many [steps](broken-reference) that define what actually happens to the data flowing through the pipelines.
+Pipelines consist of many [steps](broken-reference/) that define what actually happens to the data flowing through the pipelines.
 
 **Step**
 
@@ -79,10 +79,10 @@ def simplest_step_ever(basic_param_1: int, basic_param_2: str) -> int:
 
 There are only a few considerations for the parameters and return types.
 
-- All parameters passed into the signature must be [typed](https://docs.python.org/3/library/typing.html). Similarly, if you're returning something, it must be also be typed with the return operator (`->`)
-- ZenML uses [Pydantic](https://pydantic-docs.helpmanual.io/usage/types/) for type checking and serialization under-the-hood, so all [Pydantic types](https://pydantic-docs.helpmanual.io/usage/types/) are supported \[full list available soon].
+* All parameters passed into the signature must be [typed](https://docs.python.org/3/library/typing.html). Similarly, if you're returning something, it must be also be typed with the return operator (`->`)
+* ZenML uses [Pydantic](https://pydantic-docs.helpmanual.io/usage/types/) for type checking and serialization under-the-hood, so all [Pydantic types](https://pydantic-docs.helpmanual.io/usage/types/) are supported \[full list available soon].
 
-While this is just a function with a decorator, it is not super useful. ZenML steps really get powerful when you put them together with [data artifacts](broken-reference). Read about more of that here!
+While this is just a function with a decorator, it is not super useful. ZenML steps really get powerful when you put them together with [data artifacts](broken-reference/). Read about more of that here!
 
 **Artifact Store**
 
@@ -180,11 +180,11 @@ The design choices in **ZenML** follow the understanding that production-ready m
 
 In different words, **ZenML** runs your **ML** code while taking care of the "**Op**eration**s**" for you. It takes care of:
 
-- Interfacing between the individual processing **steps** (splitting, transform, training).
-- Tracking of intermediate results and metadata
-- Caching your processing artifacts.
-- Parallelization of computing tasks.
-- Ensuring the immutability of your pipelines from data sourcing to model artifacts.
-- No matter where - cloud, on-prem, or locally.
+* Interfacing between the individual processing **steps** (splitting, transform, training).
+* Tracking of intermediate results and metadata
+* Caching your processing artifacts.
+* Parallelization of computing tasks.
+* Ensuring the immutability of your pipelines from data sourcing to model artifacts.
+* No matter where - cloud, on-prem, or locally.
 
 Since production scenarios often look complex, **ZenML** is built with integrations in mind. **ZenML** will support a range of integrations for processing, training, and serving, and you can always add custom integrations via our extensible interfaces.

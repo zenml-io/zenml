@@ -183,19 +183,20 @@ zenml integration install sklearn # we use scikit-learn for this example
 
 ```python
 import numpy as np
+from sklearn.base import ClassifierMixin
+
+from zenml.integrations.sklearn.helpers.digits import get_digits, get_digits_model
 from zenml.pipelines import pipeline
 from zenml.steps import step
 from zenml.steps.step_output import Output
-from zenml.utils import get_mnist, get_mnist_model
-from sklearn.base import ClassifierMixin
 
 @step
 def importer() -> Output(
-    X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
+    X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
 ):
-    """Download the MNIST data store it as numpy arrays."""
-    (X_train, y_train), (X_test, y_test) = get_mnist()
-    return X_train, y_train, X_test, y_test
+    """Loads the digits array as normal numpy arrays."""
+    X_train, X_test, y_train, y_test = get_digits()
+    return X_train, X_test, y_train, y_test
 
 
 @step
@@ -203,12 +204,9 @@ def trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
-    """A simple Keras Model to train on the data."""
-    model = get_mnist_model()
-
+    """Train a simple sklearn classifier for the digits dataset."""
+    model = get_digits_model()
     model.fit(X_train, y_train)
-
-    # write model
     return model
 
 
@@ -219,7 +217,8 @@ def evaluator(
     model: ClassifierMixin,
 ) -> float:
     """Calculate the accuracy on the test set"""
-    test_acc = model.evaluate(X_test, y_test, verbose=2)
+    test_acc = model.score(X_test, y_test)
+    print(f"Test accuracy: {test_acc}")
     return test_acc
 
 
@@ -230,7 +229,7 @@ def mnist_pipeline(
     evaluator,
 ):
     """Links all the steps together in a pipeline"""
-    X_train, y_train, X_test, y_test = importer()
+    X_train, X_test, y_train, y_test = importer()
     model = trainer(X_train=X_train, y_train=y_train)
     evaluator(X_test=X_test, y_test=y_test, model=model)
 
