@@ -16,7 +16,7 @@ from zenml.integrations.integration import Integration
 
 
 class GraphvizIntegration(Integration):
-    """Definition of Plotly integration for ZenML."""
+    """Definition of Graphviz integration for ZenML."""
 
     NAME = GRAPHVIZ
     REQUIREMENTS = ["graphviz>=0.17"]
