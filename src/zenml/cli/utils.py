@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 import datetime
 import functools
+import subprocess
 import sys
 from datetime import timedelta
 from typing import (
@@ -211,3 +212,15 @@ def activate_integrations(func: F) -> F:
         return func(*args, **kwargs)
 
     return cast(F, _wrapper)
+
+
+def install_package(package: str) -> None:
+    """Installs pypi package into the current environment with pip"""
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+
+def uninstall_package(package: str) -> None:
+    """Uninstalls pypi package from the current environment with pip"""
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "uninstall", "-y", package]
+    )
