@@ -216,8 +216,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
     @property
     def _k3d_cluster_name(self) -> str:
         """Returns the K3D cluster name."""
-        short_identifier = str(self.uuid)[:8]
-        return f"zenml-kubeflow-{short_identifier}"
+        # K3D only allows cluster names with up to 32 characters, use the
+        # first 8 chars of the orchestrator UUID as identifier
+        return f"zenml-kubeflow-{str(self.uuid)[:8]}"
 
     @property
     def _k3d_registry_name(self) -> str:
