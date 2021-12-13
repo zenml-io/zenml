@@ -2,13 +2,13 @@
 description: Build production ML pipelines from the simple step interface.
 ---
 
-# Low Level API
+# Functional API
 
-The Low Level ZenML API is defined by the primitive `@step` and `@pipeline` decorators. These should be used when the [High Level API](../high-level-api/) is too inflexible for the use-case at hand, and one requires more control over individual steps and connecting them in pipelines.
+The Functional ZenML API is defined by the primitive `@step` and `@pipeline` decorators. These make it easy to quickly take your functional code into a zenml pipeline. If you want more control over the different steps the [Class based API](../high-level-api/)  is the way to go.&#x20;
 
-A user may also mix-and-match the Low Level API with the High Level API: All standard data types and steps that are applicable in the High Level API can be used with the Low Level API as well!
+A user may also mix-and-match the Functional API with the Class Based API: All standard data types and steps that are applicable in both of these approaches.
 
-In order to illustrate how the Low Level API functions, we'll do a simple exercise to create a training pipeline from scratch (without any High Level components) and take it all the way to deployment.
+In order to illustrate how the Functional API functions, we'll do a simple exercise to create a training pipeline from scratch (without any High Level components) and take it all the way to deployment.
 
 Here is what we'll do in this guide:
 

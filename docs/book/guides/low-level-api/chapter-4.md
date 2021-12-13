@@ -2,19 +2,19 @@
 description: Leverage caching.
 ---
 
-If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low_level_guide/chapter_4.py).
+# Caching
 
-# Caching in action
+If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low\_level\_guide/chapter\_4.py).
 
-What if we don't want to use TensorFlow but rather a
-[scikit-learn](https://scikit-learn.org/) model? This is easy to do. Swap out
-implementations of individual steps and see caching save you time and money!
+## Caching in action
 
-## Create steps
+What if we don't want to use TensorFlow but rather a [scikit-learn](https://scikit-learn.org) model? This is easy to do. Swap out implementations of individual steps and see caching save you time and money!
+
+### Create steps
 
 We add two more steps, a scikit-learn version of the `trainer` and `evaluator` step.
 
-### Trainer
+#### Trainer
 
 ```python
 import numpy as np
@@ -36,7 +36,7 @@ def sklearn_trainer(
 
 A simple enough step using a sklearn `ClassifierMixin` model. ZenML also knows how to store all primitive sklearn model types.
 
-### Evaluator
+#### Evaluator
 
 We also add a simple evaluator:
 
@@ -53,9 +53,9 @@ def sklearn_evaluator(
     return test_acc
 ```
 
-### Pipeline
+#### Pipeline
 
-And now the cool bit: We don't need to change the pipeline at all. We just need to change the concrete functions:
+And now the cool bit: We don't need to change the structure of the pipeline. We just need to change the concrete functions that implements the `trainer` and `evaluator` step:
 
 ```python
 # Run the pipeline
@@ -67,7 +67,7 @@ mnist_pipeline(
 ).run()
 ```
 
-## Run
+### Run
 
 You can run this as follows:
 
@@ -91,9 +91,9 @@ Step `sklearn_evaluator` has started.
 Step `sklearn_evaluator` has finished in 0.191s.
 ```
 
-Note that the `importer` and `mnist` steps are now **100x** faster. This is because we have not changed the pipeline at all, and just made another run with different functions. So ZenML caches these steps and skips straight to the new trainer and evaluator.
+Note that the `importer` and `normalize` steps are now **100x** faster. This is because we have not changed the pipeline itself, and just made another run with a different functions. So ZenML caches the unchanged steps and skips straight to the new trainer and evaluator.
 
-## Inspect
+### Inspect
 
 If you add the following code to fetch the pipeline:
 
@@ -119,6 +119,6 @@ For tf_evaluator, the accuracy is: 0.91
 For sklearn_evaluator, the accuracy is: 0.92
 ```
 
-Looks like sklearn narrowly beat TensorFlow in this one. If we want we can keep extending this and add a PyTorch example (we have done with the `not_so_quickstart` [example](https://github.com/zenml-io/zenml/tree/main/examples/not_so_quickstart)).
+Looks like sklearn narrowly beat TensorFlow in this one. Within our `not_so_quickstart` [example](https://github.com/zenml-io/zenml/tree/main/examples/not\_so\_quickstart) we expand on this with a PyTorch example.
 
 Combining different complex steps with standard pipeline interfaces is a powerful tool in any MLOps setup. You can now organize, track, and manage your codebase as it grows with your use-cases.

@@ -9,7 +9,7 @@
 
 ## Guides
 
-* [Low Level API](guides/low-level-api/README.md)
+* [Functional API](guides/low-level-api/README.md)
   * [Create a step](guides/low-level-api/chapter-1.md)
   * [Normalize data](guides/low-level-api/chapter-2.md)
   * [Train & Evaluate](guides/low-level-api/chapter-3.md)
@@ -17,15 +17,16 @@
   * [Materialize artifacts](guides/low-level-api/chapter-5.md)
   * [Import dynamic data](guides/low-level-api/chapter-6.md)
   * [Deploy to production](guides/low-level-api/chapter-7.md)
-* [High Level API](guides/high-level-api/README.md)
+* [Class based API](guides/high-level-api/README.md)
   * [Coming Soon](guides/high-level-api/chapter-1.md)
 * [Post Execution Workflow](guides/post-execution-workflow.md)
-* [Deploy Pipelines to Production](guides/deploy\_to\_production.md)
+  * [Naming a pipeline run](guides/post-execution-workflow/naming-a-pipeline-run.md)
+* [Run Deployed Pipelines](guides/deploy\_to\_production.md)
 
 ## Features
 
 * [Pipeline Configuration](guides/pipeline-configuration.md)
-* [Caching](caching.md)
+* [Caching](guides/using-cache.md)
 * [Integrations](integrations.md)
 
 ## Support
