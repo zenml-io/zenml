@@ -1,6 +1,7 @@
 import json
 import shutil
 import subprocess
+import sys
 import time
 
 from zenml.io import fileio
@@ -209,9 +210,12 @@ def start_kfp_ui_daemon(pid_file_path: str, port: int) -> None:
 
     from zenml.utils import daemon
 
-    # TODO [ENG-234]: When daemon supports windows, remove the type ignore
-    daemon.run_as_daemon(  # type: ignore[attr-defined]
-        _daemon_function,
-        pid_file=pid_file_path,
-    )
-    logger.info("Started Kubeflow Pipelines UI daemon.")
+    # TODO [ENG-234]: Update with smarter solution for windows daemon
+    if sys.platform == "win32":
+        pass
+    else:
+        daemon.run_as_daemon(
+            _daemon_function,
+            pid_file=pid_file_path,
+        )
+        logger.info("Started Kubeflow Pipelines UI daemon.")
