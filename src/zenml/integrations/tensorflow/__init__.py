@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 from zenml.integrations.constants import TENSORFLOW
 from zenml.integrations.integration import Integration
-from zenml.utils.source_utils import import_class_by_path
 
 
 class TensorflowIntegration(Integration):
@@ -25,12 +24,7 @@ class TensorflowIntegration(Integration):
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        import_class_by_path(
-            "zenml.integrations.tensorflow.materializers.keras_materializer.KerasMaterializer"
-        )
-        import_class_by_path(
-            "zenml.integrations.tensorflow.materializers.tf_dataset_materializer.TensorflowDatasetMaterializer"
-        )
+        from zenml.integrations.tensorflow import materializers  # noqa
 
 
 TensorflowIntegration.check_installation()

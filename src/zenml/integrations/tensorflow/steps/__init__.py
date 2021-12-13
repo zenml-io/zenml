@@ -11,3 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
+from zenml.integrations.tensorflow.steps.tensorflow_trainer import (
+    TensorflowBinaryClassifier,
+    TensorflowBinaryClassifierConfig,
+)

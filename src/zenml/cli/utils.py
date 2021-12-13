@@ -207,7 +207,7 @@ def activate_integrations(func: F) -> F:
         """Inner decorator function"""
         from zenml.integrations.registry import integration_registry
 
-        integration_registry.activate()
+        integration_registry.activate_integrations()
         return func(*args, **kwargs)
 
     return cast(F, _wrapper)

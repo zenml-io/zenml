@@ -14,6 +14,7 @@
 from typing import Callable, Optional, Type, TypeVar, Union, overload
 
 from zenml.pipelines.base_pipeline import (
+    INSTANCE_CONFIGURATION,
     PARAM_ENABLE_CACHE,
     PIPELINE_INNER_FUNC_NAME,
     BasePipeline,
@@ -44,7 +45,7 @@ def pipeline(
 ) -> Union[Type[BasePipeline], Callable[[F], Type[BasePipeline]]]:
     """Outer decorator function for the creation of a ZenML pipeline
 
-    In order to be able work with parameters such as "name", it features a
+    In order to be able to work with parameters such as "name", it features a
     nested decorator structure.
 
     Args:
@@ -74,6 +75,7 @@ def pipeline(
             (BasePipeline,),
             {
                 PIPELINE_INNER_FUNC_NAME: staticmethod(func),
+                INSTANCE_CONFIGURATION: {PARAM_ENABLE_CACHE: enable_cache},
                 PARAM_ENABLE_CACHE: enable_cache,
             },
         )

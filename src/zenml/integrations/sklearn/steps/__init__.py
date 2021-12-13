@@ -11,3 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
+from zenml.integrations.sklearn.steps.sklearn_evaluator import (
+    SklearnEvaluator,
+    SklearnEvaluatorConfig,
+)
+from zenml.integrations.sklearn.steps.sklearn_splitter import (
+    SklearnSplitter,
+    SklearnSplitterConfig,
+)
+from zenml.integrations.sklearn.steps.sklearn_standard_scaler import (
+    SklearnStandardScaler,
+    SklearnStandardScalerConfig,
+)

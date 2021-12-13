@@ -23,5 +23,10 @@ Pipelines can be written as simple functions. They are created by using decorato
 """
 
 
-from zenml.pipelines.base_pipeline import BasePipeline  # noqa
-from zenml.pipelines.pipeline_decorator import pipeline  # noqa
+from zenml.pipelines.base_pipeline import BasePipeline
+from zenml.pipelines.pipeline_decorator import pipeline
+
+__all__ = [
+    "BasePipeline",
+    "pipeline",
+]

@@ -26,5 +26,10 @@ inside a ZenML pipeline.
 Steps can be subclassed from the `BaseStep` class, or used via our `@step` decorator.
 """
 
-from zenml.steps.base_step import BaseStep  # noqa
-from zenml.steps.step_decorator import step  # noqa
+from zenml.steps.base_step import BaseStep
+from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps.step_context import StepContext
+from zenml.steps.step_decorator import step
+from zenml.steps.step_output import Output
+
+__all__ = ["BaseStep", "BaseStepConfig", "StepContext", "step", "Output"]

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 from zenml.integrations.constants import PYTORCH_L
 from zenml.integrations.integration import Integration
-from zenml.utils.source_utils import import_class_by_path
 
 
 class PytorchLightningIntegration(Integration):
@@ -25,9 +24,7 @@ class PytorchLightningIntegration(Integration):
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        import_class_by_path(
-            "zenml.integrations.pytorch_lightning.materializers.pytorch_lightning_materializer.PyTorchLightningMaterializer"
-        )
+        from zenml.integrations.pytorch_lightning import materializers  # noqa
 
 
 PytorchLightningIntegration.check_installation()

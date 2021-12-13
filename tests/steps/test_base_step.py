@@ -528,25 +528,6 @@ def test_call_step_with_default_materializer_registered():
         some_step()()
 
 
-def test_call_step_with_explicit_materializer():
-    """Tests that calling a step with an explicit materializer for the
-    output works."""
-
-    class MyType:
-        pass
-
-    class MyTypeMaterializer(BaseMaterializer):
-        # Not registered as default for `MyType`
-        ASSOCIATED_TYPES = [int]
-
-    @step
-    def some_step() -> MyType:
-        return MyType()
-
-    with does_not_raise():
-        some_step().with_return_materializers(MyTypeMaterializer)()
-
-
 def test_step_uses_config_class_default_values_if_no_config_is_passed():
     """Tests that a step falls back to the config class default values if
     no config object is passed at initialization."""
