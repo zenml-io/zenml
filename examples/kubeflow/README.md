@@ -92,7 +92,7 @@ Authorize docker to push to your GCP container registry: `gcloud auth configure-
 
 ### Create a GCP Kubeflow Pipelines Stack
 
-Replace $PATH_TO_YOUR_CONTAINER_REGISTRY and $PATH_TO_YOUR_GCP_BUCKET with actual values.
+Replace $PATH_TO_YOUR_CONTAINER_REGISTRY and $PATH_TO_YOUR_GCP_BUCKET with appropriate values for your setup.
 
 ```bash
 zenml container-registry register gcp_registry $PATH_TO_YOUR_CONTAINER_REGISTRY
