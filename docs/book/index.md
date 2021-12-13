@@ -14,7 +14,7 @@ Read more about Why ZenML exists [here](why-zenml.md).
 
 ## Who is ZenML for?
 
-![Before and after ZenML](.gitbook/assets/sam-side-by-side-full-text.png)
+![Before and after ZenML](assets/sam-side-by-side-full-text.png)
 
 ZenML is created for data science / machine learning teams that are not only engaged in training models, but also in putting them out in production. Production can mean many things, but examples would be:
 
