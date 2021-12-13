@@ -1,5 +1,28 @@
 # 0.5.5
-Coming Soon
+
+ZenML 0.5.5 is jam-packed with new features to take your ML pipelines to the next level. In this blog post we will highlight our three biggest new features: Kubeflow Pipelines, CLI support for our integrations and Standard Interfaces. That’s right, Standard Interfaces are back!
+
+## What's Changed
+* Implement base component tests by @schustmi in https://github.com/zenml-io/zenml/pull/211
+* Add chapter names by @alex-zenml in https://github.com/zenml-io/zenml/pull/212
+* Fix docstring error by @alex-zenml in https://github.com/zenml-io/zenml/pull/213
+* Hamza/add caching example by @htahir1 in https://github.com/zenml-io/zenml/pull/214
+* Update readme by @alex-zenml in https://github.com/zenml-io/zenml/pull/216
+* Hamza/add small utils by @htahir1 in https://github.com/zenml-io/zenml/pull/219
+* Update docs by @alex-zenml in https://github.com/zenml-io/zenml/pull/220
+* Docs fixes by @alex-zenml in https://github.com/zenml-io/zenml/pull/222
+* Baris/eng 182 standard interfaces by @bcdurak in https://github.com/zenml-io/zenml/pull/209
+* Fix naming error by @alex-zenml in https://github.com/zenml-io/zenml/pull/221
+* Remove framework design by @alex-zenml in https://github.com/zenml-io/zenml/pull/224
+* Alexej/eng 234 zenml integration install by @alexej-zenml in https://github.com/zenml-io/zenml/pull/223
+* Fix deployment section order by @alex-zenml in https://github.com/zenml-io/zenml/pull/225
+* the readme of the example by @bcdurak in https://github.com/zenml-io/zenml/pull/227
+* Kubeflow integration by @schustmi in https://github.com/zenml-io/zenml/pull/226
+
+## New Contributors
+* @alexej-zenml made their first contribution in https://github.com/zenml-io/zenml/pull/223
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.5.4...0.5.5
 
 # 0.5.4
 
