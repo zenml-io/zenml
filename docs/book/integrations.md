@@ -14,29 +14,29 @@ We currently support [Airflow](https://airflow.apache.org/) and [Kubeflow](https
 
 These are the third-party integrations that ZenML currently supports:
 
-| Integration        | Status | Implementation Notes                       |
-| ------------------ | ------ | ------------------------------------------ |
-| Apache Airflow     | ✅      | Works for local environment                |
-| Apache Beam        | ✅      |                                            |
-| BentoML            | ⛏      | Looking for community implementors         |
-| Dash               | ✅      |                                            |
-| Evidently          | ⛏      | Looking for community implementors         |
-| Facets             | ✅      |                                            |
-| GCP                | ✅      |                                            |
-| Graphviz           | ✅      |                                            |
-| Great Expectations | ⛏      | Looking for community implementors         |
-| KServing           | ⛏      | Looking for community implementors         |
-| Kubeflow           | ✅      | Either full Kubeflow or Kubeflow Pipelines |
-| MLFlow             | ⛏      | Looking for community implementors         |
-| numpy              | ✅      |                                            |
-| pandas             | ✅      |                                            |
-| Plotly             | ✅      |                                            |
-| PyTorch            | ✅      |                                            |
-| PyTorch Lightning  | ✅      |                                            |
-| scikit-learn       | ✅      |                                            |
-| Seldon             | ⛏      | Looking for community implementors         |
-| Tensorflow         | ✅      |                                            |
-| Whylogs            | ⛏      | Looking for community implementors         |
+| Integration        | Status | Type                   | Implementation Notes                                                                | Example                                                                               |
+| ------------------ | ------ | ---------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Apache Airflow     | ✅      | Orchestrator           | Works for local environment                                                         | [airflow_local](https://github.com/zenml-io/zenml/tree/main/examples/airflow_local)   |
+| Apache Beam        | ✅      | Distributed Processing |                                                                                     |                                                                                       |
+| BentoML            | ⛏      | Cloud                  | Looking for community implementors                                                  |                                                                                       |
+| Dash               | ✅      | Visualizer             | For Pipeline and PipelineRun visualization objects.                                 | [lineage](https://github.com/zenml-io/zenml/tree/main/examples/lineage)               |
+| Evidently          | ⛏      | Monitoring             | Looking for community implementors                                                  |                                                                                       |
+| Facets             | ✅      | Visualizer             |                                                                                     | [statistics](https://github.com/zenml-io/zenml/tree/main/examples/statistics)         |
+| GCP                | ✅      | Cloud                  |                                                                                     |                                                                                       |
+| Graphviz           | ✅      | Visualizer             | For Pipeline and PipelineRun visualization objects.                                 | [dag_visualizer](https://github.com/zenml-io/zenml/tree/main/examples/dag_visualizer) |
+| Great Expectations | ⛏      | Data Validation        | Looking for community implementors                                                  |                                                                                       |
+| KServe             | ⛏      | Inference              | Looking for community implementors                                                  |                                                                                       |
+| Kubeflow           | ✅      | Orchestrator           | Either full Kubeflow or Kubeflow Pipelines. Works for local environments currently. | [kubeflow](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow)             |
+| MLFlow             | ⛏      | Orchestrator           | Looking for community implementors                                                  |                                                                                       |
+| numpy              | ✅      | Exploration            |                                                                                     |                                                                                       |
+| pandas             | ✅      | Exploration            |                                                                                     |                                                                                       |
+| Plotly             | ✅      | Visualizer             | For Pipeline and PipelineRun visualization objects.                                 | [lineage](https://github.com/zenml-io/zenml/tree/main/examples/lineage)               |
+| PyTorch            | ✅      | Training               |                                                                                     |                                                                                       |
+| PyTorch Lightning  | ✅      | Training               |                                                                                     |                                                                                       |
+| scikit-learn       | ✅      | Training               |                                                                                     | [caching chapter](https://docs.zenml.io/guides/low-level-api/chapter-4)               |
+| Seldon             | ⛏      | Cloud                  | Looking for community implementors                                                  |                                                                                       |
+| Tensorflow         | ✅      | Training               |                                                                                     | [quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)         |
+| Whylogs            | ⛏      | Logging                | Looking for community implementors                                                  |                                                                                       |
 
 ## Help us with integrations!
 
