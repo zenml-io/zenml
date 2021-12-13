@@ -312,7 +312,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
         if fileio.file_exists(self._pid_file_path):
             from zenml.utils import daemon
 
-            daemon.stop_daemon(self._pid_file_path, kill_children=True)
+            # TODO [HIGH]: When daemon supports windows, remove the type ignore
+            daemon.stop_daemon(self._pid_file_path, kill_children=True)  # type: ignore[attr-defined] # noqa
             fileio.remove(self._pid_file_path)
 
         logger.info("Local kubeflow pipelines deployment spun down.")
