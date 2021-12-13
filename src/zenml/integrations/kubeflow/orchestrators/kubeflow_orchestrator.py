@@ -26,6 +26,7 @@ from zenml.constants import APP_NAME
 from zenml.core.component_factory import orchestrator_store_factory
 from zenml.core.repo import Repository
 from zenml.enums import OrchestratorTypes
+from zenml.integrations.kubeflow.orchestrators import local_deployment_utils
 from zenml.integrations.kubeflow.orchestrators.kubeflow_dag_runner import (
     KubeflowDagRunner,
     KubeflowDagRunnerConfig,
@@ -60,14 +61,18 @@ class KubeflowOrchestrator(BaseOrchestrator):
             return base_image_name
 
     @property
+    def root_directory(self) -> str:
+        """Returns path to the root directory for all files concerning
+        this orchestrator."""
+        return os.path.join(
+            click.get_app_dir(APP_NAME), "kubeflow", str(self.uuid)
+        )
+
+    @property
     def pipeline_directory(self) -> str:
         """Returns path to a directory in which the kubeflow pipeline files
         are stored."""
-        directory = os.path.join(
-            click.get_app_dir(APP_NAME), "kubeflow_pipelines", str(self.uuid)
-        )
-        fileio.make_dirs(directory)
-        return directory
+        return os.path.join(self.root_directory, "pipelines")
 
     def pre_run(self, pipeline: "BasePipeline", caller_filepath: str) -> None:
         """Builds a docker image for the current environment and uploads it to
@@ -127,6 +132,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         image_name = self.get_docker_image_name(zenml_pipeline.pipeline_name)
         image_name = get_image_digest(image_name) or image_name
 
+        fileio.make_dirs(self.pipeline_directory)
         pipeline_file_path = os.path.join(
             self.pipeline_directory, f"{zenml_pipeline.name}.yaml"
         )
@@ -203,6 +209,96 @@ class KubeflowOrchestrator(BaseOrchestrator):
             return []
 
     @property
+    def _pid_file_path(self) -> str:
+        """Returns path to the daemon PID file."""
+        return os.path.join(self.root_directory, "kubeflow_daemon.pid")
+
+    @property
+    def _k3d_cluster_name(self) -> str:
+        """Returns the K3D cluster name."""
+        short_identifier = str(self.uuid)[:8]
+        return f"zenml-kubeflow-{short_identifier}"
+
+    @property
+    def _k3d_registry_name(self) -> str:
+        """Returns the K3D registry name."""
+        return f"zenml-kubeflow-registry-{self.uuid}:5000"
+
+    @property
+    def _k3d_registry_config_path(self) -> str:
+        """Returns the path to the K3D registry config yaml."""
+        return os.path.join(self.root_directory, "k3d_registry.yaml")
+
+    @property
     def is_running(self) -> bool:
-        """Returns true if the orchestrator is running."""
-        return True
+        """Returns whether the orchestrator is running."""
+        if not local_deployment_utils.check_prerequisites():
+            # if any prerequisites are missing there is certainly no
+            # local deployment running
+            return False
+
+        return local_deployment_utils.k3d_cluster_exists(
+            cluster_name=self._k3d_cluster_name
+        )
+
+    def up(self) -> None:
+        """Spins up a local Kubeflow Pipelines deployment."""
+        if self.is_running:
+            logger.info(
+                "Found already existing local Kubeflow Pipelines deployment. "
+                "If there are any issues with the existing deployment, please "
+                "run 'zenml orchestrator down' to delete it."
+            )
+            return
+
+        if not local_deployment_utils.check_prerequisites():
+            logger.error(
+                "Unable to spin up local Kubeflow Pipelines deployment: "
+                "Please install 'k3d' and 'kubectl' and try again."
+            )
+            return
+
+        container_registry = Repository().get_active_stack().container_registry
+        if not container_registry:
+            logger.error(
+                "Unable to spin up local Kubeflow Pipelines deployment: "
+                "Missing container registry in current stack."
+            )
+            return
+
+        logger.info("Spinning up local Kubeflow Pipelines deployment...")
+        fileio.make_dirs(self.root_directory)
+        local_deployment_utils.write_local_registry_yaml(
+            yaml_path=self._k3d_registry_config_path,
+            registry_name=self._k3d_registry_name,
+            registry_uri=container_registry.uri,
+        )
+        local_deployment_utils.create_k3d_cluster(
+            cluster_name=self._k3d_cluster_name,
+            registry_name=self._k3d_registry_name,
+            registry_config_path=self._k3d_registry_config_path,
+        )
+        local_deployment_utils.deploy_kubeflow_pipelines()
+        local_deployment_utils.start_kfp_ui_daemon(
+            pid_file_path=self._pid_file_path, port=8080
+        )
+
+        logger.info(
+            "Finished local Kubeflow Pipelines deployment. The UI should now "
+            "be accessible at http://localhost:8080/."
+        )
+
+    def down(self) -> None:
+        """Tears down a local Kubeflow Pipelines deployment."""
+        if self.is_running:
+            local_deployment_utils.delete_k3d_cluster(
+                cluster_name=self._k3d_cluster_name
+            )
+
+        if fileio.file_exists(self._pid_file_path):
+            from zenml.utils import daemon
+
+            daemon.stop_daemon(self._pid_file_path, kill_children=True)
+            fileio.remove(self._pid_file_path)
+
+        logger.info("Local kubeflow pipelines deployment spun down.")
