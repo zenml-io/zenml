@@ -88,7 +88,7 @@ In order to run pipelines in GCP, we need to install one additional ZenML integr
 zenml integration install gcp
 ```
 
-Authorize docker to push to your GCP container registry: `gcloud auth configure-docker`
+Authorize Docker to push to your GCP container registry: `gcloud auth configure-docker`
 
 ### Create a GCP Kubeflow Pipelines stack
 
