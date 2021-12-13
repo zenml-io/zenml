@@ -125,7 +125,7 @@ def my_step(params: MyStepConfig):
 
 **Metadata Store**
 
-The configuration of each pipeline, step, backend, and produced artifacts are all tracked within the metadata store. The metadata store is an SQL database, and can be `sqlite` or `mysql`.
+The configuration of each pipeline, step and produced artifacts are all tracked within the metadata store. The metadata store is an SQL database, and can be `sqlite` or `mysql`.
 
 **Metadata**
 
@@ -133,15 +133,15 @@ Metadata are the pieces of information tracked about the pipelines, experiments 
 
 **Orchestrator**
 
-An orchestrator is a special kind of backend that manages the running of each step of the pipeline. Orchestrators administer the actual pipeline runs. You can think of it as the 'root' of any pipeline job that you run during your experimentation.
+An orchestrator manages the running of each step of the pipeline, administering the actual pipeline runs. You can think of it as the 'root' of any pipeline job that you run during your experimentation.
 
 **Stack**
 
 A stack is made up of the following three core components:
 
-* An Artifact Store
-* A Metadata Store
-* An Orchestrator (backend)
+- An Artifact Store
+- A Metadata Store
+- An Orchestrator
 
 A ZenML stack also happens to be a Pydantic `BaseSettings` class, which means that there are multiple ways to use it.
 
@@ -151,10 +151,6 @@ zenml stack register STACK_NAME \
     -a ARTIFACT_STORE_NAME \
     -o ORCHESTRATOR_NAME
 ```
-
-**Backend (Executors)**
-
-Backends are the infrastructure and environments on which your steps run. There are different kinds of backends depending on the particular use case. COMING SOON
 
 **Visualizers**
 
@@ -168,13 +164,13 @@ ZenML's core abstractions are either close to or replicate completely the common
 
 **Artifact stores** and **metadata stores** can be configured per **repository** as well as per **pipeline**. However, only **pipelines** with the same **artifact store** and **metadata store** are comparable, and therefore should not change to maintain the benefits of caching and consistency across **pipeline** runs.
 
-On a high level, when data is read from an **artifact** the results are persisted in your **artifact store**. An orchestrator reads the data from the **artifact store** and begins preprocessing - either itself or alternatively on a dedicated processing **backend** like [Google Dataflow](https://cloud.google.com/dataflow). Every **pipeline step** reads its predecessor's result artifacts from the **artifact store** and writes its own result artifacts to the **artifact store**. Once preprocessing is done, the orchestration begins the training of your model - again either itself or on a separate / dedicated **training backend**. The trained model will be persisted in the **artifact store**, and optionally passed on to a **serving backend**.
+On a high level, when data is read from an **artifact** the results are persisted in your **artifact store**. An orchestrator reads the data from the **artifact store** and begins preprocessing - either itself or alternatively on dedicated cloud infrastructure like [Google Dataflow](https://cloud.google.com/dataflow). Every **pipeline step** reads its predecessor's result artifacts from the **artifact store** and writes its own result artifacts to the **artifact store**. Once preprocessing is done, the orchestration begins the training of your model - again either itself or on separate / dedicated **training infrastructure**. The trained model will be persisted in the **artifact store**, and optionally passed on to **serving infrastructure**.
 
 A few rules apply:
 
-* Every **orchestrator** (local, Google Cloud VMs, etc) can run all **pipeline steps**, including training.
-* **Orchestrators** have a selection of compatible **processing backends**.
-* **Pipelines** can be configured to utilize more powerful **processing** (e.g. distributed) and **training** (e.g. Google AI Platform) **executors**.
+- Every **orchestrator** (local, Google Cloud VMs, etc) can run all **pipeline steps**, including training.
+- **Orchestrators** have a selection of compatible **processing infrastructure**.
+- **Pipelines** can be configured to utilize more powerful **processing** (e.g. distributed) and **training** (e.g. Google AI Platform) **executors**.
 
 A quick example for large datasets makes this clearer. By default, your experiments will run locally. Pipelines that load large datasets would be severely bottlenecked, so you can configure [Google Dataflow](https://cloud.google.com/dataflow) as a **processing executor** for distributed computation, and [Google AI Platform](https://cloud.google.com/ai-platform) as a **training executor**.
 

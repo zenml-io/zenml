@@ -38,7 +38,7 @@ Join our <a href="https://zenml.io/slack-invite" target="_blank">
 
 ZenML pipelines are designed to be written early on the development lifecycle. Data scientists can explore their pipelines as they develop towards production, switching stacks from local to cloud deployments with ease. You can read more about why we started building ZenML [on our blog](https://blog.zenml.io/why-zenml/). By using ZenML in the early stages of your project, you get the following benefits:
 
-- **Reproducibility** of training and inference workflows.
+- **Reproducibility** of training and inference workflows
 - A **simple and clear** way to represent the steps of your pipeline in code
 - **Plug-and-play integrations**: bring all your favorite tools together
 - Easy switching between local and cloud stacks
@@ -94,7 +94,7 @@ You can utilize caching to help iterate quickly through ML experiments. (Read [o
 
 ### 2. ♻️ Leverage Powerful Integrations
 
-Once code is organized into a ZenML pipeline, you can supercharge your ML development with powerful integrations on multiple [MLOps stacks](https://docs.zenml.io/core-concepts). There are lots of moving parts for all the MLOps tooling and infrastructure you require for ML in production and ZenML aims to bring it all together under one roof.
+Once code is organized into a ZenML pipeline, you can supercharge your ML development with [powerful integrations](https://docs.zenml.io/integrations) on multiple [MLOps stacks](https://docs.zenml.io/core-concepts). There are lots of moving parts for all the MLOps tooling and infrastructure you require for ML in production and ZenML aims to bring it all together under one roof.
 
 We currently support [Airflow](https://airflow.apache.org/) and [Kubeflow](https://www.kubeflow.org/) as third-party orchestrators for your ML pipeline code. ZenML steps can be built from any of the other tools you usually use in your ML workflows, from [`scikit-learn`](https://scikit-learn.org/stable/) to [`PyTorch`](https://pytorch.org/) or [`TensorFlow`](https://www.tensorflow.org/).
 
