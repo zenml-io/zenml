@@ -47,6 +47,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Kubeflow."""
 
     custom_docker_base_image_name: Optional[str] = None
+    kubernetes_context: Optional[str] = None
 
     def get_docker_image_name(self, pipeline_name: str) -> str:
         """Returns the full docker image name including registry and tag."""
@@ -160,8 +161,14 @@ class KubeflowOrchestrator(BaseOrchestrator):
             enable_cache: Whether caching is enabled for this pipeline run.
         """
         try:
-            # load kubeflow config to authorize the KFP client
-            config.load_kube_config()
+            if self.kubernetes_context:
+                logger.info(
+                    "Running in kubernetes context '%s'.",
+                    self.kubernetes_context,
+                )
+
+            # load kubernetes config to authorize the KFP client
+            config.load_kube_config(context=self.kubernetes_context)
 
             # upload the pipeline to Kubeflow and start it
             client = kfp.Client()
