@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, Dict, Type
+from typing import TYPE_CHECKING, Any, Dict, Type
 
 from zenml.exceptions import IntegrationError
 from zenml.logger import get_logger
@@ -40,7 +40,7 @@ class IntegrationRegistry(object):
         return self._integrations
 
     @integrations.setter
-    def integrations(self, i):
+    def integrations(self, i: Any) -> None:
         """Setter method for the integrations property"""
         raise IntegrationError(
             "Please do not manually change the integrations within the "

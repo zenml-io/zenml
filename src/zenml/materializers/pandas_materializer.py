@@ -17,6 +17,7 @@ from typing import Any, Type
 
 import pandas as pd
 
+from zenml.artifacts import DataArtifact, SchemaArtifact, StatisticsArtifact
 from zenml.materializers.base_materializer import BaseMaterializer
 
 DEFAULT_FILENAME = "df.parquet.gzip"
@@ -27,6 +28,11 @@ class PandasMaterializer(BaseMaterializer):
     """Materializer to read data to and from pandas."""
 
     ASSOCIATED_TYPES = [pd.DataFrame]
+    ASSOCIATED_ARTIFACT_TYPES = [
+        DataArtifact,
+        StatisticsArtifact,
+        SchemaArtifact,
+    ]
 
     def handle_input(self, data_type: Type[Any]) -> pd.DataFrame:
         """Reads pd.Dataframe from a parquet file."""

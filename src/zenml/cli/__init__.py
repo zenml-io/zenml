@@ -301,6 +301,7 @@ from zenml.cli.base import *  # noqa
 from zenml.cli.config import *  # noqa
 from zenml.cli.container_registry import *  # noqa
 from zenml.cli.example import *  # noqa
+from zenml.cli.integration import *  # noqa
 from zenml.cli.metadata import *  # noqa
 from zenml.cli.orchestrator import *  # noqa
 from zenml.cli.pipeline import *  # noqa

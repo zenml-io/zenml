@@ -2,17 +2,19 @@
 description: Train some models.
 ---
 
-If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low_level_guide/chapter_3.py).
+# Train & Evaluate
 
-# Train and evaluate the model.
+If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low\_level\_guide/chapter\_3.py).
+
+## Train and evaluate the model
 
 Finally we can train and evaluate our model.
 
-## Create steps
+### Create steps
 
 For this we decide to add two steps, a `trainer` and an `evaluator` step. We also keep using TensorFlow to help with these.
 
-### Trainer
+#### Trainer
 
 ```python
 import numpy as np
@@ -56,16 +58,16 @@ def tf_trainer(
         epochs=config.epochs,
     )
 
-    # write model
+    # model just needs to be returned, zenml takes care of persisting the model 
     return model
 ```
 
 A few things of note:
 
-- This is our first instance of `parameterizing` a step with a `BaseStepConfig`. This allows us to specify some parameters at run-time rather than via data artifacts between steps.
-- This time the trainer returns a `tf.keras.Model`, which ZenML takes care of storing in the artifact store. We will talk about how to 'take over' this storing via `Materializers` in a later chapter.
+* This is our first instance of `parameterizing` a step with a `BaseStepConfig`. This allows us to specify some parameters at run-time rather than via data artifacts between steps.
+* This time the trainer returns a `tf.keras.Model`, which ZenML takes care of storing in the artifact store. We will talk about how to 'take over' this storing via `Materializers` in a later [chapter](chapter-5.md).
 
-### Evaluator
+#### Evaluator
 
 We also add a a simple evaluator:
 
@@ -76,7 +78,7 @@ def tf_evaluator(
     y_test: np.ndarray,
     model: tf.keras.Model,
 ) -> float:
-    """Calculate the loss for the model for each epoch in a graph"""
+    """Calculate the loss for the model on the test set"""
 
     _, test_acc = model.evaluate(X_test, y_test, verbose=2)
     return test_acc
@@ -84,7 +86,7 @@ def tf_evaluator(
 
 This gets the model and test data, and calculates simple model accuracy over the test set.
 
-### Pipeline
+#### Pipeline
 
 And now our pipeline looks like this:
 
@@ -117,7 +119,7 @@ mnist_pipeline(
 
 Beautiful, now the pipeline is truly doing something. Let's run it!
 
-## Run
+### Run
 
 You can run this as follows:
 
@@ -141,7 +143,7 @@ Step `tf_evaluator` has started.
 `tf_evaluator` has finished in 0.742s.
 ```
 
-## Inspect
+### Inspect
 
 If you add the following code to fetch the pipeline:
 

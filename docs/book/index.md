@@ -4,9 +4,9 @@ description: Simple, reproducible MLOps.
 
 # ZenML 101
 
-**ZenML** is an extensible, open-source MLOps framework to create production-ready machine learning pipelines. It has a simple, flexible syntax, is cloud and tooling agnostic, and has interfaces/abstractions that are catered towards ML workflows.
+**ZenML** is an extensible, open-source MLOps framework to create production-ready machine learning pipelines. Built for data scientists, it has a simple, flexible syntax, is cloud- and tool-agnostic, and has interfaces/abstractions that are catered towards ML workflows.
 
-At its core, **ZenML** pipelines execute ML-specific workflows from **sourcing data** to **splitting, preprocessing, training**, all the way to the **evaluation of results** and even **serving**. There are many built-in batteries as things progress in ML development. ZenML is not here to replace the great tools that solve the individual problems. Rather, it integrates natively with many popular ML tooling, and gives standard abstraction to write your workflows.
+At its core, **ZenML pipelines execute ML-specific workflows** from sourcing data to splitting, preprocessing, training, all the way to the evaluation of results and even serving. There are many built-in batteries to support common ML development tasks. ZenML is not here to replace the great tools that solve these individual problems. Rather, it **integrates natively with popular ML tooling** and gives standard abstraction to write your workflows.
 
 {% hint style="success" %}
 Read more about Why ZenML exists [here](why-zenml.md).
@@ -14,40 +14,35 @@ Read more about Why ZenML exists [here](why-zenml.md).
 
 ## Who is ZenML for?
 
-![Before: Sam is a regular data scientist struggling with productionalizing ML models.](.gitbook/assets/sam\_frustrated.jpg)
+![Before and after ZenML](assets/sam-side-by-side-full-text.png)
 
-![After: Sam finds Zen in her MLOps with ZenML.](<.gitbook/assets/sam\_zen\_mode (2).jpg>)
-
-ZenML is created for data science / machine learning teams that are engaged in not only training models, but also putting them out in production. Production can mean many things, but examples would be:
+ZenML is created for data science / machine learning teams that are not only engaged in training models, but also in putting them out in production. Production can mean many things, but examples would be:
 
 * If you are using a model to generate analysis periodically for any business process.
 * If you are using models as a software service to serve predictions.
 * If you are trying to understand patterns using machine learning for any business process.
 
-In all of the above, there will be team that is engaged with creating, deploying, managing and improving the entire process. You always want the best results, the best models, and the most robust and reliable results. This is where ZenML can help.
+In all of the above, there will be a team that is engaged with creating, deploying, managing and improving the entire process. You always want the best results, the best models, and the most robust and reliable results. This is where ZenML can help.
 
-In terms of user persona, ZenML is created for **producers of the models.** This role is classically known as 'data scientist' in the industry and can range from research-minded individuals to more engineering-driven people. The goal of ZenML is to enable these practitioners to **own** their models until deployment and beyond.
+In terms of user personas, ZenML is created for **producers of the models.** This role is classically known as 'data scientist' in the industry and can range from research-minded individuals to more engineering-driven people. The goal of ZenML is to enable these practitioners to **own** their models from experimentation phases to deployment and beyond.
 
-## What do I get out of it?
+## Why should I use ZenML?
 
-By using ZenML at the early stages of development, you get the following features:
+ZenML pipelines are designed to be written early on the development lifecycle. Data scientists can explore their pipelines as they develop towards production, switching stacks from local to cloud deployments with ease. You can read more about why we started building ZenML [on our blog](https://blog.zenml.io/why-zenml/). By using ZenML in the early stages of your project, you get the following benefits:
 
-* **Reproducibility** of training and inference workflows.
-* Managing ML **metadata**, including versioning data, code, and models.
-* Getting an **overview** of your ML development, with a reliable link between training and deployment.
-* Maintaining **comparability** between ML models.
-* **Scaling** ML training/inference to large datasets.
-* Retaining code **quality** alongside development velocity.
-* **Reusing** code/data and reducing waste.
-* Keeping up with the **ML tooling landscape** with standard abstractions and interfaces.
+- **Reproducibility** of training and inference workflows
+- A **simple and clear** way to represent the steps of your pipeline in code
+- **Plug-and-play integrations**: bring all your favorite tools together
+- Easy switching between local and cloud stacks
+- Painless **deployment and configuration** of infrastructure
+- **Scale up** your stack transparently and logically to suit your training and deployment needs
 
 ## Okay, how can I learn more?
 
 A good place to go from this point is to:
 
 * Understand what is so special about [ZenML](why-zenml.md).
-* Take a look at some of the [key decisions that we made while building ZenML.](why/framework-design.md)
-* Get up and running with your [first pipeline](https://github.com/zenml-io/zenml/tree/f912d2d512477e6ed84e839259d42cb73eeedf2b/docs/book/starter-guide/quickstart.md).
+* Get up and running with your [first pipeline](quickstart-guide.md).
 * Read more about [core concepts](core-concepts.md) to inform your decision about using **ZenML.**
 
 ## Get involved!

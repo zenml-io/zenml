@@ -1,9 +1,61 @@
 # Pipeline Configuration
 
+## Setting step parameters using Config
+
+Sometimes you don't want to flexibly adjust parameters when you run your pipeline. This is where the step configurations come into play. In the following example we want to be able to change the learning rate for each pipeline run. For this we create a `TrainerConfig` that contains all the parameters that concern the trainer step.
+
+
+
+```python
+import tensorflow as tf
+
+from zenml.pipelines import pipeline
+from zenml.steps import step
+from zenml.steps.step_output import Output
+from zenml.steps.base_step_config import BaseStepConfig
+
+@step
+def importer_func() -> Output(
+    X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
+):
+    """Importing data"""
+    ...
+    
+class TrainerConfig(BaseStepConfig):
+    """Trainer params"""
+    lr: float = 0.001
+
+@step
+def trainer_func(
+    config: TrainerConfig, # not an artifact, passed in when pipeline is instantiated
+    X_train: np.ndarray,
+    y_train: np.ndarray
+):
+    """Training model"""
+    optimizer = tf.keras.optimizers.Adam(config.lr)
+    ...
+
+@pipeline
+def my_pipeline(
+    importer,
+    trainer,
+):
+    """Links all the steps together in a pipeline"""
+    X_train, y_train, X_test, y_test = importer()
+    model = trainer(X_train=X_train, y_train=y_train)
+
+pipeline_instance = my_pipeline(
+            importer=importer_func(),
+            trainer=trainer_func(config=TrainerConfig(lr=0.003))
+            )
+            
+pipeline_instance.run()
+```
+
 ## Setting step parameters using a config file
 
-In addition to setting parameters for your pipeline steps in code, ZenML also allows you to use a configuration [yaml](https://yaml.org/) file.
-This configuration file must follow the following structure:
+In addition to setting parameters for your pipeline steps in code as seen above, ZenML also allows you to use a configuration [yaml](https://yaml.org) file. This configuration file must follow the following structure:
+
 ```yaml
 steps:
   step_name:
@@ -14,36 +66,22 @@ steps:
     ...
 ```
 
+For our example from above this results in the following configuration yaml.&#x20;
+
+```yaml
+steps:
+  trainer:
+    parameters:
+      lr: 0.005
+```
+
 Use the configuration file by calling the pipeline method `with_config(...)`:
 
 ```python
-@pipeline
-def my_pipeline(...):
-    ...
-
-pipeline_instance = my_pipeline(...).with_config("path_to_config.yaml")
+pipeline_instance = my_pipeline(
+            importer=importer_func(),
+            trainer=trainer_func()
+            ).with_config("path_to_config.yaml")
+            
 pipeline_instance.run()
-```
-
-## Naming a pipeline run
-
-When running a pipeline by calling `my_pipeline.run()`, ZenML uses the current date and time as the name for the pipeline run.
-In order to change the name for a run, simply pass it as a parameter to the `run()` function:
-
-```python
-my_pipeline.run(run_name="custom_pipeline_run_name")
-```
-
-{% hint style="warning" %}
-Pipeline run names must be unique, so make sure to compute it dynamically if you plan to run your pipeline multiple times.
-{% endhint %}
-
-Once the pipeline run is finished we can easily access this specific run during our post-execution workflow:
-
-```python
-from zenml.core.repo import Repository
-
-repo = Repository()
-pipeline = repo.get_pipeline(pipeline_name="my_pipeline")
-run = pipeline.get_run(run_name="custom_pipeline_run_name")
 ```

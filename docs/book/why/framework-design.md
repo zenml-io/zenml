@@ -1,7 +1,6 @@
 ---
 description: >-
-  We discuss some of the fundamental framework decisions we have made and why we
-  made them
+  Some of the fundamental framework design decisions we have made and why we made them
 ---
 
 # Framework Design
@@ -13,7 +12,7 @@ One of the biggest questions often left unasked when designing a new framework i
 * Why did you select this integration and not another?
 * and many more..
 
-When designing a framework as broad as ZenML, the team is probably making hundreds of micro-decisions weekly. While all of these are impossible to capture, we have decided to capture the most key decisions here, and hopefully illuminate why we built ZenML this way.
+When designing a framework as broad as ZenML, the team is making hundreds of micro-decisions weekly. While all of these are impossible to capture, we have decided to capture the most key decisions here, and hopefully illuminate why we built ZenML this way.
 
 ## Pipelines and Pipeline Runs: Separating Configuration From Implementation
 
@@ -104,7 +103,7 @@ run = pipeline(
 )
 ```
 
-The reason is that ZenML needs to distinguish between `Artifacts` (i.e. data output from an upstream step) and `Parameters` (i.e. data input at run time). 
+The reason is that ZenML needs to distinguish between `Artifacts` (i.e. data output from an upstream step) and `Parameters` (i.e. data input at run time).
 
 The way ZenML solves this is by bundling the params in a special class and passing them in like so:
 
@@ -139,12 +138,11 @@ An artifact data type of course can have many Materializers. Think of them as di
 
 The disadvantage of this design is that one needs to implement Materializers for all different data types, which is hard. Luckily, ZenML comes built-in with many standard Materializers and allows you to easily add your own Materializers for custom workflows.
 
-## Materializers and their role in the Post Execution Workflow
-As said, artifact data types can have many `Materializers`. 
+## Materializers and the Post Execution Workflow
+Artifact data types can have many `Materializers`.
 
-## Stacks and the Ops part MLOps
-Stacks are an important concept in ZenML and they have an implicit relationship to pipelines. Stacks define where a pipeline's steps are storing data, metadata, and where the pipeline is orchestrated.
-
+## Stacks and the Ops part of MLOps
+Stacks are an important concept in ZenML and they have an implicit relationship to pipelines. Stacks define where a pipelines steps are storing data, metadata, and where the pipeline is orchestrated.
 
 ## Integration with Git
 ZenML repositories build on top of Git repositories. Here is why.
@@ -184,5 +182,7 @@ In order to ensure this is not a destructive operation, ZenML does not allow the
 
 #### Organizing code
 
-It is important to understand that when a pipeline is run, all custom classes used under-go a so-called `git-resolution` process. This means that wherever there is a custom class referenced in a Pipeline, all files within the module are checked to see if they are committed or not. If they are committed, then the class is successfully pinned with the relevant sha. If they are not, then a warning is thrown but the class is not pinned in the corresponding config. Therefore, it is important to consider not only the file where custom logic resides, but the entire module. This is also the reason that `upwards` relative imports are not permitted within these class files.
+It is important to understand that when a pipeline is run, all custom classes used under-go a so-called `git-resolution` process. This means that wherever there is a custom class referenced in a Pipeline, all files within the module are checked to see if they are committed or not. If they are committed, then the class is successfully pinned with the relevant sha. If they are not, then a warning is thrown but the class is not pinned in the corresponding config.
+
+For this reason, it is important to consider not only the file where custom logic resides, but the entire module. This is also why `upwards` relative imports are not permitted within these class files.
 
