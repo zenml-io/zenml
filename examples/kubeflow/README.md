@@ -90,7 +90,7 @@ zenml integration install gcp
 
 Authorize docker to push to your GCP container registry: `gcloud auth configure-docker`
 
-### Create a GCP Kubeflow Pipelines Stack
+### Create a GCP Kubeflow Pipelines stack
 
 Replace $PATH_TO_YOUR_CONTAINER_REGISTRY and $PATH_TO_YOUR_GCP_BUCKET with appropriate values for your setup.
 
