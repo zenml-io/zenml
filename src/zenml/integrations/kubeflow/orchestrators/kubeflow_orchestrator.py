@@ -220,10 +220,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
         # first 8 chars of the orchestrator UUID as identifier
         return f"zenml-kubeflow-{str(self.uuid)[:8]}"
 
-    @property
-    def _k3d_registry_name(self) -> str:
+    def _get_k3d_registry_name(self, port: int) -> str:
         """Returns the K3D registry name."""
-        return f"zenml-kubeflow-registry-{self.uuid}:5000"
+        return f"zenml-kubeflow-registry-{self.uuid}:{port}"
 
     @property
     def _k3d_registry_config_path(self) -> str:
@@ -269,14 +268,18 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         logger.info("Spinning up local Kubeflow Pipelines deployment...")
         fileio.make_dirs(self.root_directory)
+        container_registry_port = int(container_registry.uri.split(":")[-1])
+        container_registry_name = self._get_k3d_registry_name(
+            port=container_registry_port
+        )
         local_deployment_utils.write_local_registry_yaml(
             yaml_path=self._k3d_registry_config_path,
-            registry_name=self._k3d_registry_name,
+            registry_name=container_registry_name,
             registry_uri=container_registry.uri,
         )
         local_deployment_utils.create_k3d_cluster(
             cluster_name=self._k3d_cluster_name,
-            registry_name=self._k3d_registry_name,
+            registry_name=container_registry_name,
             registry_config_path=self._k3d_registry_config_path,
         )
         local_deployment_utils.deploy_kubeflow_pipelines()
