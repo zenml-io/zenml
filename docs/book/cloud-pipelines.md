@@ -4,7 +4,7 @@ description: >-
   production.
 ---
 
-# Run Deployed Pipelines
+# Run Your Pipelines in the Cloud
 
 When users want to run pipelines on remote architecture, all they need to do is swap out their `local` stack with a cloud-based stack, which you can configure.
 
@@ -12,7 +12,7 @@ A stack is made up of the following three core components:
 
 * An Artifact Store
 * A Metadata Store
-* An Orchestrator (backend)
+* An Orchestrator
 
 A ZenML stack can be registered in the following way:
 
@@ -31,7 +31,7 @@ See [CLI reference](../reference/cli-command-reference.md) for more help.
 After a stack has been set as active, just running a pipeline will run that pipeline on the cloud stack instead of the local stack:
 
 ```python
-python run.py  # will now run on a different backend
+python run.py  # will now run on a different orchestrator / stack
 ```
 
 Let's see what different combinations of stacks exists:
@@ -76,7 +76,7 @@ You have the following options to configure the Artifact Store:
 
 * Local (Default)
 * Remote (Google Cloud Storage)
-  * **Soon**: S3 compatible backends
+  * **Soon**: AWS S3-compatible stacks
 
 ### Local (Default)
 
