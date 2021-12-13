@@ -3,7 +3,7 @@
 
 ## Pre-requisites
 
-In order to run this example, you need to install and initialize ZenML and Airflow.
+In order to run this example, you need to install and initialize ZenML and Kubeflow.
 * Docker
 * K3D https://k3d.io/v5.2.1/
 * Kubectl
