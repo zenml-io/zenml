@@ -26,7 +26,7 @@ In all of the above, there will be a team that is engaged with creating, deployi
 
 In terms of user personas, ZenML is created for **producers of the models.** This role is classically known as 'data scientist' in the industry and can range from research-minded individuals to more engineering-driven people. The goal of ZenML is to enable these practitioners to **own** their models from experimentation phases to deployment and beyond.
 
-## What do I get out of it?
+## Why should I use ZenML?
 
 ZenML pipelines are designed to be written early on the development lifecycle. Data scientists can explore their pipelines as they develop towards production, switching stacks from local to cloud deployments with ease. You can read more about why we started building ZenML [on our blog](https://blog.zenml.io/why-zenml/). By using ZenML in the early stages of your project, you get the following benefits:
 
