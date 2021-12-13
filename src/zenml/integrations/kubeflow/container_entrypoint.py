@@ -37,7 +37,7 @@ from tfx.proto.orchestration import executable_spec_pb2, pipeline_pb2
 from tfx.types import artifact, channel, standard_artifacts
 from tfx.types.channel import Property
 
-from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.artifacts.type_registery import type_registry
 from zenml.core.repo import Repository
 from zenml.integrations.kubeflow.metadata import KubeflowMetadataStore
 from zenml.integrations.registry import integration_registry
@@ -382,17 +382,20 @@ def _create_executor_class(
     step_class = getattr(step_module, step_function_name)
     step_instance = step_class()
 
-    # TODO [HIGH]: This needs to be refactored when our standard interface
-    #  implementation is finished
-    input_spec = {key: BaseArtifact for key in step_instance.INPUT_SIGNATURE}
-    output_spec = {key: BaseArtifact for key in step_instance.OUTPUT_SIGNATURE}
+    materializers = step_instance.get_materializers(ensure_complete=True)
+
+    input_spec = {}
+    for key, value in step_class.INPUT_SIGNATURE.items():
+        input_spec[key] = type_registry.get_artifact_type(value)[0]
+
+    output_spec = {}
+    for key, value in step_class.OUTPUT_SIGNATURE.items():
+        output_spec[key] = type_registry.get_artifact_type(value)[0]
 
     execution_parameters = {
         **step_instance.PARAM_SPEC,
         **step_instance._internal_execution_parameters,
     }
-
-    materializers = step_instance.get_materializers(ensure_complete=True)
 
     generate_component_class(
         step_name=step_instance.step_name,
@@ -400,7 +403,7 @@ def _create_executor_class(
         input_spec=input_spec,
         output_spec=output_spec,
         execution_parameter_names=set(execution_parameters),
-        step_function=step_instance.process,
+        step_function=step_instance.entrypoint,
         materializers=materializers,
     )
 
