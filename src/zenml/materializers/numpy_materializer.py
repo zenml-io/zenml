@@ -19,6 +19,7 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import yaml_utils
 
@@ -39,7 +40,11 @@ class NumpyMaterializer(BaseMaterializer):
             os.path.join(self.artifact.uri, SHAPE_FILENAME)
         )
         shape_tuple = tuple(shape_dict.values())
-        data = pq.read_table(os.path.join(self.artifact.uri, DATA_FILENAME))
+        with fileio.open(
+            os.path.join(self.artifact.uri, DATA_FILENAME), "rb"
+        ) as f:
+            input_stream = pa.input_stream(f)
+            data = pq.read_table(input_stream)
         vals = getattr(data.to_pandas(), DATA_VAR).values
         return np.reshape(vals, shape_tuple)
 
@@ -55,4 +60,8 @@ class NumpyMaterializer(BaseMaterializer):
             {str(i): x for i, x in enumerate(arr.shape)},
         )
         pa_table = pa.table({DATA_VAR: arr.flatten()})
-        pq.write_table(pa_table, os.path.join(self.artifact.uri, DATA_FILENAME))
+        with fileio.open(
+            os.path.join(self.artifact.uri, DATA_FILENAME), "wb"
+        ) as f:
+            stream = pa.output_stream(f)
+            pq.write_table(pa_table, stream)
