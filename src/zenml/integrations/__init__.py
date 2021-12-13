@@ -18,14 +18,17 @@ like the ``facets`` library, distributed processing tools like Apache Beam as
 well as deep learning libraries like PyTorch.
 """
 
-from zenml.integrations.airflow import AirflowIntegration
-from zenml.integrations.beam import BeamIntegration
-from zenml.integrations.dash import DashIntegration
-from zenml.integrations.facets import FacetsIntegration
-from zenml.integrations.gcp import GcpIntegration
-from zenml.integrations.graphviz import GraphvizIntegration
-from zenml.integrations.plotly import PlotlyIntegration
-from zenml.integrations.pytorch import PytorchIntegration
-from zenml.integrations.pytorch_lightning import PytorchLightningIntegration
-from zenml.integrations.sklearn import SklearnIntegration
-from zenml.integrations.tensorflow import TensorflowIntegration
+from zenml.integrations.airflow import AirflowIntegration  # noqa
+from zenml.integrations.beam import BeamIntegration  # noqa
+from zenml.integrations.dash import DashIntegration  # noqa
+from zenml.integrations.facets import FacetsIntegration  # noqa
+from zenml.integrations.gcp import GcpIntegration  # noqa
+from zenml.integrations.graphviz import GraphvizIntegration  # noqa
+from zenml.integrations.kubeflow import KubeflowIntegration  # noqa
+from zenml.integrations.plotly import PlotlyIntegration  # noqa
+from zenml.integrations.pytorch import PytorchIntegration  # noqa
+from zenml.integrations.pytorch_lightning import (  # noqa
+    PytorchLightningIntegration,
+)
+from zenml.integrations.sklearn import SklearnIntegration  # noqa
+from zenml.integrations.tensorflow import TensorflowIntegration  # noqa
