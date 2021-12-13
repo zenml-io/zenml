@@ -27,7 +27,7 @@ class KubeflowIntegration(Integration):
     REQUIREMENTS = ["kfp==1.8.9"]
 
     @classmethod
-    def activate(cls):
+    def activate(cls) -> None:
         """Activates all classes required for the airflow integration."""
         from zenml.integrations.kubeflow import metadata  # noqa
         from zenml.integrations.kubeflow import orchestrators  # noqa
