@@ -229,7 +229,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
     def _get_k3d_registry_name(self, port: int) -> str:
         """Returns the K3D registry name."""
-        return f"zenml-kubeflow-registry-{self.uuid}:{port}"
+        return f"k3d-zenml-kubeflow-registry.localhost:{port}"
 
     @property
     def _k3d_registry_config_path(self) -> str:
