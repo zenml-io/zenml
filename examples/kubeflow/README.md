@@ -46,7 +46,7 @@ zenml stack set local_kubeflow_stack
 
 ### Deploying Kubeflow Pipelines locally
 
-ZenML takes care of locally deploying Kubeflow Pipelines for you, all we need to do is run:
+ZenML takes care of locally deploying Kubeflow Pipelines. All we need to do is run:
 
 ```bash
 zenml stack up
