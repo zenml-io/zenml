@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Dict
+from typing import Any, Dict
 
 from ml_metadata.proto import metadata_store_pb2
 from tfx.types.artifact import Artifact, Property, PropertyType
@@ -43,13 +43,15 @@ class BaseArtifact(Artifact):
         MATERIALIZER_PROPERTY_KEY: MATERIALIZER_PROPERTY,
         DATATYPE_PROPERTY_KEY: DATATYPE_PROPERTY,
     }
+    _MLMD_ARTIFACT_TYPE: Any = None
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Init method for BaseArtifact"""
         self.set_zenml_artifact_type()
         super(BaseArtifact, self).__init__(*args, **kwargs)
 
     @classmethod
-    def set_zenml_artifact_type(cls):
+    def set_zenml_artifact_type(cls) -> None:
         """Set the type of the artifact."""
         type_name = cls.TYPE_NAME
         if not (type_name and isinstance(type_name, str)):
@@ -83,5 +85,7 @@ class BaseArtifact(Artifact):
 
             # Populate ML Metadata artifact properties dictionary.
             for key, value in cls.PROPERTIES.items():
-                artifact_type.properties[key] = value.mlmd_type()
+                artifact_type.properties[
+                    key
+                ] = value.mlmd_type()  # type: ignore[no-untyped-call]
         cls._MLMD_ARTIFACT_TYPE = artifact_type
