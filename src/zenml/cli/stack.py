@@ -104,3 +104,18 @@ def up_stack() -> None:
     )
     active_stack.orchestrator.up()
     cli_utils.declare(f"Orchestrator: `{orchestrator_name}` is up.")
+
+
+@stack.command("down")
+def down_stack() -> None:
+    """Tears down resources for the stack."""
+    active_stack = Repository().get_active_stack()
+    orchestrator_name = active_stack.orchestrator_name
+
+    cli_utils.declare(
+        f"Tearing down resources for orchestrator: `{orchestrator_name}`."
+    )
+    active_stack.orchestrator.down()
+    cli_utils.declare(
+        f"Orchestrator: `{orchestrator_name}` resources are now torn down."
+    )
