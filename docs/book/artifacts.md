@@ -75,7 +75,7 @@ def any_step() -> Output(
 ```
 
 Here, we are dealing with a step definition which features two output `pd.DataFrame`s. In the step decorator, we 
-explicitly handle output_1 as a SchemaArtifact, whereas the output_2 will become a DataArtifact due to the default 
+explicitly handle `output_1` as a `SchemaArtifact`, whereas the `output_2` will become a `DataArtifact` due to the default 
 behaviour.
 
 ### What's in store for the standard artifacts in the feature?
