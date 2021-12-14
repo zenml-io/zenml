@@ -98,7 +98,7 @@ When the setup is finished, you should see a local URL which you can access in y
 
 ### Run the pipeline
 
-There is one minor change we need to make to run the pipeline from the previous chapter: We need to specify the python package requirements that ZenML should install inside the docker image it creates for you. 
+There is one minor change we need to make to run the pipeline from the previous chapter: we need to specify the Python package requirements that ZenML should install inside the Docker image it creates for you. 
 We do that by passing a file path as a parameter to the `@pipeline` decorator:
 
 ```python
