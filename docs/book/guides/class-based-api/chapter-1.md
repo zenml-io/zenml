@@ -44,7 +44,7 @@ class PandasDatasource(BaseDatasourceStep):
         )
 ```
 
-Importing things to note:
+Importing: things to note:
 
 - The annotations in the signature of the entrypoint method of the `BaseDatasourceStep` is being overwritten with the 
 actual data types. This is a necessary step for the step to work.
