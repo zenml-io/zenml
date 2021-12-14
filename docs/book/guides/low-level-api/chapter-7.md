@@ -38,7 +38,7 @@ A [Stack](../../core-concepts.md) is the configuration of the surrounding infras
 * A metadata store: To store metadata like parameters and artifact URIs
 * An artifact store: To store interim data step output.
 * An orchestrator: A service that actually kicks off and runs each step of the pipeline.
-* An optional container registry: To store docker images that are created to run your pipeline.
+* An optional container registry: To store Docker images that are created to run your pipeline.
 
 When you did `zenml init` at the start of this guide, a default `local_stack` was created with local version of all of these. In order to see the stack you can check it out in the command line:
 
