@@ -8,7 +8,7 @@ With ZenML, we aim to improve upon the concept of artifacts by adding abstractio
 which in return helps us and our users with:
 
 - Identifying the inputs and outputs of a step more clearly
-- Making it easier to query to metadata store to fetch relevant artifacts
+- Making it easier to query the metadata store to fetch relevant artifacts
 - Implementing auxiliary utility functions on top of the artifact implementation
 - Creating an easier interface to interconnect different pipelines
 
