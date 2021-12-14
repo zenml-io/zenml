@@ -4,7 +4,7 @@ description: Train some models.
 
 If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/class_based_api/chapter_3.py).
 
-Finally, we can train and evaluate our model. For this we decide to utilize the two base class, the `BaseTrainerStep` 
+Finally, we can train and evaluate our model. For this we decide to utilize the two base classes, the `BaseTrainerStep` 
 and the `BaseEvaluator` step.
 
 ### Trainer
