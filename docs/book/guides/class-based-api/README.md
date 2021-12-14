@@ -29,8 +29,8 @@ zenml integration install tensorflow
 zenml integration install sklearn
 
 # pull example
-zenml example pull class_base_api
-cd zenml_examples/class_base_api
+zenml example pull class_based_api
+cd zenml_examples/class_based_api
 
 # initialize
 git init
