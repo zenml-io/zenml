@@ -17,7 +17,7 @@ In order to run this example, we have to install a few tools that allow ZenML to
 
 * [K3D](https://k3d.io/v5.2.1/#installation) to spin up a local Kubernetes cluster
 * The Kubernetes command-line tool [Kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) to deploy Kubeflow Pipelines
-* [Docker](https://docs.docker.com/get-docker/) to build docker images that run your pipeline in Kubernetes pods
+* [Docker](https://docs.docker.com/get-docker/) to build Docker images that run your pipeline in Kubernetes pods
 
 {% hint style="warning" %}
 The local Kubeflow Pipelines deployment requires more than 2 GB of RAM, so if you're using Docker Desktop make sure to update the resource limits in the preferences
