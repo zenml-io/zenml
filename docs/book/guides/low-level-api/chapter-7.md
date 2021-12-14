@@ -106,7 +106,7 @@ We do that by passing a file path as a parameter to the `@pipeline` decorator:
 def mnist_pipeline(...)
 ```
 
-We can now run the pipeline by simply executing the python script:
+We can now run the pipeline by simply executing the Python script:
 
 ```bash
 python chapter_7.py
