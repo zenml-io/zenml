@@ -59,7 +59,7 @@ class PandasMaterializer(BaseMaterializer):
 Here, you see that the `PandasMaterializer` is only associated with `pd.DataFrame`s however it has the option to 
 interpret this dataframe either as a `DataArtifact`, a `StatisticsArtifact` or a `SchemaArtifact`. As the `DataArtifact` 
 is the first element in the list, it has a priority and unless it is specified otherwise, all the `pd.DataFrame` input
-and output annotation will yield in a `DataArtifact`.
+and output annotations will yield a `DataArtifact`.
 
 If you want to see an example on how to go beyond the default behaviour, you can also take a look at the following 
 example:
