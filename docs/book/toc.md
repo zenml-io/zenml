@@ -30,6 +30,7 @@
 * [Pipeline Configuration](guides/pipeline-configuration.md)
 * [Caching](caching.md)
 * [Integrations](integrations.md)
+* [Standardized Artifacts](artifacts.md)
 * [Run Your Pipelines in the Cloud](cloud-pipelines.md)
 
 ## Support
