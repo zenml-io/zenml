@@ -7,7 +7,7 @@ Here you can find a list of practical examples on how you can use **ZenML** with
 * [**airflow_local**](https://github.com/zenml-io/zenml/tree/main/examples/airflow_local):
   Use Airflow as the orchestrator for your ZenML pipelines.
 * [**Functional API**](https://github.com/zenml-io/zenml/blob/main/examples/functional_api/):
-A guide to using our low-level (`@step` and `@pipeline`) API for writing ZenML pipelines.
+  A guide to using our functional (`@step` and `@pipeline`) API for writing ZenML pipelines.
 * [**not_so_quickstart**](https://github.com/zenml-io/zenml/tree/main/examples/not_so_quickstart):
   This guide builds on the main quickstart tutorial but showcases modular
   pipelines and caching.

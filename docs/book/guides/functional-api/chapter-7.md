@@ -6,6 +6,8 @@ description: Deploy pipelines to production
 
 If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low\_level\_guide/chapter\_7.py).
 
+You can also watch a tutorial video of a Kubeflow stack based example [here](https://www.youtube.com/watch?v=b5TXRYkdL3w).
+
 ## Deploy pipelines to production
 
 When developing ML models, you probably develop your pipelines on your local machine initially as this allows for quicker iteration and debugging.
