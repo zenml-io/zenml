@@ -20,7 +20,7 @@ In order to run this example, we have to install a few tools that allow ZenML to
 * [Docker](https://docs.docker.com/get-docker/) to build Docker images that run your pipeline in Kubernetes pods
 
 {% hint style="warning" %}
-The local Kubeflow Pipelines deployment requires more than 2 GB of RAM, so if you're using Docker Desktop make sure to update the resource limits in the preferences
+The local Kubeflow Pipelines deployment requires more than 2 GB of RAM, so if you're using Docker Desktop make sure to update the resource limits in the preferences.
 {% endhint %}
 
 ### Installation
