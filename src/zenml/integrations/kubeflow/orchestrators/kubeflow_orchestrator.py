@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+import sys
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 
@@ -312,7 +313,11 @@ class KubeflowOrchestrator(BaseOrchestrator):
         if fileio.file_exists(self._pid_file_path):
             from zenml.utils import daemon
 
-            daemon.stop_daemon(self._pid_file_path, kill_children=True)
-            fileio.remove(self._pid_file_path)
+            # TODO [ENG-234]: Update with smarter solution for windows daemon
+            if sys.platform == "win32":
+                pass
+            else:
+                daemon.stop_daemon(self._pid_file_path, kill_children=True)
+                fileio.remove(self._pid_file_path)
 
         logger.info("Local kubeflow pipelines deployment spun down.")

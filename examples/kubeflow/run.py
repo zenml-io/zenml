@@ -12,17 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import logging
 import os
 
 import numpy as np
-import pandas as pd
-import requests
 from sklearn.base import ClassifierMixin
-from sklearn.linear_model import LogisticRegression
 
+from zenml.integrations.sklearn.helpers.digits import get_digits, get_digits_model
 from zenml.pipelines import pipeline
 from zenml.steps import step
-from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
 
 # Path to a pip requirements file that contains requirements necessary to run
@@ -30,56 +28,34 @@ from zenml.steps.step_output import Output
 requirements_file = os.path.join(os.path.dirname(__file__), "requirements.txt")
 
 
-class ImporterConfig(BaseStepConfig):
-    n_days: int = 1
-
-
-def get_X_y_from_api(n_days: int = 1, is_train: bool = True):
-    url = (
-        "https://storage.googleapis.com/zenml-public-bucket/mnist"
-        "/mnist_handwritten_train.json"
-        if is_train
-        else "https://storage.googleapis.com/zenml-public-bucket/mnist"
-        "/mnist_handwritten_test.json"
-    )
-    df = pd.DataFrame(requests.get(url).json())
-    X = df["image"].map(lambda x: np.array(x)).values
-    X = np.array([x.reshape(28, 28) for x in X])
-    y = df["label"].map(lambda y: np.array(y)).values
-    return X, y
-
-
 @step
-def importer(
-    config: ImporterConfig,
-) -> Output(
-    X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
+def importer() -> Output(
+    X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
 ):
-    """Downloads the latest data from a mock API."""
-    X_train, y_train = get_X_y_from_api(n_days=config.n_days, is_train=True)
-    X_test, y_test = get_X_y_from_api(n_days=config.n_days, is_train=False)
-    return X_train, y_train, X_test, y_test
+    """Loads the digits array as normal numpy arrays."""
+    X_train, X_test, y_train, y_test = get_digits()
+    return X_train, X_test, y_train, y_test
 
 
 @step
 def normalizer(
     X_train: np.ndarray, X_test: np.ndarray
 ) -> Output(X_train_normed=np.ndarray, X_test_normed=np.ndarray):
-    """Normalize the values for all the images so they are between 0 and 1"""
-    X_train_normed = X_train / 255.0
-    X_test_normed = X_test / 255.0
+    """Normalize digits dataset with mean and standard deviation."""
+    X_train_normed = (X_train - np.mean(X_train)) / np.std(X_train)
+    X_test_normed = (X_test - np.mean(X_test)) / np.std(X_test)
     return X_train_normed, X_test_normed
 
 
-@step
+@step(enable_cache=False)
 def trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
-    """Train SVC from sklearn."""
-    clf = LogisticRegression(penalty="l1", solver="saga", tol=0.1)
-    clf.fit(X_train.reshape((X_train.shape[0], -1)), y_train)
-    return clf
+    """Train a simple sklearn classifier for the digits dataset."""
+    model = get_digits_model()
+    model.fit(X_train, y_train)
+    return model
 
 
 @step
@@ -88,20 +64,21 @@ def evaluator(
     y_test: np.ndarray,
     model: ClassifierMixin,
 ) -> float:
-    """Calculate accuracy score with classifier."""
-    test_acc = model.score(X_test.reshape((X_test.shape[0], -1)), y_test)
+    """Calculate the accuracy on the test set"""
+    test_acc = model.score(X_test, y_test)
+    logging.info(f"Test accuracy: {test_acc}")
     return test_acc
 
 
 @pipeline(requirements_file=requirements_file)
-def mnistpipeline(
+def mnist_pipeline(
     importer,
     normalizer,
     trainer,
     evaluator,
 ):
     # Link all the steps together
-    X_train, y_train, X_test, y_test = importer()
+    X_train, X_test, y_train, y_test = importer()
     X_trained_normed, X_test_normed = normalizer(X_train=X_train, X_test=X_test)
     model = trainer(X_train=X_trained_normed, y_train=y_train)
     evaluator(X_test=X_test_normed, y_test=y_test, model=model)
@@ -109,7 +86,7 @@ def mnistpipeline(
 
 if __name__ == "__main__":
     # Run the pipeline
-    p = mnistpipeline(
+    p = mnist_pipeline(
         importer=importer(),
         normalizer=normalizer(),
         trainer=trainer(),

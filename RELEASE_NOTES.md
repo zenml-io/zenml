@@ -1,3 +1,56 @@
+# 0.5.5
+
+ZenML 0.5.5 is jam-packed with new features to take your ML pipelines to the next level. In this blog post we will highlight our three biggest new features: Kubeflow Pipelines, CLI support for our integrations and Standard Interfaces. That’s right, Standard Interfaces are back!
+
+## What's Changed
+* Implement base component tests by @schustmi in https://github.com/zenml-io/zenml/pull/211
+* Add chapter names by @alex-zenml in https://github.com/zenml-io/zenml/pull/212
+* Fix docstring error by @alex-zenml in https://github.com/zenml-io/zenml/pull/213
+* Hamza/add caching example by @htahir1 in https://github.com/zenml-io/zenml/pull/214
+* Update readme by @alex-zenml in https://github.com/zenml-io/zenml/pull/216
+* Hamza/add small utils by @htahir1 in https://github.com/zenml-io/zenml/pull/219
+* Update docs by @alex-zenml in https://github.com/zenml-io/zenml/pull/220
+* Docs fixes by @alex-zenml in https://github.com/zenml-io/zenml/pull/222
+* Baris/eng 182 standard interfaces by @bcdurak in https://github.com/zenml-io/zenml/pull/209
+* Fix naming error by @alex-zenml in https://github.com/zenml-io/zenml/pull/221
+* Remove framework design by @alex-zenml in https://github.com/zenml-io/zenml/pull/224
+* Alexej/eng 234 zenml integration install by @alexej-zenml in https://github.com/zenml-io/zenml/pull/223
+* Fix deployment section order by @alex-zenml in https://github.com/zenml-io/zenml/pull/225
+* the readme of the example by @bcdurak in https://github.com/zenml-io/zenml/pull/227
+* Kubeflow integration by @schustmi in https://github.com/zenml-io/zenml/pull/226
+
+## New Contributors
+* @alexej-zenml made their first contribution in https://github.com/zenml-io/zenml/pull/223
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.5.4...0.5.5
+
+# 0.5.4
+
+0.5.4 adds a [lineage tracking](https://github.com/zenml-io/zenml/tree/main/examples/lineage) integration to visualize lineage of pipeline runs! It also includes numerous bug fixes and optimizations.
+
+## What's Changed
+* Fix typos by @alex-zenml in https://github.com/zenml-io/zenml/pull/192
+* Fix Apache Beam bug by @alex-zenml in https://github.com/zenml-io/zenml/pull/194
+* Fix apache beam logging bug by @alex-zenml in https://github.com/zenml-io/zenml/pull/195
+* Add step context by @schustmi in https://github.com/zenml-io/zenml/pull/196
+* Init docstrings by @alex-zenml in https://github.com/zenml-io/zenml/pull/197
+* Hamza/small fixes by @htahir1 in https://github.com/zenml-io/zenml/pull/199
+* Fix writing to metadata store with airflow orchestrator by @schustmi in https://github.com/zenml-io/zenml/pull/198
+* Use pipeline parameter name as step name in post execution by @schustmi in https://github.com/zenml-io/zenml/pull/200
+* Add error message when step name is not in metadata store by @schustmi in https://github.com/zenml-io/zenml/pull/201
+* Add option to set repo location using an environment variable by @schustmi in https://github.com/zenml-io/zenml/pull/202
+* Run cloudbuild after pypi publish by @schustmi in https://github.com/zenml-io/zenml/pull/203
+* Refactor component generation by @schustmi in https://github.com/zenml-io/zenml/pull/204
+* Removed unnecessary panel dependency by @htahir1 in https://github.com/zenml-io/zenml/pull/206
+* Updated README to successively install requirements by @AlexejPenner in https://github.com/zenml-io/zenml/pull/205
+* Store active stack in local config by @schustmi in https://github.com/zenml-io/zenml/pull/208
+* Hamza/eng 125 lineage tracking vis by @htahir1 in https://github.com/zenml-io/zenml/pull/207
+
+## New Contributors
+* @AlexejPenner made their first contribution in https://github.com/zenml-io/zenml/pull/205
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.5.3...0.5.4
+
 # 0.5.3
 
 Version 0.5.3 adds [statistics visualizations](https://github.com/zenml-io/zenml/blob/main/examples/visualizers/statistics/README.md), greatly improved speed for CLI commands as well as lots of small improvements to the pipeline and step interface. 
