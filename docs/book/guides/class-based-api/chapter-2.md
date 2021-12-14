@@ -2,7 +2,7 @@
 description: Split and preprocess your dataset
 ---
 
-If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low_level_guide/chapter_2.py).
+If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/class_based_api/chapter_2.py).
 
 # Split, analyze and preprocess your dataset
 
@@ -215,13 +215,17 @@ python chapter_2.py
 The output will look as follows (note: this is filtered to highlight the most important logs)
 
 ```bash
-Creating pipeline: load_and_normalize_pipeline
-Cache enabled for pipeline `load_and_normalize_pipeline`
-Using orchestrator `local_orchestrator` for pipeline `load_and_normalize_pipeline`. Running pipeline..
-Step `importer_mnist` has started.
-Step `importer_mnist` has finished in 1.751s.
-Step `normalize_mnist` has started.
-Step `normalize_mnist` has finished in 1.848s.
+Creating pipeline: Chapter2Pipeline
+Cache enabled for pipeline `Chapter2Pipeline`
+Using orchestrator `local_orchestrator` for pipeline `Chapter2Pipeline`. Running pipeline..
+Step `PandasDatasource` has started.
+Step `PandasDatasource` has finished in 0.045s.
+Step `SklearnSplitter` has started.
+Step `SklearnSplitter` has finished in 0.432s.
+Step `PandasAnalyzer` has started.
+Step `PandasAnalyzer` has finished in 0.092s.
+Step `SklearnStandardScaler` has started.
+Step `SklearnStandardScaler` has finished in 0.151s.
 ```
 
 ## Inspect
@@ -232,26 +236,16 @@ You can add the following code to fetch the pipeline:
 from zenml.core.repo import Repository
 
 repo = Repository()
-p = repo.get_pipeline(pipeline_name="load_and_normalize_pipeline")
+p = repo.get_pipeline(pipeline_name="Chapter2Pipeline")
 runs = p.runs
-print(f"Pipeline `load_and_normalize_pipeline` has {len(runs)} run(s)")
+print(f"Pipeline `Chapter2Pipeline` has {len(runs)} run(s)")
 run = runs[-1]
-print(f"The run you just made has {len(run.steps)} steps.")
-step = run.get_step('normalizer')
-print(f"The `normalizer` step has {len(step.outputs)} output artifacts.")
-for k, o in step.outputs.items():
-    arr = o.read()
-    print(f"Output '{k}' is an array with shape: {arr.shape}")
+print(f"The run you just made has {len(run.steps)} step(s).")
 ```
 
 You will get the following output:
 
 ```bash
-Pipeline `load_and_normalize_pipeline` has 1 run(s)
-The run you just made has 2 steps.
-The `normalizer` step has 2 output artifacts.
-Output 'X_train_normed' is an array with shape: (60000, 28, 28)
-Output 'X_test_normed' is an array with shape: (10000, 28, 28)
+Pipeline `Chapter2Pipeline` has 1 run(s)
+The run you just made has 4 step(s).
 ```
-
-Which confirms again that the data is stored properly! Now we are ready to create some trainers..

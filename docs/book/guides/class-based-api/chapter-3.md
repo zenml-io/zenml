@@ -2,7 +2,7 @@
 description: Train some models.
 ---
 
-If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low\_level\_guide/chapter\_3.py).
+If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/class_based_api/chapter_3.py).
 
 Finally, we can train and evaluate our model. For this we decide to utilize the two base class, the `BaseTrainerStep` 
 and the `BaseEvaluator` step.
@@ -188,17 +188,38 @@ python chapter_3.py
 The output will look as follows (note: this is filtered to highlight the most important logs)
 
 ```bash
-Creating pipeline: mnist_pipeline
-Cache enabled for pipeline `mnist_pipeline`
-Using orchestrator `local_orchestrator` for pipeline `mnist_pipeline`. Running pipeline..
-Step `importer_mnist` has started.
-Step `importer_mnist` has finished in 1.819s.
-Step `normalize_mnist` has started.
-Step `normalize_mnist` has finished in 2.036s.
-Step `tf_trainer` has started.
-Step `tf_trainer` has finished in 4.723s.
-Step `tf_evaluator` has started.
-`tf_evaluator` has finished in 0.742s.
+Creating pipeline: TrainingPipeline
+Cache enabled for pipeline `TrainingPipeline`
+Using orchestrator `local_orchestrator` for pipeline `TrainingPipeline`. Running pipeline..
+Step `PandasDatasource` has started.
+Step `PandasDatasource` has finished in 0.017s.
+Step `SklearnSplitter` has started.
+Step `SklearnSplitter` has finished in 0.013s.
+Step `PandasAnalyzer` has started.
+Step `PandasAnalyzer` has finished in 0.013s.
+Step `SklearnStandardScaler` has started.
+Step `SklearnStandardScaler` has finished in 0.021s.
+Step `TensorflowBinaryClassifier` has started.
+67/67 [==============================] - 0s 2ms/step - loss: 0.5448 - accuracy: 0.7444 - val_loss: 0.4539 - val_accuracy: 0.7500
+Model: "sequential"
+_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+flatten (Flatten)            (None, 8)                 0         
+_________________________________________________________________
+dense (Dense)                (None, 256)               2304      
+_________________________________________________________________
+dense_1 (Dense)              (None, 64)                16448     
+_________________________________________________________________
+dense_2 (Dense)              (None, 1)                 65        
+=================================================================
+Total params: 18,817
+Trainable params: 18,817
+Non-trainable params: 0
+_________________________________________________________________
+Step `TensorflowBinaryClassifier` has finished in 1.232s.
+Step `SklearnEvaluator` has started.
+Step `SklearnEvaluator` has finished in 0.289s.
 ```
 
 ### Inspect
@@ -223,9 +244,6 @@ print(
 You get the following output:
 
 ```bash
-Pipeline `mnist_pipeline` has 1 run(s)
-The first run has 4 steps.
-The `tf_evaluator step` returned an accuracy: 0.9100000262260437
+Pipeline `TrainingPipeline` has 1 run(s)
+The run you just made has 6 step(s).
 ```
-
-Wow, we just trained our first model! But have not stopped yet. What if did not want to use TensorFlow? Let's swap out our trainers and evaluators for different libraries.

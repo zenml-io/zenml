@@ -2,7 +2,7 @@
 description: Create your first step.
 ---
 
-If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low_level_guide/chapter_1.py).
+If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/class_based_api/chapter_1.py).
 
 # Create an importer step to load data
 
@@ -86,11 +86,11 @@ python chapter_1.py
 The output will look as follows (note: this is filtered to highlight the most important logs)
 
 ```bash
-Creating pipeline: load_mnist_pipeline
-Cache enabled for pipeline `load_mnist_pipeline`
-Using orchestrator `local_orchestrator` for pipeline `load_mnist_pipeline`. Running pipeline..
-Step `importer_mnist` has started.
-Step `importer_mnist` has finished in 1.726s.
+Creating pipeline: Chapter1Pipeline
+Cache enabled for pipeline `Chapter1Pipeline`
+Using orchestrator `local_orchestrator` for pipeline `Chapter1Pipeline`. Running pipeline..
+Step `PandasDatasource` has started.
+Step `PandasDatasource` has finished in 0.016s.
 ```
 
 ## Inspect
@@ -101,28 +101,19 @@ You can add the following code to fetch the pipeline:
 from zenml.core.repo import Repository
 
 repo = Repository()
-p = repo.get_pipeline(pipeline_name="load_mnist_pipeline")
+p = repo.get_pipeline(pipeline_name="Chapter1Pipeline")
 runs = p.runs
-print(f"Pipeline `load_mnist_pipeline` has {len(runs)} run(s)")
+print(f"Pipeline `Chapter1Pipeline` has {len(runs)} run(s)")
 run = runs[-1]
 print(f"The run you just made has {len(run.steps)} step(s).")
-step = run.get_step('importer')
+step = run.get_step("datasource")
 print(f"That step has {len(step.outputs)} output artifacts.")
-for k, o in step.outputs.items():
-    arr = o.read()
-    print(f"Output '{k}' is an array with shape: {arr.shape}")
 ```
 
 You will get the following output:
 
 ```bash
-Pipeline `load_mnist_pipeline` has 1 run(s).
+Pipeline `Chapter1Pipeline` has 3 run(s)
 The run you just made has 1 step(s).
-That step has 4 output artifacts.
-Output 'X_test' is an array with shape: (10000, 28, 28)
-Output 'y_test' is an array with shape: (10000,)
-Output 'y_train' is an array with shape: (60000,)
-Output 'X_train' is an array with shape: (60000, 28, 28)
+That step has 1 output artifacts.
 ```
-
-So now we have successfully confirmed that the data is loaded with the right shape and we can fetch it again from the artifact store.
