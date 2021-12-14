@@ -8,29 +8,41 @@ If you want to see the code for this chapter of the guide, head over to the [Git
 
 ## Deploy pipelines to production
 
-When developing ML models, your pipelines will, at first, most probably live on your machine with a local [Stack](../../core-concepts.md). However, at a certain point when you are finished with its design, you might want to transition to a more production-ready setting, and deploy the pipeline to a more robust environment.
+When developing ML models, you probably develop your pipelines on your local machine initially as this allows for quicker iteration and debugging.
+However, at a certain point when you are finished with its design, you might want to transition to a more production-ready setting and deploy the pipeline to a more robust environment.
 
-### Install and configure Airflow
+### Pre-requisites
 
-This part is optional, and it would depend on your pre-existing production setting. For example, for this guide, Airflow will be set up from scratch and set up to work locally, however you might want to use a managed Airflow instance like [Cloud Composer](https://cloud.google.com/composer) or [Astronomer](https://astronomer.io).
+In order to run this example, we have to install a few tools that allow ZenML to spin up a local Kubeflow Pipelines setup:
 
-For this guide, you'll want to make sure airflow is installed before continuing:
+* [K3D](https://k3d.io/v5.2.1/#installation) to spin up a local Kubernetes cluster
+* The Kubernetes command-line tool [Kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) to deploy Kubeflow Pipelines
+* [Docker](https://docs.docker.com/get-docker/) to build Docker images that run your pipeline in Kubernetes pods
 
-```shell
-pip install apache_airflow==2.2.0
+{% hint style="warning" %}
+The local Kubeflow Pipelines deployment requires more than 2 GB of RAM, so if you're using Docker Desktop make sure to update the resource limits in the preferences.
+{% endhint %}
+
+### Installation
+
+Next, we will install all packages that are required for ZenML to run on Kubeflow Pipelines:
+
+```bash
+zenml integration install kubeflow
 ```
 
-### Creating an Airflow Stack
+### Create a local Kubeflow Pipelines Stack
 
 A [Stack](../../core-concepts.md) is the configuration of the surrounding infrastructure where ZenML pipelines are run and managed. For now, a `Stack` consists of:
 
 * A metadata store: To store metadata like parameters and artifact URIs
 * An artifact store: To store interim data step output.
 * An orchestrator: A service that actually kicks off and runs each step of the pipeline.
+* An optional container registry: To store Docker images that are created to run your pipeline.
 
 When you did `zenml init` at the start of this guide, a default `local_stack` was created with local version of all of these. In order to see the stack you can check it out in the command line:
 
-```shell
+```bash
 zenml stack list
 ```
 
@@ -38,81 +50,80 @@ Output:
 
 ```bash
 STACKS:
-key          stack_type    metadata_store_name    artifact_store_name    orchestrator_name
------------  ------------  ---------------------  ---------------------  -------------------
-local_stack  base          local_metadata_store   local_artifact_store   local_orchestrato
+key                   stack_type    metadata_store_name    artifact_store_name    orchestrator_name      container_registry_name
+--------------------  ------------  ---------------------  ---------------------  ---------------------  -------------------------
+local_stack           base          local_metadata_store   local_artifact_store   local_orchestrator
 ```
 
 ![Your local stack when you start](../../.gitbook/assets/localstack.png)
 
-Let's stick with the `local_metadata_store` and a `local_artifact_store` for now and create an Airflow orchestrator and corresponding stack.
+Let's stick with the `local_metadata_store` and a `local_artifact_store` for now and create a stack with a Kubeflow orchestrator and a local container registry.
 
-```shell
-zenml orchestrator register airflow_orchestrator airflow
-zenml stack register airflow_stack \
+```bash
+# Make sure to create the local registry on port 5000 for it to work 
+zenml container-registry register local_registry localhost:5000
+zenml orchestrator register kubeflow_orchestrator kubeflow
+zenml stack register local_kubeflow_stack \
     -m local_metadata_store \
     -a local_artifact_store \
-    -o airflow_orchestrator
-zenml stack set airflow_stack
+    -o kubeflow_orchestrator \
+    -c local_registry
+
+# Activate the newly created stack
+zenml stack set local_kubeflow_stack
 ```
 
 Output:
 
 ```bash
-Orchestrator `airflow_orchestrator` successfully registered!
-Stack `airflow_stack` successfully registered!
-Active stack: airflow_stack
+Container registry `local_registry` successfully registered!
+Orchestrator `kubeflow_orchestrator` successfully registered!
+Stack `local_kubeflow_stack` successfully registered!
+Active stack: local_kubeflow_stack
 ```
 
-![Your stack with Airflow as orchestrator](../../.gitbook/assets/localstack-with-airflow-orchestrator.png)
+![Your stack with a Kubeflow Pipelines Orchestrator](../../.gitbook/assets/localstack-with-kubeflow-orchestrator.png)
 
 {% hint style="warning" %}
-In the real-world we would also switch to something like a MySQL-based metadata store and a Azure/GCP/S3-based artifact store. We have just skipped that part to keep everything in one machine to make it a bit easier to run this guide.
+In the real world we would also switch to something like a MySQL-based metadata store and an Azure-, GCP-, or S3-based artifact store. We have just skipped that part to keep everything in one machine to make it a bit easier to run this guide.
 {% endhint %}
 
-### Starting up Airflow
-
-ZenML takes care of configuring Airflow, all we need to do is run:
-
+### Start up Kubeflow Pipelines locally
+ZenML takes care of setting up and configuring the local Kubeflow Pipelines deployment. All we need to do is run:
 ```bash
-zenml orchestrator up
+zenml stack up
 ```
+When the setup is finished, you should see a local URL which you can access in your browser and take a look at the Kubeflow Pipelines UI.
 
-This will bootstrap Airflow, start up all the necessary components and run them in the background. When the setup is finished, it will print username and password for the Airflow webserver to the console.
 
-{% hint style="warning" %}
-If you can't find the password on the console, you can navigate to the `APP_DIR / airflow / airflow_root / STACK_UUID / standalone_admin_password.txt` file. The username will always be `admin`.
+### Run the pipeline
 
-* APP\_DIR will depend on your os. See which path corresponds to your OS [here](https://click.palletsprojects.com/en/8.0.x/api/#click.get\_app\_dir).
-* STACK\_UUID will be the unique id of the airflow\_stack. There will be only one folder here so you can just navigate to the one that is present.
-{% endhint %}
-
-### Run
-
-The code from this chapter is the same as the last chapter. So run:
+There is one minor change we need to make to run the pipeline from the previous chapter: we need to specify the Python package requirements that ZenML should install inside the Docker image it creates for you. 
+We do that by passing a file path as a parameter to the `@pipeline` decorator:
 
 ```python
+@pipeline(requirements_file="path_to_requirements.txt")
+def mnist_pipeline(...)
+```
+
+We can now run the pipeline by simply executing the Python script:
+
+```bash
 python chapter_7.py
 ```
 
-Even through the pipeline script is the same, the output will be a lot different from last time. ZenML will detect that `airflow_stack` is the active stack, and do the following:
+Even though the pipeline script is essentially the same, the output will be a lot different from last time. ZenML will detect that `local_kubeflow_stack` is the active stack, and do the following:
+* Build a docker image containing all the necessary python packages and files
+* Push the docker image to the local container registry
+* Schedule a pipeline run in Kubeflow Pipelines
 
-* `chapter_7.py` will be copied to the Airflow `dag_dir` so Airflow can detect is as an [Airflow DAG definition file](https://airflow.apache.org/docs/apache-airflow/stable/tutorial.html#it-s-a-dag-definition-file).
-* The Airflow DAG will show up in the Airflow UI at [http://0.0.0.0:8080](http://0.0.0.0:8080). You will have to login with the username and password generated above.
-* The DAG name will be the same as the pipeline name, so in this case `mnist_pipeline`.
-* The DAG will be scheduled to run every minute.
-* The DAG will be un-paused so you'll probably see the first run as you click through.
+Once the script is finished, you should be able to see the pipeline run [here](http://localhost:8080/#/runs).
 
-And that's it: As long as you keep Airflow running now, this script will run every minute, pull the latest data, and train a new model!
-
-We now have a continuously training ML pipeline training on new data every day. All the pipelines will be tracked in your production [Stack's metadata store](../../core-concepts.md), the interim artifacts will be stored in the [Artifact Store](../../core-concepts.md), and the scheduling and orchestration is being handled by the [orchestrator](../../core-concepts.md), in this case Airflow.
-
-### Shutting down Airflow
-
-Once we are done experimenting, we need to shut down Airflow by running:
+### Clean up
+Once you're done experimenting, you can delete the local Kubernetes cluster and all associated resources by calling:
 
 ```bash
-zenml orchestrator down
+zenml stack down
 ```
 
 ## Conclusion

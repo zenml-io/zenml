@@ -16,7 +16,7 @@ Here is what we'll do in this guide:
 * Swap out implementations of the `trainer` and `evaluator` steps with [scikit-learn](https://scikit-learn.org).
 * Persist our interim data artifacts in SQL tables rather than on files.
 * Read from a dynamically changing datasource rather than a static one.
-* Deploy the pipeline on [Airflow](https://airflow.apache.org).
+* Deploy the pipeline on [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/introduction/).
 
 If you just want to see all of the code for each chapter of the guide, head over to the [GitHub version](https://github.com/zenml-io/zenml/tree/main/examples/low\_level\_guide)
 
@@ -26,23 +26,15 @@ If not, then get your environment ready and follow along!
 
 In order to run the chapters of the guide, you need to install and initialize ZenML:
 
-```shell
-# install CLI (order matters, please install in this order.)
+```bash
 pip install zenml 
-pip install tensorflow
-pip install apache_airflow==2.2.0
+zenml integration install tensorflow
+zenml integration install sklearn
 pip install sqlalchemy 
-pip install sklearn
 
 # pull example
 zenml example pull low_level_guide
-
-# temporary for version <0.5.2
-cd zenml_examples
-git checkout main
-
-# back to normal
-cd low_level_guide
+cd zenml_examples/low_level_guide
 
 # initialize
 git init

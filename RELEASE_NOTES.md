@@ -1,6 +1,6 @@
 # 0.5.5
 
-ZenML 0.5.5 is jam-packed with new features to take your ML pipelines to the next level. In this blog post we will highlight our three biggest new features: Kubeflow Pipelines, CLI support for our integrations and Standard Interfaces. That’s right, Standard Interfaces are back!
+ZenML 0.5.5 is jam-packed with new features to take your ML pipelines to the next level. Our three biggest new features: Kubeflow Pipelines, CLI support for our integrations and Standard Interfaces. That’s right, Standard Interfaces are back!
 
 ## What's Changed
 * Implement base component tests by @schustmi in https://github.com/zenml-io/zenml/pull/211
