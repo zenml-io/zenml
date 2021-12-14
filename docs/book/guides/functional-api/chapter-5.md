@@ -2,7 +2,7 @@
 description: Materialize artifacts as you want.
 ---
 
-If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low_level_guide/chapter_5.py).
+If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/blob/main/examples/functional_api/chapter_5.py).
 
 # Materialize artifacts the way you want to consume them
 

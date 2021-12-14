@@ -66,7 +66,7 @@ ZenML pipelines are designed to be written early on the development lifecycle. D
 
 [ZenML 101]: https://docs.zenml.io/
 [Core Concepts]: https://docs.zenml.io/core-concepts
-[Low Level API Guide]: https://docs.zenml.io/guides/low-level-api
+[Functional API Guide]: https://docs.zenml.io/guides/functional-api
 [New in v0.5.5]: https://blog.zenml.io/zero-five-five-release/
 [Vote for Features]: https://zenml.io/discussion
 [Docs]: https://docs.zenml.io/
