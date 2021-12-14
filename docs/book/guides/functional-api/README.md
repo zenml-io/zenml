@@ -18,7 +18,7 @@ Here is what we'll do in this guide:
 * Read from a dynamically changing datasource rather than a static one.
 * Deploy the pipeline on [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/introduction/).
 
-If you just want to see all of the code for each chapter of the guide, head over to the [GitHub version](https://github.com/zenml-io/zenml/tree/main/examples/low\_level\_guide)
+If you just want to see all the code for each chapter of the guide, head over to the [GitHub version](https://github.com/zenml-io/zenml/tree/main/examples/low\_level\_guide)
 
 If not, then get your environment ready and follow along!
 
