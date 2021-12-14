@@ -109,7 +109,7 @@ class SklearnEvaluator(BaseEvaluatorStep):
         return report
 ```
 
-Important thing to note:
+Important things to note:
 
 * the trainer returns a `tf.keras.Model`, which ZenML takes care of storing in the artifact store. We will talk about 
 how to 'take over' this storing via `Materializers` in a later [chapter](chapter-5.md).
