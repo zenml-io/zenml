@@ -156,7 +156,7 @@ zenml stack register STACK_NAME \
 
 **Container Registry**
 
-Container registries are where pre-built (Docker) containers are hosted, ready for use in various configurations. A ZenML workflow involving a container registry would see you spinning up a Kubernetes cluster and then deploying a pipeline to be run on Kubeflow Pipelines. As part of the deployment to the cluster, the ZenML base image would be downloaded and used as the basis for the deployed 'run'. When you are running a local Kubeflow stack, you will also have a local container registry which stores the container images you create that bundle up your pipeline code.
+A container registry is a store for (Docker) containers. A ZenML workflow involving a container registry would see you spinning up a Kubernetes cluster and then deploying a pipeline to be run on Kubeflow Pipelines. As part of the deployment to the cluster, the ZenML base image would be downloaded (from a cloud container registry) and used as the basis for the deployed 'run'. When you are running a local Kubeflow stack, you would therefore have a local container registry which stores the container images you create that bundle up your pipeline code. These images would in turn be built on top of a base image or custom image of your choice.
 
 **Visualizers**
 
