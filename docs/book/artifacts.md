@@ -27,7 +27,7 @@ class DataArtifact(BaseArtifact):
     TYPE_NAME = "DataArtifact"
 ```
 
-Using this approach, **ZenML** now supports the following list of categories:
+Using this approach, **ZenML** currently supports the following list of categories:
  
 - `DataArtifact`
 - `ModelArtifact`
