@@ -140,8 +140,8 @@ Keep reading to learn how all of the above can be achieved.
 
 Normally at this point in a quickstart, you'd like to learn more about what the product has to offer (if the docs have succeeded in making you feel so). There are essentially two choices you can make:
 
-- If your work involves a use-case that is fairly 'standard' training/inference/deployment, start with the [High Level or Class-based API](guides/high-level-api/) guide.
-- If you have a more complex workflow that requires more control over your pipelines, start with the [Low Level or Functional API](guides/low-level-api/) guide.
+- If your work involves a use-case that is fairly 'standard' training/inference/deployment, start with the [Class-based API](guides/class-based-api/) guide.
+- If you have a more complex workflow that requires more control over your pipelines, start with the [Functional API](guides/functional-api/) guide.
 
 If you're not sure, pick any one of the above. They are the easiest way to learn how ZenML enables MLOps.
 
