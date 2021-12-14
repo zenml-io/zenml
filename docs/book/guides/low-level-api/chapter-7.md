@@ -85,7 +85,7 @@ Active stack: local_kubeflow_stack
 ![Your stack with a Kubeflow Pipelines Orchestrator](../../.gitbook/assets/localstack-with-kubeflow-orchestrator.png)
 
 {% hint style="warning" %}
-In the real-world we would also switch to something like a MySQL-based metadata store and an Azure/GCP/S3-based artifact store. We have just skipped that part to keep everything in one machine to make it a bit easier to run this guide.
+In the real world we would also switch to something like a MySQL-based metadata store and an Azure-, GCP-, or S3-based artifact store. We have just skipped that part to keep everything in one machine to make it a bit easier to run this guide.
 {% endhint %}
 
 ### Start up Kubeflow Pipelines locally
