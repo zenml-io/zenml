@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Any, Dict, cast
 
 import pandas as pd
 import tensorflow as tf
@@ -38,7 +37,7 @@ class SklearnEvaluator(BaseEvaluatorStep):
         dataset: pd.DataFrame,
         model: tf.keras.Model,
         config: SklearnEvaluatorConfig,
-    ) -> Dict[str, Any]:
+    ) -> dict:  # type: ignore[type-arg]
         """Method which is responsible for the computation of the evaluation
 
         Args:
@@ -57,4 +56,4 @@ class SklearnEvaluator(BaseEvaluatorStep):
             labels, predicted_classes, output_dict=True
         )
 
-        return cast(Dict[str, Any], report)
+        return report  # type: ignore[no-any-return]
