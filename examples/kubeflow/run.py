@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import logging
 import os
 
 import numpy as np
@@ -40,13 +41,13 @@ def importer() -> Output(
 def normalizer(
     X_train: np.ndarray, X_test: np.ndarray
 ) -> Output(X_train_normed=np.ndarray, X_test_normed=np.ndarray):
-    """Normalize the values for all the images so they are between 0 and 1"""
-    X_train_normed = X_train / 255.0
-    X_test_normed = X_test / 255.0
+    """Normalize digits dataset with mean and standard deviation."""
+    X_train_normed = (X_train - np.mean(X_train)) / np.std(X_train)
+    X_test_normed = (X_test - np.mean(X_test)) / np.std(X_test)
     return X_train_normed, X_test_normed
 
 
-@step
+@step(enable_cache=False)
 def trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
@@ -65,7 +66,7 @@ def evaluator(
 ) -> float:
     """Calculate the accuracy on the test set"""
     test_acc = model.score(X_test, y_test)
-    print(f"Test accuracy: {test_acc}")
+    logging.info(f"Test accuracy: {test_acc}")
     return test_acc
 
 
