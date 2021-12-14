@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import os
 
 import numpy as np
 import pandas as pd
@@ -22,6 +23,12 @@ from zenml.pipelines import pipeline
 from zenml.steps import step
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_output import Output
+
+# Path to a pip requirements file that contains requirements necessary to run
+# the pipeline
+requirements_file = os.path.join(
+    os.path.dirname(__file__), "chapter_7_requirements.txt"
+)
 
 
 class ImporterConfig(BaseStepConfig):
@@ -88,7 +95,7 @@ def sklearn_evaluator(
     return test_acc
 
 
-@pipeline(enable_cache=False)
+@pipeline(enable_cache=False, requirements_file=requirements_file)
 def mnist_pipeline(
     importer,
     normalizer,
@@ -102,7 +109,7 @@ def mnist_pipeline(
     evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 
 
-# Initialise a new pipeline run
+# Initialize the pipeline
 scikit_p = mnist_pipeline(
     importer=dynamic_importer(),
     normalizer=normalize_mnist(),

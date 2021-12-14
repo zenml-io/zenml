@@ -33,7 +33,7 @@ zenml init
 
 ## Run on a local Kubeflow Pipelines deployment
 
-### Create a new local Kubeflow Pipelines Stack
+### Create a local Kubeflow Pipelines Stack
 
 Now with all the installation and initialization out of the way, all that's left to do is configuring our ZenML [stack](https://docs.zenml.io/core-concepts).
 For this example, the stack we create consists of the following four parts:
