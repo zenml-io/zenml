@@ -132,4 +132,4 @@ Configuring and activating the new stack is all that's necessary to switch from 
 python run.py
 ```
 
-That's it, if everything went as planned this pipeline should now be running in the cloud and we are one step closer to a production pipeline!
+That's it! If everything went as planned this pipeline should now be running in the cloud and we are one step closer to a production pipeline!
