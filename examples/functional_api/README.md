@@ -29,8 +29,8 @@ pip install sqlalchemy
 pip install sklearn
 
 # pull example
-zenml example pull low_level_guide
-cd zenml_examples/low_level_guide
+zenml example pull functional_api
+cd zenml_examples/functional_api
 
 # initialize
 git init
