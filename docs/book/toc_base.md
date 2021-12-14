@@ -19,6 +19,10 @@
 
 * [High Level API](guides/class-based-api/README.md)
   * [Chapter 1](guides/class-based-api/chapter-1.md)
+  * [Chapter 2](guides/class-based-api/chapter-2.md)
+  * [Chapter 3](guides/class-based-api/chapter-3.md)
+  * [Chapter 4](guides/class-based-api/chapter-4.md)
+  * [Chapter 5](guides/class-based-api/chapter-5.md)
 * [Post Execution Workflow](guides/post-execution-workflow.md)
 * [Deploy Pipelines to Production](guides/deploy_to_production.md)
 

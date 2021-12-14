@@ -17,6 +17,11 @@
   * [Import dynamic data](guides/functional-api/chapter-6.md)
   * [Deploy to production](guides/functional-api/chapter-7.md)
 * [Class-based API](guides/class-based-api/README.md)
+  * [Create a step](guides/class-based-api/chapter-1.md)
+  * [Normalize data](guides/class-based-api/chapter-2.md)
+  * [Train & Evaluate](guides/class-based-api/chapter-3.md)
+  * [Caching](guides/class-based-api/chapter-4.md)
+  * [Materialize artifacts](guides/class-based-api/chapter-5.md)
 * [Post Execution Workflow](guides/post-execution-workflow.md)
   * [Naming a pipeline run](guides/post-execution-workflow/naming-a-pipeline-run.md)
 
