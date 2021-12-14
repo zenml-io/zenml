@@ -52,7 +52,7 @@ ZenML pipelines are designed to be written early on the development lifecycle. D
 | 🧘‍♀️ **[ZenML 101]** | New to ZenML? Here's everything you need to know! |
 | ⚛️ **[Core Concepts]** | Some key terms and concepts we use. |
 | 🗃 **[Low Level API Guide]** | Build production ML pipelines from the simple step interface. |
-| 🚀 **[New in v0.5.4]** | New features, bug fixes. |
+| 🚀 **[New in v0.5.5]** | New features, bug fixes. |
 | 🗳 **[Vote for Features]** | Pick what we work on next! |
 | 📓 **[Docs]** | Full documentation for creating your own ZenML pipelines. |
 | 📒 **[API Reference]** | The detailed reference for ZenML's API. |
@@ -67,7 +67,7 @@ ZenML pipelines are designed to be written early on the development lifecycle. D
 [ZenML 101]: https://docs.zenml.io/
 [Core Concepts]: https://docs.zenml.io/core-concepts
 [Low Level API Guide]: https://docs.zenml.io/guides/low-level-api
-[New in v0.5.4]: https://blog.zenml.io/zero-five-four-release/
+[New in v0.5.5]: https://blog.zenml.io/zero-five-five-release/
 [Vote for Features]: https://zenml.io/discussion
 [Docs]: https://docs.zenml.io/
 [API Reference]: https://apidocs.zenml.io/
