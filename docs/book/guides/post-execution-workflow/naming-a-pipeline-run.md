@@ -21,5 +21,5 @@ from zenml.core.repo import Repository
 
 repo = Repository()
 pipeline = repo.get_pipeline(pipeline_name="my_pipeline")
-run = pipeline.get_run(run_name="custom_pipeline_run_name")
+run = pipeline.get_run("custom_pipeline_run_name")
 ```

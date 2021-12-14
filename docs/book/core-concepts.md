@@ -104,7 +104,9 @@ Artifacts can be serialized and deserialized (i.e. written and read from the Art
 
 **Materializers**
 
-A materializer defines how and where Artifacts live in between steps.
+A materializer defines how and where Artifacts live in between steps. It is used to convert a ZenML artifact into a specific format. They are most often used to handle the input or output of ZenML steps, and can be extended by building on the `BaseMaterializer` class. We care about this because steps are not just isolated pieces of work; they are linked together and the outputs of one step might well be the inputs of the next.
+
+We have some built-in ways to serialize and deserialize the data flowing between steps. Of course, if you are using some library or tool which doesn't work with our built-in options, you can write [your own custom materializer](https://docs.zenml.io/guides/low-level-api/chapter-5) to ensure that your data can be passed from step to step in this way. We use our [`fileio` utilities](https://apidocs.zenml.io/api_reference/zenml.io.fileio.html) to do the disk operations without needing to be concerned with whether we're operating on a local or cloud machine.
 
 **Parameter**
 
@@ -151,6 +153,10 @@ zenml stack register STACK_NAME \
     -a ARTIFACT_STORE_NAME \
     -o ORCHESTRATOR_NAME
 ```
+
+**Container Registry**
+
+A container registry is a store for (Docker) containers. A ZenML workflow involving a container registry would see you spinning up a Kubernetes cluster and then deploying a pipeline to be run on Kubeflow Pipelines. As part of the deployment to the cluster, the ZenML base image would be downloaded (from a cloud container registry) and used as the basis for the deployed 'run'. When you are running a local Kubeflow stack, you would therefore have a local container registry which stores the container images you create that bundle up your pipeline code. These images would in turn be built on top of a base image or custom image of your choice.
 
 **Visualizers**
 
