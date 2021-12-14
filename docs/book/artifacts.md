@@ -38,7 +38,7 @@ with many more to come in the future.
 
 ### How is it being used?
 
-In order to keep our interface as clean and intuitive as possible, we have decided to not force our users to use 
+In order to keep our interface as clean and intuitive as possible, we decided to not force our users to use 
 these categories when they are creating a step. As they are already using the input and output annotations such as
 `pd.DataFrame`, we will take advantage of our materializers to figure our what kind of artifacts you are dealing with.
 
