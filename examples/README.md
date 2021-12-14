@@ -4,11 +4,14 @@ Here you can find a list of practical examples on how you can use ZenML with bri
 
 - **airflow_local**: Running pipelines with airflow locally.
 - **caching**: Using caching to skip data-intensive tasks and save costs.
+- **class_based_api**: All the code for the class-based API guide found in the [docs](https://docs.zenml.io/guides/class-based-api).
 - **dag_visualizer**: Visualizing a pipeline.
+- **functional_api**: All the code for the functional API guide found in the [docs](https://docs.zenml.io/guides/functional-api).
+- **kubeflow**: Shows how to orchestrate a pipeline a local kubeflow stack.
 - **lineage**: Visualizing a pipeline run and showcasing artifact lineage.
-- **low_level_guide**: All the code for the low-level API guide found in the [docs](https://docs.zenml.io).
 - **not_so_quickstart**: Shows of the modularity of the pipelines with hot-swapping of Tensorflow, PyTorch, and scikit-learn trainers.
 - **quickstart**: The official quickstart tutorial.
+- **standard_interfaces**: This examples uses a collection of built-in and integrated standard interfaces to showcase their effect on the overall smoothness of the user experience.
 - **statistics**: Show-cases how ZenML can automatically extract statistics using facets.
 
 For each of these examples, ZenML provides a handy CLI command to pull them directly into your local environment. First install `zenml`:

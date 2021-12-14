@@ -3,6 +3,8 @@
 When developing ML models, you probably develop your pipelines on your local machine initially as this allows for quicker iteration and debugging.
 However, at a certain point when you are finished with its design, you might want to transition to a more production-ready setting and deploy the pipeline to a more robust environment.
 
+You can also watch a video of this example [here](https://www.youtube.com/watch?v=b5TXRYkdL3w).
+
 ## Pre-requisites
 
 In order to run this example, we have to install a few tools that allow ZenML to spin up a local Kubeflow Pipelines setup:
