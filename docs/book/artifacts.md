@@ -2,7 +2,7 @@
 
 Artifacts describe the inputs and outputs of a step in an ML workflow, and they are an integral part of 
 any ML pipeline. Due to the wide complexity of ML tasks in general, an artifact can represent a wide 
-variety of things, ranging from a trained model to a dataset, from an evaluation report to a schema.
+variety of things, ranging from a trained model to a dataset, or from an evaluation report to a schema.
 
 With ZenML, we aim to improve upon the concept of artifacts by adding abstractions of certain artifact categories, 
 which in return helps us and our users with:
