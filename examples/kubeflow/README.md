@@ -81,34 +81,36 @@ Once you're done experimenting, you can delete the local Kubernetes cluster and 
 zenml stack down
 ```
 
+## Run the same pipeline on Kubeflow Pipelines deployed to GCP
 
-## Run the same pipeline on Kubeflow Pipelines deployed to GCP [WIP]
+We will now run the same pipeline in Kubeflow Pipelines deployed to a Google Kubernetes Engine cluster. 
+As you can see from the long list of additional pre-requisites, this requires lots of external setup steps at the moment.
+In future releases ZenML will be able to automate most of these steps for you, so make sure to revisit this guide if this is something you're interested in!
 
-This section needs a bit of revision. Check back soon for updates!
+### Additional pre-requisites
 
-The steps from now on assume that you have a running deployment of Kubeflow Pipelines on GCP.
-
-Add notes for:
-
-* Creating a service account with access right to create a bucket and access google container registry.
-* Create a GCP bucket
-* Configure `kubectl` to point to the right context
-
-### Additional setup
-
-In order to run pipelines in GCP, we need to install one additional ZenML integration:
-
-```bash
-zenml integration install gcp
-```
-
-Authorize Docker to push to your GCP container registry: `gcloud auth configure-docker`
+* An existing [GCP container registry](https://cloud.google.com/container-registry/docs).
+* An existing [GCP bucket](https://cloud.google.com/storage/docs/creating-buckets).
+* [Kubeflow Pipelines](https://www.kubeflow.org/docs/distributions/gke/deploy/overview/) deployed to a Google Kubernetes Engine cluster.
+* The local docker client has to be [authorized](https://cloud.google.com/container-registry/docs/advanced-authentication) to access the GCP container registry.
+* Kubectl can [access](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl) your GCP Kubernetes cluster.
+* The [current context](https://kubernetes.io/docs/reference/kubectl/cheatsheet/#kubectl-context-and-configuration) configured in Kubectl points to your GCP cluster. 
 
 ### Create a GCP Kubeflow Pipelines stack
 
-Replace $PATH_TO_YOUR_CONTAINER_REGISTRY and $PATH_TO_YOUR_GCP_BUCKET with appropriate values for your setup.
+To run our pipeline on Kubeflow Pipelines deployed to GCP, we will create a new stack with these components:
+* The **artifact store** stores step outputs in a GCP Bucket. 
+* The **metadata store** stores metadata inside the Kubeflow Pipelines internal MySQL database.
+* The docker images that are created to run your pipeline are stored in GCP **container registry**.
+* The **Kubeflow orchestrator** is the same as in the local Kubeflow Pipelines example.
+
+When running the upcoming commands, make sure to replace `$PATH_TO_YOUR_CONTAINER_REGISTRY` and `$PATH_TO_YOUR_GCP_BUCKET` with the actual URI's of your container registry and bucket.
 
 ```bash
+# In order to create the GCP artifact store, we need to install one additional ZenML integration:
+zenml integration install gcp
+
+# Create the stack and its components
 zenml container-registry register gcp_registry $PATH_TO_YOUR_CONTAINER_REGISTRY
 zenml metadata register kubeflow_metadata_store kubeflow
 zenml artifact register gcp_artifact_store gcp --path=$PATH_TO_YOUR_GCP_BUCKET
@@ -117,16 +119,17 @@ zenml stack register gcp_kubeflow_stack \
     -a gcp_artifact_store \
     -o kubeflow_orchestrator \
     -c gcp_registry
+    
+# Activate the newly created stack
 zenml stack set gcp_kubeflow_stack
 ```
 
 ### Run the pipeline
 
-Configuring and activating the new stack is all that's necessary to switch from running your pipelines locally to running them on GCP, so you can run the pipeline as before by calling:
+Configuring and activating the new stack is all that's necessary to switch from running your pipelines locally to running them on GCP:
 
 ```bash
 python run.py
 ```
 
-
-
+That's it! If everything went as planned this pipeline should now be running in the cloud and we are one step closer to a production pipeline!
