@@ -37,11 +37,13 @@ from tfx.proto.orchestration import executable_spec_pb2, pipeline_pb2
 from tfx.types import artifact, channel, standard_artifacts
 from tfx.types.channel import Property
 
+from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.type_registery import type_registry
 from zenml.core.repo import Repository
 from zenml.integrations.kubeflow.metadata import KubeflowMetadataStore
 from zenml.integrations.registry import integration_registry
 from zenml.steps.utils import generate_component_class
+from zenml.utils import source_utils
 
 
 def _get_grpc_metadata_connection_config() -> metadata_store_pb2.MetadataStoreClientConfig:
@@ -367,6 +369,7 @@ def _create_executor_class(
     step_source_module_name: str,
     step_function_name: str,
     executor_class_target_module_name: str,
+    input_artifact_type_mapping: Dict[str, str],
 ) -> None:
     """Creates an executor class for a given step and adds it to the target
     module.
@@ -377,6 +380,8 @@ def _create_executor_class(
         step_function_name: Name of the step function.
         executor_class_target_module_name: Name of the module to which the
             executor class should be added.
+        input_artifact_type_mapping: A dictionary mapping input names to
+            a string representation of their artifact classes.
     """
     step_module = importlib.import_module(step_source_module_name)
     step_class = getattr(step_module, step_function_name)
@@ -385,8 +390,14 @@ def _create_executor_class(
     materializers = step_instance.get_materializers(ensure_complete=True)
 
     input_spec = {}
-    for key, value in step_class.INPUT_SIGNATURE.items():
-        input_spec[key] = type_registry.get_artifact_type(value)[0]
+    for input_name, class_path in input_artifact_type_mapping.items():
+        artifact_class = source_utils.load_source_path_class(class_path)
+        if not issubclass(artifact_class, BaseArtifact):
+            raise RuntimeError(
+                f"Class `{artifact_class}` specified as artifact class for "
+                f"input '{input_name}' is not a ZenML BaseArtifact subclass."
+            )
+        input_spec[input_name] = artifact_class
 
     output_spec = {}
     for key, value in step_class.OUTPUT_SIGNATURE.items():
@@ -425,6 +436,7 @@ def _parse_command_line_arguments() -> argparse.Namespace:
     parser.add_argument("--step_module", type=str, required=True)
     parser.add_argument("--step_function_name", type=str, required=True)
     parser.add_argument("--run_name", type=str, required=True)
+    parser.add_argument("--input_artifact_types", type=str, required=True)
 
     return parser.parse_args()
 
@@ -481,6 +493,7 @@ def main() -> None:
             step_source_module_name=args.step_module,
             step_function_name=args.step_function_name,
             executor_class_target_module_name=executor_class_target_module_name,
+            input_artifact_type_mapping=json.loads(args.input_artifact_types),
         )
     else:
         raise RuntimeError(
