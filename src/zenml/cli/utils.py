@@ -115,14 +115,14 @@ def pretty_print(obj: Any) -> None:
     click.echo(str(obj))
 
 
-def print_table(obj: List[Dict[str, str]]) -> None:
+def print_table(obj: List[Dict[str, Any]]) -> None:
     """Echoes the list of dicts in a table format. The input object should be a
     List of Dicts. Each item in that list represent a line in the Table. Each
     dict should have the same keys. The keys of the dict will be used as
     headers of the resulting table.
 
     Args:
-      obj: An List containing dictionaries.
+      obj: A List containing dictionaries.
     """
     click.echo(tabulate(obj, headers="keys"))
 
