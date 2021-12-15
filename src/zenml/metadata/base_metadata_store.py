@@ -33,7 +33,7 @@ from zenml.artifacts.constants import (
 )
 from zenml.core.base_component import BaseComponent
 from zenml.enums import ExecutionStatus
-from zenml.io.fileio import get_zenml_config_dir
+from zenml.io.utils import get_zenml_config_dir
 from zenml.logger import get_logger
 from zenml.post_execution import (
     ArtifactView,

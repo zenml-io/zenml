@@ -17,8 +17,7 @@ import os
 import pytest
 from git.repo.base import Repo
 
-from zenml.artifact_stores import BaseArtifactStore
-from zenml.artifact_stores import LocalArtifactStore
+from zenml.artifact_stores import BaseArtifactStore, LocalArtifactStore
 from zenml.core.repo import Repository
 from zenml.exceptions import AlreadyExistsException, DoesNotExistException
 from zenml.metadata.base_metadata_store import BaseMetadataStore

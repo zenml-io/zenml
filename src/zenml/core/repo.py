@@ -18,6 +18,7 @@ from typing import List, Optional
 
 from git import InvalidGitRepositoryError  # type: ignore[attr-defined]
 
+import zenml.io.utils
 from zenml.core.constants import ZENML_DIR_NAME
 from zenml.core.git_wrapper import GitWrapper
 from zenml.core.local_service import LocalService
@@ -46,7 +47,7 @@ class Repository:
         """
         if path is None:
             try:
-                path = fileio.get_zenml_dir()
+                path = zenml.io.utils.get_zenml_dir()
             except InitializationException:
                 # If there isn't a zenml.config, use the cwd
                 path = os.getcwd()
@@ -82,7 +83,7 @@ class Repository:
             NoSuchPathError: If the repo_path does not exist.
         """
         # First check whether it already exists or not
-        if fileio.is_zenml_dir(repo_path):
+        if zenml.io.utils.is_zenml_dir(repo_path):
             raise AssertionError(f"{repo_path} is already initialized!")
 
         try:

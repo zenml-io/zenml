@@ -4,7 +4,7 @@ import subprocess
 import sys
 import time
 
-from zenml.io import fileio
+import zenml.io.utils
 from zenml.logger import get_logger
 from zenml.utils import yaml_utils
 
@@ -64,7 +64,7 @@ def create_k3d_cluster(
         registry_config_path: Path to the registry config file.
     """
     logger.info("Creating local K3D cluster '%s'.", cluster_name)
-    config_dir_path = fileio.get_zenml_config_dir()
+    config_dir_path = zenml.io.utils.get_zenml_config_dir()
     subprocess.check_call(
         [
             "k3d",
