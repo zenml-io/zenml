@@ -141,9 +141,15 @@ def format_component_list(
     """
     list_of_dicts = []
     for key, c in component_list.items():
-        # TODO [ENG-143]: This will break if component has element called `key`
-        data = {"key": key}
-        data.update(c.dict(exclude={"_superfluous_options"}))
+        # Make sure that the `name` key is not taken in the component dict
+        # In case `name` exists, it is replaced inplace with `component_name`
+        component_dict = {
+            "component_name" if k == "name" else k: v
+            for k, v in c.dict(exclude={"_superfluous_options"}).items()
+        }
+
+        data = {"name": key}
+        data.update(component_dict)
         list_of_dicts.append(data)
     return list_of_dicts
 
