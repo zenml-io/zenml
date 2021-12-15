@@ -72,7 +72,7 @@ output.read()
 Once an output artifact is acquired from history, one can visualize it with any chosen `Visualizer`.
 
 ```python
-from zenml.materializers.pandas_materializer import PandasMaterializer
+from zenml.materializers import PandasMaterializer
 
 
 df = output.read(materializer_class=PandasMaterializer)

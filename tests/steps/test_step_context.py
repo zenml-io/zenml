@@ -17,8 +17,8 @@ import pytest
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.exceptions import StepContextError
+from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.materializers.built_in_materializer import BuiltInMaterializer
 from zenml.steps.step_context import StepContext
 
 
