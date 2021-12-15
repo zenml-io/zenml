@@ -15,7 +15,6 @@
 from typing import List, Optional
 
 import click
-from tabulate import tabulate
 
 from zenml.cli.cli import cli
 from zenml.cli.utils import (
@@ -23,6 +22,7 @@ from zenml.cli.utils import (
     declare,
     error,
     install_package,
+    print_table,
     title,
     uninstall_package,
     warning,
@@ -109,7 +109,7 @@ def list() -> None:
                 "Installed": is_installed,
             }
         )
-    declare(tabulate(table_rows, headers="keys"))
+    print_table(table_rows)
 
     warning("\nTo install the dependencies of a specific integration, type: ")
     warning("zenml integration install EXAMPLE_NAME")

@@ -478,7 +478,7 @@ def main() -> None:
 
     metadata_store = Repository().get_active_stack().metadata_store
     if isinstance(metadata_store, KubeflowMetadataStore):
-        # setup the metadata connection so it connects to the internal kubeflow
+        # set up the metadata connection so it connects to the internal kubeflow
         # mysql database
         connection_config = _get_grpc_metadata_connection_config()
     else:

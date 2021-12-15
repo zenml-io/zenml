@@ -115,15 +115,43 @@ def pretty_print(obj: Any) -> None:
     click.echo(str(obj))
 
 
-def echo_component_list(component_list: Mapping[str, "BaseComponent"]) -> None:
-    """Echoes a list of components in a pretty style."""
+def print_table(obj: List[Dict[str, Any]]) -> None:
+    """Echoes the list of dicts in a table format. The input object should be a
+    List of Dicts. Each item in that list represent a line in the Table. Each
+    dict should have the same keys. The keys of the dict will be used as
+    headers of the resulting table.
+
+    Args:
+      obj: A List containing dictionaries.
+    """
+    click.echo(tabulate(obj, headers="keys"))
+
+
+def format_component_list(
+    component_list: Mapping[str, "BaseComponent"]
+) -> List[Dict[str, str]]:
+    """Formats a list of components into a List of Dicts. This list of dicts
+    can then be printed in a table style using cli_utils.print_table.
+
+    Args:
+      component_list: The component_list is a mapping of component key to
+                      component class with its relevant attributes
+    Returns:
+        list_of_dicts: A list of all components with each component as a dict
+    """
     list_of_dicts = []
     for key, c in component_list.items():
-        # TODO [ENG-143]: This will break if component has element called `key`
-        data = {"key": key}
-        data.update(c.dict(exclude={"_superfluous_options"}))
+        # Make sure that the `name` key is not taken in the component dict
+        # In case `name` exists, it is replaced inplace with `component_name`
+        component_dict = {
+            "component_name" if k == "name" else k: v
+            for k, v in c.dict(exclude={"_superfluous_options"}).items()
+        }
+
+        data = {"name": key}
+        data.update(component_dict)
         list_of_dicts.append(data)
-    click.echo(tabulate(list_of_dicts, headers="keys"))
+    return list_of_dicts
 
 
 def format_date(

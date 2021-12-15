@@ -64,7 +64,9 @@ def list_container_registries() -> None:
     """List all available container registries from service."""
     service = Repository().get_service()
     cli_utils.title("Container registries:")
-    cli_utils.echo_component_list(service.container_registries)
+    cli_utils.print_table(
+        cli_utils.format_component_list(service.container_registries)
+    )
 
 
 @container_registry.command("delete")

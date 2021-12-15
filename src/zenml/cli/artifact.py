@@ -69,7 +69,9 @@ def list_artifact_stores() -> None:
     """List all available artifact stores from service."""
     service = Repository().get_service()
     cli_utils.title("Artifact Stores:")
-    cli_utils.echo_component_list(service.artifact_stores)
+    cli_utils.print_table(
+        cli_utils.format_component_list(service.artifact_stores)
+    )
 
 
 @artifact.command("delete")

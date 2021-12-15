@@ -101,7 +101,9 @@ def list_orchestrators() -> None:
     """List all available orchestrators from service."""
     service = Repository().get_service()
     cli_utils.title("Orchestrators:")
-    cli_utils.echo_component_list(service.orchestrators)
+    cli_utils.print_table(
+        cli_utils.format_component_list(service.orchestrators)
+    )
 
 
 @orchestrator.command("delete")
