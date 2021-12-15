@@ -62,7 +62,9 @@ def list_stacks() -> None:
     cli_utils.title("Stacks:")
     # TODO [ENG-144]: once there is a common superclass for Stack/ArtifactStore etc.,
     #  remove the mypy ignore
-    cli_utils.echo_component_list(service.stacks)  # type: ignore[arg-type]
+    cli_utils.print_table(
+        cli_utils.format_component_list(service.stacks)  # type: ignore[arg-type]
+    )
 
 
 @stack.command("delete")
