@@ -16,5 +16,7 @@ The configuration of each pipeline, step, backend, and produced artifacts are
 all tracked within the metadata store. The metadata store is an SQL database,
 and can be `sqlite` or `mysql`.
 
-Metadata are the pieces of information tracked about the pipelines, experiments and configurations that you are are running with ZenML. Metadata are stored inside the metadata store.
+Metadata are the pieces of information tracked about the pipelines, experiments
+and configurations that you are running with ZenML. Metadata are stored
+inside the metadata store.
 """
