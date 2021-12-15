@@ -74,7 +74,9 @@ def list_metadata_stores() -> None:
     """List all available metadata stores from service."""
     service = Repository().get_service()
     cli_utils.title("Metadata Stores:")
-    cli_utils.echo_component_list(service.metadata_stores)
+    cli_utils.print_table(
+        cli_utils.format_component_list(service.metadata_stores)
+    )
 
 
 @metadata.command("delete")
