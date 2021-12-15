@@ -27,6 +27,7 @@ from zenml.core.constants import ZENML_DIR_NAME
 from zenml.core.git_wrapper import GitWrapper
 from zenml.core.local_service import LocalService
 from zenml.core.repo import Repository
+from zenml.exceptions import InitializationException
 from zenml.stacks.base_stack import BaseStack
 
 # a way to get to the root
@@ -86,24 +87,23 @@ def test_repo_double_init(tmp_path: str) -> None:
     _ = Repo.init(tmp_path)
     os.mkdir(os.path.join(tmp_path, ZENML_DIR_NAME))
 
-    with pytest.raises(Exception):
-        Repository(str(tmp_path)).init_repo(repo_path=tmp_path)
+    with pytest.raises(InitializationException):
+        Repository.init_repo(path=tmp_path)
 
 
-def test_repo_init_without_git_repo_initialized_raises_error(
+def test_repo_init_without_git_repo_does_not_raise_an_error(
     tmp_path: str,
 ) -> None:
-    """Check initializing repository without git repository raises error"""
-    with pytest.raises(Exception):
-        Repository(str(tmp_path)).init_repo(repo_path=tmp_path)
+    """Check initializing repository without git repository does not raise
+    an error."""
+    with does_not_raise():
+        Repository.init_repo(path=tmp_path)
 
 
 def test_init_repo_creates_a_zen_folder(tmp_path: str) -> None:
     """Check initializing repository creates a ZenML folder"""
     _ = Repo.init(tmp_path)
-    repo = Repository(str(tmp_path))
-    local_stack = LocalService().get_stack("local_stack")
-    repo.init_repo(repo_path=tmp_path, stack=local_stack)
+    Repository.init_repo(path=tmp_path)
     assert os.path.exists(os.path.join(tmp_path, ZENML_DIR_NAME))
 
 

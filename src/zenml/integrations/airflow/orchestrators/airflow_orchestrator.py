@@ -17,11 +17,9 @@ import os
 import time
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-import click
 import tfx.orchestration.pipeline as tfx_pipeline
 from pydantic import root_validator
 
-from zenml.constants import APP_NAME
 from zenml.core.component_factory import orchestrator_store_factory
 from zenml.enums import OrchestratorTypes
 from zenml.integrations.airflow.orchestrators.airflow_dag_runner import (
@@ -62,7 +60,9 @@ class AirflowOrchestrator(BaseOrchestrator):
         if "uuid" not in values:
             raise ValueError("`uuid` needs to exist for AirflowOrchestrator.")
         values["airflow_home"] = os.path.join(
-            click.get_app_dir(APP_NAME), AIRFLOW_ROOT_DIR, str(values["uuid"])
+            fileio.get_global_config_directory(),
+            AIRFLOW_ROOT_DIR,
+            str(values["uuid"]),
         )
         return values
 

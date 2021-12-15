@@ -32,7 +32,7 @@ from zenml.cli.utils import (
     title,
     warning,
 )
-from zenml.constants import APP_NAME, GIT_REPO_URL
+from zenml.constants import GIT_REPO_URL
 from zenml.io import fileio
 from zenml.logger import get_logger
 
@@ -160,7 +160,7 @@ class GitExamplesHandler(object):
 
     def __init__(self) -> None:
         """Create a new GitExamplesHandler instance."""
-        repo_dir = click.get_app_dir(APP_NAME)
+        repo_dir = fileio.get_global_config_directory()
         examples_dir = Path(os.path.join(repo_dir, EXAMPLES_GITHUB_REPO))
         self.examples_repo = ExamplesRepo(examples_dir)
 

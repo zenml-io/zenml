@@ -18,9 +18,14 @@ import tarfile
 from pathlib import Path
 from typing import Any, Callable, Iterable, List, Optional, Tuple, Type
 
+import click
 from tfx.dsl.io.filesystem import Filesystem, PathType
 
-from zenml.constants import ENV_ZENML_REPOSITORY_PATH, REMOTE_FS_PREFIX
+from zenml.constants import (
+    APP_NAME,
+    ENV_ZENML_REPOSITORY_PATH,
+    REMOTE_FS_PREFIX,
+)
 from zenml.core.constants import ZENML_DIR_NAME
 from zenml.exceptions import InitializationException
 from zenml.io.fileio_registry import default_fileio_registry
@@ -519,6 +524,11 @@ def get_zenml_config_dir(path: Optional[str] = None) -> str:
         InitializationException if directory not found until root of OS.
     """
     return os.path.join(get_zenml_dir(path), ZENML_DIR_NAME)
+
+
+def get_global_config_directory() -> str:
+    """Returns the global config directory for ZenML."""
+    return click.get_app_dir(APP_NAME)
 
 
 def convert_to_str(path: PathType) -> str:

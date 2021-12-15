@@ -17,11 +17,11 @@ import sys
 from typing import Optional
 
 import click
-import git
 
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.core.repo import Repository
+from zenml.exceptions import InitializationException
 from zenml.utils.analytics_utils import INITIALIZE_REPO, track
 
 
@@ -52,15 +52,9 @@ def init(
     declare(f"Initializing at {repo_path}")
 
     try:
-        Repository.init_repo(repo_path=repo_path)
+        Repository.init_repo(path=repo_path)
         declare(f"ZenML repo initialized at {repo_path}")
-    except git.InvalidGitRepositoryError:  # type: ignore[attr-defined]
-        error(
-            f"{repo_path} is not a valid git repository! Please "
-            f"initialize ZenML within a git repository using "
-            f"`git init `"
-        )
-    except AssertionError as e:
+    except InitializationException as e:
         error(f"{e}")
 
 

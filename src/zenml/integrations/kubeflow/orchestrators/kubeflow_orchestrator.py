@@ -17,13 +17,11 @@ import sys
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 
-import click
 import kfp
 import tfx.orchestration.pipeline as tfx_pipeline
 import urllib3
 from kubernetes import config
 
-from zenml.constants import APP_NAME
 from zenml.core.component_factory import orchestrator_store_factory
 from zenml.core.repo import Repository
 from zenml.enums import OrchestratorTypes
@@ -67,7 +65,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Returns path to the root directory for all files concerning
         this orchestrator."""
         return os.path.join(
-            click.get_app_dir(APP_NAME), "kubeflow", str(self.uuid)
+            fileio.get_global_config_directory(), "kubeflow", str(self.uuid)
         )
 
     @property

@@ -15,10 +15,8 @@
 from typing import Any
 from uuid import UUID, uuid4
 
-import click
 from pydantic import Field
 
-from zenml import constants
 from zenml.config.constants import GLOBAL_CONFIG_NAME
 from zenml.core.base_component import BaseComponent
 from zenml.io import fileio
@@ -51,9 +49,7 @@ class GlobalConfig(BaseComponent):
 
     def get_serialization_dir(self) -> str:
         """Gets the global config dir for installed package."""
-        # using a version-pinned folder avoids conflicts when
-        #  upgrading zenml versions.
-        return click.get_app_dir(constants.APP_NAME)
+        return fileio.get_global_config_directory()
 
     def get_serialization_file_name(self) -> str:
         """Gets the global config dir for installed package."""
