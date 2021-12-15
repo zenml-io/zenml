@@ -22,13 +22,11 @@ Note: This requires Kubeflow Pipelines SDK to be installed.
 """
 from typing import Dict, List, Set
 
-from absl import logging
 from google.protobuf import json_format
 from kfp import dsl
 from kubernetes import client as k8s_client
 from tfx.dsl.components.base import base_node as tfx_base_node
 from tfx.orchestration import data_types
-from tfx.orchestration import pipeline as tfx_pipeline
 from tfx.proto.orchestration import pipeline_pb2
 
 from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
@@ -37,9 +35,11 @@ from zenml.core.repo import Repository
 from zenml.integrations.kubeflow.orchestrators import kubeflow_utils as utils
 from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
 
-_COMMAND = ["python", "-m", "zenml.integrations.kubeflow.container_entrypoint"]
-
-_WORKFLOW_ID_KEY = "WORKFLOW_ID"
+CONTAINER_ENTRYPOINT_COMMAND = [
+    "python",
+    "-m",
+    "zenml.integrations.kubeflow.container_entrypoint",
+]
 
 
 def _encode_runtime_parameter(param: data_types.RuntimeParameter) -> str:
@@ -65,7 +65,6 @@ class KubeflowComponent:
         self,
         component: tfx_base_node.BaseNode,
         depends_on: Set[dsl.ContainerOp],
-        pipeline: tfx_pipeline.Pipeline,
         image: str,
         tfx_ir: pipeline_pb2.Pipeline,  # type: ignore[valid-type]
         pod_labels_to_attach: Dict[str, str],
@@ -81,7 +80,6 @@ class KubeflowComponent:
           component: The logical TFX component to wrap.
           depends_on: The set of upstream KFP ContainerOp components that this
             component will depend on.
-          pipeline: The logical TFX pipeline to which this component belongs.
           image: The container image to use for this component.
           tfx_ir: The TFX intermedia representation of the pipeline.
           pod_labels_to_attach: Dict of pod labels to attach to the GKE pod.
@@ -133,7 +131,7 @@ class KubeflowComponent:
 
         self.container_op = dsl.ContainerOp(
             name=component.id,
-            command=_COMMAND,
+            command=CONTAINER_ENTRYPOINT_COMMAND,
             image=image,
             arguments=arguments,
             output_artifact_paths={
@@ -142,37 +140,8 @@ class KubeflowComponent:
             pvolumes=volumes,
         )
 
-        logging.info(
-            "Adding upstream dependencies for component %s",
-            self.container_op.name,
-        )
         for op in depends_on:
-            logging.info("   ->  Component: %s", op.name)
             self.container_op.after(op)
-
-        # TODO(b/140172100): Document the use of additional_pipeline_args.
-        if _WORKFLOW_ID_KEY in pipeline.additional_pipeline_args:
-            # Allow overriding pipeline's run_id externally, primarily for testing.
-            self.container_op.container.add_env_variable(
-                k8s_client.V1EnvVar(
-                    name=_WORKFLOW_ID_KEY,
-                    value=pipeline.additional_pipeline_args[_WORKFLOW_ID_KEY],
-                )
-            )
-        else:
-            # Add the Argo workflow ID to the container's environment variable so it
-            # can be used to uniquely place pipeline outputs under the pipeline_root.
-            field_path = "metadata.labels['workflows.argoproj.io/workflow']"
-            self.container_op.container.add_env_variable(
-                k8s_client.V1EnvVar(
-                    name=_WORKFLOW_ID_KEY,
-                    value_from=k8s_client.V1EnvVarSource(
-                        field_ref=k8s_client.V1ObjectFieldSelector(
-                            field_path=field_path
-                        )
-                    ),
-                )
-            )
 
         self.container_op.container.add_env_variable(
             k8s_client.V1EnvVar(
@@ -180,6 +149,5 @@ class KubeflowComponent:
             )
         )
 
-        if pod_labels_to_attach:
-            for k, v in pod_labels_to_attach.items():
-                self.container_op.add_pod_label(k, v)
+        for k, v in pod_labels_to_attach.items():
+            self.container_op.add_pod_label(k, v)

@@ -91,7 +91,7 @@ def _mount_config_map_op(config_map_name: str) -> OpFunc:
     """
 
     def mount_config_map(container_op: dsl.ContainerOp) -> None:
-        """Mounts all key-value pairs found in the named Kubernetes ConfigMap."""
+        """Mounts all key-value pairs found in the Kubernetes ConfigMap."""
         config_map_ref = k8s_client.V1ConfigMapEnvSource(
             name=config_map_name, optional=True
         )
@@ -237,10 +237,9 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
             str, List[data_types.RuntimeParameter]
         ] = collections.defaultdict(list)
         self._deduped_parameter_names: Set[str] = set()
-        if pod_labels_to_attach is None:
-            self._pod_labels_to_attach = get_default_pod_labels()
-        else:
-            self._pod_labels_to_attach = pod_labels_to_attach
+        self._pod_labels_to_attach = (
+            pod_labels_to_attach or get_default_pod_labels()
+        )
 
     def _parse_parameter_from_component(
         self, component: tfx_base_component.BaseComponent
@@ -266,11 +265,6 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
             self._params_by_component_id[component.id].append(parameter)
             if parameter.name not in self._deduped_parameter_names:
                 self._deduped_parameter_names.add(parameter.name)
-                # TODO(b/178436919): Create a test to cover default value rendering
-                # and move the external code reference over there.
-                # The default needs to be serialized then passed to dsl.PipelineParam.
-                # See
-                # https://github.com/kubeflow/pipelines/blob/f65391309650fdc967586529e79af178241b4c2c/sdk/python/kfp/dsl/_pipeline_param.py#L154
                 dsl_parameter = dsl.PipelineParam(
                     name=parameter.name, value=str(parameter.default)
                 )
@@ -295,11 +289,12 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
         component_to_kfp_op: Dict[base_node.BaseNode, dsl.ContainerOp] = {}
         tfx_ir = self._generate_tfx_ir(pipeline)
 
-        # Assumption: There is a partial ordering of components in the list, i.e.,
-        # if component A depends on component B and C, then A appears after B and C
-        # in the list.
+        # Assumption: There is a partial ordering of components in the list,
+        # i.e. if component A depends on component B and C, then A appears
+        # after B and C in the list.
         for component in pipeline.components:
-            # Keep track of the set of upstream dsl.ContainerOps for this component.
+            # Keep track of the set of upstream dsl.ContainerOps for this
+            # component.
             depends_on = set()
 
             for upstream_component in component.upstream_nodes:
@@ -324,7 +319,6 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
                 step_function_name=component.id,
                 component=component,
                 depends_on=depends_on,
-                pipeline=pipeline,
                 image=self._kubeflow_config.image,
                 pod_labels_to_attach=self._pod_labels_to_attach,
                 tfx_ir=tfx_node_ir,
@@ -392,14 +386,12 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
                 )
 
         def _construct_pipeline() -> None:
-            """Constructs a Kubeflow pipeline.
-            Creates Kubeflow ContainerOps for each TFX component encountered in the
-            logical pipeline definition.
-            """
+            """Creates Kubeflow ContainerOps for each TFX component
+            encountered in the pipeline definition."""
             self._construct_pipeline_graph(pipeline)
 
-        # Need to run this first to get self._params populated. Then KFP compiler
-        # can correctly match default value with PipelineParam.
+        # Need to run this first to get self._params populated. Then KFP
+        # compiler can correctly match default value with PipelineParam.
         self._parse_parameter_from_pipeline(pipeline)
         # Create workflow spec and write out to package.
         self._compiler._create_and_write_workflow(
