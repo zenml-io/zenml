@@ -115,7 +115,7 @@ def pretty_print(obj: Any) -> None:
     click.echo(str(obj))
 
 
-def print_table(obj: List[Dict[str, Any]]) -> None:
+def print_table(obj: List[Dict[str, Any[str, object]]]) -> None:
     """Echoes the list of dicts in a table format. The input object should be a
     List of Dicts. Each item in that list represent a line in the Table. Each
     dict should have the same keys. The keys of the dict will be used as
