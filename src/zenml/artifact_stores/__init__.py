@@ -24,3 +24,8 @@ the ``integrations`` module. For example, the ``GCPArtifactStore``, used when
 running ZenML on Google Cloud Platform, is defined in
 ``integrations.gcp.artifact_stores``.
 """
+
+from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
+
+__all__ = ["BaseArtifactStore", "LocalArtifactStore"]

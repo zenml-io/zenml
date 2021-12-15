@@ -29,7 +29,7 @@ from tfx.dsl.components.base import base_node as tfx_base_node
 from tfx.orchestration import data_types
 from tfx.proto.orchestration import pipeline_pb2
 
-from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
+from zenml.artifact_stores import LocalArtifactStore
 from zenml.constants import ENV_ZENML_PREVENT_PIPELINE_EXECUTION
 from zenml.core.repo import Repository
 from zenml.integrations.kubeflow.orchestrators import kubeflow_utils as utils

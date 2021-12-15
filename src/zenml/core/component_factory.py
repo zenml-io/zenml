@@ -14,7 +14,7 @@
 """Factory to register all components."""
 from typing import Callable, Dict, Type
 
-from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
+from zenml.artifact_stores import LocalArtifactStore
 from zenml.core.base_component import BaseComponent
 from zenml.enums import ArtifactStoreTypes, MLMetadataTypes, OrchestratorTypes
 from zenml.logger import get_logger

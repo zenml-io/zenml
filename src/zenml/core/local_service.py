@@ -18,7 +18,7 @@ from zenml.utils.analytics_utils import (
 )
 
 if TYPE_CHECKING:
-    from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+    from zenml.artifact_stores import BaseArtifactStore
     from zenml.container_registry.base_container_registry import (
         BaseContainerRegistry,
     )
@@ -62,7 +62,7 @@ class LocalService(BaseComponent):
     @property
     def artifact_stores(self) -> Dict[str, "BaseArtifactStore"]:
         """Returns all registered artifact stores."""
-        from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+        from zenml.artifact_stores import BaseArtifactStore
 
         return mapping_utils.get_components_from_store(  # type: ignore[return-value] # noqa
             BaseArtifactStore._ARTIFACT_STORE_DIR_NAME, self.artifact_store_map

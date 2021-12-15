@@ -14,7 +14,7 @@
 
 from pydantic import validator
 
-from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+from zenml.artifact_stores import BaseArtifactStore
 from zenml.constants import REMOTE_FS_PREFIX
 
 

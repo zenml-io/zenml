@@ -5,7 +5,7 @@ from pydantic import BaseSettings
 from zenml.enums import StackTypes
 
 if TYPE_CHECKING:
-    from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+    from zenml.artifact_stores import BaseArtifactStore
     from zenml.container_registry.base_container_registry import (
         BaseContainerRegistry,
     )
