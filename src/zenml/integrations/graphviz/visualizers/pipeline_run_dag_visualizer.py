@@ -20,9 +20,7 @@ import graphviz
 
 from zenml.logger import get_logger
 from zenml.post_execution.pipeline_run import PipelineRunView
-from zenml.visualizers.base_pipeline_run_visualizer import (
-    BasePipelineRunVisualizer,
-)
+from zenml.visualizers import BasePipelineRunVisualizer
 
 logger = get_logger(__name__)
 
