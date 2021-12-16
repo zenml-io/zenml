@@ -42,8 +42,7 @@ import numpy as np
 import tensorflow as tf
 
 from zenml.pipelines import pipeline
-from zenml.steps import step
-from zenml.steps.step_output import Output
+from zenml.steps import step, Output
 
 
 @step

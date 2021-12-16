@@ -20,8 +20,7 @@ For this we decide to add two steps, a `trainer` and an `evaluator` step. We als
 import numpy as np
 import tensorflow as tf
 
-from zenml.steps import step
-from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps import step, BaseStepConfig
 
 class TrainerConfig(BaseStepConfig):
     """Trainer params"""

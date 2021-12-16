@@ -113,7 +113,7 @@ We have some built-in ways to serialize and deserialize the data flowing between
 When we think about steps as functions, we know they receive input in the form of artifacts. We also know that they produce output (also in the form of artifacts, stored in the artifact store). But steps also take parameters. The parameters that you pass into the steps are also (helpfully!) stored in the metadata store. This helps freeze the iterations of your experimentation workflow in time so you can return to them exactly as you ran them. Parameters can be passed in as a subclass of `BaseStepConfig` like so:
 
 ```python
-from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps import BaseStepConfig
 
 class MyStepConfig(BaseStepConfig):
     basic_param_1: int = 1

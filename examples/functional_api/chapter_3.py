@@ -17,9 +17,7 @@ import tensorflow as tf
 
 from zenml.core.repo import Repository
 from zenml.pipelines import pipeline
-from zenml.steps import step
-from zenml.steps.base_step_config import BaseStepConfig
-from zenml.steps.step_output import Output
+from zenml.steps import step, BaseStepConfig, Output
 
 
 class TrainerConfig(BaseStepConfig):

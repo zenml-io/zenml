@@ -10,9 +10,7 @@ Sometimes you don't want to flexibly adjust parameters when you run your pipelin
 import tensorflow as tf
 
 from zenml.pipelines import pipeline
-from zenml.steps import step
-from zenml.steps.step_output import Output
-from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps import step, Output, BaseStepConfig
 
 @step
 def importer_func() -> Output(

@@ -13,8 +13,7 @@ The first thing to do is to load our data. We create a step that can load data f
 ```python
 import numpy as np
 import tensorflow as tf
-from zenml.steps import step
-from zenml.steps.step_output import Output
+from zenml.steps import step, Output
 
 @step
 def importer_mnist() -> Output(

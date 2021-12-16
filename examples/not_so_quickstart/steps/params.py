@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 
-from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps import BaseStepConfig
 
 
 class TrainerConfig(BaseStepConfig):

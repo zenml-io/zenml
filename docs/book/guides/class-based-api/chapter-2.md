@@ -25,7 +25,7 @@ from zenml.steps.step_interfaces.base_split_step import (
     BaseSplitStep,
     BaseSplitStepConfig,
 )
-from zenml.steps.step_output import Output
+from zenml.steps import Output
 
 
 class SklearnSplitterConfig(BaseSplitStepConfig):

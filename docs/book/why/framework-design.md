@@ -108,7 +108,7 @@ The reason is that ZenML needs to distinguish between `Artifacts` (i.e. data out
 The way ZenML solves this is by bundling the params in a special class and passing them in like so:
 
 ```python
-from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps import BaseStepConfig
 
 class Config(BaseStepConfig):
   add_amount: int = 1  # set a default
