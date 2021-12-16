@@ -1,6 +1,7 @@
 # ZenML Docs
 
-ZenML is an extensible, open-source MLOps framework for creating production-ready Machine Learning pipelines - in a simple way.
+ZenML is an extensible, open-source MLOps framework for creating production-ready Machine Learning pipelines - in a 
+simple way.
 
 ## Usage
 
@@ -30,19 +31,23 @@ If you'd like to generate a local build of the Sphinx API docs, you should:
 
 ### Hosting the book
 
-The html version of the docs is hosted on the `gh-pages` branch of this repo. A GitHub actions workflow has been created that automatically builds and pushes the book to this branch on a push or pull request to main.
+The html version of the docs is hosted on the `gh-pages` branch of this repo. A GitHub actions workflow has been 
+created that automatically builds and pushes the book to this branch on a push or pull request to main.
 
 If you wish to disable this automation, you may remove the GitHub actions workflow and build the book manually by:
 
 - Navigating to your local build; and running,
 - `ghp-import -n -p -f book/_build/html`
 
-This will automatically push your build to the `gh-pages` branch. More information on this hosting process can be found [here](https://galdin.dev/blog/publishing-gitbook-to-github-pages/).
+This will automatically push your build to the `gh-pages` branch. More information on this hosting process can be 
+found [here](https://galdin.dev/blog/publishing-gitbook-to-github-pages/).
 
 ## Contributors
 
-We welcome and recognize all contributions. You can see a list of current contributors in the [contributors tab](https://github.com/zenml-io/zenml/graphs/contributors).
+We welcome and recognize all contributions. You can see a list of current contributors in the 
+[contributors tab](https://github.com/zenml-io/zenml/graphs/contributors).
 
 ## Credits
 
-This project is created using the excellent open source [Jupyter Book project](https://jupyterbook.org/) and the [executablebooks/cookiecutter-jupyter-book template](https://github.com/executablebooks/cookiecutter-jupyter-book).
+This project is created using the excellent open source [Jupyter Book project](https://jupyterbook.org/) and the 
+[executablebooks/cookiecutter-jupyter-book template](https://github.com/executablebooks/cookiecutter-jupyter-book).
