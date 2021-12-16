@@ -22,8 +22,8 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 import gcsfs
 from tfx.dsl.io.fileio import NotFoundError
 
-from zenml.io.filesystem import Filesystem, PathType
 from zenml.io.fileio import convert_to_str
+from zenml.io.filesystem import Filesystem, PathType
 
 
 class ZenGCS(Filesystem):
