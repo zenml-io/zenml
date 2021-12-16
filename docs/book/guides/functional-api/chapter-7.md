@@ -35,7 +35,7 @@ zenml integration install kubeflow
 
 ### Create a local Kubeflow Pipelines Stack
 
-A [Stack](../../core-concepts.md) is the configuration of the surrounding infrastructure where ZenML pipelines are run and managed. For now, a `Stack` consists of:
+A [Stack](../../introduction/core-concepts.md) is the configuration of the surrounding infrastructure where ZenML pipelines are run and managed. For now, a `Stack` consists of:
 
 * A metadata store: To store metadata like parameters and artifact URIs
 * An artifact store: To store interim data step output.

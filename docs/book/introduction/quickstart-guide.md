@@ -35,7 +35,7 @@ Now, the setup is completed. For the next steps, just make sure that you are exe
 
 In the code that follows, you can see that we are defining the various steps of our pipeline. Each step is decorated with `@step`, the main low-level abstraction that is currently available for creating pipeline steps.
 
-![Quickstart steps](assets/quickstart-diagram.png)
+![Quickstart steps](../assets/quickstart-diagram.png)
 
 ```python
 import numpy as np
