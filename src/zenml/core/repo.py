@@ -26,7 +26,7 @@ from zenml.exceptions import InitializationException
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.post_execution.pipeline import PipelineView
-from zenml.stacks.base_stack import BaseStack
+from zenml.stacks import BaseStack
 from zenml.utils.analytics_utils import GET_PIPELINES, SET_STACK, track
 
 logger = get_logger(__name__)

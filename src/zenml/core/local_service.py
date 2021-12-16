@@ -6,7 +6,7 @@ from zenml.core.base_component import BaseComponent
 from zenml.core.mapping_utils import UUIDSourceTuple
 from zenml.exceptions import AlreadyExistsException, DoesNotExistException
 from zenml.logger import get_logger
-from zenml.stacks.base_stack import BaseStack
+from zenml.stacks import BaseStack
 from zenml.utils import source_utils
 from zenml.utils.analytics_utils import (
     REGISTERED_ARTIFACT_STORE,

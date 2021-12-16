@@ -23,7 +23,7 @@ from zenml.exceptions import AlreadyExistsException, DoesNotExistException
 from zenml.metadata import BaseMetadataStore
 from zenml.metadata.sqlite_metadata_store import SQLiteMetadataStore
 from zenml.orchestrators import BaseOrchestrator, LocalOrchestrator
-from zenml.stacks.base_stack import BaseStack
+from zenml.stacks import BaseStack
 
 LOCAL_STACK_NAME = "local_stack"
 LOCAL_ORCHESTRATOR_NAME = "local_orchestrator"
