@@ -107,10 +107,8 @@ class Repository:
             from zenml.artifact_stores.local_artifact_store import (
                 LocalArtifactStore,
             )
-            from zenml.metadata.sqlite_metadata_store import SQLiteMetadataStore
-            from zenml.orchestrators.local.local_orchestrator import (
-                LocalOrchestrator,
-            )
+            from zenml.metadata_stores import SQLiteMetadataStore
+            from zenml.orchestrators import LocalOrchestrator
 
             service = LocalService()
 

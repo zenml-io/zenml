@@ -15,7 +15,7 @@
 from ml_metadata.proto import metadata_store_pb2
 from tfx.orchestration import metadata
 
-from zenml.metadata import BaseMetadataStore
+from zenml.metadata_stores import BaseMetadataStore
 
 
 class MySQLMetadataStore(BaseMetadataStore):

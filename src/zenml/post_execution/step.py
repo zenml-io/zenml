@@ -18,7 +18,7 @@ from zenml.enums import ExecutionStatus
 from zenml.post_execution.artifact import ArtifactView
 
 if TYPE_CHECKING:
-    from zenml.metadata import BaseMetadataStore
+    from zenml.metadata_stores import BaseMetadataStore
 
 
 class StepView:

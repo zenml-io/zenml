@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Any, List
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    from zenml.metadata import BaseMetadataStore
+    from zenml.metadata_stores import BaseMetadataStore
     from zenml.post_execution.pipeline_run import PipelineRunView
 
 logger = get_logger(__name__)

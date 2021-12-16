@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from zenml.container_registry.base_container_registry import (
         BaseContainerRegistry,
     )
-    from zenml.metadata import BaseMetadataStore
+    from zenml.metadata_stores import BaseMetadataStore
     from zenml.orchestrators import BaseOrchestrator
 
 

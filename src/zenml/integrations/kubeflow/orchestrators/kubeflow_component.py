@@ -33,7 +33,7 @@ from zenml.artifact_stores import LocalArtifactStore
 from zenml.constants import ENV_ZENML_PREVENT_PIPELINE_EXECUTION
 from zenml.core.repo import Repository
 from zenml.integrations.kubeflow.orchestrators import kubeflow_utils as utils
-from zenml.metadata.sqlite_metadata_store import SQLiteMetadataStore
+from zenml.metadata_stores import SQLiteMetadataStore
 
 CONTAINER_ENTRYPOINT_COMMAND = [
     "python",
