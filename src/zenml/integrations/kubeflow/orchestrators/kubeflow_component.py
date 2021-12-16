@@ -20,12 +20,13 @@ components, thus ensuring that both types of pipeline definitions are
 compatible.
 Note: This requires Kubeflow Pipelines SDK to be installed.
 """
+import json
 from typing import Dict, List, Set
 
 from google.protobuf import json_format
 from kfp import dsl
 from kubernetes import client as k8s_client
-from tfx.dsl.components.base import base_node as tfx_base_node
+from tfx.dsl.components.base import base_component as tfx_base_component
 from tfx.orchestration import data_types
 from tfx.proto.orchestration import pipeline_pb2
 
@@ -34,6 +35,7 @@ from zenml.constants import ENV_ZENML_PREVENT_PIPELINE_EXECUTION
 from zenml.core.repo import Repository
 from zenml.integrations.kubeflow.orchestrators import kubeflow_utils as utils
 from zenml.metadata_stores import SQLiteMetadataStore
+from zenml.utils import source_utils
 
 CONTAINER_ENTRYPOINT_COMMAND = [
     "python",
@@ -54,6 +56,23 @@ def _encode_runtime_parameter(param: data_types.RuntimeParameter) -> str:
     return f"{param.name}={type_str}:{str(dsl.PipelineParam(name=param.name))}"
 
 
+def _get_input_artifact_type_mapping(
+    step_component: tfx_base_component.BaseComponent,
+) -> Dict[str, str]:
+    """Gets artifact classes for each component input.
+
+    Args:
+        step_component: The component for which the mapping should be created.
+
+    Returns:
+        A dictionary mapping component input names to resolved artifact classes.
+    """
+    return {
+        input_name: source_utils.resolve_class(channel.type)
+        for input_name, channel in step_component.spec.inputs.items()
+    }
+
+
 class KubeflowComponent:
     """Base component for all Kubeflow pipelines TFX components.
     Returns a wrapper around a KFP DSL ContainerOp class, and adds named output
@@ -63,7 +82,7 @@ class KubeflowComponent:
 
     def __init__(
         self,
-        component: tfx_base_node.BaseNode,
+        component: tfx_base_component.BaseComponent,
         depends_on: Set[dsl.ContainerOp],
         image: str,
         tfx_ir: pipeline_pb2.Pipeline,  # type: ignore[valid-type]
@@ -88,6 +107,9 @@ class KubeflowComponent:
         """
 
         utils.replace_placeholder(component)
+        input_artifact_type_mapping = _get_input_artifact_type_mapping(
+            component
+        )
 
         arguments = [
             "--node_id",
@@ -100,6 +122,8 @@ class KubeflowComponent:
             step_module,
             "--step_function_name",
             step_function_name,
+            "--input_artifact_types",
+            json.dumps(input_artifact_type_mapping),
             "--run_name",
             "{{workflow.annotations.pipelines.kubeflow.org/run_name}}",
         ]

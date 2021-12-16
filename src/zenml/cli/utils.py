@@ -108,7 +108,7 @@ def print_table(obj: List[Dict[str, Any]]) -> None:
     headers of the resulting table.
 
     Args:
-      obj: An List containing dictionaries.
+      obj: A List containing dictionaries.
     """
     click.echo(tabulate(obj, headers="keys"))
 
