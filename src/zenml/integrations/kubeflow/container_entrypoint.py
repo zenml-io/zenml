@@ -41,6 +41,7 @@ from zenml.artifacts.type_registery import type_registry
 from zenml.core.repo import Repository
 from zenml.integrations.kubeflow.metadata import KubeflowMetadataStore
 from zenml.integrations.registry import integration_registry
+from zenml.orchestrators.utils import execute_tfx_component
 from zenml.steps.utils import generate_component_class
 
 
@@ -496,9 +497,7 @@ def main() -> None:
         custom_driver_spec=custom_driver_spec,
         custom_executor_operators=custom_executor_operators,
     )
-    logging.info("Component %s is running.", node_id)
-    execution_info = component_launcher.launch()
-    logging.info("Component %s is finished.", node_id)
+    execution_info = execute_tfx_component(component_launcher)
 
     if execution_info:
         _dump_ui_metadata(pipeline_node, execution_info, args.metadata_ui_path)

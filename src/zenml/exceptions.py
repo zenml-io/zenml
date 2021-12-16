@@ -156,3 +156,14 @@ class MissingStepParameterError(Exception):
 
 class IntegrationError(Exception):
     """Raises exceptions when a requested integration can not be activated."""
+
+
+class DuplicateRunNameError(RuntimeError):
+    """Raises exception when a run with the same name already exists."""
+
+    def __init__(
+        self,
+        message: str = "Unable to run a pipeline with a run name that "
+        "already exists.",
+    ):
+        super().__init__(message)
