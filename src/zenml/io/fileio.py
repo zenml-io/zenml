@@ -21,7 +21,6 @@ from tfx.dsl.io.filesystem import Filesystem, PathType
 
 from zenml.constants import REMOTE_FS_PREFIX
 from zenml.io.fileio_registry import default_fileio_registry
-from zenml.io.utils import convert_to_str
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -329,3 +328,11 @@ def get_parent(dir_path: str) -> str:
         Parent (stem) of the dir as a string.
     """
     return Path(dir_path).stem
+
+
+def convert_to_str(path: PathType) -> str:
+    """Converts a PathType to a str using UTF-8."""
+    if isinstance(path, str):
+        return path
+    else:
+        return path.decode("utf-8")

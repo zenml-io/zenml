@@ -3,8 +3,6 @@ import tarfile
 from pathlib import Path
 from typing import Callable, Optional
 
-from tfx.dsl.io.filesystem import PathType
-
 from zenml.constants import ENV_ZENML_REPOSITORY_PATH
 from zenml.core.constants import ZENML_DIR_NAME
 from zenml.exceptions import InitializationException
@@ -73,14 +71,6 @@ def is_zenml_dir(path: str) -> bool:
     """
     config_dir_path = os.path.join(path, ZENML_DIR_NAME)
     return bool(is_dir(config_dir_path))
-
-
-def convert_to_str(path: PathType) -> str:
-    """Converts a PathType to a str using UTF-8."""
-    if isinstance(path, str):
-        return path
-    else:
-        return path.decode("utf-8")
 
 
 def get_zenml_config_dir(path: Optional[str] = None) -> str:
