@@ -4,11 +4,13 @@ description: Reading from a continuously changing datasource
 
 # Import dynamic data
 
-If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low\_level\_guide/chapter\_6.py).
+If you want to see the code for this chapter of the guide, head over to the 
+[GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low\_level\_guide/chapter\_6.py).
 
 ## Import data from a dynamic data source
 
-Until now, we've been reading from a static data importer step because we are at the experimentation phase of the ML workflow. Now as we head towards production, we want to switch over to a non-static, dynamic data importer step:
+Until now, we've been reading from a static data importer step because we are at the experimentation phase of the ML 
+workflow. Now as we head towards production, we want to switch over to a non-static, dynamic data importer step:
 
 This could be anything like:
 
@@ -18,7 +20,9 @@ This could be anything like:
 
 ### Read from a dynamic datasource
 
-Let's also slightly change our pipeline to add our new step. For this guide, we have set up a Mock API that simulates a real world setting of reading from an external API. The data in the API is just MNIST data but new data is added every day, and we query the new data each time the pipeline runs.
+Let's also slightly change our pipeline to add our new step. For this guide, we have set up a Mock API that simulates 
+a real world setting of reading from an external API. The data in the API is just MNIST data but new data is added 
+every day, and we query the new data each time the pipeline runs.
 
 ```python
 import numpy as np
@@ -80,7 +84,8 @@ python chapter_6.py
 
 ### Inspect
 
-Even if our data originally lives in an external API, we have now downloaded it and versioned locally as we ran this pipeline. So we can fetch it and inspect it:
+Even if our data originally lives in an external API, we have now downloaded it and versioned locally as we ran 
+this pipeline. So we can fetch it and inspect it:
 
 ```python
 from zenml.core.repo import Repository
@@ -103,5 +108,6 @@ We scored an accuracy of 0.72 on the latest run!
 Now we are loading data dynamically from a continously changing data source!
 
 {% hint style="info" %}
-In the near future, ZenML will help you automatically detect drift and schema changes across pipeline runs, to make your pipelines even more robust! Keep an eye out on this space and future releases!
+In the near future, ZenML will help you automatically detect drift and schema changes across pipeline runs, to make 
+your pipelines even more robust! Keep an eye out on this space and future releases!
 {% endhint %}

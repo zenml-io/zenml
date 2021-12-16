@@ -14,7 +14,8 @@ Please note that we only support Python >= 3.6 <3.9, so please adjust your pip a
 
 ## Virtual Environment
 
-We highly encourage you to install **ZenML** in a virtual environment. We like to use [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to manage our Python virtual environments.
+We highly encourage you to install **ZenML** in a virtual environment. We like to use 
+[virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to manage our Python virtual environments.
 
 ## Install with pip
 
@@ -24,7 +25,8 @@ When you're set with your environment, run:
 pip install zenml
 ```
 
-Alternatively, if you’re feeling brave, feel free to install the bleeding edge: **NOTE:** Do so at your own risk; no guarantees given!
+Alternatively, if you’re feeling brave, feel free to install the bleeding edge: **NOTE:** Do so at your own risk; 
+no guarantees given!
 
 ```bash
 pip install git+https://github.com/zenml-io/zenml.git@main --upgrade
@@ -45,7 +47,7 @@ import zenml
 print(zenml.__version__)
 ```
 
-If you would like to learn more about the current release, please visit our [PyPi package page.](https://pypi.org/project/zenml)
+If you would like to learn more about the current release, please visit our[PyPi package page.](https://pypi.org/project/zenml)
 
 ## Enabling auto-completion on the CLI
 

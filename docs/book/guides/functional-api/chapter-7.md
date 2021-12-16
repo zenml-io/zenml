@@ -4,25 +4,29 @@ description: Deploy pipelines to production
 
 # Deploy to production
 
-If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low\_level\_guide/chapter\_7.py).
+If you want to see the code for this chapter of the guide, head over to the 
+[GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low\_level\_guide/chapter\_7.py).
 
 You can also watch a tutorial video of a Kubeflow stack based example [here](https://www.youtube.com/watch?v=b5TXRYkdL3w).
 
 ## Deploy pipelines to production
 
-When developing ML models, you probably develop your pipelines on your local machine initially as this allows for quicker iteration and debugging.
-However, at a certain point when you are finished with its design, you might want to transition to a more production-ready setting and deploy the pipeline to a more robust environment.
+When developing ML models, you probably develop your pipelines on your local machine initially as this allows for 
+quicker iteration and debugging. However, at a certain point when you are finished with its design, you might want 
+to transition to a more production-ready setting and deploy the pipeline to a more robust environment.
 
 ### Pre-requisites
 
-In order to run this example, we have to install a few tools that allow ZenML to spin up a local Kubeflow Pipelines setup:
+In order to run this example, we have to install a few tools that allow ZenML to spin up a local Kubeflow 
+Pipelines setup:
 
 * [K3D](https://k3d.io/v5.2.1/#installation) to spin up a local Kubernetes cluster
 * The Kubernetes command-line tool [Kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) to deploy Kubeflow Pipelines
 * [Docker](https://docs.docker.com/get-docker/) to build Docker images that run your pipeline in Kubernetes pods
 
 {% hint style="warning" %}
-The local Kubeflow Pipelines deployment requires more than 2 GB of RAM, so if you're using Docker Desktop make sure to update the resource limits in the preferences.
+The local Kubeflow Pipelines deployment requires more than 2 GB of RAM, so if you're using Docker Desktop make sure 
+to update the resource limits in the preferences.
 {% endhint %}
 
 ### Installation
@@ -35,14 +39,16 @@ zenml integration install kubeflow
 
 ### Create a local Kubeflow Pipelines Stack
 
-A [Stack](../../introduction/core-concepts.md) is the configuration of the surrounding infrastructure where ZenML pipelines are run and managed. For now, a `Stack` consists of:
+A [Stack](../../introduction/core-concepts.md) is the configuration of the surrounding infrastructure where ZenML 
+pipelines are run and managed. For now, a `Stack` consists of:
 
 * A metadata store: To store metadata like parameters and artifact URIs
 * An artifact store: To store interim data step output.
 * An orchestrator: A service that actually kicks off and runs each step of the pipeline.
 * An optional container registry: To store Docker images that are created to run your pipeline.
 
-When you did `zenml init` at the start of this guide, a default `local_stack` was created with local version of all of these. In order to see the stack you can check it out in the command line:
+When you did `zenml init` at the start of this guide, a default `local_stack` was created with local version of 
+all of these. In order to see the stack you can check it out in the command line:
 
 ```bash
 zenml stack list
@@ -59,7 +65,8 @@ local_stack           base          local_metadata_store   local_artifact_store 
 
 ![Your local stack when you start](../../assets/localstack%20(2).png)
 
-Let's stick with the `local_metadata_store` and a `local_artifact_store` for now and create a stack with a Kubeflow orchestrator and a local container registry.
+Let's stick with the `local_metadata_store` and a `local_artifact_store` for now and create a stack with a Kubeflow 
+orchestrator and a local container registry.
 
 ```bash
 # Make sure to create the local registry on port 5000 for it to work 
@@ -87,7 +94,9 @@ Active stack: local_kubeflow_stack
 ![Your stack with a Kubeflow Pipelines Orchestrator](../../assets/localstack-with-kubeflow-orchestrator.png)
 
 {% hint style="warning" %}
-In the real world we would also switch to something like a MySQL-based metadata store and an Azure-, GCP-, or S3-based artifact store. We have just skipped that part to keep everything in one machine to make it a bit easier to run this guide.
+In the real world we would also switch to something like a MySQL-based metadata store and an Azure-, GCP-, or S3-based 
+artifact store. We have just skipped that part to keep everything in one machine to make it a bit easier to run 
+this guide.
 {% endhint %}
 
 ### Start up Kubeflow Pipelines locally
@@ -95,12 +104,14 @@ ZenML takes care of setting up and configuring the local Kubeflow Pipelines depl
 ```bash
 zenml stack up
 ```
-When the setup is finished, you should see a local URL which you can access in your browser and take a look at the Kubeflow Pipelines UI.
+When the setup is finished, you should see a local URL which you can access in your browser and take a look at the 
+Kubeflow Pipelines UI.
 
 
 ### Run the pipeline
 
-There is one minor change we need to make to run the pipeline from the previous chapter: we need to specify the Python package requirements that ZenML should install inside the Docker image it creates for you. 
+There is one minor change we need to make to run the pipeline from the previous chapter: we need to specify the Python 
+package requirements that ZenML should install inside the Docker image it creates for you. 
 We do that by passing a file path as a parameter to the `@pipeline` decorator:
 
 ```python
@@ -114,7 +125,8 @@ We can now run the pipeline by simply executing the Python script:
 python chapter_7.py
 ```
 
-Even though the pipeline script is essentially the same, the output will be a lot different from last time. ZenML will detect that `local_kubeflow_stack` is the active stack, and do the following:
+Even though the pipeline script is essentially the same, the output will be a lot different from last time. ZenML will 
+detect that `local_kubeflow_stack` is the active stack, and do the following:
 * Build a docker image containing all the necessary python packages and files
 * Push the docker image to the local container registry
 * Schedule a pipeline run in Kubeflow Pipelines
@@ -130,7 +142,8 @@ zenml stack down
 
 ## Conclusion
 
-If you made it this far, congratulations! You're one step closer to being production-ready with your ML workflows! Here is what we achieved in this entire guide:
+If you made it this far, congratulations! You're one step closer to being production-ready with your ML workflows! Here 
+is what we achieved in this entire guide:
 
 * Experimented locally and built-up a ML pipeline.
 * Transitioned to production by deploying a continuously training pipeline on newly arriving data.

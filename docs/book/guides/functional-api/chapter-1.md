@@ -2,11 +2,14 @@
 description: Create your first step.
 ---
 
-If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/blob/main/examples/functional_api/chapter_1.py).
+If you want to see the code for this chapter of the guide, head over to the 
+[GitHub](https://github.com/zenml-io/zenml/blob/main/examples/functional_api/chapter_1.py).
 
 # Create an importer step to load data
 
-The first thing to do is to load our data. We create a step that can load data from an external source (in this case a [Keras Dataset](https://keras.io/api/datasets/)). This can be done by creating a simple function and decorating it with the `@step` decorator.
+The first thing to do is to load our data. We create a step that can load data from an external source (in this 
+case a [Keras Dataset](https://keras.io/api/datasets/)). This can be done by creating a simple function and 
+decorating it with the `@step` decorator.
 
 ## Create steps
 
@@ -29,8 +32,10 @@ def importer_mnist() -> Output(
 
 There are some things to note:
 
-- As this step has multiple outputs, we need to use the `zenml.steps.step_output.Output` class to indicate the names of each output. If there was only one, we would not need to do this.
-- We could have returned the `tf.keras.datasets.mnist` directly but we wanted to persist the actual data (for caching purposes), rather than the dataset object.
+- As this step has multiple outputs, we need to use the `zenml.steps.step_output.Output` class to indicate the names 
+of each output. If there was only one, we would not need to do this.
+- We could have returned the `tf.keras.datasets.mnist` directly but we wanted to persist the actual data (for 
+caching purposes), rather than the dataset object.
 
 Now we can go ahead and create a pipeline with one step to make sure this step works:
 
@@ -99,4 +104,5 @@ Output 'y_train' is an array with shape: (60000,)
 Output 'X_train' is an array with shape: (60000, 28, 28)
 ```
 
-So now we have successfully confirmed that the data is loaded with the right shape and we can fetch it again from the artifact store.
+So now we have successfully confirmed that the data is loaded with the right shape and we can fetch it again from 
+the artifact store.

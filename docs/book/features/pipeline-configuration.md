@@ -2,7 +2,9 @@
 
 ## Setting step parameters using Config
 
-Sometimes you don't want to flexibly adjust parameters when you run your pipeline. This is where the step configurations come into play. In the following example we want to be able to change the learning rate for each pipeline run. For this we create a `TrainerConfig` that contains all the parameters that concern the trainer step.
+Sometimes you don't want to flexibly adjust parameters when you run your pipeline. This is where the step 
+configurations come into play. In the following example we want to be able to change the learning rate for each 
+pipeline run. For this we create a `TrainerConfig` that contains all the parameters that concern the trainer step.
 
 
 
@@ -52,7 +54,8 @@ pipeline_instance.run()
 
 ## Setting step parameters using a config file
 
-In addition to setting parameters for your pipeline steps in code as seen above, ZenML also allows you to use a configuration [yaml](https://yaml.org) file. This configuration file must follow the following structure:
+In addition to setting parameters for your pipeline steps in code as seen above, ZenML also allows you to use a 
+configuration [yaml](https://yaml.org) file. This configuration file must follow the following structure:
 
 ```yaml
 steps:

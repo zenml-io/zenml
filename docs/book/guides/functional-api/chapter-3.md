@@ -4,7 +4,8 @@ description: Train some models.
 
 # Train & Evaluate
 
-If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low\_level\_guide/chapter\_3.py).
+If you want to see the code for this chapter of the guide, head over to the 
+[GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low\_level\_guide/chapter\_3.py).
 
 ## Train and evaluate the model
 
@@ -12,7 +13,8 @@ Finally we can train and evaluate our model.
 
 ### Create steps
 
-For this we decide to add two steps, a `trainer` and an `evaluator` step. We also keep using TensorFlow to help with these.
+For this we decide to add two steps, a `trainer` and an `evaluator` step. We also keep using TensorFlow to help 
+with these.
 
 #### Trainer
 
@@ -63,8 +65,10 @@ def tf_trainer(
 
 A few things of note:
 
-* This is our first instance of `parameterizing` a step with a `BaseStepConfig`. This allows us to specify some parameters at run-time rather than via data artifacts between steps.
-* This time the trainer returns a `tf.keras.Model`, which ZenML takes care of storing in the artifact store. We will talk about how to 'take over' this storing via `Materializers` in a later [chapter](chapter-5.md).
+* This is our first instance of `parameterizing` a step with a `BaseStepConfig`. This allows us to specify some 
+parameters at run-time rather than via data artifacts between steps.
+* This time the trainer returns a `tf.keras.Model`, which ZenML takes care of storing in the artifact store. We will 
+talk about how to 'take over' this storing via `Materializers` in a later [chapter](chapter-5.md).
 
 #### Evaluator
 
@@ -169,4 +173,5 @@ The first run has 4 steps.
 The `tf_evaluator step` returned an accuracy: 0.9100000262260437
 ```
 
-Wow, we just trained our first model! But have not stopped yet. What if did not want to use TensorFlow? Let's swap out our trainers and evaluators for different libraries.
+Wow, we just trained our first model! But have not stopped yet. What if did not want to use TensorFlow? Let's swap 
+out our trainers and evaluators for different libraries.

@@ -2,17 +2,23 @@
 description: Materialize artifacts as you want.
 ---
 
-If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/blob/main/examples/functional_api/chapter_5.py).
+If you want to see the code for this chapter of the guide, head over to the 
+[GitHub](https://github.com/zenml-io/zenml/blob/main/examples/functional_api/chapter_5.py).
 
 # Materialize artifacts the way you want to consume them
 
-At this point, the precise way that data passes between the steps has been a bit of a mystery to us. There is, of course, a mechanism to serialize and deserialize stuff flowing between steps. We can now take control of this mechanism if we require further control.
+At this point, the precise way that data passes between the steps has been a bit of a mystery to us. There is, of 
+course, a mechanism to serialize and deserialize stuff flowing between steps. We can now take control of this mechanism 
+if we require further control.
 
 ## Create custom materializer
 
-Data that flows through steps is stored in `Artifact Stores`. The logic that governs the reading and writing of data to and from the `Artifact Stores` lives in the `Materializers`.
+Data that flows through steps is stored in `Artifact Stores`. The logic that governs the reading and writing of data 
+to and from the `Artifact Stores` lives in the `Materializers`.
 
-Suppose we wanted to write the output of our `evaluator` step and store it in a SQLite table in the Artifact Store, rather than whatever the default mechanism is to store the float. Well, that should be easy. Let's create a custom materializer:
+Suppose we wanted to write the output of our `evaluator` step and store it in a SQLite table in the Artifact Store, 
+rather than whatever the default mechanism is to store the float. Well, that should be easy. Let's create a 
+custom materializer:
 
 ```python
 import os
@@ -76,13 +82,17 @@ class SQLALchemyMaterializerForSQLite(BaseMaterializer):
 
 We use a bit of [SQLAlchemy](https://www.sqlalchemy.org/) magic to manage the creation of the SQLite tables.
 
-We then implement a custom `BaseMaterializer` and implement the `handle_input` and `handle_return` functions that manage the reading and writing respectively.
+We then implement a custom `BaseMaterializer` and implement the `handle_input` and `handle_return` functions that 
+manage the reading and writing respectively.
 
-Of course this example is still a bit silly, as you don't really want to store evaluator results this way. But you can imagine many other use-cases where you would like to materialize data in different ways depending on your use-case and needs.
+Of course this example is still a bit silly, as you don't really want to store evaluator results this way. But you 
+can imagine many other use-cases where you would like to materialize data in different ways depending on your 
+use-case and needs.
 
 ### Pipeline
 
-Again, there is no need to change the pipeline. You can just specify in the pipeline run that the evaluator step should use the custom materializer:
+Again, there is no need to change the pipeline. You can just specify in the pipeline run that the evaluator step 
+should use the custom materializer:
 
 ```python
 # Run the pipeline

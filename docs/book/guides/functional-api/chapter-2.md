@@ -2,11 +2,13 @@
 description: Add some normalization
 ---
 
-If you want to see the code for this chapter of the guide, head over to the [GitHub](https://github.com/zenml-io/zenml/blob/main/examples/functional_api/chapter_2.py).
+If you want to see the code for this chapter of the guide, head over to the
+[GitHub](https://github.com/zenml-io/zenml/blob/main/examples/functional_api/chapter_2.py).
 
 # Normalize the data
 
-Now before writing any trainers we can actually normalize our data to make sure we get better results. To do this let's add another step and make the pipeline a bit more complex.
+Now before writing any trainers we can actually normalize our data to make sure we get better results. To do this 
+let's add another step and make the pipeline a bit more complex.
 
 ## Create steps
 

@@ -4,9 +4,12 @@ description: A simple example to get started with ZenML
 
 # Quickstart
 
-Our goal here is to help you to get the first practical experience with our tool and give you a brief overview on some basic functionalities of ZenML. We'll create a training pipeline for the [MNIST](http://yann.lecun.com/exdb/mnist/) dataset.
+Our goal here is to help you to get the first practical experience with our tool and give you a brief overview on 
+some basic functionalities of ZenML. We'll create a training pipeline for the [MNIST](http://yann.lecun.com/exdb/mnist/) dataset.
 
-If you want to run this notebook in an interactive environment, feel free to run it in a [Google Colab](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb) or view it on [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/quickstart) directly.
+If you want to run this notebook in an interactive environment, feel free to run it in a 
+[Google Colab](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb) 
+or view it on [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/quickstart) directly.
 
 ## Install and initialize
 
@@ -16,10 +19,12 @@ pip install zenml tensorflow
 ```
 
 {% hint style="success" %}
-We are just using TensorFlow for the purposes of illustration; ZenML works with any ML library such as PyTorch, HuggingFace, PyTorch Lightning etc.
+We are just using TensorFlow for the purposes of illustration; ZenML works with any ML library such as PyTorch, 
+HuggingFace, PyTorch Lightning etc.
 {% endhint %}
 
-Once the installation is completed, you can go ahead and create your first ZenML repository for your project. As ZenML repositories are built on top of Git repositories, you can create yours in a desired empty directory through:
+Once the installation is completed, you can go ahead and create your first ZenML repository for your project. As 
+ZenML repositories are built on top of Git repositories, you can create yours in a desired empty directory through:
 
 ```python
 # Initialize a git repository
@@ -29,11 +34,13 @@ git init
 zenml init
 ```
 
-Now, the setup is completed. For the next steps, just make sure that you are executing the code within your ZenML repository.
+Now, the setup is completed. For the next steps, just make sure that you are executing the code within your 
+ZenML repository.
 
 ## Define ZenML Steps
 
-In the code that follows, you can see that we are defining the various steps of our pipeline. Each step is decorated with `@step`, the main low-level abstraction that is currently available for creating pipeline steps.
+In the code that follows, you can see that we are defining the various steps of our pipeline. Each step is 
+decorated with `@step`, the main low-level abstraction that is currently available for creating pipeline steps.
 
 ![Quickstart steps](../assets/quickstart-diagram.png)
 
@@ -113,11 +120,14 @@ if __name__ == "__main__":
 This code block should work 'as is'. Copy paste it into your IDE and run it!
 {% endhint %}
 
-If you had a hiccup or you have some suggestions/questions regarding our framework, you can always check [our Github](https://github.com/zenml-io/zenml) or even better join us on [our Slack channel](https://zenml.io/slack-invite).
+If you had a hiccup or you have some suggestions/questions regarding our framework, you can always check 
+[our Github](https://github.com/zenml-io/zenml) or even better join us on 
+[our Slack channel](https://zenml.io/slack-invite).
 
 ## Wait, how is this useful?
 
-The above code looks like its yet another standard pipeline framework that added to your work, but there is a lot going on under the hood that is mighty helpful:
+The above code looks like its yet another standard pipeline framework that added to your work, but there is a lot 
+going on under the hood that is mighty helpful:
 
 - All data is versioned and tracked as it flows through the steps.
 - All parameters and return values are tracked by a central metadata store that you can later query.
@@ -129,7 +139,8 @@ With just a little more work, one can:
 - Deploy this pipeline 'in production' on the cloud with a production ready orchestrator like Kubeflow.
 - Useful metadata like statistics, schemas and drifts can be inferred from model and data flowing through these steps.
 - Convert these steps to run distributed processing to handle large volumes of data.
-- Models trained this way can be set up to be easily deployed, run batch inference on, or set up in continuous training loops with automatic deployments.
+- Models trained this way can be set up to be easily deployed, run batch inference on, or set up in continuous 
+training loops with automatic deployments.
 
 Best of all: We let you and your infra/ops team decide what the underlying tools are to achieve all this.
 
@@ -137,11 +148,15 @@ Keep reading to learn how all of the above can be achieved.
 
 ## Next Steps?
 
-Normally at this point in a quickstart, you'd like to learn more about what the product has to offer (if the docs have succeeded in making you feel so). There are essentially two choices you can make:
+Normally at this point in a quickstart, you'd like to learn more about what the product has to offer (if the docs 
+have succeeded in making you feel so). There are essentially two choices you can make:
 
-- If your work involves a use-case that is fairly 'standard' training/inference/deployment, start with the [Class-based API](guides/class-based-api/) guide.
-- If you have a more complex workflow that requires more control over your pipelines, start with the [Functional API](guides/functional-api/) guide.
+- If your work involves a use-case that is fairly 'standard' training/inference/deployment, start with 
+the [Class-based API](guides/class-based-api/) guide.
+- If you have a more complex workflow that requires more control over your pipelines, start with 
+the [Functional API](guides/functional-api/) guide.
 
 If you're not sure, pick any one of the above. They are the easiest way to learn how ZenML enables MLOps.
 
-However, for those of you who don't want to read guides, then feel free to start perusing the docs with the [Core Concepts](core-concepts.md) before the guides. See you there!
+However, for those of you who don't want to read guides, then feel free to start perusing the docs with 
+the [Core Concepts](core-concepts.md) before the guides. See you there!
