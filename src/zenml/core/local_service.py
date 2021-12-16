@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from zenml.container_registry.base_container_registry import (
         BaseContainerRegistry,
     )
-    from zenml.metadata.base_metadata_store import BaseMetadataStore
+    from zenml.metadata import BaseMetadataStore
     from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 
 logger = get_logger(__name__)
@@ -53,7 +53,7 @@ class LocalService(BaseComponent):
     @property
     def metadata_stores(self) -> Dict[str, "BaseMetadataStore"]:
         """Returns all registered metadata stores."""
-        from zenml.metadata.base_metadata_store import BaseMetadataStore
+        from zenml.metadata import BaseMetadataStore
 
         return mapping_utils.get_components_from_store(  # type: ignore[return-value] # noqa
             BaseMetadataStore._METADATA_STORE_DIR_NAME, self.metadata_store_map

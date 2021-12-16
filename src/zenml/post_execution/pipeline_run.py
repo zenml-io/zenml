@@ -22,7 +22,7 @@ from zenml.logger import get_logger
 from zenml.post_execution.step import StepView
 
 if TYPE_CHECKING:
-    from zenml.metadata.base_metadata_store import BaseMetadataStore
+    from zenml.metadata import BaseMetadataStore
 
 logger = get_logger(__name__)
 

@@ -19,7 +19,7 @@ from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.materializers.base_materializer import BaseMaterializer
-    from zenml.metadata.base_metadata_store import BaseMetadataStore
+    from zenml.metadata import BaseMetadataStore
     from zenml.post_execution.step import StepView
 
 logger = get_logger(__name__)

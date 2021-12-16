@@ -18,7 +18,7 @@ import pytest
 from click.testing import CliRunner
 
 from zenml.cli.metadata import list_metadata_stores, register_metadata_store
-from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
+from zenml.metadata.sqlite_metadata_store import SQLiteMetadataStore
 
 NOT_LOGGING_LEVELS = ["abc", "my_cat_is_called_aria", "pipeline123"]
 

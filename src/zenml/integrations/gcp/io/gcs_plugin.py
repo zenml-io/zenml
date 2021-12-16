@@ -23,7 +23,7 @@ import gcsfs
 from tfx.dsl.io.fileio import NotFoundError
 
 from zenml.io.filesystem import Filesystem, PathType
-from zenml.io.utils import convert_to_str
+from zenml.io.fileio import convert_to_str
 
 
 class ZenGCS(Filesystem):

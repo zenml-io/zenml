@@ -18,7 +18,7 @@ from pydantic import validator
 from tfx.orchestration import metadata
 
 from zenml.io import fileio
-from zenml.metadata.base_metadata_store import BaseMetadataStore
+from zenml.metadata import BaseMetadataStore
 
 
 class SQLiteMetadataStore(BaseMetadataStore):

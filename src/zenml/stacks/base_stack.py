@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from zenml.container_registry.base_container_registry import (
         BaseContainerRegistry,
     )
-    from zenml.metadata.base_metadata_store import BaseMetadataStore
+    from zenml.metadata import BaseMetadataStore
     from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 
 

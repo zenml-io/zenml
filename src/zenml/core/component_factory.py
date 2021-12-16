@@ -18,8 +18,8 @@ from zenml.artifact_stores import LocalArtifactStore
 from zenml.core.base_component import BaseComponent
 from zenml.enums import ArtifactStoreTypes, MLMetadataTypes, OrchestratorTypes
 from zenml.logger import get_logger
-from zenml.metadata.mysql_metadata_wrapper import MySQLMetadataStore
-from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
+from zenml.metadata import MySQLMetadataStore
+from zenml.metadata.sqlite_metadata_store import SQLiteMetadataStore
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 
 logger = get_logger(__name__)

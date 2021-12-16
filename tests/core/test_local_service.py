@@ -20,8 +20,8 @@ from git.repo.base import Repo
 from zenml.artifact_stores import BaseArtifactStore, LocalArtifactStore
 from zenml.core.repo import Repository
 from zenml.exceptions import AlreadyExistsException, DoesNotExistException
-from zenml.metadata.base_metadata_store import BaseMetadataStore
-from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
+from zenml.metadata import BaseMetadataStore
+from zenml.metadata.sqlite_metadata_store import SQLiteMetadataStore
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.stacks.base_stack import BaseStack

@@ -20,3 +20,9 @@ Metadata are the pieces of information tracked about the pipelines, experiments
 and configurations that you are running with ZenML. Metadata are stored
 inside the metadata store.
 """
+
+from zenml.metadata.base_metadata_store import BaseMetadataStore
+from zenml.metadata.mysql_metadata_store import MySQLMetadataStore
+from zenml.metadata.sqlite_metadata_store import SQLiteMetadataStore
+
+__all__ = ["BaseMetadataStore", "MySQLMetadataStore", "SQLiteMetadataStore"]
