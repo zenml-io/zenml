@@ -55,7 +55,9 @@ from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.exceptions import MissingStepParameterError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.steps import BaseStepConfig, Output, StepContext
+from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps.step_context import StepContext
+from zenml.steps.step_output import Output
 from zenml.utils import source_utils
 
 logger = get_logger(__name__)

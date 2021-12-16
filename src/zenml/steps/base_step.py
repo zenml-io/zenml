@@ -39,7 +39,9 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
 )
-from zenml.steps import BaseStepConfig, Output, StepContext
+from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps.step_context import StepContext
+from zenml.steps.step_output import Output
 from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
