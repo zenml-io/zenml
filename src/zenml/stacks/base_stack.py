@@ -10,7 +10,7 @@ if TYPE_CHECKING:
         BaseContainerRegistry,
     )
     from zenml.metadata import BaseMetadataStore
-    from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+    from zenml.orchestrators import BaseOrchestrator
 
 
 class BaseStack(BaseSettings):

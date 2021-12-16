@@ -23,7 +23,7 @@ if TYPE_CHECKING:
         BaseContainerRegistry,
     )
     from zenml.metadata import BaseMetadataStore
-    from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+    from zenml.orchestrators import BaseOrchestrator
 
 logger = get_logger(__name__)
 
@@ -71,7 +71,7 @@ class LocalService(BaseComponent):
     @property
     def orchestrators(self) -> Dict[str, "BaseOrchestrator"]:
         """Returns all registered orchestrators."""
-        from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+        from zenml.orchestrators import BaseOrchestrator
 
         return mapping_utils.get_components_from_store(  # type: ignore[return-value] # noqa
             BaseOrchestrator._ORCHESTRATOR_STORE_DIR_NAME,

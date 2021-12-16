@@ -31,7 +31,7 @@ from zenml.integrations.airflow.orchestrators.airflow_dag_runner import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+from zenml.orchestrators import BaseOrchestrator
 from zenml.utils import daemon
 
 logger = get_logger(__name__)

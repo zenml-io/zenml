@@ -21,3 +21,7 @@ ZenML supports a local orchestrator out of the box which allows you to run your
 pipelines in a local environment. We also support using Apache Airflow as the
 orchestrator to handle the steps of your pipeline.
 """
+from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
+
+__all__ = ["BaseOrchestrator", "LocalOrchestrator"]
