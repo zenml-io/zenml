@@ -15,7 +15,6 @@ import datetime
 import functools
 import subprocess
 import sys
-from datetime import timedelta
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -179,22 +178,6 @@ def format_date(
         logger.warning("On Windows, all times are displayed in UTC timezone.")
 
     return dt.strftime(format)
-
-
-def format_timedelta(td: timedelta) -> str:
-    """Format a timedelta into a string.
-
-    Args:
-      td: datetime.timedelta object to be formatted.
-
-    Returns:
-        Formatted string according to specification.
-    """
-    if td is None:
-        return ""
-    hours, remainder = divmod(td.total_seconds(), 3600)
-    minutes, seconds = divmod(remainder, 60)
-    return "{:02}:{:02}:{:02}".format(int(hours), int(minutes), int(seconds))
 
 
 def parse_unknown_options(args: List[str]) -> Dict[str, Any]:

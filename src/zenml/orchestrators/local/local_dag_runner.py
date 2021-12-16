@@ -48,7 +48,7 @@ from tfx.orchestration.portable import (
 )
 
 from zenml.logger import get_logger
-from zenml.orchestrators.utils import execute_tfx_component
+from zenml.orchestrators.utils import execute_step
 
 logger = get_logger(__name__)
 
@@ -114,4 +114,4 @@ class LocalDagRunner(tfx_runner.TfxRunner):
                 executor_spec=executor_spec,
                 custom_driver_spec=custom_driver_spec,
             )
-            execute_tfx_component(component_launcher)
+            execute_step(component_launcher)

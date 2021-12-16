@@ -1,3 +1,17 @@
+#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+
 import time
 from typing import Optional
 
@@ -5,34 +19,12 @@ from tfx.orchestration.portable import data_types, launcher
 
 from zenml.exceptions import DuplicateRunNameError
 from zenml.logger import get_logger
+from zenml.utils import string_utils
 
 logger = get_logger(__name__)
 
 
-def _format_timedelta_pretty(seconds: float) -> str:
-    """Format a float representing seconds into a string.
-
-    Args:
-        seconds: result of a time.time() - time.time().
-
-    Returns:
-        Formatted time string.
-    """
-    int_seconds = int(seconds)
-    days, int_seconds = divmod(int_seconds, 86400)
-    hours, int_seconds = divmod(int_seconds, 3600)
-    minutes, int_seconds = divmod(int_seconds, 60)
-    if days > 0:
-        return "%dd%dh%dm%ds" % (days, hours, minutes, int_seconds)
-    elif hours > 0:
-        return "%dh%dm%ds" % (hours, minutes, int_seconds)
-    elif minutes > 0:
-        return "%dm%ds" % (minutes, int_seconds)
-    else:
-        return f"{seconds:.3f}s"
-
-
-def execute_tfx_component(
+def execute_step(
     tfx_launcher: launcher.Launcher,
 ) -> Optional[data_types.ExecutionInfo]:
     """Executes a tfx component.
@@ -57,6 +49,10 @@ def execute_tfx_component(
         else:
             raise
 
-    run_duration = _format_timedelta_pretty(time.time() - start_time)
-    logger.info(f"Step `{step_name}` has finished in {run_duration}.")
+    run_duration = time.time() - start_time
+    logger.info(
+        "Step `%s` has finished in %s.",
+        step_name,
+        string_utils.get_human_readable_time(run_duration),
+    )
     return execution_info
