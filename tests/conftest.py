@@ -379,8 +379,7 @@ from zenml.constants import ENV_ZENML_DEBUG
 from zenml.core.repo import Repository
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
-from zenml.steps import step
-from zenml.steps.step_context import StepContext
+from zenml.steps import StepContext, step
 
 
 def pytest_sessionstart(session):
