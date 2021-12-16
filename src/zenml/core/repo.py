@@ -25,7 +25,7 @@ from zenml.core.local_service import LocalService
 from zenml.exceptions import InitializationException
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.post_execution.pipeline import PipelineView
+from zenml.post_execution import PipelineView
 from zenml.stacks import BaseStack
 from zenml.utils.analytics_utils import GET_PIPELINES, SET_STACK, track
 

@@ -23,7 +23,7 @@ from dash.dependencies import Input, Output
 
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
-from zenml.post_execution.pipeline_run import PipelineRunView
+from zenml.post_execution import PipelineRunView
 from zenml.visualizers import BasePipelineRunVisualizer
 
 logger = get_logger(__name__)

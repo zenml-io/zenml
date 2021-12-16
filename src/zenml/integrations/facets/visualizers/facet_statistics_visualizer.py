@@ -28,7 +28,7 @@ from IPython.core.display import HTML, display
 
 import zenml.io.utils
 from zenml.logger import get_logger
-from zenml.post_execution.step import StepView
+from zenml.post_execution import StepView
 from zenml.visualizers import BaseStepVisualizer
 
 logger = get_logger(__name__)
