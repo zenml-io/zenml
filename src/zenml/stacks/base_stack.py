@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 class BaseStack(BaseSettings):
     """Base stack for ZenML.
 
-    A ZenML stack brings together an Metadata Store, an Artifact Store, and
+    A ZenML stack brings together a Metadata Store, an Artifact Store, and
     an Orchestrator, the trifecta of the environment required to run a ZenML
     pipeline. A ZenML stack also happens to be a pydantic `BaseSettings`
     class, which means that there are multiple ways to use it.
