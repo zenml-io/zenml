@@ -409,11 +409,6 @@ def pull(
     default="zenml_examples",
     help="Relative path at which you want to install the example(s)"
 )
-@click.option(
-    "--entrypoint",
-    "-e",
-
-)
 def run(
         git_examples_handler: GitExamplesHandler,
         example_name: str,
