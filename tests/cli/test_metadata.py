@@ -17,12 +17,12 @@ import os
 import pytest
 from click.testing import CliRunner
 
-from zenml.cli.metadata import (
+from zenml.cli.metadata_store import (
     describe_metadata_store,
     list_metadata_stores,
     register_metadata_store,
 )
-from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
+from zenml.metadata_stores import SQLiteMetadataStore
 
 NOT_LOGGING_LEVELS = ["abc", "my_cat_is_called_aria", "pipeline123"]
 NOT_METADATA_STORES = ["abc", "my_other_cat_is_called_blupus", "pipeline456"]

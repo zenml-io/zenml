@@ -16,7 +16,7 @@ import textwrap
 from typing import TYPE_CHECKING, List, Type
 
 if TYPE_CHECKING:
-    from zenml.steps.base_step_config import BaseStepConfig
+    from zenml.steps import BaseStepConfig
 
 from typing import Optional
 

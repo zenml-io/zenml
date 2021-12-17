@@ -20,8 +20,7 @@ from sklearn.base import ClassifierMixin
 
 from zenml.integrations.sklearn.helpers.digits import get_digits, get_digits_model
 from zenml.pipelines import pipeline
-from zenml.steps import step
-from zenml.steps.step_output import Output
+from zenml.steps import step, Output
 
 # Path to a pip requirements file that contains requirements necessary to run
 # the pipeline

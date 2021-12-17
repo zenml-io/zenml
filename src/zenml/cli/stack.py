@@ -20,7 +20,7 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.core.repo import Repository
-from zenml.stacks.base_stack import BaseStack
+from zenml.stacks import BaseStack
 
 
 # Stacks

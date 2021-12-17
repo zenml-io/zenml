@@ -18,6 +18,7 @@ from typing import Any, Dict
 
 import yaml
 
+import zenml.io.utils
 from zenml.io import fileio
 
 
@@ -35,7 +36,7 @@ def write_yaml(file_path: str, contents: Dict[Any, Any]) -> None:
         dir_ = str(Path(file_path).parent)
         if not fileio.is_dir(dir_):
             raise FileNotFoundError(f"Directory {dir_} does not exist.")
-    fileio.write_file_contents_as_string(file_path, yaml.dump(contents))
+    zenml.io.utils.write_file_contents_as_string(file_path, yaml.dump(contents))
 
 
 def read_yaml(file_path: str) -> Any:
@@ -51,7 +52,7 @@ def read_yaml(file_path: str) -> Any:
         FileNotFoundError if file does not exist.
     """
     if fileio.file_exists(file_path):
-        contents = fileio.read_file_contents_as_string(file_path)
+        contents = zenml.io.utils.read_file_contents_as_string(file_path)
         return yaml.load(contents, Loader=yaml.FullLoader)
     else:
         raise FileNotFoundError(f"{file_path} does not exist.")
@@ -89,7 +90,9 @@ def write_json(file_path: str, contents: Dict[str, Any]) -> None:
         if not fileio.is_dir(dir_):
             # If it is a local path and it doesnt exist, raise Exception.
             raise FileNotFoundError(f"Directory {dir_} does not exist.")
-    fileio.write_file_contents_as_string(file_path, json.dumps(contents))
+    zenml.io.utils.write_file_contents_as_string(
+        file_path, json.dumps(contents)
+    )
 
 
 def read_json(file_path: str) -> Any:
@@ -99,7 +102,7 @@ def read_json(file_path: str) -> Any:
         file_path: Path to JSON file.
     """
     if fileio.file_exists(file_path):
-        contents = fileio.read_file_contents_as_string(file_path)
+        contents = zenml.io.utils.read_file_contents_as_string(file_path)
         return json.loads(contents)
     else:
         raise FileNotFoundError(f"{file_path} does not exist.")

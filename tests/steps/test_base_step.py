@@ -17,12 +17,9 @@ from typing import Optional
 import pytest
 
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
+from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.materializers.built_in_materializer import BuiltInMaterializer
-from zenml.steps import step
-from zenml.steps.base_step_config import BaseStepConfig
-from zenml.steps.step_context import StepContext
-from zenml.steps.step_output import Output
+from zenml.steps import BaseStepConfig, Output, StepContext, step
 
 
 def test_step_decorator_creates_class_in_same_module_as_decorated_function():
