@@ -100,7 +100,7 @@ class IntegrationRegistry(object):
                 self._integrations[item].check_installation()
                 for item in self.list_integration_names
             ]
-            return all(all_installed)
+            return any(all_installed)
         else:
             raise KeyError(
                 f"Version {integration_name} does not exist. "

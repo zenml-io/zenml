@@ -116,7 +116,7 @@ def install(integration_name: str, force: bool = False) -> None:
             if force:
                 declare(
                     f"Installing all required packages for "
-                    f"{integration_name}"
+                    f"{integration_name if integration_name else 'all integrations'}"
                 )
                 for requirement in requirements:
                     install_package(requirement)
@@ -162,7 +162,8 @@ def uninstall(integration_name: str, force: bool = False) -> None:
         if requirements:
             if force:
                 declare(
-                    f"Installing all required packages for {integration_name}"
+                    f"Installing all required packages for "
+                    f"{integration_name if integration_name else 'all integrations'}"
                 )
                 for requirement in requirements:
                     uninstall_package(requirement)
