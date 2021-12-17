@@ -127,14 +127,14 @@ def print_table(obj: List[Dict[str, Any]]) -> None:
 
 
 def format_component_list(
-    component_list: Mapping[str, "BaseComponent"]
+    component_list: Mapping[str, "BaseComponent"], active_component: str
 ) -> List[Dict[str, str]]:
     """Formats a list of components into a List of Dicts. This list of dicts
     can then be printed in a table style using cli_utils.print_table.
 
     Args:
-      component_list: The component_list is a mapping of component key to
-                      component class with its relevant attributes
+        component_list: The component_list is a mapping of component key to component class with its relevant attributes
+        active_component: The component that is currently active
     Returns:
         list_of_dicts: A list of all components with each component as a dict
     """
@@ -146,6 +146,7 @@ def format_component_list(
             "component_name" if k == "name" else k: v
             for k, v in c.dict(exclude={"_superfluous_options"}).items()
         }
+        component_dict["active"] = "*" if key == active_component else ""
 
         data = {"name": key}
         data.update(component_dict)
