@@ -7,9 +7,9 @@ Visualizers are Python classes that take post-execution view objects (e.g. `Pipe
 visualizations for them. ZenML will support many standard ones but one can always extend them using the `BaseVisualization` classes.
 
 ## Overview
-Here, we are using the [Boston Housing Price Regression](https://keras.io/api/datasets/boston_housing/) dataset. We create a simple pipeline that 
-returns two pd.DataFrames, one for the training data and one for the test data. In the post-execution workflow we then plug in the visualization class 
-that visualizes the latest pipeline run for us.
+Here, we are using the [Boston Housing Price Regression](https://keras.io/api/datasets/boston_housing/) dataset. 
+We create a simple pipeline that returns two pd.DataFrames, one for the training data and one for the test data. In 
+the post-execution workflow we then plug in the visualization class that visualizes the latest pipeline run for us.
 
 This visualization is produced with the following code:
 

@@ -1,14 +1,19 @@
 # Functional API Guide
 
-The Functional ZenML API is defined by the primitive `@step` and `@pipeline` decorators. These should be used when the [Class based API](../high-level-api) is too inflexible for the use-case at hand, and one requires more control over individual steps and connecting them in pipelines.
+The Functional ZenML API is defined by the primitive `@step` and `@pipeline` decorators. These should be used when 
+the [Class based API](../high-level-api) is too inflexible for the use-case at hand, and one requires more control 
+over individual steps and connecting them in pipelines.
 
-A user may also mix-and-match the Functional API with the Class based API: All standard data types and steps that are applicable in the Functional API can be used with the Functional API as well!
+A user may also mix-and-match the Functional API with the Class based API: All standard data types and steps that are 
+applicable in the Functional API can be used with the Functional API as well!
 
-In order to illustrate how the Functional API functions, we'll do a simple exercise to create a training pipeline from scratch (without any Class based components) and take it all the way to deployment.
+In order to illustrate how the Functional API functions, we'll do a simple exercise to create a training pipeline from 
+scratch (without any Class based components) and take it all the way to deployment.
 
 Here is what we'll do in this guide:
 
-* Create a MNIST pipeline that trains using [TensorFlow (Keras)](https://www.tensorflow.org/) (similar to the [Quickstart](../../quickstart-guide.md)).
+* Create a MNIST pipeline that trains using [TensorFlow (Keras)](https://www.tensorflow.org/) 
+(similar to the [Quickstart](../../quickstart-guide.md)).
 * Swap out implementations of the `trainer` and `evaluator` steps with [scikit-learn](https://scikit-learn.org/).
 * Persist our interim data artifacts in SQL tables rather than on files.
 * Read from a dynamically changing datasource rather than a static one.
