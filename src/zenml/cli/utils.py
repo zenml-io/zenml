@@ -143,12 +143,11 @@ def format_component_list(
         # Make sure that the `name` key is not taken in the component dict
         # In case `name` exists, it is replaced inplace with `component_name`
         component_dict = {
-            "component_name" if k == "name" else k: v
+            "COMPONENT_NAME" if k == "name" else k.upper(): v
             for k, v in c.dict(exclude={"_superfluous_options"}).items()
         }
-        component_dict["active"] = "*" if key == active_component else ""
 
-        data = {"name": key}
+        data = {"ACTIVE": "*" if key == active_component else "", "NAME": key}
         data.update(component_dict)
         list_of_dicts.append(data)
     return list_of_dicts
