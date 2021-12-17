@@ -14,13 +14,13 @@
 
 import os
 
-from zenml.core.repo import Repository
-
-os.environ["ZENML_DEBUG"] = "true"
 import pandas as pd
 
+from zenml.core.repo import Repository
 from zenml.pipelines import pipeline
 from zenml.steps import step
+
+os.environ["ZENML_DEBUG"] = "true"
 
 
 @step
@@ -45,6 +45,13 @@ def evaluator(df: pd.DataFrame, model: int) -> int:
 
 @step
 def deployer(model: int, evaluation_results: int) -> bool:
+    print(
+        Repository()
+        .get_pipeline("my_pipeline")
+        .runs[-1]
+        .steps[-2]
+        .output.read()
+    )
     return True
 
 
@@ -58,7 +65,7 @@ def my_pipeline(importer, preprocesser, trainer, evaluator, deployer):
 
 
 # Pipeline
-lineage_pipeline = my_pipeline(
+p = my_pipeline(
     importer=importer(),
     preprocesser=preprocesser(),
     trainer=trainer(),
@@ -66,34 +73,7 @@ lineage_pipeline = my_pipeline(
     deployer=deployer(),
 )
 
-lineage_pipeline.run()
-lineage_pipeline.run()
-lineage_pipeline.run()
-lineage_pipeline.run()
+p.run()
+
 
 pipeline = Repository().get_pipelines()[-1]
-
-# for run in pipeline.runs:
-#     try:
-#         deployer_step = run.get_step(name="deployer")
-#         trainer_step = run.get_step(name="trainer")
-#         deployed_model_artifact = deployer_step.inputs["model"]
-#         trained_model_artifact = trainer_step.output
-#
-#         # lets do the lineage
-#         print(
-#             f"trained_model_artifact was produced by: "
-#             f"{trained_model_artifact.producer_step.id} and is_cached: "
-#             f"{trained_model_artifact.is_cached} step cached: "
-#             f"{trainer_step.status}"
-#         )
-#     except Exception as e:
-#         if "No step found for name `deployer`" in str(e):
-#             pass
-#         else:
-#             raise e
-
-
-from zenml.post_execution.visualizers.lineage.pipeline_lineage_visualizer import PipelineLineageVisualizer
-
-PipelineLineageVisualizer().visualize(pipeline)
