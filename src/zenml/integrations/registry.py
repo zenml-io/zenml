@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, Any, Dict, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
 from zenml.exceptions import IntegrationError
 from zenml.logger import get_logger
@@ -64,6 +64,49 @@ class IntegrationRegistry(object):
                 logger.debug(f"Integration `{name}` is activated.")
             else:
                 logger.debug(f"Integration `{name}` could not be activated.")
+
+    @property
+    def list_integration_names(self) -> List[str]:
+        """Get a list of all possible integrations"""
+        return [name for name in self._integrations]
+
+    def select_integration_requirements(
+        self, integration_name: Optional[str] = None
+    ) -> List[str]:
+        """Select the requirements for a given integration
+        or all integrations"""
+        if integration_name:
+            if integration_name in self.list_integration_names:
+                return self._integrations[integration_name].REQUIREMENTS
+            else:
+                raise KeyError(
+                    f"Version {integration_name} does not exist. "
+                    f"Currently the following integrations are implemented. "
+                    f"{self.list_integration_names}"
+                )
+        else:
+            return [
+                requirement
+                for name in self.list_integration_names
+                for requirement in self._integrations[name].REQUIREMENTS
+            ]
+
+    def is_installed(self, integration_name: str) -> bool:
+        """Checks if all requirements for an integration are installed"""
+        if integration_name in self.list_integration_names:
+            return self._integrations[integration_name].check_installation()
+        elif not integration_name:
+            all_installed = [
+                self._integrations[item].check_installation()
+                for item in self.list_integration_names
+            ]
+            return all(all_installed)
+        else:
+            raise KeyError(
+                f"Version {integration_name} does not exist. "
+                f"Currently the following integrations are available. "
+                f"{self.list_integration_names}"
+            )
 
 
 integration_registry = IntegrationRegistry()
