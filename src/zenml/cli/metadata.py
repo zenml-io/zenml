@@ -105,7 +105,7 @@ def describe_metadata_store(metadata_store_name: str) -> None:
             f"Metadata store `{metadata_store_name}` does not exist."
         )
         return
-    cli_utils.title("Active Container Registry:")
+    cli_utils.title("Active Metadata Store:")
     cli_utils.declare(f"NAME: {metadata_store_name}")
     cli_utils.declare(f"UUID: {metadata_store_details.uuid}")
     cli_utils.declare(f"URI: {metadata_store_details.uri}")
