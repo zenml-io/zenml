@@ -58,11 +58,15 @@ def register_stack(
 @stack.command("list")
 def list_stacks() -> None:
     """List all available stacks from service."""
-    service = Repository().get_service()
+    repo = Repository()
+    service = repo.get_service()
+    if len(service.stacks) == 0:
+        cli_utils.warning("No stacks registered!")
+        return
+
     cli_utils.title("Stacks:")
     # TODO [ENG-144]: once there is a common superclass for Stack/ArtifactStore etc.,
     #  remove the mypy ignore
-    repo = Repository()
     active_stack = repo.get_active_stack_key()
     cli_utils.print_table(
         cli_utils.format_component_list(service.stacks, active_stack)  # type: ignore[arg-type]
@@ -87,7 +91,7 @@ def describe_stack(stack_name: str) -> None:
 
     stacks = repo.get_service().stacks
     if len(stacks) == 0:
-        cli_utils.error("No stacks registered!")
+        cli_utils.warning("No stacks registered!")
         return
 
     try:

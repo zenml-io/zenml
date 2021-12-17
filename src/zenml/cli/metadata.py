@@ -74,6 +74,10 @@ def list_metadata_stores() -> None:
     """List all available metadata stores from service."""
     repo = Repository()
     service = repo.get_service()
+    if len(service.metadata_stores) == 0:
+        cli_utils.warning("No metadata stores registered!")
+        return
+
     active_metadata_store = repo.get_active_stack().metadata_store_name
 
     cli_utils.title("Metadata Stores:")
@@ -102,7 +106,7 @@ def describe_metadata_store(metadata_store_name: str) -> None:
 
     metadata_stores = repo.get_service().metadata_stores
     if len(metadata_stores) == 0:
-        cli_utils.error("No metadata stores registered!")
+        cli_utils.warning("No metadata stores registered!")
         return
 
     try:

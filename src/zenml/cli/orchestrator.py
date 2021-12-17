@@ -101,6 +101,10 @@ def list_orchestrators() -> None:
     """List all available orchestrators from service."""
     repo = Repository()
     service = repo.get_service()
+    if len(service.orchestrators) == 0:
+        cli_utils.warning("No orchestrators registered!")
+        return
+
     active_orchestrator = repo.get_active_stack().orchestrator_name
     cli_utils.title("Orchestrators:")
     cli_utils.print_table(
@@ -128,7 +132,7 @@ def describe_orchestrator(orchestrator_name: str) -> None:
 
     orchestrators = repo.get_service().orchestrators
     if len(orchestrators) == 0:
-        cli_utils.error("No orchestrators registered!")
+        cli_utils.warning("No orchestrators registered!")
         return
 
     try:

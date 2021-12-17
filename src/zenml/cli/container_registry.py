@@ -63,6 +63,11 @@ def register_container_registry(
 def list_container_registries() -> None:
     """List all available container registries from service."""
     repo = Repository()
+    service = repo.get_service()
+    if len(service.container_registries) == 0:
+        cli_utils.warning("No container registries registered!")
+        return
+
     active_container_registry = str(
         repo.get_active_stack().container_registry_name
     )
@@ -95,7 +100,7 @@ def describe_container_registry(container_registry_name: str) -> None:
 
     container_registries = repo.get_service().container_registries
     if len(container_registries) == 0:
-        cli_utils.error("No container registries registered!")
+        cli_utils.warning("No container registries registered!")
         return
 
     try:

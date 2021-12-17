@@ -69,6 +69,10 @@ def list_artifact_stores() -> None:
     """List all available artifact stores from service."""
     repo = Repository()
     service = repo.get_service()
+    if len(service.artifact_stores) == 0:
+        cli_utils.warning("No artifact stores registered!")
+        return
+
     active_artifact_store = repo.get_active_stack().artifact_store_name
     cli_utils.title("Artifact Stores:")
     cli_utils.print_table(
@@ -95,7 +99,7 @@ def describe_artifact_store(artifact_store_name: str) -> None:
 
     artifact_stores = repo.get_service().artifact_stores
     if len(artifact_stores) == 0:
-        cli_utils.error("No artifact stores registered!")
+        cli_utils.warning("No artifact stores registered!")
         return
 
     try:
