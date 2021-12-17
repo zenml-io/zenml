@@ -32,7 +32,7 @@ Join our <a href="https://zenml.io/slack-invite" target="_blank">
 
 <br>
 
-![Before and after ZenML](docs/book/assets/sam-side-by-side-full-text-readme.png)
+![Before and after ZenML](docs/book/assets/sam-side-by-side-full-text.png)
 
 # 🤖 Why use ZenML?
 
@@ -98,7 +98,7 @@ Once code is organized into a ZenML pipeline, you can supercharge your ML develo
 
 We currently support [Airflow](https://airflow.apache.org/) and [Kubeflow](https://www.kubeflow.org/) as third-party orchestrators for your ML pipeline code. ZenML steps can be built from any of the other tools you usually use in your ML workflows, from [`scikit-learn`](https://scikit-learn.org/stable/) to [`PyTorch`](https://pytorch.org/) or [`TensorFlow`](https://www.tensorflow.org/).
 
-![ZenML is the glue](docs/book/assets/zenml-is-the-glue-readme.jpeg)
+![ZenML is the glue](docs/book/assets/zenml-is-the-glue.jpeg)
 
 ### 3. ☁️ Scale to the Cloud
 
