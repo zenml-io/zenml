@@ -23,6 +23,8 @@ from tfx.orchestration import metadata
 from tfx.orchestration.portable import launcher
 from tfx.proto.orchestration import pipeline_pb2
 
+from zenml.orchestrators.utils import execute_step
+
 
 def _airflow_component_launcher(
     pipeline_node: pipeline_pb2.PipelineNode,
@@ -51,8 +53,7 @@ def _airflow_component_launcher(
         executor_spec=executor_spec,
         custom_driver_spec=custom_driver_spec,
     )
-
-    component_launcher.launch()
+    execute_step(component_launcher)
 
 
 class AirflowComponent(python.PythonOperator):
