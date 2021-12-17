@@ -72,10 +72,15 @@ def register_metadata_store(
 @metadata.command("list")
 def list_metadata_stores() -> None:
     """List all available metadata stores from service."""
-    service = Repository().get_service()
+    repo = Repository()
+    service = repo.get_service()
+    active_metadata_store = repo.get_active_stack().metadata_store_name
+
     cli_utils.title("Metadata Stores:")
     cli_utils.print_table(
-        cli_utils.format_component_list(service.metadata_stores)
+        cli_utils.format_component_list(
+            service.metadata_stores, active_metadata_store
+        )
     )
 
 

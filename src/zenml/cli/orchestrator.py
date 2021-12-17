@@ -99,8 +99,9 @@ def register_orchestrator(
 @orchestrator.command("list")
 def list_orchestrators() -> None:
     """List all available orchestrators from service."""
-    service = Repository().get_service()
-    active_orchestrator = Repository().get_active_stack().orchestrator_name
+    repo = Repository()
+    service = repo.get_service()
+    active_orchestrator = repo.get_active_stack().orchestrator_name
     cli_utils.title("Orchestrators:")
     cli_utils.print_table(
         cli_utils.format_component_list(
