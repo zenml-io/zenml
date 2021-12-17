@@ -102,11 +102,12 @@ def list() -> None:
     table_rows = []
     for name, integration_impl in integration_registry.integrations.items():
         is_installed = integration_impl.check_installation()
+        # TODO [MEDIUM]: Make the installed column right-aligned once we add rich or some other similar dependency
         table_rows.append(
             {
-                "Integration": name,
-                "Required Packages": integration_impl.REQUIREMENTS,
-                "Installed": "*" if is_installed else "",
+                "INSTALLED": "*" if is_installed else "",
+                "INTEGRATION": name,
+                "REQUIRED_PACKAGES": integration_impl.REQUIREMENTS,
             }
         )
     print_table(table_rows)
