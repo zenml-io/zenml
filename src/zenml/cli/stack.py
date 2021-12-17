@@ -69,6 +69,40 @@ def list_stacks() -> None:
     )
 
 
+@stack.command(
+    "describe",
+    help="Show details about the current active stack.",
+)
+@click.argument(
+    "stack_name",
+    type=click.STRING,
+    required=False,
+    default=Repository().get_active_stack_key(),
+)
+def describe_stack(stack_name: str) -> None:
+    """Show details about the current active stack."""
+    repo = Repository()
+    stacks = repo.get_service().stacks
+    try:
+        stack_details = stacks[stack_name]
+    except KeyError:
+        cli_utils.error(f"Stack `{stack_name}` does not exist.")
+        return
+    cli_utils.title("Active Stack:")
+    cli_utils.declare(f"NAME: {stack_name}")
+    cli_utils.declare(f"STACK_TYPE: {stack_details.stack_type}")
+    cli_utils.declare(
+        f"METADATA_STORE_NAME: {stack_details.metadata_store_name}"
+    )
+    cli_utils.declare(
+        f"ARTIFACT_STORE_NAME: {stack_details.artifact_store_name}"
+    )
+    cli_utils.declare(f"ORCHESTRATOR_NAME: {stack_details.orchestrator_name}")
+    cli_utils.declare(
+        f"CONTAINER_REGISTRY_NAME: {stack_details.container_registry_name}"
+    )
+
+
 @stack.command("delete")
 @click.argument("stack_name", type=str)
 def delete_stack(stack_name: str) -> None:
