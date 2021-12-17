@@ -17,10 +17,15 @@ import os
 import pytest
 from click.testing import CliRunner
 
-from zenml.cli.metadata import list_metadata_stores, register_metadata_store
+from zenml.cli.metadata import (
+    describe_metadata_store,
+    list_metadata_stores,
+    register_metadata_store,
+)
 from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
 
 NOT_LOGGING_LEVELS = ["abc", "my_cat_is_called_aria", "pipeline123"]
+NOT_METADATA_STORES = ["abc", "my_other_cat_is_called_blupus", "pipeline456"]
 
 
 @pytest.mark.xfail()
@@ -46,3 +51,23 @@ def test_metadata_list_lists_default_local_metadata_store() -> None:
     result = runner.invoke(list_metadata_stores)
     assert result.exit_code == 0
     assert "local_metadata_store" in result.output
+
+
+def test_metadata_describe_contains_local_metadata_store() -> None:
+    """Test that the metadata describe command contains the default local metadata store"""
+    # TODO [HIGH]: add a fixture that spins up a test env each time
+    runner = CliRunner()
+    result = runner.invoke(describe_metadata_store)
+    assert result.exit_code == 0
+    assert "local_metadata_store" in result.output
+
+
+@pytest.mark.parametrize("not_a_metadata_store", NOT_METADATA_STORES)
+def test_metadata_describe_fails_for_bad_input(
+    not_a_metadata_store: str,
+) -> None:
+    """Test that the metadata describe command fails when passing in bad parameters"""
+    # TODO [HIGH]: add a fixture that spins up a test env each time
+    runner = CliRunner()
+    result = runner.invoke(describe_metadata_store, [not_a_metadata_store])
+    assert result.exit_code == 1

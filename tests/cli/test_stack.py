@@ -13,6 +13,29 @@
 #  permissions and limitations under the License.
 
 
-def test_me() -> None:
-    """basic test"""
-    assert True
+import pytest
+from click.testing import CliRunner
+
+from zenml.cli.stack import describe_stack
+
+NOT_STACKS = ["abc", "my_other_cat_is_called_blupus", "stack123"]
+
+
+def test_stack_describe_contains_local_stack() -> None:
+    """Test that the metadata describe command contains the default local stack"""
+    # TODO [HIGH]: add a fixture that spins up a test env each time
+    runner = CliRunner()
+    result = runner.invoke(describe_stack)
+    assert result.exit_code == 0
+    assert "local_stack" in result.output
+
+
+@pytest.mark.parametrize("not_a_stack", NOT_STACKS)
+def test_metadata_describe_fails_for_bad_input(
+    not_a_stack: str,
+) -> None:
+    """Test that the metadata describe command fails when passing in bad parameters"""
+    # TODO [HIGH]: add a fixture that spins up a test env each time
+    runner = CliRunner()
+    result = runner.invoke(describe_stack, [not_a_stack])
+    assert result.exit_code == 1
