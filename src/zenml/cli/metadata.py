@@ -84,6 +84,33 @@ def list_metadata_stores() -> None:
     )
 
 
+@metadata.command(
+    "describe",
+    help="Show details about the current active metadata store.",
+)
+@click.argument(
+    "metadata_store_name",
+    type=click.STRING,
+    required=False,
+    default=Repository().get_active_stack().metadata_store_name,
+)
+def describe_metadata_store(metadata_store_name: str) -> None:
+    """Show details about the current active metadata store."""
+    repo = Repository()
+    metadata_stores = repo.get_service().metadata_stores
+    try:
+        container_registry_details = metadata_stores[metadata_store_name]
+    except KeyError:
+        cli_utils.error(
+            f"Metadata store `{metadata_store_name}` does not exist."
+        )
+        return
+    cli_utils.title("Active Container Registry:")
+    cli_utils.declare(f"NAME: {metadata_store_name}")
+    cli_utils.declare(f"UUID: {container_registry_details.uuid}")
+    cli_utils.declare(f"URI: {container_registry_details.uri}")
+
+
 @metadata.command("delete")
 @click.argument("metadata_store_name", type=str)
 def delete_metadata_store(metadata_store_name: str) -> None:
