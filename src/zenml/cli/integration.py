@@ -106,7 +106,7 @@ def list() -> None:
             {
                 "Integration": name,
                 "Required Packages": integration_impl.REQUIREMENTS,
-                "Installed": is_installed,
+                "Installed": "*" if is_installed else "",
             }
         )
     print_table(table_rows)
