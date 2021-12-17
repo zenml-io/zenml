@@ -23,10 +23,12 @@ In order to run the chapters of the guide, you need to install and initialize Ze
 ```shell
 # install CLI (order matters, please install in this order.)
 pip install zenml 
-pip install tensorflow
-pip install apache_airflow
+
+# install ZenML integrations
+zenml integration install tensorflow
+zenml integration install airflow
 pip install sqlalchemy 
-pip install sklearn
+zenml integration install sklearn
 
 # pull example
 zenml example pull functional_api

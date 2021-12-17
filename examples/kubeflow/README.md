@@ -21,6 +21,8 @@ Next, we will install ZenML, get the code for this example and initialize a ZenM
 ```bash
 # Install python dependencies
 pip install zenml
+
+# Install ZenML integrations
 zenml integration install kubeflow  
 zenml integration install sklearn  
 

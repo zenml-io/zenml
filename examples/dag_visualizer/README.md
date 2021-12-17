@@ -40,7 +40,11 @@ In order to run this example, you need to install and initialize ZenML:
 
 ```shell
 # install CLI
-pip install zenml tensorflow graphviz
+pip install zenml
+
+# install ZenML integrations
+zenml integration install tensorflow
+zenml integration install graphviz
 
 # pull example
 zenml example pull dag_visualizer

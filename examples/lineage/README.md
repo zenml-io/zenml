@@ -39,8 +39,11 @@ In order to run this example, you need to install and initialize ZenML:
 
 ```shell
 # install CLI
-pip install zenml tensorflow 
-pip install dash dash-cytoscape dash-bootstrap-components
+pip install zenml
+
+# install ZenML integrations
+zenml integration install tensorflow
+zenml integration install dash
 
 # pull example
 zenml example pull lineage

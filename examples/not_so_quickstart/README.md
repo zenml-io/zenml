@@ -18,7 +18,12 @@ In order to run this example, you need to install and initialize ZenML:
 
 ```shell
 # install CLI
-pip install zenml tensorflow torch sklearn
+pip install zenml
+
+# install ZenML integrations
+zenml integration install tensorflow
+zenml integration install torch
+zenml integration install sklearn
 
 # pull example
 zenml example pull not_so_quickstart

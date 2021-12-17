@@ -41,7 +41,11 @@ In order to run this example, you need to install and initialize ZenML:
 
 ```shell
 # install CLI
-pip install zenml tensorflow facets-overview
+pip install zenml
+
+# install ZenML integrations
+zenml integration install tensorflow
+zenml integration install facets
 
 # pull example
 zenml example pull statistics
