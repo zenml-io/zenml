@@ -25,7 +25,8 @@ In order to run this example, you need to install and initialize ZenML:
 
 ```shell
 # install CLI
-pip install zenml tensorflow
+zenml integration install beam
+zenml integration install tensorflow
 
 # pull example
 zenml example pull caching

@@ -3,6 +3,6 @@
 set -Eeo pipefail
 
 pre_run () {
-  zenml integration install sklearn
+  zenml integration install beam
   zenml integration install tensorflow
 }

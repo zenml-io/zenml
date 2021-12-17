@@ -13,8 +13,10 @@ In order to run this example, you need to install and initialize ZenML and Airfl
 ### Installation
 ```bash
 # install CLI
-pip install zenml && pip install apache-airflow && pip install tensorflow && pip install sklearn
-
+zenml integration install airflow
+zenml integration install sklearn
+zenml integration install tensorflow
+zenml integration install beam
 # pull example
 zenml example pull airflow_local
 cd zenml_examples/airflow_local
