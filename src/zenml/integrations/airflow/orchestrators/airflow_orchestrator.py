@@ -21,6 +21,7 @@ import click
 import tfx.orchestration.pipeline as tfx_pipeline
 from pydantic import root_validator
 
+import zenml.io.utils
 from zenml.constants import APP_NAME
 from zenml.core.component_factory import orchestrator_store_factory
 from zenml.enums import OrchestratorTypes
@@ -30,7 +31,7 @@ from zenml.integrations.airflow.orchestrators.airflow_dag_runner import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+from zenml.orchestrators import BaseOrchestrator
 from zenml.utils import daemon
 
 logger = get_logger(__name__)
@@ -211,7 +212,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             command.run,
             pid_file=self.pid_file,
             log_file=self.log_file,
-            working_directory=fileio.get_zenml_dir(),
+            working_directory=zenml.io.utils.get_zenml_dir(),
         )
 
         while not self.is_running:

@@ -19,7 +19,7 @@ from typing import Optional
 from zenml.config.global_config import GlobalConfig
 from zenml.core.base_component import BaseComponent
 from zenml.io import fileio
-from zenml.io.fileio import get_zenml_config_dir
+from zenml.io.utils import get_zenml_config_dir
 
 
 class BaseArtifactStore(BaseComponent):

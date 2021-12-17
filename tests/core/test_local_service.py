@@ -17,15 +17,12 @@ import os
 import pytest
 from git.repo.base import Repo
 
-from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
-from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
+from zenml.artifact_stores import BaseArtifactStore, LocalArtifactStore
 from zenml.core.repo import Repository
 from zenml.exceptions import AlreadyExistsException, DoesNotExistException
-from zenml.metadata.base_metadata_store import BaseMetadataStore
-from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
-from zenml.orchestrators.base_orchestrator import BaseOrchestrator
-from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
-from zenml.stacks.base_stack import BaseStack
+from zenml.metadata_stores import BaseMetadataStore, SQLiteMetadataStore
+from zenml.orchestrators import BaseOrchestrator, LocalOrchestrator
+from zenml.stacks import BaseStack
 
 LOCAL_STACK_NAME = "local_stack"
 LOCAL_ORCHESTRATOR_NAME = "local_orchestrator"

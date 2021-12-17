@@ -16,7 +16,7 @@
 import os
 
 from zenml.core.base_component import BaseComponent
-from zenml.io.fileio import get_zenml_config_dir
+from zenml.io.utils import get_zenml_config_dir
 
 
 class BaseContainerRegistry(BaseComponent):

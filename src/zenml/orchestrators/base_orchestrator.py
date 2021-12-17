@@ -3,7 +3,7 @@ from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Optional
 
 from zenml.core.base_component import BaseComponent
-from zenml.io.fileio import get_zenml_config_dir
+from zenml.io.utils import get_zenml_config_dir
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline

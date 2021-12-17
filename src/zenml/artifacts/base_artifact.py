@@ -26,7 +26,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """The below code is copied from the TFX source repo with minor changes.
-All credits goes to  the TFX team for the core implementation"""
+All credits go to the TFX team for the core implementation"""
 from typing import Any, Dict
 
 from ml_metadata.proto import metadata_store_pb2

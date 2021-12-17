@@ -22,8 +22,7 @@ from steps.torch_steps import torch_evaluator, torch_trainer
 
 from zenml.core.repo import Repository
 from zenml.pipelines import pipeline
-from zenml.steps import step
-from zenml.steps.step_output import Output
+from zenml.steps import step, Output
 
 
 @step

@@ -18,8 +18,7 @@ import pytest
 
 from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
 from zenml.pipelines import pipeline
-from zenml.steps import step
-from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps import BaseStepConfig, step
 from zenml.utils.yaml_utils import write_yaml
 
 

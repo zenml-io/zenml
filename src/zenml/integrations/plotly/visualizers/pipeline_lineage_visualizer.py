@@ -20,8 +20,8 @@ import plotly.express as px
 from plotly.graph_objs import Figure
 
 from zenml.logger import get_logger
-from zenml.post_execution.pipeline import PipelineView
-from zenml.visualizers.base_pipeline_visualizer import BasePipelineVisualizer
+from zenml.post_execution import PipelineView
+from zenml.visualizers import BasePipelineVisualizer
 
 logger = get_logger(__name__)
 

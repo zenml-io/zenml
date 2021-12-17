@@ -35,8 +35,7 @@ exclude = [
     "tests",
     "docs",
     "legacy",
-    "examples",
-    "playground"
+    "examples"
 ]
 include = [
     "src/zenml",

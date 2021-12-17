@@ -20,6 +20,7 @@ import pytest
 from hypothesis import given
 from hypothesis.strategies import text
 
+import zenml.io.utils
 from zenml.constants import REMOTE_FS_PREFIX
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -105,14 +106,14 @@ def test_gcs_path_when_true(filename):
     """is_gcs checks if a file begins with the prefix `gs`"""
     gs_prefix = "gs://"
     sample_file_path = gs_prefix + filename
-    assert fileio.is_gcs_path(sample_file_path)
+    assert zenml.io.utils.is_gcs_path(sample_file_path)
 
 
 @given(text())
 def test_gcs_path_when_false(filesystem):
     """is_gcs checks that false is returned when file has no `gs` prefix"""
     sample_file_path = filesystem + "test_file.txt"
-    assert fileio.is_gcs_path(sample_file_path) is False
+    assert zenml.io.utils.is_gcs_path(sample_file_path) is False
 
 
 def test_list_dir_returns_a_list_of_file_names(tmp_path):

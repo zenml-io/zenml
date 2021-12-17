@@ -16,11 +16,11 @@ from typing import Dict
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
+from zenml.steps import Output
 from zenml.steps.step_interfaces.base_split_step import (
     BaseSplitStep,
     BaseSplitStepConfig,
 )
-from zenml.steps.step_output import Output
 
 
 class SklearnSplitterConfig(BaseSplitStepConfig):
