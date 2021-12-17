@@ -36,5 +36,5 @@ zenml example pull EXAMPLE_NAME
 Have any questions? Want more tutorials? Spot out-dated, frustrating tutorials? We got you covered!
 
 Feel free to let us know by creating an 
-[issue](https://github.com/zenml-io/zenml/issues) here on our Github or by reaching out to us on our 
+[issue](https://github.com/zenml-io/zenml/issues) here on our GitHub or by reaching out to us on our 
 [Slack](https://zenml.io/slack-invite/). 

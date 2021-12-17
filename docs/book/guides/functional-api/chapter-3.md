@@ -9,7 +9,7 @@ If you want to see the code for this chapter of the guide, head over to the
 
 ## Train and evaluate the model
 
-Finally we can train and evaluate our model.
+Finally, we can train and evaluate our model.
 
 ### Create steps
 
