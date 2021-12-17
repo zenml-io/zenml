@@ -21,19 +21,19 @@ from zenml.cli.cli import cli
 from zenml.core.repo import Repository
 
 
-@cli.group()
-def metadata() -> None:
+@cli.group("metadata-store")
+def metadata_store() -> None:
     """Utilities for metadata store"""
 
 
-@metadata.command("get")
+@metadata_store.command("get")
 def get_active_metadata_store() -> None:
     """Gets the metadata store of the active stack."""
     metadata_store_name = Repository().get_active_stack().metadata_store_name
     cli_utils.declare(f"Active metadata store: {metadata_store_name}")
 
 
-@metadata.command(
+@metadata_store.command(
     "register", context_settings=dict(ignore_unknown_options=True)
 )
 @click.argument("metadata_store_name", type=str)
@@ -69,7 +69,7 @@ def register_metadata_store(
     )
 
 
-@metadata.command("list")
+@metadata_store.command("list")
 def list_metadata_stores() -> None:
     """List all available metadata stores from service."""
     repo = Repository()
@@ -84,7 +84,7 @@ def list_metadata_stores() -> None:
     )
 
 
-@metadata.command("delete")
+@metadata_store.command("delete")
 @click.argument("metadata_store_name", type=str)
 def delete_metadata_store(metadata_store_name: str) -> None:
     """Delete a metadata store."""

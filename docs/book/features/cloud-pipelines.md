@@ -65,7 +65,7 @@ dedicated MySQL-based Metadata Store to unfold their true potential.
 The Metadata Store can be simply configured to use any MySQL server (=>5.6):
 
 ```
-zenml metadata register METADATA_STORE_NAME mysql \
+zenml metadata-store register METADATA_STORE_NAME mysql \
     --host=127.0.0.1 \ 
     --port=3306 \
     --username=USER \
@@ -103,7 +103,7 @@ Artifact Store.
 Configuring a remote Artifact Store for ZenML is a one-liner using the CLI:
 
 ```
-zenml artifact register ARTIFACT_STORE_NAME gcp --path=gs://your-bucket/sub/dir
+zenml artifact-store register ARTIFACT_STORE_NAME gcp --path=gs://your-bucket/sub/dir
 ```
 
 ## Orchestrator

@@ -21,19 +21,19 @@ from zenml.cli.cli import cli
 from zenml.core.repo import Repository
 
 
-@cli.group()
-def artifact() -> None:
+@cli.group("artifact-store")
+def artifact_store() -> None:
     """Utilities for artifact store"""
 
 
-@artifact.command("get")
+@artifact_store.command("get")
 def get_active_artifact_store() -> None:
     """Gets the artifact store of the active stack."""
     artifact_store_name = Repository().get_active_stack().artifact_store_name
     cli_utils.declare(f"Active artifact store: {artifact_store_name}")
 
 
-@artifact.command(
+@artifact_store.command(
     "register", context_settings=dict(ignore_unknown_options=True)
 )
 @click.argument("artifact_store_name", type=str)
@@ -64,7 +64,7 @@ def register_artifact_store(
     )
 
 
-@artifact.command("list")
+@artifact_store.command("list")
 def list_artifact_stores() -> None:
     """List all available artifact stores from service."""
     repo = Repository()
@@ -78,7 +78,7 @@ def list_artifact_stores() -> None:
     )
 
 
-@artifact.command("delete")
+@artifact_store.command("delete")
 @click.argument("artifact_store_name", type=str)
 def delete_artifact_store(artifact_store_name: str) -> None:
     """Delete a artifact store."""
