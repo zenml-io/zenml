@@ -78,6 +78,19 @@ def list_artifact_stores() -> None:
     )
 
 
+@artifact.command("describe")
+def describe_artifact_stores() -> None:
+    """Show details about the current active artifact store."""
+    repo = Repository()
+    artifact_stores = repo.get_service().artifact_stores
+    active_artifact_store = repo.get_active_stack().artifact_store_name
+    artifact_store_details = artifact_stores[active_artifact_store]
+    cli_utils.title("Active Artifact Store:")
+    cli_utils.declare(f"NAME: {active_artifact_store}")
+    cli_utils.declare(f"UUID: {artifact_store_details.uuid}")
+    cli_utils.declare(f"PATH: {artifact_store_details.path}")
+
+
 @artifact.command("delete")
 @click.argument("artifact_store_name", type=str)
 def delete_artifact_store(artifact_store_name: str) -> None:
