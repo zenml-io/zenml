@@ -125,14 +125,19 @@ def describe_orchestrator(orchestrator_name: str) -> None:
     repo = Repository()
     orchestrators = repo.get_service().orchestrators
     try:
-        container_registry_details = orchestrators[orchestrator_name]
+        orchestrator_details = orchestrators[orchestrator_name]
     except KeyError:
         cli_utils.error(f"Orchestrator `{orchestrator_name}` does not exist.")
         return
-    cli_utils.title("Active Container Registry:")
+    cli_utils.title("Active Orchestrator:")
     cli_utils.declare(f"NAME: {orchestrator_name}")
-    cli_utils.declare(f"UUID: {container_registry_details.uuid}")
-    cli_utils.declare(f"URI: {container_registry_details.uri}")
+    cli_utils.declare(f"UUID: {orchestrator_details.uuid}")
+    cli_utils.declare(
+        f"CUSTOM_DOCKER_BASE_IMAGE_NAME: {orchestrator_details.custom_docker_base_image_name}"
+    )
+    cli_utils.declare(
+        f"KUBERNETES_CONTEXT: {orchestrator_details.kubernetes_context}"
+    )
 
 
 @orchestrator.command("delete")
