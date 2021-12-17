@@ -20,7 +20,7 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.core.repo import Repository
-from zenml.stacks.base_stack import BaseStack
+from zenml.stacks import BaseStack
 
 
 # Stacks
@@ -62,8 +62,10 @@ def list_stacks() -> None:
     cli_utils.title("Stacks:")
     # TODO [ENG-144]: once there is a common superclass for Stack/ArtifactStore etc.,
     #  remove the mypy ignore
+    repo = Repository()
+    active_stack = repo.get_active_stack_key()
     cli_utils.print_table(
-        cli_utils.format_component_list(service.stacks)  # type: ignore[arg-type]
+        cli_utils.format_component_list(service.stacks, active_stack)  # type: ignore[arg-type]
     )
 
 

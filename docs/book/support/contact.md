@@ -2,7 +2,8 @@
 
 ## GitHub
 
-If you have any questions you'd like to ask, you can join our GitHub community right [here](https://github.com/zenml-io/zenml/discussions).
+If you have any questions you'd like to ask, you can join our GitHub community right 
+[here](https://github.com/zenml-io/zenml/discussions).
 
 ## Slack
 

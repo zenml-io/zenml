@@ -23,7 +23,7 @@ from typing import (
     overload,
 )
 
-from zenml.steps.base_step import BaseStep
+from zenml.steps import BaseStep
 from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
     OUTPUT_SPEC,

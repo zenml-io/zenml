@@ -18,14 +18,15 @@ from typing import List, Optional
 
 from git import InvalidGitRepositoryError  # type: ignore[attr-defined]
 
+import zenml.io.utils
 from zenml.core.constants import ZENML_DIR_NAME
 from zenml.core.git_wrapper import GitWrapper
 from zenml.core.local_service import LocalService
 from zenml.exceptions import InitializationException
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.post_execution.pipeline import PipelineView
-from zenml.stacks.base_stack import BaseStack
+from zenml.post_execution import PipelineView
+from zenml.stacks import BaseStack
 from zenml.utils.analytics_utils import GET_PIPELINES, SET_STACK, track
 
 logger = get_logger(__name__)
@@ -46,7 +47,7 @@ class Repository:
         """
         if path is None:
             try:
-                path = fileio.get_zenml_dir()
+                path = zenml.io.utils.get_zenml_dir()
             except InitializationException:
                 # If there isn't a zenml.config, use the cwd
                 path = os.getcwd()
@@ -82,7 +83,7 @@ class Repository:
             NoSuchPathError: If the repo_path does not exist.
         """
         # First check whether it already exists or not
-        if fileio.is_zenml_dir(repo_path):
+        if zenml.io.utils.is_zenml_dir(repo_path):
             raise AssertionError(f"{repo_path} is already initialized!")
 
         try:
@@ -106,12 +107,8 @@ class Repository:
             from zenml.artifact_stores.local_artifact_store import (
                 LocalArtifactStore,
             )
-            from zenml.metadata.sqlite_metadata_wrapper import (
-                SQLiteMetadataStore,
-            )
-            from zenml.orchestrators.local.local_orchestrator import (
-                LocalOrchestrator,
-            )
+            from zenml.metadata_stores import SQLiteMetadataStore
+            from zenml.orchestrators import LocalOrchestrator
 
             service = LocalService()
 

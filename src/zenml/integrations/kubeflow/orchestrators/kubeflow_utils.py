@@ -13,9 +13,6 @@
 # limitations under the License.
 """Common utility for Kubeflow-based orchestrator."""
 
-
-# utils.py should not be used in container_entrypoint.py because of its
-# dependency on KFP.
 from kfp import dsl
 from tfx.dsl.components.base import base_node
 from tfx.orchestration import data_types
@@ -31,25 +28,3 @@ def replace_placeholder(component: base_node.BaseNode) -> None:
         component.exec_properties[key] = str(
             dsl.PipelineParam(name=exec_property.name)
         )
-
-
-def fix_brackets(placeholder: str) -> str:
-    """Fix the imbalanced brackets in placeholder.
-    When ptype is not null, regex matching might grab a placeholder with }
-    missing. This function fix the missing bracket.
-    Args:
-      placeholder: string placeholder of RuntimeParameter
-    Returns:
-      Placeholder with re-balanced brackets.
-    Raises:
-      RuntimeError: if left brackets are less than right brackets.
-    """
-    lcount = placeholder.count("{")
-    rcount = placeholder.count("}")
-    if lcount < rcount:
-        raise RuntimeError(
-            "Unexpected redundant left brackets found in {}".format(placeholder)
-        )
-    else:
-        patch = "".join(["}"] * (lcount - rcount))
-        return placeholder + patch

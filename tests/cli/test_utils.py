@@ -12,13 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from hypothesis import given
 from hypothesis.strategies import datetimes
-from hypothesis.strategies._internal.datetime import timedeltas
 
-from zenml.cli.utils import format_date, format_timedelta, parse_unknown_options
+from zenml.cli.utils import format_date, parse_unknown_options
 
 SAMPLE_CUSTOM_ARGUMENTS = [
     '--custom_argument="value"',
@@ -35,16 +34,6 @@ def test_format_date_formats_a_string_properly(
     # format_date(sample_datetime)
     assert isinstance(format_date(sample_datetime), str)
     assert format_date(datetime(2020, 1, 1), "%Y") == "2020"
-
-
-@given(sample_timedelta=timedeltas())
-def test_format_timedelta_formats_into_a_string_correctly(
-    sample_timedelta: timedelta,
-) -> None:
-    """Check the format_timedelta function returns a formatted
-    string according to specification."""
-    assert isinstance(format_timedelta(sample_timedelta), str)
-    assert format_timedelta(timedelta(days=1)) == "24:00:00"
 
 
 def test_parse_unknown_options_returns_a_dict_of_known_options() -> None:

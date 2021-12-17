@@ -44,7 +44,7 @@ can type something like this:
 
 .. code:: bash
 
-   zenml metadata register --help
+   zenml metadata-store register --help
 
 This will give you information about how to register a metadata store.
 (See below for more on that).
@@ -169,54 +169,54 @@ machine. If you wish to register a new metadata store, do so with the
 
 .. code:: bash
 
-   zenml metadata register METADATA_STORE_NAME METADATA_STORE_TYPE [--OPTIONS]
+   zenml metadata-store register METADATA_STORE_NAME METADATA_STORE_TYPE [--OPTIONS]
 
 If you wish to list the metadata stores that have already been
 registered within your ZenML project / repository, type:
 
 .. code:: bash
 
-   zenml metadata list
+   zenml metadata-store list
 
 If you wish to delete a particular metadata store, pass the name of the
 metadata store into the CLI with the following command:
 
 .. code:: bash
 
-   zenml metadata delete METADATA_STORE_NAME
+   zenml metadata-store delete METADATA_STORE_NAME
 
 Customizing your Artifact Store
 -------------------------------
 
 The artifact store is where all the inputs and outputs of your pipeline
-steps are stored. By default ZenML initializes your repository with an
+steps are stored. By default, ZenML initializes your repository with an
 artifact store with everything kept on your local machine. If you wish
 to register a new artifact store, do so with the ``register`` command:
 
 .. code:: bash
 
-   zenml artifact register ARTIFACT_STORE_NAME ARTIFACT_STORE_TYPE [--OPTIONS]
+   zenml artifact-store register ARTIFACT_STORE_NAME ARTIFACT_STORE_TYPE [--OPTIONS]
 
 If you wish to list the artifact stores that have already been
 registered within your ZenML project / repository, type:
 
 .. code:: bash
 
-   zenml artifact list
+   zenml artifact-store list
 
 If you wish to delete a particular artifact store, pass the name of the
 artifact store into the CLI with the following command:
 
 .. code:: bash
 
-   zenml artifact delete ARTIFACT_STORE_NAME
+   zenml artifact-store delete ARTIFACT_STORE_NAME
 
 Customizing your Orchestrator
 -----------------------------
 
 An orchestrator is a special kind of backend that manages the running of
 each step of the pipeline. Orchestrators administer the actual pipeline
-runs. By default ZenML initializes your repository with an orchestrator
+runs. By default, ZenML initializes your repository with an orchestrator
 that runs everything on your local machine.
 
 If you wish to register a new orchestrator, do so with the ``register``
@@ -296,13 +296,13 @@ To see which stack is currently set as the default active stack, type:
 
 """
 
-from zenml.cli.artifact import *  # noqa
+from zenml.cli.artifact_store import *  # noqa
 from zenml.cli.base import *  # noqa
 from zenml.cli.config import *  # noqa
 from zenml.cli.container_registry import *  # noqa
 from zenml.cli.example import *  # noqa
 from zenml.cli.integration import *  # noqa
-from zenml.cli.metadata import *  # noqa
+from zenml.cli.metadata_store import *  # noqa
 from zenml.cli.orchestrator import *  # noqa
 from zenml.cli.pipeline import *  # noqa
 from zenml.cli.stack import *  # noqa

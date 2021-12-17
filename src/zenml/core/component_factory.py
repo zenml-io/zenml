@@ -14,13 +14,12 @@
 """Factory to register all components."""
 from typing import Callable, Dict, Type
 
-from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
+from zenml.artifact_stores import LocalArtifactStore
 from zenml.core.base_component import BaseComponent
 from zenml.enums import ArtifactStoreTypes, MLMetadataTypes, OrchestratorTypes
 from zenml.logger import get_logger
-from zenml.metadata.mysql_metadata_wrapper import MySQLMetadataStore
-from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
-from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
+from zenml.metadata_stores import MySQLMetadataStore, SQLiteMetadataStore
+from zenml.orchestrators import LocalOrchestrator
 
 logger = get_logger(__name__)
 BaseComponentType = Type[BaseComponent]

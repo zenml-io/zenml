@@ -35,7 +35,7 @@ from zenml.integrations.kubeflow.orchestrators.kubeflow_dag_runner import (
 from zenml.integrations.utils import get_requirements_for_module
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+from zenml.orchestrators import BaseOrchestrator
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline

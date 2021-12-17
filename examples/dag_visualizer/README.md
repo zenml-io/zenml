@@ -7,9 +7,9 @@ Visualizers are Python classes that take post-execution view objects (e.g. `Pipe
 visualizations for them. ZenML will support many standard ones but one can always extend them using the `BaseVisualization` classes.
 
 ## Overview
-Here, we are using the [Boston Housing Price Regression](https://keras.io/api/datasets/boston_housing/) dataset. We create a simple pipeline that 
-returns two pd.DataFrames, one for the training data and one for the test data. In the post-execution workflow we then plug in the visualization class 
-that visualizes the latest pipeline run for us.
+Here, we are using the [Boston Housing Price Regression](https://keras.io/api/datasets/boston_housing/) dataset. 
+We create a simple pipeline that returns two pd.DataFrames, one for the training data and one for the test data. In 
+the post-execution workflow we then plug in the visualization class that visualizes the latest pipeline run for us.
 
 This visualization is produced with the following code:
 
@@ -30,7 +30,7 @@ visualizer_graph()
 
 It produces the following visualization:
 
-![Boston Housing Dataset Pipeline Visualization](../../docs/book/.gitbook/assets/dag_visualization.png)
+![Boston Housing Dataset Pipeline Visualization](../../docs/book/assets/dag-visualization.png)
 
 
 ## Run it locally
@@ -40,8 +40,11 @@ In order to run this example, you need to install and initialize ZenML:
 
 ```shell
 # install CLI
-zenml integration install graphviz
+pip install zenml
+
+# install ZenML integrations
 zenml integration install tensorflow
+zenml integration install graphviz
 
 # pull example
 zenml example pull dag_visualizer

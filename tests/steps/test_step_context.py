@@ -17,9 +17,9 @@ import pytest
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.exceptions import StepContextError
+from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.materializers.built_in_materializer import BuiltInMaterializer
-from zenml.steps.step_context import StepContext
+from zenml.steps import StepContext
 
 
 def test_initialize_step_context_with_mismatched_keys():

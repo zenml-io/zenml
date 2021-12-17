@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, Optional
 import tfx.orchestration.pipeline as tfx_pipeline
 from pydantic import PrivateAttr
 
-from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.local.local_dag_runner import LocalDagRunner
 
 if TYPE_CHECKING:
