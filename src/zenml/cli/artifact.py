@@ -85,12 +85,19 @@ def list_artifact_stores() -> None:
     "artifact_store_name",
     type=click.STRING,
     required=False,
-    default=Repository().get_active_stack().artifact_store_name,
+    default="",
 )
 def describe_artifact_store(artifact_store_name: str) -> None:
     """Show details about the current active artifact store."""
     repo = Repository()
+    if artifact_store_name == "":
+        artifact_store_name = repo.get_active_stack().artifact_store_name
+
     artifact_stores = repo.get_service().artifact_stores
+    if len(artifact_stores) == 0:
+        cli_utils.error("No artifact stores registered!")
+        return
+
     try:
         artifact_store_details = artifact_stores[artifact_store_name]
     except KeyError:

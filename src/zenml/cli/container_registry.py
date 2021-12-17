@@ -83,12 +83,21 @@ def list_container_registries() -> None:
     "container_registry_name",
     type=click.STRING,
     required=False,
-    default=Repository().get_active_stack().container_registry_name,
+    default="",
 )
 def describe_container_registry(container_registry_name: str) -> None:
     """Show details about the current active container registry."""
     repo = Repository()
+    if container_registry_name == "":
+        container_registry_name = (
+            repo.get_active_stack().container_registry_name
+        )
+
     container_registries = repo.get_service().container_registries
+    if len(container_registries) == 0:
+        cli_utils.error("No container registries registered!")
+        return
+
     try:
         container_registry_details = container_registries[
             container_registry_name

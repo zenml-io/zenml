@@ -92,12 +92,19 @@ def list_metadata_stores() -> None:
     "metadata_store_name",
     type=click.STRING,
     required=False,
-    default=Repository().get_active_stack().metadata_store_name,
+    default="",
 )
 def describe_metadata_store(metadata_store_name: str) -> None:
     """Show details about the current active metadata store."""
     repo = Repository()
+    if metadata_store_name == "":
+        metadata_store_name = repo.get_active_stack().metadata_store_name
+
     metadata_stores = repo.get_service().metadata_stores
+    if len(metadata_stores) == 0:
+        cli_utils.error("No metadata stores registered!")
+        return
+
     try:
         metadata_store_details = metadata_stores[metadata_store_name]
     except KeyError:

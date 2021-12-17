@@ -118,12 +118,19 @@ def list_orchestrators() -> None:
     "orchestrator_name",
     type=click.STRING,
     required=False,
-    default=Repository().get_active_stack().orchestrator_name,
+    default="",
 )
 def describe_orchestrator(orchestrator_name: str) -> None:
     """Show details about the current active orchestrator."""
     repo = Repository()
+    if orchestrator_name == "":
+        orchestrator_name = repo.get_active_stack().orchestrator_name
+
     orchestrators = repo.get_service().orchestrators
+    if len(orchestrators) == 0:
+        cli_utils.error("No orchestrators registered!")
+        return
+
     try:
         orchestrator_details = orchestrators[orchestrator_name]
     except KeyError:

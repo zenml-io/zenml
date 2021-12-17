@@ -77,12 +77,19 @@ def list_stacks() -> None:
     "stack_name",
     type=click.STRING,
     required=False,
-    default=Repository().get_active_stack_key(),
+    default="",
 )
 def describe_stack(stack_name: str) -> None:
     """Show details about the current active stack."""
     repo = Repository()
+    if stack_name == "":
+        stack_name = repo.get_active_stack_key()
+
     stacks = repo.get_service().stacks
+    if len(stacks) == 0:
+        cli_utils.error("No stacks registered!")
+        return
+
     try:
         stack_details = stacks[stack_name]
     except KeyError:
