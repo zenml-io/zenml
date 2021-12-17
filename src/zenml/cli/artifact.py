@@ -56,7 +56,7 @@ def register_artifact_store(
     from zenml.core.component_factory import artifact_store_factory
 
     comp = artifact_store_factory.get_single_component(artifact_store_type)
-    artifact_store = comp(**parsed_args)
+    artifact_store = comp(repo_path=repo.path, **parsed_args)
     service = repo.get_service()
     service.register_artifact_store(artifact_store_name, artifact_store)
     cli_utils.declare(

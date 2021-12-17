@@ -39,7 +39,7 @@ def get_key_from_uuid(uuid: UUID, mapping: Dict[str, UUIDSourceTuple]) -> str:
 
 
 def get_component_from_key(
-    key: str, mapping: Dict[str, UUIDSourceTuple]
+    key: str, mapping: Dict[str, UUIDSourceTuple], repo_path: str
 ) -> BaseComponent:
     """Given a key and a mapping, return an initialized component.
 
@@ -54,11 +54,11 @@ def get_component_from_key(
     class_ = source_utils.load_source_path_class(tuple_.source)
     if not issubclass(class_, BaseComponent):
         raise TypeError("")
-    return class_(uuid=tuple_.uuid)
+    return class_(uuid=tuple_.uuid, repo_path=repo_path)  # type: ignore[call-arg] # noqa
 
 
 def get_components_from_store(
-    store_name: str, mapping: Dict[str, UUIDSourceTuple]
+    store_name: str, mapping: Dict[str, UUIDSourceTuple], repo_path: str
 ) -> Dict[str, BaseComponent]:
     """Returns a list of components from a store.
 
@@ -70,12 +70,12 @@ def get_components_from_store(
         A dict of objects which are a subclass of type BaseComponent.
     """
     store_dir = os.path.join(
-        fileio.get_zenml_config_dir(),
+        fileio.get_zenml_config_dir(repo_path),
         store_name,
     )
     comps = {}
     for fnames in fileio.list_dir(store_dir, only_file_names=True):
         uuid = Path(fnames).stem
         key = get_key_from_uuid(UUID(uuid), mapping)
-        comps[key] = get_component_from_key(key, mapping)
+        comps[key] = get_component_from_key(key, mapping, repo_path)
     return comps

@@ -61,7 +61,7 @@ def register_metadata_store(
         cli_utils.error(str(e))
         return
 
-    metadata_store = comp(**parsed_args)
+    metadata_store = comp(repo_path=repo.path, **parsed_args)
     service = repo.get_service()
     service.register_metadata_store(metadata_store_name, metadata_store)
     cli_utils.declare(

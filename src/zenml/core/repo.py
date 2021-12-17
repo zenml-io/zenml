@@ -44,17 +44,8 @@ class Repository:
         Args:
             path (str): Path to root of repository
         """
-        if path is None:
-            try:
-                path = fileio.get_zenml_dir()
-            except InitializationException:
-                # If there isn't a zenml.config, use the cwd
-                path = os.getcwd()
-
-        if not fileio.is_dir(path):
-            raise FileNotFoundError(f"{path} does not exist or is not a dir!")
-        self.path = path
-        self.service = LocalService()
+        self.path = fileio.get_zenml_dir(path)
+        self.service = LocalService(repo_path=self.path)
 
         try:
             self.git_wrapper = GitWrapper(self.path)
@@ -89,7 +80,7 @@ class Repository:
             LocalOrchestrator,
         )
 
-        service = LocalService()
+        service = LocalService(repo_path=path)
 
         artifact_store_path = os.path.join(
             fileio.get_global_config_directory(),
@@ -99,14 +90,18 @@ class Repository:
         metadata_store_path = os.path.join(artifact_store_path, "metadata.db")
 
         service.register_artifact_store(
-            "local_artifact_store", LocalArtifactStore(path=artifact_store_path)
+            "local_artifact_store",
+            LocalArtifactStore(path=artifact_store_path, repo_path=path),
         )
 
         service.register_metadata_store(
-            "local_metadata_store", SQLiteMetadataStore(uri=metadata_store_path)
+            "local_metadata_store",
+            SQLiteMetadataStore(uri=metadata_store_path, repo_path=path),
         )
 
-        service.register_orchestrator("local_orchestrator", LocalOrchestrator())
+        service.register_orchestrator(
+            "local_orchestrator", LocalOrchestrator(repo_path=path)
+        )
 
         service.register_stack(
             "local_stack",

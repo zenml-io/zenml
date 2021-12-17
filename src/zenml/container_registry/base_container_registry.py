@@ -14,9 +14,10 @@
 """Base class for all container registries."""
 
 import os
+from typing import Any
 
 from zenml.core.base_component import BaseComponent
-from zenml.io.fileio import get_zenml_config_dir
+from zenml.io import fileio
 
 
 class BaseContainerRegistry(BaseComponent):
@@ -25,11 +26,17 @@ class BaseContainerRegistry(BaseComponent):
     uri: str
     _CONTAINER_REGISTRY_DIR_NAME: str = "container_registries"
 
-    def get_serialization_dir(self) -> str:
-        """Gets the local path where artifacts are stored."""
-        return os.path.join(
-            get_zenml_config_dir(), self._CONTAINER_REGISTRY_DIR_NAME
+    def __init__(self, repo_path: str, **kwargs: Any) -> None:
+        """Initializes a BaseContainerRegistry instance.
+
+        Args:
+            repo_path: Path to the repository of this container registry.
+        """
+        serialization_dir = os.path.join(
+            fileio.get_zenml_config_dir(repo_path),
+            self._CONTAINER_REGISTRY_DIR_NAME,
         )
+        super().__init__(serialization_dir=serialization_dir, **kwargs)
 
     class Config:
         """Configuration of settings."""

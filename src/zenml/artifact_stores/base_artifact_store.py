@@ -14,12 +14,11 @@
 """Definition of an Artifact Store"""
 
 import os
-from typing import Optional
+from typing import Any, Optional
 
 from zenml.config.global_config import GlobalConfig
 from zenml.core.base_component import BaseComponent
 from zenml.io import fileio
-from zenml.io.fileio import get_zenml_config_dir
 
 
 class BaseArtifactStore(BaseComponent):
@@ -30,6 +29,18 @@ class BaseArtifactStore(BaseComponent):
 
     path: str
     _ARTIFACT_STORE_DIR_NAME: str = "artifact_stores"
+
+    def __init__(self, repo_path: str, **kwargs: Any) -> None:
+        """Initializes a BaseArtifactStore instance.
+
+        Args:
+            repo_path: Path to the repository of this artifact store.
+        """
+        serialization_dir = os.path.join(
+            fileio.get_zenml_config_dir(repo_path),
+            self._ARTIFACT_STORE_DIR_NAME,
+        )
+        super().__init__(serialization_dir=serialization_dir, **kwargs)
 
     @staticmethod
     def get_component_name_from_uri(artifact_uri: str) -> str:
@@ -42,12 +53,6 @@ class BaseArtifactStore(BaseComponent):
             Name of the component.
         """
         return fileio.get_grandparent(artifact_uri)
-
-    def get_serialization_dir(self) -> str:
-        """Gets the local path where artifacts are stored."""
-        return os.path.join(
-            get_zenml_config_dir(), self._ARTIFACT_STORE_DIR_NAME
-        )
 
     def resolve_uri_locally(
         self, artifact_uri: str, path: Optional[str] = None

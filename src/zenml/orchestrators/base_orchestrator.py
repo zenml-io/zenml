@@ -3,7 +3,7 @@ from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Optional
 
 from zenml.core.base_component import BaseComponent
-from zenml.io.fileio import get_zenml_config_dir
+from zenml.io import fileio
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
@@ -13,6 +13,18 @@ class BaseOrchestrator(BaseComponent):
     """Base Orchestrator class to orchestrate ZenML pipelines."""
 
     _ORCHESTRATOR_STORE_DIR_NAME: str = "orchestrators"
+
+    def __init__(self, repo_path: str, **kwargs: Any) -> None:
+        """Initializes a BaseOrchestrator instance.
+
+        Args:
+            repo_path: Path to the repository of this orchestrator.
+        """
+        serialization_dir = os.path.join(
+            fileio.get_zenml_config_dir(repo_path),
+            self._ORCHESTRATOR_STORE_DIR_NAME,
+        )
+        super().__init__(serialization_dir=serialization_dir, **kwargs)
 
     @abstractmethod
     def run(
@@ -31,12 +43,6 @@ class BaseOrchestrator(BaseComponent):
                 implementations.
         """
         raise NotImplementedError
-
-    def get_serialization_dir(self) -> str:
-        """Gets the local path where artifacts are stored."""
-        return os.path.join(
-            get_zenml_config_dir(), self._ORCHESTRATOR_STORE_DIR_NAME
-        )
 
     @property
     @abstractmethod

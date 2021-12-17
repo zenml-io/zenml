@@ -51,9 +51,13 @@ def register_container_registry(
         BaseContainerRegistry,
     )
 
-    registry = BaseContainerRegistry(uri=container_registry_uri)
-    service = Repository().get_service()
-    service.register_container_registry(container_registry_name, registry)
+    repo = Repository()
+    registry = BaseContainerRegistry(
+        uri=container_registry_uri, repo_path=repo.path
+    )
+    repo.get_service().register_container_registry(
+        container_registry_name, registry
+    )
     cli_utils.declare(
         f"Container registry `{container_registry_name}` successfully registered!"
     )
