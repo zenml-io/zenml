@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import inspect
+import time
 from abc import abstractmethod
 from datetime import datetime
 from typing import (
@@ -45,7 +46,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.stacks import BaseStack
 from zenml.steps import BaseStep
-from zenml.utils import analytics_utils, yaml_utils
+from zenml.utils import analytics_utils, string_utils, yaml_utils
 
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
@@ -105,7 +106,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self.requirements_file = kwargs.pop(PARAM_REQUIREMENTS_FILE, None)
 
         self.pipeline_name = self.__class__.__name__
-        logger.info(f"Creating pipeline: {self.pipeline_name}")
+        logger.info("Creating run for pipeline: `%s`", self.pipeline_name)
         logger.info(
             f'Cache {"enabled" if self.enable_cache else "disabled"} for '
             f"pipeline `{self.pipeline_name}`"
@@ -272,9 +273,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
             },
         )
 
+        start_time = time.time()
         logger.info(
-            f"Using orchestrator `{self.stack.orchestrator_name}` for "
-            f"pipeline `{self.pipeline_name}`. Running pipeline.."
+            "Using stack `%s` for pipeline `%s`. Running pipeline..",
+            Repository().get_active_stack_key(),
+            self.pipeline_name,
         )
 
         # filepath of the file where pipeline.run() was called
@@ -287,6 +290,12 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
         ret = self.stack.orchestrator.run(self, run_name)
         self.stack.orchestrator.post_run()
+        run_duration = time.time() - start_time
+        logger.info(
+            "Pipeline run `%s` has finished in %s.",
+            run_name,
+            string_utils.get_human_readable_time(run_duration),
+        )
         return ret
 
     def with_config(

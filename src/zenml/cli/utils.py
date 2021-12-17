@@ -15,7 +15,6 @@ import datetime
 import functools
 import subprocess
 import sys
-from datetime import timedelta
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -114,14 +113,14 @@ def print_table(obj: List[Dict[str, Any]]) -> None:
 
 
 def format_component_list(
-    component_list: Mapping[str, "BaseComponent"]
+    component_list: Mapping[str, "BaseComponent"], active_component: str
 ) -> List[Dict[str, str]]:
     """Formats a list of components into a List of Dicts. This list of dicts
     can then be printed in a table style using cli_utils.print_table.
 
     Args:
-      component_list: The component_list is a mapping of component key to
-                      component class with its relevant attributes
+        component_list: The component_list is a mapping of component key to component class with its relevant attributes
+        active_component: The component that is currently active
     Returns:
         list_of_dicts: A list of all components with each component as a dict
     """
@@ -130,11 +129,11 @@ def format_component_list(
         # Make sure that the `name` key is not taken in the component dict
         # In case `name` exists, it is replaced inplace with `component_name`
         component_dict = {
-            "component_name" if k == "name" else k: v
+            "COMPONENT_NAME" if k == "name" else k.upper(): v
             for k, v in c.dict(exclude={"_superfluous_options"}).items()
         }
 
-        data = {"name": key}
+        data = {"ACTIVE": "*" if key == active_component else "", "NAME": key}
         data.update(component_dict)
         list_of_dicts.append(data)
     return list_of_dicts
@@ -165,22 +164,6 @@ def format_date(
         logger.warning("On Windows, all times are displayed in UTC timezone.")
 
     return dt.strftime(format)
-
-
-def format_timedelta(td: timedelta) -> str:
-    """Format a timedelta into a string.
-
-    Args:
-      td: datetime.timedelta object to be formatted.
-
-    Returns:
-        Formatted string according to specification.
-    """
-    if td is None:
-        return ""
-    hours, remainder = divmod(td.total_seconds(), 3600)
-    minutes, seconds = divmod(remainder, 60)
-    return "{:02}:{:02}:{:02}".format(int(hours), int(minutes), int(seconds))
 
 
 def parse_unknown_options(args: List[str]) -> Dict[str, Any]:
