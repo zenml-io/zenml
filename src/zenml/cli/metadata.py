@@ -119,7 +119,7 @@ def describe_metadata_store(metadata_store_name: str) -> None:
     cli_utils.title("Active Metadata Store:")
     cli_utils.declare(f"NAME: {metadata_store_name}")
     cli_utils.declare(f"UUID: {metadata_store_details.uuid}")
-    cli_utils.declare(f"URI: {metadata_store_details.uri}")
+    cli_utils.declare(f"URI: {metadata_store_details.uri}")  # type: ignore[attr-defined] # noqa
 
 
 @metadata.command("delete")

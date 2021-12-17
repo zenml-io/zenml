@@ -94,7 +94,7 @@ def describe_container_registry(container_registry_name: str) -> None:
     """Show details about the current active container registry."""
     repo = Repository()
     if container_registry_name == "":
-        container_registry_name = (
+        container_registry_name = str(
             repo.get_active_stack().container_registry_name
         )
 

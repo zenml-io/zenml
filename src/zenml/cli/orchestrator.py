@@ -144,10 +144,10 @@ def describe_orchestrator(orchestrator_name: str) -> None:
     cli_utils.declare(f"NAME: {orchestrator_name}")
     cli_utils.declare(f"UUID: {orchestrator_details.uuid}")
     cli_utils.declare(
-        f"CUSTOM_DOCKER_BASE_IMAGE_NAME: {orchestrator_details.custom_docker_base_image_name}"
+        f"CUSTOM_DOCKER_BASE_IMAGE_NAME: {orchestrator_details.custom_docker_base_image_name}"  # type: ignore[attr-defined] # noqa
     )
     cli_utils.declare(
-        f"KUBERNETES_CONTEXT: {orchestrator_details.kubernetes_context}"
+        f"KUBERNETES_CONTEXT: {orchestrator_details.kubernetes_context}"  # type: ignore[attr-defined] # noqa
     )
 
 
