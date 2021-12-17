@@ -75,6 +75,35 @@ def list_container_registries() -> None:
     )
 
 
+@container_registry.command(
+    "describe",
+    help="Show details about the current active container registry.",
+)
+@click.argument(
+    "container_registry_name",
+    type=click.STRING,
+    required=False,
+    default=Repository().get_active_stack().container_registry_name,
+)
+def describe_container_registry(container_registry_name: str) -> None:
+    """Show details about the current active container registry."""
+    repo = Repository()
+    container_registries = repo.get_service().container_registries
+    try:
+        container_registry_details = container_registries[
+            container_registry_name
+        ]
+    except KeyError:
+        cli_utils.error(
+            f"Container registry `{container_registry_name}` does not exist."
+        )
+        return
+    cli_utils.title("Active Container Registry:")
+    cli_utils.declare(f"NAME: {container_registry_name}")
+    cli_utils.declare(f"UUID: {container_registry_details.uuid}")
+    cli_utils.declare(f"URI: {container_registry_details.uri}")
+
+
 @container_registry.command("delete")
 @click.argument("container_registry_name", type=str)
 def delete_container_registry(container_registry_name: str) -> None:
