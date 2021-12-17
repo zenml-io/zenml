@@ -30,7 +30,7 @@ visualize_statistics()
 
 It produces the following visualization:
 
-![Statistics for boston housing dataset](../../docs/book/assets/statistics_boston_housing.png)
+![Statistics for boston housing dataset](../../docs/book/assets/statistics-boston-housing.png)
 
 
 

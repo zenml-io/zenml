@@ -28,7 +28,7 @@ visualize_lineage()
 
 It produces the following visualization:
 
-![Statistics for boston housing dataset](../../docs/book/assets/zenml_pipeline_run_lineage_dash.png)
+![Statistics for boston housing dataset](../../docs/book/assets/zenml-pipeline-run-lineage-dash.png)
 
 
 
