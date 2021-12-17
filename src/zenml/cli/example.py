@@ -106,7 +106,12 @@ class LocalExample:
                 declare(self.path)
                 if force:
                     subprocess.check_call([bash_file,
-
+                                           "-f",
+                                           "--executable",
+                                           self.executable_python_example],
+                                          cwd=self.path)
+                else:
+                    subprocess.check_call([bash_file,
                                            "--executable",
                                            self.executable_python_example],
                                           cwd=self.path)
