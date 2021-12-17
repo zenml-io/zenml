@@ -110,6 +110,31 @@ def list_orchestrators() -> None:
     )
 
 
+@orchestrator.command(
+    "describe",
+    help="Show details about the current active orchestrator.",
+)
+@click.argument(
+    "orchestrator_name",
+    type=click.STRING,
+    required=False,
+    default=Repository().get_active_stack().orchestrator_name,
+)
+def describe_orchestrator(orchestrator_name: str) -> None:
+    """Show details about the current active orchestrator."""
+    repo = Repository()
+    orchestrators = repo.get_service().orchestrators
+    try:
+        container_registry_details = orchestrators[orchestrator_name]
+    except KeyError:
+        cli_utils.error(f"Orchestrator `{orchestrator_name}` does not exist.")
+        return
+    cli_utils.title("Active Container Registry:")
+    cli_utils.declare(f"NAME: {orchestrator_name}")
+    cli_utils.declare(f"UUID: {container_registry_details.uuid}")
+    cli_utils.declare(f"URI: {container_registry_details.uri}")
+
+
 @orchestrator.command("delete")
 @click.argument("orchestrator_name", type=str)
 def delete_orchestrator(orchestrator_name: str) -> None:

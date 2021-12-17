@@ -99,7 +99,7 @@ def describe_metadata_store(metadata_store_name: str) -> None:
     repo = Repository()
     metadata_stores = repo.get_service().metadata_stores
     try:
-        container_registry_details = metadata_stores[metadata_store_name]
+        metadata_store_details = metadata_stores[metadata_store_name]
     except KeyError:
         cli_utils.error(
             f"Metadata store `{metadata_store_name}` does not exist."
@@ -107,8 +107,8 @@ def describe_metadata_store(metadata_store_name: str) -> None:
         return
     cli_utils.title("Active Container Registry:")
     cli_utils.declare(f"NAME: {metadata_store_name}")
-    cli_utils.declare(f"UUID: {container_registry_details.uuid}")
-    cli_utils.declare(f"URI: {container_registry_details.uri}")
+    cli_utils.declare(f"UUID: {metadata_store_details.uuid}")
+    cli_utils.declare(f"URI: {metadata_store_details.uri}")
 
 
 @metadata.command("delete")
