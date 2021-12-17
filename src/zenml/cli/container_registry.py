@@ -62,10 +62,16 @@ def register_container_registry(
 @container_registry.command("list")
 def list_container_registries() -> None:
     """List all available container registries from service."""
-    service = Repository().get_service()
+    repo = Repository()
+    active_container_registry = str(
+        repo.get_active_stack().container_registry_name
+    )
+    service = repo.get_service()
     cli_utils.title("Container registries:")
     cli_utils.print_table(
-        cli_utils.format_component_list(service.container_registries)
+        cli_utils.format_component_list(
+            service.container_registries, active_container_registry
+        )
     )
 
 
