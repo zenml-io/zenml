@@ -1,7 +1,7 @@
 # Functional API Guide
 
 The Functional ZenML API is defined by the primitive `@step` and `@pipeline` decorators. These should be used when 
-the [Class based API](../high-level-api) is too inflexible for the use-case at hand, and one requires more control 
+the [Class based API](../class_based_api) is too inflexible for the use-case at hand, and one requires more control 
 over individual steps and connecting them in pipelines.
 
 A user may also mix-and-match the Functional API with the Class based API: All standard data types and steps that are 
@@ -13,7 +13,7 @@ scratch (without any Class based components) and take it all the way to deployme
 Here is what we'll do in this guide:
 
 * Create a MNIST pipeline that trains using [TensorFlow (Keras)](https://www.tensorflow.org/) 
-(similar to the [Quickstart](../../quickstart-guide.md)).
+(similar to the [Quickstart](../quickstart/README.md)).
 * Swap out implementations of the `trainer` and `evaluator` steps with [scikit-learn](https://scikit-learn.org/).
 * Persist our interim data artifacts in SQL tables rather than on files.
 * Read from a dynamically changing datasource rather than a static one.
