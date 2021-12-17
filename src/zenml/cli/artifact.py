@@ -78,15 +78,28 @@ def list_artifact_stores() -> None:
     )
 
 
-@artifact.command("describe")
-def describe_artifact_stores() -> None:
+@artifact.command(
+    "describe", help="Show details about the current active artifact store."
+)
+@click.argument(
+    "artifact_store_name",
+    type=click.STRING,
+    required=False,
+    default=Repository().get_active_stack().artifact_store_name,
+)
+def describe_artifact_store(artifact_store_name: str) -> None:
     """Show details about the current active artifact store."""
     repo = Repository()
     artifact_stores = repo.get_service().artifact_stores
-    active_artifact_store = repo.get_active_stack().artifact_store_name
-    artifact_store_details = artifact_stores[active_artifact_store]
+    try:
+        artifact_store_details = artifact_stores[artifact_store_name]
+    except KeyError:
+        cli_utils.error(
+            f"Artifact store `{artifact_store_name}` does not exist."
+        )
+        return
     cli_utils.title("Active Artifact Store:")
-    cli_utils.declare(f"NAME: {active_artifact_store}")
+    cli_utils.declare(f"NAME: {artifact_store_name}")
     cli_utils.declare(f"UUID: {artifact_store_details.uuid}")
     cli_utils.declare(f"PATH: {artifact_store_details.path}")
 
