@@ -13,40 +13,56 @@
 #  permissions and limitations under the License.
 import json
 import os
-import tempfile
-from typing import Dict, Iterable, List, Optional, cast
+from typing import Any, Dict, Iterable, List, Optional, cast
 
 import pkg_resources
 from docker.client import DockerClient
+from docker.utils import build as docker_build_utils
 
 import zenml
+from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.utils import string_utils
 
 DEFAULT_BASE_IMAGE = f"zenmldocker/zenml:{zenml.__version__}"
 
 logger = get_logger(__name__)
 
 
-def create_dockerfile(
+def _parse_dockerignore(dockerignore_path: str) -> List[str]:
+    """Parses a dockerignore file and returns a list of patterns to ignore."""
+    try:
+        file_content = fileio.read_file_contents_as_string(dockerignore_path)
+    except FileNotFoundError:
+        logger.warning(
+            "Unable to find dockerignore file at path '%s'.", dockerignore_path
+        )
+        return []
+
+    exclude_patterns = []
+    for line in file_content.split("\n"):
+        line = line.strip()
+        if line and not line.startswith("#"):
+            exclude_patterns.append(line)
+
+    return exclude_patterns
+
+
+def generate_dockerfile_contents(
     base_image: str,
     command: Optional[str] = None,
     requirements: Optional[List[str]] = None,
-    output_path: Optional[str] = None,
 ) -> str:
-    """Creates a dockerfile.
+    """Generates a Dockerfile.
 
     Args:
         base_image: The image to use as base for the dockerfile.
         command: The default command that gets executed when running a
             container of an image created by this dockerfile.
         requirements: Optional list of pip requirements to install.
-        output_path: Path where the dockerfile should be written to.
-            If this is not set, a filepath inside the temp directory will be
-            used instead. **IMPORTANT**: Whoever uses this function is
-            responsible for removing the created dockerfile.
 
     Returns:
-        A path to the dockerfile.
+        Content of a dockerfile.
     """
     lines = [f"FROM {base_image}", "WORKDIR /app"]
 
@@ -62,14 +78,73 @@ def create_dockerfile(
     if command:
         lines.append(f"CMD {command}")
 
-    if not output_path:
-        _, output_path = tempfile.mkstemp()
+    return "\n".join(lines)
 
-    logger.debug("Writing dockerfile to path '%s'", output_path)
-    with open(output_path, "w") as output_file:
-        output_file.write("\n".join(lines))
 
-    return output_path
+def create_custom_build_context(
+    build_context_path: str,
+    dockerfile_contents: str,
+    dockerignore_path: Optional[str] = None,
+) -> Any:
+    """Creates a docker build context.
+
+    Args:
+        build_context_path: Path to a directory that will be sent to the
+            docker daemon as build context.
+        dockerfile_contents: File contents of the Dockerfile to use for the
+            build.
+        dockerignore_path: Optional path to a dockerignore file. If no value is
+            given, the .dockerignore in the root of the build context will be
+            used if it exists.
+
+    Returns:
+        Docker build context that can be passed when building a docker image.
+    """
+    exclude_patterns = []
+    default_dockerignore_path = os.path.join(
+        build_context_path, ".dockerignore"
+    )
+    if dockerignore_path:
+        exclude_patterns = _parse_dockerignore(dockerignore_path)
+    elif fileio.file_exists(default_dockerignore_path):
+        logger.info(
+            "Using dockerignore found at path '%s' to create docker "
+            "build context.",
+            default_dockerignore_path,
+        )
+        exclude_patterns = _parse_dockerignore(default_dockerignore_path)
+
+    logger.debug(
+        "Exclude patterns for creating docker build context: %s",
+        exclude_patterns,
+    )
+    no_ignores_found = not exclude_patterns
+
+    files = docker_build_utils.exclude_paths(
+        build_context_path, patterns=exclude_patterns
+    )
+    extra_files = [("Dockerfile", dockerfile_contents)]
+    context = docker_build_utils.create_archive(
+        root=build_context_path,
+        files=sorted(files),
+        gzip=False,
+        extra_files=extra_files,
+    )
+
+    build_context_size = os.path.getsize(context.name)
+    if build_context_size > 50 * 1024 * 1024 and no_ignores_found:
+        # The build context exceeds 50MiB and we didn't find any excludes
+        # in dockerignore files -> remind to specify a .dockerignore file
+        logger.warning(
+            "Build context size for docker image: %s. If you believe this is "
+            "unreasonably large, make sure to include a .dockerignore file at "
+            "the root of your build context (%s) or specify a custom file "
+            "when defining your pipeline.",
+            string_utils.get_human_readable_filesize(build_context_size),
+            default_dockerignore_path,
+        )
+
+    return context
 
 
 def get_current_environment_requirements() -> Dict[str, str]:
@@ -85,6 +160,7 @@ def build_docker_image(
     build_context_path: str,
     image_name: str,
     dockerfile_path: Optional[str] = None,
+    dockerignore_path: Optional[str] = None,
     requirements: Optional[List[str]] = None,
     use_local_requirements: bool = False,
     base_image: Optional[str] = None,
@@ -97,6 +173,9 @@ def build_docker_image(
         image_name: The name to use for the created docker image.
         dockerfile_path: Optional path to a dockerfile. If no value is given,
             a temporary dockerfile will be created.
+        dockerignore_path: Optional path to a dockerignore file. If no value is
+            given, the .dockerignore in the root of the build context will be
+            used if it exists.
         requirements: Optional list of pip requirements to install. This
             will only be used if no value is given for `dockerfile_path`.
         use_local_requirements: If `True` and no values are given for
@@ -118,32 +197,40 @@ def build_docker_image(
             requirements,
         )
 
-    temporary_dockerfile = not dockerfile_path
-    if not dockerfile_path:
-        dockerfile_path = create_dockerfile(
+    if dockerfile_path:
+        dockerfile_contents = fileio.read_file_contents_as_string(
+            dockerfile_path
+        )
+    else:
+        dockerfile_contents = generate_dockerfile_contents(
             requirements=requirements,
             base_image=base_image or DEFAULT_BASE_IMAGE,
         )
 
+    build_context = create_custom_build_context(
+        build_context_path=build_context_path,
+        dockerfile_contents=dockerfile_contents,
+        dockerignore_path=dockerignore_path,
+    )
+    # If a custom base image is provided, make sure to always pull the
+    # latest version of that image. If no base image is provided, we use
+    # the static default ZenML image so there is no need to constantly pull
+    always_pull_base_image = bool(base_image)
+
     logger.info(
         "Building docker image '%s', this might take a while...", image_name
     )
-    try:
-        docker_client = DockerClient.from_env()
-        # We use the client api directly here so we can stream the logs
-        output_stream = docker_client.images.client.api.build(
-            path=build_context_path,
-            dockerfile=dockerfile_path,
-            tag=image_name,
-            pull=True,  # pull changes to base image
-            rm=True,  # remove intermediate containers
-        )
-        _process_stream(output_stream)
-        logger.info("Finished building docker image.")
-    finally:
-        if temporary_dockerfile:
-            logger.debug("Removing temporary dockerfile '%s'", dockerfile_path)
-            os.remove(dockerfile_path)
+    docker_client = DockerClient.from_env()
+    # We use the client api directly here so we can stream the logs
+    output_stream = docker_client.images.client.api.build(
+        fileobj=build_context,
+        custom_context=True,
+        tag=image_name,
+        pull=always_pull_base_image,
+        rm=False,  # don't remove intermediate containers
+    )
+    _process_stream(output_stream)
+    logger.info("Finished building docker image.")
 
 
 def push_docker_image(image_name: str) -> None:
