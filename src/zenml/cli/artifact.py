@@ -67,10 +67,14 @@ def register_artifact_store(
 @artifact.command("list")
 def list_artifact_stores() -> None:
     """List all available artifact stores from service."""
-    service = Repository().get_service()
+    repo = Repository()
+    service = repo.get_service()
+    active_artifact_store = repo.get_active_stack().artifact_store_name
     cli_utils.title("Artifact Stores:")
     cli_utils.print_table(
-        cli_utils.format_component_list(service.artifact_stores)
+        cli_utils.format_component_list(
+            service.artifact_stores, active_artifact_store
+        )
     )
 
 
