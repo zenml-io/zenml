@@ -68,13 +68,23 @@ def get_active_orchestrator() -> None:
 @orchestrator.command(
     "register", context_settings=dict(ignore_unknown_options=True)
 )
-@click.argument("orchestrator_name", type=str)
-@click.argument("orchestrator_type", type=str)
+@click.option(
+    "--name",
+    "-n",
+    help="The name of the orchestrator to register.",
+    required=True,
+    type=click.STRING,
+)
+@click.option(
+    "--type",
+    "-t",
+    help="The type of the orchestrator to register.",
+    required=True,
+    type=click.STRING,
+)
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 @cli_utils.activate_integrations
-def register_orchestrator(
-    orchestrator_name: str, orchestrator_type: str, args: List[str]
-) -> None:
+def register_orchestrator(name: str, type: str, args: List[str]) -> None:
     """Register an orchestrator."""
 
     try:
@@ -87,13 +97,11 @@ def register_orchestrator(
     # TODO [ENG-186]: Remove when we rework the registry logic
     from zenml.core.component_factory import orchestrator_store_factory
 
-    comp = orchestrator_store_factory.get_single_component(orchestrator_type)
+    comp = orchestrator_store_factory.get_single_component(type)
     orchestrator_ = comp(**parsed_args)
     service = repo.get_service()
-    service.register_orchestrator(orchestrator_name, orchestrator_)
-    cli_utils.declare(
-        f"Orchestrator `{orchestrator_name}` successfully registered!"
-    )
+    service.register_orchestrator(name, orchestrator_)
+    cli_utils.declare(f"Orchestrator `{name}` successfully registered!")
 
 
 @orchestrator.command("list")

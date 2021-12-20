@@ -36,13 +36,23 @@ def get_active_artifact_store() -> None:
 @artifact_store.command(
     "register", context_settings=dict(ignore_unknown_options=True)
 )
-@click.argument("artifact_store_name", type=str)
-@click.argument("artifact_store_type", type=str)
+@click.option(
+    "--name",
+    "-n",
+    help="The name of the artifact store to register.",
+    required=True,
+    type=click.STRING,
+)
+@click.option(
+    "--type",
+    "-t",
+    help="The type of the artifact store to register.",
+    required=True,
+    type=click.STRING,
+)
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 @cli_utils.activate_integrations
-def register_artifact_store(
-    artifact_store_name: str, artifact_store_type: str, args: List[str]
-) -> None:
+def register_artifact_store(name: str, type: str, args: List[str]) -> None:
     """Register an artifact store."""
 
     try:
@@ -55,13 +65,11 @@ def register_artifact_store(
     # TODO [ENG-188]: Remove when we rework the registry logic
     from zenml.core.component_factory import artifact_store_factory
 
-    comp = artifact_store_factory.get_single_component(artifact_store_type)
+    comp = artifact_store_factory.get_single_component(type)
     artifact_store = comp(**parsed_args)
     service = repo.get_service()
-    service.register_artifact_store(artifact_store_name, artifact_store)
-    cli_utils.declare(
-        f"Artifact Store `{artifact_store_name}` successfully registered!"
-    )
+    service.register_artifact_store(name, artifact_store)
+    cli_utils.declare(f"Artifact Store `{name}` successfully registered!")
 
 
 @artifact_store.command("list")
