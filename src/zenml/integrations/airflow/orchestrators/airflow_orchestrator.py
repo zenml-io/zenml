@@ -232,14 +232,14 @@ class AirflowOrchestrator(BaseOrchestrator):
     def run(
         self,
         zenml_pipeline: "BasePipeline",
-        run_name: Optional[str] = None,
+        run_name: str,
         **kwargs: Any,
     ) -> "airflow.DAG":
         """Prepares the pipeline so it can be run in Airflow.
 
         Args:
             zenml_pipeline: The pipeline to run.
-            run_name: Optional name for the run.
+            run_name: Name of the pipeline run.
             **kwargs: Unused argument to conform with base class signature.
         """
         self.airflow_config = {

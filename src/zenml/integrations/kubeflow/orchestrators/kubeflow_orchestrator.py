@@ -108,10 +108,16 @@ class KubeflowOrchestrator(BaseOrchestrator):
     def run(
         self,
         zenml_pipeline: "BasePipeline",
-        run_name: Optional[str] = None,
+        run_name: str,
         **kwargs: Any,
     ) -> None:
-        """Prepares the pipeline to be run on Kubeflow"""
+        """Runs the pipeline on Kubeflow.
+
+        Args:
+            zenml_pipeline: The pipeline to run.
+            run_name: Name of the pipeline run.
+            **kwargs: Unused kwargs to conform with base signature
+        """
         from zenml.integrations.kubeflow.docker_utils import get_image_digest
 
         image_name = self.get_docker_image_name(zenml_pipeline.name)

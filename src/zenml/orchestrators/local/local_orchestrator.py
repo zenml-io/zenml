@@ -13,7 +13,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from pydantic import PrivateAttr
 
@@ -38,14 +38,14 @@ class LocalOrchestrator(BaseOrchestrator):
     def run(
         self,
         zenml_pipeline: "BasePipeline",
-        run_name: Optional[str] = None,
+        run_name: str,
         **pipeline_args: Any
     ) -> None:
         """Runs a pipeline locally.
 
         Args:
             zenml_pipeline: The pipeline to run.
-            run_name: Optional name for the run.
+            run_name: Name of the pipeline run.
             **pipeline_args: Unused kwargs to conform with base signature.
         """
         self._is_running = True

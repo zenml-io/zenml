@@ -260,7 +260,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         integration_registry.activate_integrations()
 
-        if run_name is None:
+        if not run_name:
             run_name = (
                 f"{self.name}-"
                 f'{datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")}'
@@ -289,7 +289,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self.stack.orchestrator.pre_run(
             pipeline=self, caller_filepath=caller_filepath
         )
-        ret = self.stack.orchestrator.run(self, run_name)
+        ret = self.stack.orchestrator.run(self, run_name=run_name)
         self.stack.orchestrator.post_run()
         run_duration = time.time() - start_time
         logger.info(

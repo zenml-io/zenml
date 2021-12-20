@@ -17,7 +17,6 @@ source code (outside of superficial, stylistic changes)"""
 import os
 import typing
 import warnings
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union, cast
 
 import tfx.orchestration.pipeline as tfx_pipeline
@@ -76,7 +75,7 @@ class AirflowDagRunner(tfx_runner.TfxRunner):
         super().__init__(config)
 
     def run(
-        self, pipeline: tfx_pipeline.Pipeline, run_name: Optional[str] = None
+        self, pipeline: tfx_pipeline.Pipeline, run_name: str = ""
     ) -> "airflow.DAG":
         """Deploys given logical pipeline on Airflow.
 
@@ -120,7 +119,6 @@ class AirflowDagRunner(tfx_runner.TfxRunner):
         c = compiler.Compiler()
         pipeline = c.compile(pipeline)
 
-        run_name = run_name or datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")
         # Substitute the runtime parameter to be a concrete run_id
         runtime_parameter_utils.substitute_runtime_parameter(
             pipeline,
