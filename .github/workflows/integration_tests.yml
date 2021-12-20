@@ -1,0 +1,64 @@
+name: Integration Testing
+
+# Controls when the action will run. Triggers the workflow on push of a tag
+on:
+  push:
+    branches:
+      - Alexej/ENG-14-integration-test-the-examples-within-CI-pipeline
+jobs:
+  integration_testing:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        python-version: [3.6, 3.7, 3.8]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install poetry
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "poetry"
+
+      - name: Install Dependencies
+        run: |
+          python -m poetry install
+
+      - name: Opt-out of analytics
+        run: |
+          python -m poetry run zenml analytics opt-out
+
+      - name: Pull examples
+        run : |
+          zenml example pull -b ${GITHUB_REF##*/} -f
+
+      - name: Run quickstart example
+        run : |
+          zenml example run quickstart -f
+
+      - name: 1. Clean between examples
+        run: |
+          zenml integration uninstall
+          zenml integration install beam -f
+
+      - name: Run not_so_quickstart example
+        run: | 
+          zenml example run not_so_quickstart -f
+
+      - name: 2. Clean between examples
+        run: |
+          zenml integration uninstall 
+          zenml integration install beam -f
+
+      - name: Run not_so_quickstart caching
+        run: |
+          zenml example run caching -f
+
+
