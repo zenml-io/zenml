@@ -330,7 +330,9 @@ class GitExamplesHandler(object):
         else:
             return self.examples
 
-    def pull(self, version: str = "", force: bool = False) -> None:
+    def pull(
+        self, version: str = "", force: bool = False, branch: str = "main"
+    ) -> None:
         """Pulls the examples from the main git examples repository."""
         if version == "":
             version = self.examples_repo.latest_release
@@ -342,7 +344,16 @@ class GitExamplesHandler(object):
             self.examples_repo.clone()
 
         try:
-            self.examples_repo.checkout(version)
+            if branch not in self.examples_repo.repo.references:
+                warning(
+                    f"The specified branch {branch} not found in "
+                    "repo, falling back to use main."
+                )
+                branch = "main"
+            if branch != "main":
+                self.examples_repo.checkout(branch=branch)
+            else:
+                self.examples_repo.checkout(version)
         except GitCommandError:
             logger.warning(
                 f"Version {version} does not exist in remote repository. "
@@ -467,6 +478,14 @@ def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
     help="The version of ZenML to use for the force-redownloaded examples.",
 )
 @click.option(
+    "--branch",
+    "-b",
+    type=click.STRING,
+    default="main",
+    help="The branch of the ZenML repo to use for the force-redownloaded "
+    "examples. A non main-branch overrules the version number.",
+)
+@click.option(
     "--path",
     "-p",
     type=click.STRING,
@@ -479,12 +498,16 @@ def pull(
     force: bool,
     version: str,
     path: str,
+    branch: str,
 ) -> None:
     """Pull examples straight into your current working directory.
     Add the flag --force or -f to redownload all the examples afresh.
     Use the flag --version or -v and the version number to specify
     which version of ZenML you wish to use for the examples."""
-    git_examples_handler.pull(force=force, version=version)
+    git_examples_handler.pull(
+        force=force, version=version, branch=branch.strip()
+    )
+
     examples_dir = os.path.join(os.getcwd(), path)
     fileio.create_dir_if_not_exists(examples_dir)
     try:
@@ -556,6 +579,7 @@ def run(
     else:
         example_dir = os.path.join(examples_dir, example_name)
         local_example = LocalExample(example_name, example_dir)
+
         if not local_example.is_present():
             error(f"Example {example_name} is not installed at {examples_dir})")
         else:
