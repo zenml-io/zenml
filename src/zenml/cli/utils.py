@@ -140,7 +140,7 @@ def format_component_list(
     return list_of_dicts
 
 
-def print_component_properties(properties: dict) -> None:
+def print_component_properties(properties: Dict[str, str]) -> None:
     """Prints the properties of a component.
 
     Args:
