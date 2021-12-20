@@ -68,10 +68,8 @@ def get_active_orchestrator() -> None:
 @orchestrator.command(
     "register", context_settings=dict(ignore_unknown_options=True)
 )
-@click.option(
-    "--name",
-    "-n",
-    help="The name of the orchestrator to register.",
+@click.argument(
+    "name",
     required=True,
     type=click.STRING,
 )
