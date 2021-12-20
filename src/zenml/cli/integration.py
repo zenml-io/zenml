@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from typing import Optional
 
 import click
 
@@ -32,12 +33,12 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-@cli.group(help="Interact with the requirements of external integrations")
+@cli.group(help="Interact with the requirements of external integrations.")
 def integration() -> None:
     """Integrations group"""
 
 
-@integration.command(name="list", help="List the available integration .")
+@integration.command(name="list", help="List the available integrations.")
 def list_integrations() -> None:
     """List all available integrations with their installation status."""
     title("Integrations:\n")
@@ -45,7 +46,8 @@ def list_integrations() -> None:
     table_rows = []
     for name, integration_impl in integration_registry.integrations.items():
         is_installed = integration_impl.check_installation()
-        # TODO [ENG-253]: Make the installed column right-aligned once we add rich or some other similar dependency
+        # TODO [ENG-253]: Make the installed column right-aligned once we
+        #  add rich or some other similar dependency
         table_rows.append(
             {
                 "INSTALLED": "*" if is_installed else "",
@@ -59,9 +61,11 @@ def list_integrations() -> None:
     warning("zenml integration install EXAMPLE_NAME")
 
 
-@integration.command(help="List the available integration .")
+@integration.command(
+    name="get-requirements", help="List all requirements for an integration."
+)
 @click.argument("integration_name", required=False, default=None)
-def get_requirements(integration_name: str) -> None:
+def get_requirements(integration_name: Optional[str] = None) -> None:
     """List all requirements for the chosen integration."""
     try:
         requirements = integration_registry.select_integration_requirements(
@@ -85,7 +89,7 @@ def get_requirements(integration_name: str) -> None:
 
 
 @integration.command(
-    help="Install the required packages " "for the integration of choice."
+    help="Install the required packages for the integration of choice."
 )
 @click.argument("integration_name", required=False, default=None)
 @click.option(
@@ -95,7 +99,9 @@ def get_requirements(integration_name: str) -> None:
     help="Force the installation of the required packages. This will skip the "
     "confirmation step and reinstall existing packages as well",
 )
-def install(integration_name: str, force: bool = False) -> None:
+def install(
+    integration_name: Optional[str] = None, force: bool = False
+) -> None:
     """Installs the required packages for a given integration. If no integration
     is specified all required packages for all integrations are installed
     using pip"""
@@ -132,7 +138,7 @@ def install(integration_name: str, force: bool = False) -> None:
 
 
 @integration.command(
-    help="Uninstall the required packages " "for the integration of choice."
+    help="Uninstall the required packages for the integration of choice."
 )
 @click.argument("integration_name", required=False, default=None)
 @click.option(
@@ -142,7 +148,9 @@ def install(integration_name: str, force: bool = False) -> None:
     help="Force the uninstallation of the required packages. This will skip "
     "the confirmation step",
 )
-def uninstall(integration_name: str, force: bool = False) -> None:
+def uninstall(
+    integration_name: Optional[str] = None, force: bool = False
+) -> None:
     """Installs the required packages for a given integration. If no integration
     is specified all required packages for all integrations are installed
     using pip"""
@@ -153,8 +161,8 @@ def uninstall(integration_name: str, force: bool = False) -> None:
             )
         else:
             warning(
-                "The specified requirements already not installed."
-                " Nothing will be done."
+                "The specified requirements already not installed. "
+                "Nothing will be done."
             )
             requirements = []
     except KeyError as e:
