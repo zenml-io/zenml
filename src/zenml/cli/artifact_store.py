@@ -36,12 +36,10 @@ def get_active_artifact_store() -> None:
 @artifact_store.command(
     "register", context_settings=dict(ignore_unknown_options=True)
 )
-@click.option(
-    "--name",
-    "-n",
-    help="The name of the artifact store to register.",
-    required=True,
+@click.argument(
+    "name",
     type=click.STRING,
+    required=True,
 )
 @click.option(
     "--type",
