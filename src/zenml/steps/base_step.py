@@ -182,7 +182,7 @@ class BaseStep(metaclass=BaseStepMeta):
     """Abstract base class for all ZenML steps.
 
     Attributes:
-        step_name: The name of this step.
+        name: The name of this step.
         pipeline_parameter_name: The name of the pipeline parameter for which
             this step was passed as an argument.
         enable_cache: A boolean indicating if caching is enabled for this step.
@@ -204,7 +204,7 @@ class BaseStep(metaclass=BaseStepMeta):
     INSTANCE_CONFIGURATION: Dict[str, Any] = {}
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self.step_name = self.__class__.__name__
+        self.name = self.__class__.__name__
         self.pipeline_parameter_name: Optional[str] = None
 
         kwargs.update(getattr(self, INSTANCE_CONFIGURATION))
@@ -262,7 +262,7 @@ class BaseStep(metaclass=BaseStepMeta):
                     raise StepInterfaceError(
                         f"Unable to find materializer for output "
                         f"'{output_name}' of type `{output_type}` in step "
-                        f"'{self.step_name}'. Please make sure to either "
+                        f"'{self.name}'. Please make sure to either "
                         f"explicitly set a materializer for step outputs "
                         f"using `step.with_return_materializers(...)` or "
                         f"registering a default materializer for specific "
@@ -334,7 +334,7 @@ class BaseStep(metaclass=BaseStepMeta):
             raise StepInterfaceError(
                 f"Too many arguments ({arg_count}, expected: "
                 f"{maximum_arg_count}) passed when creating a "
-                f"'{self.step_name}' step."
+                f"'{self.name}' step."
             )
 
         if self.CONFIG_PARAMETER_NAME and self.CONFIG_CLASS:
@@ -346,7 +346,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 if key != self.CONFIG_PARAMETER_NAME:
                     raise StepInterfaceError(
                         f"Unknown keyword argument '{key}' when creating a "
-                        f"'{self.step_name}' step, only expected a single "
+                        f"'{self.name}' step, only expected a single "
                         f"argument with key '{self.CONFIG_PARAMETER_NAME}'."
                     )
             else:
@@ -360,7 +360,7 @@ class BaseStep(metaclass=BaseStepMeta):
             if not isinstance(config, self.CONFIG_CLASS):
                 raise StepInterfaceError(
                     f"`{config}` object passed when creating a "
-                    f"'{self.step_name}' step is not a "
+                    f"'{self.name}' step is not a "
                     f"`{self.CONFIG_CLASS.__name__}` instance."
                 )
 
@@ -399,7 +399,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
             if missing_keys:
                 raise MissingStepParameterError(
-                    self.step_name, missing_keys, self.CONFIG_CLASS
+                    self.name, missing_keys, self.CONFIG_CLASS
                 )
 
     def _prepare_input_artifacts(
@@ -423,7 +423,7 @@ class BaseStep(metaclass=BaseStepMeta):
         input_artifact_keys = list(self.INPUT_SIGNATURE.keys())
         if len(artifacts) > len(input_artifact_keys):
             raise StepInterfaceError(
-                f"Too many input artifacts for step '{self.step_name}'. "
+                f"Too many input artifacts for step '{self.name}'. "
                 f"This step expects {len(input_artifact_keys)} artifact(s) "
                 f"but got {len(artifacts) + len(kw_artifacts)}."
             )
@@ -434,7 +434,7 @@ class BaseStep(metaclass=BaseStepMeta):
             if not isinstance(artifact, Channel):
                 raise StepInterfaceError(
                     f"Wrong argument type (`{type(artifact)}`) for positional "
-                    f"argument {i} of step '{self.step_name}'. Only outputs "
+                    f"argument {i} of step '{self.name}'. Only outputs "
                     f"from previous steps can be used as arguments when "
                     f"connecting steps."
                 )
@@ -448,14 +448,14 @@ class BaseStep(metaclass=BaseStepMeta):
                 # the positional input artifacts
                 raise StepInterfaceError(
                     f"Unexpected keyword argument '{key}' for step "
-                    f"'{self.step_name}'. An artifact for this key was "
+                    f"'{self.name}'. An artifact for this key was "
                     f"already passed as a positional argument."
                 )
 
             if not isinstance(artifact, Channel):
                 raise StepInterfaceError(
                     f"Wrong argument type (`{type(artifact)}`) for argument "
-                    f"'{key}' of step '{self.step_name}'. Only outputs from "
+                    f"'{key}' of step '{self.name}'. Only outputs from "
                     f"previous steps can be used as arguments when "
                     f"connecting steps."
                 )
@@ -471,13 +471,13 @@ class BaseStep(metaclass=BaseStepMeta):
         if missing_artifacts:
             raise StepInterfaceError(
                 f"Missing input artifact(s) for step "
-                f"'{self.step_name}': {missing_artifacts}."
+                f"'{self.name}': {missing_artifacts}."
             )
 
         if unexpected_artifacts:
             raise StepInterfaceError(
                 f"Unexpected input artifact(s) for step "
-                f"'{self.step_name}': {unexpected_artifacts}. This step "
+                f"'{self.name}': {unexpected_artifacts}. This step "
                 f"only requires the following artifacts: {expected_artifacts}."
             )
 
@@ -537,13 +537,13 @@ class BaseStep(metaclass=BaseStepMeta):
         except TypeError as e:
             raise StepInterfaceError(
                 f"Failed to serialize execution parameters for step "
-                f"'{self.step_name}'. Please make sure to only use "
+                f"'{self.name}'. Please make sure to only use "
                 f"json serializable parameter values."
             ) from e
 
         source_fn = getattr(self, STEP_INNER_FUNC_NAME)
         component_class = generate_component_class(
-            step_name=self.step_name,
+            step_name=self.name,
             step_module=self.__module__,
             input_spec=self.INPUT_SPEC,
             output_spec=self.OUTPUT_SPEC,
@@ -610,7 +610,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 if output_name not in allowed_output_names:
                     raise StepInterfaceError(
                         f"Got unexpected materializers for non-existent "
-                        f"output '{output_name}' in step '{self.step_name}'. "
+                        f"output '{output_name}' in step '{self.name}'. "
                         f"Only materializers for the outputs "
                         f"{allowed_output_names} of this step can"
                         f" be registered."
@@ -620,7 +620,7 @@ class BaseStep(metaclass=BaseStepMeta):
                     raise StepInterfaceError(
                         f"Got unexpected object `{materializer}` as "
                         f"materializer for output '{output_name}' of step "
-                        f"'{self.step_name}'. Only `BaseMaterializer` "
+                        f"'{self.name}'. Only `BaseMaterializer` "
                         f"subclasses are allowed."
                     )
                 self._explicit_materializers[output_name] = materializer
@@ -633,7 +633,7 @@ class BaseStep(metaclass=BaseStepMeta):
         else:
             raise StepInterfaceError(
                 f"Got unexpected object `{materializers}` as output "
-                f"materializer for step '{self.step_name}'. Only "
+                f"materializer for step '{self.name}'. Only "
                 f"`BaseMaterializer` subclasses or dictionaries mapping "
                 f"output names to `BaseMaterializer` subclasses are allowed "
                 f"as input when specifying return materializers."

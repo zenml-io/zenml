@@ -410,7 +410,7 @@ def _create_executor_class(
     }
 
     generate_component_class(
-        step_name=step_instance.step_name,
+        step_name=step_instance.name,
         step_module=executor_class_target_module_name,
         input_spec=input_spec,
         output_spec=output_spec,
