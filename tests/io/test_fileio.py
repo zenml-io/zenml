@@ -198,3 +198,9 @@ def test_copy_raises_error_when_file_exists(tmp_path) -> None:
         fileio.copy(temp_file.name, os.path.join(tmp_path, "new_file.txt"))
         with pytest.raises(OSError):
             fileio.copy(temp_file.name, os.path.join(tmp_path, "new_file.txt"))
+
+
+def test_file_exists_function(tmp_path) -> None:
+    """Test that file_exists returns True when the file exists"""
+    with NamedTemporaryFile(dir=tmp_path) as temp_file:
+        assert fileio.file_exists(temp_file.name)
