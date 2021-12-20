@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+from io import FileIO
 from tempfile import NamedTemporaryFile
 from types import GeneratorType
 
@@ -156,8 +157,24 @@ def test_get_filesystem() -> None:
     assert issubclass(fileio._get_filesystem("/"), LocalFilesystem)
 
 
+@pytest.fixture(scope="module")
 @given(not_a_file=text(min_size=1))
-def test_open_returns_error_when_file_nonexistent(not_a_file: str) -> None:
+def test_open_returns_error_when_file_nonexistent(
+    tmp_path, not_a_file: str
+) -> None:
     """Test that open returns a file object"""
     with pytest.raises(NotFoundError):
-        fileio.open(os.path.join(".", not_a_file), "rb")
+        fileio.open(os.path.join(tmp_path, not_a_file), "rb")
+
+
+@pytest.fixture(scope="module")
+@given(random_file=text(min_size=1))
+def test_open_returns_file_object_when_file_exists(
+    tmp_path, random_file: str
+) -> None:
+    """Test that open returns a file object"""
+    with fileio.open(os.path.join(tmp_path, random_file), "w") as _:
+        assert isinstance(
+            fileio.open(os.path.join(tmp_path, random_file), "rb"),
+            FileIO,
+        )
