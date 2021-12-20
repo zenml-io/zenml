@@ -33,7 +33,7 @@ class StepContext:
     **Note**: When using a `StepContext` inside a step, ZenML disables caching
     for this step by default as the context provides access to external
     resources which might influence the result of your step execution. To
-    enable caching anyway, explicitly enable it in the @step decorator or when
+    enable caching anyway, explicitly enable it in the `@step` decorator or when
     initializing your custom step class.
     """
 
