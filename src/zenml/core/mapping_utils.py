@@ -47,6 +47,7 @@ def get_component_from_key(
     Args:
         key: Unique key.
         mapping: Dict of type str -> UUIDSourceTuple.
+        repo_path: Path to the repo from which to load the component.
 
     Returns:
         An object which is a subclass of type BaseComponent.
@@ -66,12 +67,13 @@ def get_components_from_store(
     Args:
         store_name: Name of the store.
         mapping: Dict of type str -> UUIDSourceTuple.
+        repo_path: Path to the repo from which to load the components.
 
     Returns:
         A dict of objects which are a subclass of type BaseComponent.
     """
     store_dir = os.path.join(
-        zenml.io.utils.get_zenml_config_dir(),
+        zenml.io.utils.get_zenml_config_dir(repo_path),
         store_name,
     )
     comps = {}
