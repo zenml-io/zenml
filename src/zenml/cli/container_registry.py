@@ -40,23 +40,31 @@ def get_active_container_registry() -> None:
 @container_registry.command(
     "register", context_settings=dict(ignore_unknown_options=True)
 )
-@click.argument("container_registry_name", type=str)
-@click.argument("container_registry_uri", type=str)
-def register_container_registry(
-    container_registry_name: str, container_registry_uri: str
-) -> None:
+@click.option(
+    "--name",
+    "-n",
+    help="The name of the container registry to register.",
+    required=True,
+    type=click.STRING,
+)
+@click.option(
+    "--uri",
+    "-u",
+    help="The URI for the container registry to register.",
+    required=True,
+    type=click.STRING,
+)
+def register_container_registry(name: str, uri: str) -> None:
     """Register a container registry."""
 
     from zenml.container_registry.base_container_registry import (
         BaseContainerRegistry,
     )
 
-    registry = BaseContainerRegistry(uri=container_registry_uri)
+    registry = BaseContainerRegistry(uri=uri)
     service = Repository().get_service()
-    service.register_container_registry(container_registry_name, registry)
-    cli_utils.declare(
-        f"Container registry `{container_registry_name}` successfully registered!"
-    )
+    service.register_container_registry(name, registry)
+    cli_utils.declare(f"Container registry `{name}` successfully registered!")
 
 
 @container_registry.command("list")
