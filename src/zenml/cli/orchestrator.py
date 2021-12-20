@@ -146,17 +146,7 @@ def describe_orchestrator(orchestrator_name: Optional[str]) -> None:
     else:
         cli_utils.declare("")
     cli_utils.declare(f"NAME: {orchestrator_name}")
-    for key, value in orchestrator_details.dict().items():
-        cli_utils.declare(f"{key.upper()}: {value}")
-    # try:
-    #     cli_utils.declare(
-    #         f"CUSTOM_DOCKER_BASE_IMAGE_NAME: {orchestrator_details.custom_docker_base_image_name}"  # type: ignore[attr-defined] # noqa
-    #     )
-    #     cli_utils.declare(
-    #         f"KUBERNETES_CONTEXT: {orchestrator_details.kubernetes_context}"  # type: ignore[attr-defined] # noqa
-    #     )
-    # except AttributeError:
-    #     pass
+    cli_utils.print_component_properties(orchestrator_details.dict())
 
 
 @orchestrator.command("delete")

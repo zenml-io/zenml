@@ -103,8 +103,7 @@ def describe_stack(stack_name: Optional[str]) -> None:
     else:
         cli_utils.declare("")
     cli_utils.declare(f"NAME: {stack_name}")
-    for key, value in stack_details.dict().items():
-        cli_utils.declare(f"{key.upper()}: {value}")
+    cli_utils.print_component_properties(stack_details.dict())
 
 
 @stack.command("delete")

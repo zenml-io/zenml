@@ -115,8 +115,7 @@ def describe_artifact_store(artifact_store_name: Optional[str]) -> None:
     else:
         cli_utils.declare("")
     cli_utils.declare(f"NAME: {artifact_store_name}")
-    for key, value in artifact_store_details.dict().items():
-        cli_utils.declare(f"{key.upper()}: {value}")
+    cli_utils.print_component_properties(artifact_store_details.dict())
 
 
 @artifact_store.command("delete")
