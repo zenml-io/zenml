@@ -28,7 +28,7 @@ from zenml.core.git_wrapper import GitWrapper
 from zenml.core.local_service import LocalService
 from zenml.core.repo import Repository
 from zenml.exceptions import InitializationException
-from zenml.stacks.base_stack import BaseStack
+from zenml.stacks import BaseStack
 
 # a way to get to the root
 ZENML_ROOT = str(Path(zenml.__path__[0]).parent)

@@ -17,7 +17,7 @@ import os
 from typing import Any
 
 from zenml.core.base_component import BaseComponent
-from zenml.io import fileio
+from zenml.io.utils import get_zenml_config_dir
 
 
 class BaseContainerRegistry(BaseComponent):
@@ -33,7 +33,7 @@ class BaseContainerRegistry(BaseComponent):
             repo_path: Path to the repository of this container registry.
         """
         serialization_dir = os.path.join(
-            fileio.get_zenml_config_dir(repo_path),
+            get_zenml_config_dir(repo_path),
             self._CONTAINER_REGISTRY_DIR_NAME,
         )
         super().__init__(serialization_dir=serialization_dir, **kwargs)

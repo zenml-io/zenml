@@ -30,11 +30,11 @@ from tfx.dsl.components.base import base_component as tfx_base_component
 from tfx.orchestration import data_types
 from tfx.proto.orchestration import pipeline_pb2
 
-from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
+from zenml.artifact_stores import LocalArtifactStore
 from zenml.constants import ENV_ZENML_PREVENT_PIPELINE_EXECUTION
 from zenml.core.repo import Repository
 from zenml.integrations.kubeflow.orchestrators import kubeflow_utils as utils
-from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
+from zenml.metadata_stores import SQLiteMetadataStore
 from zenml.utils import source_utils
 
 CONTAINER_ENTRYPOINT_COMMAND = [

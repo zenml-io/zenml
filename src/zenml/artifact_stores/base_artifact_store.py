@@ -19,6 +19,7 @@ from typing import Any, Optional
 from zenml.config.global_config import GlobalConfig
 from zenml.core.base_component import BaseComponent
 from zenml.io import fileio
+from zenml.io.utils import get_zenml_config_dir
 
 
 class BaseArtifactStore(BaseComponent):
@@ -37,7 +38,7 @@ class BaseArtifactStore(BaseComponent):
             repo_path: Path to the repository of this artifact store.
         """
         serialization_dir = os.path.join(
-            fileio.get_zenml_config_dir(repo_path),
+            get_zenml_config_dir(repo_path),
             self._ARTIFACT_STORE_DIR_NAME,
         )
         super().__init__(serialization_dir=serialization_dir, **kwargs)

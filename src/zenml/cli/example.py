@@ -22,6 +22,7 @@ from git.exc import GitCommandError, NoSuchPathError
 from git.repo.base import Repo
 from packaging.version import Version, parse
 
+import zenml.io.utils
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
 from zenml.cli.utils import (
@@ -160,7 +161,7 @@ class GitExamplesHandler(object):
 
     def __init__(self) -> None:
         """Create a new GitExamplesHandler instance."""
-        repo_dir = fileio.get_global_config_directory()
+        repo_dir = zenml.io.utils.get_global_config_directory()
         examples_dir = Path(os.path.join(repo_dir, EXAMPLES_GITHUB_REPO))
         self.examples_repo = ExamplesRepo(examples_dir)
 

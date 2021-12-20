@@ -61,20 +61,6 @@ def confirmation(text: str, *args: Any, **kwargs: Any) -> bool:
     return click.confirm(click.style(text, fg="yellow"), *args, **kwargs)
 
 
-def question(text: str, *args: Any, **kwargs: Any) -> Any:
-    """Echo a question string on the CLI.
-
-    Args:
-      text: Input text string.
-      *args: Args to be passed to click.prompt().
-      **kwargs: Kwargs to be passed to click.prompt().
-
-    Returns:
-        The answer to the question of any type, usually string.
-    """
-    return click.prompt(text=text, *args, **kwargs)  # type: ignore[misc]
-
-
 def declare(text: str) -> None:
     """Echo a declaration on the CLI.
 

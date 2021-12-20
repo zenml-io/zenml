@@ -30,39 +30,13 @@ import pathlib
 import site
 import sys
 import types
-from typing import Any, List, Optional, Type, Union
+from typing import Any, Optional, Type, Union
 
 from zenml import __version__
 from zenml.constants import APP_NAME
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
-
-
-class LazyLoader(types.ModuleType):
-    """Lazily loads modules."""
-
-    def __init__(self, name: str) -> None:
-        """Initializes a lazy loader."""
-        self.module: Optional[types.ModuleType] = None
-        super(LazyLoader, self).__init__(name)
-
-    def load(self) -> types.ModuleType:
-        """Loads a module and returns it."""
-        if self.module is None:
-            self.module = importlib.import_module(self.__name__)
-            self.__dict__.update(self.module.__dict__)
-        return self.module
-
-    def __getattr__(self, item: str) -> Any:
-        """Overrides the __getattr__ method with loading logic."""
-        self.module = self.load()
-        return getattr(self.module, item)
-
-    def __dir__(self) -> List[str]:
-        """Overrides the __dir__ method with loading logic."""
-        self.module = self.load()
-        return dir(self.module)
 
 
 def is_standard_pin(pin: str) -> bool:
@@ -122,29 +96,6 @@ def is_standard_source(source: str) -> bool:
     if source.split(".")[0] == "zenml":
         return True
     return False
-
-
-def get_path_from_source(source: str) -> str:
-    """Get file path from a source string.
-
-    Args:
-        source: class_source e.g. this.module.Class.
-    """
-    # TODO [ENG-169]: Make sure this is an absolute path rather than naive split
-    file_path = "/".join(source.split(".")[:-1]) + ".py"
-    return file_path
-
-
-def get_pin_from_source(source: str) -> Optional[str]:
-    """Gets pin from source, i.e. module.path@pin, returns pin.
-
-    Args:
-        source: class_source e.g. this.module.Class[@pin].
-    """
-    if "@" in source:
-        pin = source.split("@")[-1]
-        return pin
-    return "unpinned"
 
 
 def get_class_source_from_source(source: str) -> str:

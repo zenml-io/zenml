@@ -17,6 +17,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseSettings, Field, root_validator
 
+import zenml.io.utils
 from zenml.core.utils import generate_customise_sources
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -99,7 +100,7 @@ class BaseComponent(BaseSettings):
             sort_keys=True,
             exclude={SUPERFLUOUS_OPTIONS_ATTRIBUTE_NAME},
         )
-        fileio.write_file_contents_as_string(file_path, file_content)
+        zenml.io.utils.write_file_contents_as_string(file_path, file_content)
 
     def dict(self, **kwargs: Any) -> Dict[str, Any]:
         """Removes private attributes from pydantic dict so they don't get

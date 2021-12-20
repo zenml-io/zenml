@@ -22,7 +22,7 @@ from zenml.cli.cli import cli
 from zenml.core.repo import Repository
 
 if TYPE_CHECKING:
-    from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+    from zenml.orchestrators import BaseOrchestrator
 
 
 @cli_utils.activate_integrations

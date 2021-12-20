@@ -20,6 +20,7 @@ from docker.client import DockerClient
 from docker.utils import build as docker_build_utils
 
 import zenml
+import zenml.io.utils
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import string_utils
@@ -32,7 +33,9 @@ logger = get_logger(__name__)
 def _parse_dockerignore(dockerignore_path: str) -> List[str]:
     """Parses a dockerignore file and returns a list of patterns to ignore."""
     try:
-        file_content = fileio.read_file_contents_as_string(dockerignore_path)
+        file_content = zenml.io.utils.read_file_contents_as_string(
+            dockerignore_path
+        )
     except FileNotFoundError:
         logger.warning(
             "Unable to find dockerignore file at path '%s'.", dockerignore_path
@@ -198,7 +201,7 @@ def build_docker_image(
         )
 
     if dockerfile_path:
-        dockerfile_contents = fileio.read_file_contents_as_string(
+        dockerfile_contents = zenml.io.utils.read_file_contents_as_string(
             dockerfile_path
         )
     else:

@@ -18,14 +18,15 @@ from typing import List, Optional
 
 from git import InvalidGitRepositoryError  # type: ignore[attr-defined]
 
+import zenml.io.utils
 from zenml.core.constants import ZENML_DIR_NAME
 from zenml.core.git_wrapper import GitWrapper
 from zenml.core.local_service import LocalService
 from zenml.exceptions import InitializationException
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.post_execution.pipeline import PipelineView
-from zenml.stacks.base_stack import BaseStack
+from zenml.post_execution import PipelineView
+from zenml.stacks import BaseStack
 from zenml.utils.analytics_utils import GET_PIPELINES, SET_STACK, track
 
 logger = get_logger(__name__)
@@ -44,7 +45,7 @@ class Repository:
         Args:
             path (str): Path to root of repository
         """
-        self.path = fileio.get_zenml_dir(path)
+        self.path = zenml.io.utils.get_zenml_dir(path)
         self.service = LocalService(repo_path=self.path)
 
         try:
@@ -63,7 +64,7 @@ class Repository:
             InitializationException: If a ZenML repository already exists at
                 the given path.
         """
-        if fileio.is_zenml_dir(path):
+        if zenml.io.utils.is_zenml_dir(path):
             raise InitializationException(
                 f"A ZenML repository already exists at path '{path}'."
             )
@@ -72,18 +73,14 @@ class Repository:
         zen_dir = os.path.join(path, ZENML_DIR_NAME)
         fileio.create_dir_recursive_if_not_exists(zen_dir)
 
-        from zenml.artifact_stores.local_artifact_store import (
-            LocalArtifactStore,
-        )
-        from zenml.metadata.sqlite_metadata_wrapper import SQLiteMetadataStore
-        from zenml.orchestrators.local.local_orchestrator import (
-            LocalOrchestrator,
-        )
+        from zenml.artifact_stores import LocalArtifactStore
+        from zenml.metadata_stores import SQLiteMetadataStore
+        from zenml.orchestrators import LocalOrchestrator
 
         service = LocalService(repo_path=path)
 
         artifact_store_path = os.path.join(
-            fileio.get_global_config_directory(),
+            zenml.io.utils.get_global_config_directory(),
             "local_stores",
             str(service.uuid),
         )

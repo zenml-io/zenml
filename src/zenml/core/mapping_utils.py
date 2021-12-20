@@ -5,6 +5,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+import zenml.io.utils
 from zenml.core.base_component import BaseComponent
 from zenml.io import fileio
 from zenml.utils import source_utils
@@ -70,7 +71,7 @@ def get_components_from_store(
         A dict of objects which are a subclass of type BaseComponent.
     """
     store_dir = os.path.join(
-        fileio.get_zenml_config_dir(repo_path),
+        zenml.io.utils.get_zenml_config_dir(),
         store_name,
     )
     comps = {}

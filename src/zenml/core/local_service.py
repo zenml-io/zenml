@@ -1,12 +1,12 @@
 from typing import TYPE_CHECKING, Any, Dict
 
+import zenml.io.utils
 from zenml.core import mapping_utils
 from zenml.core.base_component import BaseComponent
 from zenml.core.mapping_utils import UUIDSourceTuple
 from zenml.exceptions import AlreadyExistsException, DoesNotExistException
-from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.stacks.base_stack import BaseStack
+from zenml.stacks import BaseStack
 from zenml.utils import source_utils
 from zenml.utils.analytics_utils import (
     REGISTERED_ARTIFACT_STORE,
@@ -18,12 +18,12 @@ from zenml.utils.analytics_utils import (
 )
 
 if TYPE_CHECKING:
-    from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+    from zenml.artifact_stores import BaseArtifactStore
     from zenml.container_registry.base_container_registry import (
         BaseContainerRegistry,
     )
-    from zenml.metadata.base_metadata_store import BaseMetadataStore
-    from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+    from zenml.metadata_stores import BaseMetadataStore
+    from zenml.orchestrators import BaseOrchestrator
 
 logger = get_logger(__name__)
 
@@ -48,7 +48,7 @@ class LocalService(BaseComponent):
         Args:
             repo_path: Path to the repository of this service.
         """
-        serialization_dir = fileio.get_zenml_config_dir(repo_path)
+        serialization_dir = zenml.io.utils.get_zenml_config_dir(repo_path)
         super().__init__(serialization_dir=serialization_dir, **kwargs)
         self._repo_path = repo_path
         for stack in self.stacks.values():
@@ -61,7 +61,7 @@ class LocalService(BaseComponent):
     @property
     def metadata_stores(self) -> Dict[str, "BaseMetadataStore"]:
         """Returns all registered metadata stores."""
-        from zenml.metadata.base_metadata_store import BaseMetadataStore
+        from zenml.metadata_stores import BaseMetadataStore
 
         return mapping_utils.get_components_from_store(  # type: ignore[return-value] # noqa
             BaseMetadataStore._METADATA_STORE_DIR_NAME,
@@ -72,7 +72,7 @@ class LocalService(BaseComponent):
     @property
     def artifact_stores(self) -> Dict[str, "BaseArtifactStore"]:
         """Returns all registered artifact stores."""
-        from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+        from zenml.artifact_stores import BaseArtifactStore
 
         return mapping_utils.get_components_from_store(  # type: ignore[return-value] # noqa
             BaseArtifactStore._ARTIFACT_STORE_DIR_NAME,
@@ -83,7 +83,7 @@ class LocalService(BaseComponent):
     @property
     def orchestrators(self) -> Dict[str, "BaseOrchestrator"]:
         """Returns all registered orchestrators."""
-        from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+        from zenml.orchestrators import BaseOrchestrator
 
         return mapping_utils.get_components_from_store(  # type: ignore[return-value] # noqa
             BaseOrchestrator._ORCHESTRATOR_STORE_DIR_NAME,

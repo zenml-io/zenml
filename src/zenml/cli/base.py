@@ -74,5 +74,3 @@ def clean(yes: bool = False) -> None:
         )
 
     error("Not implemented for this version")
-    # if confirm:
-    #     repo.clean()

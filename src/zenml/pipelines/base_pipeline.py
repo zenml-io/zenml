@@ -44,8 +44,8 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.stacks.base_stack import BaseStack
-from zenml.steps.base_step import BaseStep
+from zenml.stacks import BaseStack
+from zenml.steps import BaseStep
 from zenml.utils import analytics_utils, string_utils, yaml_utils
 
 logger = get_logger(__name__)

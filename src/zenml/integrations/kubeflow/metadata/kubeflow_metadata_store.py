@@ -15,7 +15,7 @@
 
 from zenml.core.component_factory import metadata_store_factory
 from zenml.enums import MLMetadataTypes
-from zenml.metadata.mysql_metadata_wrapper import MySQLMetadataStore
+from zenml.metadata_stores import MySQLMetadataStore
 
 
 @metadata_store_factory.register(MLMetadataTypes.kubeflow)

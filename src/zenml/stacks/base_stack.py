@@ -1,3 +1,16 @@
+#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from pydantic import BaseSettings, PrivateAttr
@@ -5,18 +18,18 @@ from pydantic import BaseSettings, PrivateAttr
 from zenml.enums import StackTypes
 
 if TYPE_CHECKING:
-    from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+    from zenml.artifact_stores import BaseArtifactStore
     from zenml.container_registry.base_container_registry import (
         BaseContainerRegistry,
     )
-    from zenml.metadata.base_metadata_store import BaseMetadataStore
-    from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+    from zenml.metadata_stores import BaseMetadataStore
+    from zenml.orchestrators import BaseOrchestrator
 
 
 class BaseStack(BaseSettings):
     """Base stack for ZenML.
 
-    A ZenML stack brings together an Metadata Store, an Artifact Store, and
+    A ZenML stack brings together a Metadata Store, an Artifact Store, and
     an Orchestrator, the trifecta of the environment required to run a ZenML
     pipeline. A ZenML stack also happens to be a pydantic `BaseSettings`
     class, which means that there are multiple ways to use it.

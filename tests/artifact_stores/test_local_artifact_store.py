@@ -15,7 +15,7 @@
 import pytest
 from pydantic import ValidationError
 
-from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
+from zenml.artifact_stores import LocalArtifactStore
 
 
 def test_must_be_local_path():

@@ -4,8 +4,8 @@ orchestration with the ML-specific benefits of ZenML pipelines. Each ZenML step 
 [`PythonOperator`](https://airflow.apache.org/docs/apache-airflow/stable/howto/operator/python.html), and 
 executes Airflow natively. We will use the MNIST dataset again (pull it from a Mock API).
 
-Note that this tutorial installs and deploys Airflow locally on your machine, but in a production setting that part might be already done. 
-Please read the other airflow tutorials that cover that case.
+Note that this tutorial installs and deploys Airflow locally on your machine, but in a production setting that part 
+might be already done. Please read the other airflow tutorials that cover that case.
 
 ## Pre-requisites
 In order to run this example, you need to install and initialize ZenML and Airflow.
@@ -13,7 +13,12 @@ In order to run this example, you need to install and initialize ZenML and Airfl
 ### Installation
 ```bash
 # install CLI
-pip install zenml && pip install apache-airflow && pip install tensorflow && pip install sklearn
+pip install zenml
+
+# install ZenML integrations
+zenml integration install airflow
+zenml integration install tensorflow
+zenml integration install sklearn
 
 # pull example
 zenml example pull airflow_local
@@ -49,8 +54,10 @@ When the setup is finished, it will print username and password for the Airflow 
 If you can't find the password on the console, you can navigate to the `APP_DIR / airflow / airflow_root / STACK_UUID / standalone_admin_password.txt` file.
 The username will always be `admin`.
 
-- APP_DIR will depend on your os. See which path corresponds to your OS [here](https://click.palletsprojects.com/en/8.0.x/api/#click.get_app_dir).
-- STACK_UUID will be the unique id of the airflow_stack. There will be only one folder here so you can just navigate to the one that is present.
+- APP_DIR will depend on your os. See which path corresponds to your OS 
+[here](https://click.palletsprojects.com/en/8.0.x/api/#click.get_app_dir).
+- STACK_UUID will be the unique id of the airflow_stack. There will be only one folder here, so you can just navigate 
+to the one that is present.
   {% endhint %}
 
 

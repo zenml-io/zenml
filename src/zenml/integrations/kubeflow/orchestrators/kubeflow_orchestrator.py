@@ -22,6 +22,7 @@ import tfx.orchestration.pipeline as tfx_pipeline
 import urllib3
 from kubernetes import config
 
+import zenml.io.utils
 from zenml.core.component_factory import orchestrator_store_factory
 from zenml.core.repo import Repository
 from zenml.enums import OrchestratorTypes
@@ -33,7 +34,7 @@ from zenml.integrations.kubeflow.orchestrators.kubeflow_dag_runner import (
 from zenml.integrations.utils import get_requirements_for_module
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+from zenml.orchestrators import BaseOrchestrator
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
@@ -65,7 +66,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Returns path to the root directory for all files concerning
         this orchestrator."""
         return os.path.join(
-            fileio.get_global_config_directory(), "kubeflow", str(self.uuid)
+            zenml.io.utils.get_global_config_directory(),
+            "kubeflow",
+            str(self.uuid),
         )
 
     @property

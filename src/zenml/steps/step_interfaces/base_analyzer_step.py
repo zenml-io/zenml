@@ -15,10 +15,7 @@
 from abc import abstractmethod
 
 from zenml.artifacts import DataArtifact, SchemaArtifact, StatisticsArtifact
-from zenml.steps.base_step import BaseStep
-from zenml.steps.base_step_config import BaseStepConfig
-from zenml.steps.step_context import StepContext
-from zenml.steps.step_output import Output
+from zenml.steps import BaseStep, BaseStepConfig, Output, StepContext
 
 
 class BaseAnalyzerConfig(BaseStepConfig):
