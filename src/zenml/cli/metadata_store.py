@@ -121,6 +121,7 @@ def describe_metadata_store(metadata_store_name: Optional[str]) -> None:
         cli_utils.declare("**ACTIVE**\n")
     else:
         cli_utils.declare("")
+    cli_utils.declare(f"NAME: {metadata_store_name}")
     for key, value in metadata_store_details.dict().items():
         cli_utils.declare(f"{key.upper()}: {value}")
 

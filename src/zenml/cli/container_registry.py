@@ -121,6 +121,7 @@ def describe_container_registry(
         cli_utils.declare("**ACTIVE**\n")
     else:
         cli_utils.declare("")
+    cli_utils.declare(f"NAME: {container_registry_name}")
     for key, value in container_registry_details.dict().items():
         cli_utils.declare(f"{key.upper()}: {value}")
 

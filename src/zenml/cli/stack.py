@@ -102,6 +102,7 @@ def describe_stack(stack_name: Optional[str]) -> None:
         cli_utils.declare("**ACTIVE**\n")
     else:
         cli_utils.declare("")
+    cli_utils.declare(f"NAME: {stack_name}")
     for key, value in stack_details.dict().items():
         cli_utils.declare(f"{key.upper()}: {value}")
 

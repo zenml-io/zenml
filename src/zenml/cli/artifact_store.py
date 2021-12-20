@@ -114,6 +114,7 @@ def describe_artifact_store(artifact_store_name: Optional[str]) -> None:
         cli_utils.declare("**ACTIVE**\n")
     else:
         cli_utils.declare("")
+    cli_utils.declare(f"NAME: {artifact_store_name}")
     for key, value in artifact_store_details.dict().items():
         cli_utils.declare(f"{key.upper()}: {value}")
 
