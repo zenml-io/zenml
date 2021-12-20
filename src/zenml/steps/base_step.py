@@ -217,10 +217,20 @@ class BaseStep(metaclass=BaseStepMeta):
                 # external resources which might influence the step execution.
                 # We therefore disable caching unless it is explicitly enabled
                 enable_cache = False
+                logger.debug(
+                    "Step '%s': Step context required and caching not "
+                    "explicitly enabled.",
+                    self.step_name,
+                )
             else:
                 # Default to cache enabled if not explicitly set
                 enable_cache = True
 
+        logger.debug(
+            "Step '%s': Caching %s.",
+            self.step_name,
+            "enabled" if enable_cache else "disabled",
+        )
         self.enable_cache = enable_cache
 
         self._explicit_materializers: Dict[str, Type[BaseMaterializer]] = {}
