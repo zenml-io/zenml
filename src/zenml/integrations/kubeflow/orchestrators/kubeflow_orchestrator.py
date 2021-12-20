@@ -99,6 +99,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         build_docker_image(
             build_context_path=repository_root,
             image_name=image_name,
+            dockerignore_path=pipeline.dockerignore_file,
             requirements=requirements,
             base_image=self.custom_docker_base_image_name,
         )
