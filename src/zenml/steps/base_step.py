@@ -45,6 +45,7 @@ from zenml.steps.step_output import Output
 from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
+    PARAM_CREATED_BY_FUNCTIONAL_API,
     PARAM_ENABLE_CACHE,
     PARAM_PIPELINE_PARAMETER_NAME,
     SINGLE_RETURN_OUT_NAME,
@@ -210,6 +211,10 @@ class BaseStep(metaclass=BaseStepMeta):
         self.enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, True)
 
         self.requires_context = bool(self.CONTEXT_PARAMETER_NAME)
+
+        self._created_by_functional_api = kwargs.pop(
+            PARAM_CREATED_BY_FUNCTIONAL_API, False
+        )
         self._explicit_materializers: Dict[str, Type[BaseMaterializer]] = {}
         self._component: Optional[_ZenMLSimpleComponent] = None
 
@@ -283,8 +288,15 @@ class BaseStep(metaclass=BaseStepMeta):
                 source_code = inspect.getsource(value)
                 return hashlib.sha256(source_code.encode("utf-8")).hexdigest()
 
-            source_fn = getattr(self, STEP_INNER_FUNC_NAME)
-            parameters["step_source"] = _get_hashed_source(source_fn)
+            # If the step was defined using the functional api, only track
+            # changes to the entrypoint function. Otherwise track changes to
+            # the entire step class.
+            source_object = (
+                self.entrypoint
+                if self._created_by_functional_api
+                else self.__class__
+            )
+            parameters["step_source"] = _get_hashed_source(source_object)
 
             for name, materializer in self.get_materializers().items():
                 key = f"{name}_materializer_source"
