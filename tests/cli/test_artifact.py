@@ -16,7 +16,7 @@
 import pytest
 from click.testing import CliRunner
 
-from zenml.cli.artifact import describe_artifact_store
+from zenml.cli.artifact_store import describe_artifact_store
 
 NOT_ARTIFACT_STORES = [
     "abc",
