@@ -40,10 +40,8 @@ def get_active_container_registry() -> None:
 @container_registry.command(
     "register", context_settings=dict(ignore_unknown_options=True)
 )
-@click.option(
-    "--name",
-    "-n",
-    help="The name of the container registry to register.",
+@click.argument(
+    "name",
     required=True,
     type=click.STRING,
 )
