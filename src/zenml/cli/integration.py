@@ -59,7 +59,9 @@ def list_integrations() -> None:
     warning("zenml integration install EXAMPLE_NAME")
 
 
-@integration.command(help="List the available integration .")
+@integration.command(
+    name="requirements", help="List the available integrations."
+)
 @click.argument("integration_name", required=False, default=None)
 def get_requirements(integration_name: str) -> None:
     """List all requirements for the chosen integration."""
