@@ -299,7 +299,7 @@ class GitExamplesHandler(object):
 
     @property
     def is_installed(self) -> bool:
-        """Checks if the """
+        """Checks if the"""
         return fileio.file_exists(str(self.examples_dir)) and fileio.is_dir(
             str(self.examples_dir)
         )
@@ -393,26 +393,38 @@ def list(git_examples_handler: GitExamplesHandler) -> None:
     declare("zenml example pull EXAMPLE_NAME")
 
 
+@click.option(
+    "--path",
+    "-p",
+    type=click.STRING,
+    default="zenml_examples",
+    help="Relative path at which you want to clean the example(s)",
+)
 @example.command(help="Deletes the ZenML examples directory.")
 @pass_git_examples_handler
-def clean(git_examples_handler: GitExamplesHandler) -> None:
+def clean(git_examples_handler: GitExamplesHandler, path: str) -> None:
     """Deletes the ZenML examples directory from your current working
     directory."""
-
-    if git_examples_handler.is_installed and confirmation(
-        "Do you wish to delete the ZenML"
-        " examples directory? \n "
-        f"{git_examples_handler.examples_dir}"
+    examples_directory = os.path.join(os.getcwd(), path)
+    if (
+        fileio.file_exists(examples_directory)
+        and fileio.is_dir(examples_directory)
+        and confirmation(
+            "Do you wish to delete the ZenML examples directory? \n"
+            f"{examples_directory}"
+        )
     ):
         git_examples_handler.clean_current_examples()
         declare(
             "ZenML examples directory was deleted from your current working "
             "directory."
         )
-    elif not git_examples_handler.is_installed:
+    elif not fileio.file_exists(examples_directory) and not fileio.is_dir(
+        examples_directory
+    ):
         logger.error(
             f"Unable to delete the ZenML examples directory - "
-            f"{git_examples_handler.examples_dir} - "
+            f"{examples_directory} - "
             "as it was not found in your current working directory."
         )
 
