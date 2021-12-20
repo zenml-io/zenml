@@ -19,6 +19,7 @@ from types import GeneratorType
 import pytest
 from hypothesis import given
 from hypothesis.strategies import text
+from tfx.dsl.io.filesystem import NotFoundError
 from tfx.dsl.io.plugins.local import LocalFilesystem
 
 import zenml.io.utils
@@ -153,3 +154,10 @@ def test_list_dir_returns_empty_list_when_dir_doesnt_exist(
 def test_get_filesystem() -> None:
     """Test the right filesystem is returned for local paths"""
     assert issubclass(fileio._get_filesystem("/"), LocalFilesystem)
+
+
+@given(not_a_file=text(min_size=1))
+def test_open_returns_error_when_file_nonexistent(not_a_file: str) -> None:
+    """Test that open returns a file object"""
+    with pytest.raises(NotFoundError):
+        fileio.open(os.path.join(".", not_a_file), "rb")
