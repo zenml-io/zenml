@@ -19,6 +19,7 @@ from types import GeneratorType
 import pytest
 from hypothesis import given
 from hypothesis.strategies import text
+from tfx.dsl.io.plugins.local import LocalFilesystem
 
 import zenml.io.utils
 from zenml.constants import REMOTE_FS_PREFIX
@@ -149,11 +150,6 @@ def test_list_dir_returns_empty_list_when_dir_doesnt_exist(
     assert isinstance(fileio.list_dir(not_a_real_dir), list)
 
 
-# @pytest.mark.xfail()
-# TODO [HIGH]: write this test
-# def test_logging_takes_place_on_fail_of_list_dir(caplog):
-#     """logger should output a debug statement on failure to find directory"""
-#     not_a_real_dir = "./not_a_dir"
-#     caplog.set_level(logger.DEBUG)
-#     fileio.list_dir(not_a_real_dir)
-#     assert f"Dir {not_a_real_dir} not found." in caplog.text
+def test_get_filesystem() -> None:
+    """Test the right filesystem is returned for local paths"""
+    assert issubclass(fileio._get_filesystem("/"), LocalFilesystem)
