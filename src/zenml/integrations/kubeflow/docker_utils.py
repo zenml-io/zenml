@@ -98,7 +98,8 @@ def create_custom_build_context(
             build.
         dockerignore_path: Optional path to a dockerignore file. If no value is
             given, the .dockerignore in the root of the build context will be
-            used if it exists.
+            used if it exists. Otherwise, all files inside `build_context_path`
+            are included in the build context.
 
     Returns:
         Docker build context that can be passed when building a docker image.
@@ -116,6 +117,14 @@ def create_custom_build_context(
             default_dockerignore_path,
         )
         exclude_patterns = _parse_dockerignore(default_dockerignore_path)
+    else:
+        logger.info(
+            "No explicit dockerignore specified and no file called "
+            ".dockerignore exists at the build context root (%s)."
+            "Creating docker build context with all files inside the build "
+            "context root directory.",
+            build_context_path,
+        )
 
     logger.debug(
         "Exclude patterns for creating docker build context: %s",
@@ -178,7 +187,8 @@ def build_docker_image(
             a temporary dockerfile will be created.
         dockerignore_path: Optional path to a dockerignore file. If no value is
             given, the .dockerignore in the root of the build context will be
-            used if it exists.
+            used if it exists. Otherwise, all files inside `build_context_path`
+            are included in the build context.
         requirements: Optional list of pip requirements to install. This
             will only be used if no value is given for `dockerfile_path`.
         use_local_requirements: If `True` and no values are given for
