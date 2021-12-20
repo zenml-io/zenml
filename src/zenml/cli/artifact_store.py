@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import List
+from typing import List, Optional
 
 import click
 
@@ -69,6 +69,10 @@ def list_artifact_stores() -> None:
     """List all available artifact stores from service."""
     repo = Repository()
     service = repo.get_service()
+    if len(service.artifact_stores) == 0:
+        cli_utils.warning("No artifact stores registered!")
+        return
+
     active_artifact_store = repo.get_active_stack().artifact_store_name
     cli_utils.title("Artifact Stores:")
     cli_utils.print_table(
@@ -76,6 +80,42 @@ def list_artifact_stores() -> None:
             service.artifact_stores, active_artifact_store
         )
     )
+
+
+@artifact_store.command(
+    "describe", help="Show details about the current active artifact store."
+)
+@click.argument(
+    "artifact_store_name",
+    type=click.STRING,
+    required=False,
+)
+def describe_artifact_store(artifact_store_name: Optional[str]) -> None:
+    """Show details about the current active artifact store."""
+    repo = Repository()
+    artifact_store_name = (
+        artifact_store_name or repo.get_active_stack().artifact_store_name
+    )
+
+    artifact_stores = repo.get_service().artifact_stores
+    if len(artifact_stores) == 0:
+        cli_utils.warning("No artifact stores registered!")
+        return
+
+    try:
+        artifact_store_details = artifact_stores[artifact_store_name]
+    except KeyError:
+        cli_utils.error(
+            f"Artifact store `{artifact_store_name}` does not exist."
+        )
+        return
+    cli_utils.title("Artifact Store:")
+    if repo.get_active_stack().artifact_store_name == artifact_store_name:
+        cli_utils.declare("**ACTIVE**\n")
+    else:
+        cli_utils.declare("")
+    cli_utils.declare(f"NAME: {artifact_store_name}")
+    cli_utils.print_component_properties(artifact_store_details.dict())
 
 
 @artifact_store.command("delete")

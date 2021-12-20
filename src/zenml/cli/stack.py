@@ -58,15 +58,52 @@ def register_stack(
 @stack.command("list")
 def list_stacks() -> None:
     """List all available stacks from service."""
-    service = Repository().get_service()
+    repo = Repository()
+    service = repo.get_service()
+    if len(service.stacks) == 0:
+        cli_utils.warning("No stacks registered!")
+        return
+
     cli_utils.title("Stacks:")
     # TODO [ENG-144]: once there is a common superclass for Stack/ArtifactStore etc.,
     #  remove the mypy ignore
-    repo = Repository()
     active_stack = repo.get_active_stack_key()
     cli_utils.print_table(
         cli_utils.format_component_list(service.stacks, active_stack)  # type: ignore[arg-type]
     )
+
+
+@stack.command(
+    "describe",
+    help="Show details about the current active stack.",
+)
+@click.argument(
+    "stack_name",
+    type=click.STRING,
+    required=False,
+)
+def describe_stack(stack_name: Optional[str]) -> None:
+    """Show details about the current active stack."""
+    repo = Repository()
+    stack_name = stack_name or repo.get_active_stack_key()
+
+    stacks = repo.get_service().stacks
+    if len(stacks) == 0:
+        cli_utils.warning("No stacks registered!")
+        return
+
+    try:
+        stack_details = stacks[stack_name]
+    except KeyError:
+        cli_utils.error(f"Stack `{stack_name}` does not exist.")
+        return
+    cli_utils.title("Stack:")
+    if repo.get_active_stack_key() == stack_name:
+        cli_utils.declare("**ACTIVE**\n")
+    else:
+        cli_utils.declare("")
+    cli_utils.declare(f"NAME: {stack_name}")
+    cli_utils.print_component_properties(stack_details.dict())
 
 
 @stack.command("delete")

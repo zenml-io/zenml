@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import List
+from typing import List, Optional
 
 import click
 
@@ -74,6 +74,10 @@ def list_metadata_stores() -> None:
     """List all available metadata stores from service."""
     repo = Repository()
     service = repo.get_service()
+    if len(service.metadata_stores) == 0:
+        cli_utils.warning("No metadata stores registered!")
+        return
+
     active_metadata_store = repo.get_active_stack().metadata_store_name
 
     cli_utils.title("Metadata Stores:")
@@ -82,6 +86,43 @@ def list_metadata_stores() -> None:
             service.metadata_stores, active_metadata_store
         )
     )
+
+
+@metadata_store.command(
+    "describe",
+    help="Show details about the current active metadata store.",
+)
+@click.argument(
+    "metadata_store_name",
+    type=click.STRING,
+    required=False,
+)
+def describe_metadata_store(metadata_store_name: Optional[str]) -> None:
+    """Show details about the current active metadata store."""
+    repo = Repository()
+    metadata_store_name = (
+        metadata_store_name or repo.get_active_stack().metadata_store_name
+    )
+
+    metadata_stores = repo.get_service().metadata_stores
+    if len(metadata_stores) == 0:
+        cli_utils.warning("No metadata stores registered!")
+        return
+
+    try:
+        metadata_store_details = metadata_stores[metadata_store_name]
+    except KeyError:
+        cli_utils.error(
+            f"Metadata store `{metadata_store_name}` does not exist."
+        )
+        return
+    cli_utils.title("Metadata Store:")
+    if repo.get_active_stack().metadata_store_name == metadata_store_name:
+        cli_utils.declare("**ACTIVE**\n")
+    else:
+        cli_utils.declare("")
+    cli_utils.declare(f"NAME: {metadata_store_name}")
+    cli_utils.print_component_properties(metadata_store_details.dict())
 
 
 @metadata_store.command("delete")

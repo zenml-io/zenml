@@ -101,6 +101,10 @@ def list_orchestrators() -> None:
     """List all available orchestrators from service."""
     repo = Repository()
     service = repo.get_service()
+    if len(service.orchestrators) == 0:
+        cli_utils.warning("No orchestrators registered!")
+        return
+
     active_orchestrator = repo.get_active_stack().orchestrator_name
     cli_utils.title("Orchestrators:")
     cli_utils.print_table(
@@ -108,6 +112,41 @@ def list_orchestrators() -> None:
             service.orchestrators, active_orchestrator
         )
     )
+
+
+@orchestrator.command(
+    "describe",
+    help="Show details about the current active orchestrator.",
+)
+@click.argument(
+    "orchestrator_name",
+    type=click.STRING,
+    required=False,
+)
+def describe_orchestrator(orchestrator_name: Optional[str]) -> None:
+    """Show details about the current active orchestrator."""
+    repo = Repository()
+    orchestrator_name = (
+        orchestrator_name or repo.get_active_stack().orchestrator_name
+    )
+
+    orchestrators = repo.get_service().orchestrators
+    if len(orchestrators) == 0:
+        cli_utils.warning("No orchestrators registered!")
+        return
+
+    try:
+        orchestrator_details = orchestrators[orchestrator_name]
+    except KeyError:
+        cli_utils.error(f"Orchestrator `{orchestrator_name}` does not exist.")
+        return
+    cli_utils.title("Orchestrator:")
+    if repo.get_active_stack().orchestrator_name == orchestrator_name:
+        cli_utils.declare("**ACTIVE**\n")
+    else:
+        cli_utils.declare("")
+    cli_utils.declare(f"NAME: {orchestrator_name}")
+    cli_utils.print_component_properties(orchestrator_details.dict())
 
 
 @orchestrator.command("delete")
