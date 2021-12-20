@@ -92,14 +92,16 @@ def test_find_files_when_file_absent(tmp_path):
 
 @pytest.mark.parametrize("filesystem", REMOTE_FS_PREFIX)
 def test_is_remote_when_using_remote_prefix(filesystem):
-    """is_remote returns True when path starts with one of the TFX remote file prefixes"""
+    """is_remote returns True when path starts with one of
+    the TFX remote file prefixes"""
     some_random_path = os.path.join(filesystem + "some_directory")
     assert fileio.is_remote(some_random_path)
 
 
 @given(text())
 def test_is_remote_when_using_non_remote_prefix(filesystem):
-    """is_remote returns False when path doesn't start with a remote prefix"""
+    """is_remote returns False when path doesn't start with
+    a remote prefix"""
     some_random_path = os.path.join(filesystem + "some_directory")
     assert fileio.is_remote(some_random_path) is False
 
@@ -126,7 +128,8 @@ def test_list_dir_returns_a_list_of_file_names(tmp_path):
 
 
 def test_list_dir_returns_a_list_of_file_paths(tmp_path):
-    """list_dir should return a list of file paths inside the queried directory"""
+    """list_dir should return a list of file paths inside
+    the queried directory"""
     with NamedTemporaryFile(dir=tmp_path) as temp_file:
         assert fileio.list_dir(str(tmp_path)) == [
             os.path.join(tmp_path, temp_file.name)
@@ -136,7 +139,8 @@ def test_list_dir_returns_a_list_of_file_paths(tmp_path):
 @pytest.fixture(scope="module")
 @given(sample_file=text())
 def test_list_dir_returns_one_result_for_one_file(tmp_path, sample_file):
-    """list_dir should return only one result, when there is only one file created"""
+    """list_dir should return only one result, when there is only
+    one file created"""
     with open(sample_file, "w"):
         assert len(fileio.list_dir(str(tmp_path))) == 1
 
@@ -178,3 +182,19 @@ def test_open_returns_file_object_when_file_exists(
             fileio.open(os.path.join(tmp_path, random_file), "rb"),
             FileIO,
         )
+
+
+def test_copy_moves_file_to_new_location(tmp_path) -> None:
+    """Test that copy moves the file to the new location"""
+    with NamedTemporaryFile(dir=tmp_path) as temp_file:
+        fileio.copy(temp_file.name, os.path.join(tmp_path, "new_file.txt"))
+        assert os.path.exists(os.path.join(tmp_path, "new_file.txt"))
+
+
+def test_copy_raises_error_when_file_exists(tmp_path) -> None:
+    """Test that copy raises an error when the file already exists in
+    the desired location"""
+    with NamedTemporaryFile(dir=tmp_path) as temp_file:
+        fileio.copy(temp_file.name, os.path.join(tmp_path, "new_file.txt"))
+        with pytest.raises(OSError):
+            fileio.copy(temp_file.name, os.path.join(tmp_path, "new_file.txt"))
