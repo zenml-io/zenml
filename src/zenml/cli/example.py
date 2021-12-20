@@ -14,9 +14,9 @@
 
 import os
 import shutil
-from pathlib import Path
-from typing import List, Dict
 import subprocess
+from pathlib import Path
+from typing import List, Optional
 
 import click
 from git.exc import GitCommandError, NoSuchPathError
@@ -59,11 +59,18 @@ class LocalExample:
 
     @property
     def python_files_in_dir(self) -> List[str]:
-        """List of all python files in the local example directory
+        """List of all python files in the drectl in local example directory
         the __init__.py file is excluded from this list"""
-        py_in_dir = fileio.find_files(self.path, '*.py')
-        # TODO[HIGH] verify this works on Windows with \\
-        return [f for f in py_in_dir if f.split('/')[-1] != '__init__.py']
+        py_in_dir = fileio.find_files(self.path, "*.py")
+        py_files = []
+        for f in py_in_dir:
+            # Make sure only files directly in dir are considered, not files
+            # in sub dirs
+            if Path(self.path) == Path(f).parent:
+                if Path(f).name != "__init__.py":
+                    py_files.append(f)
+
+        return py_files
 
     @property
     def has_single_python_file(self) -> bool:
@@ -81,18 +88,20 @@ class LocalExample:
         if self.has_single_python_file:
             return self.python_files_in_dir[0]
         elif self.has_any_python_file:
-            raise RuntimeError("Unclear which python file to return for "
-                               f"example {self.name}."
-                               f"{self.python_files_in_dir}")
+            raise RuntimeError(
+                "Unclear which python file to return for "
+                f"example {self.name}."
+                f"{self.python_files_in_dir}"
+            )
         else:
             raise RuntimeError("No Python file present")
 
     def is_present(self) -> bool:
-        """ Checks if the example is installed at the given path."""
+        """Checks if the example is installed at the given path."""
         return fileio.file_exists(self.path) and fileio.is_dir(self.path)
 
     def run_example(self, bash_file: str, force: bool) -> None:
-        """ Run the local example using the bash script at the supplied
+        """Run the local example using the bash script at the supplied
         location
 
         Args:
@@ -105,29 +114,41 @@ class LocalExample:
                 # TODO[HIGH] Catch errors that might be thrown in subprocess
                 declare(self.path)
                 if force:
-                    subprocess.check_call([bash_file,
-                                           "-f",
-                                           "--executable",
-                                           self.executable_python_example],
-                                          cwd=self.path)
+                    subprocess.check_call(
+                        [
+                            bash_file,
+                            "-f",
+                            "--executable",
+                            self.executable_python_example,
+                        ],
+                        cwd=self.path,
+                    )
                 else:
-                    subprocess.check_call([bash_file,
-                                           "--executable",
-                                           self.executable_python_example],
-                                          cwd=self.path)
-            except RuntimeError as e:
-                raise NotImplementedError(f"Currently the example {self.name} "
-                                          "has no implementation for the "
-                                          "run method")
+                    subprocess.check_call(
+                        [
+                            bash_file,
+                            "--executable",
+                            self.executable_python_example,
+                        ],
+                        cwd=self.path,
+                    )
+            except RuntimeError:
+                raise NotImplementedError(
+                    f"Currently the example {self.name} "
+                    "has no implementation for the "
+                    "run method"
+                )
             except subprocess.CalledProcessError as e:
                 if str(e.returncode) == "42":
                     raise NotImplementedError(
                         f"Currently the example {self.name} "
                         "has no implementation for the "
-                        "run method")
-            except FileNotFoundError as e:
-                raise FileNotFoundError("Bash File to run Examples not found at"
-                                        f"{bash_file}")
+                        "run method"
+                    )
+            except FileNotFoundError:
+                raise FileNotFoundError(
+                    "Bash File to run Examples not found at" f"{bash_file}"
+                )
 
 
 class Example:
@@ -155,10 +176,11 @@ class Example:
             return readme_content
         except FileNotFoundError:
             if fileio.file_exists(str(self.path_in_repo)) and fileio.is_dir(
-                    str(self.path_in_repo)
+                str(self.path_in_repo)
             ):
-                raise ValueError(f"No README.md file found in "
-                                 f"{self.path_in_repo}")
+                raise ValueError(
+                    f"No README.md file found in " f"{self.path_in_repo}"
+                )
             else:
                 raise FileNotFoundError(
                     f"Example {self.name} is not one of the available options."
@@ -187,8 +209,8 @@ class ExamplesRepo:
     def latest_release(self) -> str:
         """Returns the latest release for the examples repository."""
         tags = sorted(
-            self.repo.tags, key=lambda t: t.commit.committed_datetime
-            # type: ignore
+            self.repo.tags,
+            key=lambda t: t.commit.committed_datetime,  # type: ignore
         )
         latest_tag = parse(tags[-1].name)
         if type(latest_tag) is not Version:
@@ -207,7 +229,7 @@ class ExamplesRepo:
 
     @property
     def examples_run_bash_script(self) -> str:
-        return os.path.join(self.examples_dir, 'run_example.sh')
+        return os.path.join(self.examples_dir, "run_example.sh")
 
     def clone(self) -> None:
         """Clones repo to cloning_path.
@@ -255,8 +277,9 @@ class GitExamplesHandler(object):
     def __init__(self) -> None:
         """Create a new GitExamplesHandler instance."""
         self.repo_dir = click.get_app_dir(APP_NAME)
-        self.examples_dir = Path(os.path.join(self.repo_dir,
-                                              EXAMPLES_GITHUB_REPO))
+        self.examples_dir = Path(
+            os.path.join(self.repo_dir, EXAMPLES_GITHUB_REPO)
+        )
         self.examples_repo = ExamplesRepo(self.examples_dir)
 
     @property
@@ -268,18 +291,21 @@ class GitExamplesHandler(object):
             )
             for name in sorted(os.listdir(self.examples_repo.examples_dir))
             if (
-                    not name.startswith(".")
-                    and not name.startswith("__")
-                    and not name.startswith("README")
+                not name.startswith(".")
+                and not name.startswith("__")
+                and not name.startswith("README")
             )
         ]
 
     @property
     def is_installed(self) -> bool:
-        return (fileio.file_exists(str(self.examples_dir))
-                and fileio.is_dir(str(self.examples_dir)))
+        """Checks if the """
+        return fileio.file_exists(str(self.examples_dir)) and fileio.is_dir(
+            str(self.examples_dir)
+        )
 
-    def is_example(self, example_name) -> bool:
+    def is_example(self, example_name: Optional[str] = None) -> bool:
+        """Checks if the supplied example_name corresponds to an example"""
         example_dict = {e.name: e for e in self.examples}
         if example_name:
             if example_name in example_dict.keys():
@@ -287,12 +313,12 @@ class GitExamplesHandler(object):
 
         return False
 
-    def get_examples(self, example_name: str = None) -> List[Example]:
+    def get_examples(self, example_name: Optional[str] = None) -> List[Example]:
         """Method that allows you to get an example by name. If no example is
-            supplied,  all examples are returned
+        supplied,  all examples are returned
 
-            Args:
-              example_name: Name of an example.
+        Args:
+          example_name: Name of an example.
         """
         example_dict = {e.name: e for e in self.examples}
         if example_name:
@@ -333,8 +359,9 @@ class GitExamplesHandler(object):
     def copy_example(self, example: Example, destination_dir: str) -> None:
         """Copies an example to the destination_dir."""
         fileio.create_dir_if_not_exists(destination_dir)
-        fileio.copy_dir(str(example.path_in_repo), destination_dir,
-                        overwrite=True)
+        fileio.copy_dir(
+            str(example.path_in_repo), destination_dir, overwrite=True
+        )
 
     def clean_current_examples(self) -> None:
         """Deletes the ZenML examples directory from your current working
@@ -372,12 +399,10 @@ def clean(git_examples_handler: GitExamplesHandler) -> None:
     """Deletes the ZenML examples directory from your current working
     directory."""
 
-    if (
-            git_examples_handler.is_installed
-            and
-            confirmation("Do you wish to delete the ZenML"
-                         " examples directory? \n "
-                         f"{git_examples_handler.examples_dir}")
+    if git_examples_handler.is_installed and confirmation(
+        "Do you wish to delete the ZenML"
+        " examples directory? \n "
+        f"{git_examples_handler.examples_dir}"
     ):
         git_examples_handler.clean_current_examples()
         declare(
@@ -420,7 +445,7 @@ def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
     "-f",
     is_flag=True,
     help="Force the redownload of the examples folder to the ZenML config "
-         "folder.",
+    "folder.",
 )
 @click.option(
     "--version",
@@ -434,14 +459,14 @@ def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
     "-p",
     type=click.STRING,
     default="zenml_examples",
-    help="Relative path at which you want to install the example(s)"
+    help="Relative path at which you want to install the example(s)",
 )
 def pull(
-        git_examples_handler: GitExamplesHandler,
-        example_name: str,
-        force: bool,
-        version: str,
-        path: str
+    git_examples_handler: GitExamplesHandler,
+    example_name: str,
+    force: bool,
+    version: str,
+    path: str,
 ) -> None:
     """Pull examples straight into your current working directory.
     Add the flag --force or -f to redownload all the examples afresh.
@@ -462,9 +487,9 @@ def pull(
 
             if LocalExample(example.name, destination_dir).is_present():
                 if confirmation(
-                        f"Example {example.name} is already pulled. "
-                        "Do you wish to overwrite the directory at "
-                        f"{destination_dir}?"
+                    f"Example {example.name} is already pulled. "
+                    "Do you wish to overwrite the directory at "
+                    f"{destination_dir}?"
                 ):
                     fileio.rm_dir(destination_dir)
                 else:
@@ -481,7 +506,7 @@ def pull(
 
 @example.command(
     help="Run the example that you previously installed with "
-         "`zenml example pull`"
+    "`zenml example pull`"
 )
 @pass_git_examples_handler
 @click.argument("example_name", required=True)
@@ -490,21 +515,28 @@ def pull(
     "-p",
     type=click.STRING,
     default="zenml_examples",
-    help="Relative path at which you want to install the example(s)"
+    help="Relative path at which you want to install the example(s)",
 )
 @click.option(
     "--force",
     "-f",
     is_flag=True,
-    help="Force the redownload of the examples folder to the ZenML config "
-         "folder.",
+    help="Force te run of the example. This deletes the .zen folder from the"
+    "example folder and force installs all necessary integration "
+    "requirements.",
 )
 def run(
-        git_examples_handler: GitExamplesHandler,
-        example_name: str,
-        path: str,
-        force: bool
+    git_examples_handler: GitExamplesHandler,
+    example_name: str,
+    path: str,
+    force: bool,
 ) -> None:
+    """Run the example at the specified relative path.
+    `zenml example pull EXAMPLE_NAME` has to be called with the same relative
+    path before the run command.
+    """
+    # TODO[MEDIUM] - create a post_run function inside individual setup.sh
+    #  to inform user how to clean up
     examples_dir = os.path.join(os.getcwd(), path)
     try:
         _ = git_examples_handler.get_examples(example_name)[0]
@@ -516,17 +548,12 @@ def run(
         if not local_example.is_present():
             error(f"Example {example_name} is not installed at {examples_dir})")
         else:
-            bash_script_location = (git_examples_handler
-                                    .examples_repo
-                                    .examples_run_bash_script)
+            bash_script_location = (
+                git_examples_handler.examples_repo.examples_run_bash_script
+            )
             try:
-                local_example.run_example(bash_file=bash_script_location,
-                                          force=force)
+                local_example.run_example(
+                    bash_file=bash_script_location, force=force
+                )
             except NotImplementedError as e:
-                error(e)
-
-# from click.testing import CliRunner
-#
-# runner = CliRunner()
-#
-# result = runner.invoke(example, ["pull", "airflow_local", "-f"])
+                error(str(e))

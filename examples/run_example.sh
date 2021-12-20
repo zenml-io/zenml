@@ -37,21 +37,27 @@ main() {
   ERROR='\033[0;31m'
   WARNING='\033[0;33m'
 
-  git init
-
-  zenml_init
-
   REQUIREMENTS_TXT="requirements.txt"
 
   if [ -f "$REQUIREMENTS_TXT" ]; then
     python3 -m pip install -r requirements.txt
   fi
 
+  git init
+
+  zenml_init
+
   if [ -f "setup.sh" ]; then
-    echo "This example requires some additional setup."
+    msg "This example requires some additional setup."
     source "./setup.sh"
-    if [[ $(type -t pre_run) == function ]]; then
-      pre_run
+    if [ -n "$FORCE" ]; then
+      if [[ $(type -t pre_run_forced) == function ]]; then
+        pre_run_forced
+      fi
+    else
+      if [[ $(type -t pre_run) == function ]]; then
+        pre_run
+      fi
     fi
   fi
 
@@ -73,8 +79,6 @@ die() {
 parse_params() {
   # default values of variables
   FORCE=""
-
-  echo "${2-}"
 
   while :; do
     case "${1-}" in
@@ -98,4 +102,5 @@ parse_params() {
 
 parse_params "$@"
 main "$@"
+
 
