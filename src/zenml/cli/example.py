@@ -294,6 +294,7 @@ class GitExamplesHandler(object):
                 not name.startswith(".")
                 and not name.startswith("__")
                 and not name.startswith("README")
+                and not name.endswith(".sh")
             )
         ]
 
@@ -385,6 +386,8 @@ def example() -> None:
 def list(git_examples_handler: GitExamplesHandler) -> None:
     """List all available examples."""
     declare("Listing examples: \n")
+
+    # TODO[HIGH] - don't list .sh file
 
     for example in git_examples_handler.get_examples():
         declare(f"{example.name}")
