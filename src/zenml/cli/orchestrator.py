@@ -122,13 +122,13 @@ def list_orchestrators() -> None:
     "orchestrator_name",
     type=click.STRING,
     required=False,
-    default="",
 )
-def describe_orchestrator(orchestrator_name: str) -> None:
+def describe_orchestrator(orchestrator_name: Optional[str]) -> None:
     """Show details about the current active orchestrator."""
     repo = Repository()
-    if orchestrator_name == "":
-        orchestrator_name = repo.get_active_stack().orchestrator_name
+    orchestrator_name = (
+        orchestrator_name or repo.get_active_stack().orchestrator_name
+    )
 
     orchestrators = repo.get_service().orchestrators
     if len(orchestrators) == 0:

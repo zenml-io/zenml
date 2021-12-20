@@ -81,13 +81,11 @@ def list_stacks() -> None:
     "stack_name",
     type=click.STRING,
     required=False,
-    default="",
 )
-def describe_stack(stack_name: str) -> None:
+def describe_stack(stack_name: Optional[str]) -> None:
     """Show details about the current active stack."""
     repo = Repository()
-    if stack_name == "":
-        stack_name = repo.get_active_stack_key()
+    stack_name = stack_name or repo.get_active_stack_key()
 
     stacks = repo.get_service().stacks
     if len(stacks) == 0:

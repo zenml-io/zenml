@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from typing import Optional
 
 import click
 
@@ -88,15 +89,15 @@ def list_container_registries() -> None:
     "container_registry_name",
     type=click.STRING,
     required=False,
-    default="",
 )
-def describe_container_registry(container_registry_name: str) -> None:
+def describe_container_registry(
+    container_registry_name: Optional[str],
+) -> None:
     """Show details about the current active container registry."""
     repo = Repository()
-    if container_registry_name == "":
-        container_registry_name = str(
-            repo.get_active_stack().container_registry_name
-        )
+    container_registry_name = container_registry_name or str(
+        repo.get_active_stack().container_registry_name
+    )
 
     container_registries = repo.get_service().container_registries
     if len(container_registries) == 0:

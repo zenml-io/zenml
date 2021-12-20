@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import List
+from typing import List, Optional
 
 import click
 
@@ -89,13 +89,13 @@ def list_artifact_stores() -> None:
     "artifact_store_name",
     type=click.STRING,
     required=False,
-    default="",
 )
-def describe_artifact_store(artifact_store_name: str) -> None:
+def describe_artifact_store(artifact_store_name: Optional[str]) -> None:
     """Show details about the current active artifact store."""
     repo = Repository()
-    if artifact_store_name == "":
-        artifact_store_name = repo.get_active_stack().artifact_store_name
+    artifact_store_name = (
+        artifact_store_name or repo.get_active_stack().artifact_store_name
+    )
 
     artifact_stores = repo.get_service().artifact_stores
     if len(artifact_stores) == 0:
