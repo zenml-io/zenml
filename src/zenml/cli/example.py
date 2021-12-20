@@ -40,6 +40,7 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 EXAMPLES_GITHUB_REPO = "zenml_examples"
+EXAMPLES_RUN_SCRIPT = "run_example.sh"
 
 
 class LocalExample:
@@ -94,7 +95,10 @@ class LocalExample:
                 f"{self.python_files_in_dir}"
             )
         else:
-            raise RuntimeError("No Python file present")
+            raise RuntimeError(
+                "No pipeline runner script found in example. "
+                f"Files found: {self.python_files_in_dir}"
+            )
 
     def is_present(self) -> bool:
         """Checks if the example is installed at the given path."""
@@ -111,7 +115,7 @@ class LocalExample:
         if fileio.file_exists(bash_file):
             os.chdir(self.path)
             try:
-                # TODO[HIGH] Catch errors that might be thrown in subprocess
+                # TODO [HIGH]: Catch errors that might be thrown in subprocess
                 declare(self.path)
                 if force:
                     subprocess.check_call(
@@ -139,7 +143,7 @@ class LocalExample:
                     "run method"
                 )
             except subprocess.CalledProcessError as e:
-                if str(e.returncode) == "42":
+                if e.returncode == 38:
                     raise NotImplementedError(
                         f"Currently the example {self.name} "
                         "has no implementation for the "
@@ -229,7 +233,7 @@ class ExamplesRepo:
 
     @property
     def examples_run_bash_script(self) -> str:
-        return os.path.join(self.examples_dir, "run_example.sh")
+        return os.path.join(self.examples_dir, EXAMPLES_RUN_SCRIPT)
 
     def clone(self) -> None:
         """Clones repo to cloning_path.
@@ -297,13 +301,6 @@ class GitExamplesHandler(object):
                 and not name.endswith(".sh")
             )
         ]
-
-    @property
-    def is_installed(self) -> bool:
-        """Checks if the"""
-        return fileio.file_exists(str(self.examples_dir)) and fileio.is_dir(
-            str(self.examples_dir)
-        )
 
     def is_example(self, example_name: Optional[str] = None) -> bool:
         """Checks if the supplied example_name corresponds to an example"""
@@ -515,7 +512,6 @@ def pull(
 
             fileio.create_dir_if_not_exists(destination_dir)
             git_examples_handler.copy_example(example, destination_dir)
-
             declare(f"Example pulled in directory: {destination_dir}")
 
 
@@ -550,7 +546,7 @@ def run(
     `zenml example pull EXAMPLE_NAME` has to be called with the same relative
     path before the run command.
     """
-    # TODO[MEDIUM] - create a post_run function inside individual setup.sh
+    # TODO [MEDIUM]: - create a post_run function inside individual setup.sh
     #  to inform user how to clean up
     examples_dir = os.path.join(os.getcwd(), path)
     try:
