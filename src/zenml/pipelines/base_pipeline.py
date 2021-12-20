@@ -84,7 +84,15 @@ T = TypeVar("T", bound="BasePipeline")
 
 
 class BasePipeline(metaclass=BasePipelineMeta):
-    """Base ZenML pipeline."""
+    """Abstract base class for all ZenML pipelines.
+
+    Attributes:
+        name: The name of this pipeline.
+        enable_cache: A boolean indicating if caching is enabled for this
+            pipeline.
+        requirements_file: Optional path to a pip requirements file that
+            contains all requirements to run the pipeline.
+    """
 
     STEP_SPEC: ClassVar[Dict[str, Any]] = None  # type: ignore[assignment]
 
