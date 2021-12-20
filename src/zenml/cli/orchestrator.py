@@ -140,18 +140,22 @@ def describe_orchestrator(orchestrator_name: Optional[str]) -> None:
     except KeyError:
         cli_utils.error(f"Orchestrator `{orchestrator_name}` does not exist.")
         return
-    cli_utils.title("Active Orchestrator:")
-    cli_utils.declare(f"NAME: {orchestrator_name}")
-    cli_utils.declare(f"UUID: {orchestrator_details.uuid}")
-    try:
-        cli_utils.declare(
-            f"CUSTOM_DOCKER_BASE_IMAGE_NAME: {orchestrator_details.custom_docker_base_image_name}"  # type: ignore[attr-defined] # noqa
-        )
-        cli_utils.declare(
-            f"KUBERNETES_CONTEXT: {orchestrator_details.kubernetes_context}"  # type: ignore[attr-defined] # noqa
-        )
-    except AttributeError:
-        pass
+    cli_utils.title("Orchestrator:")
+    if repo.get_active_stack().orchestrator_name == orchestrator_name:
+        cli_utils.declare("**ACTIVE**\n")
+    else:
+        cli_utils.declare("")
+    for key, value in orchestrator_details.dict().items():
+        cli_utils.declare(f"{key.upper()}: {value}")
+    # try:
+    #     cli_utils.declare(
+    #         f"CUSTOM_DOCKER_BASE_IMAGE_NAME: {orchestrator_details.custom_docker_base_image_name}"  # type: ignore[attr-defined] # noqa
+    #     )
+    #     cli_utils.declare(
+    #         f"KUBERNETES_CONTEXT: {orchestrator_details.kubernetes_context}"  # type: ignore[attr-defined] # noqa
+    #     )
+    # except AttributeError:
+    #     pass
 
 
 @orchestrator.command("delete")

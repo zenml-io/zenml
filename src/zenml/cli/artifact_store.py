@@ -109,10 +109,13 @@ def describe_artifact_store(artifact_store_name: Optional[str]) -> None:
             f"Artifact store `{artifact_store_name}` does not exist."
         )
         return
-    cli_utils.title("Active Artifact Store:")
-    cli_utils.declare(f"NAME: {artifact_store_name}")
-    cli_utils.declare(f"UUID: {artifact_store_details.uuid}")
-    cli_utils.declare(f"PATH: {artifact_store_details.path}")
+    cli_utils.title("Artifact Store:")
+    if repo.get_active_stack().artifact_store_name == artifact_store_name:
+        cli_utils.declare("**ACTIVE**\n")
+    else:
+        cli_utils.declare("")
+    for key, value in artifact_store_details.dict().items():
+        cli_utils.declare(f"{key.upper()}: {value}")
 
 
 @artifact_store.command("delete")

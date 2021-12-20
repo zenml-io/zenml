@@ -97,19 +97,13 @@ def describe_stack(stack_name: Optional[str]) -> None:
     except KeyError:
         cli_utils.error(f"Stack `{stack_name}` does not exist.")
         return
-    cli_utils.title("Active Stack:")
-    cli_utils.declare(f"NAME: {stack_name}")
-    cli_utils.declare(f"STACK_TYPE: {stack_details.stack_type}")
-    cli_utils.declare(
-        f"METADATA_STORE_NAME: {stack_details.metadata_store_name}"
-    )
-    cli_utils.declare(
-        f"ARTIFACT_STORE_NAME: {stack_details.artifact_store_name}"
-    )
-    cli_utils.declare(f"ORCHESTRATOR_NAME: {stack_details.orchestrator_name}")
-    cli_utils.declare(
-        f"CONTAINER_REGISTRY_NAME: {stack_details.container_registry_name}"
-    )
+    cli_utils.title("Stack:")
+    if repo.get_active_stack_key() == stack_name:
+        cli_utils.declare("**ACTIVE**\n")
+    else:
+        cli_utils.declare("")
+    for key, value in stack_details.dict().items():
+        cli_utils.declare(f"{key.upper()}: {value}")
 
 
 @stack.command("delete")

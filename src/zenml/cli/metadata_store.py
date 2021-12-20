@@ -116,10 +116,13 @@ def describe_metadata_store(metadata_store_name: Optional[str]) -> None:
             f"Metadata store `{metadata_store_name}` does not exist."
         )
         return
-    cli_utils.title("Active Metadata Store:")
-    cli_utils.declare(f"NAME: {metadata_store_name}")
-    cli_utils.declare(f"UUID: {metadata_store_details.uuid}")
-    cli_utils.declare(f"URI: {metadata_store_details.uri}")  # type: ignore[attr-defined] # noqa
+    cli_utils.title("Metadata Store:")
+    if repo.get_active_stack().metadata_store_name == metadata_store_name:
+        cli_utils.declare("**ACTIVE**\n")
+    else:
+        cli_utils.declare("")
+    for key, value in metadata_store_details.dict().items():
+        cli_utils.declare(f"{key.upper()}: {value}")
 
 
 @metadata_store.command("delete")

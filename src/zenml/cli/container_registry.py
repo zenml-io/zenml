@@ -113,10 +113,16 @@ def describe_container_registry(
             f"Container registry `{container_registry_name}` does not exist."
         )
         return
-    cli_utils.title("Active Container Registry:")
-    cli_utils.declare(f"NAME: {container_registry_name}")
-    cli_utils.declare(f"UUID: {container_registry_details.uuid}")
-    cli_utils.declare(f"URI: {container_registry_details.uri}")
+    cli_utils.title("Container Registry:")
+    if (
+        repo.get_active_stack().container_registry_name
+        == container_registry_name
+    ):
+        cli_utils.declare("**ACTIVE**\n")
+    else:
+        cli_utils.declare("")
+    for key, value in container_registry_details.dict().items():
+        cli_utils.declare(f"{key.upper()}: {value}")
 
 
 @container_registry.command("delete")
