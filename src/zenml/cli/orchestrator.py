@@ -145,6 +145,7 @@ def describe_orchestrator(orchestrator_name: Optional[str]) -> None:
         cli_utils.declare("**ACTIVE**\n")
     else:
         cli_utils.declare("")
+    cli_utils.declare(f"NAME: {orchestrator_name}")
     for key, value in orchestrator_details.dict().items():
         cli_utils.declare(f"{key.upper()}: {value}")
     # try:
