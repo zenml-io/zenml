@@ -29,6 +29,12 @@ class StepContext:
     when creating the step, as long as you specify it in the signature ZenML
     will create the `StepContext` and automatically pass it when executing your
     step.
+
+    **Note**: When using a `StepContext` inside a step, ZenML disables caching
+    for this step by default as the context provides access to external
+    resources which might influence the result of your step execution. To
+    enable caching anyway, explicitly enable it in the @step decorator or when
+    initializing your custom step class.
     """
 
     def __init__(

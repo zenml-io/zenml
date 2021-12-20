@@ -55,7 +55,7 @@ def step(
     _func: Optional[F] = None,
     *,
     name: Optional[str] = None,
-    enable_cache: bool = True,
+    enable_cache: Optional[bool] = None,
     output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
 ) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
     """Outer decorator function for the creation of a ZenML step
@@ -67,7 +67,10 @@ def step(
         _func: The decorated function.
         name: The name of the step. If left empty, the name of the decorated
             function will be used as a fallback.
-        enable_cache: Whether to use caching or not.
+        enable_cache: Specify whether caching is enabled for this step. If no
+            value is passed, caching is enabled by default unless the step
+            requires a `StepContext` (see
+            :class:`zenml.steps.step_context.StepContext` for more information).
         output_types: A dictionary which sets different outputs to non-default
             artifact types
 

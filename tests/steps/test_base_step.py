@@ -65,6 +65,39 @@ def test_define_step_with_multiple_contexts():
             pass
 
 
+def test_step_without_context_has_caching_enabled_by_default():
+    """Tests that defining a step without a context enables caching by
+    default."""
+
+    @step
+    def some_step():
+        pass
+
+    assert some_step().enable_cache is True
+
+
+def test_step_with_context_has_caching_disabled_by_default():
+    """Tests that defining a step with a context disables caching by
+    default."""
+
+    @step
+    def some_step(context: StepContext):
+        pass
+
+    assert some_step().enable_cache is False
+
+
+def test_enable_caching_for_step_with_context():
+    """Tests that caching can be explicitly enabled for a step with a
+    context."""
+
+    @step(enable_cache=True)
+    def some_step(context: StepContext):
+        pass
+
+    assert some_step().enable_cache is True
+
+
 def test_define_step_without_input_annotation():
     """Tests that defining a step with a missing input annotation raises
     a StepInterfaceError."""
