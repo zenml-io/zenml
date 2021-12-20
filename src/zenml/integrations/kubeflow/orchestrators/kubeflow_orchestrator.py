@@ -85,7 +85,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             push_docker_image,
         )
 
-        image_name = self.get_docker_image_name(pipeline.pipeline_name)
+        image_name = self.get_docker_image_name(pipeline.name)
 
         repository_root = Repository().path
         requirements = (
@@ -131,7 +131,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         from zenml.integrations.kubeflow.docker_utils import get_image_digest
 
-        image_name = self.get_docker_image_name(zenml_pipeline.pipeline_name)
+        image_name = self.get_docker_image_name(zenml_pipeline.name)
         image_name = get_image_digest(image_name) or image_name
 
         fileio.make_dirs(self.pipeline_directory)
