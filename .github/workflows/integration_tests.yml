@@ -37,28 +37,28 @@ jobs:
 
       - name: Pull examples
         run : |
-          zenml example pull -b ${GITHUB_REF##*/} -f
+          python -m poetry run zenml example pull -b ${GITHUB_REF##*/} -f
 
       - name: Run quickstart example
         run : |
-          zenml example run quickstart -f
+          python -m poetry run zenml example run quickstart -f
 
       - name: 1. Clean between examples
         run: |
-          zenml integration uninstall
-          zenml integration install beam -f
+          python -m poetry run zenml integration uninstall
+          python -m poetry run zenml integration install beam -f
 
       - name: Run not_so_quickstart example
         run: | 
-          zenml example run not_so_quickstart -f
+          python -m poetry run zenml example run not_so_quickstart -f
 
       - name: 2. Clean between examples
         run: |
-          zenml integration uninstall 
-          zenml integration install beam -f
+          python -m poetry run zenml integration uninstall 
+          python -m poetry run zenml integration install beam -f
 
-      - name: Run not_so_quickstart caching
+      - name: Run caching example
         run: |
-          zenml example run caching -f
+          python -m poetry run zenml example run caching -f
 
 
