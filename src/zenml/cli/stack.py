@@ -30,11 +30,35 @@ def stack() -> None:
 
 
 @stack.command("register", context_settings=dict(ignore_unknown_options=True))
-@click.argument("stack_name", type=str)
-@click.option("-m", "--metadata-store", type=str, required=True)
-@click.option("-a", "--artifact-store", type=str, required=True)
-@click.option("-o", "--orchestrator", type=str, required=True)
-@click.option("-c", "--container_registry", type=str, required=False)
+@click.argument("stack_name", type=click.STRING, required=True)
+@click.option(
+    "-m",
+    "--metadata-store",
+    help="The name of the metadata store that you would like to register as part of the new stack.",
+    type=click.STRING,
+    required=True,
+)
+@click.option(
+    "-a",
+    "--artifact-store",
+    help="The name of the artifact store that you would like to register as part of the new stack.",
+    type=click.STRING,
+    required=True,
+)
+@click.option(
+    "-o",
+    "--orchestrator",
+    help="The name of the orchestrator that you would like to register as part of the new stack.",
+    type=click.STRING,
+    required=True,
+)
+@click.option(
+    "-c",
+    "--container_registry",
+    help="The name of the container_registry that you would like to register as part of the new stack.",
+    type=click.STRING,
+    required=False,
+)
 def register_stack(
     stack_name: str,
     metadata_store: str,
