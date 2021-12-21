@@ -52,7 +52,7 @@ def get_data_loader_from_np(X: np.ndarray, y: np.ndarray) -> DataLoader:
     tensor_x = torch.Tensor(X)  # transform to torch tensor
     tensor_y = torch.Tensor(y).type(torch.LongTensor)
 
-    torch_dataset = TensorDataset(tensor_x, tensor_y)  # create your datset
+    torch_dataset = TensorDataset(tensor_x, tensor_y)  # create your dataset
     torch_dataloader = DataLoader(torch_dataset)  # create your dataloader
     return torch_dataloader
 
