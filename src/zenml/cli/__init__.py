@@ -169,9 +169,10 @@ Using integrations
 ------------------
 
 Integrations are the different pieces of a project stack that enable custom
-functionality. This ranges from bigger libraries like `kubeflow` for
-orchestration down to smaller visualization tools like `facets`. Our CLI is an
-easy way to get started with these integrations.
+functionality. This ranges from bigger libraries like
+[`kubeflow`](https://www.kubeflow.org/) for orchestration down to smaller
+visualization tools like [`facets`](https://pair-code.github.io/facets/). Our
+CLI is an easy way to get started with these integrations.
 
 To list all the integrations available to you, type:
 
@@ -287,7 +288,7 @@ orchestrator into the CLI with the following command:
 Customizing your Container Registry
 -----------------------------------
 
-The container registry is where all the containers that are used by a
+The container registry is where all the images that are used by a
 container-based orchestrator are stored. By default, a default ZenML local stack
 will not register a container registry. If you wish to register a new container
 registry, do so with the `register` command:
