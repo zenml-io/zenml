@@ -402,7 +402,7 @@ class BaseStep(metaclass=BaseStepMeta):
             if output_name not in self.OUTPUT_SIGNATURE:
                 raise StepInterfaceError(
                     f"Found explicit artifact type for unrecognized output "
-                    f"'{output_name}' in step '{self.step_name}'. Output "
+                    f"'{output_name}' in step '{self.name}'. Output "
                     f"artifact types can only be specified for the outputs "
                     f"of this step: {set(self.OUTPUT_SIGNATURE)}."
                 )
@@ -410,7 +410,7 @@ class BaseStep(metaclass=BaseStepMeta):
             if not issubclass(artifact_type, BaseArtifact):
                 raise StepInterfaceError(
                     f"Invalid artifact type ({artifact_type}) for output "
-                    f"'{output_name}' of step '{self.step_name}'. Only "
+                    f"'{output_name}' of step '{self.name}'. Only "
                     f"`BaseArtifact` subclasses are allowed as artifact types."
                 )
 
@@ -422,7 +422,7 @@ class BaseStep(metaclass=BaseStepMeta):
             if artifact_type not in allowed_artifact_types:
                 raise StepInterfaceError(
                     f"Artifact type `{artifact_type}` for output "
-                    f"'{output_name}' of step '{self.step_name}' is not an "
+                    f"'{output_name}' of step '{self.name}' is not an "
                     f"allowed artifact type for the defined output type "
                     f"`{output_type}`. Allowed artifact types: "
                     f"{allowed_artifact_types}. If you want to extend the "
