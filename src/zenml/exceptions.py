@@ -13,12 +13,10 @@
 #  permissions and limitations under the License.
 """ZenML specific exception definitions"""
 import textwrap
-from typing import TYPE_CHECKING, List, Type
+from typing import TYPE_CHECKING, List, Optional, Type
 
 if TYPE_CHECKING:
     from zenml.steps import BaseStepConfig
-
-from typing import Optional
 
 
 class InitializationException(Exception):
