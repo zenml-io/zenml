@@ -23,7 +23,7 @@ DEFAULT_FILENAME = "saved_data"
 
 
 class TensorflowDatasetMaterializer(BaseMaterializer):
-    """Materializer to read data to and from beam."""
+    """Materializer to read data to and from tf.data.Dataset."""
 
     ASSOCIATED_TYPES = [tf.data.Dataset]
     ASSOCIATED_ARTIFACT_TYPES = [DataArtifact]
