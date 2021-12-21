@@ -45,7 +45,10 @@ def step(_func: F) -> Type[BaseStep]:
 
 @overload
 def step(
-    *, name: Optional[str] = None, enable_cache: bool = True
+    *,
+    name: Optional[str] = None,
+    enable_cache: bool = True,
+    output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
 ) -> Callable[[F], Type[BaseStep]]:
     """Type annotations for step decorator in case of arguments."""
     ...

@@ -33,6 +33,7 @@ from typing import (
 from tfx.types.channel import Channel
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.artifacts.type_registery import type_registry
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -236,7 +237,8 @@ class BaseStep(metaclass=BaseStepMeta):
         self._explicit_materializers: Dict[str, Type[BaseMaterializer]] = {}
         self._component: Optional[_ZenMLSimpleComponent] = None
 
-        self._verify_arguments(*args, **kwargs)
+        self._verify_init_arguments(*args, **kwargs)
+        self._verify_output_spec()
 
     @abstractmethod
     def entrypoint(self, *args: Any, **kwargs: Any) -> Any:
@@ -263,7 +265,7 @@ class BaseStep(metaclass=BaseStepMeta):
         Raises:
             StepInterfaceError: (Only if `ensure_complete` is set to `True`)
                 If an output does not have an explicit materializer assigned
-                to it and we there is no default materializer registered for
+                to it and there is no default materializer registered for
                 the output type.
         """
         materializers = self._explicit_materializers
@@ -322,7 +324,7 @@ class BaseStep(metaclass=BaseStepMeta):
             for key, value in parameters.items()
         }
 
-    def _verify_arguments(self, *args: Any, **kwargs: Any) -> None:
+    def _verify_init_arguments(self, *args: Any, **kwargs: Any) -> None:
         """Verifies the initialization args and kwargs of this step.
 
         This method makes sure that there is only a config object passed at
@@ -376,6 +378,48 @@ class BaseStep(metaclass=BaseStepMeta):
                 )
 
             self.PARAM_SPEC = config.dict()
+
+    def _verify_output_spec(self) -> None:
+        """Verifies the explicitly set output artifact types of this step.
+
+        Raises:
+            StepInterfaceError: If an output artifact type is specified for a
+                non-existent step output or the artifact type is not allowed
+                for the corresponding output type.
+        """
+        for output_name, artifact_type in self.OUTPUT_SPEC.items():
+            if output_name not in self.OUTPUT_SIGNATURE:
+                raise StepInterfaceError(
+                    f"Found explicit artifact type for unrecognized output "
+                    f"'{output_name}' in step '{self.step_name}'. Output "
+                    f"artifact types can only be specified for the outputs "
+                    f"of this step: {set(self.OUTPUT_SIGNATURE)}."
+                )
+
+            if not issubclass(artifact_type, BaseArtifact):
+                raise StepInterfaceError(
+                    f"Invalid artifact type ({artifact_type}) for output "
+                    f"'{output_name}' of step '{self.step_name}'. Only "
+                    f"`BaseArtifact` subclasses are allowed as artifact types."
+                )
+
+            output_type = self.OUTPUT_SIGNATURE[output_name]
+            allowed_artifact_types = set(
+                type_registry.get_artifact_type(output_type)
+            )
+
+            if artifact_type not in allowed_artifact_types:
+                raise StepInterfaceError(
+                    f"Artifact type `{artifact_type}` for output "
+                    f"'{output_name}' of step '{self.step_name}' is not an "
+                    f"allowed artifact type for the defined output type "
+                    f"`{output_type}`. Allowed artifact types: "
+                    f"{allowed_artifact_types}. If you want to extend the "
+                    f"allowed artifact types, implement a custom "
+                    f"`BaseMaterializer` subclass and set its "
+                    f"`ASSOCIATED_ARTIFACT_TYPES` and `ASSOCIATED_TYPES` "
+                    f"accordingly."
+                )
 
     def _update_and_verify_parameter_spec(self) -> None:
         """Verifies and prepares the config parameters for running this step.
@@ -501,13 +545,6 @@ class BaseStep(metaclass=BaseStepMeta):
         # TODO [ENG-157]: replaces Channels with ZenML class (BaseArtifact?)
         self._update_and_verify_parameter_spec()
 
-        # Make sure that the input/output artifact types exist in the signature
-        if not all(k in self.OUTPUT_SIGNATURE for k in self.OUTPUT_SPEC):
-            raise StepInterfaceError(
-                "Failed to create the step. The predefined artifact types "
-                "for the input does not match the input signature."
-            )
-
         # Prepare the input artifacts and spec
         input_artifacts = self._prepare_input_artifacts(
             *artifacts, **kw_artifacts
@@ -522,18 +559,10 @@ class BaseStep(metaclass=BaseStepMeta):
         materializers = self.get_materializers(ensure_complete=True)
 
         # Prepare the output artifacts and spec
-        from zenml.artifacts.type_registery import type_registry
-
         for key, value in self.OUTPUT_SIGNATURE.items():
             verified_types = type_registry.get_artifact_type(value)
             if key not in self.OUTPUT_SPEC:
                 self.OUTPUT_SPEC[key] = verified_types[0]
-            else:
-                if self.OUTPUT_SPEC[key] not in verified_types:
-                    raise StepInterfaceError(
-                        f"Type {key} can not be interpreted as a "
-                        f"{self.OUTPUT_SPEC[key]}"
-                    )
 
         execution_parameters = {
             **self.PARAM_SPEC,

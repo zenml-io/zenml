@@ -16,6 +16,7 @@ from typing import Optional
 
 import pytest
 
+from zenml.artifacts import DataArtifact, ModelArtifact
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -193,6 +194,57 @@ def test_initialize_step_with_config():
 
     with pytest.raises(StepInterfaceError):
         step_with_config(config=StepConfig(), config2=StepConfig())
+
+
+def test_only_registered_output_artifact_types_are_allowed():
+    """Tests that only artifact types which are registered for the output type
+    are allowed as custom output artifact types."""
+
+    class CustomType:
+        pass
+
+    class CustomTypeMaterializer(BaseMaterializer):
+        ASSOCIATED_TYPES = [CustomType]
+        ASSOCIATED_ARTIFACT_TYPES = [DataArtifact]
+
+    @step(output_types={"output": DataArtifact})
+    def some_step() -> CustomType:
+        pass
+
+    with does_not_raise():
+        some_step()
+
+    @step(output_types={"output": ModelArtifact})
+    def some_other_step() -> CustomType:
+        pass
+
+    with pytest.raises(StepInterfaceError):
+        some_other_step()
+
+
+def test_pass_invalid_type_as_output_artifact_type():
+    """Tests that passing a type that is not a `BaseArtifact` subclass as
+    output artifact type fails.
+    """
+
+    @step(output_types={"output": int})
+    def some_step() -> int:
+        pass
+
+    with pytest.raises(StepInterfaceError):
+        some_step()
+
+
+def test_unrecognized_output_in_output_artifact_types():
+    """Tests that passing an output artifact type for an output that doesn't
+    exist raises an exception."""
+
+    @step(output_types={"non-existent": DataArtifact})
+    def some_step():
+        pass
+
+    with pytest.raises(StepInterfaceError):
+        some_step()
 
 
 def test_pipeline_parameter_name_is_empty_when_initializing_a_step():
