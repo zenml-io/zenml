@@ -43,6 +43,10 @@ jobs:
         run : |
           python -m poetry run zenml example run quickstart -f
 
+      - name: Test success quickstart example
+        run : |
+          (test -f zenml_examples/quickstart/.zen/local_store/trainer/output/2/model && echo Model created through example)
+
       - name: 1. Clean between examples
         run: |
           python -m poetry run zenml integration uninstall -f
@@ -51,6 +55,10 @@ jobs:
       - name: Run not_so_quickstart example
         run: | 
           python -m poetry run zenml example run not_so_quickstart -f
+
+      - name: Test success not_so_quickstart example
+        run : |
+          (test -f zenml_examples/not_so_quickstart/.zen/local_store/tf_trainer/output/3/saved_model.pb && echo Model created through example)
 
       - name: 2. Clean between examples
         run: |
