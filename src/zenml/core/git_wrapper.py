@@ -113,7 +113,7 @@ class GitWrapper:
         for file_path in module_file_names:
             path = os.path.join(module_dir, file_path)
 
-            # if its .gitignored then continue and dont do anything
+            # if its .gitignored then continue and don't do anything
             if len(self.git_repo.ignored(path)) > 0:
                 continue
 

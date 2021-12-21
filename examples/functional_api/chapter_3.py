@@ -17,7 +17,7 @@ import tensorflow as tf
 
 from zenml.core.repo import Repository
 from zenml.pipelines import pipeline
-from zenml.steps import step, BaseStepConfig, Output
+from zenml.steps import BaseStepConfig, Output, step
 
 
 class TrainerConfig(BaseStepConfig):
@@ -30,7 +30,10 @@ class TrainerConfig(BaseStepConfig):
 
 @step
 def importer_mnist() -> Output(
-    X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
+    X_train=np.ndarray,
+    y_train=np.ndarray,
+    X_test=np.ndarray,
+    y_test=np.ndarray,
 ):
     """Download the MNIST data and store it as an artifact"""
     (X_train, y_train), (
@@ -56,7 +59,7 @@ def tf_trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> tf.keras.Model:
-    """Train a neural net from scratch to recognise MNIST digits return our
+    """Train a neural net from scratch to recognize MNIST digits return our
     model or the learner"""
     model = tf.keras.Sequential(
         [

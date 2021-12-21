@@ -57,7 +57,9 @@ def list_integrations() -> None:
         )
     print_table(table_rows)
 
-    warning("\nTo install the dependencies of a specific integration, type: ")
+    warning(
+        "\n" + "To install the dependencies of a specific integration, type: "
+    )
     warning("zenml integration install EXAMPLE_NAME")
 
 
@@ -82,7 +84,7 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
             )
             declare(f"{requirements}")
             warning(
-                "\nTo install the dependencies of a "
+                "\n" + "To install the dependencies of a "
                 "specific integration, type: "
             )
             warning("zenml integration install EXAMPLE_NAME")

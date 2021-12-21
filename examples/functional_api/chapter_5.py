@@ -26,7 +26,7 @@ from sqlalchemy.orm import sessionmaker
 from zenml.core.repo import Repository
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
-from zenml.steps import step, BaseStepConfig, Output
+from zenml.steps import BaseStepConfig, Output, step
 
 Base = declarative_base()
 
@@ -88,7 +88,10 @@ class TrainerConfig(BaseStepConfig):
 
 @step
 def importer_mnist() -> Output(
-    X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
+    X_train=np.ndarray,
+    y_train=np.ndarray,
+    X_test=np.ndarray,
+    y_test=np.ndarray,
 ):
     """Download the MNIST data and store it as an artifact"""
     (X_train, y_train), (
@@ -146,7 +149,7 @@ def mnist_pipeline(
     evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 
 
-# Initialise a new pipeline run
+# Initialize a new pipeline run
 scikit_p = mnist_pipeline(
     importer=importer_mnist(),
     normalizer=normalize_mnist(),

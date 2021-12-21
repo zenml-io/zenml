@@ -65,7 +65,7 @@ def mnist_pipeline(
     evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 
 
-# Initialise the pipeline
+# Initialize the pipeline
 p = mnist_pipeline(
     importer=importer_mnist(),
     normalizer=normalizer(),

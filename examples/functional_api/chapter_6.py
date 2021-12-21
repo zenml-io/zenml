@@ -20,7 +20,7 @@ from sklearn.linear_model import LogisticRegression
 
 from zenml.core.repo import Repository
 from zenml.pipelines import pipeline
-from zenml.steps import step, BaseStepConfig, Output
+from zenml.steps import BaseStepConfig, Output, step
 
 
 class ImporterConfig(BaseStepConfig):
@@ -46,7 +46,10 @@ def get_X_y_from_api(n_days: int = 1, is_train: bool = True):
 def dynamic_importer(
     config: ImporterConfig,
 ) -> Output(
-    X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
+    X_train=np.ndarray,
+    y_train=np.ndarray,
+    X_test=np.ndarray,
+    y_test=np.ndarray,
 ):
     """Downloads the latest data from a mock API."""
     X_train, y_train = get_X_y_from_api(n_days=config.n_days, is_train=True)
@@ -101,7 +104,7 @@ def mnist_pipeline(
     evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 
 
-# Initialise a new pipeline run
+# Initialize a new pipeline run
 scikit_p = mnist_pipeline(
     importer=dynamic_importer(),
     normalizer=normalize_mnist(),

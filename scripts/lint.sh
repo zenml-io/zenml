@@ -13,11 +13,4 @@ isort $SRC scripts --check-only
 black $SRC  --check
 interrogate $SRC_NO_TESTS -c pyproject.toml
 mypy $SRC_NO_TESTS
-codespell -c -f -i 0 --builtin clear,rare,en-GB_to_en-US,names,code CODE-OF-CONDUCT.md
-codespell  -c -f -i 0 --builtin clear,rare,en-GB_to_en-US,names,code CONTRIBUTING.md
-codespell  -c -f -i 0 --builtin clear,rare,en-GB_to_en-US,names,code ROADMAP.md
-codespell -c -f -i 0 --builtin clear,rare,en-GB_to_en-US,names,code README.md
-codespell -c -f -i 0 --builtin clear,rare,en-GB_to_en-US,names,code RELEASE_NOTES.md
-codespell -c -f -i 0 --builtin clear,rare,en-GB_to_en-US,names,code src/
-codespell -c -f -i 0 --builtin clear,rare,en-GB_to_en-US,names,code docs/book
-codespell -c -f -i 0 --builtin clear,rare,en-GB_to_en-US,names,code examples/
+codespell -c -I .codespell-ignore-words -f -i 0 --builtin clear,rare,en-GB_to_en-US,names,code CODE-OF-CONDUCT.md CONTRIBUTING.md ROADMAP.md README.md RELEASE_NOTES.md src/ docs/book examples/

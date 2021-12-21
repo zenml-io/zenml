@@ -66,7 +66,7 @@ Version 0.5.3 adds [statistics visualizations](https://github.com/zenml-io/zenml
 * Update docker files by @schustmi in https://github.com/zenml-io/zenml/pull/169
 * Hamza/deploy api reference by @htahir1 in https://github.com/zenml-io/zenml/pull/171
 * API Reference by @schustmi in https://github.com/zenml-io/zenml/pull/172
-* Add colour back into our github actions by @alex-zenml in https://github.com/zenml-io/zenml/pull/176
+* Add color back into our github actions by @alex-zenml in https://github.com/zenml-io/zenml/pull/176
 * Refactor tests not raising by @alex-zenml in https://github.com/zenml-io/zenml/pull/177
 * Improve step and pipeline interface by @schustmi in https://github.com/zenml-io/zenml/pull/175
 * Alex/eng 27 windows bug again by @htahir1 in https://github.com/zenml-io/zenml/pull/178

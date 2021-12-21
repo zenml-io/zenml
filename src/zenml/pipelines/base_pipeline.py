@@ -250,7 +250,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             # run a single step.
             logger.info(
                 "Preventing execution of pipeline '%s'. If this is not "
-                "intended behaviour, make sure to unset the environment "
+                "intended behavior, make sure to unset the environment "
                 "variable '%s'.",
                 self.name,
                 ENV_ZENML_PREVENT_PIPELINE_EXECUTION,

@@ -189,7 +189,8 @@ class Example:
             else:
                 raise FileNotFoundError(
                     f"Example {self.name} is not one of the available options."
-                    f"\nTo list all available examples, type: `zenml example "
+                    f"\n"
+                    f"To list all available examples, type: `zenml example "
                     f"list`"
                 )
 
@@ -250,7 +251,7 @@ class ExamplesRepo:
             )
         except KeyboardInterrupt:
             self.delete()
-            logger.error("Cancelled download of repository.. Rolled back.")
+            logger.error("Canceled download of repository.. Rolled back.")
 
     def delete(self) -> None:
         """Delete `cloning_path` if it exists."""
@@ -401,7 +402,7 @@ def list(git_examples_handler: GitExamplesHandler) -> None:
     for example in git_examples_handler.get_examples():
         declare(f"{example.name}")
 
-    declare("\nTo pull the examples, type: ")
+    declare("\n" + "To pull the examples, type: ")
     declare("zenml example pull EXAMPLE_NAME")
 
 
