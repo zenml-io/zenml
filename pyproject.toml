@@ -97,6 +97,7 @@ types-tabulate = "^0.8.3"
 types-termcolor = "^1.1.2"
 types-psutil = "^5.8.13"
 pytest-mock = "^3.6.1"
+codespell = "^2.1.0"
 
 [build-system]
 requires = ["poetry-core"]
