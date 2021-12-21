@@ -32,8 +32,6 @@
 by Google at: https://github.com/tensorflow/tfx/blob/master/tfx/orchestration
 /local/local_dag_runner.py"""
 
-from datetime import datetime
-from typing import Optional
 
 import tfx.orchestration.pipeline as tfx_pipeline
 from tfx.dsl.compiler import compiler
@@ -59,14 +57,12 @@ class LocalDagRunner(tfx_runner.TfxRunner):
     def __init__(self) -> None:
         """Initializes LocalDagRunner as a TFX orchestrator."""
 
-    def run(
-        self, pipeline: tfx_pipeline.Pipeline, run_name: Optional[str] = None
-    ) -> None:
+    def run(self, pipeline: tfx_pipeline.Pipeline, run_name: str = "") -> None:
         """Runs given logical pipeline locally.
 
         Args:
           pipeline: Logical pipeline containing pipeline args and components.
-          run_name: Optional name for the run.
+          run_name: Name of the pipeline run.
         """
         for component in pipeline.components:
             if isinstance(component, base_component.BaseComponent):
@@ -77,7 +73,6 @@ class LocalDagRunner(tfx_runner.TfxRunner):
         c = compiler.Compiler()
         pipeline = c.compile(pipeline)
 
-        run_name = run_name or datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")
         # Substitute the runtime parameter to be a concrete run_id
         runtime_parameter_utils.substitute_runtime_parameter(
             pipeline,

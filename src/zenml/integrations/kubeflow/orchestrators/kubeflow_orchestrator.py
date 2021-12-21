@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING, Any, List, Optional
 
 import click
 import kfp
-import tfx.orchestration.pipeline as tfx_pipeline
 import urllib3
 from kubernetes import config
 
@@ -36,6 +35,7 @@ from zenml.integrations.utils import get_requirements_for_module
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators.utils import create_tfx_pipeline
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
@@ -85,7 +85,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             push_docker_image,
         )
 
-        image_name = self.get_docker_image_name(pipeline.pipeline_name)
+        image_name = self.get_docker_image_name(pipeline.name)
 
         repository_root = Repository().path
         requirements = (
@@ -108,30 +108,19 @@ class KubeflowOrchestrator(BaseOrchestrator):
     def run(
         self,
         zenml_pipeline: "BasePipeline",
-        run_name: Optional[str] = None,
+        run_name: str,
         **kwargs: Any,
     ) -> None:
-        """Prepares the pipeline to be run on Kubeflow"""
-        # Establish the connections between the components
-        zenml_pipeline.connect(**zenml_pipeline.steps)
+        """Runs the pipeline on Kubeflow.
 
-        # Create the final step list and the corresponding pipeline
-        steps = [s.component for s in zenml_pipeline.steps.values()]
-
-        artifact_store = zenml_pipeline.stack.artifact_store
-        metadata_store = zenml_pipeline.stack.metadata_store
-
-        created_pipeline = tfx_pipeline.Pipeline(
-            pipeline_name=zenml_pipeline.name,
-            components=steps,  # type: ignore[arg-type]
-            pipeline_root=artifact_store.path,
-            metadata_connection_config=metadata_store.get_tfx_metadata_config(),
-            enable_cache=zenml_pipeline.enable_cache,
-        )
-
+        Args:
+            zenml_pipeline: The pipeline to run.
+            run_name: Name of the pipeline run.
+            **kwargs: Unused kwargs to conform with base signature
+        """
         from zenml.integrations.kubeflow.docker_utils import get_image_digest
 
-        image_name = self.get_docker_image_name(zenml_pipeline.pipeline_name)
+        image_name = self.get_docker_image_name(zenml_pipeline.name)
         image_name = get_image_digest(image_name) or image_name
 
         fileio.make_dirs(self.pipeline_directory)
@@ -142,7 +131,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
         runner = KubeflowDagRunner(
             config=runner_config, output_path=pipeline_file_path
         )
-        runner.run(created_pipeline)
+        tfx_pipeline = create_tfx_pipeline(zenml_pipeline)
+        runner.run(tfx_pipeline)
 
         run_name = run_name or datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")
         self._upload_and_run_pipeline(

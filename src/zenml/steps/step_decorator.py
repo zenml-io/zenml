@@ -27,6 +27,7 @@ from zenml.steps import BaseStep
 from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
     OUTPUT_SPEC,
+    PARAM_CREATED_BY_FUNCTIONAL_API,
     PARAM_ENABLE_CACHE,
     STEP_INNER_FUNC_NAME,
 )
@@ -100,7 +101,10 @@ def step(
             (BaseStep,),
             {
                 STEP_INNER_FUNC_NAME: staticmethod(func),
-                INSTANCE_CONFIGURATION: {PARAM_ENABLE_CACHE: enable_cache},
+                INSTANCE_CONFIGURATION: {
+                    PARAM_ENABLE_CACHE: enable_cache,
+                    PARAM_CREATED_BY_FUNCTIONAL_API: True,
+                },
                 OUTPUT_SPEC: output_spec,
                 "__module__": func.__module__,
             },
