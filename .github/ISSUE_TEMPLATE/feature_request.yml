@@ -50,7 +50,7 @@ body:
   - type: textarea
     id: feature-solution
     attributes:
-      label: How do you solve your current problem with the current status-quo of ZenML?
+      label: Any other comments?
       description: Add any other context about the feature here.
       placeholder: "This is related to issue #46."
     validations:
