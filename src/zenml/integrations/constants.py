@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 
 AIRFLOW = "airflow"
-BEAM = "beam"
 GCP = "gcp"
 PYTORCH = "pytorch"
 PYTORCH_L = "pytorch_lightning"

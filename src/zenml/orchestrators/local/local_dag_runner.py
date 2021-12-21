@@ -28,7 +28,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-"""Definition of Beam TFX runner. Inspired by local dag runner implementation
+"""Inspired by local dag runner implementation
 by Google at: https://github.com/tensorflow/tfx/blob/master/tfx/orchestration
 /local/local_dag_runner.py"""
 
