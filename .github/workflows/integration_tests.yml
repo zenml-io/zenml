@@ -8,6 +8,9 @@ on:
 jobs:
   integration_testing:
     runs-on: ubuntu-latest
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
@@ -21,6 +24,17 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Test before
+        run: echo ZENML_DEBUG
+
+      - name: Set environment Variables
+        run: |
+          echo "ZENML_DEBUG=1" >> $GITHUB_ENV
+          echo "ZENML_ANALYTICS_OPT_IN=false" >> $GITHUB_ENV
+
+      - name: Test after
+        run: echo ZENML_DEBUG
 
       - name: Install poetry
         run: |
@@ -39,34 +53,44 @@ jobs:
         run : |
           python -m poetry run zenml example pull -b "origin/${GITHUB_REF#refs/heads/}" -f
 
-      - name: Run quickstart example
-        run : |
-          python -m poetry run zenml example run quickstart -f
+#      - name: Run quickstart example
+#        run : |
+#          python -m poetry run zenml example run quickstart -f
+#
+#      - name: Test success quickstart example
+#        run : |
+#          (test -f zenml_examples/quickstart/.zen/local_store/trainer/output/2/model && echo Model created through example)
+#
+#      - name: 1. Clean between examples
+#        run: |
+#          python -m poetry run zenml integration uninstall -f
+#          python -m poetry run zenml integration install beam -f
+#
+#      - name: Run not_so_quickstart example
+#        run: |
+#          python -m poetry run zenml example run not_so_quickstart -f
+#
+#      - name: Test success not_so_quickstart example
+#        run : |
+#          (test -f zenml_examples/not_so_quickstart/.zen/local_store/tf_trainer/output/3/saved_model.pb && echo Tensorflow model created through example)
+#          (test -f zenml_examples/not_so_quickstart/.zen/local_store/torch_trainer/output/7/entire_model.pt && echo Torch model created through example)
+#          (test -f zenml_examples/not_so_quickstart/.zen/local_store/sklearn_trainer/output/11/model  && echo Sklearn model created through example)
+#
+#      - name: 2. Clean between examples
+#        run: |
+#          python -m poetry run zenml integration uninstall -f
+#          python -m poetry run zenml integration install beam -f
+#
+#      - name: Run caching example
+#        run: |
+#          python -m poetry run zenml example run caching -f
+#
+#      - name: Test success not_so_quickstart example
+#        run : |
+#          (test -f zzenml_examples/caching/.zen/local_store/tf_trainer/output/3/saved_model.pb  && echo First model created through example)
+#          (test -f zzenml_examples/caching/.zen/local_store/tf_trainer/output/7/saved_model.pb  && echo Second model created through example)
 
-      - name: Test success quickstart example
-        run : |
-          (test -f zenml_examples/quickstart/.zen/local_store/trainer/output/2/model && echo Model created through example)
-
-      - name: 1. Clean between examples
-        run: |
-          python -m poetry run zenml integration uninstall -f
-          python -m poetry run zenml integration install beam -f
-
-      - name: Run not_so_quickstart example
-        run: | 
-          python -m poetry run zenml example run not_so_quickstart -f
-
-      - name: Test success not_so_quickstart example
-        run : |
-          (test -f zenml_examples/not_so_quickstart/.zen/local_store/tf_trainer/output/3/saved_model.pb && echo Model created through example)
-
-      - name: 2. Clean between examples
-        run: |
-          python -m poetry run zenml integration uninstall -f
-          python -m poetry run zenml integration install beam -f
-
-      - name: Run caching example
-        run: |
-          python -m poetry run zenml example run caching -f
+          
+      
 
 
