@@ -298,7 +298,7 @@ zenml init
 * Added `JSONDatasource` and `TFRecordsDatasource`.
 
 ## Bug Fixes + Refactor
-A big thanks to our new contributer @aak7912 for the help in this release with issue #71 and PR #75.
+A big thanks to our new contributor @aak7912 for the help in this release with issue #71 and PR #75.
 
 * Added an example for [regression](https://github.com/zenml-io/zenml/tree/main/examples/regression).
 * `compare_training_runs()` now takes an optional `datasource` parameter to filter by datasource.
