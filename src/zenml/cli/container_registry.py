@@ -56,9 +56,7 @@ def get_active_container_registry() -> None:
 def register_container_registry(name: str, uri: str) -> None:
     """Register a container registry."""
 
-    from zenml.container_registry.base_container_registry import (
-        BaseContainerRegistry,
-    )
+    from zenml.container_registries import BaseContainerRegistry
 
     repo = Repository()
     registry = BaseContainerRegistry(uri=uri, repo_path=repo.path)

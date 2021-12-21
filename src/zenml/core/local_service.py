@@ -19,9 +19,7 @@ from zenml.utils.analytics_utils import (
 
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
-    from zenml.container_registry.base_container_registry import (
-        BaseContainerRegistry,
-    )
+    from zenml.container_registries import BaseContainerRegistry
     from zenml.metadata_stores import BaseMetadataStore
     from zenml.orchestrators import BaseOrchestrator
 
@@ -94,9 +92,7 @@ class LocalService(BaseComponent):
     @property
     def container_registries(self) -> Dict[str, "BaseContainerRegistry"]:
         """Returns all registered container registries."""
-        from zenml.container_registry.base_container_registry import (
-            BaseContainerRegistry,
-        )
+        from zenml.container_registries import BaseContainerRegistry
 
         return mapping_utils.get_components_from_store(  # type: ignore[return-value] # noqa
             BaseContainerRegistry._CONTAINER_REGISTRY_DIR_NAME,

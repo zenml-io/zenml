@@ -19,9 +19,7 @@ from zenml.enums import StackTypes
 
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
-    from zenml.container_registry.base_container_registry import (
-        BaseContainerRegistry,
-    )
+    from zenml.container_registries import BaseContainerRegistry
     from zenml.metadata_stores import BaseMetadataStore
     from zenml.orchestrators import BaseOrchestrator
 
