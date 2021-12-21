@@ -207,9 +207,32 @@ class BaseStep(metaclass=BaseStepMeta):
         self.pipeline_parameter_name: Optional[str] = None
 
         kwargs.update(getattr(self, INSTANCE_CONFIGURATION))
-        self.enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, True)
 
         self.requires_context = bool(self.CONTEXT_PARAMETER_NAME)
+
+        enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, None)
+        if enable_cache is None:
+            if self.requires_context:
+                # Using the StepContext inside a step provides access to
+                # external resources which might influence the step execution.
+                # We therefore disable caching unless it is explicitly enabled
+                enable_cache = False
+                logger.debug(
+                    "Step '%s': Step context required and caching not "
+                    "explicitly enabled.",
+                    self.step_name,
+                )
+            else:
+                # Default to cache enabled if not explicitly set
+                enable_cache = True
+
+        logger.debug(
+            "Step '%s': Caching %s.",
+            self.step_name,
+            "enabled" if enable_cache else "disabled",
+        )
+        self.enable_cache = enable_cache
+
         self._explicit_materializers: Dict[str, Type[BaseMaterializer]] = {}
         self._component: Optional[_ZenMLSimpleComponent] = None
 
