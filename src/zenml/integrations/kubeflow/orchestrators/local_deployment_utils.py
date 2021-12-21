@@ -194,26 +194,28 @@ def start_kfp_ui_daemon(pid_file_path: str, port: int) -> None:
             be written.
         port: Port on which the UI should be accessible.
     """
+    command = [
+        "kubectl",
+        "--namespace",
+        "kubeflow",
+        "port-forward",
+        "svc/ml-pipeline-ui",
+        f"{port}:80",
+    ]
 
     def _daemon_function() -> None:
         """Port-forwards the Kubeflow Pipelines UI pod."""
-        subprocess.check_call(
-            [
-                "kubectl",
-                "--namespace",
-                "kubeflow",
-                "port-forward",
-                "svc/ml-pipeline-ui",
-                f"{port}:80",
-            ]
-        )
+        subprocess.check_call(command)
 
-    from zenml.utils import daemon
-
-    # TODO [ENG-234]: Update with smarter solution for windows daemon
     if sys.platform == "win32":
-        pass
+        logger.warning(
+            f"Daemon functionality not supported on Windows. "
+            f"In order to access the Kubeflow Pipelines UI, please run "
+            f"'{' '.join(command)}' in a separate command line shell."
+        )
     else:
+        from zenml.utils import daemon
+
         daemon.run_as_daemon(
             _daemon_function,
             pid_file=pid_file_path,
