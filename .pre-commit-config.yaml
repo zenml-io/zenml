@@ -7,6 +7,7 @@ repos:
         name: lint
         entry: poetry run bash scripts/lint.sh
         language: system
+        files: ^src/zenml/|^tests/
         types: [file, python]
         pass_filenames: false
 
@@ -16,5 +17,6 @@ repos:
         name: pytest
         entry: poetry run bash scripts/test-coverage-xml.sh
         language: system
+        files: ^src/zenml/|^tests/
         types: [file, python]
         pass_filenames: false
