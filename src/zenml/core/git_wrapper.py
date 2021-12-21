@@ -269,7 +269,7 @@ class GitWrapper:
                 self.reset(relative_module_path)
                 self.checkout(directory=relative_module_path)
                 raise GitException(
-                    f"A git exception occured when checking out repository "
+                    f"A git exception occurred when checking out repository "
                     f"from git history. Resetting repository to original "
                     f"state. Original exception: {e}"
                 )

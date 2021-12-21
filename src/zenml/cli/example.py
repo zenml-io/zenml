@@ -556,7 +556,7 @@ def pull(
     "--force",
     "-f",
     is_flag=True,
-    help="Force te run of the example. This deletes the .zen folder from the"
+    help="Force the run of the example. This deletes the .zen folder from the"
     "example folder and force installs all necessary integration "
     "requirements.",
 )

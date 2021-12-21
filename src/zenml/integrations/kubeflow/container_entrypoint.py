@@ -280,7 +280,7 @@ def _dump_ui_metadata(
             "type": "markdown",
         }
     ]
-    # Add Tensorboard view for ModelRun outpus.
+    # Add Tensorboard view for ModelRun outputs.
     for name, spec in node.outputs.outputs.items():  # type: ignore[attr-defined] # noqa
         if (
             spec.artifact_spec.type.name
