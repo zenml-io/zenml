@@ -303,12 +303,14 @@ class KubeflowOrchestrator(BaseOrchestrator):
             )
 
         if fileio.file_exists(self._pid_file_path):
-            from zenml.utils import daemon
-
-            # TODO [ENG-234]: Update with smarter solution for windows daemon
             if sys.platform == "win32":
+                # Daemon functionality is not supported on Windows, so the PID
+                # file won't exist. This if clause exists just for mypy to not
+                # complain about missing functions
                 pass
             else:
+                from zenml.utils import daemon
+
                 daemon.stop_daemon(self._pid_file_path, kill_children=True)
                 fileio.remove(self._pid_file_path)
 
