@@ -36,13 +36,17 @@ def get_active_metadata_store() -> None:
 @metadata_store.command(
     "register", context_settings=dict(ignore_unknown_options=True)
 )
-@click.argument("metadata_store_name", type=str)
-@click.argument("metadata_store_type", type=str)
+@click.argument("name", type=click.STRING, required=True)
+@click.option(
+    "--type",
+    "-t",
+    help="The type of the metadata store to register.",
+    required=True,
+    type=click.STRING,
+)
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 @cli_utils.activate_integrations
-def register_metadata_store(
-    metadata_store_name: str, metadata_store_type: str, args: List[str]
-) -> None:
+def register_metadata_store(name: str, type: str, args: List[str]) -> None:
     """Register a metadata store."""
 
     try:
@@ -56,17 +60,15 @@ def register_metadata_store(
         # TODO [ENG-187]: Remove when we rework the registry logic
         from zenml.core.component_factory import metadata_store_factory
 
-        comp = metadata_store_factory.get_single_component(metadata_store_type)
+        comp = metadata_store_factory.get_single_component(type)
     except AssertionError as e:
         cli_utils.error(str(e))
         return
 
     metadata_store = comp(**parsed_args)
     service = repo.get_service()
-    service.register_metadata_store(metadata_store_name, metadata_store)
-    cli_utils.declare(
-        f"Metadata Store `{metadata_store_name}` successfully registered!"
-    )
+    service.register_metadata_store(name, metadata_store)
+    cli_utils.declare(f"Metadata Store `{name}` successfully registered!")
 
 
 @metadata_store.command("list")
