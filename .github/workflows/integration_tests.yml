@@ -81,5 +81,5 @@ jobs:
 
       - name: 3. Test success caching example
         run : |
-          (test -f zzenml_examples/caching/.zen/local_store/tf_trainer/output/3/saved_model.pb  && echo First model created through example)
-          (test -f zzenml_examples/caching/.zen/local_store/tf_trainer/output/7/saved_model.pb  && echo Second model created through example)
+          (test -f zenml_examples/caching/.zen/local_store/tf_trainer/output/3/saved_model.pb  && echo First model created through example)
+          (test -f zenml_examples/caching/.zen/local_store/tf_trainer/output/7/saved_model.pb  && echo Second model created through example)
