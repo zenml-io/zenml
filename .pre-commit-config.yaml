@@ -35,6 +35,15 @@ repos:
       - id: interrogate
         args: [  ]
         files: ^src/zenml
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.1.0
+    hooks:
+    -   id: codespell
+        name: codespell
+        description: Checks for common misspellings in text files.
+        entry: codespell -c -f -i 0 --builtin clear,rare,en-GB_to_en-US,names,code CODE-OF-CONDUCT.md CONTRIBUTING.md ROADMAP.md README.md RELEASE_NOTES.md src/ docs/book/ examples/
+        language: python
+        types: [text]
   - repo: local
     hooks:
       - id: dependency_update_warning
