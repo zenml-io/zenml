@@ -165,6 +165,40 @@ up whatever dependencies are required, use the ``run`` subcommand:
 
    zenml example run quickstart
 
+Using integrations
+------------------
+
+Integrations are the different pieces of a project stack that enable custom
+functionality. This ranges from bigger libraries like `kubeflow` for
+orchestration down to smaller visualization tools like `facets`. Our CLI is an
+easy way to get started with these integrations.
+
+To list all the integrations available to you, type:
+
+```bash
+zenml integration list
+```
+
+To see the requirements for a specific integration, use the `requirements` command:
+
+```bash
+zenml integration requirements INTEGRATION_NAME
+```
+
+If you wish to install the integration, using the requirements listed in the previous command, `install` allows you to do this for your local environment:
+
+```bash
+zenml integration install INTEGRATION_NAME
+```
+
+Note that if you don't specify a specific integration to be installed, the ZenML CLI will install **all** available integrations.
+
+Uninstalling a specific integration is as simple as typing:
+
+```bash
+zenml integration uninstall INTEGRATION_NAME
+```
+
 Customizing your Metadata Store
 -------------------------------
 
@@ -246,6 +280,15 @@ orchestrator into the CLI with the following command:
 .. code:: bash
 
    zenml orchestrator delete ORCHESTRATOR_NAME
+
+Customizing your Container Registry
+-----------------------------------
+
+zenml container-registry get
+zenml container-registry list
+zenml container-registry register
+zenml container-registry describe
+zenml container-registry delete
 
 Administering the Stack
 -----------------------
