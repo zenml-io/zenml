@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from typing import Optional
 
 import click
 
@@ -40,11 +41,19 @@ def get_active_container_registry() -> None:
 @container_registry.command(
     "register", context_settings=dict(ignore_unknown_options=True)
 )
-@click.argument("container_registry_name", type=str)
-@click.argument("container_registry_uri", type=str)
-def register_container_registry(
-    container_registry_name: str, container_registry_uri: str
-) -> None:
+@click.argument(
+    "name",
+    required=True,
+    type=click.STRING,
+)
+@click.option(
+    "--uri",
+    "-u",
+    help="The URI for the container registry to register.",
+    required=True,
+    type=click.STRING,
+)
+def register_container_registry(name: str, uri: str) -> None:
     """Register a container registry."""
 
     from zenml.container_registry.base_container_registry import (
@@ -52,21 +61,20 @@ def register_container_registry(
     )
 
     repo = Repository()
-    registry = BaseContainerRegistry(
-        uri=container_registry_uri, repo_path=repo.path
-    )
-    repo.get_service().register_container_registry(
-        container_registry_name, registry
-    )
-    cli_utils.declare(
-        f"Container registry `{container_registry_name}` successfully registered!"
-    )
+    registry = BaseContainerRegistry(uri=uri, repo_path=repo.path)
+    repo.get_service().register_container_registry(name, registry)
+    cli_utils.declare(f"Container registry `{name}` successfully registered!")
 
 
 @container_registry.command("list")
 def list_container_registries() -> None:
     """List all available container registries from service."""
     repo = Repository()
+    service = repo.get_service()
+    if len(service.container_registries) == 0:
+        cli_utils.warning("No container registries registered!")
+        return
+
     active_container_registry = str(
         repo.get_active_stack().container_registry_name
     )
@@ -77,6 +85,50 @@ def list_container_registries() -> None:
             service.container_registries, active_container_registry
         )
     )
+
+
+@container_registry.command(
+    "describe",
+    help="Show details about the current active container registry.",
+)
+@click.argument(
+    "container_registry_name",
+    type=click.STRING,
+    required=False,
+)
+def describe_container_registry(
+    container_registry_name: Optional[str],
+) -> None:
+    """Show details about the current active container registry."""
+    repo = Repository()
+    container_registry_name = container_registry_name or str(
+        repo.get_active_stack().container_registry_name
+    )
+
+    container_registries = repo.get_service().container_registries
+    if len(container_registries) == 0:
+        cli_utils.warning("No container registries registered!")
+        return
+
+    try:
+        container_registry_details = container_registries[
+            container_registry_name
+        ]
+    except KeyError:
+        cli_utils.error(
+            f"Container registry `{container_registry_name}` does not exist."
+        )
+        return
+    cli_utils.title("Container Registry:")
+    if (
+        repo.get_active_stack().container_registry_name
+        == container_registry_name
+    ):
+        cli_utils.declare("**ACTIVE**\n")
+    else:
+        cli_utils.declare("")
+    cli_utils.declare(f"NAME: {container_registry_name}")
+    cli_utils.print_component_properties(container_registry_details.dict())
 
 
 @container_registry.command("delete")

@@ -17,7 +17,6 @@ import os
 import time
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-import tfx.orchestration.pipeline as tfx_pipeline
 from pydantic import root_validator
 
 import zenml.io.utils
@@ -30,6 +29,7 @@ from zenml.integrations.airflow.orchestrators.airflow_dag_runner import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators.utils import create_tfx_pipeline
 from zenml.utils import daemon
 
 logger = get_logger(__name__)
@@ -232,14 +232,14 @@ class AirflowOrchestrator(BaseOrchestrator):
     def run(
         self,
         zenml_pipeline: "BasePipeline",
-        run_name: Optional[str] = None,
+        run_name: str,
         **kwargs: Any,
     ) -> "airflow.DAG":
         """Prepares the pipeline so it can be run in Airflow.
 
         Args:
             zenml_pipeline: The pipeline to run.
-            run_name: Optional name for the run.
+            run_name: Name of the pipeline run.
             **kwargs: Unused argument to conform with base class signature.
         """
         self.airflow_config = {
@@ -251,22 +251,5 @@ class AirflowOrchestrator(BaseOrchestrator):
         }
 
         runner = AirflowDagRunner(AirflowPipelineConfig(self.airflow_config))
-
-        # Establish the connections between the components
-        zenml_pipeline.connect(**zenml_pipeline.steps)
-
-        # Create the final step list and the corresponding pipeline
-        steps = [s.component for s in zenml_pipeline.steps.values()]
-
-        artifact_store = zenml_pipeline.stack.artifact_store
-        metadata_store = zenml_pipeline.stack.metadata_store
-
-        created_pipeline = tfx_pipeline.Pipeline(
-            pipeline_name=zenml_pipeline.name,
-            components=steps,  # type: ignore[arg-type]
-            pipeline_root=artifact_store.path,
-            metadata_connection_config=metadata_store.get_tfx_metadata_config(),
-            enable_cache=zenml_pipeline.enable_cache,
-        )
-
-        return runner.run(created_pipeline, run_name=run_name)
+        tfx_pipeline = create_tfx_pipeline(zenml_pipeline)
+        return runner.run(tfx_pipeline, run_name=run_name)

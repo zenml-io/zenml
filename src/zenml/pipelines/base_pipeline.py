@@ -65,7 +65,6 @@ class BasePipelineMeta(type):
         """Saves argument names for later verification purposes"""
         cls = cast(Type["BasePipeline"], super().__new__(mcs, name, bases, dct))
 
-        cls.NAME = name
         cls.STEP_SPEC = {}
 
         connect_spec = inspect.getfullargspec(
@@ -86,9 +85,16 @@ T = TypeVar("T", bound="BasePipeline")
 
 
 class BasePipeline(metaclass=BasePipelineMeta):
-    """Base ZenML pipeline."""
+    """Abstract base class for all ZenML pipelines.
 
-    NAME: ClassVar[str] = ""
+    Attributes:
+        name: The name of this pipeline.
+        enable_cache: A boolean indicating if caching is enabled for this
+            pipeline.
+        requirements_file: Optional path to a pip requirements file that
+            contains all requirements to run the pipeline.
+    """
+
     STEP_SPEC: ClassVar[Dict[str, Any]] = None  # type: ignore[assignment]
 
     INSTANCE_CONFIGURATION: Dict[Text, Any] = {}
@@ -107,11 +113,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self.requirements_file = kwargs.pop(PARAM_REQUIREMENTS_FILE, None)
         self.dockerignore_file = kwargs.pop(PARAM_DOCKERIGNORE_FILE, None)
 
-        self.pipeline_name = self.__class__.__name__
-        logger.info("Creating run for pipeline: `%s`", self.pipeline_name)
+        self.name = self.__class__.__name__
+        logger.info("Creating run for pipeline: `%s`", self.name)
         logger.info(
             f'Cache {"enabled" if self.enable_cache else "disabled"} for '
-            f"pipeline `{self.pipeline_name}`"
+            f"pipeline `{self.name}`"
         )
 
         self.__steps: Dict[str, BaseStep] = {}
@@ -135,7 +141,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         input_step_keys = list(self.STEP_SPEC.keys())
         if len(steps) > len(input_step_keys):
             raise PipelineInterfaceError(
-                f"Too many input steps for pipeline '{self.pipeline_name}'. "
+                f"Too many input steps for pipeline '{self.name}'. "
                 f"This pipeline expects {len(input_step_keys)} step(s) "
                 f"but got {len(steps) + len(kw_steps)}."
             )
@@ -146,7 +152,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             if not isinstance(step, BaseStep):
                 raise PipelineInterfaceError(
                     f"Wrong argument type (`{type(step)}`) for positional "
-                    f"argument {i} of pipeline '{self.pipeline_name}'. Only "
+                    f"argument {i} of pipeline '{self.name}'. Only "
                     f"`@step` decorated functions or instances of `BaseStep` "
                     f"subclasses can be used as arguments when creating "
                     f"a pipeline."
@@ -162,14 +168,14 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 # the positional input steps
                 raise PipelineInterfaceError(
                     f"Unexpected keyword argument '{key}' for pipeline "
-                    f"'{self.pipeline_name}'. A step for this key was "
+                    f"'{self.name}'. A step for this key was "
                     f"already passed as a positional argument."
                 )
 
             if not isinstance(step, BaseStep):
                 raise PipelineInterfaceError(
                     f"Wrong argument type (`{type(step)}`) for argument "
-                    f"'{key}' of pipeline '{self.pipeline_name}'. Only "
+                    f"'{key}' of pipeline '{self.name}'. Only "
                     f"`@step` decorated functions or instances of `BaseStep` "
                     f"subclasses can be used as arguments when creating "
                     f"a pipeline."
@@ -187,13 +193,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
         if missing_steps:
             raise PipelineInterfaceError(
                 f"Missing input step(s) for pipeline "
-                f"'{self.pipeline_name}': {missing_steps}."
+                f"'{self.name}': {missing_steps}."
             )
 
         if unexpected_steps:
             raise PipelineInterfaceError(
                 f"Unexpected input step(s) for pipeline "
-                f"'{self.pipeline_name}': {unexpected_steps}. This pipeline "
+                f"'{self.name}': {unexpected_steps}. This pipeline "
                 f"only requires the following steps: {expected_steps}."
             )
 
@@ -203,11 +209,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
     def connect(self, *args: BaseStep, **kwargs: BaseStep) -> None:
         """Function that connects inputs and outputs of the pipeline steps."""
         raise NotImplementedError
-
-    @property
-    def name(self) -> str:
-        """Name of pipeline is always equal to self.NAME"""
-        return self.NAME
 
     @property
     def stack(self) -> BaseStack:
@@ -251,7 +252,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 "Preventing execution of pipeline '%s'. If this is not "
                 "intended behaviour, make sure to unset the environment "
                 "variable '%s'.",
-                self.pipeline_name,
+                self.name,
                 ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
             )
             return
@@ -261,9 +262,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         integration_registry.activate_integrations()
 
-        if run_name is None:
+        if not run_name:
             run_name = (
-                f"{self.pipeline_name}-"
+                f"{self.name}-"
                 f'{datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")}'
             )
 
@@ -279,7 +280,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         logger.info(
             "Using stack `%s` for pipeline `%s`. Running pipeline..",
             Repository().get_active_stack_key(),
-            self.pipeline_name,
+            self.name,
         )
 
         # filepath of the file where pipeline.run() was called
@@ -290,7 +291,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self.stack.orchestrator.pre_run(
             pipeline=self, caller_filepath=caller_filepath
         )
-        ret = self.stack.orchestrator.run(self, run_name)
+        ret = self.stack.orchestrator.run(self, run_name=run_name)
         self.stack.orchestrator.post_run()
         run_duration = time.time() - start_time
         logger.info(

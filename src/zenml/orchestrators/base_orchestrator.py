@@ -28,17 +28,14 @@ class BaseOrchestrator(BaseComponent):
 
     @abstractmethod
     def run(
-        self,
-        zenml_pipeline: "BasePipeline",
-        run_name: Optional[str] = None,
-        **kwargs: Any
+        self, zenml_pipeline: "BasePipeline", run_name: str, **kwargs: Any
     ) -> Any:
         """Abstract method to run a pipeline. Overwrite this in subclasses
         with a concrete implementation on how to run the given pipeline.
 
         Args:
             zenml_pipeline: The pipeline to run.
-            run_name: Optional name for the run.
+            run_name: Name of the pipeline run.
             **kwargs: Potential additional parameters used in subclass
                 implementations.
         """
