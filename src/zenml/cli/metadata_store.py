@@ -65,7 +65,7 @@ def register_metadata_store(name: str, type: str, args: List[str]) -> None:
         cli_utils.error(str(e))
         return
 
-    metadata_store = comp(**parsed_args)
+    metadata_store = comp(repo_path=repo.path, **parsed_args)
     service = repo.get_service()
     service.register_metadata_store(name, metadata_store)
     cli_utils.declare(f"Metadata Store `{name}` successfully registered!")

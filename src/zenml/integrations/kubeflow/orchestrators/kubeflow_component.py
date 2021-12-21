@@ -34,8 +34,11 @@ from zenml.artifact_stores import LocalArtifactStore
 from zenml.constants import ENV_ZENML_PREVENT_PIPELINE_EXECUTION
 from zenml.core.repo import Repository
 from zenml.integrations.kubeflow.orchestrators import kubeflow_utils as utils
+from zenml.logger import get_logger
 from zenml.metadata_stores import SQLiteMetadataStore
 from zenml.utils import source_utils
+
+logger = get_logger(__name__)
 
 CONTAINER_ENTRYPOINT_COMMAND = [
     "python",
@@ -133,24 +136,35 @@ class KubeflowComponent:
             arguments.append(_encode_runtime_parameter(param))
 
         repo = Repository()
-        is_local_artifact_store = isinstance(
-            repo.get_active_stack().artifact_store, LocalArtifactStore
-        )
-        is_local_metadata_store = isinstance(
-            repo.get_active_stack().metadata_store, SQLiteMetadataStore
-        )
+        artifact_store = repo.get_active_stack().artifact_store
+        metadata_store = repo.get_active_stack().metadata_store
 
         volumes: Dict[str, k8s_client.V1Volume] = {}
 
-        if is_local_artifact_store or is_local_metadata_store:
-            # Only mount the local filesystem if the user has specified a
-            # local artifact or metadata store
-            local_store_path = repo.service.get_serialization_dir()
+        if isinstance(artifact_store, LocalArtifactStore):
             host_path = k8s_client.V1HostPathVolumeSource(
-                path=local_store_path, type="Directory"
+                path=artifact_store.path, type="Directory"
             )
-            volumes[local_store_path] = k8s_client.V1Volume(
-                name="local-store", host_path=host_path
+            volumes[artifact_store.path] = k8s_client.V1Volume(
+                name="local-artifact-store", host_path=host_path
+            )
+            logger.debug(
+                "Adding host path volume for local artifact store (path: %s) "
+                "in kubeflow pipelines container.",
+                artifact_store.path,
+            )
+
+        if isinstance(metadata_store, SQLiteMetadataStore):
+            host_path = k8s_client.V1HostPathVolumeSource(
+                path=metadata_store.uri, type="Directory"
+            )
+            volumes[metadata_store.uri] = k8s_client.V1Volume(
+                name="local-metadata-store", host_path=host_path
+            )
+            logger.debug(
+                "Adding host path volume for local metadata store (uri: %s) "
+                "in kubeflow pipelines container.",
+                metadata_store.uri,
             )
 
         self.container_op = dsl.ContainerOp(

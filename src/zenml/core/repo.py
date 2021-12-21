@@ -45,95 +45,71 @@ class Repository:
         Args:
             path (str): Path to root of repository
         """
-        if path is None:
-            try:
-                path = zenml.io.utils.get_zenml_dir()
-            except InitializationException:
-                # If there isn't a zenml.config, use the cwd
-                path = os.getcwd()
+        self.path = zenml.io.utils.get_zenml_dir(path)
+        self.service = LocalService(repo_path=self.path)
 
-        if not fileio.is_dir(path):
-            raise FileNotFoundError(f"{path} does not exist or is not a dir!")
-        self.path = path
-        self.service = LocalService()
-
-        # Hook up git, path needs to have a git folder.
         try:
             self.git_wrapper = GitWrapper(self.path)
         except InvalidGitRepositoryError:
-            # We only need to raise exception in the `init_repo`, not in the
-            #  constructor here. This makes it more relaxed in remote
-            #  orchestration scenarios. We might want to revisit this.
             self.git_wrapper = None  # type: ignore[assignment]
 
     @staticmethod
-    def init_repo(
-        repo_path: str = os.getcwd(),
-        stack: Optional[BaseStack] = None,
-    ) -> None:
-        """
-        Initializes a git repo with zenml.
+    def init_repo(path: str = os.getcwd()) -> None:
+        """Initializes a ZenML repository.
 
         Args:
-            repo_path (str): path to root of a git repo
-            stack: Initial stack.
+            path: Path where the ZenML repository should be created.
 
         Raises:
-            InvalidGitRepositoryError: If repository is not a git repository.
-            NoSuchPathError: If the repo_path does not exist.
+            InitializationException: If a ZenML repository already exists at
+                the given path.
         """
-        # First check whether it already exists or not
-        if zenml.io.utils.is_zenml_dir(repo_path):
-            raise AssertionError(f"{repo_path} is already initialized!")
-
-        try:
-            GitWrapper(repo_path)
-        except InvalidGitRepositoryError:
+        if zenml.io.utils.is_zenml_dir(path):
             raise InitializationException(
-                f"{repo_path} is not a valid git repository. Please initialize"
-                f" the repository with `git init`."
+                f"A ZenML repository already exists at path '{path}'."
             )
 
         # Create the base dir
-        zen_dir = os.path.join(repo_path, ZENML_DIR_NAME)
+        zen_dir = os.path.join(path, ZENML_DIR_NAME)
         fileio.create_dir_recursive_if_not_exists(zen_dir)
 
-        # Set up metadata and artifact store defaults
-        artifact_dir = os.path.join(zen_dir, "local_store")
-        metadata_dir = os.path.join(artifact_dir, "metadata.db")
+        from zenml.artifact_stores import LocalArtifactStore
+        from zenml.metadata_stores import SQLiteMetadataStore
+        from zenml.orchestrators import LocalOrchestrator
 
-        # Create stack if not specified
-        if stack is None:
-            from zenml.artifact_stores.local_artifact_store import (
-                LocalArtifactStore,
-            )
-            from zenml.metadata_stores import SQLiteMetadataStore
-            from zenml.orchestrators import LocalOrchestrator
+        service = LocalService(repo_path=path)
 
-            service = LocalService()
+        artifact_store_path = os.path.join(
+            zenml.io.utils.get_global_config_directory(),
+            "local_stores",
+            str(service.uuid),
+        )
+        metadata_store_path = os.path.join(artifact_store_path, "metadata.db")
 
-            service.register_artifact_store(
-                "local_artifact_store", LocalArtifactStore(path=artifact_dir)
-            )
+        service.register_artifact_store(
+            "local_artifact_store",
+            LocalArtifactStore(path=artifact_store_path, repo_path=path),
+        )
 
-            service.register_metadata_store(
-                "local_metadata_store", SQLiteMetadataStore(uri=metadata_dir)
-            )
+        service.register_metadata_store(
+            "local_metadata_store",
+            SQLiteMetadataStore(uri=metadata_store_path, repo_path=path),
+        )
 
-            service.register_orchestrator(
-                "local_orchestrator", LocalOrchestrator()
-            )
+        service.register_orchestrator(
+            "local_orchestrator", LocalOrchestrator(repo_path=path)
+        )
 
-            service.register_stack(
-                "local_stack",
-                BaseStack(
-                    metadata_store_name="local_metadata_store",
-                    artifact_store_name="local_artifact_store",
-                    orchestrator_name="local_orchestrator",
-                ),
-            )
+        service.register_stack(
+            "local_stack",
+            BaseStack(
+                metadata_store_name="local_metadata_store",
+                artifact_store_name="local_artifact_store",
+                orchestrator_name="local_orchestrator",
+            ),
+        )
 
-            service.set_active_stack_key("local_stack")
+        service.set_active_stack_key("local_stack")
 
     def get_git_wrapper(self) -> GitWrapper:
         """Returns the git wrapper for the repo."""

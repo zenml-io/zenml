@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Any, Dict
 
 import zenml.io.utils
 from zenml.core import mapping_utils
@@ -42,9 +42,17 @@ class LocalService(BaseComponent):
 
     _LOCAL_SERVICE_FILE_NAME = "zenservice.json"
 
-    def get_serialization_dir(self) -> str:
-        """The local service stores everything in the zenml config dir."""
-        return zenml.io.utils.get_zenml_config_dir()
+    def __init__(self, repo_path: str, **kwargs: Any) -> None:
+        """Initializes a LocalService instance.
+
+        Args:
+            repo_path: Path to the repository of this service.
+        """
+        serialization_dir = zenml.io.utils.get_zenml_config_dir(repo_path)
+        super().__init__(serialization_dir=serialization_dir, **kwargs)
+        self._repo_path = repo_path
+        for stack in self.stacks.values():
+            stack._repo_path = repo_path
 
     def get_serialization_file_name(self) -> str:
         """Return the name of the file where object is serialized."""
@@ -56,7 +64,9 @@ class LocalService(BaseComponent):
         from zenml.metadata_stores import BaseMetadataStore
 
         return mapping_utils.get_components_from_store(  # type: ignore[return-value] # noqa
-            BaseMetadataStore._METADATA_STORE_DIR_NAME, self.metadata_store_map
+            BaseMetadataStore._METADATA_STORE_DIR_NAME,
+            self.metadata_store_map,
+            self._repo_path,
         )
 
     @property
@@ -65,7 +75,9 @@ class LocalService(BaseComponent):
         from zenml.artifact_stores import BaseArtifactStore
 
         return mapping_utils.get_components_from_store(  # type: ignore[return-value] # noqa
-            BaseArtifactStore._ARTIFACT_STORE_DIR_NAME, self.artifact_store_map
+            BaseArtifactStore._ARTIFACT_STORE_DIR_NAME,
+            self.artifact_store_map,
+            self._repo_path,
         )
 
     @property
@@ -76,6 +88,7 @@ class LocalService(BaseComponent):
         return mapping_utils.get_components_from_store(  # type: ignore[return-value] # noqa
             BaseOrchestrator._ORCHESTRATOR_STORE_DIR_NAME,
             self.orchestrator_map,
+            self._repo_path,
         )
 
     @property
@@ -88,6 +101,7 @@ class LocalService(BaseComponent):
         return mapping_utils.get_components_from_store(  # type: ignore[return-value] # noqa
             BaseContainerRegistry._CONTAINER_REGISTRY_DIR_NAME,
             self.container_registry_map,
+            self._repo_path,
         )
 
     def get_active_stack_key(self) -> str:
@@ -188,7 +202,7 @@ class LocalService(BaseComponent):
                 f"Available keys: {list(self.artifact_store_map.keys())}"
             )
         return mapping_utils.get_component_from_key(  # type: ignore[return-value] # noqa
-            key, self.artifact_store_map
+            key, self.artifact_store_map, self._repo_path
         )
 
     @track(event=REGISTERED_ARTIFACT_STORE)
@@ -246,7 +260,7 @@ class LocalService(BaseComponent):
                 f"Available keys: {list(self.metadata_store_map.keys())}"
             )
         return mapping_utils.get_component_from_key(  # type: ignore[return-value] # noqa
-            key, self.metadata_store_map
+            key, self.metadata_store_map, self._repo_path
         )
 
     @track(event=REGISTERED_METADATA_STORE)
@@ -304,7 +318,7 @@ class LocalService(BaseComponent):
                 f"Available keys: {list(self.orchestrator_map.keys())}"
             )
         return mapping_utils.get_component_from_key(  # type: ignore[return-value] # noqa
-            key, self.orchestrator_map
+            key, self.orchestrator_map, self._repo_path
         )
 
     @track(event=REGISTERED_ORCHESTRATOR)
@@ -362,7 +376,7 @@ class LocalService(BaseComponent):
                 f"Available keys: {list(self.container_registry_map.keys())}"
             )
         return mapping_utils.get_component_from_key(  # type: ignore[return-value] # noqa
-            key, self.container_registry_map
+            key, self.container_registry_map, self._repo_path
         )
 
     @track(event=REGISTERED_CONTAINER_REGISTRY)

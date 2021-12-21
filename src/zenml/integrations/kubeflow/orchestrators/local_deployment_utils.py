@@ -64,7 +64,7 @@ def create_k3d_cluster(
         registry_config_path: Path to the registry config file.
     """
     logger.info("Creating local K3D cluster '%s'.", cluster_name)
-    config_dir_path = zenml.io.utils.get_zenml_config_dir()
+    global_config_dir_path = zenml.io.utils.get_global_config_directory()
     subprocess.check_call(
         [
             "k3d",
@@ -76,7 +76,7 @@ def create_k3d_cluster(
             "--registry-config",
             registry_config_path,
             "--volume",
-            f"{config_dir_path}:{config_dir_path}",
+            f"{global_config_dir_path}:{global_config_dir_path}",
         ]
     )
     logger.info("Finished K3D cluster creation.")

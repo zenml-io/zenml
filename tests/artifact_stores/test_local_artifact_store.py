@@ -21,13 +21,13 @@ from zenml.artifact_stores import LocalArtifactStore
 def test_must_be_local_path():
     """Checks must_be_gcs_path validator"""
     with pytest.raises(ValidationError):
-        LocalArtifactStore(path="gs://remote/path")
+        LocalArtifactStore(path="gs://remote/path", repo_path="")
 
     with pytest.raises(ValidationError):
-        LocalArtifactStore(path="s3://remote/path")
+        LocalArtifactStore(path="s3://remote/path", repo_path="")
 
     with pytest.raises(ValidationError):
-        LocalArtifactStore(path="hdfs://remote/path")
+        LocalArtifactStore(path="hdfs://remote/path", repo_path="")
 
-    gcp_as = LocalArtifactStore(path="/local/path")
+    gcp_as = LocalArtifactStore(path="/local/path", repo_path="")
     assert gcp_as.path == "/local/path"

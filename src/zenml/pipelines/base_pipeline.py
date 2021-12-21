@@ -52,6 +52,7 @@ logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
 PARAM_ENABLE_CACHE: str = "enable_cache"
 PARAM_REQUIREMENTS_FILE: str = "requirements_file"
+PARAM_DOCKERIGNORE_FILE: str = "dockerignore_file"
 INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
 
 
@@ -110,6 +111,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         kwargs.update(getattr(self, INSTANCE_CONFIGURATION))
         self.enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, True)
         self.requirements_file = kwargs.pop(PARAM_REQUIREMENTS_FILE, None)
+        self.dockerignore_file = kwargs.pop(PARAM_DOCKERIGNORE_FILE, None)
 
         self.name = self.__class__.__name__
         logger.info("Creating run for pipeline: `%s`", self.name)

@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
-from abc import abstractmethod
 from typing import Any, Dict, Optional
 from uuid import UUID, uuid4
 
@@ -45,30 +44,32 @@ class BaseComponent(BaseSettings):
     uuid: Optional[UUID] = Field(default_factory=uuid4)
     _file_suffix = ".json"
     _superfluous_options: Dict[str, Any] = {}
+    _serialization_dir: str
 
-    def __init__(self, **values: Any):
+    def __init__(self, serialization_dir: str, **values: Any):
         # Here, we insert monkey patch the `customise_sources` function
         #  because we want to dynamically generate the serialization
         #  file path and name.
 
         if hasattr(self, "uuid"):
             self.__config__.customise_sources = generate_customise_sources(  # type: ignore[assignment] # noqa
-                self.get_serialization_dir(),
+                serialization_dir,
                 self.get_serialization_file_name(),
             )
         elif "uuid" in values:
             self.__config__.customise_sources = generate_customise_sources(  # type: ignore[assignment] # noqa
-                self.get_serialization_dir(),
+                serialization_dir,
                 f"{str(values['uuid'])}{self._file_suffix}",
             )
         else:
             self.__config__.customise_sources = generate_customise_sources(  # type: ignore[assignment] # noqa
-                self.get_serialization_dir(),
+                serialization_dir,
                 self.get_serialization_file_name(),
             )
 
         # Initialize values from the above sources.
         super().__init__(**values)
+        self._serialization_dir = serialization_dir
         self._save_backup_file_if_required()
 
     def _save_backup_file_if_required(self) -> None:
@@ -101,15 +102,24 @@ class BaseComponent(BaseSettings):
         )
         zenml.io.utils.write_file_contents_as_string(file_path, file_content)
 
+    def dict(self, **kwargs: Any) -> Dict[str, Any]:
+        """Removes private attributes from pydantic dict so they don't get
+        stored in our config files."""
+        return {
+            key: value
+            for key, value in super().dict(**kwargs).items()
+            if not key.startswith("_")
+        }
+
     def _create_serialization_file_if_not_exists(self) -> None:
         """Creates the serialization file if it does not exist."""
         f = self.get_serialization_full_path()
         if not fileio.file_exists(str(f)):
             fileio.create_file_if_not_exists(str(f))
 
-    @abstractmethod
     def get_serialization_dir(self) -> str:
         """Return the dir where object is serialized."""
+        return self._serialization_dir
 
     def get_serialization_file_name(self) -> str:
         """Return the name of the file where object is serialized. This
@@ -125,7 +135,7 @@ class BaseComponent(BaseSettings):
     def get_serialization_full_path(self) -> str:
         """Returns the full path of the serialization file."""
         return os.path.join(
-            self.get_serialization_dir(), self.get_serialization_file_name()
+            self._serialization_dir, self.get_serialization_file_name()
         )
 
     def update(self) -> None:

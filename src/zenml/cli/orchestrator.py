@@ -96,7 +96,7 @@ def register_orchestrator(name: str, type: str, args: List[str]) -> None:
     from zenml.core.component_factory import orchestrator_store_factory
 
     comp = orchestrator_store_factory.get_single_component(type)
-    orchestrator_ = comp(**parsed_args)
+    orchestrator_ = comp(repo_path=repo.path, **parsed_args)
     service = repo.get_service()
     service.register_orchestrator(name, orchestrator_)
     cli_utils.declare(f"Orchestrator `{name}` successfully registered!")

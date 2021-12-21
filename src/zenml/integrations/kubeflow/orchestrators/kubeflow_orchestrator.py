@@ -17,12 +17,11 @@ import sys
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 
-import click
 import kfp
 import urllib3
 from kubernetes import config
 
-from zenml.constants import APP_NAME
+import zenml.io.utils
 from zenml.core.component_factory import orchestrator_store_factory
 from zenml.core.repo import Repository
 from zenml.enums import OrchestratorTypes
@@ -67,7 +66,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Returns path to the root directory for all files concerning
         this orchestrator."""
         return os.path.join(
-            click.get_app_dir(APP_NAME), "kubeflow", str(self.uuid)
+            zenml.io.utils.get_global_config_directory(),
+            "kubeflow",
+            str(self.uuid),
         )
 
     @property
@@ -98,6 +99,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         build_docker_image(
             build_context_path=repository_root,
             image_name=image_name,
+            dockerignore_path=pipeline.dockerignore_file,
             requirements=requirements,
             base_image=self.custom_docker_base_image_name,
         )
