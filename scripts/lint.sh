@@ -13,3 +13,11 @@ isort $SRC scripts --check-only
 black $SRC  --check
 interrogate $SRC_NO_TESTS -c pyproject.toml
 mypy $SRC_NO_TESTS
+codespell CODE-OF-CONDUCT.md
+codespell CONTRIBUTING.md
+codespell ROADMAP.md
+codespell README.md
+codespell RELEASE_NOTES.md
+codespell src/
+codespell docs/book
+codespell examples/
