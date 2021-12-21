@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from datetime import datetime
 
 import numpy as np
 import tensorflow as tf
@@ -22,7 +23,7 @@ from steps.torch_steps import torch_evaluator, torch_trainer
 
 from zenml.core.repo import Repository
 from zenml.pipelines import pipeline
-from zenml.steps import step, Output
+from zenml.steps import Output, step
 
 
 @step
@@ -71,7 +72,7 @@ tf_p = mnist_pipeline(
 )
 
 # Run the pipeline
-tf_p.run()
+tf_p.run(run_name=f"Tensorflow-{datetime.now()}")
 
 # Initialise a new pipeline run
 torch_p = mnist_pipeline(
@@ -82,7 +83,7 @@ torch_p = mnist_pipeline(
 )
 
 # Run the new pipeline
-torch_p.run()
+torch_p.run(run_name=f"Torch-{datetime.now()}")
 
 # Initialise a new pipeline run
 scikit_p = mnist_pipeline(
@@ -93,15 +94,15 @@ scikit_p = mnist_pipeline(
 )
 
 # Run the new pipeline
-scikit_p.run()
+scikit_p.run(run_name=f"Sklearn-{datetime.now()}")
 
 # Post execution flow
 repo = Repository()
 pipeline = repo.get_pipelines()[0]
 print("***********************OUTPUT************************")
-for r in pipeline.runs[0:3]:
+for r in pipeline.runs[-3:]:
     eval_step = r.get_step("evaluator")
     print(
-        f"For {eval_step.name}, the accuracy is: "
+        f"For the {r.name.split('-')[0]}-{eval_step.name}, the accuracy is: "
         f"{eval_step.output.read():.2f}"
     )
