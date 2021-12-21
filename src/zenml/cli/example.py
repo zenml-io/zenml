@@ -115,7 +115,7 @@ class LocalExample:
         if fileio.file_exists(bash_file):
             os.chdir(self.path)
             try:
-                # TODO [HIGH]: Catch errors that might be thrown in subprocess
+                # TODO [ENG-271]: Catch errors that might be thrown in subprocess
                 declare(self.path)
                 if force:
                     subprocess.check_call(
@@ -569,7 +569,7 @@ def run(
     `zenml example pull EXAMPLE_NAME` has to be called with the same relative
     path before the run command.
     """
-    # TODO [MEDIUM]: - create a post_run function inside individual setup.sh
+    # TODO [ENG-272]: - create a post_run function inside individual setup.sh
     #  to inform user how to clean up
     examples_dir = os.path.join(os.getcwd(), path)
     try:
