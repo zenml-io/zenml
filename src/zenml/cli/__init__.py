@@ -158,6 +158,13 @@ download examples corresponding to a previous release of ZenML, use the
 
    zenml example pull --force --version 0.3.8
 
+If you wish to run the example, allowing the ZenML CLI to do the work of setting
+up whatever dependencies are required, use the ``run`` subcommand:
+
+.. code:: bash
+
+   zenml example run quickstart
+
 Customizing your Metadata Store
 -------------------------------
 
@@ -169,7 +176,7 @@ machine. If you wish to register a new metadata store, do so with the
 
 .. code:: bash
 
-   zenml metadata-store register METADATA_STORE_NAME METADATA_STORE_TYPE [--OPTIONS]
+   zenml metadata-store register METADATA_STORE_NAME --type METADATA_STORE_TYPE [--OPTIONS]
 
 If you wish to list the metadata stores that have already been
 registered within your ZenML project / repository, type:
@@ -195,7 +202,7 @@ to register a new artifact store, do so with the ``register`` command:
 
 .. code:: bash
 
-   zenml artifact-store register ARTIFACT_STORE_NAME ARTIFACT_STORE_TYPE [--OPTIONS]
+   zenml artifact-store register ARTIFACT_STORE_NAME --type ARTIFACT_STORE_TYPE [--OPTIONS]
 
 If you wish to list the artifact stores that have already been
 registered within your ZenML project / repository, type:
@@ -224,7 +231,7 @@ command:
 
 .. code:: bash
 
-   zenml orchestrator register ORCHESTRATOR_NAME ORCHESTRATOR_TYPE [--ORCHESTRATOR_OPTIONS]
+   zenml orchestrator register ORCHESTRATOR_NAME --type ORCHESTRATOR_TYPE [--ORCHESTRATOR_OPTIONS]
 
 If you wish to list the orchestrators that have already been registered
 within your ZenML project / repository, type:
