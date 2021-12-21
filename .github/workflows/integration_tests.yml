@@ -37,7 +37,7 @@ jobs:
 
       - name: Pull examples
         run : |
-          python -m poetry run zenml example pull -b ${GITHUB_REF#refs/heads/} -f
+          python -m poetry run zenml example pull -b "origin/${GITHUB_REF#refs/heads/}" -f
 
       - name: Run quickstart example
         run : |
