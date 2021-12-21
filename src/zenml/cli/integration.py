@@ -62,7 +62,7 @@ def list_integrations() -> None:
 
 
 @integration.command(
-    name="get-requirements", help="List all requirements for an integration."
+    name="requirements", help="List all requirements for an integration."
 )
 @click.argument("integration_name", required=False, default=None)
 def get_requirements(integration_name: Optional[str] = None) -> None:

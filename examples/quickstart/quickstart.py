@@ -12,42 +12,31 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-
 import numpy as np
-import tensorflow as tf
+from sklearn.base import ClassifierMixin
 
+from zenml.integrations.sklearn.helpers.digits import get_digits, get_digits_model
 from zenml.pipelines import pipeline
 from zenml.steps import step, Output
 
 
 @step
 def importer() -> Output(
-    X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
+    X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
 ):
-    """Download the MNIST data store it as numpy arrays."""
-    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
-    return X_train, y_train, X_test, y_test
+    """Loads the digits array as normal numpy arrays."""
+    X_train, X_test, y_train, y_test = get_digits()
+    return X_train, X_test, y_train, y_test
 
 
 @step
 def trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
-) -> tf.keras.Model:
-    """A simple Keras Model to train on the data."""
-    model = tf.keras.Sequential()
-    model.add(tf.keras.layers.Flatten(input_shape=(28, 28)))
-    model.add(tf.keras.layers.Dense(10))
-
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(0.001),
-        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-        metrics=["accuracy"],
-    )
-
+) -> ClassifierMixin:
+    """Train a simple sklearn classifier for the digits dataset."""
+    model = get_digits_model()
     model.fit(X_train, y_train)
-
-    # write model
     return model
 
 
@@ -55,10 +44,11 @@ def trainer(
 def evaluator(
     X_test: np.ndarray,
     y_test: np.ndarray,
-    model: tf.keras.Model,
+    model: ClassifierMixin,
 ) -> float:
     """Calculate the accuracy on the test set"""
-    test_acc = model.evaluate(X_test, y_test, verbose=2)
+    test_acc = model.score(X_test, y_test)
+    print(f"Test accuracy: {test_acc}")
     return test_acc
 
 
@@ -69,16 +59,14 @@ def mnist_pipeline(
     evaluator,
 ):
     """Links all the steps together in a pipeline"""
-    X_train, y_train, X_test, y_test = importer()
+    X_train, X_test, y_train, y_test = importer()
     model = trainer(X_train=X_train, y_train=y_train)
     evaluator(X_test=X_test, y_test=y_test, model=model)
 
 
-if __name__ == "__main__":
-    # Run the pipeline
-    p = mnist_pipeline(
-        importer=importer(),
-        trainer=trainer(),
-        evaluator=evaluator(),
-    )
-    p.run()
+pipeline = mnist_pipeline(
+    importer=importer(),
+    trainer=trainer(),
+    evaluator=evaluator(),
+)
+pipeline.run()
