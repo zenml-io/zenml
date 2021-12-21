@@ -14,12 +14,10 @@
 """
 The ZenML integrations module contains sub-modules for each integration that we
 support. This includes orchestrators like Apache Airflow, visualization tools
-like the ``facets`` library, distributed processing tools like Apache Beam as
-well as deep learning libraries like PyTorch.
+like the ``facets`` library, as well as deep learning libraries like PyTorch.
 """
 
 from zenml.integrations.airflow import AirflowIntegration  # noqa
-from zenml.integrations.beam import BeamIntegration  # noqa
 from zenml.integrations.dash import DashIntegration  # noqa
 from zenml.integrations.facets import FacetsIntegration  # noqa
 from zenml.integrations.gcp import GcpIntegration  # noqa
