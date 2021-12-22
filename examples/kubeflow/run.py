@@ -18,9 +18,12 @@ import os
 import numpy as np
 from sklearn.base import ClassifierMixin
 
-from zenml.integrations.sklearn.helpers.digits import get_digits, get_digits_model
+from zenml.integrations.sklearn.helpers.digits import (
+    get_digits,
+    get_digits_model,
+)
 from zenml.pipelines import pipeline
-from zenml.steps import step, Output
+from zenml.steps import Output, step
 
 # Path to a pip requirements file that contains requirements necessary to run
 # the pipeline

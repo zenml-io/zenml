@@ -11,25 +11,24 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import os
+
 from zenml.core.repo import Repository
 from zenml.integrations.sklearn import steps as sklearn_steps
 from zenml.pipelines import BasePipeline
-from zenml.steps import step_interfaces
-
-from zenml.steps import builtin_steps
-
-import os
+from zenml.steps import builtin_steps, step_interfaces
 
 
 class Chapter2Pipeline(BasePipeline):
     """Class for Chapter 2 of the class-based API"""
 
-    def connect(self,
-                datasource: step_interfaces.BaseDatasourceStep,
-                splitter: step_interfaces.BaseSplitStep,
-                analyzer: step_interfaces.BaseAnalyzerStep,
-                preprocesser: step_interfaces.BasePreprocesserStep
-                ) -> None:
+    def connect(
+        self,
+        datasource: step_interfaces.BaseDatasourceStep,
+        splitter: step_interfaces.BaseSplitStep,
+        analyzer: step_interfaces.BaseAnalyzerStep,
+        preprocesser: step_interfaces.BasePreprocesserStep,
+    ) -> None:
         # Ingesting the datasource
         dataset = datasource()
 
@@ -48,20 +47,28 @@ class Chapter2Pipeline(BasePipeline):
             schema=schema,
         )
 
+
 # Create an instance of the pipeline and run it
 pipeline_instance = Chapter2Pipeline(
     datasource=builtin_steps.PandasDatasource(
-        config=builtin_steps.PandasDatasourceConfig(path=os.getenv("data"))),
+        config=builtin_steps.PandasDatasourceConfig(path=os.getenv("data"))
+    ),
     splitter=sklearn_steps.SklearnSplitter(
-        config=sklearn_steps.SklearnSplitterConfig(ratios={"train": 0.7,
-                                                           "test": 0.15,
-                                                           "validation": 0.15})),
+        config=sklearn_steps.SklearnSplitterConfig(
+            ratios={"train": 0.7, "test": 0.15, "validation": 0.15}
+        )
+    ),
     analyzer=builtin_steps.PandasAnalyzer(
-        config=builtin_steps.PandasAnalyzerConfig(percentiles=[0.2, 0.4, 0.6,
-                                                               0.8, 1.0])),
+        config=builtin_steps.PandasAnalyzerConfig(
+            percentiles=[0.2, 0.4, 0.6, 0.8, 1.0]
+        )
+    ),
     preprocesser=sklearn_steps.SklearnStandardScaler(
         config=sklearn_steps.SklearnStandardScalerConfig(
-            ignore_columns=["has_diabetes"])))
+            ignore_columns=["has_diabetes"]
+        )
+    ),
+)
 
 pipeline_instance.run()
 

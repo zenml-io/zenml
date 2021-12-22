@@ -95,9 +95,7 @@ def mnist_pipeline(
 ):
     # Link all the steps artifacts together
     X_train, y_train, X_test, y_test = importer()
-    X_trained_normed, X_test_normed = normalizer(
-        X_train=X_train, X_test=X_test
-    )
+    X_trained_normed, X_test_normed = normalizer(X_train=X_train, X_test=X_test)
     model = trainer(X_train=X_trained_normed, y_train=y_train)
     evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 
