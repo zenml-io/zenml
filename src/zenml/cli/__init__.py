@@ -165,6 +165,44 @@ up whatever dependencies are required, use the ``run`` subcommand:
 
    zenml example run quickstart
 
+Using integrations
+------------------
+
+Integrations are the different pieces of a project stack that enable custom
+functionality. This ranges from bigger libraries like
+[`kubeflow`](https://www.kubeflow.org/) for orchestration down to smaller
+visualization tools like [`facets`](https://pair-code.github.io/facets/). Our
+CLI is an easy way to get started with these integrations.
+
+To list all the integrations available to you, type:
+
+```bash
+zenml integration list
+```
+
+To see the requirements for a specific integration, use the `requirements`
+command:
+
+```bash
+zenml integration requirements INTEGRATION_NAME
+```
+
+If you wish to install the integration, using the requirements listed in the
+previous command, `install` allows you to do this for your local environment:
+
+```bash
+zenml integration install INTEGRATION_NAME
+```
+
+Note that if you don't specify a specific integration to be installed, the
+ZenML CLI will install **all** available integrations.
+
+Uninstalling a specific integration is as simple as typing:
+
+```bash
+zenml integration uninstall INTEGRATION_NAME
+```
+
 Customizing your Metadata Store
 -------------------------------
 
@@ -246,6 +284,46 @@ orchestrator into the CLI with the following command:
 .. code:: bash
 
    zenml orchestrator delete ORCHESTRATOR_NAME
+
+Customizing your Container Registry
+-----------------------------------
+
+The container registry is where all the images that are used by a
+container-based orchestrator are stored. By default, a default ZenML local stack
+will not register a container registry. If you wish to register a new container
+registry, do so with the `register` command:
+
+```bash
+zenml container-registry register REGISTRY_NAME --type REGISTRY_TYPE [--REGISTRY_OPTIONS]
+```
+
+If you want the name of the current container registry, use the `get` command:
+
+```bash
+zenml container-registry get
+```
+
+To list all container registries available and registered for use, use the
+`list` command:
+
+```bash
+zenml container-registry list
+```
+
+For details about a particular container registry, use the `describe` command.
+By default (without a specific registry name passed in) it will describe the
+active or currently used container registry:
+
+```bash
+zenml container-registry describe [REGISTRY_NAME]
+```
+
+To delete a container registry (and all of its contents), use the `delete`
+command:
+
+```bash
+zenml container-registry delete
+```
 
 Administering the Stack
 -----------------------
