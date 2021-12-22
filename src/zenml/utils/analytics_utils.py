@@ -129,6 +129,8 @@ def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> None:
     try:
         import analytics
 
+        from zenml.config.global_config import GlobalConfig
+
         if analytics.write_key is None:
             analytics.write_key = get_segment_key()
 
@@ -136,7 +138,8 @@ def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> None:
             analytics.write_key is not None
         ), "Analytics key not set but trying to make telemetry call."
 
-        from zenml.config.global_config import GlobalConfig
+        # Set this to 1 to avoid backoff loop
+        analytics.max_retries = 1
 
         gc = GlobalConfig()
 
