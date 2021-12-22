@@ -116,6 +116,8 @@ class BaseMetadataStore(BaseComponent):
         Returns:
             Original `StepView` derived from the proto.Execution.
         """
+        impl_name = self.step_type_mapping[execution.type_id].split(".")[-1]
+
         step_name_property = execution.custom_properties.get(
             INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_PIPELINE_PARAMETER_NAME,
             None,
@@ -184,7 +186,8 @@ class BaseMetadataStore(BaseComponent):
         return StepView(
             id_=execution.id,
             parents_step_ids=list(parents_step_ids),
-            name=step_name,
+            name=impl_name,
+            pipeline_step_name=step_name,
             parameters=step_parameters,
             metadata_store=self,
         )
@@ -285,7 +288,7 @@ class BaseMetadataStore(BaseComponent):
         # order from the metadata store
         for execution in reversed(pipeline_run._executions):  # noqa
             step = self._get_step_view_from_execution(execution)
-            steps[step.name] = step
+            steps[step.pipeline_step_name] = step
 
         logger.debug(
             "Fetched %d steps for pipeline run '%s'.",

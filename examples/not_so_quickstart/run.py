@@ -99,7 +99,7 @@ scikit_p.run()
 repo = Repository()
 pipeline = repo.get_pipelines()[0]
 print("***********************OUTPUT************************")
-for r in pipeline.runs[0:3]:
+for r in pipeline.runs[-3:]:
     eval_step = r.get_step("evaluator")
     print(
         f"For {eval_step.name}, the accuracy is: "
