@@ -253,7 +253,7 @@ ZenML is managed by a [core team](https://zenml.io/team) of developers that are 
 
 # 🙋‍♀️ Contributing & Community
 
-We would love to develop ZenML together with our community! Check our [Contributing Guide](CONTRIBUTING.md) for more details on how best to contribute.
+We would love to develop ZenML together with our community! Best way to get started is to select any issue from the [`good-first-issue` label](https://github.com/zenml-io/zenml/labels/good%20first%20issue). If you would like to contribute, please review our [Contributing Guide](CONTRIBUTING.md) for all relevant details.
 
 <br>
 
