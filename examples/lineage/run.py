@@ -21,7 +21,7 @@ from zenml.integrations.dash.visualizers.pipeline_run_lineage_visualizer import 
     PipelineRunLineageVisualizer,
 )
 from zenml.pipelines import pipeline
-from zenml.steps import step, Output
+from zenml.steps import Output, step
 
 FEATURE_COLS = [
     "CRIM",

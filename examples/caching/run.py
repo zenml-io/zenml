@@ -17,7 +17,7 @@ import numpy as np
 import tensorflow as tf
 
 from zenml.pipelines import pipeline
-from zenml.steps import step, BaseStepConfig, Output
+from zenml.steps import BaseStepConfig, Output, step
 
 
 class TrainerConfig(BaseStepConfig):
@@ -56,7 +56,7 @@ def tf_trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> tf.keras.Model:
-    """Train a neural net from scratch to recognise MNIST digits return our
+    """Train a neural net from scratch to recognize MNIST digits return our
     model or the learner"""
     model = tf.keras.Sequential(
         [
@@ -109,7 +109,7 @@ def mnist_pipeline(
     evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 
 
-# Initialise a pipeline run
+# Initialize a pipeline run
 run_1 = mnist_pipeline(
     importer=importer_mnist(),
     normalizer=normalizer(),
@@ -120,7 +120,7 @@ run_1 = mnist_pipeline(
 # Run the pipeline
 run_1.run()
 
-# Initialise a pipeline run again
+# Initialize a pipeline run again
 run_2 = mnist_pipeline(
     importer=importer_mnist(),
     normalizer=normalizer(),

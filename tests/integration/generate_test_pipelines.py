@@ -54,7 +54,7 @@ def trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> tf.keras.Model:
-    """Train a neural net from scratch to recognise MNIST digits return our
+    """Train a neural net from scratch to recognize MNIST digits return our
     model or the learner"""
     model = tf.keras.Sequential(
         [
@@ -109,7 +109,7 @@ def mnist_pipeline(
     evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 
 
-# Initialise the pipeline
+# Initialize the pipeline
 p = mnist_pipeline(
     importer=importer_mnist(),
     normalizer=normalizer(),
@@ -134,7 +134,7 @@ def importer_fashion_mnist() -> Output(
     return X_train, y_train, X_test, y_test
 
 
-# Initialise a new pipeline
+# Initialize a new pipeline
 fashion_p = mnist_pipeline(
     importer=importer_fashion_mnist(),
     normalizer=normalizer(),

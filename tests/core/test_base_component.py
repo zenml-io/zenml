@@ -30,7 +30,7 @@ def test_base_component_detects_superfluous_arguments(tmp_path):
 
 def test_base_component_creates_backup_file_if_schema_changes(tmp_path):
     """Tests that a base component creates a backup file if the json file
-    schema is different than the current class definiton."""
+    schema is different than the current class definition."""
     uuid = uuid4()
     component = BaseComponent(uuid=uuid, serialization_dir=str(tmp_path))
     config_path = component.get_serialization_full_path()

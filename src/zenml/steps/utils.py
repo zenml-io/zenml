@@ -203,7 +203,7 @@ class _PropertyDictWrapper(json_utils.Jsonable):
 
         Args:
             data: The data to be wrapped.
-            compat_aliases: Compatability aliases to support deprecated keys.
+            compat_aliases: Compatibility aliases to support deprecated keys.
         """
         self._data = data
         self._compat_aliases = compat_aliases or {}
@@ -386,7 +386,9 @@ class _FunctionExecutor(BaseExecutor):
                     ]
 
                     raise MissingStepParameterError(
-                        getattr(self, PARAM_STEP_NAME), missing_fields, arg_type
+                        getattr(self, PARAM_STEP_NAME),
+                        missing_fields,
+                        arg_type,
                     ) from None
                 function_params[arg] = config_object
             elif issubclass(arg_type, StepContext):

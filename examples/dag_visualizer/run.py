@@ -21,7 +21,7 @@ from zenml.integrations.graphviz.visualizers.pipeline_run_dag_visualizer import 
     PipelineRunDagVisualizer,
 )
 from zenml.pipelines import pipeline
-from zenml.steps import step, Output
+from zenml.steps import Output, step
 
 FEATURE_COLS = [
     "CRIM",

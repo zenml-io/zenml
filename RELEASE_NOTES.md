@@ -66,7 +66,7 @@ Version 0.5.3 adds [statistics visualizations](https://github.com/zenml-io/zenml
 * Update docker files by @schustmi in https://github.com/zenml-io/zenml/pull/169
 * Hamza/deploy api reference by @htahir1 in https://github.com/zenml-io/zenml/pull/171
 * API Reference by @schustmi in https://github.com/zenml-io/zenml/pull/172
-* Add colour back into our github actions by @alex-zenml in https://github.com/zenml-io/zenml/pull/176
+* Add color back into our github actions by @alex-zenml in https://github.com/zenml-io/zenml/pull/176
 * Refactor tests not raising by @alex-zenml in https://github.com/zenml-io/zenml/pull/177
 * Improve step and pipeline interface by @schustmi in https://github.com/zenml-io/zenml/pull/175
 * Alex/eng 27 windows bug again by @htahir1 in https://github.com/zenml-io/zenml/pull/178
@@ -298,7 +298,7 @@ zenml init
 * Added `JSONDatasource` and `TFRecordsDatasource`.
 
 ## Bug Fixes + Refactor
-A big thanks to our new contributer @aak7912 for the help in this release with issue #71 and PR #75.
+A big thanks to our new contributor @aak7912 for the help in this release with issue #71 and PR #75.
 
 * Added an example for [regression](https://github.com/zenml-io/zenml/tree/main/examples/regression).
 * `compare_training_runs()` now takes an optional `datasource` parameter to filter by datasource.
