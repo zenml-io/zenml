@@ -20,3 +20,11 @@ repos:
         files: ^src/zenml/|^tests/
         types: [file, python]
         pass_filenames: false
+
+  -   repo: https://github.com/codespell-project/codespell
+      rev: v2.1.0
+      hooks:
+      -   id: codespell
+          name: codespell
+          description: Checks for common misspellings in text files.
+          entry: codespell -c -I .codespell-ignore-words -f -i 0 --builtin clear,rare,en-GB_to_en-US,names,code CODE-OF-CONDUCT.md CONTRIBUTING.md ROADMAP.md README.md RELEASE_NOTES.md src/ docs/book examples/
