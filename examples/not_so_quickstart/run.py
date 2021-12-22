@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from datetime import datetime
 
 import numpy as np
 import tensorflow as tf
@@ -72,7 +71,7 @@ tf_p = mnist_pipeline(
 )
 
 # Run the pipeline
-tf_p.run(run_name=f"Tensorflow-{datetime.now()}")
+tf_p.run()
 
 # Initialise a new pipeline run
 torch_p = mnist_pipeline(
@@ -83,7 +82,7 @@ torch_p = mnist_pipeline(
 )
 
 # Run the new pipeline
-torch_p.run(run_name=f"Torch-{datetime.now()}")
+torch_p.run()
 
 # Initialise a new pipeline run
 scikit_p = mnist_pipeline(
@@ -94,7 +93,7 @@ scikit_p = mnist_pipeline(
 )
 
 # Run the new pipeline
-scikit_p.run(run_name=f"Sklearn-{datetime.now()}")
+scikit_p.run()
 
 # Post execution flow
 repo = Repository()
@@ -103,6 +102,6 @@ print("***********************OUTPUT************************")
 for r in pipeline.runs[-3:]:
     eval_step = r.get_step("evaluator")
     print(
-        f"For the {r.name.split('-')[0]}-{eval_step.name}, the accuracy is: "
+        f"For {eval_step.name}, the accuracy is: "
         f"{eval_step.output.read():.2f}"
     )
