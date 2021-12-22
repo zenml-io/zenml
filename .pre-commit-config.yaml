@@ -13,18 +13,17 @@ repos:
 
   - repo: local
     hooks:
+      - id: lint
+        name: lint
+        entry: poetry run bash scripts/check-spelling.sh
+        language: system
+
+  - repo: local
+    hooks:
       - id: pytest
         name: pytest
         entry: poetry run bash scripts/test-coverage-xml.sh
         language: system
-        files: ^src/zenml/|^tests/|^examples/
+        files: ^src/zenml/|^tests/
         types: [file, python]
         pass_filenames: false
-
-  -   repo: https://github.com/codespell-project/codespell
-      rev: v2.1.0
-      hooks:
-      -   id: codespell
-          name: codespell
-          description: Checks for common misspellings in text files.
-          entry: codespell -c -I .codespell-ignore-words -f -i 0 --builtin clear,rare,en-GB_to_en-US,names,code
