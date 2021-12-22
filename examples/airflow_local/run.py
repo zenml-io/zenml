@@ -45,10 +45,7 @@ def get_X_y_from_api(n_days: int = 1, is_train: bool = True):
 def dynamic_importer(
     config: ImporterConfig,
 ) -> Output(
-    X_train=np.ndarray,
-    y_train=np.ndarray,
-    X_test=np.ndarray,
-    y_test=np.ndarray,
+    X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
 ):
     """Downloads the latest data from a mock API."""
     X_train, y_train = get_X_y_from_api(n_days=config.n_days, is_train=True)
@@ -98,7 +95,9 @@ def mnist_pipeline(
 ):
     # Link all the steps artifacts together
     X_train, y_train, X_test, y_test = importer()
-    X_trained_normed, X_test_normed = normalizer(X_train=X_train, X_test=X_test)
+    X_trained_normed, X_test_normed = normalizer(
+        X_train=X_train, X_test=X_test
+    )
     model = trainer(X_train=X_trained_normed, y_train=y_train)
     evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 

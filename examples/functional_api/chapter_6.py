@@ -46,10 +46,7 @@ def get_X_y_from_api(n_days: int = 1, is_train: bool = True):
 def dynamic_importer(
     config: ImporterConfig,
 ) -> Output(
-    X_train=np.ndarray,
-    y_train=np.ndarray,
-    X_test=np.ndarray,
-    y_test=np.ndarray,
+    X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
 ):
     """Downloads the latest data from a mock API."""
     X_train, y_train = get_X_y_from_api(n_days=config.n_days, is_train=True)
