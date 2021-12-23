@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import click
-from git.exc import GitCommandError, NoSuchPathError
+from git.exc import GitCommandError, InvalidGitRepositoryError, NoSuchPathError
 from git.repo.base import Repo
 from packaging.version import Version, parse
 
@@ -207,13 +207,14 @@ class ExamplesRepo:
         self.cloning_path = cloning_path
         try:
             self.repo = Repo(self.cloning_path)
-        except NoSuchPathError:
+        except NoSuchPathError or InvalidGitRepositoryError:
             self.repo = None  # type: ignore
             logger.debug(
-                f"`cloning_path`: {self.cloning_path} was empty, "
-                f"but ExamplesRepo was created. "
-                "Ensure a pull is performed before doing any other operations."
+                f"`Cloning_path`: {self.cloning_path} was empty, "
+                "Automatically cloning the examples."
             )
+            self.clone()
+            self.checkout(branch=self.latest_release)
 
     @property
     def active_version(self) -> Optional[str]:
@@ -444,8 +445,6 @@ def list(git_examples_handler: GitExamplesHandler) -> None:
     check_for_version_mismatch(git_examples_handler)
     declare("Listing examples: \n")
 
-    # TODO[HIGH] - don't list .sh file
-
     for example in git_examples_handler.get_examples():
         declare(f"{example.name}")
 
@@ -644,3 +643,10 @@ def run(
                 )
             except NotImplementedError as e:
                 error(str(e))
+
+
+# from click.testing import CliRunner
+#
+# runner = CliRunner()
+#
+# result = runner.invoke(example, ["list"])
