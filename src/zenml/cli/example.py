@@ -643,10 +643,3 @@ def run(
                 )
             except NotImplementedError as e:
                 error(str(e))
-
-
-# from click.testing import CliRunner
-#
-# runner = CliRunner()
-#
-# result = runner.invoke(example, ["list"])
