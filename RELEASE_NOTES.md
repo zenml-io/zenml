@@ -1,3 +1,40 @@
+# 0.5.6
+
+        )                    *      (     
+     ( /(                  (  `     )\ )  
+     )\())    (            )\))(   (()/(  
+    ((_)\    ))\    (     ((_)()\   /(_)) 
+     _((_)  /((_)   )\ )  (_()((_) (_))   
+    |_  /  (_))    _(_/(  |  \/  | | |    
+     / /   / -_)  | ' \)) | |\/| | | |__  
+    /___|  \___|  |_||_|  |_|  |_| |____| 
+
+This release fixes some known bugs from previous releases and especially 0.5.5. Therefore, upgrading to 0.5.6 is a **breaking change**. You must do the following in order to proceed with this version:
+
+```
+cd zenml_enabled_repo
+rm -rf .zen/
+```
+
+And then start again with ZenML init:
+
+```
+pip install --upgrade zenml
+zenml init
+```
+
+## What's Changed
+* Added `zenml example run [EXAMPLE_RUN_NAME]` feature: The ability to run an example with one command. In order to run this, do `zenml example pull` first and see all examples available by running `zenml example list`.
+* Added ability to specify a `.dockerignore` file before running pipelines on Kubeflow.
+* Kubeflow Orchestrator is now leaner and faster. 
+* Added the `describe` command group to the CLI for groups `stack`, `orchestrator`, `artifact-store`, and `metadata-store`. E.g. `zenml stack describe`
+
+## Bug fixes and minor improvements
+* Adding `StepContext` to a branch now invalidates caching by default. Disable explicitly with `enable_cache=True`.
+* Docs updated to reflect minor changes in CLI commands.
+* CLI `list` commands now mentions active component. Try `zenml stack list` to check this out.
+* `zenml version` now has cooler art.
+
 # 0.5.5
 
 ZenML 0.5.5 is jam-packed with new features to take your ML pipelines to the next level. Our three biggest new features: Kubeflow Pipelines, CLI support for our integrations and Standard Interfaces. That’s right, Standard Interfaces are back!
