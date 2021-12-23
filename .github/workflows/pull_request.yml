@@ -7,6 +7,9 @@ on:
 jobs:
   testing:
     runs-on: ubuntu-latest
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
@@ -34,10 +37,6 @@ jobs:
           python -m poetry run zenml integration install gcp -f
           python -m poetry run pip install click~=8.0.3
           python -m poetry run pip install awscli
-
-      - name: Opt-out of analytics
-        run: |
-          python -m poetry run zenml analytics opt-out
 
       - name: Lint
         run: python -m poetry run bash scripts/lint.sh
