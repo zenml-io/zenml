@@ -37,6 +37,7 @@ from zenml.cli.utils import (
 from zenml.constants import GIT_REPO_URL
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.utils.analytics_utils import RUN_EXAMPLE, track_event
 
 logger = get_logger(__name__)
 
@@ -154,6 +155,9 @@ class LocalExample:
                 raise FileNotFoundError(
                     "Bash File to run Examples not found at" f"{bash_file}"
                 )
+
+        # Telemetry
+        track_event(RUN_EXAMPLE, {"name": self.name})
 
 
 class Example:

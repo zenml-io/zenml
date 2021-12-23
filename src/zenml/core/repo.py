@@ -27,7 +27,12 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.post_execution import PipelineView
 from zenml.stacks import BaseStack
-from zenml.utils.analytics_utils import GET_PIPELINES, SET_STACK, track
+from zenml.utils.analytics_utils import (
+    GET_PIPELINE,
+    GET_PIPELINES,
+    SET_STACK,
+    track,
+)
 
 logger = get_logger(__name__)
 
@@ -160,6 +165,7 @@ class Repository:
         metadata_store = self.service.get_stack(stack_key).metadata_store
         return metadata_store.get_pipelines()
 
+    @track(event=GET_PIPELINE)
     def get_pipeline(
         self, pipeline_name: str, stack_key: Optional[str] = None
     ) -> Optional[PipelineView]:

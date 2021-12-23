@@ -54,11 +54,21 @@ class ComponentFactory:
             f"{[str(k) for k in self.components.keys()]}"
         )
 
+    def get_component_key(self, component: BaseComponentType) -> str:
+        """Gets the key of a registered component."""
+        for k, v in self.components.items():
+            if v == component:
+                return k
+        raise KeyError(
+            f"Type '{component}' does not exist! Available options: "
+            f"{[str(v) for v in self.components.values()]}"
+        )
+
     def register_component(
         self, key: str, component: BaseComponentType
     ) -> None:
         """Registers a single component class for a given key."""
-        self.components[key] = component
+        self.components[str(key)] = component
 
     def register(
         self, name: str

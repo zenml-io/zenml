@@ -30,8 +30,8 @@ logger = get_logger(__name__)
 # Pipelines
 
 RUN_PIPELINE = "Pipeline run"
-
 GET_PIPELINES = "Pipelines fetched"
+GET_PIPELINE = "Pipeline fetched"
 
 # Repo
 INITIALIZE_REPO = "ZenML initialized"
@@ -47,11 +47,14 @@ REGISTERED_STACK = "Stack registered"
 SET_STACK = "Stack set"
 
 # Analytics opt in and out
-ANALYTICS_OPT_IN = "Analytics opt-in"
-ANALYTICS_OPT_OUT = "Analytics opt-out"
+OPT_IN_ANALYTICS = "Analytics opt-in"
+OPT_OUT_ANALYTICS = "Analytics opt-out"
+
+# Examples
+RUN_EXAMPLE = "Example run"
 
 # Test event
-TEST_EVENT = "Test event"
+EVENT_TEST = "Test event"
 
 
 def get_segment_key() -> str:
@@ -166,9 +169,15 @@ def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> bool:
 
         gc = GlobalConfig()
 
+        logger.debug(
+            f"Attempting analytics: User: {gc.user_id}, "
+            f"Event: {event},"
+            f"Metadata: {metadata}"
+        )
+
         if not gc.analytics_opt_in and event not in [
-            ANALYTICS_OPT_OUT,
-            ANALYTICS_OPT_IN,
+            OPT_OUT_ANALYTICS,
+            OPT_IN_ANALYTICS,
         ]:
             return False
 
