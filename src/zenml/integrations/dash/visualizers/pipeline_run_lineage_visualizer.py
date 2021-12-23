@@ -109,7 +109,6 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
         ExecutionStatus.COMPLETED: "blue",
     }
 
-    @abstractmethod
     def visualize(
         self, object: PipelineRunView, *args: Any, **kwargs: Any
     ) -> dash.Dash:
