@@ -21,10 +21,12 @@
 
 import click
 
+from zenml import __version__
 from zenml.logger import set_root_verbosity
 
 
 @click.group()
+@click.version_option(__version__, "--version", "-v")
 def cli() -> None:
     """ZenML"""
     set_root_verbosity()
