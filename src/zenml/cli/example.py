@@ -422,9 +422,9 @@ def check_for_version_mismatch(
         else:
             warning(
                 "The examples you have installed are downloaded from a "
-                "development branch of ZenML. Full functionality is not"
+                "development branch of ZenML. Full functionality is not "
                 "guaranteed. Use `zenml example pull` to "
-                "get examples using your zenml version"
+                "get examples using your zenml version."
             )
 
 
