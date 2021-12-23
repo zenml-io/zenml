@@ -46,6 +46,13 @@ REGISTERED_CONTAINER_REGISTRY = "Container Registry registered"
 REGISTERED_STACK = "Stack registered"
 SET_STACK = "Stack set"
 
+# Analytics opt in and out
+ANALYTICS_OPT_IN = "Analytics opt-in"
+ANALYTICS_OPT_OUT = "Analytics opt-out"
+
+# Test event
+TEST_EVENT = "Test event"
+
 
 def get_segment_key() -> str:
     """Get key for authorizing to Segment backend.
@@ -118,13 +125,29 @@ def get_system_info() -> Dict[str, Any]:
     return {"os": "unknown"}
 
 
-def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> None:
+def get_environment() -> str:
+    """Returns a string representing the execution environment of the pipeline.
+    Currently, one of `docker`, `paperspace`, 'colab', or `native`"""
+    if in_docker():
+        return "docker"
+    elif in_google_colab():
+        return "colab"
+    elif in_paperspace_gradient():
+        return "paperspace"
+    else:
+        return "native"
+
+
+def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> bool:
     """
     Track segment event if user opted-in.
 
     Args:
         event: Name of event to track in segment.
         metadata: Dict of metadata to track.
+
+    Returns:
+        True if event is sent successfully, False is not.
     """
     try:
         import analytics
@@ -143,8 +166,11 @@ def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> None:
 
         gc = GlobalConfig()
 
-        if not gc.analytics_opt_in and event != INITIALIZE_REPO:
-            return
+        if not gc.analytics_opt_in and event not in [
+            ANALYTICS_OPT_OUT,
+            ANALYTICS_OPT_IN,
+        ]:
+            return False
 
         if metadata is None:
             metadata = {}
@@ -153,9 +179,7 @@ def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> None:
         metadata.update(get_system_info())
         metadata.update(
             {
-                "in_docker": in_docker(),
-                "in_google_colab": in_google_colab(),
-                "in_paperspace_gradient": in_paperspace_gradient(),
+                "environment": get_environment(),
                 "version": __version__,
             }
         )
@@ -165,9 +189,11 @@ def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> None:
             f"Analytics sent: User: {gc.user_id}, Event: {event}, Metadata: "
             f"{metadata}"
         )
+        return True
     except Exception as e:
         # We should never fail main thread
         logger.debug(f"Analytics failed due to: {e}")
+        return False
 
 
 def parametrized(
