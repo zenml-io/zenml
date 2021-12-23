@@ -47,7 +47,7 @@ class LocalExample:
     """Class to encapsulate all properties and methods of the local example
     that can be run from the CLI"""
 
-    def __init__(self, name: str, path: str) -> None:
+    def __init__(self, path: Path, name: str) -> None:
         """Create a new LocalExample instance.
 
         Args:
@@ -62,14 +62,14 @@ class LocalExample:
     def python_files_in_dir(self) -> List[str]:
         """List of all python files in the drectl in local example directory
         the __init__.py file is excluded from this list"""
-        py_in_dir = fileio.find_files(self.path, "*.py")
+        py_in_dir = fileio.find_files(str(self.path), "*.py")
         py_files = []
-        for f in py_in_dir:
+        for file in py_in_dir:
             # Make sure only files directly in dir are considered, not files
             # in sub dirs
-            if Path(self.path) == Path(f).parent:
-                if Path(f).name != "__init__.py":
-                    py_files.append(f)
+            if self.path == Path(file).parent:
+                if Path(file).name != "__init__.py":
+                    py_files.append(file)
 
         return py_files
 
@@ -102,7 +102,8 @@ class LocalExample:
 
     def is_present(self) -> bool:
         """Checks if the example is installed at the given path."""
-        return fileio.file_exists(self.path) and fileio.is_dir(self.path)
+        return (fileio.file_exists(str(self.path))
+                and fileio.is_dir(str(self.path)))
 
     def run_example(self, bash_file: str, force: bool) -> None:
         """Run the local example using the bash script at the supplied
@@ -116,7 +117,7 @@ class LocalExample:
             os.chdir(self.path)
             try:
                 # TODO [HIGH]: Catch errors that might be thrown in subprocess
-                declare(self.path)
+                declare(str(self.path))
                 if force:
                     subprocess.check_call(
                         [
@@ -125,7 +126,7 @@ class LocalExample:
                             "--executable",
                             self.executable_python_example,
                         ],
-                        cwd=self.path,
+                        cwd=str(self.path),
                     )
                 else:
                     subprocess.check_call(
@@ -571,14 +572,14 @@ def run(
     """
     # TODO [MEDIUM]: - create a post_run function inside individual setup.sh
     #  to inform user how to clean up
-    examples_dir = os.path.join(os.getcwd(), path)
+    examples_dir = Path(os.getcwd()) / path
     try:
         _ = git_examples_handler.get_examples(example_name)[0]
     except KeyError as e:
         error(str(e))
     else:
-        example_dir = os.path.join(examples_dir, example_name)
-        local_example = LocalExample(example_name, example_dir)
+        example_dir = examples_dir / example_name
+        local_example = LocalExample(example_dir, example_name)
 
         if not local_example.is_present():
             error(f"Example {example_name} is not installed at {examples_dir})")

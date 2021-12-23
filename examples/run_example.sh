@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -Eeo pipefail
+set +x pipefail
 
 usage() {
   cat << EOF # remove the space between << and EOF
