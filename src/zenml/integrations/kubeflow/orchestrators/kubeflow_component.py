@@ -90,6 +90,7 @@ class KubeflowComponent:
         image: str,
         tfx_ir: pipeline_pb2.Pipeline,  # type: ignore[valid-type]
         pod_labels_to_attach: Dict[str, str],
+        main_module: str,
         step_module: str,
         step_function_name: str,
         runtime_parameters: List[data_types.RuntimeParameter],
@@ -121,6 +122,8 @@ class KubeflowComponent:
             json_format.MessageToJson(tfx_ir),
             "--metadata_ui_path",
             metadata_ui_path,
+            "--main_module",
+            main_module,
             "--step_module",
             step_module,
             "--step_function_name",
