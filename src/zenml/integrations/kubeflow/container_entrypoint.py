@@ -434,6 +434,7 @@ def _parse_command_line_arguments() -> argparse.Namespace:
     # There might be multiple runtime parameters.
     # `args.runtime_parameter` should become List[str] by using "append".
     parser.add_argument("--runtime_parameter", type=str, action="append")
+    parser.add_argument("--main_module", type=str, required=True)
     parser.add_argument("--step_module", type=str, required=True)
     parser.add_argument("--step_function_name", type=str, required=True)
     parser.add_argument("--run_name", type=str, required=True)
@@ -486,6 +487,9 @@ def main() -> None:
         connection_config = deployment_config.metadata_connection_config  # type: ignore[attr-defined] # noqa
 
     metadata_connection = metadata.Metadata(connection_config)
+
+    # import the user main module to register all the materializers
+    importlib.import_module(args.main_module)
 
     if hasattr(executor_spec, "class_path"):
         executor_module_parts = getattr(executor_spec, "class_path").split(".")
