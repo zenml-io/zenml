@@ -212,6 +212,19 @@ class ExamplesRepo:
             )
 
     @property
+    def active_version(self) -> Optional[str]:
+        """In case a tagged version is checked out, this property returns
+        that version, else None is returned"""
+        return next(
+            (
+                tag
+                for tag in self.repo.tags
+                if tag.commit == self.repo.head.commit
+            ),
+            None,
+        )
+
+    @property
     def latest_release(self) -> str:
         """Returns the latest release for the examples repository."""
         tags = sorted(
@@ -304,6 +317,12 @@ class GitExamplesHandler(object):
             )
         ]
 
+    @property
+    def is_matching_versions(self) -> bool:
+        """Returns a boolean whether the checked out examples are on the
+        same code version as zenml"""
+        return zenml_version_installed == str(self.examples_repo.active_version)
+
     def is_example(self, example_name: Optional[str] = None) -> bool:
         """Checks if the supplied example_name corresponds to an example"""
         example_dict = {e.name: e for e in self.examples}
@@ -337,7 +356,7 @@ class GitExamplesHandler(object):
     ) -> None:
         """Pulls the examples from the main git examples repository."""
         if version == "":
-            version = self.examples_repo.latest_release
+            version = zenml_version_installed
 
         if not self.examples_repo.is_cloned:
             self.examples_repo.clone()
@@ -386,6 +405,29 @@ pass_git_examples_handler = click.make_pass_decorator(
 )
 
 
+def check_for_version_mismatch(
+    git_examples_handler: GitExamplesHandler,
+) -> None:
+    if git_examples_handler.is_matching_versions:
+        return
+    else:
+        if git_examples_handler.examples_repo.active_version:
+            warning(
+                "The examples you have installed are installed with Version "
+                f"{git_examples_handler.examples_repo.active_version} "
+                f"of ZenML. However your code is at {zenml_version_installed} "
+                "Consider using `zenml example pull` to download  "
+                "examples matching your zenml installation."
+            )
+        else:
+            warning(
+                "The examples you have installed are downloaded from a "
+                "development branch of ZenML. Full functionality is not "
+                "guaranteed. Use `zenml example pull` to "
+                "get examples using your zenml version."
+            )
+
+
 @cli.group(help="Access all ZenML examples.")
 def example() -> None:
     """Examples group"""
@@ -395,6 +437,7 @@ def example() -> None:
 @pass_git_examples_handler
 def list(git_examples_handler: GitExamplesHandler) -> None:
     """List all available examples."""
+    check_for_version_mismatch(git_examples_handler)
     declare("Listing examples: \n")
 
     # TODO[HIGH] - don't list .sh file
@@ -447,6 +490,7 @@ def clean(git_examples_handler: GitExamplesHandler, path: str) -> None:
 @click.argument("example_name")
 def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
     """Find out more about an example."""
+    check_for_version_mismatch(git_examples_handler)
     # TODO [ENG-148]: fix markdown formatting so that it looks nicer (not a
     #  pure .md dump)
     try:
@@ -571,6 +615,8 @@ def run(
     `zenml example pull EXAMPLE_NAME` has to be called with the same relative
     path before the run command.
     """
+    check_for_version_mismatch(git_examples_handler)
+
     # TODO [ENG-272]: - create a post_run function inside individual setup.sh
     #  to inform user how to clean up
     examples_dir = os.path.join(os.getcwd(), path)
