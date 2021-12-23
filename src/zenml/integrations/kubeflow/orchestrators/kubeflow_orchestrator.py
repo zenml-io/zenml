@@ -47,6 +47,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Kubeflow."""
 
     custom_docker_base_image_name: Optional[str] = None
+    kubeflow_pipelines_ui_port: int = 8080
     kubernetes_context: Optional[str] = None
 
     def get_docker_image_name(self, pipeline_name: str) -> str:
@@ -287,12 +288,14 @@ class KubeflowOrchestrator(BaseOrchestrator):
             kubernetes_context=kubernetes_context
         )
         local_deployment_utils.start_kfp_ui_daemon(
-            pid_file_path=self._pid_file_path, port=8080
+            pid_file_path=self._pid_file_path,
+            port=self.kubeflow_pipelines_ui_port,
         )
 
         logger.info(
-            "Finished local Kubeflow Pipelines deployment. The UI should now "
-            "be accessible at http://localhost:8080/."
+            f"Finished local Kubeflow Pipelines deployment. The UI should now "
+            f"be accessible at "
+            f"http://localhost:{self.kubeflow_pipelines_ui_port}/."
         )
 
     def down(self) -> None:
