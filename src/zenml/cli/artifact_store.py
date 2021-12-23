@@ -69,7 +69,7 @@ def register_artifact_store(name: str, type: str, args: List[str]) -> None:
     artifact_store = comp(repo_path=repo.path, **parsed_args)
     service = repo.get_service()
     service.register_artifact_store(
-        name, cast(BaseArtifactStore, artifact_store)
+        name, cast("BaseArtifactStore", artifact_store)
     )
     cli_utils.declare(f"Artifact Store `{name}` successfully registered!")
 
