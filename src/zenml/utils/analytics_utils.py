@@ -30,8 +30,8 @@ logger = get_logger(__name__)
 # Pipelines
 
 RUN_PIPELINE = "Pipeline run"
-
 GET_PIPELINES = "Pipelines fetched"
+GET_PIPELINE = "Pipeline fetched"
 
 # Repo
 INITIALIZE_REPO = "ZenML initialized"
@@ -45,6 +45,16 @@ REGISTERED_CONTAINER_REGISTRY = "Container Registry registered"
 # Stack
 REGISTERED_STACK = "Stack registered"
 SET_STACK = "Stack set"
+
+# Analytics opt in and out
+OPT_IN_ANALYTICS = "Analytics opt-in"
+OPT_OUT_ANALYTICS = "Analytics opt-out"
+
+# Examples
+RUN_EXAMPLE = "Example run"
+
+# Test event
+EVENT_TEST = "Test event"
 
 
 def get_segment_key() -> str:
@@ -118,13 +128,29 @@ def get_system_info() -> Dict[str, Any]:
     return {"os": "unknown"}
 
 
-def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> None:
+def get_environment() -> str:
+    """Returns a string representing the execution environment of the pipeline.
+    Currently, one of `docker`, `paperspace`, 'colab', or `native`"""
+    if in_docker():
+        return "docker"
+    elif in_google_colab():
+        return "colab"
+    elif in_paperspace_gradient():
+        return "paperspace"
+    else:
+        return "native"
+
+
+def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> bool:
     """
     Track segment event if user opted-in.
 
     Args:
         event: Name of event to track in segment.
         metadata: Dict of metadata to track.
+
+    Returns:
+        True if event is sent successfully, False is not.
     """
     try:
         import analytics
@@ -143,8 +169,17 @@ def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> None:
 
         gc = GlobalConfig()
 
-        if not gc.analytics_opt_in and event != INITIALIZE_REPO:
-            return
+        logger.debug(
+            f"Attempting analytics: User: {gc.user_id}, "
+            f"Event: {event},"
+            f"Metadata: {metadata}"
+        )
+
+        if not gc.analytics_opt_in and event not in [
+            OPT_OUT_ANALYTICS,
+            OPT_IN_ANALYTICS,
+        ]:
+            return False
 
         if metadata is None:
             metadata = {}
@@ -153,9 +188,7 @@ def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> None:
         metadata.update(get_system_info())
         metadata.update(
             {
-                "in_docker": in_docker(),
-                "in_google_colab": in_google_colab(),
-                "in_paperspace_gradient": in_paperspace_gradient(),
+                "environment": get_environment(),
                 "version": __version__,
             }
         )
@@ -165,9 +198,11 @@ def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> None:
             f"Analytics sent: User: {gc.user_id}, Event: {event}, Metadata: "
             f"{metadata}"
         )
+        return True
     except Exception as e:
         # We should never fail main thread
         logger.debug(f"Analytics failed due to: {e}")
+        return False
 
 
 def parametrized(

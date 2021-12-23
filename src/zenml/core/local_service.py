@@ -15,6 +15,7 @@ from zenml.utils.analytics_utils import (
     REGISTERED_ORCHESTRATOR,
     REGISTERED_STACK,
     track,
+    track_event,
 )
 
 if TYPE_CHECKING:
@@ -201,7 +202,6 @@ class LocalService(BaseComponent):
             key, self.artifact_store_map, self._repo_path
         )
 
-    @track(event=REGISTERED_ARTIFACT_STORE)
     def register_artifact_store(
         self, key: str, artifact_store: "BaseArtifactStore"
     ) -> None:
@@ -227,6 +227,18 @@ class LocalService(BaseComponent):
             uuid=artifact_store.uuid, source=source
         )
         self.update()
+
+        # Telemetry
+        from zenml.core.component_factory import artifact_store_factory
+
+        track_event(
+            REGISTERED_ARTIFACT_STORE,
+            {
+                "type": artifact_store_factory.get_component_key(
+                    artifact_store.__class__
+                )
+            },
+        )
 
     def delete_artifact_store(self, key: str) -> None:
         """Delete an artifact_store.
@@ -259,7 +271,6 @@ class LocalService(BaseComponent):
             key, self.metadata_store_map, self._repo_path
         )
 
-    @track(event=REGISTERED_METADATA_STORE)
     def register_metadata_store(
         self, key: str, metadata_store: "BaseMetadataStore"
     ) -> None:
@@ -285,6 +296,18 @@ class LocalService(BaseComponent):
             uuid=metadata_store.uuid, source=source
         )
         self.update()
+
+        # Telemetry
+        from zenml.core.component_factory import metadata_store_factory
+
+        track_event(
+            REGISTERED_METADATA_STORE,
+            {
+                "type": metadata_store_factory.get_component_key(
+                    metadata_store.__class__
+                )
+            },
+        )
 
     def delete_metadata_store(self, key: str) -> None:
         """Delete a metadata store.
@@ -317,7 +340,6 @@ class LocalService(BaseComponent):
             key, self.orchestrator_map, self._repo_path
         )
 
-    @track(event=REGISTERED_ORCHESTRATOR)
     def register_orchestrator(
         self, key: str, orchestrator: "BaseOrchestrator"
     ) -> None:
@@ -343,6 +365,18 @@ class LocalService(BaseComponent):
             uuid=orchestrator.uuid, source=source
         )
         self.update()
+
+        # Telemetry
+        from zenml.core.component_factory import orchestrator_store_factory
+
+        track_event(
+            REGISTERED_ORCHESTRATOR,
+            {
+                "type": orchestrator_store_factory.get_component_key(
+                    orchestrator.__class__
+                )
+            },
+        )
 
     def delete_orchestrator(self, key: str) -> None:
         """Delete a orchestrator.
