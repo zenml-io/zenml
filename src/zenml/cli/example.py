@@ -571,7 +571,7 @@ def pull(
             destination_dir = os.path.join(os.getcwd(), path, example.name)
 
             if LocalExample(example.name, destination_dir).is_present():
-                if confirmation(
+                if force or confirmation(
                     f"Example {example.name} is already pulled. "
                     "Do you wish to overwrite the directory at "
                     f"{destination_dir}?"
