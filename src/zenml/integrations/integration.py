@@ -14,7 +14,7 @@
 from typing import Any, Dict, List, Tuple, Type, cast
 
 import pkg_resources
-import subprocess
+import shutil
 
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
@@ -51,10 +51,11 @@ class Integration(metaclass=IntegrationMeta):
         """Method to check whether the required packages are installed"""
         try:
             for req, command in cls.SYSTEM_REQUIREMENTS.items():
-                result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
-                if result.returncode!=0:
+                result = shutil.which(command)
+
+                if result==None:
                     raise DoesNotExistException(
-                            f"Unable to find linux/unix installation of {req}"
+                            f"Unable to find the required packages for {req} on your system. Please install the packages on your system and try again."
                     ) 
 
             for r in cls.REQUIREMENTS:
