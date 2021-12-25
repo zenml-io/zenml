@@ -14,9 +14,11 @@
 from typing import Any, Dict, List, Tuple, Type, cast
 
 import pkg_resources
+import subprocess
 
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
+from zenml.exceptions import DoesNotExistException
 
 logger = get_logger(__name__)
 
@@ -42,10 +44,19 @@ class Integration(metaclass=IntegrationMeta):
 
     REQUIREMENTS: List[str] = []
 
+    SYSTEM_REQUIREMENTS: Dict[str, str] = {}
+
     @classmethod
     def check_installation(cls) -> bool:
         """Method to check whether the required packages are installed"""
         try:
+            for req, command in cls.SYSTEM_REQUIREMENTS.items():
+                result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+                if result.returncode!=0:
+                    raise DoesNotExistException(
+                            f"Unable to find linux/unix installation of {req}"
+                    ) 
+
             for r in cls.REQUIREMENTS:
                 pkg_resources.get_distribution(r)
             logger.debug(
