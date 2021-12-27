@@ -11,14 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import shutil
 from typing import Any, Dict, List, Tuple, Type, cast
 
 import pkg_resources
-import shutil
 
+from zenml.exceptions import DoesNotExistException
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
-from zenml.exceptions import DoesNotExistException
 
 logger = get_logger(__name__)
 
