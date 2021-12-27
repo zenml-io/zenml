@@ -22,7 +22,7 @@ repos:
     hooks:
       - id: pytest
         name: pytest
-        entry: poetry run bash scripts/test-coverage-xml.sh
+        entry: poetry run bash scripts/test-coverage-xml.sh unit
         language: system
         files: ^src/zenml/|^tests/
         types: [file, python]

@@ -120,7 +120,7 @@ class LocalExample:
             os.chdir(self.path)
             try:
                 # TODO [ENG-271]: Catch errors that might be thrown in subprocess
-                declare(self.path)
+                declare(str(self.path))
                 if force:
                     subprocess.check_call(
                         [
