@@ -162,6 +162,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             step.pipeline_parameter_name = key
             combined_steps[key] = step
 
+        step_refs: Dict[type, str] = {}
+
         for key, step in kw_steps.items():
             if key in combined_steps:
                 # a step for this key was already set by
@@ -181,8 +183,19 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"a pipeline."
                 )
 
+            step_ref_func = type(step)
+
+            if step_ref_func in step_refs:
+                prev_key = step_refs[step_ref_func]
+                raise PipelineInterfaceError(
+                    f"Same argument type (`{type(step)}`) used for arguments "
+                    f"{key} and {prev_key}. Functions decorated with @step "
+                    f"should be unique for each argument."
+                )
+
             step.pipeline_parameter_name = key
             combined_steps[key] = step
+            step_refs[step_ref_func] = key
 
         # check if there are any missing or unexpected steps
         expected_steps = set(self.STEP_SPEC.keys())
