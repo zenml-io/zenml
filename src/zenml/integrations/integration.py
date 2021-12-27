@@ -11,10 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import shutil
 from typing import Any, Dict, List, Tuple, Type, cast
 
 import pkg_resources
 
+from zenml.exceptions import DoesNotExistException
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 
@@ -42,10 +44,20 @@ class Integration(metaclass=IntegrationMeta):
 
     REQUIREMENTS: List[str] = []
 
+    SYSTEM_REQUIREMENTS: Dict[str, str] = {}
+
     @classmethod
     def check_installation(cls) -> bool:
         """Method to check whether the required packages are installed"""
         try:
+            for req, command in cls.SYSTEM_REQUIREMENTS.items():
+                result = shutil.which(command)
+
+                if result is None:
+                    raise DoesNotExistException(
+                        f"Unable to find the required packages for {req} on your system. Please install the packages on your system and try again."
+                    )
+
             for r in cls.REQUIREMENTS:
                 pkg_resources.get_distribution(r)
             logger.debug(

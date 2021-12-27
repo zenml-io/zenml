@@ -42,9 +42,9 @@ def test_run_quickstart(examples_dir: Path):
         bash_file=str(bash_script_location), force=True
     )
 
-    # assert (local_example.path.joinpath(
-    #             '.zen/local_store/trainer/output/2/model'
-    #         ).is_file())
+    assert (local_example.path.joinpath(
+                '.zen/local_store/trainer/output/2/model'
+            ).is_file())
 
 
 def test_run_not_so_quickstart(examples_dir: Path):
@@ -57,33 +57,30 @@ def test_run_not_so_quickstart(examples_dir: Path):
         bash_file=str(bash_script_location), force=True
     )
 
-    # assert (local_example.path.joinpath(
-    #     '.zen/local_store/tf_trainer/output/3/saved_model.pb'
-    # ).is_file())
-    # assert (local_example.path.joinpath(
-    #     '.zen/local_store/torch_trainer/output/7/entire_model.pt'
-    # ).is_file())
-    # assert (local_example.path.joinpath(
-    #     '.zen/local_store/sklearn_trainer/output/11/model'
-    # ).is_file())
+    assert (local_example.path.joinpath(
+        '.zen/local_store/tf_trainer/output/3/saved_model.pb'
+    ).is_file())
+    assert (local_example.path.joinpath(
+        '.zen/local_store/torch_trainer/output/7/entire_model.pt'
+    ).is_file())
+    assert (local_example.path.joinpath(
+        '.zen/local_store/sklearn_trainer/output/11/model'
+    ).is_file())
 
 
-# def test_run_caching(examples_dir: Path):
-#     """"""
-#     examples_dir = Path('home/apenner/delete')
-#
-#     local_example = LocalExample(examples_dir / CACHING,
-#                                  name=CACHING)
-#
-#     bash_script_location = examples_dir / CACHING
-#     local_example.run_example(
-#         bash_file=str(bash_script_location), force=True
-#     )
-#     a = 0
-#     assert (local_example.path.joinpath(
-#         '.zen/local_store/tf_trainer/output/3/saved_model.pb'
-#     ).is_file())
-#     assert (local_example.path.joinpath(
-#         '.zen/local_store/tf_trainer/output/7/saved_model.pb'
-#     ).is_file())
+def test_run_caching(examples_dir: Path):
+    """"""
+    local_example = LocalExample(examples_dir / CACHING,
+                                 name=CACHING)
 
+    bash_script_location = examples_dir / EXAMPLES_RUN_SCRIPT
+    local_example.run_example(
+        bash_file=str(bash_script_location), force=True
+    )
+
+    assert (local_example.path.joinpath(
+        '.zen/local_store/tf_trainer/output/3/saved_model.pb'
+    ).is_file())
+    assert (local_example.path.joinpath(
+        '.zen/local_store/tf_trainer/output/7/saved_model.pb'
+    ).is_file())
