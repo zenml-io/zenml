@@ -591,7 +591,6 @@ def pull(
     help="Run the example that you previously installed with "
     "`zenml example pull`"
 )
-@pass_git_examples_handler
 @click.argument("example_name", required=True)
 @click.option(
     "--path",
@@ -608,7 +607,10 @@ def pull(
     "example folder and force installs all necessary integration "
     "requirements.",
 )
+@pass_git_examples_handler
+@click.pass_context
 def run(
+    ctx: click.Context,
     git_examples_handler: GitExamplesHandler,
     example_name: str,
     path: str,
@@ -632,14 +634,14 @@ def run(
         local_example = LocalExample(example_name, example_dir)
 
         if not local_example.is_present():
-            error(f"Example {example_name} is not installed at {examples_dir})")
-        else:
-            bash_script_location = (
-                git_examples_handler.examples_repo.examples_run_bash_script
+            ctx.forward(pull)
+
+        bash_script_location = (
+            git_examples_handler.examples_repo.examples_run_bash_script
+        )
+        try:
+            local_example.run_example(
+                bash_file=bash_script_location, force=force
             )
-            try:
-                local_example.run_example(
-                    bash_file=bash_script_location, force=force
-                )
-            except NotImplementedError as e:
-                error(str(e))
+        except NotImplementedError as e:
+            error(str(e))
