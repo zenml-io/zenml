@@ -17,6 +17,8 @@ from pathlib import Path
 import pytest
 
 from zenml.cli import EXAMPLES_RUN_SCRIPT, LocalExample
+from zenml.core.repo import Repository
+from zenml.enums import ExecutionStatus
 
 QUICKSTART = "quickstart"
 NOT_SO_QUICKSTART = "not_so_quickstart"
@@ -34,19 +36,37 @@ def examples_dir(tmp_path_factory):
 
 
 def test_run_quickstart(examples_dir: Path):
-    """"""
+    """Testing the functionality of the quickstart example
+
+    Args:
+        Temporary folder containing all examples including the run_examples
+        bash script.
+    """
     local_example = LocalExample(examples_dir / QUICKSTART, name=QUICKSTART)
 
     bash_script_location = examples_dir / EXAMPLES_RUN_SCRIPT
     local_example.run_example(bash_file=str(bash_script_location), force=True)
 
-    assert local_example.path.joinpath(
-        ".zen/local_store/trainer/output/2/model"
-    ).is_file()
+    # Verify the example run was successful
+    repo = Repository(path=str(local_example.path))
+    pipeline = repo.get_pipelines()[0]
+    assert pipeline.name == "mnist_pipeline"
+
+    pipeline_run = pipeline.runs[-1]
+
+    assert pipeline_run.status == ExecutionStatus.COMPLETED
+
+    for step in pipeline_run.steps:
+        assert step.status == ExecutionStatus.COMPLETED
 
 
 def test_run_not_so_quickstart(examples_dir: Path):
-    """"""
+    """Testing the functionality of the not_so_quickstart example
+
+    Args:
+        Temporary folder containing all examples including the run_examples
+        bash script.
+    """
     local_example = LocalExample(
         examples_dir / NOT_SO_QUICKSTART, name=NOT_SO_QUICKSTART
     )
@@ -54,27 +74,50 @@ def test_run_not_so_quickstart(examples_dir: Path):
     bash_script_location = examples_dir / EXAMPLES_RUN_SCRIPT
     local_example.run_example(bash_file=str(bash_script_location), force=True)
 
-    assert local_example.path.joinpath(
-        ".zen/local_store/tf_trainer/output/3/saved_model.pb"
-    ).is_file()
-    assert local_example.path.joinpath(
-        ".zen/local_store/torch_trainer/output/7/entire_model.pt"
-    ).is_file()
-    assert local_example.path.joinpath(
-        ".zen/local_store/sklearn_trainer/output/11/model"
-    ).is_file()
+    # Verify the example run was successful
+    repo = Repository(path=str(local_example.path))
+    pipeline = repo.get_pipelines()[0]
+    assert pipeline.name == "mnist_pipeline"
+
+    first_run = pipeline.runs[-3]
+    second_run = pipeline.runs[-2]
+    third_run = pipeline.runs[-1]
+
+    assert first_run.status == ExecutionStatus.COMPLETED
+    assert second_run.status == ExecutionStatus.COMPLETED
+    assert third_run.status == ExecutionStatus.COMPLETED
 
 
 def test_run_caching(examples_dir: Path):
-    """"""
+    """Testing the functionality of the caching example
+
+    Args:
+        Temporary folder containing all examples including the run_examples
+        bash script.
+    """
     local_example = LocalExample(examples_dir / CACHING, name=CACHING)
 
     bash_script_location = examples_dir / EXAMPLES_RUN_SCRIPT
     local_example.run_example(bash_file=str(bash_script_location), force=True)
 
-    assert local_example.path.joinpath(
-        ".zen/local_store/tf_trainer/output/3/saved_model.pb"
-    ).is_file()
-    assert local_example.path.joinpath(
-        ".zen/local_store/tf_trainer/output/7/saved_model.pb"
-    ).is_file()
+    # Verify the example run was successful
+    repo = Repository(path=str(local_example.path))
+    pipeline = repo.get_pipelines()[0]
+    assert pipeline.name == "mnist_pipeline"
+
+    first_run = pipeline.runs[-2]
+    second_run = pipeline.runs[-1]
+
+    # Both runs should be completed
+    assert first_run.status == ExecutionStatus.COMPLETED
+    assert second_run.status == ExecutionStatus.COMPLETED
+
+    # The first run should not have any cached steps
+    for step in first_run.steps:
+        assert not step.is_cached
+
+    # The second run should have two cached steps (chronologically first 2)
+    assert second_run.steps[0].is_cached
+    assert second_run.steps[1].is_cached
+    assert not second_run.steps[2].is_cached
+    assert not second_run.steps[3].is_cached
