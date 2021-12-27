@@ -54,6 +54,39 @@ In general, we follow the ["fork-and-pull" Git workflow](https://github.com/susa
 6. Push changes to your fork
 7. Open a PR in our repository and follow the PR template so that we can efficiently review the changes.
 
+### Linting, formatting, and tests
+
+ZenML is mainly developed using [poetry](https://python-poetry.org/) as the dependency management system. In order to install all core dev-dependencies, do:
+
+```
+poetry install
+```
+
+Optionally, you might want to run the following commands to ensure you have all integrations for `mypy` checks:
+
+```
+zenml integration install -f
+mypy --install-types
+```
+
+Warning: This might take a while for both (~ 15 mins each), however if you have time, please run it as it will make the next commands error-free.
+
+It is easy to run the following scripts via poetry to ensure code formatting and linting is in order:
+
+```
+poetry run bash scripts/format.sh
+poetry run bash scripts/lint.sh
+poetry run bash scripts/check-spelling.sh
+```
+
+Tests can be run as follows:
+
+```
+poetry run bash scripts/test-coverage-xml.sh
+```
+
+Please note that it is good practice to run the above commands before submitting any Pull Request: The CI GitHub Action will run it anyway, so might as well catch the errors locally.
+
 ### Reporting a Vulnerability
 
 If you think you found a vulnerability, and even if you are not sure about it, please report it right away by sending an email to: support@zenml.com. Please try to be as explicit as possible, describing all the steps and example code to reproduce the security issue.
