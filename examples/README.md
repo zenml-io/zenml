@@ -2,6 +2,8 @@
 
 Here you can find a list of practical examples on how you can use ZenML with brief descriptions for each example:
 
+Please note that at any moment this examples folder might be subject to change on `main`. If you are using a certain version of `zenml`, you can select the correct version on the GitHub UI at the top left side with the appropriate tag, or visit the link directly: `https://github.com/zenml-io/zenml/tree/<VERSION>/examples`
+
 - **airflow_local**: Running pipelines with airflow locally.
 - **caching**: Using caching to skip data-intensive tasks and save costs.
 - **class_based_api**: All the code for the class-based API guide found in the [docs](https://docs.zenml.io/guides/class-based-api).
@@ -34,6 +36,12 @@ And pull individual ones:
 ```shell
 zenml example pull EXAMPLE_NAME
 # at this point a `zenml_examples` dir would be created with the examples
+```
+
+You can now even run the example directly with a one-liner:
+
+```shell
+zenml example run EXAMPLE_NAME  # not implemented for all examples
 ```
 
 Have any questions? Want more tutorials? Spot out-dated, frustrating tutorials? We got you covered!

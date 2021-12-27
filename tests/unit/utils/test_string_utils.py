@@ -24,3 +24,14 @@ def test_get_human_readable_time_formats_correctly() -> None:
     assert string_utils.get_human_readable_time(301) == "5m1s"
     assert string_utils.get_human_readable_time(0.1234) == "0.123s"
     assert string_utils.get_human_readable_time(-300) == "-5m0s"
+
+
+def test_get_human_readable_filesize_formats_correctly() -> None:
+    """Check the get_human_readable_filesize function formats the string
+    correctly."""
+    assert string_utils.get_human_readable_filesize(1023) == "1023.00 B"
+    assert string_utils.get_human_readable_filesize(1024) == "1.00 KiB"
+    assert (
+        string_utils.get_human_readable_filesize(int(1.5 * 1024 * 1024 * 1024))
+        == "1.50 GiB"
+    )

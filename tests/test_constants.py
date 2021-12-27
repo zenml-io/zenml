@@ -21,10 +21,10 @@ def test_handle_int_env_var():
     """Check handle_int_env_var in all cases"""
     env_var = "ZENML_TEST_HANDLE_INT_ENV_VAR"
 
-    # check value error (when it cant be converted to int)
+    # check value error (when it can't be converted to int)
     os.environ[env_var] = "test"
     assert 0 == handle_int_env_var(env_var, 0)
 
-    # check if it isnt there (in case it doesnt exist)
+    # check if it isn't there (in case it doesn't exist)
     del os.environ[env_var]
     assert 0 == handle_int_env_var(env_var, 0)

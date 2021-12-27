@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Any, Dict
 
 import zenml.io.utils
 from zenml.core import mapping_utils
@@ -15,13 +15,12 @@ from zenml.utils.analytics_utils import (
     REGISTERED_ORCHESTRATOR,
     REGISTERED_STACK,
     track,
+    track_event,
 )
 
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
-    from zenml.container_registry.base_container_registry import (
-        BaseContainerRegistry,
-    )
+    from zenml.container_registries import BaseContainerRegistry
     from zenml.metadata_stores import BaseMetadataStore
     from zenml.orchestrators import BaseOrchestrator
 
@@ -42,9 +41,17 @@ class LocalService(BaseComponent):
 
     _LOCAL_SERVICE_FILE_NAME = "zenservice.json"
 
-    def get_serialization_dir(self) -> str:
-        """The local service stores everything in the zenml config dir."""
-        return zenml.io.utils.get_zenml_config_dir()
+    def __init__(self, repo_path: str, **kwargs: Any) -> None:
+        """Initializes a LocalService instance.
+
+        Args:
+            repo_path: Path to the repository of this service.
+        """
+        serialization_dir = zenml.io.utils.get_zenml_config_dir(repo_path)
+        super().__init__(serialization_dir=serialization_dir, **kwargs)
+        self._repo_path = repo_path
+        for stack in self.stacks.values():
+            stack._repo_path = repo_path
 
     def get_serialization_file_name(self) -> str:
         """Return the name of the file where object is serialized."""
@@ -56,7 +63,9 @@ class LocalService(BaseComponent):
         from zenml.metadata_stores import BaseMetadataStore
 
         return mapping_utils.get_components_from_store(  # type: ignore[return-value] # noqa
-            BaseMetadataStore._METADATA_STORE_DIR_NAME, self.metadata_store_map
+            BaseMetadataStore._METADATA_STORE_DIR_NAME,
+            self.metadata_store_map,
+            self._repo_path,
         )
 
     @property
@@ -65,7 +74,9 @@ class LocalService(BaseComponent):
         from zenml.artifact_stores import BaseArtifactStore
 
         return mapping_utils.get_components_from_store(  # type: ignore[return-value] # noqa
-            BaseArtifactStore._ARTIFACT_STORE_DIR_NAME, self.artifact_store_map
+            BaseArtifactStore._ARTIFACT_STORE_DIR_NAME,
+            self.artifact_store_map,
+            self._repo_path,
         )
 
     @property
@@ -76,18 +87,18 @@ class LocalService(BaseComponent):
         return mapping_utils.get_components_from_store(  # type: ignore[return-value] # noqa
             BaseOrchestrator._ORCHESTRATOR_STORE_DIR_NAME,
             self.orchestrator_map,
+            self._repo_path,
         )
 
     @property
     def container_registries(self) -> Dict[str, "BaseContainerRegistry"]:
         """Returns all registered container registries."""
-        from zenml.container_registry.base_container_registry import (
-            BaseContainerRegistry,
-        )
+        from zenml.container_registries import BaseContainerRegistry
 
         return mapping_utils.get_components_from_store(  # type: ignore[return-value] # noqa
             BaseContainerRegistry._CONTAINER_REGISTRY_DIR_NAME,
             self.container_registry_map,
+            self._repo_path,
         )
 
     def get_active_stack_key(self) -> str:
@@ -188,10 +199,9 @@ class LocalService(BaseComponent):
                 f"Available keys: {list(self.artifact_store_map.keys())}"
             )
         return mapping_utils.get_component_from_key(  # type: ignore[return-value] # noqa
-            key, self.artifact_store_map
+            key, self.artifact_store_map, self._repo_path
         )
 
-    @track(event=REGISTERED_ARTIFACT_STORE)
     def register_artifact_store(
         self, key: str, artifact_store: "BaseArtifactStore"
     ) -> None:
@@ -217,6 +227,18 @@ class LocalService(BaseComponent):
             uuid=artifact_store.uuid, source=source
         )
         self.update()
+
+        # Telemetry
+        from zenml.core.component_factory import artifact_store_factory
+
+        track_event(
+            REGISTERED_ARTIFACT_STORE,
+            {
+                "type": artifact_store_factory.get_component_key(
+                    artifact_store.__class__
+                )
+            },
+        )
 
     def delete_artifact_store(self, key: str) -> None:
         """Delete an artifact_store.
@@ -246,10 +268,9 @@ class LocalService(BaseComponent):
                 f"Available keys: {list(self.metadata_store_map.keys())}"
             )
         return mapping_utils.get_component_from_key(  # type: ignore[return-value] # noqa
-            key, self.metadata_store_map
+            key, self.metadata_store_map, self._repo_path
         )
 
-    @track(event=REGISTERED_METADATA_STORE)
     def register_metadata_store(
         self, key: str, metadata_store: "BaseMetadataStore"
     ) -> None:
@@ -275,6 +296,18 @@ class LocalService(BaseComponent):
             uuid=metadata_store.uuid, source=source
         )
         self.update()
+
+        # Telemetry
+        from zenml.core.component_factory import metadata_store_factory
+
+        track_event(
+            REGISTERED_METADATA_STORE,
+            {
+                "type": metadata_store_factory.get_component_key(
+                    metadata_store.__class__
+                )
+            },
+        )
 
     def delete_metadata_store(self, key: str) -> None:
         """Delete a metadata store.
@@ -304,10 +337,9 @@ class LocalService(BaseComponent):
                 f"Available keys: {list(self.orchestrator_map.keys())}"
             )
         return mapping_utils.get_component_from_key(  # type: ignore[return-value] # noqa
-            key, self.orchestrator_map
+            key, self.orchestrator_map, self._repo_path
         )
 
-    @track(event=REGISTERED_ORCHESTRATOR)
     def register_orchestrator(
         self, key: str, orchestrator: "BaseOrchestrator"
     ) -> None:
@@ -333,6 +365,18 @@ class LocalService(BaseComponent):
             uuid=orchestrator.uuid, source=source
         )
         self.update()
+
+        # Telemetry
+        from zenml.core.component_factory import orchestrator_store_factory
+
+        track_event(
+            REGISTERED_ORCHESTRATOR,
+            {
+                "type": orchestrator_store_factory.get_component_key(
+                    orchestrator.__class__
+                )
+            },
+        )
 
     def delete_orchestrator(self, key: str) -> None:
         """Delete a orchestrator.
@@ -362,7 +406,7 @@ class LocalService(BaseComponent):
                 f"Available keys: {list(self.container_registry_map.keys())}"
             )
         return mapping_utils.get_component_from_key(  # type: ignore[return-value] # noqa
-            key, self.container_registry_map
+            key, self.container_registry_map, self._repo_path
         )
 
     @track(event=REGISTERED_CONTAINER_REGISTRY)

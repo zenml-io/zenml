@@ -13,15 +13,40 @@
 #  permissions and limitations under the License.
 
 import time
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
+import tfx.orchestration.pipeline as tfx_pipeline
 from tfx.orchestration.portable import data_types, launcher
 
 from zenml.exceptions import DuplicateRunNameError
 from zenml.logger import get_logger
 from zenml.utils import string_utils
 
+if TYPE_CHECKING:
+    from zenml.pipelines.base_pipeline import BasePipeline
+
 logger = get_logger(__name__)
+
+
+def create_tfx_pipeline(
+    zenml_pipeline: "BasePipeline",
+) -> tfx_pipeline.Pipeline:
+    """Creates a tfx pipeline from a ZenML pipeline."""
+    # Connect the inputs/outputs of all steps in the pipeline
+    zenml_pipeline.connect(**zenml_pipeline.steps)
+
+    tfx_components = [step.component for step in zenml_pipeline.steps.values()]
+
+    artifact_store = zenml_pipeline.stack.artifact_store
+    metadata_store = zenml_pipeline.stack.metadata_store
+
+    return tfx_pipeline.Pipeline(
+        pipeline_name=zenml_pipeline.name,
+        components=tfx_components,  # type: ignore[arg-type]
+        pipeline_root=artifact_store.path,
+        metadata_connection_config=metadata_store.get_tfx_metadata_config(),
+        enable_cache=zenml_pipeline.enable_cache,
+    )
 
 
 def execute_step(

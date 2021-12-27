@@ -27,6 +27,7 @@ from zenml.steps import BaseStep
 from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
     OUTPUT_SPEC,
+    PARAM_CREATED_BY_FUNCTIONAL_API,
     PARAM_ENABLE_CACHE,
     STEP_INNER_FUNC_NAME,
 )
@@ -45,7 +46,10 @@ def step(_func: F) -> Type[BaseStep]:
 
 @overload
 def step(
-    *, name: Optional[str] = None, enable_cache: bool = True
+    *,
+    name: Optional[str] = None,
+    enable_cache: bool = True,
+    output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
 ) -> Callable[[F], Type[BaseStep]]:
     """Type annotations for step decorator in case of arguments."""
     ...
@@ -55,7 +59,7 @@ def step(
     _func: Optional[F] = None,
     *,
     name: Optional[str] = None,
-    enable_cache: bool = True,
+    enable_cache: Optional[bool] = None,
     output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
 ) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
     """Outer decorator function for the creation of a ZenML step
@@ -67,7 +71,10 @@ def step(
         _func: The decorated function.
         name: The name of the step. If left empty, the name of the decorated
             function will be used as a fallback.
-        enable_cache: Whether to use caching or not.
+        enable_cache: Specify whether caching is enabled for this step. If no
+            value is passed, caching is enabled by default unless the step
+            requires a `StepContext` (see
+            :class:`zenml.steps.step_context.StepContext` for more information).
         output_types: A dictionary which sets different outputs to non-default
             artifact types
 
@@ -94,7 +101,10 @@ def step(
             (BaseStep,),
             {
                 STEP_INNER_FUNC_NAME: staticmethod(func),
-                INSTANCE_CONFIGURATION: {PARAM_ENABLE_CACHE: enable_cache},
+                INSTANCE_CONFIGURATION: {
+                    PARAM_ENABLE_CACHE: enable_cache,
+                    PARAM_CREATED_BY_FUNCTIONAL_API: True,
+                },
                 OUTPUT_SPEC: output_spec,
                 "__module__": func.__module__,
             },

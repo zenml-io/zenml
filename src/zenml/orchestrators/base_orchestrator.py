@@ -14,29 +14,32 @@ class BaseOrchestrator(BaseComponent):
 
     _ORCHESTRATOR_STORE_DIR_NAME: str = "orchestrators"
 
+    def __init__(self, repo_path: str, **kwargs: Any) -> None:
+        """Initializes a BaseOrchestrator instance.
+
+        Args:
+            repo_path: Path to the repository of this orchestrator.
+        """
+        serialization_dir = os.path.join(
+            get_zenml_config_dir(repo_path),
+            self._ORCHESTRATOR_STORE_DIR_NAME,
+        )
+        super().__init__(serialization_dir=serialization_dir, **kwargs)
+
     @abstractmethod
     def run(
-        self,
-        zenml_pipeline: "BasePipeline",
-        run_name: Optional[str] = None,
-        **kwargs: Any
+        self, zenml_pipeline: "BasePipeline", run_name: str, **kwargs: Any
     ) -> Any:
         """Abstract method to run a pipeline. Overwrite this in subclasses
         with a concrete implementation on how to run the given pipeline.
 
         Args:
             zenml_pipeline: The pipeline to run.
-            run_name: Optional name for the run.
+            run_name: Name of the pipeline run.
             **kwargs: Potential additional parameters used in subclass
                 implementations.
         """
         raise NotImplementedError
-
-    def get_serialization_dir(self) -> str:
-        """Gets the local path where artifacts are stored."""
-        return os.path.join(
-            get_zenml_config_dir(), self._ORCHESTRATOR_STORE_DIR_NAME
-        )
 
     @property
     @abstractmethod

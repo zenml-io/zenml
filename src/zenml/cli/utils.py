@@ -30,6 +30,7 @@ import click
 from dateutil import tz
 from tabulate import tabulate
 
+from zenml.cli import utils as cli_utils
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -137,6 +138,16 @@ def format_component_list(
         data.update(component_dict)
         list_of_dicts.append(data)
     return list_of_dicts
+
+
+def print_component_properties(properties: Dict[str, str]) -> None:
+    """Prints the properties of a component.
+
+    Args:
+        properties: A dictionary of properties.
+    """
+    for key, value in properties.items():
+        cli_utils.declare(f"{key.upper()}: {value}")
 
 
 def format_date(

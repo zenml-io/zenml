@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The Facets integration provides a simple way to visualise post-execution objects
+The Facets integration provides a simple way to visualize post-execution objects
 like `PipelineView`, `PipelineRunView` and `StepView`. These objects can be
 extended using the `BaseVisualization` class. This integration requires
 `facets-overview` be installed in your Python environment.

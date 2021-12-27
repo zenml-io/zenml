@@ -17,13 +17,11 @@ import sys
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 
-import click
 import kfp
-import tfx.orchestration.pipeline as tfx_pipeline
 import urllib3
 from kubernetes import config
 
-from zenml.constants import APP_NAME
+import zenml.io.utils
 from zenml.core.component_factory import orchestrator_store_factory
 from zenml.core.repo import Repository
 from zenml.enums import OrchestratorTypes
@@ -36,6 +34,7 @@ from zenml.integrations.utils import get_requirements_for_module
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators.utils import create_tfx_pipeline
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
@@ -48,6 +47,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Kubeflow."""
 
     custom_docker_base_image_name: Optional[str] = None
+    kubeflow_pipelines_ui_port: int = 8080
     kubernetes_context: Optional[str] = None
 
     def get_docker_image_name(self, pipeline_name: str) -> str:
@@ -67,7 +67,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Returns path to the root directory for all files concerning
         this orchestrator."""
         return os.path.join(
-            click.get_app_dir(APP_NAME), "kubeflow", str(self.uuid)
+            zenml.io.utils.get_global_config_directory(),
+            "kubeflow",
+            str(self.uuid),
         )
 
     @property
@@ -85,7 +87,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             push_docker_image,
         )
 
-        image_name = self.get_docker_image_name(pipeline.pipeline_name)
+        image_name = self.get_docker_image_name(pipeline.name)
 
         repository_root = Repository().path
         requirements = (
@@ -98,6 +100,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         build_docker_image(
             build_context_path=repository_root,
             image_name=image_name,
+            dockerignore_path=pipeline.dockerignore_file,
             requirements=requirements,
             base_image=self.custom_docker_base_image_name,
         )
@@ -108,30 +111,19 @@ class KubeflowOrchestrator(BaseOrchestrator):
     def run(
         self,
         zenml_pipeline: "BasePipeline",
-        run_name: Optional[str] = None,
+        run_name: str,
         **kwargs: Any,
     ) -> None:
-        """Prepares the pipeline to be run on Kubeflow"""
-        # Establish the connections between the components
-        zenml_pipeline.connect(**zenml_pipeline.steps)
+        """Runs the pipeline on Kubeflow.
 
-        # Create the final step list and the corresponding pipeline
-        steps = [s.component for s in zenml_pipeline.steps.values()]
-
-        artifact_store = zenml_pipeline.stack.artifact_store
-        metadata_store = zenml_pipeline.stack.metadata_store
-
-        created_pipeline = tfx_pipeline.Pipeline(
-            pipeline_name=zenml_pipeline.name,
-            components=steps,  # type: ignore[arg-type]
-            pipeline_root=artifact_store.path,
-            metadata_connection_config=metadata_store.get_tfx_metadata_config(),
-            enable_cache=zenml_pipeline.enable_cache,
-        )
-
+        Args:
+            zenml_pipeline: The pipeline to run.
+            run_name: Name of the pipeline run.
+            **kwargs: Unused kwargs to conform with base signature
+        """
         from zenml.integrations.kubeflow.docker_utils import get_image_digest
 
-        image_name = self.get_docker_image_name(zenml_pipeline.pipeline_name)
+        image_name = self.get_docker_image_name(zenml_pipeline.name)
         image_name = get_image_digest(image_name) or image_name
 
         fileio.make_dirs(self.pipeline_directory)
@@ -142,7 +134,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
         runner = KubeflowDagRunner(
             config=runner_config, output_path=pipeline_file_path
         )
-        runner.run(created_pipeline)
+        tfx_pipeline = create_tfx_pipeline(zenml_pipeline)
+        runner.run(tfx_pipeline)
 
         run_name = run_name or datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")
         self._upload_and_run_pipeline(
@@ -295,12 +288,14 @@ class KubeflowOrchestrator(BaseOrchestrator):
             kubernetes_context=kubernetes_context
         )
         local_deployment_utils.start_kfp_ui_daemon(
-            pid_file_path=self._pid_file_path, port=8080
+            pid_file_path=self._pid_file_path,
+            port=self.kubeflow_pipelines_ui_port,
         )
 
         logger.info(
-            "Finished local Kubeflow Pipelines deployment. The UI should now "
-            "be accessible at http://localhost:8080/."
+            f"Finished local Kubeflow Pipelines deployment. The UI should now "
+            f"be accessible at "
+            f"http://localhost:{self.kubeflow_pipelines_ui_port}/."
         )
 
     def down(self) -> None:
@@ -311,12 +306,14 @@ class KubeflowOrchestrator(BaseOrchestrator):
             )
 
         if fileio.file_exists(self._pid_file_path):
-            from zenml.utils import daemon
-
-            # TODO [ENG-234]: Update with smarter solution for windows daemon
             if sys.platform == "win32":
+                # Daemon functionality is not supported on Windows, so the PID
+                # file won't exist. This if clause exists just for mypy to not
+                # complain about missing functions
                 pass
             else:
+                from zenml.utils import daemon
+
                 daemon.stop_daemon(self._pid_file_path, kill_children=True)
                 fileio.remove(self._pid_file_path)
 

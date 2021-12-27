@@ -11,17 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from pydantic import BaseSettings
+from pydantic import BaseSettings, PrivateAttr
 
 from zenml.enums import StackTypes
 
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
-    from zenml.container_registry.base_container_registry import (
-        BaseContainerRegistry,
-    )
+    from zenml.container_registries import BaseContainerRegistry
     from zenml.metadata_stores import BaseMetadataStore
     from zenml.orchestrators import BaseOrchestrator
 
@@ -54,27 +52,43 @@ class BaseStack(BaseSettings):
     artifact_store_name: str
     orchestrator_name: str
     container_registry_name: Optional[str] = None
+    _repo_path: Optional[str] = PrivateAttr(default=None)
+
+    def dict(self, **kwargs: Any) -> Dict[str, Any]:
+        """Removes private attributes from pydantic dict so they don't get
+        stored in our config files."""
+        return {
+            key: value
+            for key, value in super().dict(**kwargs).items()
+            if not key.startswith("_")
+        }
 
     @property
     def orchestrator(self) -> "BaseOrchestrator":
         """Returns the orchestrator of this stack."""
         from zenml.core.repo import Repository
 
-        return Repository().service.get_orchestrator(self.orchestrator_name)
+        return Repository(self._repo_path).service.get_orchestrator(
+            self.orchestrator_name
+        )
 
     @property
     def artifact_store(self) -> "BaseArtifactStore":
         """Returns the artifact store of this stack."""
         from zenml.core.repo import Repository
 
-        return Repository().service.get_artifact_store(self.artifact_store_name)
+        return Repository(self._repo_path).service.get_artifact_store(
+            self.artifact_store_name
+        )
 
     @property
     def metadata_store(self) -> "BaseMetadataStore":
         """Returns the metadata store of this stack."""
         from zenml.core.repo import Repository
 
-        return Repository().service.get_metadata_store(self.metadata_store_name)
+        return Repository(self._repo_path).service.get_metadata_store(
+            self.metadata_store_name
+        )
 
     @property
     def container_registry(self) -> Optional["BaseContainerRegistry"]:
@@ -82,7 +96,7 @@ class BaseStack(BaseSettings):
         if self.container_registry_name:
             from zenml.core.repo import Repository
 
-            return Repository().service.get_container_registry(
+            return Repository(self._repo_path).service.get_container_registry(
                 self.container_registry_name
             )
         else:

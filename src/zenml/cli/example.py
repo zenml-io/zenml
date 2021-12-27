@@ -23,6 +23,7 @@ from git.exc import GitCommandError, NoSuchPathError
 from git.repo.base import Repo
 from packaging.version import Version, parse
 
+import zenml.io.utils
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
 from zenml.cli.utils import (
@@ -33,9 +34,10 @@ from zenml.cli.utils import (
     title,
     warning,
 )
-from zenml.constants import APP_NAME, GIT_REPO_URL
+from zenml.constants import GIT_REPO_URL
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.utils.analytics_utils import RUN_EXAMPLE, track_event
 
 logger = get_logger(__name__)
 
@@ -117,7 +119,8 @@ class LocalExample:
         if fileio.file_exists(bash_file):
             os.chdir(self.path)
             try:
-                # TODO [HIGH]: Catch errors that might be thrown in subprocess
+                # TODO [ENG-271]: Catch errors that might be thrown in subprocess
+                declare(self.path)
                 if force:
                     subprocess.check_call(
                         [
@@ -155,6 +158,9 @@ class LocalExample:
                     "Bash File to run Examples not found at" f"{bash_file}"
                 )
 
+        # Telemetry
+        track_event(RUN_EXAMPLE, {"name": self.name})
+
 
 class Example:
     """Class for all example objects."""
@@ -189,7 +195,8 @@ class Example:
             else:
                 raise FileNotFoundError(
                     f"Example {self.name} is not one of the available options."
-                    f"\nTo list all available examples, type: `zenml example "
+                    f"\n"
+                    f"To list all available examples, type: `zenml example "
                     f"list`"
                 )
 
@@ -209,6 +216,19 @@ class ExamplesRepo:
                 f"but ExamplesRepo was created. "
                 "Ensure a pull is performed before doing any other operations."
             )
+
+    @property
+    def active_version(self) -> Optional[str]:
+        """In case a tagged version is checked out, this property returns
+        that version, else None is returned"""
+        return next(
+            (
+                tag
+                for tag in self.repo.tags
+                if tag.commit == self.repo.head.commit
+            ),
+            None,
+        )
 
     @property
     def latest_release(self) -> str:
@@ -250,7 +270,7 @@ class ExamplesRepo:
             )
         except KeyboardInterrupt:
             self.delete()
-            logger.error("Cancelled download of repository.. Rolled back.")
+            logger.error("Canceled download of repository.. Rolled back.")
 
     def delete(self) -> None:
         """Delete `cloning_path` if it exists."""
@@ -281,7 +301,7 @@ class GitExamplesHandler(object):
 
     def __init__(self) -> None:
         """Create a new GitExamplesHandler instance."""
-        self.repo_dir = click.get_app_dir(APP_NAME)
+        self.repo_dir = zenml.io.utils.get_global_config_directory()
         self.examples_dir = Path(
             os.path.join(self.repo_dir, EXAMPLES_GITHUB_REPO)
         )
@@ -302,6 +322,12 @@ class GitExamplesHandler(object):
                 and not name.endswith(".sh")
             )
         ]
+
+    @property
+    def is_matching_versions(self) -> bool:
+        """Returns a boolean whether the checked out examples are on the
+        same code version as zenml"""
+        return zenml_version_installed == str(self.examples_repo.active_version)
 
     def is_example(self, example_name: Optional[str] = None) -> bool:
         """Checks if the supplied example_name corresponds to an example"""
@@ -336,7 +362,7 @@ class GitExamplesHandler(object):
     ) -> None:
         """Pulls the examples from the main git examples repository."""
         if version == "":
-            version = self.examples_repo.latest_release
+            version = zenml_version_installed
 
         if not self.examples_repo.is_cloned:
             self.examples_repo.clone()
@@ -385,6 +411,29 @@ pass_git_examples_handler = click.make_pass_decorator(
 )
 
 
+def check_for_version_mismatch(
+    git_examples_handler: GitExamplesHandler,
+) -> None:
+    if git_examples_handler.is_matching_versions:
+        return
+    else:
+        if git_examples_handler.examples_repo.active_version:
+            warning(
+                "The examples you have installed are installed with Version "
+                f"{git_examples_handler.examples_repo.active_version} "
+                f"of ZenML. However your code is at {zenml_version_installed} "
+                "Consider using `zenml example pull` to download  "
+                "examples matching your zenml installation."
+            )
+        else:
+            warning(
+                "The examples you have installed are downloaded from a "
+                "development branch of ZenML. Full functionality is not "
+                "guaranteed. Use `zenml example pull` to "
+                "get examples using your zenml version."
+            )
+
+
 @cli.group(help="Access all ZenML examples.")
 def example() -> None:
     """Examples group"""
@@ -394,6 +443,7 @@ def example() -> None:
 @pass_git_examples_handler
 def list(git_examples_handler: GitExamplesHandler) -> None:
     """List all available examples."""
+    check_for_version_mismatch(git_examples_handler)
     declare("Listing examples: \n")
 
     # TODO[HIGH] - don't list .sh file
@@ -401,7 +451,7 @@ def list(git_examples_handler: GitExamplesHandler) -> None:
     for example in git_examples_handler.get_examples():
         declare(f"{example.name}")
 
-    declare("\nTo pull the examples, type: ")
+    declare("\n" + "To pull the examples, type: ")
     declare("zenml example pull EXAMPLE_NAME")
 
 
@@ -446,6 +496,7 @@ def clean(git_examples_handler: GitExamplesHandler, path: str) -> None:
 @click.argument("example_name")
 def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
     """Find out more about an example."""
+    check_for_version_mismatch(git_examples_handler)
     # TODO [ENG-148]: fix markdown formatting so that it looks nicer (not a
     #  pure .md dump)
     try:
@@ -522,7 +573,7 @@ def pull(
             destination_dir = os.path.join(os.getcwd(), path, example.name)
 
             if LocalExample(Path(example.name), destination_dir).is_present():
-                if confirmation(
+                if force or confirmation(
                     f"Example {example.name} is already pulled. "
                     "Do you wish to overwrite the directory at "
                     f"{destination_dir}?"
@@ -556,7 +607,7 @@ def pull(
     "--force",
     "-f",
     is_flag=True,
-    help="Force te run of the example. This deletes the .zen folder from the"
+    help="Force the run of the example. This deletes the .zen folder from the"
     "example folder and force installs all necessary integration "
     "requirements.",
 )
@@ -570,7 +621,9 @@ def run(
     `zenml example pull EXAMPLE_NAME` has to be called with the same relative
     path before the run command.
     """
-    # TODO [MEDIUM]: - create a post_run function inside individual setup.sh
+    check_for_version_mismatch(git_examples_handler)
+
+    # TODO [ENG-272]: - create a post_run function inside individual setup.sh
     #  to inform user how to clean up
     examples_dir = Path(os.getcwd()) / path
     try:

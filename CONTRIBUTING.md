@@ -24,6 +24,8 @@ Contributions are made to this repo via Issues and Pull Requests (PRs). A few ge
 - Search for existing Issues and PRs before creating your own.
 - We work hard to makes sure issues are handled in a timely manner but, depending on the impact, it could take a while to investigate the root cause. A friendly ping in the comment thread to the submitter or a contributor can help draw attention if your issue is blocking.
 
+The best way to start is to check the [`good-first-issue` label](https://github.com/zenml-io/zenml/labels/good%20first%20issue) on the issue board. These issues are created by the core team as important smaller tasks that you can work on in order to get deeper into ZenML internals.
+
 ### Issues
 
 Issues should be used to report problems with the library, request a new feature, or to discuss potential changes before a PR is created. When you create a new Issue, a template will be loaded that will guide you through collecting and providing the information we need to investigate.
@@ -52,9 +54,42 @@ In general, we follow the ["fork-and-pull" Git workflow](https://github.com/susa
 6. Push changes to your fork
 7. Open a PR in our repository and follow the PR template so that we can efficiently review the changes.
 
+### Linting, formatting, and tests
+
+ZenML is mainly developed using [poetry](https://python-poetry.org/) as the dependency management system. In order to install all core dev-dependencies, do:
+
+```
+poetry install
+```
+
+Optionally, you might want to run the following commands to ensure you have all integrations for `mypy` checks:
+
+```
+zenml integration install -f
+mypy --install-types
+```
+
+Warning: This might take a while for both (~ 15 mins each), however if you have time, please run it as it will make the next commands error-free.
+
+It is easy to run the following scripts via poetry to ensure code formatting and linting is in order:
+
+```
+poetry run bash scripts/format.sh
+poetry run bash scripts/lint.sh
+poetry run bash scripts/check-spelling.sh
+```
+
+Tests can be run as follows:
+
+```
+poetry run bash scripts/test-coverage-xml.sh
+```
+
+Please note that it is good practice to run the above commands before submitting any Pull Request: The CI GitHub Action will run it anyway, so might as well catch the errors locally.
+
 ### Reporting a Vulnerability
 
-If you think you found a vulnerability, and even if you are not sure about it, please report it right away by sending an email to: info@zenml.com. Please try to be as explicit as possible, describing all the steps and example code to reproduce the security issue.
+If you think you found a vulnerability, and even if you are not sure about it, please report it right away by sending an email to: support@zenml.com. Please try to be as explicit as possible, describing all the steps and example code to reproduce the security issue.
 
 We will review it thoroughly and get back to you.
 

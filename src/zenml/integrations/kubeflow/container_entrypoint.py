@@ -280,7 +280,7 @@ def _dump_ui_metadata(
             "type": "markdown",
         }
     ]
-    # Add Tensorboard view for ModelRun outpus.
+    # Add Tensorboard view for ModelRun outputs.
     for name, spec in node.outputs.outputs.items():  # type: ignore[attr-defined] # noqa
         if (
             spec.artifact_spec.type.name
@@ -410,7 +410,7 @@ def _create_executor_class(
     }
 
     generate_component_class(
-        step_name=step_instance.step_name,
+        step_name=step_instance.name,
         step_module=executor_class_target_module_name,
         input_spec=input_spec,
         output_spec=output_spec,
@@ -434,6 +434,7 @@ def _parse_command_line_arguments() -> argparse.Namespace:
     # There might be multiple runtime parameters.
     # `args.runtime_parameter` should become List[str] by using "append".
     parser.add_argument("--runtime_parameter", type=str, action="append")
+    parser.add_argument("--main_module", type=str, required=True)
     parser.add_argument("--step_module", type=str, required=True)
     parser.add_argument("--step_function_name", type=str, required=True)
     parser.add_argument("--run_name", type=str, required=True)
@@ -486,6 +487,9 @@ def main() -> None:
         connection_config = deployment_config.metadata_connection_config  # type: ignore[attr-defined] # noqa
 
     metadata_connection = metadata.Metadata(connection_config)
+
+    # import the user main module to register all the materializers
+    importlib.import_module(args.main_module)
 
     if hasattr(executor_spec, "class_path"):
         executor_module_parts = getattr(executor_spec, "class_path").split(".")

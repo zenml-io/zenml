@@ -3,9 +3,9 @@
 set -Eeo pipefail
 
 setup_stack () {
-  zenml container-registry register local_registry localhost:5000 || \
+  zenml container-registry register local_registry --uri=localhost:5000 || \
     msg "${WARNING}Reusing preexisting container registry ${NOFORMAT}local_registry, this might fail if port 5000 is blocked by another process."
-  zenml orchestrator register kubeflow_orchestrator kubeflow || \
+  zenml orchestrator register kubeflow_orchestrator --type=kubeflow || \
     msg "${WARNING}Reusing preexisting orchestrator ${NOFORMAT}kubeflow_orchestrator"
   zenml stack register local_kubeflow_stack \
       -m local_metadata_store \

@@ -15,6 +15,7 @@ from typing import Callable, Optional, Type, TypeVar, Union, overload
 
 from zenml.pipelines.base_pipeline import (
     INSTANCE_CONFIGURATION,
+    PARAM_DOCKERIGNORE_FILE,
     PARAM_ENABLE_CACHE,
     PARAM_REQUIREMENTS_FILE,
     PIPELINE_INNER_FUNC_NAME,
@@ -35,7 +36,7 @@ def pipeline(
     *,
     name: Optional[str] = None,
     enable_cache: bool = True,
-    requirements_file: Optional[str] = None
+    requirements_file: Optional[str] = None,
 ) -> Callable[[F], Type[BasePipeline]]:
     """Type annotations for step decorator in case of arguments."""
     ...
@@ -46,7 +47,8 @@ def pipeline(
     *,
     name: Optional[str] = None,
     enable_cache: bool = True,
-    requirements_file: Optional[str] = None
+    requirements_file: Optional[str] = None,
+    dockerignore_file: Optional[str] = None,
 ) -> Union[Type[BasePipeline], Callable[[F], Type[BasePipeline]]]:
     """Outer decorator function for the creation of a ZenML pipeline
 
@@ -60,6 +62,10 @@ def pipeline(
         enable_cache: Whether to use caching or not.
         requirements_file: Optional path to a pip requirements file that
             contains requirements to run the pipeline.
+        dockerignore_file: Optional path to a dockerignore file to use when
+            building docker images for running this pipeline.
+            **Note**: If you pass a file, make sure it does not include the
+            `.zen` directory as it is needed to run ZenML inside the container.
 
     Returns:
         the inner decorator which creates the pipeline class based on the
@@ -85,6 +91,7 @@ def pipeline(
                 INSTANCE_CONFIGURATION: {
                     PARAM_ENABLE_CACHE: enable_cache,
                     PARAM_REQUIREMENTS_FILE: requirements_file,
+                    PARAM_DOCKERIGNORE_FILE: dockerignore_file,
                 },
             },
         )

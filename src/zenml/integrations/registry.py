@@ -91,7 +91,7 @@ class IntegrationRegistry(object):
                 for requirement in self._integrations[name].REQUIREMENTS
             ]
 
-    def is_installed(self, integration_name: str) -> bool:
+    def is_installed(self, integration_name: Optional[str] = None) -> bool:
         """Checks if all requirements for an integration are installed"""
         if integration_name in self.list_integration_names:
             return self._integrations[integration_name].check_installation()
@@ -103,8 +103,8 @@ class IntegrationRegistry(object):
             return any(all_installed)
         else:
             raise KeyError(
-                f"Version {integration_name} does not exist. "
-                f"Currently the following integrations are available. "
+                f"Integration '{integration_name}' not found. "
+                f"Currently the following integrations are available: "
                 f"{self.list_integration_names}"
             )
 

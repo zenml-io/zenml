@@ -19,7 +19,7 @@ from sklearn.linear_model import LogisticRegression
 
 from zenml.core.repo import Repository
 from zenml.pipelines import pipeline
-from zenml.steps import step, BaseStepConfig, Output
+from zenml.steps import BaseStepConfig, Output, step
 
 
 class TrainerConfig(BaseStepConfig):
@@ -58,7 +58,7 @@ def tf_trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> tf.keras.Model:
-    """Train a neural net from scratch to recognise MNIST digits return our
+    """Train a neural net from scratch to recognize MNIST digits return our
     model or the learner"""
     model = tf.keras.Sequential(
         [
@@ -135,7 +135,7 @@ def mnist_pipeline(
 
 
 # Run the pipeline
-# Initialise a pipeline run
+# Initialize a pipeline run
 tf_p = mnist_pipeline(
     importer=importer_mnist(),
     normalizer=normalize_mnist(),
@@ -147,7 +147,7 @@ tf_p = mnist_pipeline(
 tf_p.run()
 
 
-# Initialise a new pipeline run
+# Initialize a new pipeline run
 scikit_p = mnist_pipeline(
     importer=importer_mnist(),
     normalizer=normalize_mnist(),

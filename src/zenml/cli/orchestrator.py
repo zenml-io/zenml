@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import time
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple, cast
 
 import click
 
@@ -68,13 +68,21 @@ def get_active_orchestrator() -> None:
 @orchestrator.command(
     "register", context_settings=dict(ignore_unknown_options=True)
 )
-@click.argument("orchestrator_name", type=str)
-@click.argument("orchestrator_type", type=str)
+@click.argument(
+    "name",
+    required=True,
+    type=click.STRING,
+)
+@click.option(
+    "--type",
+    "-t",
+    help="The type of the orchestrator to register.",
+    required=True,
+    type=click.STRING,
+)
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 @cli_utils.activate_integrations
-def register_orchestrator(
-    orchestrator_name: str, orchestrator_type: str, args: List[str]
-) -> None:
+def register_orchestrator(name: str, type: str, args: List[str]) -> None:
     """Register an orchestrator."""
 
     try:
@@ -87,13 +95,11 @@ def register_orchestrator(
     # TODO [ENG-186]: Remove when we rework the registry logic
     from zenml.core.component_factory import orchestrator_store_factory
 
-    comp = orchestrator_store_factory.get_single_component(orchestrator_type)
-    orchestrator_ = comp(**parsed_args)
+    comp = orchestrator_store_factory.get_single_component(type)
+    orchestrator_ = comp(repo_path=repo.path, **parsed_args)
     service = repo.get_service()
-    service.register_orchestrator(orchestrator_name, orchestrator_)
-    cli_utils.declare(
-        f"Orchestrator `{orchestrator_name}` successfully registered!"
-    )
+    service.register_orchestrator(name, cast("BaseOrchestrator", orchestrator_))
+    cli_utils.declare(f"Orchestrator `{name}` successfully registered!")
 
 
 @orchestrator.command("list")
@@ -101,6 +107,10 @@ def list_orchestrators() -> None:
     """List all available orchestrators from service."""
     repo = Repository()
     service = repo.get_service()
+    if len(service.orchestrators) == 0:
+        cli_utils.warning("No orchestrators registered!")
+        return
+
     active_orchestrator = repo.get_active_stack().orchestrator_name
     cli_utils.title("Orchestrators:")
     cli_utils.print_table(
@@ -108,6 +118,41 @@ def list_orchestrators() -> None:
             service.orchestrators, active_orchestrator
         )
     )
+
+
+@orchestrator.command(
+    "describe",
+    help="Show details about the current active orchestrator.",
+)
+@click.argument(
+    "orchestrator_name",
+    type=click.STRING,
+    required=False,
+)
+def describe_orchestrator(orchestrator_name: Optional[str]) -> None:
+    """Show details about the current active orchestrator."""
+    repo = Repository()
+    orchestrator_name = (
+        orchestrator_name or repo.get_active_stack().orchestrator_name
+    )
+
+    orchestrators = repo.get_service().orchestrators
+    if len(orchestrators) == 0:
+        cli_utils.warning("No orchestrators registered!")
+        return
+
+    try:
+        orchestrator_details = orchestrators[orchestrator_name]
+    except KeyError:
+        cli_utils.error(f"Orchestrator `{orchestrator_name}` does not exist.")
+        return
+    cli_utils.title("Orchestrator:")
+    if repo.get_active_stack().orchestrator_name == orchestrator_name:
+        cli_utils.declare("**ACTIVE**\n")
+    else:
+        cli_utils.declare("")
+    cli_utils.declare(f"NAME: {orchestrator_name}")
+    cli_utils.print_component_properties(orchestrator_details.dict())
 
 
 @orchestrator.command("delete")

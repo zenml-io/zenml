@@ -22,7 +22,7 @@ from steps.torch_steps import torch_evaluator, torch_trainer
 
 from zenml.core.repo import Repository
 from zenml.pipelines import pipeline
-from zenml.steps import step, Output
+from zenml.steps import Output, step
 
 
 @step
@@ -62,7 +62,7 @@ def mnist_pipeline(
     evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 
 
-# Initialise a pipeline run
+# Initialize a pipeline run
 tf_p = mnist_pipeline(
     importer=importer_mnist(),
     normalizer=normalizer(),
@@ -73,7 +73,7 @@ tf_p = mnist_pipeline(
 # Run the pipeline
 tf_p.run()
 
-# Initialise a new pipeline run
+# Initialize a new pipeline run
 torch_p = mnist_pipeline(
     importer=importer_mnist(),
     normalizer=normalizer(),
@@ -84,7 +84,7 @@ torch_p = mnist_pipeline(
 # Run the new pipeline
 torch_p.run()
 
-# Initialise a new pipeline run
+# Initialize a new pipeline run
 scikit_p = mnist_pipeline(
     importer=importer_mnist(),
     normalizer=normalizer(),
@@ -95,11 +95,11 @@ scikit_p = mnist_pipeline(
 # Run the new pipeline
 scikit_p.run()
 
-# Post execution flow
+# Post-execution flow
 repo = Repository()
 pipeline = repo.get_pipelines()[0]
 print("***********************OUTPUT************************")
-for r in pipeline.runs[0:3]:
+for r in pipeline.runs[-3:]:
     eval_step = r.get_step("evaluator")
     print(
         f"For {eval_step.name}, the accuracy is: "

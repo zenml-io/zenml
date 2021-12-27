@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from abc import abstractmethod
 from typing import Any, Collection, Dict, List, Union
 
 import dash
@@ -109,7 +108,6 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
         ExecutionStatus.COMPLETED: "blue",
     }
 
-    @abstractmethod
     def visualize(
         self, object: PipelineRunView, *args: Any, **kwargs: Any
     ) -> dash.Dash:

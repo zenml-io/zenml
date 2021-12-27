@@ -24,10 +24,10 @@ from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (
 def test_must_be_gcs_path():
     """Checks must_be_gcs_path validator"""
     with pytest.raises(ValidationError):
-        GCPArtifactStore(path="/local/path")
+        GCPArtifactStore(path="/local/path", repo_path="")
 
     with pytest.raises(ValidationError):
-        GCPArtifactStore(path="s3://local/path")
+        GCPArtifactStore(path="s3://local/path", repo_path="")
 
-    gcp_as = GCPArtifactStore(path="gs://mybucket")
+    gcp_as = GCPArtifactStore(path="gs://mybucket", repo_path="")
     assert gcp_as.path == "gs://mybucket"

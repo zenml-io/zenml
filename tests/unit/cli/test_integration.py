@@ -43,9 +43,7 @@ def test_integration_get_requirements_inexistent_integration(
     """Tests that the get-requirements sub-command works as expected"""
     runner = CliRunner()
 
-    result = runner.invoke(
-        integration, ["get-requirements", not_an_integration]
-    )
+    result = runner.invoke(integration, ["requirements", not_an_integration])
     assert result.exit_code == 1
 
 
@@ -53,7 +51,7 @@ def test_integration_get_requirements_specific_integration() -> None:
     """Tests that the get-requirements sub-command works as expected"""
     runner = CliRunner()
 
-    result = runner.invoke(integration, ["get-requirements", "airflow"])
+    result = runner.invoke(integration, ["requirements", "airflow"])
     assert result.exit_code == 0
 
 
@@ -61,7 +59,7 @@ def test_integration_get_requirements_all() -> None:
     """Tests that the get-requirements sub-command works as expected"""
     runner = CliRunner()
 
-    result = runner.invoke(integration, ["get-requirements"])
+    result = runner.invoke(integration, ["requirements"])
     assert result.exit_code == 0
 
 

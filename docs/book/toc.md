@@ -1,6 +1,6 @@
 # Table of contents
 
-* [ZenML 101](introduction/index.md)
+* [ZenML 101](index.md)
 * [Installation & Setup](introduction/installation.md)
 * [Quickstart](introduction/quickstart-guide.md)
 * [Core Concepts](introduction/core-concepts.md)
@@ -8,7 +8,7 @@
 
 ## Guides
 
-* [Functional API](guides/functional-api/front-page.md)
+* [Functional API](guides/functional-api/functional-api.md)
   * [Create a step](guides/functional-api/create-a-step.md)
   * [Preprocess data](guides/functional-api/normalize-data.md)
   * [Train & evaluate](guides/functional-api/train-and-evaluate.md)
@@ -16,13 +16,13 @@
   * [Materialize artifacts](guides/functional-api/materialize-artifacts.md)
   * [Import dynamic data](guides/functional-api/import-dynamic-data.md)
   * [Deploy to production](guides/functional-api/deploy-to-production.md)
-* [Class-based API](guides/class-based-api/front-page.md)
+* [Class-based API](guides/class-based-api/class-based-api.md)
   * [Create a step](guides/class-based-api/create-a-step.md)
   * [Preprocess data](guides/class-based-api/split-and-preprocess.md)
   * [Train & evaluate](guides/class-based-api/train-and-evaluate.md)
   * [Caching](guides/class-based-api/caching.md)
   * [Materialize artifacts](guides/class-based-api/materialize-artifacts.md)
-* [Post Execution Workflow](guides/post-execution-workflow/front-page.md)
+* [Post Execution Workflow](guides/post-execution-workflow/post-execution-workflow.md)
   * [Naming a pipeline run](guides/post-execution-workflow/naming-a-pipeline-run.md)
 
 ## Features

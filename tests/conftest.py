@@ -19,6 +19,7 @@ import pytest
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.constants import ENV_ZENML_DEBUG
 from zenml.core.repo import Repository
+from zenml.exceptions import InitializationException
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
 from zenml.steps import StepContext, step
@@ -31,7 +32,7 @@ def pytest_sessionstart(session):
     os.environ[ENV_ZENML_DEBUG] = "true"
     try:
         Repository.init_repo()
-    except AssertionError:
+    except InitializationException:
         # already initialized
         logging.info("Repo already initialized for testing.")
 

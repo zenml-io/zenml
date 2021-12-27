@@ -35,8 +35,8 @@ class PandasDatasourceConfig(BaseDatasourceConfig):
 
 class PandasDatasource(BaseDatasourceStep):
     def entrypoint(
-            self,
-            config: PandasDatasourceConfig,
+        self,
+        config: PandasDatasourceConfig,
     ) -> pd.DataFrame:
         return pd.read_csv(
             filepath_or_buffer=config.path,
@@ -50,7 +50,10 @@ class PandasDatasource(BaseDatasourceStep):
 class Chapter1Pipeline(BasePipeline):
     """Class for Chapter 1 of the class-based API"""
 
-    def connect(self, datasource: BaseDatasourceStep, ) -> None:
+    def connect(
+        self,
+        datasource: BaseDatasourceStep,
+    ) -> None:
         datasource()
 
 

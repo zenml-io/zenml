@@ -16,7 +16,7 @@ from typing import Any, Iterator, NamedTuple, Tuple, Type
 
 
 class Output(object):
-    """A named tuple with a default name that cannot be overriden."""
+    """A named tuple with a default name that cannot be overridden."""
 
     def __init__(self, **kwargs: Type[Any]):
         # TODO [ENG-161]: do we even need the named tuple here or is

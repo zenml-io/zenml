@@ -67,6 +67,7 @@ SINGLE_RETURN_OUT_NAME: str = "output"
 PARAM_STEP_NAME: str = "step_name"
 PARAM_ENABLE_CACHE: str = "enable_cache"
 PARAM_PIPELINE_PARAMETER_NAME: str = "pipeline_parameter_name"
+PARAM_CREATED_BY_FUNCTIONAL_API: str = "created_by_functional_api"
 INTERNAL_EXECUTION_PARAMETER_PREFIX: str = "zenml-"
 INSTANCE_CONFIGURATION: str = "INSTANCE_CONFIGURATION"
 OUTPUT_SPEC: str = "OUTPUT_SPEC"
@@ -202,7 +203,7 @@ class _PropertyDictWrapper(json_utils.Jsonable):
 
         Args:
             data: The data to be wrapped.
-            compat_aliases: Compatability aliases to support deprecated keys.
+            compat_aliases: Compatibility aliases to support deprecated keys.
         """
         self._data = data
         self._compat_aliases = compat_aliases or {}
@@ -385,7 +386,9 @@ class _FunctionExecutor(BaseExecutor):
                     ]
 
                     raise MissingStepParameterError(
-                        getattr(self, PARAM_STEP_NAME), missing_fields, arg_type
+                        getattr(self, PARAM_STEP_NAME),
+                        missing_fields,
+                        arg_type,
                     ) from None
                 function_params[arg] = config_object
             elif issubclass(arg_type, StepContext):

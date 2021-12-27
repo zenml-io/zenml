@@ -1,3 +1,87 @@
+# 0.5.6
+
+        )                    *      (     
+     ( /(                  (  `     )\ )  
+     )\())    (            )\))(   (()/(  
+    ((_)\    ))\    (     ((_)()\   /(_)) 
+     _((_)  /((_)   )\ )  (_()((_) (_))   
+    |_  /  (_))    _(_/(  |  \/  | | |    
+     / /   / -_)  | ' \)) | |\/| | | |__  
+    /___|  \___|  |_||_|  |_|  |_| |____| 
+
+This release fixes some known bugs from previous releases and especially 0.5.5. Therefore, upgrading to 0.5.6 is a **breaking change**. You must do the following in order to proceed with this version:
+
+```
+cd zenml_enabled_repo
+rm -rf .zen/
+```
+
+And then start again with ZenML init:
+
+```
+pip install --upgrade zenml
+zenml init
+```
+
+## New Features
+* Added `zenml example run [EXAMPLE_RUN_NAME]` feature: The ability to run an example with one command. In order to run this, do `zenml example pull` first and see all examples available by running `zenml example list`.
+* Added ability to specify a `.dockerignore` file before running pipelines on Kubeflow.
+* Kubeflow Orchestrator is now leaner and faster. 
+* Added the `describe` command group to the CLI for groups `stack`, `orchestrator`, `artifact-store`, and `metadata-store`. E.g. `zenml stack describe`
+
+## Bug fixes and minor improvements
+* Adding `StepContext` to a branch now invalidates caching by default. Disable explicitly with `enable_cache=True`.
+* Docs updated to reflect minor changes in CLI commands.
+* CLI `list` commands now mentions active component. Try `zenml stack list` to check this out.
+* `zenml version` now has cooler art.
+
+## What's Changed
+* Delete blog reference from release notes by @alex-zenml in https://github.com/zenml-io/zenml/pull/228
+* Docs updates by @alex-zenml in https://github.com/zenml-io/zenml/pull/229
+* Update kubeflow guide by @schustmi in https://github.com/zenml-io/zenml/pull/230
+* Updated quickstart to reflect newest zenml version by @alexej-zenml in https://github.com/zenml-io/zenml/pull/231
+* Add KFP GCP example readme by @schustmi in https://github.com/zenml-io/zenml/pull/233
+* Baris/update docs with class api by @bcdurak in https://github.com/zenml-io/zenml/pull/232
+* fixing a small typo [ci skip] by @bcdurak in https://github.com/zenml-io/zenml/pull/236
+* Hamza/docs last min updates by @htahir1 in https://github.com/zenml-io/zenml/pull/234
+* fix broken links by @alex-zenml in https://github.com/zenml-io/zenml/pull/237
+* added one more page for standardized artifacts [ci skip] by @bcdurak in https://github.com/zenml-io/zenml/pull/238
+* Unified use of cli_utils.print_table for all table format cli printouts by @AlexejPenner in https://github.com/zenml-io/zenml/pull/240
+* Remove unused tfx kubeflow code by @schustmi in https://github.com/zenml-io/zenml/pull/239
+* Relaxed typing requirements for cli_utils.print_table by @AlexejPenner in https://github.com/zenml-io/zenml/pull/241
+* Pass input artifact types to kubeflow container entrypoint by @schustmi in https://github.com/zenml-io/zenml/pull/242
+* Catch duplicate run name error and throw custom exception by @schustmi in https://github.com/zenml-io/zenml/pull/243
+* Improved logs by @htahir1 in https://github.com/zenml-io/zenml/pull/244
+* CLI active component highlighting by @alex-zenml in https://github.com/zenml-io/zenml/pull/245
+* Baris/eng 244 clean up by @bcdurak in https://github.com/zenml-io/zenml/pull/246
+* CLI describe command by @alex-zenml in https://github.com/zenml-io/zenml/pull/248
+* Alexej/eng 35 run examples from cli by @AlexejPenner in https://github.com/zenml-io/zenml/pull/253
+* CLI argument and option flag consistency improvements by @alex-zenml in https://github.com/zenml-io/zenml/pull/250
+* Invalidate caching when a step requires a step context by @schustmi in https://github.com/zenml-io/zenml/pull/252
+* Implement better error messages for custom step output artifact types by @schustmi in https://github.com/zenml-io/zenml/pull/254
+* Small improvements by @schustmi in https://github.com/zenml-io/zenml/pull/251
+* Kubeflow dockerignore by @schustmi in https://github.com/zenml-io/zenml/pull/249
+* Rename container registry folder to be consistent with the other stack components by @schustmi in https://github.com/zenml-io/zenml/pull/257
+* Update todo script by @schustmi in https://github.com/zenml-io/zenml/pull/256
+* Update docs following CLI change by @alex-zenml in https://github.com/zenml-io/zenml/pull/255
+* Bump mypy version by @schustmi in https://github.com/zenml-io/zenml/pull/258
+* Kubeflow Windows daemon alternative by @schustmi in https://github.com/zenml-io/zenml/pull/259
+* Run pre commit in local environment by @schustmi in https://github.com/zenml-io/zenml/pull/260
+* Hamza/eng 269 move beam out by @htahir1 in https://github.com/zenml-io/zenml/pull/262
+* Update docs by @alex-zenml in https://github.com/zenml-io/zenml/pull/261
+* Hamza/update readme with contribitions by @htahir1 in https://github.com/zenml-io/zenml/pull/271
+* Hamza/eng 256 backoff analytics by @htahir1 in https://github.com/zenml-io/zenml/pull/270
+* Add spellcheck by @alex-zenml in https://github.com/zenml-io/zenml/pull/264
+* Using the pipeline run name to explicitly access when explaining the … by @AlexejPenner in https://github.com/zenml-io/zenml/pull/263
+* Import user main module in kubeflow entrypoint to make sure all components are registered by @schustmi in https://github.com/zenml-io/zenml/pull/273
+* Fix cli version command by @schustmi in https://github.com/zenml-io/zenml/pull/272
+* User is informed of version mismatch and example pull defaults to cod… by @AlexejPenner in https://github.com/zenml-io/zenml/pull/274
+* Hamza/eng 274 telemetry by @htahir1 in https://github.com/zenml-io/zenml/pull/275
+* Update docs with right commands and events by @htahir1 in https://github.com/zenml-io/zenml/pull/276
+* Fixed type annotation for some python versions by @AlexejPenner in https://github.com/zenml-io/zenml/pull/277
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.5.5...0.5.6
+
 # 0.5.5
 
 ZenML 0.5.5 is jam-packed with new features to take your ML pipelines to the next level. Our three biggest new features: Kubeflow Pipelines, CLI support for our integrations and Standard Interfaces. That’s right, Standard Interfaces are back!
@@ -66,7 +150,7 @@ Version 0.5.3 adds [statistics visualizations](https://github.com/zenml-io/zenml
 * Update docker files by @schustmi in https://github.com/zenml-io/zenml/pull/169
 * Hamza/deploy api reference by @htahir1 in https://github.com/zenml-io/zenml/pull/171
 * API Reference by @schustmi in https://github.com/zenml-io/zenml/pull/172
-* Add colour back into our github actions by @alex-zenml in https://github.com/zenml-io/zenml/pull/176
+* Add color back into our github actions by @alex-zenml in https://github.com/zenml-io/zenml/pull/176
 * Refactor tests not raising by @alex-zenml in https://github.com/zenml-io/zenml/pull/177
 * Improve step and pipeline interface by @schustmi in https://github.com/zenml-io/zenml/pull/175
 * Alex/eng 27 windows bug again by @htahir1 in https://github.com/zenml-io/zenml/pull/178
@@ -298,7 +382,7 @@ zenml init
 * Added `JSONDatasource` and `TFRecordsDatasource`.
 
 ## Bug Fixes + Refactor
-A big thanks to our new contributer @aak7912 for the help in this release with issue #71 and PR #75.
+A big thanks to our new contributor @aak7912 for the help in this release with issue #71 and PR #75.
 
 * Added an example for [regression](https://github.com/zenml-io/zenml/tree/main/examples/regression).
 * `compare_training_runs()` now takes an optional `datasource` parameter to filter by datasource.

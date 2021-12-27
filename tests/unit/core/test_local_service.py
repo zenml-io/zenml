@@ -33,6 +33,7 @@ LOCAL_ARTIFACT_STORE_NAME = "local_artifact_store"
 def test_local_service_file_name_exists(tmp_path: str) -> None:
     """Local Service contains reference to a local service file name."""
     Repo.init(tmp_path)
+    Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
     assert local_service.get_serialization_file_name is not None
@@ -41,6 +42,7 @@ def test_local_service_file_name_exists(tmp_path: str) -> None:
 def test_local_service_can_access_metadata_stores(tmp_path: str) -> None:
     """Local Service can access metadata stores."""
     Repo.init(tmp_path)
+    Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
     assert local_service.metadata_stores is not None
@@ -54,6 +56,7 @@ def test_local_service_can_access_metadata_stores(tmp_path: str) -> None:
 def test_local_service_can_access_artifact_stores(tmp_path: str) -> None:
     """Local Service can access artifact stores."""
     Repo.init(tmp_path)
+    Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
     assert local_service.artifact_stores is not None
@@ -67,6 +70,7 @@ def test_local_service_can_access_artifact_stores(tmp_path: str) -> None:
 def test_local_service_can_access_orchestrators(tmp_path: str) -> None:
     """Local Service can access orchestrators."""
     Repo.init(tmp_path)
+    Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
     assert local_service.orchestrators is not None
@@ -80,6 +84,7 @@ def test_local_service_can_access_orchestrators(tmp_path: str) -> None:
 def test_get_stack_returns_a_stack_when_provided_a_key(tmp_path: str) -> None:
     """Check get_stack returns a stack with its expected components."""
     Repo.init(tmp_path)
+    Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
     stack = local_service.get_stack("local_stack")
@@ -102,6 +107,7 @@ def test_get_stack_returns_a_stack_when_provided_a_key(tmp_path: str) -> None:
 def test_register_stack_works_as_expected(tmp_path: str) -> None:
     """Test register_stack method registers a stack as expected."""
     Repo.init(tmp_path)
+    Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
     local_stack1 = local_service.get_stack("local_stack")
@@ -120,6 +126,7 @@ def test_get_stack_raises_exception_when_key_does_not_exist(
 ) -> None:
     """Test get_stack raises exception when key does not exist."""
     Repo.init(tmp_path)
+    Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
     with pytest.raises(DoesNotExistException):
@@ -131,6 +138,7 @@ def test_register_stack_raises_exception_when_key_already_exists(
 ) -> None:
     """Test register_stack raises exception when key already exists."""
     Repo.init(tmp_path)
+    Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
     local_stack1 = local_service.get_stack("local_stack")
@@ -141,6 +149,7 @@ def test_register_stack_raises_exception_when_key_already_exists(
 def test_delete_stack_deletes_the_stack(tmp_path: str) -> None:
     """Test delete_stack deletes the stack."""
     Repo.init(tmp_path)
+    Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
     local_stack1 = local_service.get_stack("local_stack")
@@ -155,6 +164,7 @@ def test_delete_stack_deletes_the_stack(tmp_path: str) -> None:
 def test_get_artifact_store_returns_artifact_store(tmp_path: str) -> None:
     """Test get_artifact_store returns artifact store."""
     Repo.init(tmp_path)
+    Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
     artifact_store = local_service.get_artifact_store(LOCAL_ARTIFACT_STORE_NAME)
@@ -165,10 +175,13 @@ def test_get_artifact_store_returns_artifact_store(tmp_path: str) -> None:
 def test_register_artifact_store_works_as_expected(tmp_path: str) -> None:
     """Test register_artifact_store method registers an artifact store as expected."""
     Repo.init(tmp_path)
+    Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
     artifact_store_dir = os.path.join(tmp_path, "test_store")
-    local_artifact_store = LocalArtifactStore(path=artifact_store_dir)
+    local_artifact_store = LocalArtifactStore(
+        path=artifact_store_dir, repo_path=repo.path
+    )
     local_service.register_artifact_store(
         "local_artifact_store_2", local_artifact_store
     )
@@ -181,6 +194,7 @@ def test_register_artifact_store_works_as_expected(tmp_path: str) -> None:
 def test_register_artifact_store_with_existing_key_fails(tmp_path: str) -> None:
     """Test register_artifact_store with existing key fails."""
     Repo.init(tmp_path)
+    Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
     with pytest.raises(AlreadyExistsException):
@@ -193,10 +207,13 @@ def test_register_artifact_store_with_existing_key_fails(tmp_path: str) -> None:
 def test_delete_artifact_store_works(tmp_path: str) -> None:
     """Test delete_artifact_store works as expected."""
     Repo.init(tmp_path)
+    Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
     artifact_store_dir = os.path.join(tmp_path, "test_store")
-    local_artifact_store = LocalArtifactStore(path=artifact_store_dir)
+    local_artifact_store = LocalArtifactStore(
+        path=artifact_store_dir, repo_path=repo.path
+    )
     local_service.register_artifact_store(
         "local_artifact_store_2", local_artifact_store
     )
@@ -208,6 +225,7 @@ def test_delete_artifact_store_works(tmp_path: str) -> None:
 def test_get_metadata_store_returns_metadata_store(tmp_path: str) -> None:
     """Test get_metadata_store returns metadata store."""
     Repo.init(tmp_path)
+    Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
     metadata_store = local_service.get_metadata_store(LOCAL_METADATA_STORE_NAME)
@@ -218,11 +236,12 @@ def test_get_metadata_store_returns_metadata_store(tmp_path: str) -> None:
 def test_register_metadata_store_works_as_expected(tmp_path: str) -> None:
     """Test register_metadata_store method registers an metadata store as expected."""
     Repo.init(tmp_path)
+    Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
     artifact_store_dir = os.path.join(tmp_path, "test_store")
     metadata_file = os.path.join(artifact_store_dir, "metadata.db")
-    metadata_store = SQLiteMetadataStore(uri=metadata_file)
+    metadata_store = SQLiteMetadataStore(uri=metadata_file, repo_path=repo.path)
     local_service.register_metadata_store(
         "local_metadata_store_2", metadata_store
     )
@@ -235,6 +254,7 @@ def test_register_metadata_store_works_as_expected(tmp_path: str) -> None:
 def test_register_metadata_store_with_existing_key_fails(tmp_path: str) -> None:
     """Test register_metadata_store with existing key fails."""
     Repo.init(tmp_path)
+    Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
     with pytest.raises(AlreadyExistsException):
@@ -247,11 +267,12 @@ def test_register_metadata_store_with_existing_key_fails(tmp_path: str) -> None:
 def test_delete_metadata_store_works(tmp_path: str) -> None:
     """Test delete_metadata_store works as expected"""
     Repo.init(tmp_path)
+    Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
     artifact_store_dir = os.path.join(tmp_path, "test_store")
     metadata_file = os.path.join(artifact_store_dir, "metadata.db")
-    metadata_store = SQLiteMetadataStore(uri=metadata_file)
+    metadata_store = SQLiteMetadataStore(uri=metadata_file, repo_path=repo.path)
     local_service.register_metadata_store(
         "local_metadata_store_2", metadata_store
     )
@@ -263,6 +284,7 @@ def test_delete_metadata_store_works(tmp_path: str) -> None:
 def test_get_orchestrator_returns_orchestrator(tmp_path: str) -> None:
     """Test get_orchestrator returns orchestrator"""
     Repo.init(tmp_path)
+    Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
     orchestrator = local_service.get_orchestrator(LOCAL_ORCHESTRATOR_NAME)
@@ -273,9 +295,10 @@ def test_get_orchestrator_returns_orchestrator(tmp_path: str) -> None:
 def test_register_orchestrator_works_as_expected(tmp_path: str) -> None:
     """Test register_orchestrator method registers an orchestrator as expected."""
     Repo.init(tmp_path)
+    Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
-    orchestrator = LocalOrchestrator()
+    orchestrator = LocalOrchestrator(repo_path=repo.path)
     local_service.register_orchestrator("local_orchestrator_2", orchestrator)
     assert local_service.get_orchestrator("local_orchestrator_2") is not None
     local_service.delete_orchestrator("local_orchestrator_2")
@@ -284,6 +307,7 @@ def test_register_orchestrator_works_as_expected(tmp_path: str) -> None:
 def test_register_orchestrator_with_existing_key_fails(tmp_path: str) -> None:
     """Test register_orchestrator with existing key fails."""
     Repo.init(tmp_path)
+    Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
     with pytest.raises(AlreadyExistsException):
@@ -296,9 +320,10 @@ def test_register_orchestrator_with_existing_key_fails(tmp_path: str) -> None:
 def test_delete_orchestrator_works(tmp_path: str) -> None:
     """Test delete_orchestrator works as expected."""
     Repo.init(tmp_path)
+    Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
     local_service = repo.get_service()
-    orchestrator = LocalOrchestrator()
+    orchestrator = LocalOrchestrator(repo_path=repo.path)
     local_service.register_orchestrator("local_orchestrator_2", orchestrator)
     local_service.delete_orchestrator("local_orchestrator_2")
     with pytest.raises(DoesNotExistException):

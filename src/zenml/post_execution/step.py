@@ -31,6 +31,7 @@ class StepView:
         id_: int,
         parents_step_ids: List[int],
         name: str,
+        pipeline_step_name: str,
         parameters: Dict[str, Any],
         metadata_store: "BaseMetadataStore",
     ):
@@ -43,6 +44,7 @@ class StepView:
             id_: The execution id of this step.
             parents_step_ids: The execution ids of the parents of this step.
             name: The name of this step.
+            pipeline_step_name: The name of this step within the pipeline
             parameters: Parameters that were used to run this step.
             metadata_store: The metadata store which should be used to fetch
                 additional information related to this step.
@@ -50,6 +52,7 @@ class StepView:
         self._id = id_
         self._parents_step_ids = parents_step_ids
         self._name = name
+        self._pipeline_step_name = pipeline_step_name
         self._parameters = parameters
         self._metadata_store = metadata_store
 
@@ -92,6 +95,28 @@ class StepView:
             def my_step_function(...)
         """
         return self._name
+
+    @property
+    def pipeline_step_name(self) -> str:
+        """Returns the pipeline step name as it is defined in the pipeline.
+
+        This name is equal to the name given to the step within the pipeline
+        context
+
+        Examples:
+            @step()
+            def my_step_function(...)
+
+            @pipeline
+            def my_pipeline_function(step_a)
+
+            p = my_pipeline_function(
+                    step_a = my_step_function()
+                )
+
+            The pipeline step name will be `step_a`
+        """
+        return self._pipeline_step_name
 
     @property
     def parameters(self) -> Dict[str, Any]:
