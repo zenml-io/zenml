@@ -3,7 +3,11 @@
 set -e
 set -x
 
-TEST_SRC=${1:-"tests"}
+# If only unittests are needed call
+# test-coverage-xml.sh unit
+# For only integration tests call
+# test-coverage-xml.sh integration
+TEST_SRC="tests/"${1:-""}
 
 export ZENML_DEBUG=1
 export ZENML_ANALYTICS_OPT_IN=false

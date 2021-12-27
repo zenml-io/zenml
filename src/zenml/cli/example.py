@@ -102,8 +102,9 @@ class LocalExample:
 
     def is_present(self) -> bool:
         """Checks if the example is installed at the given path."""
-        return (fileio.file_exists(str(self.path))
-                and fileio.is_dir(str(self.path)))
+        return fileio.file_exists(str(self.path)) and fileio.is_dir(
+            str(self.path)
+        )
 
     def run_example(self, bash_file: str, force: bool) -> None:
         """Run the local example using the bash script at the supplied
