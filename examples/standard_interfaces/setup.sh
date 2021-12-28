@@ -10,9 +10,11 @@ download_data () {
 pre_run () {
   zenml integration install sklearn
   zenml integration install tensorflow
+  download_data
 }
 
 pre_run_forced () {
   zenml integration install sklearn -f
   zenml integration install tensorflow -f
+  download_data
 }
