@@ -24,6 +24,18 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install Linux System Dependencies
+        if: runner.os=='Linux'
+        run: sudo apt install graphviz
+
+      - name: Install MacOS System Dependencies
+        if: runner.os=='macOS'
+        run: brew install graphviz
+
+      - name: Install Windows System Dependencies
+        if: runner.os=='Windows'
+        run: choco install graphviz
+
       - name: Install poetry
         run: |
           python -m pip install --upgrade pip

@@ -20,6 +20,7 @@ class GraphvizIntegration(Integration):
 
     NAME = GRAPHVIZ
     REQUIREMENTS = ["graphviz>=0.17"]
+    SYSTEM_REQUIREMENTS = {"graphviz": "dot"}
 
 
 GraphvizIntegration.check_installation()
