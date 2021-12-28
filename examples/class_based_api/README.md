@@ -37,6 +37,15 @@ git init
 zenml init
 ```
 
+### Download the dataset
+ For this example to work you need to download the dataset as a csv file from kaggle: 
+ https://www.kaggle.com/uciml/pima-indians-diabetes-database
+
+Move the csv file into this folder and set the following environment variable.
+```bash
+export data="diabetes.csv"
+```
+
 In general, to run each chapter you can do:
 
 ```shell
