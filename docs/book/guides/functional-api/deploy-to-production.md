@@ -130,7 +130,7 @@ Once you're done experimenting, you can delete the local Kubernetes cluster and 
 zenml stack down
 ```
 
-## Run the same pipeline on Kubeflow Pipelines deployed to GCP
+### Run the same pipeline on Kubeflow Pipelines deployed to GCP
 
 We will now run the same pipeline in Kubeflow Pipelines deployed to a Google Kubernetes Engine cluster. As you can see from the long list of additional pre-requisites, this requires lots of external setup steps at the moment. In future releases ZenML will be able to automate most of these steps for you, so make sure to revisit this guide if this is something you're interested in!
 
