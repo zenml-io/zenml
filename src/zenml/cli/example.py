@@ -91,11 +91,11 @@ class LocalExample:
         if self.has_single_python_file:
             return self.python_files_in_dir[0]
         elif self.has_any_python_file:
-            raise RuntimeError(
-                "Unclear which python file to return for "
-                f"example {self.name}."
-                f"{self.python_files_in_dir}"
+            logger.warning(
+                "This example has multiple executable python files"
+                "The last one in alphanumerical order is taken."
             )
+            return sorted(self.python_files_in_dir)[-1]
         else:
             raise RuntimeError(
                 "No pipeline runner script found in example. "
@@ -645,3 +645,10 @@ def run(
                 )
             except NotImplementedError as e:
                 error(str(e))
+
+
+#
+# from click.testing import CliRunner
+# runner = CliRunner()
+#
+# result = runner.invoke(example, ["run", "class_based_api"])

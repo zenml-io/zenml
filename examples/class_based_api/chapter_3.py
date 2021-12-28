@@ -45,7 +45,7 @@ preprocesser = sklearn_steps.SklearnStandardScaler(
 # Configuring the training step
 trainer = tf_steps.TensorflowBinaryClassifier(
     tf_steps.TensorflowBinaryClassifierConfig(
-        target_column="has_diabetes", epochs=1
+        target_column="has_diabetes", epochs=100
     )
 )
 
