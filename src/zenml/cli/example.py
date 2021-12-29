@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import click
-from git.exc import GitCommandError, NoSuchPathError
+from git.exc import GitCommandError, InvalidGitRepositoryError, NoSuchPathError
 from git.repo.base import Repo
 from packaging.version import Version, parse
 
@@ -209,13 +209,14 @@ class ExamplesRepo:
         self.cloning_path = cloning_path
         try:
             self.repo = Repo(self.cloning_path)
-        except NoSuchPathError:
+        except NoSuchPathError or InvalidGitRepositoryError:
             self.repo = None  # type: ignore
             logger.debug(
-                f"`cloning_path`: {self.cloning_path} was empty, "
-                f"but ExamplesRepo was created. "
-                "Ensure a pull is performed before doing any other operations."
+                f"`Cloning_path`: {self.cloning_path} was empty, "
+                "Automatically cloning the examples."
             )
+            self.clone()
+            self.checkout(branch=self.latest_release)
 
     @property
     def active_version(self) -> Optional[str]:
@@ -446,8 +447,6 @@ def list(git_examples_handler: GitExamplesHandler) -> None:
     check_for_version_mismatch(git_examples_handler)
     declare("Listing examples: \n")
 
-    # TODO[HIGH] - don't list .sh file
-
     for example in git_examples_handler.get_examples():
         declare(f"{example.name}")
 
@@ -594,7 +593,6 @@ def pull(
     help="Run the example that you previously installed with "
     "`zenml example pull`"
 )
-@pass_git_examples_handler
 @click.argument("example_name", required=True)
 @click.option(
     "--path",
@@ -611,7 +609,10 @@ def pull(
     "example folder and force installs all necessary integration "
     "requirements.",
 )
+@pass_git_examples_handler
+@click.pass_context
 def run(
+    ctx: click.Context,
     git_examples_handler: GitExamplesHandler,
     example_name: str,
     path: str,
@@ -635,14 +636,14 @@ def run(
         local_example = LocalExample(example_dir, example_name)
 
         if not local_example.is_present():
-            error(f"Example {example_name} is not installed at {examples_dir})")
-        else:
-            bash_script_location = (
-                git_examples_handler.examples_repo.examples_run_bash_script
+            ctx.forward(pull)
+
+        bash_script_location = (
+            git_examples_handler.examples_repo.examples_run_bash_script
+        )
+        try:
+            local_example.run_example(
+                bash_file=bash_script_location, force=force
             )
-            try:
-                local_example.run_example(
-                    bash_file=bash_script_location, force=force
-                )
-            except NotImplementedError as e:
-                error(str(e))
+        except NotImplementedError as e:
+            error(str(e))
