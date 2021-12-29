@@ -147,6 +147,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
 
         combined_steps = {}
+        step_refs: Dict[type, str] = {}
 
         for i, step in enumerate(steps):
             if not isinstance(step, BaseStep):
@@ -158,11 +159,18 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"a pipeline."
                 )
 
+            step_ref_func = type(step)
+
+            if step_ref_func in step_refs:
+                raise PipelineInterfaceError(
+                    f"Step object (`{type(step)}`) has been used twice. Step "
+                    f"objects should be unique for each argument."
+                )
+
             key = input_step_keys[i]
             step.pipeline_parameter_name = key
             combined_steps[key] = step
-
-        step_refs: Dict[type, str] = {}
+            step_refs[step_ref_func] = str(i)
 
         for key, step in kw_steps.items():
             if key in combined_steps:
@@ -186,11 +194,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
             step_ref_func = type(step)
 
             if step_ref_func in step_refs:
-                prev_key = step_refs[step_ref_func]
+                step_refs[step_ref_func]
                 raise PipelineInterfaceError(
-                    f"Same argument type (`{type(step)}`) used for arguments "
-                    f"{key} and {prev_key}. Functions decorated with @step "
-                    f"should be unique for each argument."
+                    f"Step object (`{type(step)}`) has been used twice. Step "
+                    f"objects should be unique for each argument."
                 )
 
             step.pipeline_parameter_name = key
