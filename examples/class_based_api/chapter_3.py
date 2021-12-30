@@ -40,7 +40,7 @@ if not os.path.isfile(DATASET_PATH):
 
 # Configuring the datasource
 datasource = builtin_steps.PandasDatasource(
-    builtin_steps.PandasDatasourceConfig(path=os.getenv("data"))
+    builtin_steps.PandasDatasourceConfig(path=DATASET_PATH)
 )
 
 # Configuring the split step

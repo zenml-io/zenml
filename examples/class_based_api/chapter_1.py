@@ -75,7 +75,7 @@ class Chapter1Pipeline(BasePipeline):
 
 
 pipeline_instance = Chapter1Pipeline(
-    datasource=PandasDatasource(PandasDatasourceConfig(path=os.getenv("data")))
+    datasource=PandasDatasource(PandasDatasourceConfig(path=DATASET_PATH))
 )
 
 pipeline_instance.run()
