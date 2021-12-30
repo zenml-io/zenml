@@ -16,21 +16,23 @@ from urllib.request import urlopen
 
 from zenml.integrations.sklearn import steps as sklearn_steps
 from zenml.integrations.tensorflow import steps as tf_steps
+from zenml.logger import get_logger
 from zenml.pipelines.builtin_pipelines import TrainingPipeline
 from zenml.steps import builtin_steps
-from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
-DATASET_PATH = 'diabetes.csv'
+DATASET_PATH = "diabetes.csv"
 
 # Download the dataset for this example
 if not os.path.isfile(DATASET_PATH):
-    logger.info(f'Downloading dataset {DATASET_PATH}')
-    with urlopen('https://storage.googleapis.com/zenml-public-bucket/'
-                 'pima-indians-diabetes/diabetes.csv') as data:
+    logger.info(f"Downloading dataset {DATASET_PATH}")
+    with urlopen(
+        "https://storage.googleapis.com/zenml-public-bucket/"
+        "pima-indians-diabetes/diabetes.csv"
+    ) as data:
         content = data.read().decode()
-    with open(DATASET_PATH, 'w') as output:
+    with open(DATASET_PATH, "w") as output:
         output.write(content)
 
 # Configuring the datasource
