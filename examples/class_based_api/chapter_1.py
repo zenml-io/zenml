@@ -14,6 +14,7 @@
 
 import os
 from typing import List, Optional, Union
+from urllib.request import urlopen
 
 import pandas as pd
 
@@ -23,6 +24,17 @@ from zenml.steps.step_interfaces.base_datasource_step import (
     BaseDatasourceConfig,
     BaseDatasourceStep,
 )
+
+
+DATASET_PATH = 'diabetes.csv'
+
+# Download the dataset for this example
+if not os.path.isfile(DATASET_PATH):
+    with urlopen('https://storage.googleapis.com/zenml-public-bucket/'
+                 'pima-indians-diabetes/diabetes.csv') as data:
+        content = data.read().decode()
+    with open(DATASET_PATH, 'w') as output:
+        output.write(content)
 
 
 class PandasDatasourceConfig(BaseDatasourceConfig):

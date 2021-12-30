@@ -12,11 +12,23 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
+from urllib.request import urlopen
 
 from zenml.core.repo import Repository
 from zenml.integrations.sklearn import steps as sklearn_steps
 from zenml.pipelines import BasePipeline
 from zenml.steps import builtin_steps, step_interfaces
+
+
+DATASET_PATH = 'diabetes.csv'
+
+# Download the dataset for this example
+if not os.path.isfile(DATASET_PATH):
+    with urlopen('https://storage.googleapis.com/zenml-public-bucket/'
+                 'pima-indians-diabetes/diabetes.csv') as data:
+        content = data.read().decode()
+    with open(DATASET_PATH, 'w') as output:
+        output.write(content)
 
 
 class Chapter2Pipeline(BasePipeline):

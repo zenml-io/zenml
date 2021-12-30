@@ -13,12 +13,25 @@
 #  permissions and limitations under the License.
 
 import os
+from urllib.request import urlopen
 
 from zenml.core.repo import Repository
 from zenml.integrations.sklearn import steps as sklearn_steps
 from zenml.integrations.tensorflow import steps as tf_steps
 from zenml.pipelines.builtin_pipelines import TrainingPipeline
 from zenml.steps import builtin_steps
+
+
+DATASET_PATH = 'diabetes.csv'
+
+# Download the dataset for this example
+if not os.path.isfile(DATASET_PATH):
+    with urlopen('https://storage.googleapis.com/zenml-public-bucket/'
+                 'pima-indians-diabetes/diabetes.csv') as data:
+        content = data.read().decode()
+    with open(DATASET_PATH, 'w') as output:
+        output.write(content)
+
 
 # Configuring the datasource
 datasource = builtin_steps.PandasDatasource(
