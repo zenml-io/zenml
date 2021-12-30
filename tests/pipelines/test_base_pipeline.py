@@ -48,7 +48,7 @@ def test_initialize_pipeline_with_args(
 ):
     """Test that a pipeline can be initialized with args."""
     with does_not_raise():
-        empty_step_1, empty_step_2, extra_steps = multiple_empty_steps()
+        empty_step_1, empty_step_2, _ = multiple_empty_steps()
         unconnected_two_step_pipeline(empty_step_1(), empty_step_2())
 
 
@@ -57,7 +57,7 @@ def test_initialize_pipeline_with_kwargs(
 ):
     """Test that a pipeline can be initialized with kwargs."""
     with does_not_raise():
-        empty_step_1, empty_step_2, extra_steps = multiple_empty_steps()
+        empty_step_1, empty_step_2, _ = multiple_empty_steps()
         unconnected_two_step_pipeline(
             step_1=empty_step_1(), step_2=empty_step_2()
         )
@@ -68,7 +68,7 @@ def test_initialize_pipeline_with_args_and_kwargs(
 ):
     """Test that a pipeline can be initialized with a mix of args and kwargs."""
     with does_not_raise():
-        empty_step_1, empty_step_2, extra_steps = multiple_empty_steps()
+        empty_step_1, empty_step_2, _ = multiple_empty_steps()
         unconnected_two_step_pipeline(empty_step_1(), step_2=empty_step_2())
 
 
@@ -118,6 +118,24 @@ def test_initialize_pipeline_with_unexpected_key(
 
 
 def test_initialize_pipeline_with_repeated_args(
+    unconnected_two_step_pipeline, empty_step
+):
+    """Test that pipeline initialization fails when same step
+    object is used"""
+    with pytest.raises(PipelineInterfaceError):
+        unconnected_two_step_pipeline(empty_step(), empty_step())
+
+
+def test_initialize_pipeline_with_repeated_kwargs(
+    unconnected_two_step_pipeline, empty_step
+):
+    """Test that pipeline initialization fails when same step
+    object is used"""
+    with pytest.raises(PipelineInterfaceError):
+        unconnected_two_step_pipeline(step_1=empty_step(), step_2=empty_step())
+
+
+def test_initialize_pipeline_with_repeated_args_and_kwargs(
     unconnected_two_step_pipeline, empty_step
 ):
     """Test that pipeline initialization fails when same step
