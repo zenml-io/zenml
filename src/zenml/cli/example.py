@@ -319,6 +319,7 @@ class GitExamplesHandler(object):
                 and not name.startswith("__")
                 and not name.startswith("README")
                 and not name.endswith(".sh")
+                and not name == "example_data"
             )
         ]
 
@@ -444,8 +445,6 @@ def list(git_examples_handler: GitExamplesHandler) -> None:
     """List all available examples."""
     check_for_version_mismatch(git_examples_handler)
     declare("Listing examples: \n")
-
-    # TODO[HIGH] - don't list .sh file
 
     for example in git_examples_handler.get_examples():
         declare(f"{example.name}")
@@ -645,10 +644,3 @@ def run(
                 )
             except NotImplementedError as e:
                 error(str(e))
-
-
-#
-# from click.testing import CliRunner
-# runner = CliRunner()
-#
-# result = runner.invoke(example, ["run", "class_based_api"])
