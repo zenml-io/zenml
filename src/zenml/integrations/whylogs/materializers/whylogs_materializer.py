@@ -32,8 +32,6 @@ pipeline: {DEFAULT_PIPELINE_NAME}
 verbose: false
 """
 
-def load(config_path: str):
-    return
 
 class WhylogsMaterializer(BaseMaterializer):
     """Materializer to read/write Pytorch models."""
