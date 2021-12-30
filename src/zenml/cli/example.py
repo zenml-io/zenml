@@ -319,7 +319,6 @@ class GitExamplesHandler(object):
                 and not name.startswith("__")
                 and not name.startswith("README")
                 and not name.endswith(".sh")
-                and not name == "example_data"
             )
         ]
 
