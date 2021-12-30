@@ -13,34 +13,53 @@
 #  permissions and limitations under the License.
 import logging
 import os
+import shutil
 
 import pytest
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.constants import ENV_ZENML_DEBUG
 from zenml.core.repo import Repository
-from zenml.exceptions import InitializationException
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
 from zenml.steps import StepContext, step
 
 
-def pytest_sessionstart(session):
-    """Called after the Session object has been created and
-    before performing collection and entering the run test loop.
-    """
+@pytest.fixture(scope="session", autouse=True)
+def session_setup(tmp_path_factory, session_mocker):
     os.environ[ENV_ZENML_DEBUG] = "true"
-    try:
-        Repository.init_repo()
-    except InitializationException:
-        # already initialized
-        logging.info("Repo already initialized for testing.")
+    os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
+    tmp_path = tmp_path_factory.mktemp("tmp")
+    session_mocker.patch(
+        "zenml.io.utils.get_global_config_directory",
+        return_value=str(tmp_path / "zenml"),
+    )
+    logging.info(tmp_path)
+    Repository.init_repo(str(tmp_path))
+    os.chdir(tmp_path)
+    repo = Repository(str(tmp_path))
+    yield repo
+    shutil.rmtree(tmp_path)
 
 
-def pytest_sessionfinish(session, exitstatus):
-    """Called after whole test run finished, right before
-    returning the exit status to the system.
-    """
+#
+# def pytest_sessionstart(session):
+#     """Called after the Session object has been created and
+#     before performing collection and entering the run test loop.
+#     """
+#     session
+#     os.environ[ENV_ZENML_DEBUG] = "true"
+#     try:
+#         Repository.init_repo()
+#     except InitializationException:
+#         # already initialized
+#         logging.info("Repo already initialized for testing.")
+#
+#
+# def pytest_sessionfinish(session, exitstatus):
+#     """Called after whole test run finished, right before
+#     returning the exit status to the system.
+#     """
 
 
 @pytest.fixture
