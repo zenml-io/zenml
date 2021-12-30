@@ -18,12 +18,15 @@ from zenml.core.repo import Repository
 from zenml.integrations.sklearn import steps as sklearn_steps
 from zenml.pipelines import BasePipeline
 from zenml.steps import builtin_steps, step_interfaces
+from zenml.logger import get_logger
 
+logger = get_logger(__name__)
 
 DATASET_PATH = 'diabetes.csv'
 
 # Download the dataset for this example
 if not os.path.isfile(DATASET_PATH):
+    logger.info(f'Downloading dataset {DATASET_PATH}')
     with urlopen('https://storage.googleapis.com/zenml-public-bucket/'
                  'pima-indians-diabetes/diabetes.csv') as data:
         content = data.read().decode()
