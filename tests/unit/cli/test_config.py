@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import logging
 import os
 
 import pytest
@@ -32,7 +31,6 @@ def read_global_config():
     config_file = os.path.join(
         get_global_config_directory(), GLOBAL_CONFIG_NAME
     )
-    logging.info(config_file)
     return read_json(config_file)
 
 

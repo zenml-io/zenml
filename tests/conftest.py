@@ -14,6 +14,7 @@
 import logging
 import os
 import shutil
+import sys
 
 import pytest
 
@@ -30,36 +31,17 @@ def session_setup(tmp_path_factory, session_mocker):
     os.environ[ENV_ZENML_DEBUG] = "true"
     os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
     tmp_path = tmp_path_factory.mktemp("tmp")
-    session_mocker.patch(
-        "zenml.io.utils.get_global_config_directory",
+    session_mocker.patch.object(
+        sys.modules["zenml.io.utils"],
+        "get_global_config_directory",
         return_value=str(tmp_path / "zenml"),
     )
+    os.chdir(tmp_path)
     logging.info(tmp_path)
     Repository.init_repo(str(tmp_path))
-    os.chdir(tmp_path)
     repo = Repository(str(tmp_path))
     yield repo
     shutil.rmtree(tmp_path)
-
-
-#
-# def pytest_sessionstart(session):
-#     """Called after the Session object has been created and
-#     before performing collection and entering the run test loop.
-#     """
-#     session
-#     os.environ[ENV_ZENML_DEBUG] = "true"
-#     try:
-#         Repository.init_repo()
-#     except InitializationException:
-#         # already initialized
-#         logging.info("Repo already initialized for testing.")
-#
-#
-# def pytest_sessionfinish(session, exitstatus):
-#     """Called after whole test run finished, right before
-#     returning the exit status to the system.
-#     """
 
 
 @pytest.fixture
