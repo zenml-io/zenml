@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING, Any, Dict
 
-import zenml.io.utils
 from zenml.core import mapping_utils
 from zenml.core.base_component import BaseComponent
 from zenml.core.mapping_utils import UUIDSourceTuple
 from zenml.exceptions import AlreadyExistsException, DoesNotExistException
+from zenml.io.utils import get_zenml_config_dir
 from zenml.logger import get_logger
 from zenml.stacks import BaseStack
 from zenml.utils import source_utils
@@ -47,7 +47,7 @@ class LocalService(BaseComponent):
         Args:
             repo_path: Path to the repository of this service.
         """
-        serialization_dir = zenml.io.utils.get_zenml_config_dir(repo_path)
+        serialization_dir = get_zenml_config_dir(repo_path)
         super().__init__(serialization_dir=serialization_dir, **kwargs)
         self._repo_path = repo_path
         for stack in self.stacks.values():
