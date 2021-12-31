@@ -25,14 +25,12 @@ NOT_SO_QUICKSTART = "not_so_quickstart"
 CACHING = "caching"
 
 
-@pytest.fixture(scope="session")
-def examples_dir(tmp_path_factory):
-    tmp_path = tmp_path_factory.mktemp("tmp")
-    examples_path = tmp_path / "zenml_examples"
-    source_path = Path("examples")
+@pytest.fixture
+def examples_dir(clean_repo):
+    examples_path = Path(clean_repo.path) / "zenml_examples"
+    source_path = Path(clean_repo.original_cwd) / "examples"
     shutil.copytree(source_path, examples_path)
     yield examples_path
-    shutil.rmtree(str(examples_path))
 
 
 def test_run_quickstart(examples_dir: Path):

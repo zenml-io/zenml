@@ -29,6 +29,9 @@ from zenml.steps import StepContext, step
 @pytest.fixture(scope="session", autouse=True)
 def base_repo(tmp_path_factory, session_mocker):
     """Fixture to get a base clean repository for all tests."""
+    # original working directory
+    orig_cwd = os.getcwd()
+
     # set env variables
     os.environ[ENV_ZENML_DEBUG] = "true"
     os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
@@ -45,9 +48,12 @@ def base_repo(tmp_path_factory, session_mocker):
         return_value=str(tmp_path / "zenml"),
     )
 
-    # initialize and yield repo
+    # initialize repo at path
     Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
+
+    # monkey patch original cwd in for later use and yield
+    repo.original_cwd = orig_cwd
     yield repo
 
     # clean up
@@ -72,9 +78,12 @@ def clean_repo(tmp_path_factory, mocker, base_repo: Repository):
         return_value=str(tmp_path / "zenml"),
     )
 
-    # initialize and yield repo
+    # initialize repo with new tmp path
     Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
+
+    # monkey patch base repo cwd for later user and yield
+    repo.original_cwd = base_repo.original_cwd
     yield repo
 
     # remove all traces, and change working directory back to base path
