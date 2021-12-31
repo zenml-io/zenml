@@ -27,21 +27,59 @@ from zenml.steps import StepContext, step
 
 
 @pytest.fixture(scope="session", autouse=True)
-def session_setup(tmp_path_factory, session_mocker):
+def base_repo(tmp_path_factory, session_mocker):
+    """Fixture to get a base clean repository for all tests."""
+    # set env variables
     os.environ[ENV_ZENML_DEBUG] = "true"
     os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
+
+    # change the working directory to a fresh temp path
     tmp_path = tmp_path_factory.mktemp("tmp")
+    os.chdir(tmp_path)
+
+    # patch the global dir just within the scope of this function
+    logging.info(f"Tests are running in repo path: {tmp_path}")
     session_mocker.patch.object(
         sys.modules["zenml.io.utils"],
         "get_global_config_directory",
         return_value=str(tmp_path / "zenml"),
     )
-    os.chdir(tmp_path)
-    logging.info(tmp_path)
+
+    # initialize and yield repo
     Repository.init_repo(str(tmp_path))
     repo = Repository(str(tmp_path))
     yield repo
+
+    # clean up
     shutil.rmtree(tmp_path)
+
+
+@pytest.fixture
+def clean_repo(tmp_path_factory, mocker, base_repo: Repository):
+    """Fixture to get a clean repository for an individual test."""
+    # set env variables
+    os.environ[ENV_ZENML_DEBUG] = "true"
+    os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
+
+    # change the working directory to a fresh temp path
+    tmp_path = tmp_path_factory.mktemp("tmp")
+    os.chdir(tmp_path)
+
+    # patch the global dir just within the scope of this function
+    mocker.patch.object(
+        sys.modules["zenml.io.utils"],
+        "get_global_config_directory",
+        return_value=str(tmp_path / "zenml"),
+    )
+
+    # initialize and yield repo
+    Repository.init_repo(str(tmp_path))
+    repo = Repository(str(tmp_path))
+    yield repo
+
+    # remove all traces, and change working directory back to base path
+    shutil.rmtree(tmp_path)
+    os.chdir(base_repo.path)
 
 
 @pytest.fixture
