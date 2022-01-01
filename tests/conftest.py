@@ -63,10 +63,6 @@ def base_repo(tmp_path_factory, session_mocker):
 @pytest.fixture
 def clean_repo(tmp_path_factory, mocker, base_repo: Repository):
     """Fixture to get a clean repository for an individual test."""
-    # set env variables
-    os.environ[ENV_ZENML_DEBUG] = "true"
-    os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
-
     # change the working directory to a fresh temp path
     tmp_path = tmp_path_factory.mktemp("tmp")
     os.chdir(tmp_path)
