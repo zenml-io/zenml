@@ -55,6 +55,30 @@ def empty_step():
 
 
 @pytest.fixture
+def multiple_empty_steps():
+    """Pytest fixture that returns multiple unique empty step functions."""
+
+    def _multiple_empty_steps():
+        @step
+        def _empty_step_1():
+            pass
+
+        @step
+        def _empty_step_2():
+            pass
+
+        @step
+        def _empty_step_3():
+            pass
+
+        output = [_empty_step_1, _empty_step_2, _empty_step_3]
+
+        return output
+
+    return _multiple_empty_steps
+
+
+@pytest.fixture
 def one_step_pipeline():
     """Pytest fixture that returns a pipeline which takes a single step
     named `step_`."""
