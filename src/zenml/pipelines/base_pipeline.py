@@ -21,6 +21,7 @@ from typing import (
     Dict,
     NoReturn,
     Optional,
+    Set,
     Text,
     Tuple,
     Type,
@@ -147,22 +148,36 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
 
         combined_steps = {}
+        step_cls_args: Set[Type[BaseStep]] = set()
 
         for i, step in enumerate(steps):
+            step_class = type(step)
+
             if not isinstance(step, BaseStep):
                 raise PipelineInterfaceError(
-                    f"Wrong argument type (`{type(step)}`) for positional "
+                    f"Wrong argument type (`{step_class}`) for positional "
                     f"argument {i} of pipeline '{self.name}'. Only "
                     f"`@step` decorated functions or instances of `BaseStep` "
                     f"subclasses can be used as arguments when creating "
                     f"a pipeline."
                 )
 
+            if step_class in step_cls_args:
+                raise PipelineInterfaceError(
+                    f"Step object (`{step_class}`) has been used twice. Step "
+                    f"objects should be unique for each argument."
+                )
+
             key = input_step_keys[i]
             step.pipeline_parameter_name = key
             combined_steps[key] = step
+            step_cls_args.add(step_class)
+
+        step_cls_kwargs: Dict[Type[BaseStep], str] = {}
 
         for key, step in kw_steps.items():
+            step_class = type(step)
+
             if key in combined_steps:
                 # a step for this key was already set by
                 # the positional input steps
@@ -174,15 +189,30 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
             if not isinstance(step, BaseStep):
                 raise PipelineInterfaceError(
-                    f"Wrong argument type (`{type(step)}`) for argument "
+                    f"Wrong argument type (`{step_class}`) for argument "
                     f"'{key}' of pipeline '{self.name}'. Only "
                     f"`@step` decorated functions or instances of `BaseStep` "
                     f"subclasses can be used as arguments when creating "
                     f"a pipeline."
                 )
 
+            if step_class in step_cls_kwargs:
+                prev_key = step_cls_kwargs[step_class]
+                raise PipelineInterfaceError(
+                    f"Same step object (`{step_class}`) passed for arguments "
+                    f"'{key}' and '{prev_key}'. Step objects should be "
+                    f"unique for each argument."
+                )
+
+            if step_class in step_cls_args:
+                raise PipelineInterfaceError(
+                    f"Step object (`{step_class}`) has been used twice. Step "
+                    f"objects should be unique for each argument."
+                )
+
             step.pipeline_parameter_name = key
             combined_steps[key] = step
+            step_cls_kwargs[step_class] = key
 
         # check if there are any missing or unexpected steps
         expected_steps = set(self.STEP_SPEC.keys())
