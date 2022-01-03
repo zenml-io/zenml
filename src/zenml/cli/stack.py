@@ -167,11 +167,7 @@ def up_stack() -> None:
         f"Bootstrapping resources for orchestrator: `{orchestrator_name}`. "
         f"This might take a few seconds..."
     )
-    try:
-        active_stack.orchestrator.up()
-    except Exception as e:
-        cli_utils.error(f"Failed to bootstrap resources: {e}")
-        return
+    active_stack.orchestrator.up()
     cli_utils.declare(f"Orchestrator: `{orchestrator_name}` is up.")
 
 
