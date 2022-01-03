@@ -204,3 +204,10 @@ def test_file_exists_function(tmp_path) -> None:
     """Test that file_exists returns True when the file exists"""
     with NamedTemporaryFile(dir=tmp_path) as temp_file:
         assert fileio.file_exists(temp_file.name)
+
+
+def test_remove_function(tmp_path) -> None:
+    """Test that remove function actually removes a file"""
+    with NamedTemporaryFile(dir=tmp_path) as temp_file:
+        fileio.remove(temp_file.name)
+        assert not os.path.exists(temp_file.name)
