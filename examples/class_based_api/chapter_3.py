@@ -25,14 +25,13 @@ from zenml.steps import builtin_steps
 logger = get_logger(__name__)
 
 DATASET_PATH = "diabetes.csv"
+DATASET_SRC = "https://storage.googleapis.com/zenml-public-bucket/" \
+              "pima-indians-diabetes/diabetes.csv"
 
 # Download the dataset for this example
 if not os.path.isfile(DATASET_PATH):
     logger.info(f"Downloading dataset {DATASET_PATH}")
-    with urlopen(
-        "https://storage.googleapis.com/zenml-public-bucket/"
-        "pima-indians-diabetes/diabetes.csv"
-    ) as data:
+    with urlopen(DATASET_SRC) as data:
         content = data.read().decode()
     with open(DATASET_PATH, "w") as output:
         output.write(content)
@@ -63,7 +62,7 @@ preprocesser = sklearn_steps.SklearnStandardScaler(
 # Configuring the training step
 trainer = tf_steps.TensorflowBinaryClassifier(
     tf_steps.TensorflowBinaryClassifierConfig(
-        target_column="has_diabetes", epochs=100
+        target_column="has_diabetes", epochs=10
     )
 )
 

@@ -23,14 +23,13 @@ from zenml.steps import builtin_steps, step_interfaces
 logger = get_logger(__name__)
 
 DATASET_PATH = "diabetes.csv"
+DATASET_SRC = "https://storage.googleapis.com/zenml-public-bucket/" \
+              "pima-indians-diabetes/diabetes.csv"
 
 # Download the dataset for this example
 if not os.path.isfile(DATASET_PATH):
     logger.info(f"Downloading dataset {DATASET_PATH}")
-    with urlopen(
-        "https://storage.googleapis.com/zenml-public-bucket/"
-        "pima-indians-diabetes/diabetes.csv"
-    ) as data:
+    with urlopen(DATASET_SRC) as data:
         content = data.read().decode()
     with open(DATASET_PATH, "w") as output:
         output.write(content)
