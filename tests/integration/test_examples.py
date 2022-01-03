@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import os
 import shutil
 from pathlib import Path
 
@@ -20,28 +19,18 @@ import pytest
 from zenml.cli import EXAMPLES_RUN_SCRIPT, LocalExample
 from zenml.core.repo import Repository
 from zenml.enums import ExecutionStatus
-from zenml.logger import get_logger
-
-logger = get_logger(__name__)
-
 
 QUICKSTART = "quickstart"
 NOT_SO_QUICKSTART = "not_so_quickstart"
 CACHING = "caching"
 
 
-@pytest.fixture(scope="module")
-def examples_dir(tmp_path_factory):
-    prev_wd = os.getcwd()
-    tmp_path = tmp_path_factory.mktemp("tmp")
-    examples_path = tmp_path / "zenml_examples"
-    source_path = Path("examples")
+@pytest.fixture
+def examples_dir(clean_repo):
+    examples_path = Path(clean_repo.path) / "zenml_examples"
+    source_path = Path(clean_repo.original_cwd) / "examples"
     shutil.copytree(source_path, examples_path)
-
     yield examples_path
-    # Cleanup fixture and ensure that we return to previous working dir
-    shutil.rmtree(str(examples_path))
-    os.chdir(prev_wd)
 
 
 def test_run_quickstart(examples_dir: Path):
