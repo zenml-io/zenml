@@ -33,7 +33,6 @@ zenml example pull class_based_api
 cd zenml_examples/class_based_api
 
 # initialize
-git init
 zenml init
 ```
 
@@ -57,5 +56,3 @@ In order to clean up, delete the remaining zenml references.
 ```shell
 rm -rf zenml_examples
 ```
-
-Press next to start the first chapter!

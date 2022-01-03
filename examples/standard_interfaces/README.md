@@ -43,7 +43,6 @@ zenml example pull standard_interfaces
 cd zenml_examples/standard_interfaces
 
 # initialize
-git init
 zenml init
 ```
 
