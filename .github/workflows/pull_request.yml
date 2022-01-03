@@ -6,10 +6,13 @@ on:
 
 jobs:
   testing:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
+    # Exit if its a commit from Gitbook
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
+
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
@@ -41,6 +44,11 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install "poetry"
 
+      - name: Delete error-causing bash
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: |
+          rm.exe "C:/WINDOWS/system32/bash.EXE"
+
       - name: Install Dependencies
         run: |
           python -m poetry install
@@ -48,10 +56,10 @@ jobs:
           python -m poetry run zenml integration install pytorch -f
           python -m poetry run zenml integration install gcp -f
           python -m poetry run pip install click~=8.0.3
-          python -m poetry run pip install awscli
 
       - name: Lint
-        run: python -m poetry run bash scripts/lint.sh
+        run: |
+          python -m poetry run bash scripts/lint.sh
 
       - name: Test
         run: python -m poetry run bash scripts/test-coverage-xml.sh unit
