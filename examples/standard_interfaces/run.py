@@ -23,8 +23,10 @@ from zenml.steps import builtin_steps
 logger = get_logger(__name__)
 
 DATASET_PATH = "diabetes.csv"
-DATASET_SRC = "https://storage.googleapis.com/zenml-public-bucket/" \
-              "pima-indians-diabetes/diabetes.csv"
+DATASET_SRC = (
+    "https://storage.googleapis.com/zenml-public-bucket/"
+    "pima-indians-diabetes/diabetes.csv"
+)
 
 # Download the dataset for this example
 if not os.path.isfile(DATASET_PATH):
