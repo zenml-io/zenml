@@ -57,6 +57,7 @@ def base_repo(tmp_path_factory, session_mocker):
     yield repo
 
     # clean up
+    os.chdir(orig_cwd)
     shutil.rmtree(tmp_path)
 
 
@@ -83,8 +84,8 @@ def clean_repo(tmp_path_factory, mocker, base_repo: Repository):
     yield repo
 
     # remove all traces, and change working directory back to base path
-    shutil.rmtree(tmp_path)
     os.chdir(base_repo.path)
+    shutil.rmtree(tmp_path)
 
 
 @pytest.fixture
