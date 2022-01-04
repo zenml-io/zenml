@@ -297,18 +297,18 @@ class KubeflowOrchestrator(BaseOrchestrator):
             return
 
         logger.info("Spinning up local Kubeflow Pipelines deployment...")
+        fileio.make_dirs(self.root_directory)
+        container_registry_port = int(container_registry.uri.split(":")[-1])
+        container_registry_name = self._get_k3d_registry_name(
+            port=container_registry_port
+        )
+        local_deployment_utils.write_local_registry_yaml(
+            yaml_path=self._k3d_registry_config_path,
+            registry_name=container_registry_name,
+            registry_uri=container_registry.uri,
+        )
 
         try:
-            fileio.make_dirs(self.root_directory)
-            container_registry_port = int(container_registry.uri.split(":")[-1])
-            container_registry_name = self._get_k3d_registry_name(
-                port=container_registry_port
-            )
-            local_deployment_utils.write_local_registry_yaml(
-                yaml_path=self._k3d_registry_config_path,
-                registry_name=container_registry_name,
-                registry_uri=container_registry.uri,
-            )
             local_deployment_utils.create_k3d_cluster(
                 cluster_name=self._k3d_cluster_name,
                 registry_name=container_registry_name,
@@ -329,15 +329,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 f"The orchestrator is now up."
             )
         except Exception as e:
-            container_registry_port = int(container_registry.uri.split(":")[-1])
-            container_registry_name = self._get_k3d_registry_name(
-                port=container_registry_port
-            )
-            local_deployment_utils.write_local_registry_yaml(
-                yaml_path=self._k3d_registry_config_path,
-                registry_name=container_registry_name,
-                registry_uri=container_registry.uri,
-            )
             logger.error(e)
             self.list_manual_setup_steps(
                 container_registry_name, self._k3d_registry_config_path
