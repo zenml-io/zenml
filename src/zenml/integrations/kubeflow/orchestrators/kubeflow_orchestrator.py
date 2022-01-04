@@ -245,7 +245,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
             cluster_name=self._k3d_cluster_name
         )
 
-    def list_manual_setup_steps(self) -> None:
+    def list_manual_setup_steps(
+        self, container_registry_name: str, container_registry_path: str
+    ) -> None:
         """Logs manual steps needed to setup the Kubeflow local orchestrator."""
         global_config_dir_path = zenml.io.utils.get_global_config_directory()
         logger.error("Unable to spin up local Kubeflow Pipelines deployment.")
@@ -254,7 +256,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             "please enter the following commands (substituting where appropriate):\n"
         )
         logger.info(
-            f"k3d cluster create CLUSTER_NAME --registry-create REGISTRY_NAME --registry-config REGISTRY_CONFIG_PATH --volume {global_config_dir_path}:{global_config_dir_path}"
+            f"k3d cluster create CLUSTER_NAME --registry-create {container_registry_name} --registry-config {container_registry_path} --volume {global_config_dir_path}:{global_config_dir_path}"
         )
         logger.info(
             f"kubectl --context CLUSTER_NAME apply -k github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic-pns?ref={KFP_VERSION}"
@@ -327,7 +329,19 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 f"The orchestrator is now up."
             )
         except Exception as e:
-            self.list_manual_setup_steps()
+            container_registry_port = int(container_registry.uri.split(":")[-1])
+            container_registry_name = self._get_k3d_registry_name(
+                port=container_registry_port
+            )
+            local_deployment_utils.write_local_registry_yaml(
+                yaml_path=self._k3d_registry_config_path,
+                registry_name=container_registry_name,
+                registry_uri=container_registry.uri,
+            )
+            self.list_manual_setup_steps(
+                container_registry_name, self._k3d_registry_config_path
+            )
+            self.down()
             raise e
 
     def down(self) -> None:
