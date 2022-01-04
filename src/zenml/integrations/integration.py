@@ -16,7 +16,6 @@ from typing import Any, Dict, List, Tuple, Type, cast
 
 import pkg_resources
 
-from zenml.exceptions import DoesNotExistException
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 
