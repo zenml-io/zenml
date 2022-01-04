@@ -52,16 +52,8 @@ This will give you information about how to register a metadata store.
 Beginning a Project
 -------------------
 
-When you begin a project, you should first initialize your base project
-directory as a Git repository. To do this, type:
-
-.. code:: bash
-
-   git init
-
-Once your directory is setup with a (usually hidden) ``.git`` folder,
-initialize the directory with ZenML’s own config and resource management
-tools. Type:
+When you begin a project, initialize the directory with ZenML’s
+own config and resource management tools. Type:
 
 .. code:: bash
 
