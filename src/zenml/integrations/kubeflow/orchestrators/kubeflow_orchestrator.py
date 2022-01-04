@@ -338,11 +338,11 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 registry_name=container_registry_name,
                 registry_uri=container_registry.uri,
             )
+            logger.error(e)
             self.list_manual_setup_steps(
                 container_registry_name, self._k3d_registry_config_path
             )
             self.down()
-            raise e
 
     def down(self) -> None:
         """Tears down a local Kubeflow Pipelines deployment."""
