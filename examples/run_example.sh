@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -Eeo pipefail
+set -eo pipefail
 
 usage() {
   cat << EOF # remove the space between << and EOF
@@ -40,7 +40,7 @@ main() {
   REQUIREMENTS_TXT="requirements.txt"
 
   if [ -f "$REQUIREMENTS_TXT" ]; then
-    python3 -m pip install -r requirements.txt
+    python -m pip install -r requirements.txt
   fi
 
   git init
@@ -62,7 +62,7 @@ main() {
   fi
 
   # Run the script
-  python3 "$executable"
+  python "$executable"
 }
 
 msg() {

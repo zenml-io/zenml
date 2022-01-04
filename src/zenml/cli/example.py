@@ -117,9 +117,9 @@ class LocalExample:
             force: Whether to force the install
         """
         if fileio.file_exists(bash_file):
-            os.chdir(self.path)
             try:
-                # TODO [ENG-271]: Catch errors that might be thrown in subprocess
+                # TODO [ENG-271]: Catch errors that might be thrown
+                #  in subprocess
                 if force:
                     subprocess.check_call(
                         [
@@ -129,6 +129,7 @@ class LocalExample:
                             self.executable_python_example,
                         ],
                         cwd=str(self.path),
+                        shell=True,
                     )
                 else:
                     subprocess.check_call(
@@ -138,6 +139,7 @@ class LocalExample:
                             self.executable_python_example,
                         ],
                         cwd=self.path,
+                        shell=True,
                     )
             except RuntimeError:
                 raise NotImplementedError(
