@@ -266,3 +266,19 @@ def test_rename_function_raises_error_if_file_already_exists(tmp_path) -> None:
         with pytest.raises(OSError):
             with NamedTemporaryFile(dir=tmp_path) as temp_file2:
                 fileio.rename(temp_file.name, temp_file2.name)
+
+
+def test_rm_dir_function(tmp_path) -> None:
+    """Test that rm_dir removes a directory"""
+    fileio.mkdir(os.path.join(tmp_path, "not_a_dir"))
+    fileio.rm_dir(os.path.join(tmp_path, "not_a_dir"))
+    assert not os.path.exists(os.path.join(tmp_path, "not_a_dir"))
+
+
+def test_rm_dir_function_works_recursively(tmp_path) -> None:
+    """Test that rm_dir removes a directory recursively"""
+    fileio.make_dirs(os.path.join(tmp_path, "not_a_dir/also_not_a_dir"))
+    fileio.rm_dir(os.path.join(tmp_path, "not_a_dir/also_not_a_dir"))
+    assert not os.path.exists(
+        os.path.join(tmp_path, "not_a_dir/also_not_a_dir")
+    )
