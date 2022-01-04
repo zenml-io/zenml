@@ -220,7 +220,11 @@ class AirflowOrchestrator(BaseOrchestrator):
                 time.sleep(0.1)
             self._log_webserver_credentials()
         except Exception as e:
-            logger.error("An error occurred while starting the Airflow daemon.")
+            logger.error(
+                "An error occurred while starting the Airflow daemon."
+                "If you want to start it manually, use the commands described "
+                "in the official Airflow quickstart guide for running Airflow locally."
+            )
             raise e
 
     def down(self) -> None:
