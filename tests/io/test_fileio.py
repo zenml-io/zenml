@@ -206,6 +206,11 @@ def test_file_exists_function(tmp_path) -> None:
         assert fileio.file_exists(temp_file.name)
 
 
+def test_file_exists_when_file_doesnt_exist(tmp_path) -> None:
+    """Test that file_exists returns False when the file does not exist"""
+    assert not fileio.file_exists(os.path.join(tmp_path, "not_a_file.txt"))
+
+
 # def test_remove_function(tmp_path) -> None:
 #     """Test that remove function actually removes a file"""
 #     with NamedTemporaryFile(dir=tmp_path) as temp_file:
@@ -222,12 +227,13 @@ def test_glob_function(tmp_path) -> None:
         assert temp_file.name in files
 
 
-def test_is_dir_function(tmp_path) -> None:
-    """Test that is_dir returns True when the path is a directory"""
-    assert fileio.is_dir(str(tmp_path))
+def test_make_dirs(tmp_path) -> None:
+    """Test that make_dirs creates a directory"""
+    fileio.make_dirs(os.path.join(tmp_path, "not_a_dir"))
+    assert os.path.exists(os.path.join(tmp_path, "not_a_dir"))
 
 
-def test_is_dir_returns_true_when_not_a_dir(tmp_path) -> None:
-    """Test that is_dir returns False when the path is not a directory"""
-    with NamedTemporaryFile(dir=tmp_path) as temp_file:
-        assert not fileio.is_dir(str(temp_file.name))
+def test_make_dirs_when_recursive(tmp_path) -> None:
+    """Test that make_dirs creates a directory"""
+    fileio.make_dirs(os.path.join(tmp_path, "not_a_dir/still_not_a_dir"))
+    assert os.path.exists(os.path.join(tmp_path, "not_a_dir/still_not_a_dir"))
