@@ -326,8 +326,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 f"http://localhost:{self.kubeflow_pipelines_ui_port}/."
                 f"The orchestrator is now up."
             )
-        except Exception:
+        except Exception as e:
             self.list_manual_setup_steps()
+            raise e
 
     def down(self) -> None:
         """Tears down a local Kubeflow Pipelines deployment."""
