@@ -292,12 +292,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
             port=self.kubeflow_pipelines_ui_port,
         )
 
-        logger.info(
-            f"Finished local Kubeflow Pipelines deployment. The UI should now "
-            f"be accessible at "
-            f"http://localhost:{self.kubeflow_pipelines_ui_port}/."
-        )
-
     def down(self) -> None:
         """Tears down a local Kubeflow Pipelines deployment."""
         if self.is_running:

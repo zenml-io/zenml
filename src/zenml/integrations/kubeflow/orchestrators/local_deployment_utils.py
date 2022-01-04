@@ -1,5 +1,6 @@
 import json
 import shutil
+import socket
 import subprocess
 import sys
 import time
@@ -203,21 +204,52 @@ def start_kfp_ui_daemon(pid_file_path: str, port: int) -> None:
         f"{port}:80",
     ]
 
-    def _daemon_function() -> None:
-        """Port-forwards the Kubeflow Pipelines UI pod."""
-        subprocess.check_call(command)
-
-    if sys.platform == "win32":
+    if not port_available(port):
+        modified_command = command.copy()
+        modified_command[-1] = "PORT:80"
         logger.warning(
-            f"Daemon functionality not supported on Windows. "
-            f"In order to access the Kubeflow Pipelines UI, please run "
-            f"'{' '.join(command)}' in a separate command line shell."
+            "Unable to port-forward Kubeflow Pipelines UI to local port %d "
+            "because the port is occupied. In order to access the Kubeflow "
+            "Pipelines UI at http://localhost:PORT/, please run '%s' in a "
+            "separate command line shell (replace PORT with a free port of "
+            "your choice).",
+            port,
+            " ".join(modified_command),
+        )
+    elif sys.platform == "win32":
+        logger.warning(
+            "Daemon functionality not supported on Windows. "
+            "In order to access the Kubeflow Pipelines UI at "
+            "http://localhost:%d/, please run '%s' in a separate command "
+            "line shell.",
+            port,
+            " ".join(command),
         )
     else:
         from zenml.utils import daemon
+
+        def _daemon_function() -> None:
+            """Port-forwards the Kubeflow Pipelines UI pod."""
+            subprocess.check_call(command)
 
         daemon.run_as_daemon(
             _daemon_function,
             pid_file=pid_file_path,
         )
-        logger.info("Started Kubeflow Pipelines UI daemon.")
+        logger.info(
+            "Started Kubeflow Pipelines UI daemon. The Kubeflow Pipelines UI "
+            "should now be accessible at http://localhost:%d/.",
+            port,
+        )
+
+
+def port_available(port: int) -> bool:
+    """Checks if a local port is available."""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(("127.0.0.1", port))
+    except socket.error as e:
+        logger.debug("Port %d unavailable: %s", port, e)
+        return False
+
+    return True
