@@ -54,8 +54,10 @@ class Integration(metaclass=IntegrationMeta):
                 result = shutil.which(command)
 
                 if result is None:
-                    raise DoesNotExistException(
-                        f"Unable to find the required packages for {req} on your system. Please install the packages on your system and try again."
+                    raise pkg_resources.DistributionNotFound(
+                        f"Unable to find the required packages for {req} on "
+                        f"your system. Please install the packages on your "
+                        f"system and try again."
                     )
 
             for r in cls.REQUIREMENTS:
