@@ -215,6 +215,11 @@ class KubeflowOrchestrator(BaseOrchestrator):
         return os.path.join(self.root_directory, "kubeflow_daemon.pid")
 
     @property
+    def _daemon_log_file_path(self) -> str:
+        """Path of the daemon log file."""
+        return os.path.join(self.root_directory, "kubeflow_daemon.log")
+
+    @property
     def _k3d_cluster_name(self) -> str:
         """Returns the K3D cluster name."""
         # K3D only allows cluster names with up to 32 characters, use the
@@ -289,6 +294,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         )
         local_deployment_utils.start_kfp_ui_daemon(
             pid_file_path=self._pid_file_path,
+            log_file_path=self._daemon_log_file_path,
             port=self.kubeflow_pipelines_ui_port,
         )
 
@@ -310,5 +316,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
                 daemon.stop_daemon(self._pid_file_path, kill_children=True)
                 fileio.remove(self._pid_file_path)
+
+        if fileio.file_exists(self._daemon_log_file_path):
+            fileio.remove(self._daemon_log_file_path)
 
         logger.info("Local kubeflow pipelines deployment spun down.")

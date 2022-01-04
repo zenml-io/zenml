@@ -186,13 +186,16 @@ def deploy_kubeflow_pipelines(kubernetes_context: str) -> None:
     logger.info("Finished Kubeflow Pipelines setup.")
 
 
-def start_kfp_ui_daemon(pid_file_path: str, port: int) -> None:
+def start_kfp_ui_daemon(
+    pid_file_path: str, log_file_path: str, port: int
+) -> None:
     """Starts a daemon process that forwards ports so the Kubeflow Pipelines
     UI is accessible in the browser.
 
     Args:
         pid_file_path: Path where the file with the daemons process ID should
             be written.
+        log_file_path: Path to a file where the daemon logs should be written.
         port: Port on which the UI should be accessible.
     """
     command = [
@@ -233,12 +236,13 @@ def start_kfp_ui_daemon(pid_file_path: str, port: int) -> None:
             subprocess.check_call(command)
 
         daemon.run_as_daemon(
-            _daemon_function,
-            pid_file=pid_file_path,
+            _daemon_function, pid_file=pid_file_path, log_file=log_file_path
         )
         logger.info(
-            "Started Kubeflow Pipelines UI daemon. The Kubeflow Pipelines UI "
-            "should now be accessible at http://localhost:%d/.",
+            "Started Kubeflow Pipelines UI daemon (check the daemon logs at %s "
+            "in case you're not able to view the UI). The Kubeflow Pipelines "
+            "UI should now be accessible at http://localhost:%d/.",
+            log_file_path,
             port,
         )
 
