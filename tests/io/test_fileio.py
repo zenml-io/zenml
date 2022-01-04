@@ -237,3 +237,32 @@ def test_make_dirs_when_recursive(tmp_path) -> None:
     """Test that make_dirs creates a directory"""
     fileio.make_dirs(os.path.join(tmp_path, "not_a_dir/still_not_a_dir"))
     assert os.path.exists(os.path.join(tmp_path, "not_a_dir/still_not_a_dir"))
+
+
+def test_mkdir_function(tmp_path) -> None:
+    """Test that mkdir creates a directory"""
+    fileio.mkdir(os.path.join(tmp_path, "not_a_dir"))
+    assert os.path.exists(os.path.join(tmp_path, "not_a_dir"))
+
+
+def test_mkdir_function_when_parent_doesnt_exist(tmp_path) -> None:
+    """Test that mkdir creates a directory"""
+    with pytest.raises(NotFoundError):
+        fileio.mkdir(os.path.join(tmp_path, "not_a_dir/still_not_a_dir"))
+
+
+# def test_rename_function(tmp_path) -> None:
+#     """Test that rename renames a file"""
+#     with NamedTemporaryFile(dir=tmp_path) as temp_file:
+#         assert fileio.file_exists(temp_file.name)
+#         fileio.rename(temp_file.name, os.path.join(tmp_path, "new_file.txt"))
+#         assert os.path.exists(os.path.join(tmp_path, "new_file.txt"))
+
+
+def test_rename_function_raises_error_if_file_already_exists(tmp_path) -> None:
+    """Test that rename raises an error if the file already exists"""
+    with NamedTemporaryFile(dir=tmp_path) as temp_file:
+        assert fileio.file_exists(temp_file.name)
+        with pytest.raises(OSError):
+            with NamedTemporaryFile(dir=tmp_path) as temp_file2:
+                fileio.rename(temp_file.name, temp_file2.name)
