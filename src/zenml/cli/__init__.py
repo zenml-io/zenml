@@ -62,11 +62,10 @@ own config and resource management tools. Type:
 This is all you need to begin using all the MLOps goodness that ZenML
 provides!
 
-If your repository is not initialized as a ``git`` repository, the CLI
-will let you know with an error message. By default, ``zenml init`` will
-install its own hidden ``.zen`` folder inside the current directory from
-which you are running the command. You can also pass in a directory path
-manually using the ``--repo_path`` option:
+By default, ``zenml init`` will install its own hidden ``.zen`` folder
+inside the current directory from which you are running the command.
+You can also pass in a directory path manually using the
+``--repo_path`` option:
 
 .. code:: bash
 
