@@ -11,14 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional, cast
 
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.core.repo import Repository
+
+if TYPE_CHECKING:
+    from zenml.artifact_stores import BaseArtifactStore
 
 
 @cli.group("artifact-store")
@@ -66,7 +68,9 @@ def register_artifact_store(name: str, type: str, args: List[str]) -> None:
     comp = artifact_store_factory.get_single_component(type)
     artifact_store = comp(repo_path=repo.path, **parsed_args)
     service = repo.get_service()
-    service.register_artifact_store(name, artifact_store)
+    service.register_artifact_store(
+        name, cast("BaseArtifactStore", artifact_store)
+    )
     cli_utils.declare(f"Artifact Store `{name}` successfully registered!")
 
 

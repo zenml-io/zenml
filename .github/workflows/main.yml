@@ -11,6 +11,9 @@ on:
 jobs:
   main:
     runs-on: ${{ matrix.os }}
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
     # Exit if its a commit from Gitbook
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
 
@@ -27,6 +30,18 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Install Linux System Dependencies
+        if: runner.os=='Linux'
+        run: sudo apt install graphviz
+
+      - name: Install MacOS System Dependencies
+        if: runner.os=='macOS'
+        run: brew install graphviz
+
+      - name: Install Windows System Dependencies
+        if: runner.os=='Windows'
+        run: choco install graphviz
 
       - name: Install poetry
         run: |
@@ -45,18 +60,13 @@ jobs:
           python -m poetry run zenml integration install pytorch -f
           python -m poetry run zenml integration install gcp -f
           python -m poetry run pip install click~=8.0.3
-          
-
-      - name: Opt-out of analytics
-        run: |
-          python -m poetry run zenml analytics opt-out
 
       - name: Lint
         run: |
           python -m poetry run bash scripts/lint.sh
 
       - name: Test
-        run: python -m poetry run bash scripts/test-coverage-xml.sh
+        run: python -m poetry run bash scripts/test-coverage-xml.sh unit
 
       - name: Upload coverage
         # only do it for python 3.6, we don't need to do it for every version

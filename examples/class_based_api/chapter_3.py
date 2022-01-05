@@ -13,16 +13,35 @@
 #  permissions and limitations under the License.
 
 import os
+from urllib.request import urlopen
 
 from zenml.core.repo import Repository
 from zenml.integrations.sklearn import steps as sklearn_steps
 from zenml.integrations.tensorflow import steps as tf_steps
+from zenml.logger import get_logger
 from zenml.pipelines.builtin_pipelines import TrainingPipeline
 from zenml.steps import builtin_steps
 
+logger = get_logger(__name__)
+
+DATASET_PATH = "diabetes.csv"
+DATASET_SRC = (
+    "https://storage.googleapis.com/zenml-public-bucket/"
+    "pima-indians-diabetes/diabetes.csv"
+)
+
+# Download the dataset for this example
+if not os.path.isfile(DATASET_PATH):
+    logger.info(f"Downloading dataset {DATASET_PATH}")
+    with urlopen(DATASET_SRC) as data:
+        content = data.read().decode()
+    with open(DATASET_PATH, "w") as output:
+        output.write(content)
+
+
 # Configuring the datasource
 datasource = builtin_steps.PandasDatasource(
-    builtin_steps.PandasDatasourceConfig(path=os.getenv("data"))
+    builtin_steps.PandasDatasourceConfig(path=DATASET_PATH)
 )
 
 # Configuring the split step
@@ -45,7 +64,7 @@ preprocesser = sklearn_steps.SklearnStandardScaler(
 # Configuring the training step
 trainer = tf_steps.TensorflowBinaryClassifier(
     tf_steps.TensorflowBinaryClassifierConfig(
-        target_column="has_diabetes", epochs=1
+        target_column="has_diabetes", epochs=10
     )
 )
 

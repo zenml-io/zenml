@@ -20,7 +20,7 @@ ML workflows, from [`scikit-learn`](https://scikit-learn.org/stable/) to [`PyTor
 These are the third-party integrations that ZenML currently supports:
 
 | Integration        | Status | Type                   | Implementation Notes                                                                | Example                                                                               |
-| ------------------ | ------ | ---------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| ------------------ | ------ | ---------------------- | ----------------------------------------------------------------------------------- |---------------------------------------------------------------------------------------|
 | Apache Airflow     | ✅      | Orchestrator           | Works for local environment                                                         | [airflow_local](https://github.com/zenml-io/zenml/tree/main/examples/airflow_local)   |
 | Apache Beam        | ✅      | Distributed Processing |                                                                                     |                                                                                       |
 | BentoML            | ⛏      | Cloud                  | Looking for community implementors                                                  |                                                                                       |
@@ -38,7 +38,7 @@ These are the third-party integrations that ZenML currently supports:
 | Plotly             | ✅      | Visualizer             | For Pipeline and PipelineRun visualization objects.                                 | [lineage](https://github.com/zenml-io/zenml/tree/main/examples/lineage)               |
 | PyTorch            | ✅      | Training               |                                                                                     |                                                                                       |
 | PyTorch Lightning  | ✅      | Training               |                                                                                     |                                                                                       |
-| scikit-learn       | ✅      | Training               |                                                                                     | [caching chapter](https://docs.zenml.io/guides/functional-api/chapter-4)               |
+| scikit-learn       | ✅      | Training               |                                                                                     | [caching chapter](https://docs.zenml.io/guides/functional-api/caching)                |
 | Seldon             | ⛏      | Cloud                  | Looking for community implementors                                                  |                                                                                       |
 | Tensorflow         | ✅      | Training               |                                                                                     | [quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)         |
 | Whylogs            | ⛏      | Logging                | Looking for community implementors                                                  |                                                                                       |

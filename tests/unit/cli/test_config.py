@@ -11,17 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
 import os
 
 import pytest
-from click import get_app_dir
 from click.testing import CliRunner
 
 from zenml.cli.config import opt_in, opt_out, set_logging_verbosity
 from zenml.config.constants import GLOBAL_CONFIG_NAME
 from zenml.config.global_config import GlobalConfig
-from zenml.constants import APP_NAME, ZENML_LOGGING_VERBOSITY
+from zenml.constants import ZENML_LOGGING_VERBOSITY
+from zenml.io.utils import get_global_config_directory
 from zenml.utils.yaml_utils import read_json
 
 NOT_LOGGING_LEVELS = ["abc", "my_cat_is_called_aria", "pipeline123"]
@@ -29,8 +28,10 @@ NOT_LOGGING_LEVELS = ["abc", "my_cat_is_called_aria", "pipeline123"]
 
 def read_global_config():
     """Read the global config file"""
-    config_file = os.path.join(get_app_dir(APP_NAME), GLOBAL_CONFIG_NAME)
-    return read_json(str(config_file))
+    config_file = os.path.join(
+        get_global_config_directory(), GLOBAL_CONFIG_NAME
+    )
+    return read_json(config_file)
 
 
 def get_analytics_opt_in_status():

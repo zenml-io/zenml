@@ -13,6 +13,9 @@ jobs:
   publish:
     name: Build and publish the api docs to S3
     runs-on: ubuntu-latest
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-node@v2
@@ -32,10 +35,6 @@ jobs:
         python -m poetry run zenml integration install -f
         python -m poetry run pip install click~=8.0.3 typing-extensions~=3.10.0.2
         python -m poetry run pip install awscli
-
-    - name: Opt-out of analytics
-      run: |
-        python -m poetry run zenml analytics opt-out
 
     - name: Runs docs generation
       run: poetry run bash scripts/generate-docs.sh

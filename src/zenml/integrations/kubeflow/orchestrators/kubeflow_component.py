@@ -21,6 +21,7 @@ compatible.
 Note: This requires Kubeflow Pipelines SDK to be installed.
 """
 import json
+import os.path
 from typing import Dict, List, Set
 
 from google.protobuf import json_format
@@ -90,6 +91,7 @@ class KubeflowComponent:
         image: str,
         tfx_ir: pipeline_pb2.Pipeline,  # type: ignore[valid-type]
         pod_labels_to_attach: Dict[str, str],
+        main_module: str,
         step_module: str,
         step_function_name: str,
         runtime_parameters: List[data_types.RuntimeParameter],
@@ -121,6 +123,8 @@ class KubeflowComponent:
             json_format.MessageToJson(tfx_ir),
             "--metadata_ui_path",
             metadata_ui_path,
+            "--main_module",
+            main_module,
             "--step_module",
             step_module,
             "--step_function_name",
@@ -155,10 +159,11 @@ class KubeflowComponent:
             )
 
         if isinstance(metadata_store, SQLiteMetadataStore):
+            metadata_store_dir = os.path.dirname(metadata_store.uri)
             host_path = k8s_client.V1HostPathVolumeSource(
-                path=metadata_store.uri, type="Directory"
+                path=metadata_store_dir, type="Directory"
             )
-            volumes[metadata_store.uri] = k8s_client.V1Volume(
+            volumes[metadata_store_dir] = k8s_client.V1Volume(
                 name="local-metadata-store", host_path=host_path
             )
             logger.debug(

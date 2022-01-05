@@ -143,7 +143,7 @@ they are linked together and the outputs of one step might well be the inputs of
 
 We have some built-in ways to serialize and deserialize the data flowing between steps. Of course, if you are 
 using some library or tool which doesn't work with our built-in options, you can write 
-[your own custom materializer](https://docs.zenml.io/guides/functional-api/chapter-5) to ensure that your data can 
+[your own custom materializer](https://docs.zenml.io/guides/functional-api/materialize-artifacts) to ensure that your data can 
 be passed from step to step in this way. We use our 
 [`fileio` utilities](https://apidocs.zenml.io/api_reference/zenml.io.fileio.html) to do the disk operations 
 without needing to be concerned with whether we're operating on a local or cloud machine.

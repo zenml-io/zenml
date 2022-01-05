@@ -24,9 +24,7 @@ from zenml.steps import BaseStepConfig, Output, step
 
 # Path to a pip requirements file that contains requirements necessary to run
 # the pipeline
-requirements_file = os.path.join(
-    os.path.dirname(__file__), "chapter_7_requirements.txt"
-)
+requirements_file = os.path.join(os.path.dirname(__file__), "requirements.txt")
 
 
 class ImporterConfig(BaseStepConfig):

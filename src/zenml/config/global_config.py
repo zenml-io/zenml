@@ -17,10 +17,10 @@ from uuid import UUID, uuid4
 
 from pydantic import Field
 
-import zenml.io.utils
 from zenml.config.constants import GLOBAL_CONFIG_NAME
 from zenml.core.base_component import BaseComponent
 from zenml.io import fileio
+from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -41,8 +41,7 @@ class GlobalConfig(BaseComponent):
         config, we want to persist the data as soon as it is initialized for
         the first time."""
         super().__init__(
-            serialization_dir=zenml.io.utils.get_global_config_directory(),
-            **data
+            serialization_dir=get_global_config_directory(), **data
         )
 
         # At this point, if the serialization file does not exist we should

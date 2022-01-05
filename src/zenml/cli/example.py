@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import click
-from git.exc import GitCommandError, NoSuchPathError
+from git.exc import GitCommandError, InvalidGitRepositoryError, NoSuchPathError
 from git.repo.base import Repo
 from packaging.version import Version, parse
 
@@ -37,6 +37,7 @@ from zenml.cli.utils import (
 from zenml.constants import GIT_REPO_URL
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.utils.analytics_utils import RUN_EXAMPLE, track_event
 
 logger = get_logger(__name__)
 
@@ -48,7 +49,7 @@ class LocalExample:
     """Class to encapsulate all properties and methods of the local example
     that can be run from the CLI"""
 
-    def __init__(self, name: str, path: str) -> None:
+    def __init__(self, path: Path, name: str) -> None:
         """Create a new LocalExample instance.
 
         Args:
@@ -63,14 +64,14 @@ class LocalExample:
     def python_files_in_dir(self) -> List[str]:
         """List of all python files in the drectl in local example directory
         the __init__.py file is excluded from this list"""
-        py_in_dir = fileio.find_files(self.path, "*.py")
+        py_in_dir = fileio.find_files(str(self.path), "*.py")
         py_files = []
-        for f in py_in_dir:
+        for file in py_in_dir:
             # Make sure only files directly in dir are considered, not files
             # in sub dirs
-            if Path(self.path) == Path(f).parent:
-                if Path(f).name != "__init__.py":
-                    py_files.append(f)
+            if self.path == Path(file).parent:
+                if Path(file).name != "__init__.py":
+                    py_files.append(file)
 
         return py_files
 
@@ -90,11 +91,11 @@ class LocalExample:
         if self.has_single_python_file:
             return self.python_files_in_dir[0]
         elif self.has_any_python_file:
-            raise RuntimeError(
-                "Unclear which python file to return for "
-                f"example {self.name}."
-                f"{self.python_files_in_dir}"
+            logger.warning(
+                "This example has multiple executable python files"
+                "The last one in alphanumerical order is taken."
             )
+            return sorted(self.python_files_in_dir)[-1]
         else:
             raise RuntimeError(
                 "No pipeline runner script found in example. "
@@ -103,7 +104,9 @@ class LocalExample:
 
     def is_present(self) -> bool:
         """Checks if the example is installed at the given path."""
-        return fileio.file_exists(self.path) and fileio.is_dir(self.path)
+        return fileio.file_exists(str(self.path)) and fileio.is_dir(
+            str(self.path)
+        )
 
     def run_example(self, bash_file: str, force: bool) -> None:
         """Run the local example using the bash script at the supplied
@@ -117,7 +120,6 @@ class LocalExample:
             os.chdir(self.path)
             try:
                 # TODO [ENG-271]: Catch errors that might be thrown in subprocess
-                declare(self.path)
                 if force:
                     subprocess.check_call(
                         [
@@ -126,7 +128,7 @@ class LocalExample:
                             "--executable",
                             self.executable_python_example,
                         ],
-                        cwd=self.path,
+                        cwd=str(self.path),
                     )
                 else:
                     subprocess.check_call(
@@ -154,6 +156,9 @@ class LocalExample:
                 raise FileNotFoundError(
                     "Bash File to run Examples not found at" f"{bash_file}"
                 )
+
+        # Telemetry
+        track_event(RUN_EXAMPLE, {"name": self.name})
 
 
 class Example:
@@ -203,13 +208,27 @@ class ExamplesRepo:
         self.cloning_path = cloning_path
         try:
             self.repo = Repo(self.cloning_path)
-        except NoSuchPathError:
+        except NoSuchPathError or InvalidGitRepositoryError:
             self.repo = None  # type: ignore
             logger.debug(
-                f"`cloning_path`: {self.cloning_path} was empty, "
-                f"but ExamplesRepo was created. "
-                "Ensure a pull is performed before doing any other operations."
+                f"`Cloning_path`: {self.cloning_path} was empty, "
+                "Automatically cloning the examples."
             )
+            self.clone()
+            self.checkout(branch=self.latest_release)
+
+    @property
+    def active_version(self) -> Optional[str]:
+        """In case a tagged version is checked out, this property returns
+        that version, else None is returned"""
+        return next(
+            (
+                tag
+                for tag in self.repo.tags
+                if tag.commit == self.repo.head.commit
+            ),
+            None,
+        )
 
     @property
     def latest_release(self) -> str:
@@ -304,6 +323,12 @@ class GitExamplesHandler(object):
             )
         ]
 
+    @property
+    def is_matching_versions(self) -> bool:
+        """Returns a boolean whether the checked out examples are on the
+        same code version as zenml"""
+        return zenml_version_installed == str(self.examples_repo.active_version)
+
     def is_example(self, example_name: Optional[str] = None) -> bool:
         """Checks if the supplied example_name corresponds to an example"""
         example_dict = {e.name: e for e in self.examples}
@@ -337,7 +362,7 @@ class GitExamplesHandler(object):
     ) -> None:
         """Pulls the examples from the main git examples repository."""
         if version == "":
-            version = self.examples_repo.latest_release
+            version = zenml_version_installed
 
         if not self.examples_repo.is_cloned:
             self.examples_repo.clone()
@@ -386,6 +411,29 @@ pass_git_examples_handler = click.make_pass_decorator(
 )
 
 
+def check_for_version_mismatch(
+    git_examples_handler: GitExamplesHandler,
+) -> None:
+    if git_examples_handler.is_matching_versions:
+        return
+    else:
+        if git_examples_handler.examples_repo.active_version:
+            warning(
+                "The examples you have installed are installed with Version "
+                f"{git_examples_handler.examples_repo.active_version} "
+                f"of ZenML. However your code is at {zenml_version_installed} "
+                "Consider using `zenml example pull` to download  "
+                "examples matching your zenml installation."
+            )
+        else:
+            warning(
+                "The examples you have installed are downloaded from a "
+                "development branch of ZenML. Full functionality is not "
+                "guaranteed. Use `zenml example pull` to "
+                "get examples using your zenml version."
+            )
+
+
 @cli.group(help="Access all ZenML examples.")
 def example() -> None:
     """Examples group"""
@@ -395,9 +443,8 @@ def example() -> None:
 @pass_git_examples_handler
 def list(git_examples_handler: GitExamplesHandler) -> None:
     """List all available examples."""
+    check_for_version_mismatch(git_examples_handler)
     declare("Listing examples: \n")
-
-    # TODO[HIGH] - don't list .sh file
 
     for example in git_examples_handler.get_examples():
         declare(f"{example.name}")
@@ -447,6 +494,7 @@ def clean(git_examples_handler: GitExamplesHandler, path: str) -> None:
 @click.argument("example_name")
 def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
     """Find out more about an example."""
+    check_for_version_mismatch(git_examples_handler)
     # TODO [ENG-148]: fix markdown formatting so that it looks nicer (not a
     #  pure .md dump)
     try:
@@ -522,8 +570,8 @@ def pull(
         for example in examples:
             destination_dir = os.path.join(os.getcwd(), path, example.name)
 
-            if LocalExample(example.name, destination_dir).is_present():
-                if confirmation(
+            if LocalExample(Path(example.name), destination_dir).is_present():
+                if force or confirmation(
                     f"Example {example.name} is already pulled. "
                     "Do you wish to overwrite the directory at "
                     f"{destination_dir}?"
@@ -544,7 +592,6 @@ def pull(
     help="Run the example that you previously installed with "
     "`zenml example pull`"
 )
-@pass_git_examples_handler
 @click.argument("example_name", required=True)
 @click.option(
     "--path",
@@ -561,7 +608,10 @@ def pull(
     "example folder and force installs all necessary integration "
     "requirements.",
 )
+@pass_git_examples_handler
+@click.pass_context
 def run(
+    ctx: click.Context,
     git_examples_handler: GitExamplesHandler,
     example_name: str,
     path: str,
@@ -571,26 +621,28 @@ def run(
     `zenml example pull EXAMPLE_NAME` has to be called with the same relative
     path before the run command.
     """
+    check_for_version_mismatch(git_examples_handler)
+
     # TODO [ENG-272]: - create a post_run function inside individual setup.sh
     #  to inform user how to clean up
-    examples_dir = os.path.join(os.getcwd(), path)
+    examples_dir = Path(os.getcwd()) / path
     try:
         _ = git_examples_handler.get_examples(example_name)[0]
     except KeyError as e:
         error(str(e))
     else:
-        example_dir = os.path.join(examples_dir, example_name)
-        local_example = LocalExample(example_name, example_dir)
+        example_dir = examples_dir / example_name
+        local_example = LocalExample(example_dir, example_name)
 
         if not local_example.is_present():
-            error(f"Example {example_name} is not installed at {examples_dir})")
-        else:
-            bash_script_location = (
-                git_examples_handler.examples_repo.examples_run_bash_script
+            ctx.forward(pull)
+
+        bash_script_location = (
+            git_examples_handler.examples_repo.examples_run_bash_script
+        )
+        try:
+            local_example.run_example(
+                bash_file=bash_script_location, force=force
             )
-            try:
-                local_example.run_example(
-                    bash_file=bash_script_location, force=force
-                )
-            except NotImplementedError as e:
-                error(str(e))
+        except NotImplementedError as e:
+            error(str(e))

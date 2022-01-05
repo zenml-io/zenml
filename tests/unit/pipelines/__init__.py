@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,16 +11,3 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.integrations.constants import GRAPHVIZ
-from zenml.integrations.integration import Integration
-
-
-class GraphvizIntegration(Integration):
-    """Definition of Graphviz integration for ZenML."""
-
-    NAME = GRAPHVIZ
-    REQUIREMENTS = ["graphviz>=0.17"]
-    SYSTEM_REQUIREMENTS = {"graphviz": "dot"}
-
-
-GraphvizIntegration.check_installation()

@@ -13,34 +13,79 @@
 #  permissions and limitations under the License.
 import logging
 import os
+import shutil
+import sys
 
 import pytest
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.constants import ENV_ZENML_DEBUG
 from zenml.core.repo import Repository
-from zenml.exceptions import InitializationException
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
 from zenml.steps import StepContext, step
 
 
-def pytest_sessionstart(session):
-    """Called after the Session object has been created and
-    before performing collection and entering the run test loop.
-    """
+@pytest.fixture(scope="session", autouse=True)
+def base_repo(tmp_path_factory, session_mocker):
+    """Fixture to get a base clean repository for all tests."""
+    # original working directory
+    orig_cwd = os.getcwd()
+
+    # set env variables
     os.environ[ENV_ZENML_DEBUG] = "true"
-    try:
-        Repository.init_repo()
-    except InitializationException:
-        # already initialized
-        logging.info("Repo already initialized for testing.")
+    os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
+
+    # change the working directory to a fresh temp path
+    tmp_path = tmp_path_factory.mktemp("tmp")
+    os.chdir(tmp_path)
+
+    # patch the global dir just within the scope of this function
+    logging.info(f"Tests are running in repo path: {tmp_path}")
+    session_mocker.patch.object(
+        sys.modules["zenml.io.utils"],
+        "get_global_config_directory",
+        return_value=str(tmp_path / "zenml"),
+    )
+
+    # initialize repo at path
+    Repository.init_repo(str(tmp_path))
+    repo = Repository(str(tmp_path))
+
+    # monkey patch original cwd in for later use and yield
+    repo.original_cwd = orig_cwd
+    yield repo
+
+    # clean up
+    os.chdir(orig_cwd)
+    shutil.rmtree(tmp_path)
 
 
-def pytest_sessionfinish(session, exitstatus):
-    """Called after whole test run finished, right before
-    returning the exit status to the system.
-    """
+@pytest.fixture
+def clean_repo(tmp_path_factory, mocker, base_repo: Repository):
+    """Fixture to get a clean repository for an individual test."""
+    # change the working directory to a fresh temp path
+    tmp_path = tmp_path_factory.mktemp("tmp")
+    os.chdir(tmp_path)
+
+    # patch the global dir just within the scope of this function
+    mocker.patch.object(
+        sys.modules["zenml.io.utils"],
+        "get_global_config_directory",
+        return_value=str(tmp_path / "zenml"),
+    )
+
+    # initialize repo with new tmp path
+    Repository.init_repo(str(tmp_path))
+    repo = Repository(str(tmp_path))
+
+    # monkey patch base repo cwd for later user and yield
+    repo.original_cwd = base_repo.original_cwd
+    yield repo
+
+    # remove all traces, and change working directory back to base path
+    os.chdir(base_repo.path)
+    shutil.rmtree(tmp_path)
 
 
 @pytest.fixture
@@ -52,6 +97,30 @@ def empty_step():
         pass
 
     return _empty_step
+
+
+@pytest.fixture
+def multiple_empty_steps():
+    """Pytest fixture that returns multiple unique empty step functions."""
+
+    def _multiple_empty_steps():
+        @step
+        def _empty_step_1():
+            pass
+
+        @step
+        def _empty_step_2():
+            pass
+
+        @step
+        def _empty_step_3():
+            pass
+
+        output = [_empty_step_1, _empty_step_2, _empty_step_3]
+
+        return output
+
+    return _multiple_empty_steps
 
 
 @pytest.fixture

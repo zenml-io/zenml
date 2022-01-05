@@ -12,13 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional, cast
 
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.core.repo import Repository
+
+if TYPE_CHECKING:
+    from zenml.metadata_stores import BaseMetadataStore
 
 
 @cli.group("metadata-store")
@@ -67,7 +70,9 @@ def register_metadata_store(name: str, type: str, args: List[str]) -> None:
 
     metadata_store = comp(repo_path=repo.path, **parsed_args)
     service = repo.get_service()
-    service.register_metadata_store(name, metadata_store)
+    service.register_metadata_store(
+        name, cast("BaseMetadataStore", metadata_store)
+    )
     cli_utils.declare(f"Metadata Store `{name}` successfully registered!")
 
 

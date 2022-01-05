@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import time
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple, cast
 
 import click
 
@@ -98,7 +98,7 @@ def register_orchestrator(name: str, type: str, args: List[str]) -> None:
     comp = orchestrator_store_factory.get_single_component(type)
     orchestrator_ = comp(repo_path=repo.path, **parsed_args)
     service = repo.get_service()
-    service.register_orchestrator(name, orchestrator_)
+    service.register_orchestrator(name, cast("BaseOrchestrator", orchestrator_))
     cli_utils.declare(f"Orchestrator `{name}` successfully registered!")
 
 

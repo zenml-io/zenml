@@ -14,14 +14,12 @@
 
 import os
 
-import click
-
-from zenml import constants
 from zenml.config.constants import GLOBAL_CONFIG_NAME
 from zenml.config.global_config import GlobalConfig
 from zenml.io import fileio
+from zenml.io.utils import get_global_config_directory
 
-APP_DIR = click.get_app_dir(constants.APP_NAME)
+APP_DIR = get_global_config_directory()
 
 
 def test_global_config_file_creation():
