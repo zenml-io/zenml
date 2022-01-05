@@ -52,8 +52,9 @@ This will give you information about how to register a metadata store.
 Beginning a Project
 -------------------
 
-When you begin a project, initialize the directory with ZenML’s
-own config and resource management tools. Type:
+In order to start working on your project, initialize a ZenML repository
+within your current directory with ZenML’s own config and resource management
+tools:
 
 .. code:: bash
 
