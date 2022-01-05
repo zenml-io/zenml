@@ -16,7 +16,6 @@ from typing import Any, Dict, List, Tuple, Type, cast
 
 import pkg_resources
 
-from zenml.exceptions import DoesNotExistException
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 
@@ -28,7 +27,7 @@ class IntegrationMeta(type):
     subclasses"""
 
     def __new__(
-            mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
+        mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
     ) -> "IntegrationMeta":
         """Hook into creation of an Integration class."""
         cls = cast(Type["Integration"], super().__new__(mcs, name, bases, dct))
@@ -50,15 +49,17 @@ class Integration(metaclass=IntegrationMeta):
     def check_installation(cls) -> bool:
         """Method to check whether the required packages are installed"""
         try:
-            for req, command in cls.SYSTEM_REQUIREMENTS.items():
+            for requirement, command in cls.SYSTEM_REQUIREMENTS.items():
                 result = shutil.which(command)
 
                 if result is None:
-                    raise DoesNotExistException(
-                        f"Unable to find the required packages for {req} on "
-                        f"your system. Please install the packages on your "
-                        f"system and try again."
+                    logger.debug(
+                        "Unable to find the required packages for %s on your "
+                        "system. Please install the packages on your system "
+                        "and try again.",
+                        requirement,
                     )
+                    return False
 
             for r in cls.REQUIREMENTS:
                 pkg_resources.get_distribution(r)
@@ -78,9 +79,6 @@ class Integration(metaclass=IntegrationMeta):
                 f"VersionConflict error when loading installation {cls.NAME}: "
                 f"{str(e)}"
             )
-            return False
-        except DoesNotExistException as e:
-            logger.debug(e)
             return False
 
     @staticmethod
