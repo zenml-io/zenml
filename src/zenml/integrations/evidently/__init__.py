@@ -26,7 +26,7 @@ class EvidentlyIntegration(Integration):
     for ZenML."""
 
     NAME = EVIDENTLY
-    REQUIREMENTS = ["evidently>=0.1.39.dev0"]
+    REQUIREMENTS = ["evidently"]
 
 
 EvidentlyIntegration.check_installation()
