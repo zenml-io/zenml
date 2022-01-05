@@ -218,7 +218,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         return os.path.join(self.root_directory, "kubeflow_daemon.pid")
 
     @property
-    def _daemon_log_file_path(self) -> str:
+    def log_file(self) -> str:
         """Path of the daemon log file."""
         return os.path.join(self.root_directory, "kubeflow_daemon.log")
 
