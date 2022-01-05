@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from datetime import datetime
+
 import mlflow
 import numpy as np
 import tensorflow as tf
@@ -122,7 +124,7 @@ run_1 = mlflow_example_pipeline(
     evaluator=tf_evaluator(),
 )
 
-run_1.run(run_name="run_1")
+run_1.run(run_name=f'run_1_{datetime.now().strftime("%d_%h_%y-%H_%M_%S")}')
 
 
 # Initialize a pipeline run again
@@ -133,4 +135,4 @@ run_2 = mlflow_example_pipeline(
     evaluator=tf_evaluator(),
 )
 
-run_2.run(run_name="run_2")
+run_2.run(run_name=f'run_2_{datetime.now().strftime("%d_%h_%y-%H_%M_%S")}')
