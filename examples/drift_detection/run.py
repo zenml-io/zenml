@@ -12,8 +12,8 @@
 #  permissions and limitations under the License.
 
 import pandas as pd
-from evidently.dashboard import Dashboard
-from evidently.tabs import DataDriftTab
+from evidently.model_profile import Profile
+from evidently.profile_sections import DataDriftProfileSection
 from sklearn import datasets
 
 from zenml.logger import get_logger
@@ -23,18 +23,23 @@ from zenml.steps import Output, step
 logger = get_logger(__name__)
 
 
-@step
-def data_loader() -> Output(dataset=pd.DataFrame):
+@step()
+def data_loader() -> pd.DataFrame:
     """Load the breast cancer dataset."""
-    return datasets.load_breast_cancer()
+    breast_cancer = datasets.load_breast_cancer()
+    df = pd.DataFrame(
+        data=breast_cancer.data, columns=breast_cancer.feature_names
+    )
+    df["class"] = breast_cancer.target
+    return df
 
 
 @step
 def full_split(
     input: pd.DataFrame,
-) -> Output(dataset=pd.DataFrame,):
+) -> Output(dataset=pd.DataFrame):
     """Loads the breast cancer dataset as a Pandas dataframe."""
-    return pd.DataFrame(input.data, columns=input.feature_names)
+    return [input]
 
 
 @step
@@ -42,20 +47,20 @@ def partial_split(
     input: pd.DataFrame,
 ) -> Output(dataset=pd.DataFrame,):
     """Loads part of the breast cancer dataset as a Pandas dataframe."""
-    return pd.DataFrame(input.data, columns=input.feature_names)[:100]
+    return [input[:100]]
 
 
 @step()
-def drift_detector(full_data: pd.DataFrame, partial_data: pd.DataFrame) -> None:
+def drift_detector(full_data: pd.DataFrame, partial_data: pd.DataFrame) -> dict:
     """Detects a drift in the pipeline."""
-    breast_cancer_data_drift_report = Dashboard(tabs=[DataDriftTab()])
-    breast_cancer_data_drift_report.calculate(
+    breast_cancer_data_drift_profile = Profile(
+        sections=[DataDriftProfileSection()]
+    )
+    breast_cancer_data_drift_profile.calculate(
         full_data, partial_data, column_mapping=None
     )
-    breast_cancer_data_drift_report.save(
-        "reports/breast_cancer_drift_report.html"
-    )
-    # logger.info("Drift detected")
+    breast_cancer_data_drift_profile.json()
+    logger.info(breast_cancer_data_drift_profile.json())
 
 
 @pipeline
