@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import socket
+from typing import cast
 
 from zenml.logger import get_logger
 
@@ -36,4 +37,4 @@ def find_available_port() -> int:
         s.bind(("127.0.0.1", 0))
         _, port = s.getsockname()
 
-    return port
+    return cast(int, port)

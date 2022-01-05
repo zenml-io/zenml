@@ -306,7 +306,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         local_deployment_utils.start_kfp_ui_daemon(
             pid_file_path=self._pid_file_path,
-            log_file_path=self._daemon_log_file_path,
+            log_file_path=self.log_file,
             port=port,
         )
 
@@ -329,7 +329,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 daemon.stop_daemon(self._pid_file_path, kill_children=True)
                 fileio.remove(self._pid_file_path)
 
-        if fileio.file_exists(self._daemon_log_file_path):
-            fileio.remove(self._daemon_log_file_path)
+        if fileio.file_exists(self.log_file):
+            fileio.remove(self.log_file)
 
         logger.info("Local kubeflow pipelines deployment spun down.")
