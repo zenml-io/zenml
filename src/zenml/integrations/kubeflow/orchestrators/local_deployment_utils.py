@@ -1,13 +1,12 @@
 import json
 import shutil
-import socket
 import subprocess
 import sys
 import time
 
 import zenml.io.utils
 from zenml.logger import get_logger
-from zenml.utils import yaml_utils
+from zenml.utils import networking_utils, yaml_utils
 
 KFP_VERSION = "1.7.1"
 logger = get_logger(__name__)
@@ -207,7 +206,7 @@ def start_kfp_ui_daemon(
         f"{port}:80",
     ]
 
-    if not port_available(port):
+    if not networking_utils.port_available(port):
         modified_command = command.copy()
         modified_command[-1] = "PORT:80"
         logger.warning(
@@ -245,15 +244,3 @@ def start_kfp_ui_daemon(
             log_file_path,
             port,
         )
-
-
-def port_available(port: int) -> bool:
-    """Checks if a local port is available."""
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(("127.0.0.1", port))
-    except socket.error as e:
-        logger.debug("Port %d unavailable: %s", port, e)
-        return False
-
-    return True
