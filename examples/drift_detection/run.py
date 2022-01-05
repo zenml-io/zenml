@@ -12,14 +12,13 @@
 #  permissions and limitations under the License.
 
 import pandas as pd
-from sklearn import datasets
-
 from evidently.dashboard import Dashboard
 from evidently.tabs import DataDriftTab
+from sklearn import datasets
 
+from zenml.logger import get_logger
 from zenml.pipelines import pipeline
 from zenml.steps import Output, step
-from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -31,17 +30,17 @@ def data_loader() -> Output(dataset=pd.DataFrame):
 
 
 @step
-def full_split(input: pd.DataFrame) -> Output(
-    dataset=pd.DataFrame,
-):
+def full_split(
+    input: pd.DataFrame,
+) -> Output(dataset=pd.DataFrame,):
     """Loads the breast cancer dataset as a Pandas dataframe."""
     return pd.DataFrame(input.data, columns=input.feature_names)
 
 
 @step
-def partial_split(input: pd.DataFrame) -> Output(
-    dataset=pd.DataFrame,
-):
+def partial_split(
+    input: pd.DataFrame,
+) -> Output(dataset=pd.DataFrame,):
     """Loads part of the breast cancer dataset as a Pandas dataframe."""
     return pd.DataFrame(input.data, columns=input.feature_names)[:100]
 
@@ -50,8 +49,12 @@ def partial_split(input: pd.DataFrame) -> Output(
 def drift_detector(full_data: pd.DataFrame, partial_data: pd.DataFrame) -> None:
     """Detects a drift in the pipeline."""
     breast_cancer_data_drift_report = Dashboard(tabs=[DataDriftTab()])
-    breast_cancer_data_drift_report.calculate(full_data, partial_data, column_mapping=None)
-    breast_cancer_data_drift_report.save("reports/breast_cancer_drift_report.html")
+    breast_cancer_data_drift_report.calculate(
+        full_data, partial_data, column_mapping=None
+    )
+    breast_cancer_data_drift_report.save(
+        "reports/breast_cancer_drift_report.html"
+    )
     # logger.info("Drift detected")
 
 
