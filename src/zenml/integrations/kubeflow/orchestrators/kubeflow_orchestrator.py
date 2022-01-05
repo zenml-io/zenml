@@ -250,26 +250,20 @@ class KubeflowOrchestrator(BaseOrchestrator):
     ) -> None:
         """Logs manual steps needed to setup the Kubeflow local orchestrator."""
         global_config_dir_path = zenml.io.utils.get_global_config_directory()
+        kubeflow_commands = [
+            f"> k3d cluster create CLUSTER_NAME --registry-create {container_registry_name} --registry-config {container_registry_path} --volume {global_config_dir_path}:{global_config_dir_path}\n",
+            f"> kubectl --context CLUSTER_NAME apply -k github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic-pns?ref={KFP_VERSION}",
+            "> kubectl --context CLUSTER_NAME wait --timeout=60s --for condition=established crd/applications.app.k8s.io",
+            f"> kubectl --context CLUSTER_NAME apply -k github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic-pns?ref={KFP_VERSION}",
+            f"> kubectl --namespace kubeflow port-forward svc/ml-pipeline-ui {self.kubeflow_pipelines_ui_port}:80",
+        ]
+
         logger.error("Unable to spin up local Kubeflow Pipelines deployment.")
         logger.info(
             "If you wish to spin up this Kubeflow local orchestrator manually, "
             "please enter the following commands (substituting where appropriate):\n"
         )
-        logger.info(
-            f"k3d cluster create CLUSTER_NAME --registry-create {container_registry_name} --registry-config {container_registry_path} --volume {global_config_dir_path}:{global_config_dir_path}"
-        )
-        logger.info(
-            f"kubectl --context CLUSTER_NAME apply -k github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic-pns?ref={KFP_VERSION}"
-        )
-        logger.info(
-            "kubectl --context CLUSTER_NAME wait --timeout=60s --for condition=established crd/applications.app.k8s.io"
-        )
-        logger.info(
-            f"kubectl --context CLUSTER_NAME apply -k github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic-pns?ref={KFP_VERSION}"
-        )
-        logger.info(
-            f"kubectl --namespace kubeflow port-forward svc/ml-pipeline-ui {self.kubeflow_pipelines_ui_port}:80"
-        )
+        logger.info("\n".join(kubeflow_commands))
 
     def up(self) -> None:
         """Spins up a local Kubeflow Pipelines deployment."""
@@ -325,7 +319,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             logger.info(
                 f"Finished local Kubeflow Pipelines deployment. The UI should now "
                 f"be accessible at "
-                f"http://localhost:{self.kubeflow_pipelines_ui_port}/."
+                f"http://localhost:{self.kubeflow_pipelines_ui_port}/. "
                 f"The orchestrator is now up."
             )
         except Exception as e:
