@@ -11,11 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import Any, Dict
+
 from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
 
-# import pandas as pd
-# import tensorflow as tf
-from zenml.artifacts import DataArtifact, DataDriftArtifact
+from zenml.artifacts import DataArtifact
 from zenml.steps import StepContext
 from zenml.steps.step_interfaces.base_drift_detection_step import (
     BaseDriftDetectionConfig,
@@ -43,7 +43,7 @@ class EvidentlyDriftDetectionStep(BaseDriftDetectionStep):
         comparison_dataset: DataArtifact,
         config: EvidentlyDriftDetectionConfig,
         context: StepContext,
-    ) -> DataDriftArtifact:
+    ) -> Dict[str, Any]:
         """Main entrypoint for the Evidently drift detection step.
 
         Args:
@@ -56,4 +56,4 @@ class EvidentlyDriftDetectionStep(BaseDriftDetectionStep):
         Returns:
             a DataDriftArtifact containing the results of the drift detection
         """
-        return DataDriftArtifact(1)
+        return {"item": 1}
