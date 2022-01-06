@@ -250,7 +250,7 @@ the default route through which pipelines are run. [read more about orchestrator
 Currently, this release is bare bones. We are missing some basic features which used to be part of ZenML 0.3.8 (the previous release):
 
 * Standard interfaces for `TrainingPipeline`.
-* Individual step interfaces like `PreprocesserStep`, `TrainerStep`, `DeployerStep` etc. need to be rewritten from within the new paradigm. They should
+* Individual step interfaces like `PreprocessorStep`, `TrainerStep`, `DeployerStep` etc. need to be rewritten from within the new paradigm. They should
 be included in the non-RC version of this release.
 * A proper production setup with an orchestrator like Airflow.
 * A post-execution workflow to analyze and inspect pipeline runs.
@@ -299,7 +299,7 @@ the default route through which pipelines are run. [read more about orchestrator
 Currently, this release is bare bones. We are missing some basic features which used to be part of ZenML 0.3.8 (the previous release):
 
 * Standard interfaces for `TrainingPipeline`.
-* Individual step interfaces like `PreprocesserStep`, `TrainerStep`, `DeployerStep` etc. need to be rewritten from within the new paradigm. They should
+* Individual step interfaces like `PreprocessorStep`, `TrainerStep`, `DeployerStep` etc. need to be rewritten from within the new paradigm. They should
 be included in the non-RC version of this release.
 * A proper production setup with an orchestrator like Airflow.
 * A post-execution workflow to analyze and inspect pipeline runs.
@@ -395,7 +395,7 @@ A big thanks to our new contributor @aak7912 for the help in this release with i
 0.3.6 is a more inwards-facing release as part of a bigger effort to create a more flexible ZenML. As a first step, ZenML now supports arbitrary splits for all components natively, freeing us from the `train/eval` split paradigm. Here is an overview of changes:
 
 ## New Features
-* The inner-workings of the `BaseTrainerStep`, `BaseEvaluatorStep` and the `BasePreprocesserStep` have been modified along with their respective components to work with the new split_mapping. Now, users can define arbitrary splits (not just train/eval). E.g. Doing a `train/eval/test` split is possible.
+* The inner-workings of the `BaseTrainerStep`, `BaseEvaluatorStep` and the `BasePreprocessorStep` have been modified along with their respective components to work with the new split_mapping. Now, users can define arbitrary splits (not just train/eval). E.g. Doing a `train/eval/test` split is possible.
 
 * Within the instance of a `TrainerStep`, the user has access to `input_patterns` and `output_patterns` which provide the required uris with respect to their splits for the input and output(test_results) examples.
 

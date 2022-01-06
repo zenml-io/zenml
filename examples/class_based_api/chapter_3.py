@@ -57,7 +57,7 @@ analyzer = builtin_steps.PandasAnalyzer(
 )
 
 # Configuring the preprocessing step
-preprocesser = sklearn_steps.SklearnStandardScaler(
+preprocessor = sklearn_steps.SklearnStandardScaler(
     sklearn_steps.SklearnStandardScalerConfig(ignore_columns=["has_diabetes"])
 )
 
@@ -78,7 +78,7 @@ pipeline_instance = TrainingPipeline(
     datasource=datasource,
     splitter=splitter,
     analyzer=analyzer,
-    preprocesser=preprocesser,
+    preprocessor=preprocessor,
     trainer=trainer,
     evaluator=evaluator,
 )
