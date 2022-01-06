@@ -56,3 +56,4 @@ class EvidentlyDriftDetectionStep(BaseDriftDetectionStep):
         Returns:
             a DataDriftArtifact containing the results of the drift detection
         """
+        return DataDriftArtifact(1)

@@ -12,13 +12,12 @@
 #  permissions and limitations under the License.
 
 import pandas as pd
-from evidently.model_profile import Profile
-from evidently.profile_sections import DataDriftProfileSection
 from sklearn import datasets
 
+from zenml.integrations.evidently import steps as evidently_steps
 from zenml.logger import get_logger
 from zenml.pipelines import pipeline
-from zenml.steps import Output, step
+from zenml.steps import step
 
 logger = get_logger(__name__)
 
@@ -37,7 +36,7 @@ def data_loader() -> pd.DataFrame:
 @step
 def full_split(
     input: pd.DataFrame,
-) -> Output(dataset=pd.DataFrame):
+) -> pd.DataFrame:
     """Loads the breast cancer dataset as a Pandas dataframe."""
     return [input]
 
@@ -45,22 +44,26 @@ def full_split(
 @step
 def partial_split(
     input: pd.DataFrame,
-) -> Output(dataset=pd.DataFrame,):
+) -> pd.DataFrame:
     """Loads part of the breast cancer dataset as a Pandas dataframe."""
     return [input[:100]]
 
 
-@step()
-def drift_detector(full_data: pd.DataFrame, partial_data: pd.DataFrame) -> dict:
-    """Detects a drift in the pipeline."""
-    breast_cancer_data_drift_profile = Profile(
-        sections=[DataDriftProfileSection()]
-    )
-    breast_cancer_data_drift_profile.calculate(
-        full_data, partial_data, column_mapping=None
-    )
-    breast_cancer_data_drift_profile.json()
-    logger.info(breast_cancer_data_drift_profile.json())
+drift_detector = evidently_steps.EvidentlyDriftDetectionStep(
+    evidently_steps.EvidentlyDriftDetectionConfig(column_mapping=None)
+)
+
+# @step()
+# def drift_detector(full_data: pd.DataFrame, partial_data: pd.DataFrame) -> dict:
+#     """Detects a drift in the pipeline."""
+#     breast_cancer_data_drift_profile = Profile(
+#         sections=[DataDriftProfileSection()]
+#     )
+#     breast_cancer_data_drift_profile.calculate(
+#         full_data, partial_data, column_mapping=None
+#     )
+#     breast_cancer_data_drift_profile.json()
+#     logger.info(breast_cancer_data_drift_profile.json())
 
 
 @pipeline
