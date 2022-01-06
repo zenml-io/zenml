@@ -13,7 +13,9 @@
 #  permissions and limitations under the License.
 from typing import Any, Dict
 
+from evidently.model_profile import Profile  # type: ignore
 from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
+from evidently.profile_sections import DataDriftProfileSection  # type: ignore
 
 from zenml.artifacts import DataArtifact
 from zenml.steps import StepContext
@@ -56,4 +58,10 @@ class EvidentlyDriftDetectionStep(BaseDriftDetectionStep):
         Returns:
             a DataDriftArtifact containing the results of the drift detection
         """
-        return {"item": 1}
+        data_drift_profile = Profile(sections=[DataDriftProfileSection()])
+        data_drift_profile.calculate(
+            reference_dataset,
+            comparison_dataset,
+            column_mapping=config.column_mapping or None,
+        )
+        return data_drift_profile.object()
