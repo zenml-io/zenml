@@ -30,6 +30,9 @@ from zenml.integrations.kubeflow.orchestrators.kubeflow_dag_runner import (
     KubeflowDagRunner,
     KubeflowDagRunnerConfig,
 )
+from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
+    KFP_VERSION,
+)
 from zenml.integrations.utils import get_requirements_for_module
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -242,6 +245,26 @@ class KubeflowOrchestrator(BaseOrchestrator):
             cluster_name=self._k3d_cluster_name
         )
 
+    def list_manual_setup_steps(
+        self, container_registry_name: str, container_registry_path: str
+    ) -> None:
+        """Logs manual steps needed to setup the Kubeflow local orchestrator."""
+        global_config_dir_path = zenml.io.utils.get_global_config_directory()
+        kubeflow_commands = [
+            f"> k3d cluster create CLUSTER_NAME --registry-create {container_registry_name} --registry-config {container_registry_path} --volume {global_config_dir_path}:{global_config_dir_path}\n",
+            f"> kubectl --context CLUSTER_NAME apply -k github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic-pns?ref={KFP_VERSION}",
+            "> kubectl --context CLUSTER_NAME wait --timeout=60s --for condition=established crd/applications.app.k8s.io",
+            f"> kubectl --context CLUSTER_NAME apply -k github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic-pns?ref={KFP_VERSION}",
+            f"> kubectl --namespace kubeflow port-forward svc/ml-pipeline-ui {self.kubeflow_pipelines_ui_port}:80",
+        ]
+
+        logger.error("Unable to spin up local Kubeflow Pipelines deployment.")
+        logger.info(
+            "If you wish to spin up this Kubeflow local orchestrator manually, "
+            "please enter the following commands (substituting where appropriate):\n"
+        )
+        logger.info("\n".join(kubeflow_commands))
+
     def up(self) -> None:
         """Spins up a local Kubeflow Pipelines deployment."""
         if self.is_running:
@@ -278,25 +301,33 @@ class KubeflowOrchestrator(BaseOrchestrator):
             registry_name=container_registry_name,
             registry_uri=container_registry.uri,
         )
-        local_deployment_utils.create_k3d_cluster(
-            cluster_name=self._k3d_cluster_name,
-            registry_name=container_registry_name,
-            registry_config_path=self._k3d_registry_config_path,
-        )
-        kubernetes_context = f"k3d-{self._k3d_cluster_name}"
-        local_deployment_utils.deploy_kubeflow_pipelines(
-            kubernetes_context=kubernetes_context
-        )
-        local_deployment_utils.start_kfp_ui_daemon(
-            pid_file_path=self._pid_file_path,
-            port=self.kubeflow_pipelines_ui_port,
-        )
 
-        logger.info(
-            f"Finished local Kubeflow Pipelines deployment. The UI should now "
-            f"be accessible at "
-            f"http://localhost:{self.kubeflow_pipelines_ui_port}/."
-        )
+        try:
+            local_deployment_utils.create_k3d_cluster(
+                cluster_name=self._k3d_cluster_name,
+                registry_name=container_registry_name,
+                registry_config_path=self._k3d_registry_config_path,
+            )
+            kubernetes_context = f"k3d-{self._k3d_cluster_name}"
+            local_deployment_utils.deploy_kubeflow_pipelines(
+                kubernetes_context=kubernetes_context
+            )
+            local_deployment_utils.start_kfp_ui_daemon(
+                pid_file_path=self._pid_file_path,
+                port=self.kubeflow_pipelines_ui_port,
+            )
+            logger.info(
+                f"Finished local Kubeflow Pipelines deployment. The UI should now "
+                f"be accessible at "
+                f"http://localhost:{self.kubeflow_pipelines_ui_port}/. "
+                f"The orchestrator is now up."
+            )
+        except Exception as e:
+            logger.error(e)
+            self.list_manual_setup_steps(
+                container_registry_name, self._k3d_registry_config_path
+            )
+            self.down()
 
     def down(self) -> None:
         """Tears down a local Kubeflow Pipelines deployment."""
