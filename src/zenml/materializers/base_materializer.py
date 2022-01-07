@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Tuple, Type, cast
 
 if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
-from zenml.artifacts.type_registery import type_registry
+from zenml.artifacts.type_registry import type_registry
 from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
 )
