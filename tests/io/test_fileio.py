@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+from collections.abc import Iterable
 from io import FileIO
 from tempfile import NamedTemporaryFile
 from types import GeneratorType
@@ -294,3 +295,14 @@ def test_stat_raises_error_when_file_doesnt_exist(tmp_path) -> None:
     """Test that stat raises an error when the file doesn't exist"""
     with pytest.raises(NotFoundError):
         fileio.stat(os.path.join(tmp_path, "not_a_file.txt"))
+
+
+def test_walk_returns_an_iterator(tmp_path) -> None:
+    """Test that walk returns an iterator"""
+    assert isinstance(fileio.walk(str(tmp_path)), Iterable)
+
+
+def test_create_file_if_not_exists(tmp_path) -> None:
+    """Test that create_file_if_not_exists creates a file"""
+    fileio.create_file_if_not_exists(os.path.join(tmp_path, "new_file.txt"))
+    assert os.path.exists(os.path.join(tmp_path, "new_file.txt"))
