@@ -62,10 +62,10 @@ def drift_detection_pipeline(
     drift_detector,
 ):
     """Links all the steps together in a pipeline"""
-    data_loader = data_loader()
+    data_loader = data_loader
     full_data = full_data(data_loader)
     partial_data = partial_data(data_loader)
-    drift_detector()
+    drift_detector(reference_dataset=full_data, comparison_dataset=partial_data)
 
 
 pipeline = drift_detection_pipeline(
