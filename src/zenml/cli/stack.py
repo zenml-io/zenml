@@ -168,7 +168,6 @@ def up_stack() -> None:
         f"This might take a few seconds..."
     )
     active_stack.orchestrator.up()
-    cli_utils.declare(f"Orchestrator: `{orchestrator_name}` is up.")
 
 
 @stack.command("down")

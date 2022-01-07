@@ -25,7 +25,6 @@ zenml example pull airflow_local
 cd zenml_examples/airflow_local
 
 # initialize
-git init
 zenml init
 ```
 

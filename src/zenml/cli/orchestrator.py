@@ -175,7 +175,6 @@ def up_orchestrator(orchestrator_name: Optional[str] = None) -> None:
         f"This might take a few seconds..."
     )
     orchestrator_.up()
-    cli_utils.declare(f"Orchestrator: `{orchestrator_name}` is up.")
 
 
 @orchestrator.command("down")

@@ -35,7 +35,6 @@ zenml example pull not_so_quickstart
 cd zenml_examples/not_so_quickstart
 
 # initialize
-git init
 zenml init
 ```
 

@@ -27,9 +27,6 @@ Once the installation is completed, you can go ahead and create your first ZenML
 ZenML repositories are built on top of Git repositories, you can create yours in a desired empty directory through:
 
 ```python
-# Initialize a git repository
-git init
-
 # Initialize ZenML
 zenml init
 ```

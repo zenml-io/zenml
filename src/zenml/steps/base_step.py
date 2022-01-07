@@ -33,7 +33,7 @@ from typing import (
 from tfx.types.channel import Channel
 
 from zenml.artifacts.base_artifact import BaseArtifact
-from zenml.artifacts.type_registery import type_registry
+from zenml.artifacts.type_registry import type_registry
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
