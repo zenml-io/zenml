@@ -40,7 +40,6 @@ zenml example pull functional_api
 cd zenml_examples/functional_api
 
 # initialize
-git init
 zenml init
 ```
 

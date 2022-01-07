@@ -171,10 +171,9 @@ pip install git+https://github.com/zenml-io/zenml.git@main --upgrade
 
 The quickest way to get started is to create a simple pipeline.
 
-#### Step 1: Initialize a ZenML repo from within a git repo
+#### Step 1: Initialize a ZenML repo
 
 ```bash
-git init
 zenml init
 zenml integration install sklearn # we use scikit-learn for this example
 ```
