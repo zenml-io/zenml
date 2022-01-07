@@ -135,6 +135,7 @@ class BaseStepMeta(type):
                     )
                 cls.CONFIG_PARAMETER_NAME = arg
                 cls.CONFIG_CLASS = arg_type
+
             elif issubclass(arg_type, StepContext):
                 if cls.CONTEXT_PARAMETER_NAME is not None:
                     raise StepInterfaceError(
@@ -163,14 +164,17 @@ class BaseStepMeta(type):
         # tfx requires them to be unique
         # TODO [ENG-155]: Can we prefix inputs and outputs to avoid this
         #  restriction?
-        shared_input_output_keys = set(cls.INPUT_SIGNATURE).intersection(
-            set(cls.OUTPUT_SIGNATURE)
-        )
-        if shared_input_output_keys:
+        all_keys = list(cls.INPUT_SIGNATURE) + list(cls.OUTPUT_SIGNATURE)
+        if cls.CONFIG_CLASS:
+            all_keys += list(cls.CONFIG_CLASS.__fields__.keys())
+
+        shared_keys = set([key for key in all_keys if all_keys.count(key) > 1])
+        if shared_keys:
             raise StepInterfaceError(
-                f"There is an overlap in the input and output names of "
-                f"step '{name}': {shared_input_output_keys}. Please make "
-                f"sure that your input and output names are distinct."
+                f"The following keys are overlapping in the input, output and "
+                f"config parameter names of step '{name}': {shared_keys}. "
+                f"Please make sure that your input, output and config "
+                f"parameter names are unique."
             )
 
         return cls
