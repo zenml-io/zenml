@@ -254,12 +254,15 @@ def test_mkdir_function_when_parent_doesnt_exist(tmp_path) -> None:
         fileio.mkdir(os.path.join(tmp_path, "not_a_dir/still_not_a_dir"))
 
 
-# def test_rename_function(tmp_path) -> None:
-#     """Test that rename renames a file"""
-#     with NamedTemporaryFile(dir=tmp_path) as temp_file:
-#         assert fileio.file_exists(temp_file.name)
-#         fileio.rename(temp_file.name, os.path.join(tmp_path, "new_file.txt"))
-#         assert os.path.exists(os.path.join(tmp_path, "new_file.txt"))
+def test_rename_function(tmp_path) -> None:
+    """Test that rename renames a file"""
+    fileio.create_file_if_not_exists(os.path.join(tmp_path, "test_file.txt"))
+    fileio.rename(
+        os.path.join(tmp_path, "test_file.txt"),
+        os.path.join(tmp_path, "new_file.txt"),
+    )
+    assert os.path.exists(os.path.join(tmp_path, "new_file.txt"))
+    assert not os.path.exists(os.path.join(tmp_path, "test_file.txt"))
 
 
 def test_rename_function_raises_error_if_file_already_exists(tmp_path) -> None:
