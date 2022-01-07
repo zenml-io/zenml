@@ -213,12 +213,13 @@ def test_file_exists_when_file_doesnt_exist(tmp_path) -> None:
     assert not fileio.file_exists(os.path.join(tmp_path, "not_a_file.txt"))
 
 
-# def test_remove_function(tmp_path) -> None:
-#     """Test that remove function actually removes a file"""
-#     with NamedTemporaryFile(dir=tmp_path) as temp_file:
-#         assert fileio.file_exists(temp_file.name)
-#         fileio.remove(str(temp_file.name)
-#         assert not os.path.exists(temp_file.name)
+def test_remove_function(tmp_path) -> None:
+    """Test that remove function actually removes a file"""
+    new_file_path = os.path.join(tmp_path, "test_file.txt")
+    fileio.create_file_if_not_exists(new_file_path)
+    assert fileio.file_exists(new_file_path)
+    fileio.remove(new_file_path)
+    assert not os.path.exists(new_file_path)
 
 
 def test_glob_function(tmp_path) -> None:
