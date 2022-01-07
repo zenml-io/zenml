@@ -36,7 +36,6 @@ zenml example pull kubeflow
 cd zenml_examples/kubeflow
 
 # Initialize a ZenML repository
-git init
 zenml init
 ```
 
@@ -54,8 +53,8 @@ following four parts:
 
 ```bash
 # Make sure to create the local registry on port 5000 for it to work 
-zenml container-registry register local_registry localhost:5000
-zenml orchestrator register kubeflow_orchestrator kubeflow
+zenml container-registry register local_registry --uri=localhost:5000
+zenml orchestrator register kubeflow_orchestrator --type=kubeflow
 zenml stack register local_kubeflow_stack \
     -m local_metadata_store \
     -a local_artifact_store \
@@ -129,9 +128,9 @@ When running the upcoming commands, make sure to replace `$PATH_TO_YOUR_CONTAINE
 zenml integration install gcp
 
 # Create the stack and its components
-zenml container-registry register gcp_registry $PATH_TO_YOUR_CONTAINER_REGISTRY
-zenml metadata-store register kubeflow_metadata_store kubeflow
-zenml artifact-store register gcp_artifact_store gcp --path=$PATH_TO_YOUR_GCP_BUCKET
+zenml container-registry register gcp_registry --uri=$PATH_TO_YOUR_CONTAINER_REGISTRY
+zenml metadata-store register kubeflow_metadata_store --type=kubeflow
+zenml artifact-store register gcp_artifact_store --type=gcp --path=$PATH_TO_YOUR_GCP_BUCKET
 zenml stack register gcp_kubeflow_stack \
     -m kubeflow_metadata_store \
     -a gcp_artifact_store \

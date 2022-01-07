@@ -61,7 +61,7 @@ interpret this dataframe either as a `DataArtifact`, a `StatisticsArtifact` or a
 is the first element in the list, it has a priority and unless it is specified otherwise, all the `pd.DataFrame` input
 and output annotations will yield a `DataArtifact`.
 
-If you want to see an example on how to go beyond the default behaviour, you can also take a look at the following 
+If you want to see an example on how to go beyond the default behavior, you can also take a look at the following 
 example:
 
 ```python
@@ -76,7 +76,7 @@ def any_step() -> Output(
 
 Here, we are dealing with a step definition which features two output `pd.DataFrame`s. In the step decorator, we 
 explicitly handle `output_1` as a `SchemaArtifact`, whereas the `output_2` will become a `DataArtifact` due to the default 
-behaviour.
+behavior.
 
 ### What's in store for the standard artifacts in the feature?
 

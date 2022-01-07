@@ -8,7 +8,7 @@
 
 At its core, **ZenML pipelines execute ML-specific workflows** from sourcing data to splitting, preprocessing, training, all the way to the evaluation of results and even serving. There are many built-in batteries to support common ML development tasks. ZenML is not here to replace the great tools that solve these individual problems. Rather, it **integrates natively with popular ML tooling** and gives standard abstraction to write your workflows.
 
-🎉 **Version 0.5.5 out now!** [Check out the release notes here](https://blog.zenml.io/zero-five-five-release/).
+🎉 **Version 0.5.6 out now!** [Check out the release notes here](https://blog.zenml.io/zero-five-six-release/).
 
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zenml)](https://pypi.org/project/zenml/)
 [![PyPI Status](https://pepy.tech/badge/zenml)](https://pepy.tech/project/zenml)
@@ -51,8 +51,8 @@ ZenML pipelines are designed to be written early on the development lifecycle. D
 | ------------- | - |
 | 🧘‍♀️ **[ZenML 101]** | New to ZenML? Here's everything you need to know! |
 | ⚛️ **[Core Concepts]** | Some key terms and concepts we use. |
-| 🗃 **[Low Level API Guide]** | Build production ML pipelines from the simple step interface. |
-| 🚀 **[New in v0.5.5]** | New features, bug fixes. |
+| 🗃 **[Functional API Guide]** | Build production ML pipelines with simple functions. |
+| 🚀 **[New in v0.5.6]** | New features, bug fixes. |
 | 🗳 **[Vote for Features]** | Pick what we work on next! |
 | 📓 **[Docs]** | Full documentation for creating your own ZenML pipelines. |
 | 📒 **[API Reference]** | The detailed reference for ZenML's API. |
@@ -67,7 +67,7 @@ ZenML pipelines are designed to be written early on the development lifecycle. D
 [ZenML 101]: https://docs.zenml.io/
 [Core Concepts]: https://docs.zenml.io/core-concepts
 [Functional API Guide]: https://docs.zenml.io/guides/functional-api
-[New in v0.5.5]: https://blog.zenml.io/zero-five-five-release/
+[New in v0.5.6]: https://blog.zenml.io/zero-five-six-release/
 [Vote for Features]: https://zenml.io/discussion
 [Docs]: https://docs.zenml.io/
 [API Reference]: https://apidocs.zenml.io/
@@ -171,10 +171,9 @@ pip install git+https://github.com/zenml-io/zenml.git@main --upgrade
 
 The quickest way to get started is to create a simple pipeline.
 
-#### Step 1: Initialize a ZenML repo from within a git repo
+#### Step 1: Initialize a ZenML repo
 
 ```bash
-git init
 zenml init
 zenml integration install sklearn # we use scikit-learn for this example
 ```
@@ -253,7 +252,7 @@ ZenML is managed by a [core team](https://zenml.io/team) of developers that are 
 
 # 🙋‍♀️ Contributing & Community
 
-We would love to develop ZenML together with our community! Check our [Contributing Guide](CONTRIBUTING.md) for more details on how best to contribute.
+We would love to develop ZenML together with our community! Best way to get started is to select any issue from the [`good-first-issue` label](https://github.com/zenml-io/zenml/labels/good%20first%20issue). If you would like to contribute, please review our [Contributing Guide](CONTRIBUTING.md) for all relevant details.
 
 <br>
 

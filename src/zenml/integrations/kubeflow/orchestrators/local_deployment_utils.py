@@ -64,7 +64,7 @@ def create_k3d_cluster(
         registry_config_path: Path to the registry config file.
     """
     logger.info("Creating local K3D cluster '%s'.", cluster_name)
-    config_dir_path = zenml.io.utils.get_zenml_config_dir()
+    global_config_dir_path = zenml.io.utils.get_global_config_directory()
     subprocess.check_call(
         [
             "k3d",
@@ -76,7 +76,7 @@ def create_k3d_cluster(
             "--registry-config",
             registry_config_path,
             "--volume",
-            f"{config_dir_path}:{config_dir_path}",
+            f"{global_config_dir_path}:{global_config_dir_path}",
         ]
     )
     logger.info("Finished K3D cluster creation.")
@@ -194,26 +194,28 @@ def start_kfp_ui_daemon(pid_file_path: str, port: int) -> None:
             be written.
         port: Port on which the UI should be accessible.
     """
+    command = [
+        "kubectl",
+        "--namespace",
+        "kubeflow",
+        "port-forward",
+        "svc/ml-pipeline-ui",
+        f"{port}:80",
+    ]
 
     def _daemon_function() -> None:
         """Port-forwards the Kubeflow Pipelines UI pod."""
-        subprocess.check_call(
-            [
-                "kubectl",
-                "--namespace",
-                "kubeflow",
-                "port-forward",
-                "svc/ml-pipeline-ui",
-                f"{port}:80",
-            ]
-        )
+        subprocess.check_call(command)
 
-    from zenml.utils import daemon
-
-    # TODO [ENG-234]: Update with smarter solution for windows daemon
     if sys.platform == "win32":
-        pass
+        logger.warning(
+            f"Daemon functionality not supported on Windows. "
+            f"In order to access the Kubeflow Pipelines UI, please run "
+            f"'{' '.join(command)}' in a separate command line shell."
+        )
     else:
+        from zenml.utils import daemon
+
         daemon.run_as_daemon(
             _daemon_function,
             pid_file=pid_file_path,

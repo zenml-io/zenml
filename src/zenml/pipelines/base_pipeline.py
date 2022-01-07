@@ -21,6 +21,7 @@ from typing import (
     Dict,
     NoReturn,
     Optional,
+    Set,
     Text,
     Tuple,
     Type,
@@ -52,6 +53,7 @@ logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
 PARAM_ENABLE_CACHE: str = "enable_cache"
 PARAM_REQUIREMENTS_FILE: str = "requirements_file"
+PARAM_DOCKERIGNORE_FILE: str = "dockerignore_file"
 INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
 
 
@@ -64,7 +66,6 @@ class BasePipelineMeta(type):
         """Saves argument names for later verification purposes"""
         cls = cast(Type["BasePipeline"], super().__new__(mcs, name, bases, dct))
 
-        cls.NAME = name
         cls.STEP_SPEC = {}
 
         connect_spec = inspect.getfullargspec(
@@ -85,9 +86,16 @@ T = TypeVar("T", bound="BasePipeline")
 
 
 class BasePipeline(metaclass=BasePipelineMeta):
-    """Base ZenML pipeline."""
+    """Abstract base class for all ZenML pipelines.
 
-    NAME: ClassVar[str] = ""
+    Attributes:
+        name: The name of this pipeline.
+        enable_cache: A boolean indicating if caching is enabled for this
+            pipeline.
+        requirements_file: Optional path to a pip requirements file that
+            contains all requirements to run the pipeline.
+    """
+
     STEP_SPEC: ClassVar[Dict[str, Any]] = None  # type: ignore[assignment]
 
     INSTANCE_CONFIGURATION: Dict[Text, Any] = {}
@@ -104,12 +112,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
         kwargs.update(getattr(self, INSTANCE_CONFIGURATION))
         self.enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, True)
         self.requirements_file = kwargs.pop(PARAM_REQUIREMENTS_FILE, None)
+        self.dockerignore_file = kwargs.pop(PARAM_DOCKERIGNORE_FILE, None)
 
-        self.pipeline_name = self.__class__.__name__
-        logger.info("Creating run for pipeline: `%s`", self.pipeline_name)
+        self.name = self.__class__.__name__
+        logger.info("Creating run for pipeline: `%s`", self.name)
         logger.info(
             f'Cache {"enabled" if self.enable_cache else "disabled"} for '
-            f"pipeline `{self.pipeline_name}`"
+            f"pipeline `{self.name}`"
         )
 
         self.__steps: Dict[str, BaseStep] = {}
@@ -133,48 +142,77 @@ class BasePipeline(metaclass=BasePipelineMeta):
         input_step_keys = list(self.STEP_SPEC.keys())
         if len(steps) > len(input_step_keys):
             raise PipelineInterfaceError(
-                f"Too many input steps for pipeline '{self.pipeline_name}'. "
+                f"Too many input steps for pipeline '{self.name}'. "
                 f"This pipeline expects {len(input_step_keys)} step(s) "
                 f"but got {len(steps) + len(kw_steps)}."
             )
 
         combined_steps = {}
+        step_cls_args: Set[Type[BaseStep]] = set()
 
         for i, step in enumerate(steps):
+            step_class = type(step)
+
             if not isinstance(step, BaseStep):
                 raise PipelineInterfaceError(
-                    f"Wrong argument type (`{type(step)}`) for positional "
-                    f"argument {i} of pipeline '{self.pipeline_name}'. Only "
+                    f"Wrong argument type (`{step_class}`) for positional "
+                    f"argument {i} of pipeline '{self.name}'. Only "
                     f"`@step` decorated functions or instances of `BaseStep` "
                     f"subclasses can be used as arguments when creating "
                     f"a pipeline."
+                )
+
+            if step_class in step_cls_args:
+                raise PipelineInterfaceError(
+                    f"Step object (`{step_class}`) has been used twice. Step "
+                    f"objects should be unique for each argument."
                 )
 
             key = input_step_keys[i]
             step.pipeline_parameter_name = key
             combined_steps[key] = step
+            step_cls_args.add(step_class)
+
+        step_cls_kwargs: Dict[Type[BaseStep], str] = {}
 
         for key, step in kw_steps.items():
+            step_class = type(step)
+
             if key in combined_steps:
                 # a step for this key was already set by
                 # the positional input steps
                 raise PipelineInterfaceError(
                     f"Unexpected keyword argument '{key}' for pipeline "
-                    f"'{self.pipeline_name}'. A step for this key was "
+                    f"'{self.name}'. A step for this key was "
                     f"already passed as a positional argument."
                 )
 
             if not isinstance(step, BaseStep):
                 raise PipelineInterfaceError(
-                    f"Wrong argument type (`{type(step)}`) for argument "
-                    f"'{key}' of pipeline '{self.pipeline_name}'. Only "
+                    f"Wrong argument type (`{step_class}`) for argument "
+                    f"'{key}' of pipeline '{self.name}'. Only "
                     f"`@step` decorated functions or instances of `BaseStep` "
                     f"subclasses can be used as arguments when creating "
                     f"a pipeline."
                 )
 
+            if step_class in step_cls_kwargs:
+                prev_key = step_cls_kwargs[step_class]
+                raise PipelineInterfaceError(
+                    f"Same step object (`{step_class}`) passed for arguments "
+                    f"'{key}' and '{prev_key}'. Step objects should be "
+                    f"unique for each argument."
+                )
+
+            if step_class in step_cls_args:
+                raise PipelineInterfaceError(
+                    f"Step object (`{step_class}`) has been used twice. Step "
+                    f"objects should be unique for each argument."
+                )
+
             step.pipeline_parameter_name = key
             combined_steps[key] = step
+            step_cls_kwargs[step_class] = key
 
         # check if there are any missing or unexpected steps
         expected_steps = set(self.STEP_SPEC.keys())
@@ -185,13 +223,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
         if missing_steps:
             raise PipelineInterfaceError(
                 f"Missing input step(s) for pipeline "
-                f"'{self.pipeline_name}': {missing_steps}."
+                f"'{self.name}': {missing_steps}."
             )
 
         if unexpected_steps:
             raise PipelineInterfaceError(
                 f"Unexpected input step(s) for pipeline "
-                f"'{self.pipeline_name}': {unexpected_steps}. This pipeline "
+                f"'{self.name}': {unexpected_steps}. This pipeline "
                 f"only requires the following steps: {expected_steps}."
             )
 
@@ -201,11 +239,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
     def connect(self, *args: BaseStep, **kwargs: BaseStep) -> None:
         """Function that connects inputs and outputs of the pipeline steps."""
         raise NotImplementedError
-
-    @property
-    def name(self) -> str:
-        """Name of pipeline is always equal to self.NAME"""
-        return self.NAME
 
     @property
     def stack(self) -> BaseStack:
@@ -247,9 +280,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
             # run a single step.
             logger.info(
                 "Preventing execution of pipeline '%s'. If this is not "
-                "intended behaviour, make sure to unset the environment "
+                "intended behavior, make sure to unset the environment "
                 "variable '%s'.",
-                self.pipeline_name,
+                self.name,
                 ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
             )
             return
@@ -259,9 +292,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         integration_registry.activate_integrations()
 
-        if run_name is None:
+        if not run_name:
             run_name = (
-                f"{self.pipeline_name}-"
+                f"{self.name}-"
                 f'{datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")}'
             )
 
@@ -277,7 +310,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         logger.info(
             "Using stack `%s` for pipeline `%s`. Running pipeline..",
             Repository().get_active_stack_key(),
-            self.pipeline_name,
+            self.name,
         )
 
         # filepath of the file where pipeline.run() was called
@@ -288,7 +321,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self.stack.orchestrator.pre_run(
             pipeline=self, caller_filepath=caller_filepath
         )
-        ret = self.stack.orchestrator.run(self, run_name)
+        ret = self.stack.orchestrator.run(self, run_name=run_name)
         self.stack.orchestrator.post_run()
         run_duration = time.time() - start_time
         logger.info(

@@ -52,16 +52,9 @@ This will give you information about how to register a metadata store.
 Beginning a Project
 -------------------
 
-When you begin a project, you should first initialize your base project
-directory as a Git repository. To do this, type:
-
-.. code:: bash
-
-   git init
-
-Once your directory is setup with a (usually hidden) ``.git`` folder,
-initialize the directory with ZenML’s own config and resource management
-tools. Type:
+In order to start working on your project, initialize a ZenML repository
+within your current directory with ZenML’s own config and resource management
+tools:
 
 .. code:: bash
 
@@ -70,11 +63,10 @@ tools. Type:
 This is all you need to begin using all the MLOps goodness that ZenML
 provides!
 
-If your repository is not initialized as a ``git`` repository, the CLI
-will let you know with an error message. By default, ``zenml init`` will
-install its own hidden ``.zen`` folder inside the current directory from
-which you are running the command. You can also pass in a directory path
-manually using the ``--repo_path`` option:
+By default, ``zenml init`` will install its own hidden ``.zen`` folder
+inside the current directory from which you are running the command.
+You can also pass in a directory path manually using the
+``--repo_path`` option:
 
 .. code:: bash
 
@@ -158,6 +150,51 @@ download examples corresponding to a previous release of ZenML, use the
 
    zenml example pull --force --version 0.3.8
 
+If you wish to run the example, allowing the ZenML CLI to do the work of setting
+up whatever dependencies are required, use the ``run`` subcommand:
+
+.. code:: bash
+
+   zenml example run quickstart
+
+Using integrations
+------------------
+
+Integrations are the different pieces of a project stack that enable custom
+functionality. This ranges from bigger libraries like
+[`kubeflow`](https://www.kubeflow.org/) for orchestration down to smaller
+visualization tools like [`facets`](https://pair-code.github.io/facets/). Our
+CLI is an easy way to get started with these integrations.
+
+To list all the integrations available to you, type:
+
+```bash
+zenml integration list
+```
+
+To see the requirements for a specific integration, use the `requirements`
+command:
+
+```bash
+zenml integration requirements INTEGRATION_NAME
+```
+
+If you wish to install the integration, using the requirements listed in the
+previous command, `install` allows you to do this for your local environment:
+
+```bash
+zenml integration install INTEGRATION_NAME
+```
+
+Note that if you don't specify a specific integration to be installed, the
+ZenML CLI will install **all** available integrations.
+
+Uninstalling a specific integration is as simple as typing:
+
+```bash
+zenml integration uninstall INTEGRATION_NAME
+```
+
 Customizing your Metadata Store
 -------------------------------
 
@@ -169,7 +206,7 @@ machine. If you wish to register a new metadata store, do so with the
 
 .. code:: bash
 
-   zenml metadata-store register METADATA_STORE_NAME METADATA_STORE_TYPE [--OPTIONS]
+   zenml metadata-store register METADATA_STORE_NAME --type METADATA_STORE_TYPE [--OPTIONS]
 
 If you wish to list the metadata stores that have already been
 registered within your ZenML project / repository, type:
@@ -195,7 +232,7 @@ to register a new artifact store, do so with the ``register`` command:
 
 .. code:: bash
 
-   zenml artifact-store register ARTIFACT_STORE_NAME ARTIFACT_STORE_TYPE [--OPTIONS]
+   zenml artifact-store register ARTIFACT_STORE_NAME --type ARTIFACT_STORE_TYPE [--OPTIONS]
 
 If you wish to list the artifact stores that have already been
 registered within your ZenML project / repository, type:
@@ -224,7 +261,7 @@ command:
 
 .. code:: bash
 
-   zenml orchestrator register ORCHESTRATOR_NAME ORCHESTRATOR_TYPE [--ORCHESTRATOR_OPTIONS]
+   zenml orchestrator register ORCHESTRATOR_NAME --type ORCHESTRATOR_TYPE [--ORCHESTRATOR_OPTIONS]
 
 If you wish to list the orchestrators that have already been registered
 within your ZenML project / repository, type:
@@ -239,6 +276,46 @@ orchestrator into the CLI with the following command:
 .. code:: bash
 
    zenml orchestrator delete ORCHESTRATOR_NAME
+
+Customizing your Container Registry
+-----------------------------------
+
+The container registry is where all the images that are used by a
+container-based orchestrator are stored. By default, a default ZenML local stack
+will not register a container registry. If you wish to register a new container
+registry, do so with the `register` command:
+
+```bash
+zenml container-registry register REGISTRY_NAME --type REGISTRY_TYPE [--REGISTRY_OPTIONS]
+```
+
+If you want the name of the current container registry, use the `get` command:
+
+```bash
+zenml container-registry get
+```
+
+To list all container registries available and registered for use, use the
+`list` command:
+
+```bash
+zenml container-registry list
+```
+
+For details about a particular container registry, use the `describe` command.
+By default (without a specific registry name passed in) it will describe the
+active or currently used container registry:
+
+```bash
+zenml container-registry describe [REGISTRY_NAME]
+```
+
+To delete a container registry (and all of its contents), use the `delete`
+command:
+
+```bash
+zenml container-registry delete
+```
 
 Administering the Stack
 -----------------------

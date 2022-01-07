@@ -115,7 +115,7 @@ else:
             f.write(f"{os.getpid()}\n")
 
         # register actions in case this process exits/gets killed
-        def sigterm(signum: signal.Signals, frame: types.FrameType) -> None:
+        def sigterm(signum: int, frame: Optional[types.FrameType]) -> None:
             """Removes the PID file."""
             os.remove(pid_file)
 

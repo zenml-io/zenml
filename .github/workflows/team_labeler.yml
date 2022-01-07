@@ -4,6 +4,9 @@ name: team-label
 jobs:
   team-labeler:
     runs-on: ubuntu-latest
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
     steps:
     - uses: JulienKode/team-labeler-action@v0.1.1
       with:

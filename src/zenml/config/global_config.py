@@ -15,13 +15,12 @@
 from typing import Any
 from uuid import UUID, uuid4
 
-import click
 from pydantic import Field
 
-from zenml import constants
 from zenml.config.constants import GLOBAL_CONFIG_NAME
 from zenml.core.base_component import BaseComponent
 from zenml.io import fileio
+from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -41,19 +40,15 @@ class GlobalConfig(BaseComponent):
         """We persist the attributes in the config file. For the global
         config, we want to persist the data as soon as it is initialized for
         the first time."""
-        super().__init__(**data)
+        super().__init__(
+            serialization_dir=get_global_config_directory(), **data
+        )
 
         # At this point, if the serialization file does not exist we should
         #  create it and dump our data.
         f = self.get_serialization_full_path()
         if not fileio.file_exists(str(f)):
             self._dump()
-
-    def get_serialization_dir(self) -> str:
-        """Gets the global config dir for installed package."""
-        # using a version-pinned folder avoids conflicts when
-        #  upgrading zenml versions.
-        return click.get_app_dir(constants.APP_NAME)
 
     def get_serialization_file_name(self) -> str:
         """Gets the global config dir for installed package."""

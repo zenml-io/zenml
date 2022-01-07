@@ -88,7 +88,7 @@ def write_json(file_path: str, contents: Dict[str, Any]) -> None:
     if not fileio.is_remote(file_path):
         dir_ = str(Path(file_path).parent)
         if not fileio.is_dir(dir_):
-            # If it is a local path and it doesnt exist, raise Exception.
+            # If it is a local path and it doesn't exist, raise Exception.
             raise FileNotFoundError(f"Directory {dir_} does not exist.")
     zenml.io.utils.write_file_contents_as_string(
         file_path, json.dumps(contents)

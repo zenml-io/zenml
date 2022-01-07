@@ -6,7 +6,13 @@ on:
 
 jobs:
   testing:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+    # Exit if its a commit from Gitbook
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
+
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
@@ -21,10 +27,27 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install Linux System Dependencies
+        if: runner.os=='Linux'
+        run: sudo apt install graphviz
+
+      - name: Install MacOS System Dependencies
+        if: runner.os=='macOS'
+        run: brew install graphviz
+
+      - name: Install Windows System Dependencies
+        if: runner.os=='Windows'
+        run: choco install graphviz
+
       - name: Install poetry
         run: |
           python -m pip install --upgrade pip
           python -m pip install "poetry"
+
+      - name: Delete error-causing bash
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: |
+          rm.exe "C:/WINDOWS/system32/bash.EXE"
 
       - name: Install Dependencies
         run: |
@@ -33,17 +56,13 @@ jobs:
           python -m poetry run zenml integration install pytorch -f
           python -m poetry run zenml integration install gcp -f
           python -m poetry run pip install click~=8.0.3
-          python -m poetry run pip install awscli
-
-      - name: Opt-out of analytics
-        run: |
-          python -m poetry run zenml analytics opt-out
 
       - name: Lint
-        run: python -m poetry run bash scripts/lint.sh
+        run: |
+          python -m poetry run bash scripts/lint.sh
 
       - name: Test
-        run: python -m poetry run bash scripts/test-coverage-xml.sh
+        run: python -m poetry run bash scripts/test-coverage-xml.sh unit
 
       - name: Upload coverage
         # only do it for python 3.6, we don't need to do it for every version

@@ -15,7 +15,6 @@
 
 def get_human_readable_time(seconds: float) -> str:
     """Convert seconds into a human-readable string."""
-
     prefix = "-" if seconds < 0 else ""
     seconds = abs(seconds)
     int_seconds = int(seconds)
@@ -32,3 +31,14 @@ def get_human_readable_time(seconds: float) -> str:
         time_string = f"{seconds:.3f}s"
 
     return prefix + time_string
+
+
+def get_human_readable_filesize(bytes_: int) -> str:
+    """Convert a file size in bytes into a human-readable string."""
+    size = abs(float(bytes_))
+    for unit in ["B", "KiB", "MiB", "GiB"]:
+        if size < 1024.0 or unit == "GiB":
+            break
+        size /= 1024.0
+
+    return f"{size:.2f} {unit}"

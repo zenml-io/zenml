@@ -25,13 +25,12 @@ zenml example pull airflow_local
 cd zenml_examples/airflow_local
 
 # initialize
-git init
 zenml init
 ```
 
 ### Create a new Airflow Stack
 ```bash
-zenml orchestrator register airflow_orchestrator airflow
+zenml orchestrator register airflow_orchestrator --type airflow
 zenml stack register airflow_stack \
     -m local_metadata_store \
     -a local_artifact_store \

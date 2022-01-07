@@ -20,13 +20,11 @@ from sklearn.base import ClassifierMixin
 from sklearn.linear_model import LogisticRegression
 
 from zenml.pipelines import pipeline
-from zenml.steps import step, BaseStepConfig, Output
+from zenml.steps import BaseStepConfig, Output, step
 
 # Path to a pip requirements file that contains requirements necessary to run
 # the pipeline
-requirements_file = os.path.join(
-    os.path.dirname(__file__), "chapter_7_requirements.txt"
-)
+requirements_file = os.path.join(os.path.dirname(__file__), "requirements.txt")
 
 
 class ImporterConfig(BaseStepConfig):

@@ -6,9 +6,6 @@ We'll be using the [MNIST](http://yann.lecun.com/exdb/mnist/) dataset (originall
 digits and train a classifier using [Tensorflow (Keras)](https://www.tensorflow.org/), [PyTorch](https://pytorch.org/),
 and [scikit-learn](https://scikit-learn.org/).
 
-If you want to run this notebook in an interactive environment, feel free to run it in a 
-[Google Colab version](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/not_so_quickstart/not_so_quickstart.ipynb).
-
 ## Overview
 Here we swap out the `trainer` and `evaluator` steps of the MNIST pipeline with different implementations. 
 The advantage is:
@@ -38,7 +35,6 @@ zenml example pull not_so_quickstart
 cd zenml_examples/not_so_quickstart
 
 # initialize
-git init
 zenml init
 ```
 

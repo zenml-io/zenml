@@ -105,7 +105,7 @@ Pipeline `mnist_pipeline` has 1 run(s)
 We scored an accuracy of 0.72 on the latest run!
 ```
 
-Now we are loading data dynamically from a continously changing data source!
+Now we are loading data dynamically from a continuously changing data source!
 
 {% hint style="info" %}
 In the near future, ZenML will help you automatically detect drift and schema changes across pipeline runs, to make 

@@ -14,15 +14,33 @@
 
 import os
 from typing import List, Optional, Union
+from urllib.request import urlopen
 
 import pandas as pd
 
 from zenml.core.repo import Repository
+from zenml.logger import get_logger
 from zenml.pipelines import BasePipeline
 from zenml.steps.step_interfaces.base_datasource_step import (
     BaseDatasourceConfig,
     BaseDatasourceStep,
 )
+
+logger = get_logger(__name__)
+
+DATASET_PATH = "diabetes.csv"
+DATASET_SRC = (
+    "https://storage.googleapis.com/zenml-public-bucket/"
+    "pima-indians-diabetes/diabetes.csv"
+)
+
+# Download the dataset for this example
+if not os.path.isfile(DATASET_PATH):
+    logger.info(f"Downloading dataset {DATASET_PATH}")
+    with urlopen(DATASET_SRC) as data:
+        content = data.read().decode()
+    with open(DATASET_PATH, "w") as output:
+        output.write(content)
 
 
 class PandasDatasourceConfig(BaseDatasourceConfig):
@@ -35,8 +53,8 @@ class PandasDatasourceConfig(BaseDatasourceConfig):
 
 class PandasDatasource(BaseDatasourceStep):
     def entrypoint(
-            self,
-            config: PandasDatasourceConfig,
+        self,
+        config: PandasDatasourceConfig,
     ) -> pd.DataFrame:
         return pd.read_csv(
             filepath_or_buffer=config.path,
@@ -50,12 +68,15 @@ class PandasDatasource(BaseDatasourceStep):
 class Chapter1Pipeline(BasePipeline):
     """Class for Chapter 1 of the class-based API"""
 
-    def connect(self, datasource: BaseDatasourceStep, ) -> None:
+    def connect(
+        self,
+        datasource: BaseDatasourceStep,
+    ) -> None:
         datasource()
 
 
 pipeline_instance = Chapter1Pipeline(
-    datasource=PandasDatasource(PandasDatasourceConfig(path=os.getenv("data")))
+    datasource=PandasDatasource(PandasDatasourceConfig(path=DATASET_PATH))
 )
 
 pipeline_instance.run()

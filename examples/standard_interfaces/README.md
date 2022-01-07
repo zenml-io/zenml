@@ -14,7 +14,7 @@ to be specified:
 - `datasource`: for the data ingestion 
 - `splitter`: for splitting the dataset into train, test and validation datasets
 - `analyzer`: for extraction the statistics and the schema of the train dataset
-- `preprocesser`: for preprocessing the splits
+- `preprocessor`: for preprocessing the splits
 - `trainer`: for training a model 
 - `evaluator`: for the evaluation of the trained model
 
@@ -43,7 +43,6 @@ zenml example pull standard_interfaces
 cd zenml_examples/standard_interfaces
 
 # initialize
-git init
 zenml init
 ```
 

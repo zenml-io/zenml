@@ -20,7 +20,7 @@ from sklearn.linear_model import LogisticRegression
 
 from zenml.core.repo import Repository
 from zenml.pipelines import pipeline
-from zenml.steps import step, BaseStepConfig, Output
+from zenml.steps import BaseStepConfig, Output, step
 
 
 class ImporterConfig(BaseStepConfig):
@@ -101,7 +101,7 @@ def mnist_pipeline(
     evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 
 
-# Initialise a new pipeline run
+# Initialize a new pipeline run
 scikit_p = mnist_pipeline(
     importer=dynamic_importer(),
     normalizer=normalize_mnist(),

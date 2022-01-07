@@ -161,6 +161,8 @@ def init_logging() -> None:
         "apache_beam",
         "rdbms_metadata_access_object",
         "apache_beam.io.gcp.bigquery",
+        "backoff",
+        "segment",
     ]
     for logger_name in muted_logger_names:
         logging.getLogger(logger_name).setLevel(logging.WARNING)

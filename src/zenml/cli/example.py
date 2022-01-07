@@ -14,14 +14,16 @@
 
 import os
 import shutil
+import subprocess
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import click
-from git.exc import GitCommandError, NoSuchPathError
+from git.exc import GitCommandError, InvalidGitRepositoryError, NoSuchPathError
 from git.repo.base import Repo
 from packaging.version import Version, parse
 
+import zenml.io.utils
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
 from zenml.cli.utils import (
@@ -32,50 +34,170 @@ from zenml.cli.utils import (
     title,
     warning,
 )
-from zenml.constants import APP_NAME, GIT_REPO_URL
+from zenml.constants import GIT_REPO_URL
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.utils.analytics_utils import RUN_EXAMPLE, track_event
 
 logger = get_logger(__name__)
 
 EXAMPLES_GITHUB_REPO = "zenml_examples"
+EXAMPLES_RUN_SCRIPT = "run_example.sh"
+
+
+class LocalExample:
+    """Class to encapsulate all properties and methods of the local example
+    that can be run from the CLI"""
+
+    def __init__(self, path: Path, name: str) -> None:
+        """Create a new LocalExample instance.
+
+        Args:
+            name: The name of the example, specifically the name of the folder
+                  on git
+            path: Path at which the example is installed
+        """
+        self.name = name
+        self.path = path
+
+    @property
+    def python_files_in_dir(self) -> List[str]:
+        """List of all python files in the drectl in local example directory
+        the __init__.py file is excluded from this list"""
+        py_in_dir = fileio.find_files(str(self.path), "*.py")
+        py_files = []
+        for file in py_in_dir:
+            # Make sure only files directly in dir are considered, not files
+            # in sub dirs
+            if self.path == Path(file).parent:
+                if Path(file).name != "__init__.py":
+                    py_files.append(file)
+
+        return py_files
+
+    @property
+    def has_single_python_file(self) -> bool:
+        """Boolean that states if only one python file is present"""
+        return len(self.python_files_in_dir) == 1
+
+    @property
+    def has_any_python_file(self) -> bool:
+        """Boolean that states if any python file is present"""
+        return len(self.python_files_in_dir) > 0
+
+    @property
+    def executable_python_example(self) -> str:
+        """Return the python file for the example"""
+        if self.has_single_python_file:
+            return self.python_files_in_dir[0]
+        elif self.has_any_python_file:
+            logger.warning(
+                "This example has multiple executable python files"
+                "The last one in alphanumerical order is taken."
+            )
+            return sorted(self.python_files_in_dir)[-1]
+        else:
+            raise RuntimeError(
+                "No pipeline runner script found in example. "
+                f"Files found: {self.python_files_in_dir}"
+            )
+
+    def is_present(self) -> bool:
+        """Checks if the example is installed at the given path."""
+        return fileio.file_exists(str(self.path)) and fileio.is_dir(
+            str(self.path)
+        )
+
+    def run_example(self, bash_file: str, force: bool) -> None:
+        """Run the local example using the bash script at the supplied
+        location
+
+        Args:
+            bash_file: File location of the bash script to run examples
+            force: Whether to force the install
+        """
+        if fileio.file_exists(bash_file):
+            os.chdir(self.path)
+            try:
+                # TODO [ENG-271]: Catch errors that might be thrown in subprocess
+                if force:
+                    subprocess.check_call(
+                        [
+                            bash_file,
+                            "-f",
+                            "--executable",
+                            self.executable_python_example,
+                        ],
+                        cwd=str(self.path),
+                    )
+                else:
+                    subprocess.check_call(
+                        [
+                            bash_file,
+                            "--executable",
+                            self.executable_python_example,
+                        ],
+                        cwd=self.path,
+                    )
+            except RuntimeError:
+                raise NotImplementedError(
+                    f"Currently the example {self.name} "
+                    "has no implementation for the "
+                    "run method"
+                )
+            except subprocess.CalledProcessError as e:
+                if e.returncode == 38:
+                    raise NotImplementedError(
+                        f"Currently the example {self.name} "
+                        "has no implementation for the "
+                        "run method"
+                    )
+            except FileNotFoundError:
+                raise FileNotFoundError(
+                    "Bash File to run Examples not found at" f"{bash_file}"
+                )
+
+        # Telemetry
+        track_event(RUN_EXAMPLE, {"name": self.name})
 
 
 class Example:
     """Class for all example objects."""
 
-    def __init__(self, name: str, path: Path) -> None:
-        """Create a new Example instance."""
+    def __init__(self, name: str, path_in_repo: Path) -> None:
+        """Create a new Example instance.
+
+        Args:
+            name: The name of the example, specifically the name of the folder
+                  on git
+            path_in_repo: Path to the local example within the global zenml
+                          folder.
+        """
         self.name = name
-        self.path = path
+        self.path_in_repo = path_in_repo
 
     @property
     def readme_content(self) -> str:
         """Returns the readme content associated with a particular example."""
-        readme_file = os.path.join(self.path, "README.md")
+        readme_file = os.path.join(self.path_in_repo, "README.md")
         try:
             with open(readme_file) as readme:
                 readme_content = readme.read()
             return readme_content
         except FileNotFoundError:
-            if fileio.file_exists(str(self.path)) and fileio.is_dir(
-                str(self.path)
+            if fileio.file_exists(str(self.path_in_repo)) and fileio.is_dir(
+                str(self.path_in_repo)
             ):
-                raise ValueError(f"No README.md file found in {self.path}")
+                raise ValueError(
+                    f"No README.md file found in " f"{self.path_in_repo}"
+                )
             else:
                 raise FileNotFoundError(
                     f"Example {self.name} is not one of the available options."
-                    f"\nTo list all available examples, type: `zenml example "
+                    f"\n"
+                    f"To list all available examples, type: `zenml example "
                     f"list`"
                 )
-
-    def run(self) -> None:
-        """Runs the example script.
-
-        Raises:
-            NotImplementedError: This method is not yet implemented."""
-        # TODO [ENG-191]: Add an example-run command to run an example. (ENG-145)
-        raise NotImplementedError("Functionality is not yet implemented.")
 
 
 class ExamplesRepo:
@@ -86,19 +208,34 @@ class ExamplesRepo:
         self.cloning_path = cloning_path
         try:
             self.repo = Repo(self.cloning_path)
-        except NoSuchPathError:
+        except NoSuchPathError or InvalidGitRepositoryError:
             self.repo = None  # type: ignore
             logger.debug(
-                f"`cloning_path`: {self.cloning_path} was empty, "
-                f"but ExamplesRepo was created. "
-                "Ensure a pull is performed before doing any other operations."
+                f"`Cloning_path`: {self.cloning_path} was empty, "
+                "Automatically cloning the examples."
             )
+            self.clone()
+            self.checkout(branch=self.latest_release)
+
+    @property
+    def active_version(self) -> Optional[str]:
+        """In case a tagged version is checked out, this property returns
+        that version, else None is returned"""
+        return next(
+            (
+                tag
+                for tag in self.repo.tags
+                if tag.commit == self.repo.head.commit
+            ),
+            None,
+        )
 
     @property
     def latest_release(self) -> str:
         """Returns the latest release for the examples repository."""
         tags = sorted(
-            self.repo.tags, key=lambda t: t.commit.committed_datetime  # type: ignore
+            self.repo.tags,
+            key=lambda t: t.commit.committed_datetime,  # type: ignore
         )
         latest_tag = parse(tags[-1].name)
         if type(latest_tag) is not Version:
@@ -115,6 +252,10 @@ class ExamplesRepo:
         """Returns the path for the examples directory."""
         return os.path.join(self.cloning_path, "examples")
 
+    @property
+    def examples_run_bash_script(self) -> str:
+        return os.path.join(self.examples_dir, EXAMPLES_RUN_SCRIPT)
+
     def clone(self) -> None:
         """Clones repo to cloning_path.
 
@@ -129,7 +270,7 @@ class ExamplesRepo:
             )
         except KeyboardInterrupt:
             self.delete()
-            logger.error("Cancelled download of repository.. Rolled back.")
+            logger.error("Canceled download of repository.. Rolled back.")
 
     def delete(self) -> None:
         """Delete `cloning_path` if it exists."""
@@ -160,13 +301,15 @@ class GitExamplesHandler(object):
 
     def __init__(self) -> None:
         """Create a new GitExamplesHandler instance."""
-        repo_dir = click.get_app_dir(APP_NAME)
-        examples_dir = Path(os.path.join(repo_dir, EXAMPLES_GITHUB_REPO))
-        self.examples_repo = ExamplesRepo(examples_dir)
+        self.repo_dir = zenml.io.utils.get_global_config_directory()
+        self.examples_dir = Path(
+            os.path.join(self.repo_dir, EXAMPLES_GITHUB_REPO)
+        )
+        self.examples_repo = ExamplesRepo(self.examples_dir)
 
     @property
     def examples(self) -> List[Example]:
-        """Returns a list of examples"""
+        """Property that contains a list of examples"""
         return [
             Example(
                 name, Path(os.path.join(self.examples_repo.examples_dir, name))
@@ -176,13 +319,50 @@ class GitExamplesHandler(object):
                 not name.startswith(".")
                 and not name.startswith("__")
                 and not name.startswith("README")
+                and not name.endswith(".sh")
             )
         ]
 
-    def pull(self, version: str = "", force: bool = False) -> None:
+    @property
+    def is_matching_versions(self) -> bool:
+        """Returns a boolean whether the checked out examples are on the
+        same code version as zenml"""
+        return zenml_version_installed == str(self.examples_repo.active_version)
+
+    def is_example(self, example_name: Optional[str] = None) -> bool:
+        """Checks if the supplied example_name corresponds to an example"""
+        example_dict = {e.name: e for e in self.examples}
+        if example_name:
+            if example_name in example_dict.keys():
+                return True
+
+        return False
+
+    def get_examples(self, example_name: Optional[str] = None) -> List[Example]:
+        """Method that allows you to get an example by name. If no example is
+        supplied,  all examples are returned
+
+        Args:
+          example_name: Name of an example.
+        """
+        example_dict = {e.name: e for e in self.examples}
+        if example_name:
+            if example_name in example_dict.keys():
+                return [example_dict[example_name]]
+            else:
+                raise KeyError(
+                    f"Example {example_name} does not exist! "
+                    f"Available examples: {[example_dict.keys()]}"
+                )
+        else:
+            return self.examples
+
+    def pull(
+        self, version: str = "", force: bool = False, branch: str = "main"
+    ) -> None:
         """Pulls the examples from the main git examples repository."""
         if version == "":
-            version = self.examples_repo.latest_release
+            version = zenml_version_installed
 
         if not self.examples_repo.is_cloned:
             self.examples_repo.clone()
@@ -191,7 +371,16 @@ class GitExamplesHandler(object):
             self.examples_repo.clone()
 
         try:
-            self.examples_repo.checkout(version)
+            if branch not in self.examples_repo.repo.references:
+                warning(
+                    f"The specified branch {branch} not found in "
+                    "repo, falling back to use main."
+                )
+                branch = "main"
+            if branch != "main":
+                self.examples_repo.checkout(branch=branch)
+            else:
+                self.examples_repo.checkout(version)
         except GitCommandError:
             logger.warning(
                 f"Version {version} does not exist in remote repository. "
@@ -206,7 +395,9 @@ class GitExamplesHandler(object):
     def copy_example(self, example: Example, destination_dir: str) -> None:
         """Copies an example to the destination_dir."""
         fileio.create_dir_if_not_exists(destination_dir)
-        fileio.copy_dir(str(example.path), destination_dir, overwrite=True)
+        fileio.copy_dir(
+            str(example.path_in_repo), destination_dir, overwrite=True
+        )
 
     def clean_current_examples(self) -> None:
         """Deletes the ZenML examples directory from your current working
@@ -220,6 +411,29 @@ pass_git_examples_handler = click.make_pass_decorator(
 )
 
 
+def check_for_version_mismatch(
+    git_examples_handler: GitExamplesHandler,
+) -> None:
+    if git_examples_handler.is_matching_versions:
+        return
+    else:
+        if git_examples_handler.examples_repo.active_version:
+            warning(
+                "The examples you have installed are installed with Version "
+                f"{git_examples_handler.examples_repo.active_version} "
+                f"of ZenML. However your code is at {zenml_version_installed} "
+                "Consider using `zenml example pull` to download  "
+                "examples matching your zenml installation."
+            )
+        else:
+            warning(
+                "The examples you have installed are downloaded from a "
+                "development branch of ZenML. Full functionality is not "
+                "guaranteed. Use `zenml example pull` to "
+                "get examples using your zenml version."
+            )
+
+
 @cli.group(help="Access all ZenML examples.")
 def example() -> None:
     """Examples group"""
@@ -229,19 +443,29 @@ def example() -> None:
 @pass_git_examples_handler
 def list(git_examples_handler: GitExamplesHandler) -> None:
     """List all available examples."""
+    check_for_version_mismatch(git_examples_handler)
     declare("Listing examples: \n")
-    for example in git_examples_handler.examples:
+
+    for example in git_examples_handler.get_examples():
         declare(f"{example.name}")
-    declare("\nTo pull the examples, type: ")
+
+    declare("\n" + "To pull the examples, type: ")
     declare("zenml example pull EXAMPLE_NAME")
 
 
+@click.option(
+    "--path",
+    "-p",
+    type=click.STRING,
+    default="zenml_examples",
+    help="Relative path at which you want to clean the example(s)",
+)
 @example.command(help="Deletes the ZenML examples directory.")
 @pass_git_examples_handler
-def clean(git_examples_handler: GitExamplesHandler) -> None:
+def clean(git_examples_handler: GitExamplesHandler, path: str) -> None:
     """Deletes the ZenML examples directory from your current working
     directory."""
-    examples_directory = os.path.join(os.getcwd(), "zenml_examples")
+    examples_directory = os.path.join(os.getcwd(), path)
     if (
         fileio.file_exists(examples_directory)
         and fileio.is_dir(examples_directory)
@@ -270,18 +494,15 @@ def clean(git_examples_handler: GitExamplesHandler) -> None:
 @click.argument("example_name")
 def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
     """Find out more about an example."""
+    check_for_version_mismatch(git_examples_handler)
     # TODO [ENG-148]: fix markdown formatting so that it looks nicer (not a
     #  pure .md dump)
-    example_obj = None
-    for example in git_examples_handler.examples:
-        if example.name == example_name:
-            example_obj = example
+    try:
+        example_obj = git_examples_handler.get_examples(example_name)[0]
 
-    if example_obj is None:
-        error(
-            f"Example {example_name} is not one of the available options."
-            f"\nTo list all available examples, type: `zenml example list`"
-        )
+    except KeyError as e:
+        error(str(e))
+
     else:
         title(example_obj.name)
         pretty_print(example_obj.readme_content)
@@ -306,56 +527,122 @@ def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
     default=zenml_version_installed,
     help="The version of ZenML to use for the force-redownloaded examples.",
 )
+@click.option(
+    "--branch",
+    "-b",
+    type=click.STRING,
+    default="main",
+    help="The branch of the ZenML repo to use for the force-redownloaded "
+    "examples. A non main-branch overrules the version number.",
+)
+@click.option(
+    "--path",
+    "-p",
+    type=click.STRING,
+    default="zenml_examples",
+    help="Relative path at which you want to install the example(s)",
+)
 def pull(
     git_examples_handler: GitExamplesHandler,
     example_name: str,
     force: bool,
     version: str,
+    path: str,
+    branch: str,
 ) -> None:
     """Pull examples straight into your current working directory.
     Add the flag --force or -f to redownload all the examples afresh.
     Use the flag --version or -v and the version number to specify
     which version of ZenML you wish to use for the examples."""
-    git_examples_handler.pull(force=force, version=version)
-    destination_dir = os.path.join(os.getcwd(), "zenml_examples")
-    fileio.create_dir_if_not_exists(destination_dir)
-
-    examples = (
-        git_examples_handler.examples
-        if not example_name
-        else [
-            Example(
-                example_name,
-                Path(
-                    os.path.join(
-                        git_examples_handler.examples_repo.examples_dir,
-                        example_name,
-                    )
-                ),
-            )
-        ]
+    git_examples_handler.pull(
+        force=force, version=version, branch=branch.strip()
     )
 
-    for example in examples:
-        if not fileio.file_exists(str(example.path)):
-            error(
-                f"Example {example.name} does not exist! Available examples: "
-                f"{[e.name for e in git_examples_handler.examples]}"
+    examples_dir = os.path.join(os.getcwd(), path)
+    fileio.create_dir_if_not_exists(examples_dir)
+    try:
+        examples = git_examples_handler.get_examples(example_name)
+
+    except KeyError as e:
+        error(str(e))
+
+    else:
+        for example in examples:
+            destination_dir = os.path.join(os.getcwd(), path, example.name)
+
+            if LocalExample(Path(example.name), destination_dir).is_present():
+                if force or confirmation(
+                    f"Example {example.name} is already pulled. "
+                    "Do you wish to overwrite the directory at "
+                    f"{destination_dir}?"
+                ):
+                    fileio.rm_dir(destination_dir)
+                else:
+                    warning(f"Example {example.name} not overwritten.")
+                    continue
+
+            declare(f"Pulling example {example.name}...")
+
+            fileio.create_dir_if_not_exists(destination_dir)
+            git_examples_handler.copy_example(example, destination_dir)
+            declare(f"Example pulled in directory: {destination_dir}")
+
+
+@example.command(
+    help="Run the example that you previously installed with "
+    "`zenml example pull`"
+)
+@click.argument("example_name", required=True)
+@click.option(
+    "--path",
+    "-p",
+    type=click.STRING,
+    default="zenml_examples",
+    help="Relative path at which you want to install the example(s)",
+)
+@click.option(
+    "--force",
+    "-f",
+    is_flag=True,
+    help="Force the run of the example. This deletes the .zen folder from the"
+    "example folder and force installs all necessary integration "
+    "requirements.",
+)
+@pass_git_examples_handler
+@click.pass_context
+def run(
+    ctx: click.Context,
+    git_examples_handler: GitExamplesHandler,
+    example_name: str,
+    path: str,
+    force: bool,
+) -> None:
+    """Run the example at the specified relative path.
+    `zenml example pull EXAMPLE_NAME` has to be called with the same relative
+    path before the run command.
+    """
+    check_for_version_mismatch(git_examples_handler)
+
+    # TODO [ENG-272]: - create a post_run function inside individual setup.sh
+    #  to inform user how to clean up
+    examples_dir = Path(os.getcwd()) / path
+    try:
+        _ = git_examples_handler.get_examples(example_name)[0]
+    except KeyError as e:
+        error(str(e))
+    else:
+        example_dir = examples_dir / example_name
+        local_example = LocalExample(example_dir, example_name)
+
+        if not local_example.is_present():
+            ctx.forward(pull)
+
+        bash_script_location = (
+            git_examples_handler.examples_repo.examples_run_bash_script
+        )
+        try:
+            local_example.run_example(
+                bash_file=bash_script_location, force=force
             )
-            return
-
-        example_destination_dir = os.path.join(destination_dir, example.name)
-        if fileio.file_exists(example_destination_dir):
-            if confirmation(
-                f"Example {example.name} is already pulled. "
-                f"Do you wish to overwrite the directory?"
-            ):
-                fileio.rm_dir(example_destination_dir)
-            else:
-                warning(f"Example {example.name} not overwritten.")
-                continue
-
-        declare(f"Pulling example {example.name}...")
-        git_examples_handler.copy_example(example, example_destination_dir)
-
-        declare(f"Example pulled in directory: {example_destination_dir}")
+        except NotImplementedError as e:
+            error(str(e))

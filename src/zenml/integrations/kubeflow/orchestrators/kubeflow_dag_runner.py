@@ -303,18 +303,21 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
             # remove the extra pipeline node information
             tfx_node_ir = self._dehydrate_tfx_ir(tfx_ir, component.id)
 
+            from zenml.utils import source_utils
+
+            main_module_file = sys.modules["__main__"].__file__
+            main_module = source_utils.get_module_source_from_file_path(
+                os.path.abspath(main_module_file)
+            )
+
             step_module = component.component_type.split(".")[:-1]
             if step_module[0] == "__main__":
-                from zenml.utils import source_utils
-
-                main_module_file = sys.modules["__main__"].__file__
-                step_module = source_utils.get_module_source_from_file_path(
-                    os.path.abspath(main_module_file)
-                )
+                step_module = main_module
             else:
                 step_module = ".".join(step_module)
 
             kfp_component = KubeflowComponent(
+                main_module=main_module,
                 step_module=step_module,
                 step_function_name=component.id,
                 component=component,

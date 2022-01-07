@@ -3,7 +3,9 @@ import tarfile
 from pathlib import Path
 from typing import Callable, Optional
 
-from zenml.constants import ENV_ZENML_REPOSITORY_PATH
+import click
+
+from zenml.constants import APP_NAME, ENV_ZENML_REPOSITORY_PATH
 from zenml.core.constants import ZENML_DIR_NAME
 from zenml.exceptions import InitializationException
 from zenml.io.fileio import file_exists, is_dir, is_remote, is_root, open
@@ -144,6 +146,11 @@ def get_zenml_dir(path: Optional[str] = None) -> str:
 
     path = _find_repo_helper(path)
     return str(Path(path).resolve())
+
+
+def get_global_config_directory() -> str:
+    """Returns the global config directory for ZenML."""
+    return click.get_app_dir(APP_NAME)
 
 
 def write_file_contents_as_string(file_path: str, content: str) -> None:

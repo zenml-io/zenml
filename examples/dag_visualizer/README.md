@@ -51,7 +51,6 @@ zenml example pull dag_visualizer
 cd zenml_examples/dag_visualizer
 
 # initialize
-git init
 zenml init
 ```
 

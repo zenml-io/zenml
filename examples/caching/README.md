@@ -1,5 +1,5 @@
 # Caching and its power in machine learning
-If we organise the steps of our model training smartly, we can ensure that the data outputs and inputs along the way 
+If we organize the steps of our model training smartly, we can ensure that the data outputs and inputs along the way 
 are cached. A good way to think about splitting up the steps is to use the image of 
 [pipelines](https://blog.zenml.io/tag/pipelines/) and the steps that are executed. 
 For each step, data is passed in, and (potentially) gets returned. We can cache the data at these entry and exit 
@@ -48,7 +48,6 @@ zenml example pull caching
 cd zenml_examples/caching
 
 # initialize
-git init
 zenml init
 ```
 

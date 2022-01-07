@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import shutil
 from typing import Any, Dict, List, Tuple, Type, cast
 
 import pkg_resources
@@ -42,10 +43,24 @@ class Integration(metaclass=IntegrationMeta):
 
     REQUIREMENTS: List[str] = []
 
+    SYSTEM_REQUIREMENTS: Dict[str, str] = {}
+
     @classmethod
     def check_installation(cls) -> bool:
         """Method to check whether the required packages are installed"""
         try:
+            for requirement, command in cls.SYSTEM_REQUIREMENTS.items():
+                result = shutil.which(command)
+
+                if result is None:
+                    logger.debug(
+                        "Unable to find the required packages for %s on your "
+                        "system. Please install the packages on your system "
+                        "and try again.",
+                        requirement,
+                    )
+                    return False
+
             for r in cls.REQUIREMENTS:
                 pkg_resources.get_distribution(r)
             logger.debug(
