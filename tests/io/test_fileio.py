@@ -138,13 +138,13 @@ def test_list_dir_returns_a_list_of_file_paths(tmp_path):
         ]
 
 
-# @pytest.fixture(scope="module")
-# @given(sample_file=text())
-# def test_list_dir_returns_one_result_for_one_file(tmp_path, sample_file):
-#     """list_dir should return only one result, when there is only
-#     one file created"""
-#     with open(sample_file, "w"):
-#         assert len(fileio.list_dir(str(tmp_path))) == 1
+def test_list_dir_returns_one_result_for_one_file(tmp_path):
+    """list_dir should return only one result, when there is only
+    one file created"""
+    fileio.create_file_if_not_exists(
+        os.path.join(tmp_path, TEMPORARY_FILE_NAME)
+    )
+    assert len(fileio.list_dir(str(tmp_path))) == 1
 
 
 @pytest.fixture(scope="module")
