@@ -36,7 +36,6 @@ zenml example pull kubeflow
 cd zenml_examples/kubeflow
 
 # Initialize a ZenML repository
-git init
 zenml init
 ```
 

@@ -37,8 +37,7 @@ def init(
       repo_path: Path to the repository.
 
     Raises:
-        InvalidGitRepositoryError: If repo is not a git repo.
-        AssertionError
+        InitializationException: If the repo is already initialized.
     """
     if sys.version_info.minor == 6:
         warning(

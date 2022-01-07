@@ -10,24 +10,14 @@ description: A good place to start before diving further into the docs.
 
 **Repository**
 
-A repository is at the core of all ZenML activity. Every action that can be executed within ZenML must take place 
-within a ZenML repository. ZenML repositories are inextricably tied to `git`. ZenML creates a `.zen` folder at the 
-root of your repository to manage your assets and metadata.
+Every ZenML project starts inside a ZenML repository and, it is at the core of all ZenML activity. Every action that 
+can be executed within ZenML must take place within such a repository. 
 
-Every ZenML project starts inside a ZenML repository. Think of it just like a normal Git repository, except that 
-there are some added bonuses on top! A repository is at the core of all ZenML activity. Every action that can be 
-executed within ZenML must take place within a ZenML repository. ZenML repositories are inextricably tied to `git`. 
-ZenML creates a `.zen` folder at the root of your repository to manage your assets and metadata.
-
-To create a ZenML repository, do the following after having installed ZenML:
+In order to create a ZenML repository, do the following after having installed ZenML:
 
 ```
 zenml init
 ```
-
-{% hint style="warning" %}
-Please make sure to be inside a valid git repository before executing the above!
-{% endhint %}
 
 The initialization creates a local `.zen` folder where various information about your local configuration lives, 
 e.g., the active [Stack](guides/deploy\_to\_production.md) that you are using to run pipelines.

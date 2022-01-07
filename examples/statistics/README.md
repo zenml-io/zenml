@@ -55,7 +55,6 @@ zenml example pull statistics
 cd zenml_examples/statistics
 
 # initialize
-git init
 zenml init
 ```
 
