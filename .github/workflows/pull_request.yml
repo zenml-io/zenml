@@ -12,7 +12,9 @@ jobs:
       ZENML_ANALYTICS_OPT_IN: false
     # Exit if its a commit from Gitbook
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
-
+    defaults:
+      run:
+        shell: bash
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
