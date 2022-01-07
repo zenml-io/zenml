@@ -382,3 +382,9 @@ def test_get_parent_gets_the_parent_directory(tmp_path) -> None:
     )
     parent = fileio.get_parent(os.path.join(tmp_path, "new_dir/new_dir2"))
     assert parent == "new_dir"
+
+
+def test_convert_to_str_converts_to_string(tmp_path) -> None:
+    """Test that convert_to_str converts bytes to a string"""
+    assert isinstance(fileio.convert_to_str(bytes(str(tmp_path), "ascii")), str)
+    assert fileio.convert_to_str(bytes(str(tmp_path), "ascii")) == str(tmp_path)
