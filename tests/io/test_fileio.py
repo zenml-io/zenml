@@ -320,3 +320,20 @@ def test_create_dir_recursive_if_not_exists(tmp_path) -> None:
         os.path.join(tmp_path, "new_dir/new_dir2")
     )
     assert os.path.exists(os.path.join(tmp_path, "new_dir/new_dir2"))
+
+
+def test_resolve_relative_path(tmp_path) -> None:
+    """Test that resolve_relative_path resolves a relative path"""
+    current_working_directory = os.getcwd()
+    assert current_working_directory == fileio.resolve_relative_path(".")
+
+
+def test_copy_dir_copies_dir_from_source_to_destination(tmp_path) -> None:
+    """Test that copy_dir copies a directory from source to destination"""
+    fileio.create_file_if_not_exists(os.path.join(tmp_path, "new_file.txt"))
+    fileio.copy_dir(
+        os.path.join(tmp_path),
+        os.path.join(tmp_path, "test_dir_copy"),
+    )
+    assert os.path.exists(os.path.join(tmp_path, "test_dir_copy"))
+    assert os.path.exists(os.path.join(tmp_path, "test_dir_copy/new_file.txt"))
