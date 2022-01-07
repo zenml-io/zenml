@@ -282,3 +282,15 @@ def test_rm_dir_function_works_recursively(tmp_path) -> None:
     assert not os.path.exists(
         os.path.join(tmp_path, "not_a_dir/also_not_a_dir")
     )
+
+
+def test_stat_returns_a_stat_result_object(tmp_path) -> None:
+    """Test that stat returns a stat result object"""
+    with NamedTemporaryFile(dir=tmp_path) as temp_file:
+        assert isinstance(fileio.stat(temp_file.name), os.stat_result)
+
+
+def test_stat_raises_error_when_file_doesnt_exist(tmp_path) -> None:
+    """Test that stat raises an error when the file doesn't exist"""
+    with pytest.raises(NotFoundError):
+        fileio.stat(os.path.join(tmp_path, "not_a_file.txt"))
