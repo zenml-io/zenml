@@ -306,3 +306,9 @@ def test_create_file_if_not_exists(tmp_path) -> None:
     """Test that create_file_if_not_exists creates a file"""
     fileio.create_file_if_not_exists(os.path.join(tmp_path, "new_file.txt"))
     assert os.path.exists(os.path.join(tmp_path, "new_file.txt"))
+
+
+def test_create_dir_if_not_exists(tmp_path) -> None:
+    """Test that create_dir_if_not_exists creates a directory"""
+    fileio.create_dir_if_not_exists(os.path.join(tmp_path, "new_dir"))
+    assert os.path.exists(os.path.join(tmp_path, "new_dir"))
