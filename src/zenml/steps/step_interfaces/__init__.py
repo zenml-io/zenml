@@ -27,9 +27,9 @@ from zenml.steps.step_interfaces.base_evaluator_step import (
     BaseEvaluatorConfig,
     BaseEvaluatorStep,
 )
-from zenml.steps.step_interfaces.base_preprocesser_step import (
-    BasePreprocesserConfig,
-    BasePreprocesserStep,
+from zenml.steps.step_interfaces.base_preprocessor_step import (
+    BasePreprocessorConfig,
+    BasePreprocessorStep,
 )
 from zenml.steps.step_interfaces.base_split_step import (
     BaseSplitStep,
@@ -49,8 +49,8 @@ __all__ = [
     "BaseDriftDetectionStep",
     "BaseEvaluatorConfig",
     "BaseEvaluatorStep",
-    "BasePreprocesserConfig",
-    "BasePreprocesserStep",
+    "BasePreprocessorConfig",
+    "BasePreprocessorStep",
     "BaseSplitStep",
     "BaseSplitStepConfig",
     "BaseTrainerStep",
