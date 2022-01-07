@@ -53,18 +53,6 @@ drift_detector = evidently_steps.EvidentlyDriftDetectionStep(
     evidently_steps.EvidentlyDriftDetectionConfig(column_mapping=None)
 )
 
-# @step()
-# def drift_detector(full_data: pd.DataFrame, partial_data: pd.DataFrame) -> dict:
-#     """Detects a drift in the pipeline."""
-#     breast_cancer_data_drift_profile = Profile(
-#         sections=[DataDriftProfileSection()]
-#     )
-#     breast_cancer_data_drift_profile.calculate(
-#         full_data, partial_data, column_mapping=None
-#     )
-#     breast_cancer_data_drift_profile.json()
-#     logger.info(breast_cancer_data_drift_profile.json())
-
 
 @pipeline
 def drift_detection_pipeline(
@@ -77,7 +65,7 @@ def drift_detection_pipeline(
     data_loader = data_loader()
     full_data = full_data(data_loader)
     partial_data = partial_data(data_loader)
-    drift_detector(full_data, partial_data)
+    drift_detector()
 
 
 pipeline = drift_detection_pipeline(
