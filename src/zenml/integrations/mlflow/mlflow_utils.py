@@ -23,12 +23,37 @@ from zenml.pipelines.base_pipeline import BasePipeline
 from zenml.steps import BaseStep
 
 
-def setup_mlflow(experiment_name: str = "default") -> None:
-    zenml_mlruns_path = os.path.join(get_global_config_directory(), "mlruns")
-    if not os.path.exists(zenml_mlruns_path):
-        os.mkdir(zenml_mlruns_path)
-    set_tracking_uri(zenml_mlruns_path)
+def local_mlflow_backend():
+    """Returns the local mlflow backend inside the global zenml directory"""
+    local_mlflow_backend_uri = os.path.join(
+        get_global_config_directory(), "mlruns"
+    )
+    if not os.path.exists(local_mlflow_backend_uri):
+        os.mkdir(local_mlflow_backend_uri)
+    return local_mlflow_backend_uri
 
+
+def setup_mlflow(
+    backend_store_uri: Optional[str] = None, experiment_name: str = "default"
+) -> None:
+    """Setup all mlflow related configurations. This includes specifying which
+    mlflow tracking uri should b e used and which experiment the tracking
+    will be associated with.
+
+    Args:
+        backend_store_uri: The mlflow backend to log to
+        experiment_name: The experiment name under which all runs will be
+                         tracked
+
+    """
+    # TODO [HIGH]: Implement a way to get the mlflow token and set
+    #  it as env variable at MLFLOW_TRACKING_TOKEN
+    if not backend_store_uri:
+        backend_store_uri = local_mlflow_backend()
+
+    os.environ["MLFLOW_TRACKING_URI"] = backend_store_uri
+    set_tracking_uri(backend_store_uri)
+    # Set which experiment is used within mlflow
     set_experiment(experiment_name)
 
 
