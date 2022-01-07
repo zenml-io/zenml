@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Any, Dict
+from typing import Any, Dict, Optional, cast
 
 from evidently.model_profile import Profile  # type: ignore
 from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
@@ -32,7 +32,7 @@ class EvidentlyDriftDetectionConfig(BaseDriftDetectionConfig):
     detection
     """
 
-    column_mapping: ColumnMapping
+    column_mapping: Optional[ColumnMapping]
 
 
 class EvidentlyDriftDetectionStep(BaseDriftDetectionStep):
@@ -64,4 +64,4 @@ class EvidentlyDriftDetectionStep(BaseDriftDetectionStep):
             comparison_dataset,
             column_mapping=config.column_mapping or None,
         )
-        return data_drift_profile.object()
+        return cast(Dict[str, Any], data_drift_profile.object())
