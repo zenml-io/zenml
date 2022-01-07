@@ -312,3 +312,11 @@ def test_create_dir_if_not_exists(tmp_path) -> None:
     """Test that create_dir_if_not_exists creates a directory"""
     fileio.create_dir_if_not_exists(os.path.join(tmp_path, "new_dir"))
     assert os.path.exists(os.path.join(tmp_path, "new_dir"))
+
+
+def test_create_dir_recursive_if_not_exists(tmp_path) -> None:
+    """Test that create_dir_recursive_if_not_exists creates a directory"""
+    fileio.create_dir_recursive_if_not_exists(
+        os.path.join(tmp_path, "new_dir/new_dir2")
+    )
+    assert os.path.exists(os.path.join(tmp_path, "new_dir/new_dir2"))
