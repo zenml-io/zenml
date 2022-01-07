@@ -188,18 +188,24 @@ def test_open_returns_file_object_when_file_exists(
 
 def test_copy_moves_file_to_new_location(tmp_path) -> None:
     """Test that copy moves the file to the new location"""
-    with NamedTemporaryFile(dir=tmp_path) as temp_file:
-        fileio.copy(temp_file.name, os.path.join(tmp_path, "new_file.txt"))
-        assert os.path.exists(os.path.join(tmp_path, "new_file.txt"))
+    fileio.create_file_if_not_exists(os.path.join(tmp_path, "test_file.txt"))
+    fileio.copy(
+        os.path.join(tmp_path, "test_file.txt"),
+        os.path.join(tmp_path, "test_file2.txt"),
+    )
+    assert os.path.exists(os.path.join(tmp_path, "test_file2.txt"))
 
 
 def test_copy_raises_error_when_file_exists(tmp_path) -> None:
     """Test that copy raises an error when the file already exists in
     the desired location"""
-    with NamedTemporaryFile(dir=tmp_path) as temp_file:
-        fileio.copy(temp_file.name, os.path.join(tmp_path, "new_file.txt"))
-        with pytest.raises(OSError):
-            fileio.copy(temp_file.name, os.path.join(tmp_path, "new_file.txt"))
+    fileio.create_file_if_not_exists(os.path.join(tmp_path, "test_file.txt"))
+    fileio.create_file_if_not_exists(os.path.join(tmp_path, "test_file2.txt"))
+    with pytest.raises(OSError):
+        fileio.copy(
+            os.path.join(tmp_path, "test_file.txt"),
+            os.path.join(tmp_path, "test_file2.txt"),
+        )
 
 
 def test_file_exists_function(tmp_path) -> None:
