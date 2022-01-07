@@ -337,3 +337,27 @@ def test_copy_dir_copies_dir_from_source_to_destination(tmp_path) -> None:
     )
     assert os.path.exists(os.path.join(tmp_path, "test_dir_copy"))
     assert os.path.exists(os.path.join(tmp_path, "test_dir_copy/new_file.txt"))
+
+
+def test_move_moves_a_file_from_source_to_destination(tmp_path) -> None:
+    """Test that move moves a file from source to destination"""
+    fileio.create_file_if_not_exists(os.path.join(tmp_path, "new_file.txt"))
+    fileio.move(
+        os.path.join(tmp_path, "new_file.txt"),
+        os.path.join(tmp_path, "new_file_moved.txt"),
+    )
+    assert os.path.exists(os.path.join(tmp_path, "new_file_moved.txt"))
+    assert not os.path.exists(os.path.join(tmp_path, "new_file.txt"))
+
+
+def test_move_moves_a_directory_from_source_to_destination(tmp_path) -> None:
+    """Test that move moves a directory from source to destination"""
+    fileio.create_file_if_not_exists(
+        os.path.join(tmp_path, "new_folder/new_file.txt")
+    )
+    fileio.move(
+        os.path.join(tmp_path, "new_folder"),
+        os.path.join(tmp_path, "test_dir_moved"),
+    )
+    assert os.path.exists(os.path.join(tmp_path, "test_dir_moved"))
+    assert os.path.exists(os.path.join(tmp_path, "test_dir_moved/new_file.txt"))
