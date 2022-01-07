@@ -66,7 +66,7 @@ jobs:
           python -m poetry run bash scripts/lint.sh
 
       - name: Test
-        run: python -m poetry run bash scripts/test-coverage-xml.sh unit
+        run: python -m poetry run bash scripts/test-coverage-xml.sh
 
       - name: Upload coverage
         # only do it for python 3.6, we don't need to do it for every version

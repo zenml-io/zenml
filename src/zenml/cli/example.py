@@ -117,30 +117,17 @@ class LocalExample:
             force: Whether to force the install
         """
         if fileio.file_exists(bash_file):
+            call = [
+                bash_file,
+                "--executable",
+                self.executable_python_example,
+            ] + (["-f"] if force else [])
             try:
                 # TODO [ENG-271]: Catch errors that might be thrown
                 #  in subprocess
-                if force:
-                    subprocess.check_call(
-                        [
-                            bash_file,
-                            "-f",
-                            "--executable",
-                            self.executable_python_example,
-                        ],
-                        cwd=str(self.path),
-                        shell=True,
-                    )
-                else:
-                    subprocess.check_call(
-                        [
-                            bash_file,
-                            "--executable",
-                            self.executable_python_example,
-                        ],
-                        cwd=self.path,
-                        shell=True,
-                    )
+                subprocess.check_call(
+                    call, cwd=str(self.path), shell=click._compat.WIN
+                )
             except RuntimeError:
                 raise NotImplementedError(
                     f"Currently the example {self.name} "
