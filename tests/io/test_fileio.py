@@ -15,6 +15,7 @@
 import os
 from collections.abc import Iterable
 from io import FileIO
+from pathlib import Path
 from tempfile import NamedTemporaryFile
 from types import GeneratorType
 
@@ -361,3 +362,23 @@ def test_move_moves_a_directory_from_source_to_destination(tmp_path) -> None:
     )
     assert os.path.exists(os.path.join(tmp_path, "test_dir_moved"))
     assert os.path.exists(os.path.join(tmp_path, "test_dir_moved/new_file.txt"))
+
+
+def test_get_grandparent_gets_the_grandparent_directory(tmp_path) -> None:
+    """Test that get_grandparent gets the grandparent directory"""
+    fileio.create_dir_recursive_if_not_exists(
+        os.path.join(tmp_path, "new_dir/new_dir2")
+    )
+    grandparent = fileio.get_grandparent(
+        os.path.join(tmp_path, "new_dir/new_dir2")
+    )
+    assert grandparent == Path(tmp_path).stem
+
+
+def test_get_parent_gets_the_parent_directory(tmp_path) -> None:
+    """Test that get_parent gets the parent directory"""
+    fileio.create_dir_recursive_if_not_exists(
+        os.path.join(tmp_path, "new_dir/new_dir2")
+    )
+    parent = fileio.get_parent(os.path.join(tmp_path, "new_dir/new_dir2"))
+    assert parent == "new_dir"
