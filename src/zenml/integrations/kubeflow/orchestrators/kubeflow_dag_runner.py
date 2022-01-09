@@ -163,7 +163,7 @@ class KubeflowDagRunnerConfig(pipeline_config.PipelineConfig):
         supported_launcher_classes: Optional[
             List[Type[base_component_launcher.BaseComponentLauncher]]
         ] = None,
-        metadata_ui_path: str = "/mlpipeline-ui-metadata.json",
+        metadata_ui_path: str = "/tmp/mlpipeline-ui-metadata.json",
         **kwargs: Any
     ):
         """Creates a KubeflowDagRunnerConfig object.
