@@ -69,9 +69,6 @@ In order to run this example, you need to install and initialize ZenML:
 # install CLI
 pip install zenml
 
-# install ZenML integrations for this example
-zenml integration install drift_detection
-
 # pull example
 zenml example pull drift_detection
 ```
