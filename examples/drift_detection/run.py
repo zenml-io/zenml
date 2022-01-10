@@ -17,7 +17,9 @@ from sklearn import datasets
 from zenml.integrations.evidently import steps as evidently_steps
 from zenml.logger import get_logger
 from zenml.pipelines import pipeline
+from zenml.core.repo import Repository
 from zenml.steps import step
+from rich import print
 
 logger = get_logger(__name__)
 
@@ -38,7 +40,7 @@ def full_split(
     input: pd.DataFrame,
 ) -> pd.DataFrame:
     """Loads the breast cancer dataset as a Pandas dataframe."""
-    return [input]
+    return input
 
 
 @step
@@ -46,7 +48,7 @@ def partial_split(
     input: pd.DataFrame,
 ) -> pd.DataFrame:
     """Loads part of the breast cancer dataset as a Pandas dataframe."""
-    return [input[:100]]
+    return input[:100]
 
 
 drift_detector = evidently_steps.EvidentlyDriftDetectionStep(
@@ -62,7 +64,7 @@ def drift_detection_pipeline(
     drift_detector,
 ):
     """Links all the steps together in a pipeline"""
-    data_loader = data_loader
+    data_loader = data_loader()
     full_data = full_data(data_loader)
     partial_data = partial_data(data_loader)
     drift_detector(reference_dataset=full_data, comparison_dataset=partial_data)
@@ -72,7 +74,16 @@ pipeline = drift_detection_pipeline(
     data_loader=data_loader(),
     full_data=full_split(),
     partial_data=partial_split(),
-    drift_detector=drift_detector(),
+    drift_detector=drift_detector,
 )
 
 pipeline.run()
+
+repo = Repository()
+pipeline = repo.get_pipelines()[0]
+runs = pipeline.runs
+run = runs[-1]
+steps = run.steps
+step = steps[3]
+output = step.output
+print(output.read())
