@@ -11,21 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from abc import ABC, abstractmethod
+from zenml.new_core.repository import Repository
+from zenml.new_core.runtime_configuration import RuntimeConfiguration
 
-from zenml.enums import MetadataStoreFlavor, StackComponentType
-from zenml.new_core.stack_component import StackComponent
-
-
-class BaseMetadataStore(StackComponent, ABC):
-    """Base class for all ZenML metadata stores."""
-
-    @property
-    def type(self) -> StackComponentType:
-        """The component type."""
-        return StackComponentType.METADATA_STORE
-
-    @property
-    @abstractmethod
-    def flavor(self) -> MetadataStoreFlavor:
-        """The metadata store flavor."""
+__all__ = ["Repository", "RuntimeConfiguration"]

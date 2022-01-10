@@ -17,14 +17,21 @@ from ml_metadata.proto import metadata_store_pb2
 from pydantic import validator
 from tfx.orchestration import metadata
 
+from zenml.enums import MetadataStoreFlavor
 from zenml.io import fileio
-from zenml.metadata_stores import BaseMetadataStore
+from zenml.metadata_stores import MLMDMetadataStore
 
 
-class SQLiteMetadataStore(BaseMetadataStore):
+class SQLiteMetadataStore(MLMDMetadataStore):
     """SQLite backend for ZenML metadata store."""
 
     uri: str
+    supports_local_execution = True
+    supports_remote_execution = False
+
+    @property
+    def flavor(self) -> MetadataStoreFlavor:
+        return MetadataStoreFlavor.SQLITE
 
     def __init__(self, **data: Any):
         """Constructor for MySQL MetadataStore for ZenML."""

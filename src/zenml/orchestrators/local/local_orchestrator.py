@@ -15,8 +15,7 @@
 
 from typing import TYPE_CHECKING, Any
 
-from pydantic import PrivateAttr
-
+from zenml.enums import OrchestratorFlavor
 from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.local.local_dag_runner import LocalDagRunner
 from zenml.orchestrators.utils import create_tfx_pipeline
@@ -28,7 +27,13 @@ if TYPE_CHECKING:
 class LocalOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines locally."""
 
-    _is_running: bool = PrivateAttr(default=False)
+    supports_local_execution = True
+    supports_remote_execution = False
+    _is_running = False
+
+    @property
+    def flavor(self) -> OrchestratorFlavor:
+        return OrchestratorFlavor.LOCAL
 
     @property
     def is_running(self) -> bool:

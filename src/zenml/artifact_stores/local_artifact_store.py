@@ -16,14 +16,25 @@ from pydantic import validator
 
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.constants import REMOTE_FS_PREFIX
+from zenml.enums import ArtifactStoreFlavor
 
 
 class LocalArtifactStore(BaseArtifactStore):
     """Artifact Store for local artifacts."""
 
+    supports_local_execution = True
+    supports_remote_execution = False
+
+    @property
+    def flavor(self) -> ArtifactStoreFlavor:
+        return ArtifactStoreFlavor.LOCAL
+
     @validator("path")
-    def must_be_local_path(cls, v: str) -> str:
-        """Validates that the path is a local path."""
-        if any([v.startswith(prefix) for prefix in REMOTE_FS_PREFIX]):
-            raise ValueError("Must be a local path.")
-        return v
+    def ensure_path_is_local(cls, path: str) -> str:
+        """Ensures that the artifact store path is local."""
+        if any([path.startswith(prefix) for prefix in REMOTE_FS_PREFIX]):
+            raise ValueError(
+                f"Path '{path}' specified for LocalArtifactStore is not a "
+                f"local path."
+            )
+        return path

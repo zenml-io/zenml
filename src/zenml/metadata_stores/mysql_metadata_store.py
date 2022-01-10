@@ -15,10 +15,11 @@
 from ml_metadata.proto import metadata_store_pb2
 from tfx.orchestration import metadata
 
-from zenml.metadata_stores import BaseMetadataStore
+from zenml.enums import MetadataStoreFlavor
+from zenml.metadata_stores import MLMDMetadataStore
 
 
-class MySQLMetadataStore(BaseMetadataStore):
+class MySQLMetadataStore(MLMDMetadataStore):
     """MySQL backend for ZenML metadata store."""
 
     host: str
@@ -26,6 +27,12 @@ class MySQLMetadataStore(BaseMetadataStore):
     database: str
     username: str
     password: str
+    supports_local_execution = True
+    supports_remote_execution = True
+
+    @property
+    def flavor(self) -> MetadataStoreFlavor:
+        return MetadataStoreFlavor.MYSQL
 
     def get_tfx_metadata_config(self) -> metadata_store_pb2.ConnectionConfig:
         """Return tfx metadata config for mysql metadata store."""

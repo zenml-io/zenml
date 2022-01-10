@@ -75,3 +75,42 @@ class LoggingLevels(Enum):
     INFO = logging.INFO
     DEBUG = logging.DEBUG
     CRITICAL = logging.CRITICAL
+
+
+class StackComponentFlavor(str, Enum):
+    pass
+
+
+class ArtifactStoreFlavor(StackComponentFlavor):
+    LOCAL = "local"
+    GCP = "gcp"
+
+
+class MetadataStoreFlavor(StackComponentFlavor):
+    SQLITE = "sqlite"
+    MYSQL = "mysql"
+    KUBEFLOW = "kubeflow"
+
+
+class ContainerRegistryFlavor(StackComponentFlavor):
+    DEFAULT = "default"
+
+
+class OrchestratorFlavor(StackComponentFlavor):
+    LOCAL = "local"
+    KUBEFLOW = "kubeflow"
+    AIRFLOW = "airflow"
+
+
+class StackComponentType(str, Enum):
+    ORCHESTRATOR = "orchestrator"
+    METADATA_STORE = "metadata_store"
+    ARTIFACT_STORE = "artifact_store"
+    CONTAINER_REGISTRY = "container_registry"
+
+    @property
+    def plural(self) -> str:
+        if self == StackComponentType.CONTAINER_REGISTRY:
+            return "container_registries"
+
+        return f"{self.value}s"
