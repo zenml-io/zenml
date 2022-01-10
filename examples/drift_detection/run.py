@@ -12,14 +12,14 @@
 #  permissions and limitations under the License.
 
 import pandas as pd
+from rich import print
 from sklearn import datasets
 
+from zenml.core.repo import Repository
 from zenml.integrations.evidently import steps as evidently_steps
 from zenml.logger import get_logger
 from zenml.pipelines import pipeline
-from zenml.core.repo import Repository
 from zenml.steps import step
-from rich import print
 
 logger = get_logger(__name__)
 
