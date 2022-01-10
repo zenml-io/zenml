@@ -102,7 +102,7 @@ def tf_evaluator(
 
 # Define the pipeline and enable mlflow - order of decorators is important here
 @enable_mlflow
-@pipeline
+@pipeline(enable_cache=False)
 def mlflow_example_pipeline(
     importer,
     normalizer,
@@ -140,6 +140,6 @@ print(
     "Now run \n "
     f"`mlflow ui --backend-store-uri {local_mlflow_backend()}` \n"
     "To inspect your experiment runs within the mlflow ui. \n"
-    "You can find your runs tracked within the `mlflow_example_pipeline`"
-    "experiment. Here you'll also be able to compare the two runs)"
+    "You can find your runs tracked within the `mlflow_example_pipeline` "
+    "experiment. Here you'll also be able to compare the two runs.)"
 )

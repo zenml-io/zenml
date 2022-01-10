@@ -56,6 +56,8 @@ def trainer(
 ) -> ClassifierMixin:
     """Train a simple sklearn classifier for the digits dataset."""
     model = get_digits_model()
+
+    # mlflow.sklearn.autolog()
     model.fit(X_train, y_train)
     return model
 
@@ -72,6 +74,7 @@ def evaluator(
     return test_acc
 
 
+# @enable_mlflow
 @pipeline(requirements_file=requirements_file)
 def mnist_pipeline(
     importer,

@@ -14,16 +14,16 @@
 import os
 from typing import Any, Callable, Optional, Type
 
-import mlflow
+import mlflow  # type: ignore
 from mlflow import set_experiment
-from mlflow.tracking import set_tracking_uri
+from mlflow.tracking import set_tracking_uri  # type: ignore
 
 from zenml.io.utils import get_global_config_directory
 from zenml.pipelines.base_pipeline import BasePipeline
 from zenml.steps import BaseStep
 
 
-def local_mlflow_backend():
+def local_mlflow_backend() -> str:
     """Returns the local mlflow backend inside the global zenml directory"""
     local_mlflow_backend_uri = os.path.join(
         get_global_config_directory(), "mlruns"
@@ -58,8 +58,9 @@ def setup_mlflow(
 
 
 def enable_mlflow_init(
-    original_init: Type[Callable], experiment_name: Optional[str] = None
-) -> Type[Callable]:
+    original_init: Callable[[BasePipeline, BaseStep, Any], None],
+    experiment_name: Optional[str] = None,
+) -> Callable[..., None]:
     """Outer decorator function for extending the __init__ method for pipelines
     that should be run using mlflow
 
@@ -71,7 +72,9 @@ def enable_mlflow_init(
         the inner decorator which extends the __init__ method
     """
 
-    def inner_decorator(self, *args: BaseStep, **kwargs: Any) -> None:
+    def inner_decorator(
+        self: BasePipeline, *args: BaseStep, **kwargs: Any
+    ) -> None:
         """Inner decorator overwriting the pipeline __init__
         Makes sure mlflow is properly set up and all mlflow logging takes place
         within one mlflow experiment that is associated with the pipeline
@@ -83,7 +86,7 @@ def enable_mlflow_init(
     return inner_decorator
 
 
-def enable_mlflow_run(run: Type[Callable]) -> Type[Callable]:
+def enable_mlflow_run(run: Callable[..., Any]) -> Callable[..., Any]:
     """Outer decorator function for extending the run method for pipelines
     that should be run using mlflow
 
@@ -94,7 +97,9 @@ def enable_mlflow_run(run: Type[Callable]) -> Type[Callable]:
         the inner decorator which extends the run method
     """
 
-    def inner_decorator(self, run_name: Optional[str] = None) -> Any:
+    def inner_decorator(
+        self: BasePipeline, run_name: Optional[str] = None
+    ) -> Any:
         """Inner decorator used to extend the run method of a pipeline.
         This ensures each pipeline run is run within a different mlflow context.
 
