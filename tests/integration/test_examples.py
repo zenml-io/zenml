@@ -117,9 +117,9 @@ def test_run_drift_detection(examples_dir: Path):
         assert not step.is_cached
 
     # Final step should have output a data drift report
-    output = run.steps[3].output
-    assert isinstance(output, Dict)
-    assert output.get("data_drift") is not None
+    output_obj = run.steps[3].output.read()
+    assert isinstance(output_obj, Dict)
+    assert output_obj.get("data_drift") is not None
 
 
 def test_run_caching(examples_dir: Path):
