@@ -41,7 +41,6 @@ jobs:
         if: runner.os=='Windows'
         run: |
           choco install graphviz
-          choco install git
 
       - name: Install poetry
         run: |
@@ -51,8 +50,9 @@ jobs:
       - name: Delete error-causing bash
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
-          rm.exe "C:/WINDOWS/system32/bash.EXE"
-          choco install git -y
+          get-command bash
+          choco install git -y --force
+          get-command bash
 
       - name: Install Dependencies
         run: |
