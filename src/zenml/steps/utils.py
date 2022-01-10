@@ -411,7 +411,8 @@ class _FunctionExecutor(BaseExecutor):
         if return_type is not None:
             if isinstance(return_type, Output):
                 # Resolve named (and multi-) outputs.
-                if len(return_type.items()) == 1:
+                # breakpoint()
+                if sum(1 for dummy_var in return_type.items()) == 1:
                     return_values = [return_values]
                 for i, output_tuple in enumerate(return_type.items()):
                     self.resolve_output_artifact(
