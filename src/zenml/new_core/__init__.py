@@ -13,5 +13,6 @@
 #  permissions and limitations under the License.
 from zenml.new_core.repository import Repository
 from zenml.new_core.runtime_configuration import RuntimeConfiguration
+from zenml.new_core.stack import Stack
 
-__all__ = ["Repository", "RuntimeConfiguration"]
+__all__ = ["Repository", "RuntimeConfiguration", "Stack"]

@@ -19,8 +19,8 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
-from zenml.core.repo import Repository
-from zenml.stacks import BaseStack
+from zenml.enums import StackComponentType
+from zenml.new_core import Repository, Stack
 
 
 # Stacks
@@ -30,35 +30,36 @@ def stack() -> None:
 
 
 @stack.command("register", context_settings=dict(ignore_unknown_options=True))
-@click.argument("stack_name", type=click.STRING, required=True)
+@click.argument("stack_name", type=str, required=True)
 @click.option(
     "-m",
     "--metadata-store",
     help="The name of the metadata store that you would like to register as part of the new stack.",
-    type=click.STRING,
+    type=str,
     required=True,
 )
 @click.option(
     "-a",
     "--artifact-store",
     help="The name of the artifact store that you would like to register as part of the new stack.",
-    type=click.STRING,
+    type=str,
     required=True,
 )
 @click.option(
     "-o",
     "--orchestrator",
     help="The name of the orchestrator that you would like to register as part of the new stack.",
-    type=click.STRING,
+    type=str,
     required=True,
 )
 @click.option(
     "-c",
     "--container_registry",
     help="The name of the container_registry that you would like to register as part of the new stack.",
-    type=click.STRING,
+    type=str,
     required=False,
 )
+@cli_utils.activate_integrations
 def register_stack(
     stack_name: str,
     metadata_store: str,
@@ -68,14 +69,26 @@ def register_stack(
 ) -> None:
     """Register a stack."""
 
-    service = Repository().get_service()
-    stack = BaseStack(
-        artifact_store_name=artifact_store,
-        orchestrator_name=orchestrator,
-        metadata_store_name=metadata_store,
-        container_registry_name=container_registry,
-    )
-    service.register_stack(stack_name, stack)
+    repo = Repository()
+
+    stack_components = {
+        "metadata_store": repo.get_stack_component(
+            StackComponentType.METADATA_STORE, name=metadata_store
+        ),
+        "artifact_store": repo.get_stack_component(
+            StackComponentType.ARTIFACT_STORE, name=artifact_store
+        ),
+        "orchestrator": repo.get_stack_component(
+            StackComponentType.ORCHESTRATOR, name=orchestrator
+        ),
+    }
+
+    if container_registry:
+        stack_components["container_registry"] = repo.get_stack_component(
+            StackComponentType.CONTAINER_REGISTRY, name=container_registry
+        )
+
+    repo.register_stack(Stack(name=stack_name, **stack_components))
     cli_utils.declare(f"Stack `{stack_name}` successfully registered!")
 
 
@@ -83,18 +96,27 @@ def register_stack(
 def list_stacks() -> None:
     """List all available stacks from service."""
     repo = Repository()
-    service = repo.get_service()
-    if len(service.stacks) == 0:
+
+    if len(repo._config.stacks) == 0:
         cli_utils.warning("No stacks registered!")
         return
 
     cli_utils.title("Stacks:")
-    # TODO [ENG-144]: once there is a common superclass for Stack/ArtifactStore etc.,
-    #  remove the mypy ignore
-    active_stack = repo.get_active_stack_key()
-    cli_utils.print_table(
-        cli_utils.format_component_list(service.stacks, active_stack)  # type: ignore[arg-type]
-    )
+    active_stack_name = repo._config.active_stack_name
+
+    stack_dicts = []
+    for stack_name, stack_configuration in repo._config.stacks.items():
+        is_active = stack_name == active_stack_name
+        stack_config = {
+            "ACTIVE": "*" if is_active else "",
+            **{
+                key.upper(): value
+                for key, value in stack_configuration.dict().items()
+            },
+        }
+        stack_dicts.append(stack_config)
+
+    cli_utils.print_table(stack_dicts)
 
 
 @stack.command(
@@ -109,51 +131,51 @@ def list_stacks() -> None:
 def describe_stack(stack_name: Optional[str]) -> None:
     """Show details about the current active stack."""
     repo = Repository()
-    stack_name = stack_name or repo.get_active_stack_key()
+    active_stack_name = repo._config.active_stack_name
+    stack_name = stack_name or active_stack_name
 
-    stacks = repo.get_service().stacks
+    stacks = repo._config.stacks
     if len(stacks) == 0:
         cli_utils.warning("No stacks registered!")
         return
 
     try:
-        stack_details = stacks[stack_name]
+        stack_configuration = stacks[stack_name]
     except KeyError:
         cli_utils.error(f"Stack `{stack_name}` does not exist.")
         return
     cli_utils.title("Stack:")
-    if repo.get_active_stack_key() == stack_name:
+
+    if stack_name == active_stack_name:
         cli_utils.declare("**ACTIVE**\n")
     else:
         cli_utils.declare("")
+
     cli_utils.declare(f"NAME: {stack_name}")
-    cli_utils.print_component_properties(stack_details.dict())
+    for key, value in stack_configuration.dict().items():
+        cli_utils.declare(f"{key.upper()}: {value}")
 
 
 @stack.command("delete")
 @click.argument("stack_name", type=str)
 def delete_stack(stack_name: str) -> None:
     """Delete a stack."""
-    service = Repository().get_service()
-    cli_utils.declare(f"Deleting stack: {stack_name}")
-    service.delete_stack(stack_name)
-    cli_utils.declare("Deleted!")
+    Repository().deregister_stack(stack_name)
+    cli_utils.declare(f"Deleted stack {stack_name}.")
 
 
 @stack.command("set")
 @click.argument("stack_name", type=str)
 def set_active_stack(stack_name: str) -> None:
     """Sets a stack active."""
-    repo = Repository()
-    repo.set_active_stack(stack_name)
+    Repository().activate_stack(stack_name)
     cli_utils.declare(f"Active stack: {stack_name}")
 
 
 @stack.command("get")
 def get_active_stack() -> None:
     """Gets the active stack."""
-    repo = Repository()
-    key = repo.get_active_stack_key()
+    key = Repository()._config.active_stack_name
     cli_utils.declare(f"Active stack: {key}")
 
 
