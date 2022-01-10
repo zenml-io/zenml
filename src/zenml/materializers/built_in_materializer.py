@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
-from typing import Any, Type
+from typing import Any, Dict, Type
 
 from zenml.artifacts import DataArtifact
 from zenml.logger import get_logger
@@ -32,6 +32,7 @@ class BuiltInMaterializer(BaseMaterializer):
         str,
         bytes,
         dict,
+        Dict,
         float,
         list,
         tuple,

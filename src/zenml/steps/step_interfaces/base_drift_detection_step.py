@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 from abc import abstractmethod
+from typing import Dict
 
 from zenml.artifacts import DataArtifact
 from zenml.steps import BaseStep, BaseStepConfig, StepContext
@@ -35,5 +36,5 @@ class BaseDriftDetectionStep(BaseStep):
         comparison_dataset: DataArtifact,
         config: BaseDriftDetectionConfig,
         context: StepContext,
-    ) -> dict:  # type: ignore[type-arg]
+    ) -> Dict:  # type: ignore[type-arg]
         """Base entrypoint for any drift detection implementation"""
