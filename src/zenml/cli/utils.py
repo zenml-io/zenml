@@ -30,8 +30,8 @@ import click
 from dateutil import tz
 from tabulate import tabulate
 
-from zenml.cli import utils as cli_utils
 from zenml.logger import get_logger
+from zenml.new_core.stack_component import StackComponent
 
 logger = get_logger(__name__)
 
@@ -113,6 +113,30 @@ def print_table(obj: List[Dict[str, Any]]) -> None:
     click.echo(tabulate(obj, headers="keys"))
 
 
+def print_stack_component_list(
+    components: List[StackComponent], active_component_name: str
+) -> None:
+    """Prints a table with configuration options for a list of stack components.
+
+    If a component is active (its name matches the `active_component_name`),
+    it will be highlighted in a separate table column.
+
+    Args:
+        components: List of stack components to print.
+        active_component_name: Name of the component that is currently active.
+    """
+    configurations = []
+    for component in components:
+        is_active = component.name == active_component_name
+        component_config = {
+            "ACTIVE": "*" if is_active else "",
+            **{key.upper(): value for key, value in component.dict().items()},
+        }
+        configurations.append(component_config)
+
+    print_table(configurations)
+
+
 def format_component_list(
     component_list: Mapping[str, "BaseComponent"], active_component: str
 ) -> List[Dict[str, str]]:
@@ -140,14 +164,11 @@ def format_component_list(
     return list_of_dicts
 
 
-def print_component_properties(properties: Dict[str, str]) -> None:
-    """Prints the properties of a component.
-
-    Args:
-        properties: A dictionary of properties.
-    """
-    for key, value in properties.items():
-        cli_utils.declare(f"{key.upper()}: {value}")
+def print_stack_component_configuration(component: StackComponent) -> None:
+    """Prints the configuration options of a stack component."""
+    declare(f"NAME: {component.name}")
+    for key, value in component.dict(exclude={"name"}).items():
+        declare(f"{key.upper()}: {value}")
 
 
 def format_date(
