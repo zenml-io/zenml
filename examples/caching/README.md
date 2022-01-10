@@ -48,7 +48,6 @@ zenml example pull caching
 cd zenml_examples/caching
 
 # initialize
-git init
 zenml init
 ```
 

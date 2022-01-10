@@ -52,7 +52,6 @@ zenml example pull lineage
 cd zenml_examples/lineage
 
 # initialize
-git init
 zenml init
 ```
 

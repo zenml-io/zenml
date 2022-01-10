@@ -91,10 +91,10 @@ class PandasAnalyzer(BaseAnalyzerStep):
         return statistics, schema
 ```
 
-### Preprocesser
+### Preprocessor
 
 Finally, we can write a step which would preprocess all the splits based on the statistics extracted from the train 
-split. Let's use the `BasePreprocesserStep` to achieve that:
+split. Let's use the `BasePreprocessorStep` to achieve that:
 
 ```python
 from typing import List
@@ -103,17 +103,17 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
 from zenml.steps import Output
-from zenml.steps.step_interfaces.base_preprocesser_step import (
-    BasePreprocesserConfig,
-    BasePreprocesserStep,
+from zenml.steps.step_interfaces.base_preprocessor_step import (
+    BasePreprocessorConfig,
+    BasePreprocessorStep,
 )
 
-class SklearnStandardScalerConfig(BasePreprocesserConfig):
+class SklearnStandardScalerConfig(BasePreprocessorConfig):
     ignore_columns: List[str] = []
     exclude_columns: List[str] = []
 
 
-class SklearnStandardScaler(BasePreprocesserStep):
+class SklearnStandardScaler(BasePreprocessorStep):
     def entrypoint(self,
                    train_dataset: pd.DataFrame,
                    test_dataset: pd.DataFrame,
@@ -123,7 +123,7 @@ class SklearnStandardScaler(BasePreprocesserStep):
                    config: SklearnStandardScalerConfig,
                    ) -> Output(train_transformed=pd.DataFrame,
                                test_transformed=pd.DataFrame,
-                               valdation_transformed=pd.DataFrame):
+                               validation_transformed=pd.DataFrame):
         
         schema_dict = {k: v[0] for k, v in schema.to_dict().items()}
 
@@ -169,7 +169,7 @@ class Chapter2Pipeline(BasePipeline):
                 datasource: step_interfaces.BaseDatasourceStep,
                 splitter: step_interfaces.BaseSplitStep,
                 analyzer: step_interfaces.BaseAnalyzerStep,
-                preprocesser: step_interfaces.BasePreprocesserStep
+                preprocessor: step_interfaces.BasePreprocessorStep
                 ) -> None:
         
         # Ingesting the datasource
@@ -182,7 +182,7 @@ class Chapter2Pipeline(BasePipeline):
         statistics, schema = analyzer(dataset=train)  
 
         # Preprocessing the splits
-        train_t, test_t, validation_t = preprocesser(  
+        train_t, test_t, validation_t = preprocessor(  
             train_dataset=train,
             test_dataset=test,
             validation_dataset=validation,
@@ -198,7 +198,7 @@ pipeline_instance = Chapter2Pipeline(
     datasource=PandasDatasource(PandasDatasourceConfig(path=os.getenv("data"))),
     splitter=SklearnSplitter(SklearnSplitterConfig(ratios={"train": 0.7, "test": 0.15, "validation": 0.15})),
     analyzer=PandasAnalyzer(PandasAnalyzerConfig(percentiles=[0.2, 0.4, 0.6, 0.8, 1.0])),
-    preprocesser=SklearnStandardScaler(SklearnStandardScalerConfig(ignore_columns=["has_diabetes"]))
+    preprocessor=SklearnStandardScaler(SklearnStandardScalerConfig(ignore_columns=["has_diabetes"]))
 )
 
 pipeline_instance.run()

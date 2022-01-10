@@ -133,7 +133,7 @@ def deploy_kubeflow_pipelines(kubernetes_context: str) -> None:
             kubernetes_context,
             "apply",
             "-k",
-            f"github.com/kubeflow/pipelines/manifests/kustomize/cluster-scoped-resources?ref={KFP_VERSION}",
+            f"github.com/kubeflow/pipelines/manifests/kustomize/cluster-scoped-resources?ref={KFP_VERSION}&timeout=1m",
         ]
     )
     subprocess.check_call(
@@ -155,7 +155,7 @@ def deploy_kubeflow_pipelines(kubernetes_context: str) -> None:
             kubernetes_context,
             "apply",
             "-k",
-            f"github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic-pns?ref={KFP_VERSION}",
+            f"github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic-pns?ref={KFP_VERSION}&timeout=1m",
         ]
     )
 

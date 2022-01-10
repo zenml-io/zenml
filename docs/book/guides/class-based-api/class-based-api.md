@@ -33,7 +33,6 @@ zenml example pull class_based_api
 cd zenml_examples/class_based_api
 
 # initialize
-git init
 zenml init
 ```
 
