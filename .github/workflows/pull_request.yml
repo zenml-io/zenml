@@ -50,9 +50,9 @@ jobs:
       - name: Delete error-causing bash
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
-          get-command bash
+          where.exe bash
           choco install git -y --force
-          get-command bash
+          where.exe bash
 
       - name: Install Dependencies
         run: |
