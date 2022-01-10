@@ -14,7 +14,7 @@
 
 from abc import abstractmethod
 
-from zenml.artifacts import DataArtifact, DataDriftArtifact
+from zenml.artifacts import DataArtifact
 from zenml.steps import BaseStep, BaseStepConfig, StepContext
 
 
@@ -35,5 +35,5 @@ class BaseDriftDetectionStep(BaseStep):
         comparison_dataset: DataArtifact,
         config: BaseDriftDetectionConfig,
         context: StepContext,
-    ) -> DataDriftArtifact:
+    ) -> dict:  # type: ignore[type-arg]
         """Base entrypoint for any drift detection implementation"""

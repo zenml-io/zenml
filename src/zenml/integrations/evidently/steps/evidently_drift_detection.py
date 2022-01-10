@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Any, Dict, Optional, cast
+from typing import Optional, cast
 
 from evidently.model_profile import Profile  # type: ignore
 from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
@@ -45,7 +45,7 @@ class EvidentlyDriftDetectionStep(BaseDriftDetectionStep):
         comparison_dataset: DataArtifact,
         config: EvidentlyDriftDetectionConfig,
         context: StepContext,
-    ) -> Dict[str, Any]:
+    ) -> dict:  # type: ignore[type-arg]
         """Main entrypoint for the Evidently drift detection step.
 
         Args:
@@ -64,4 +64,4 @@ class EvidentlyDriftDetectionStep(BaseDriftDetectionStep):
             comparison_dataset,
             column_mapping=config.column_mapping or None,
         )
-        return cast(Dict[str, Any], data_drift_profile.object())
+        return cast(dict, data_drift_profile.object())  # type: ignore[type-arg]
