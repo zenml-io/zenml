@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.integrations.evidently.steps.evidently_drift_detection import (
+from zenml.integrations.evidently.steps.evidently_data_drift import (
     EvidentlyDriftDetectionConfig,
     EvidentlyDriftDetectionStep,
 )
