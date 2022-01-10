@@ -39,7 +39,9 @@ jobs:
 
       - name: Install Windows System Dependencies
         if: runner.os=='Windows'
-        run: choco install graphviz
+        run: |
+          choco install graphviz
+          choco install git
 
       - name: Install poetry
         run: |
@@ -64,6 +66,7 @@ jobs:
           python -m poetry run bash scripts/lint.sh
 
       - name: Test
+        shell: bash
         run: python -m poetry run bash scripts/test-coverage-xml.sh
 
       - name: Upload coverage
