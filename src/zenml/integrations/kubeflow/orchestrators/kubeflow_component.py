@@ -187,19 +187,26 @@ class KubeflowComponent:
             pvolumes=volumes,
         )
 
-        if has_local_repos and sys.platform != "win32":
-            # Run KFP containers in the context of the local UID/GID
-            # to ensure that the artifact and metadata stores can be shared
-            # with the local pipeline runs.
-            self.container_op.container.security_context = (
-                k8s_client.V1SecurityContext(
-                    run_as_user=os.getuid(), run_as_group=os.getgid()
+        if has_local_repos:
+            if sys.platform == "win32":
+                # File permissions are not checked on Windows. This if clause
+                # prevents mypy from complaining about unused 'type: ignore'
+                # statements
+                pass
+            else:
+                # Run KFP containers in the context of the local UID/GID
+                # to ensure that the artifact and metadata stores can be shared
+                # with the local pipeline runs.
+                self.container_op.container.security_context = (
+                    k8s_client.V1SecurityContext(
+                        run_as_user=os.getuid(),
+                        run_as_group=os.getgid(),
+                    )
                 )
-            )
-            logger.debug(
-                "Setting security context UID and GID to local user/group "
-                "in kubeflow pipelines container."
-            )
+                logger.debug(
+                    "Setting security context UID and GID to local user/group "
+                    "in kubeflow pipelines container."
+                )
         for op in depends_on:
             self.container_op.after(op)
 
