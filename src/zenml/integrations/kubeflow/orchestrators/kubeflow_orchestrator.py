@@ -22,7 +22,6 @@ import urllib3
 from kubernetes import config
 
 import zenml.io.utils
-from zenml.core.repo import Repository
 from zenml.enums import OrchestratorFlavor, StackComponentType
 from zenml.integrations.kubeflow.orchestrators import local_deployment_utils
 from zenml.integrations.kubeflow.orchestrators.kubeflow_dag_runner import (
@@ -32,12 +31,13 @@ from zenml.integrations.kubeflow.orchestrators.kubeflow_dag_runner import (
 from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
     KFP_VERSION,
 )
-from zenml.integrations.utils import get_requirements_for_module
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.new_core import Repository
 from zenml.new_core.stack_component_class_registry import (
     register_stack_component_class,
 )
+from zenml.new_core.stack_validator import StackValidator
 from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.utils import create_tfx_pipeline
 
@@ -65,11 +65,18 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """The orchestrator flavor."""
         return OrchestratorFlavor.KUBEFLOW
 
+    @property
+    def validator(self) -> Optional[StackValidator]:
+        """Validates that the stack contains a container registry."""
+        return StackValidator(
+            required_components={StackComponentType.CONTAINER_REGISTRY}
+        )
+
     def get_docker_image_name(self, pipeline_name: str) -> str:
         """Returns the full docker image name including registry and tag."""
 
         base_image_name = f"zenml-kubeflow:{pipeline_name}"
-        container_registry = Repository().get_active_stack().container_registry
+        container_registry = Repository().active_stack.container_registry
 
         if container_registry:
             registry_uri = container_registry.uri.rstrip("/")
@@ -104,23 +111,25 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         image_name = self.get_docker_image_name(pipeline.name)
 
-        repository_root = Repository().path
+        repo = Repository()
         requirements = (
             ["kubernetes"]
-            + self._get_stack_requirements()
+            + repo.active_stack.requirements(
+                exclude_components={StackComponentType.ORCHESTRATOR}
+            )
             + self._get_pipeline_requirements(pipeline)
         )
         logger.debug("Kubeflow docker container requirements: %s", requirements)
 
         build_docker_image(
-            build_context_path=repository_root,
+            build_context_path=str(repo.root),
             image_name=image_name,
             dockerignore_path=pipeline.dockerignore_file,
             requirements=requirements,
             base_image=self.custom_docker_base_image_name,
         )
 
-        if Repository().get_active_stack().container_registry:
+        if repo.active_stack.container_registry:
             push_docker_image(image_name)
 
     def run(
@@ -195,19 +204,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 "current context is set correctly.",
                 error,
             )
-
-    def _get_stack_requirements(self) -> List[str]:
-        """Gets list of requirements for the current active stack."""
-        stack = Repository().get_active_stack()
-        requirements = []
-
-        artifact_store_module = stack.artifact_store.__module__
-        requirements += get_requirements_for_module(artifact_store_module)
-
-        metadata_store_module = stack.metadata_store.__module__
-        requirements += get_requirements_for_module(metadata_store_module)
-
-        return requirements
 
     def _get_pipeline_requirements(self, pipeline: "BasePipeline") -> List[str]:
         """Gets list of requirements for a pipeline."""
@@ -294,7 +290,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             )
             return
 
-        container_registry = Repository().get_active_stack().container_registry
+        container_registry = Repository().active_stack.container_registry
         if not container_registry:
             logger.error(
                 "Unable to spin up local Kubeflow Pipelines deployment: "
