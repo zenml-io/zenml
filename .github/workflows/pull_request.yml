@@ -52,6 +52,7 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
           rm.exe "C:/WINDOWS/system32/bash.EXE"
+          choco install git -y
 
       - name: Install Dependencies
         run: |
