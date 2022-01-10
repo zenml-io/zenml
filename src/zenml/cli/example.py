@@ -43,6 +43,7 @@ logger = get_logger(__name__)
 
 EXAMPLES_GITHUB_REPO = "zenml_examples"
 EXAMPLES_RUN_SCRIPT = "run_example.sh"
+WINDOWS_BASH = r"C:\Program Files\Git\bin\bash.exe"
 
 
 class LocalExample:
@@ -117,11 +118,15 @@ class LocalExample:
             force: Whether to force the install
         """
         if fileio.file_exists(bash_file):
-            call = [
-                bash_file,
-                "--executable",
-                self.executable_python_example,
-            ] + (["-f"] if force else [])
+            call = (
+                [WINDOWS_BASH] * click._compat.WIN
+                + [
+                    bash_file,
+                    "--executable",
+                    self.executable_python_example,
+                ]
+                + ["-f"] * force
+            )
             try:
                 # TODO [ENG-271]: Catch errors that might be thrown
                 #  in subprocess
