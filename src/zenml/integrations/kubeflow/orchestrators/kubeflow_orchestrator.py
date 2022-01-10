@@ -38,11 +38,14 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.utils import create_tfx_pipeline
+from zenml.utils import networking_utils
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
 
 logger = get_logger(__name__)
+
+DEFAULT_KFP_UI_PORT = 8080
 
 
 @orchestrator_store_factory.register(OrchestratorTypes.kubeflow)
@@ -50,7 +53,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Kubeflow."""
 
     custom_docker_base_image_name: Optional[str] = None
-    kubeflow_pipelines_ui_port: int = 8080
+    kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT
     kubernetes_context: Optional[str] = None
 
     def get_docker_image_name(self, pipeline_name: str) -> str:
@@ -218,6 +221,11 @@ class KubeflowOrchestrator(BaseOrchestrator):
         return os.path.join(self.root_directory, "kubeflow_daemon.pid")
 
     @property
+    def log_file(self) -> str:
+        """Path of the daemon log file."""
+        return os.path.join(self.root_directory, "kubeflow_daemon.log")
+
+    @property
     def _k3d_cluster_name(self) -> str:
         """Returns the K3D cluster name."""
         # K3D only allows cluster names with up to 32 characters, use the
@@ -312,15 +320,20 @@ class KubeflowOrchestrator(BaseOrchestrator):
             local_deployment_utils.deploy_kubeflow_pipelines(
                 kubernetes_context=kubernetes_context
             )
+
+            port = self.kubeflow_pipelines_ui_port
+            if (
+                port == DEFAULT_KFP_UI_PORT
+                and not networking_utils.port_available(port)
+            ):
+                # if the user didn't specify a specific port and the default
+                # port is occupied, fallback to a random open port
+                port = networking_utils.find_available_port()
+
             local_deployment_utils.start_kfp_ui_daemon(
                 pid_file_path=self._pid_file_path,
-                port=self.kubeflow_pipelines_ui_port,
-            )
-            logger.info(
-                f"Finished local Kubeflow Pipelines deployment. The UI should now "
-                f"be accessible at "
-                f"http://localhost:{self.kubeflow_pipelines_ui_port}/. "
-                f"The orchestrator is now up."
+                log_file_path=self.log_file,
+                port=port,
             )
         except Exception as e:
             logger.error(e)
@@ -347,5 +360,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
                 daemon.stop_daemon(self._pid_file_path, kill_children=True)
                 fileio.remove(self._pid_file_path)
+
+        if fileio.file_exists(self.log_file):
+            fileio.remove(self.log_file)
 
         logger.info("Local kubeflow pipelines deployment spun down.")

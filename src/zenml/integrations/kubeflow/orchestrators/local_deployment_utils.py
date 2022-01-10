@@ -6,7 +6,7 @@ import time
 
 import zenml.io.utils
 from zenml.logger import get_logger
-from zenml.utils import yaml_utils
+from zenml.utils import networking_utils, yaml_utils
 
 KFP_VERSION = "1.7.1"
 logger = get_logger(__name__)
@@ -185,13 +185,16 @@ def deploy_kubeflow_pipelines(kubernetes_context: str) -> None:
     logger.info("Finished Kubeflow Pipelines setup.")
 
 
-def start_kfp_ui_daemon(pid_file_path: str, port: int) -> None:
+def start_kfp_ui_daemon(
+    pid_file_path: str, log_file_path: str, port: int
+) -> None:
     """Starts a daemon process that forwards ports so the Kubeflow Pipelines
     UI is accessible in the browser.
 
     Args:
         pid_file_path: Path where the file with the daemons process ID should
             be written.
+        log_file_path: Path to a file where the daemon logs should be written.
         port: Port on which the UI should be accessible.
     """
     command = [
@@ -203,21 +206,41 @@ def start_kfp_ui_daemon(pid_file_path: str, port: int) -> None:
         f"{port}:80",
     ]
 
-    def _daemon_function() -> None:
-        """Port-forwards the Kubeflow Pipelines UI pod."""
-        subprocess.check_call(command)
-
-    if sys.platform == "win32":
+    if not networking_utils.port_available(port):
+        modified_command = command.copy()
+        modified_command[-1] = "PORT:80"
         logger.warning(
-            f"Daemon functionality not supported on Windows. "
-            f"In order to access the Kubeflow Pipelines UI, please run "
-            f"'{' '.join(command)}' in a separate command line shell."
+            "Unable to port-forward Kubeflow Pipelines UI to local port %d "
+            "because the port is occupied. In order to access the Kubeflow "
+            "Pipelines UI at http://localhost:PORT/, please run '%s' in a "
+            "separate command line shell (replace PORT with a free port of "
+            "your choice).",
+            port,
+            " ".join(modified_command),
+        )
+    elif sys.platform == "win32":
+        logger.warning(
+            "Daemon functionality not supported on Windows. "
+            "In order to access the Kubeflow Pipelines UI at "
+            "http://localhost:%d/, please run '%s' in a separate command "
+            "line shell.",
+            port,
+            " ".join(command),
         )
     else:
         from zenml.utils import daemon
 
+        def _daemon_function() -> None:
+            """Port-forwards the Kubeflow Pipelines UI pod."""
+            subprocess.check_call(command)
+
         daemon.run_as_daemon(
-            _daemon_function,
-            pid_file=pid_file_path,
+            _daemon_function, pid_file=pid_file_path, log_file=log_file_path
         )
-        logger.info("Started Kubeflow Pipelines UI daemon.")
+        logger.info(
+            "Started Kubeflow Pipelines UI daemon (check the daemon logs at %s "
+            "in case you're not able to view the UI). The Kubeflow Pipelines "
+            "UI should now be accessible at http://localhost:%d/.",
+            log_file_path,
+            port,
+        )
