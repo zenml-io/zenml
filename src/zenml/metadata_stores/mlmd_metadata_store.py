@@ -48,6 +48,7 @@ logger = get_logger(__name__)
 
 class MLMDMetadataStore(BaseMetadataStore, ABC):
     """Abstract base class for all MLMD metadata stores."""
+
     @property
     def store(self) -> metadata_store.MetadataStore:
         """General property that hooks into TFX metadata store."""

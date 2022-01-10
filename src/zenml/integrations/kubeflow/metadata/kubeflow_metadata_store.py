@@ -13,12 +13,17 @@
 #  permissions and limitations under the License.
 
 
-from zenml.core.component_factory import metadata_store_factory
-from zenml.enums import MLMetadataTypes
+from zenml.enums import MetadataStoreFlavor, StackComponentType
 from zenml.metadata_stores import MySQLMetadataStore
+from zenml.new_core.stack_component_class_registry import (
+    register_stack_component_class,
+)
 
 
-@metadata_store_factory.register(MLMetadataTypes.kubeflow)
+@register_stack_component_class(
+    component_type=StackComponentType.METADATA_STORE,
+    component_flavor=MetadataStoreFlavor.KUBEFLOW,
+)
 class KubeflowMetadataStore(MySQLMetadataStore):
     """Kubeflow MySQL backend for ZenML metadata store."""
 
@@ -27,3 +32,8 @@ class KubeflowMetadataStore(MySQLMetadataStore):
     database: str = "metadb"
     username: str = "root"
     password: str = ""
+
+    @property
+    def flavor(self) -> MetadataStoreFlavor:
+        """The metadata store flavor."""
+        return MetadataStoreFlavor.KUBEFLOW

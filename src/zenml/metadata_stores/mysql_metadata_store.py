@@ -32,6 +32,7 @@ class MySQLMetadataStore(MLMDMetadataStore):
 
     @property
     def flavor(self) -> MetadataStoreFlavor:
+        """The metadata store flavor."""
         return MetadataStoreFlavor.MYSQL
 
     def get_tfx_metadata_config(self) -> metadata_store_pb2.ConnectionConfig:

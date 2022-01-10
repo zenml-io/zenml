@@ -22,9 +22,8 @@ import urllib3
 from kubernetes import config
 
 import zenml.io.utils
-from zenml.core.component_factory import orchestrator_store_factory
 from zenml.core.repo import Repository
-from zenml.enums import OrchestratorTypes
+from zenml.enums import OrchestratorFlavor, StackComponentType
 from zenml.integrations.kubeflow.orchestrators import local_deployment_utils
 from zenml.integrations.kubeflow.orchestrators.kubeflow_dag_runner import (
     KubeflowDagRunner,
@@ -36,6 +35,9 @@ from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
 from zenml.integrations.utils import get_requirements_for_module
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.new_core.stack_component_class_registry import (
+    register_stack_component_class,
+)
 from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.utils import create_tfx_pipeline
 
@@ -45,13 +47,23 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-@orchestrator_store_factory.register(OrchestratorTypes.kubeflow)
+@register_stack_component_class(
+    component_type=StackComponentType.ORCHESTRATOR,
+    component_flavor=OrchestratorFlavor.KUBEFLOW,
+)
 class KubeflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Kubeflow."""
 
     custom_docker_base_image_name: Optional[str] = None
     kubeflow_pipelines_ui_port: int = 8080
     kubernetes_context: Optional[str] = None
+    supports_local_execution = True
+    supports_remote_execution = True
+
+    @property
+    def flavor(self) -> OrchestratorFlavor:
+        """The orchestrator flavor."""
+        return OrchestratorFlavor.KUBEFLOW
 
     def get_docker_image_name(self, pipeline_name: str) -> str:
         """Returns the full docker image name including registry and tag."""

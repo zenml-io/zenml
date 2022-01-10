@@ -15,8 +15,10 @@ from collections import defaultdict
 from typing import Callable, ClassVar, DefaultDict, Dict, Type, Union
 
 from zenml.artifact_stores import LocalArtifactStore
+from zenml.container_registries import BaseContainerRegistry
 from zenml.enums import (
     ArtifactStoreFlavor,
+    ContainerRegistryFlavor,
     MetadataStoreFlavor,
     OrchestratorFlavor,
     StackComponentFlavor,
@@ -151,4 +153,9 @@ StackComponentClassRegistry.register_class(
     StackComponentType.ARTIFACT_STORE,
     ArtifactStoreFlavor.LOCAL,
     LocalArtifactStore,
+)
+StackComponentClassRegistry.register_class(
+    StackComponentType.CONTAINER_REGISTRY,
+    ContainerRegistryFlavor.DEFAULT,
+    BaseContainerRegistry,
 )
