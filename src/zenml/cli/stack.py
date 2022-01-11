@@ -34,28 +34,28 @@ def stack() -> None:
 @click.option(
     "-m",
     "--metadata-store",
-    help="The name of the metadata store that you would like to register as part of the new stack.",
+    help="Name of the metadata store for this stack.",
     type=str,
     required=True,
 )
 @click.option(
     "-a",
     "--artifact-store",
-    help="The name of the artifact store that you would like to register as part of the new stack.",
+    help="Name of the artifact store for this stack.",
     type=str,
     required=True,
 )
 @click.option(
     "-o",
     "--orchestrator",
-    help="The name of the orchestrator that you would like to register as part of the new stack.",
+    help="Name of the orchestrator for this stack.",
     type=str,
     required=True,
 )
 @click.option(
     "-c",
     "--container_registry",
-    help="The name of the container_registry that you would like to register as part of the new stack.",
+    help="Name of the container registry for this stack.",
     type=str,
     required=False,
 )
@@ -97,15 +97,15 @@ def list_stacks() -> None:
     """List all available stacks from service."""
     repo = Repository()
 
-    if len(repo._config.stacks) == 0:
+    if len(repo.stack_configurations) == 0:
         cli_utils.warning("No stacks registered!")
         return
 
     cli_utils.title("Stacks:")
-    active_stack_name = repo._config.active_stack_name
+    active_stack_name = repo.active_stack_name
 
     stack_dicts = []
-    for stack_name, stack_configuration in repo._config.stacks.items():
+    for stack_name, stack_configuration in repo.stack_configurations.items():
         is_active = stack_name == active_stack_name
         stack_config = {
             "ACTIVE": "*" if is_active else "",
@@ -131,16 +131,16 @@ def list_stacks() -> None:
 def describe_stack(stack_name: Optional[str]) -> None:
     """Show details about the current active stack."""
     repo = Repository()
-    active_stack_name = repo._config.active_stack_name
+    active_stack_name = repo.active_stack_name
     stack_name = stack_name or active_stack_name
 
-    stacks = repo._config.stacks
-    if len(stacks) == 0:
+    stack_configurations = repo.stack_configurations
+    if len(stack_configurations) == 0:
         cli_utils.warning("No stacks registered!")
         return
 
     try:
-        stack_configuration = stacks[stack_name]
+        stack_configuration = stack_configurations[stack_name]
     except KeyError:
         cli_utils.error(f"Stack `{stack_name}` does not exist.")
         return
@@ -175,33 +175,36 @@ def set_active_stack(stack_name: str) -> None:
 @stack.command("get")
 def get_active_stack() -> None:
     """Gets the active stack."""
-    key = Repository()._config.active_stack_name
-    cli_utils.declare(f"Active stack: {key}")
+    cli_utils.declare(f"Active stack: {Repository().active_stack_name}")
 
 
 @stack.command("up")
+@cli_utils.activate_integrations
 def up_stack() -> None:
     """Provisions resources for the stack."""
-    active_stack = Repository().get_active_stack()
-    orchestrator_name = active_stack.orchestrator_name
-
-    cli_utils.declare(
-        f"Bootstrapping resources for orchestrator: `{orchestrator_name}`. "
-        f"This might take a few seconds..."
-    )
-    active_stack.orchestrator.up()
+    stack_ = Repository().active_stack
+    cli_utils.declare(f"Provisioning resources for stack '{stack_.name}'.")
+    stack_.provision()
+    stack_.resume()
 
 
 @stack.command("down")
-def down_stack() -> None:
+@click.option(
+    "--force",
+    "-f",
+    is_flag=True,
+    help="Deprovisions local resources instead of suspending them.",
+)
+@cli_utils.activate_integrations
+def down_stack(force: bool = False) -> None:
     """Tears down resources for the stack."""
-    active_stack = Repository().get_active_stack()
-    orchestrator_name = active_stack.orchestrator_name
+    stack_ = Repository().active_stack
 
-    cli_utils.declare(
-        f"Tearing down resources for orchestrator: `{orchestrator_name}`."
-    )
-    active_stack.orchestrator.down()
-    cli_utils.declare(
-        f"Orchestrator: `{orchestrator_name}` resources are now torn down."
-    )
+    if force:
+        cli_utils.declare(
+            f"Deprovisioning resources for stack '{stack_.name}'."
+        )
+        stack_.deprovision()
+    else:
+        cli_utils.declare(f"Suspending resources for stack '{stack_.name}'.")
+        stack_.suspend()
