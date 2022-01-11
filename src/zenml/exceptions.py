@@ -180,3 +180,8 @@ class StackComponentExistsError(Exception):
 
 class StackValidationError(Exception):
     """Raised when a stack configuration is not valid."""
+
+
+class ProvisioningError(Exception):
+    """Raised when an error occurs when provisioning resources for a
+    StackComponent."""

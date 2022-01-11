@@ -22,6 +22,7 @@ from kubernetes import config
 
 import zenml.io.utils
 from zenml.enums import OrchestratorFlavor, StackComponentType
+from zenml.exceptions import ProvisioningError
 from zenml.integrations.kubeflow.orchestrators import local_deployment_utils
 from zenml.integrations.kubeflow.orchestrators.kubeflow_dag_runner import (
     KubeflowDagRunner,
@@ -104,7 +105,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         self,
         pipeline: "BasePipeline",
         stack: "Stack",
-        runtime_configuration: RuntimeConfiguration,
+        runtime_configuration: "RuntimeConfiguration",
     ) -> None:
         """Builds a docker image for the current environment and uploads it to
         a container registry if configured.
@@ -235,18 +236,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Returns the path to the K3D registry config yaml."""
         return os.path.join(self.root_directory, "k3d_registry.yaml")
 
-    @property
-    def is_running(self) -> bool:
-        """Returns whether the orchestrator is running."""
-        if not local_deployment_utils.check_prerequisites():
-            # if any prerequisites are missing there is certainly no
-            # local deployment running
-            return False
-
-        return local_deployment_utils.k3d_cluster_exists(
-            cluster_name=self._k3d_cluster_name
-        )
-
     def list_manual_setup_steps(
         self, container_registry_name: str, container_registry_path: str
     ) -> None:
@@ -267,8 +256,30 @@ class KubeflowOrchestrator(BaseOrchestrator):
         )
         logger.info("\n".join(kubeflow_commands))
 
-    def up(self) -> None:
-        """Spins up a local Kubeflow Pipelines deployment."""
+    @property
+    def is_provisioned(self) -> bool:
+        """Returns if a local k3d cluster for this orchestrator exists."""
+        if not local_deployment_utils.check_prerequisites():
+            # if any prerequisites are missing there is certainly no
+            # local deployment running
+            return False
+
+        return local_deployment_utils.k3d_cluster_exists(
+            cluster_name=self._k3d_cluster_name
+        )
+
+    @property
+    def is_running(self) -> bool:
+        """Returns if the local k3d cluster for this orchestrator is running."""
+        if not self.is_provisioned:
+            return False
+
+        return local_deployment_utils.k3d_cluster_running(
+            cluster_name=self._k3d_cluster_name
+        )
+
+    def provision(self) -> None:
+        """Provisions a local Kubeflow Pipelines deployment."""
         if self.is_running:
             logger.info(
                 "Found already existing local Kubeflow Pipelines deployment. "
@@ -279,7 +290,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         if not local_deployment_utils.check_prerequisites():
             logger.error(
-                "Unable to spin up local Kubeflow Pipelines deployment: "
+                "Unable to provision local Kubeflow Pipelines deployment: "
                 "Please install 'k3d' and 'kubectl' and try again."
             )
             return
@@ -287,12 +298,12 @@ class KubeflowOrchestrator(BaseOrchestrator):
         container_registry = Repository().active_stack.container_registry
         if not container_registry:
             logger.error(
-                "Unable to spin up local Kubeflow Pipelines deployment: "
+                "Unable to provision local Kubeflow Pipelines deployment: "
                 "Missing container registry in current stack."
             )
             return
 
-        logger.info("Spinning up local Kubeflow Pipelines deployment...")
+        logger.info("Provisioning local Kubeflow Pipelines deployment...")
         fileio.make_dirs(self.root_directory)
         container_registry_port = int(container_registry.uri.split(":")[-1])
         container_registry_name = self._get_k3d_registry_name(
@@ -331,8 +342,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
             )
             self.down()
 
-    def down(self) -> None:
-        """Tears down a local Kubeflow Pipelines deployment."""
+    def deprovision(self) -> None:
+        """Deprovisions a local Kubeflow Pipelines deployment."""
         if self.is_running:
             local_deployment_utils.delete_k3d_cluster(
                 cluster_name=self._k3d_cluster_name
@@ -350,4 +361,29 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 daemon.stop_daemon(self._pid_file_path, kill_children=True)
                 fileio.remove(self._pid_file_path)
 
-        logger.info("Local kubeflow pipelines deployment spun down.")
+        logger.info("Local kubeflow pipelines deployment deprovisioned.")
+
+    def resume(self) -> None:
+        """Resumes the local k3d cluster."""
+        if self.is_running:
+            logger.info("Local kubeflow pipelines deployment already running.")
+            return
+
+        if not self.is_provisioned:
+            raise ProvisioningError(
+                "Unable to resume local kubeflow pipelines deployment: No resources provisioned for local deployment."
+            )
+
+        local_deployment_utils.start_k3d_cluster(
+            cluster_name=self._k3d_cluster_name
+        )
+
+    def suspend(self) -> None:
+        """Suspends the local k3d cluster."""
+        if not self.is_running:
+            logger.info("Local kubeflow pipelines deployment not running.")
+            return
+
+        local_deployment_utils.stop_k3d_cluster(
+            cluster_name=self._k3d_cluster_name
+        )
