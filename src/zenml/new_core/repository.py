@@ -57,6 +57,11 @@ class StackConfiguration(BaseModel):
     artifact_store: str
     container_registry: Optional[str]
 
+    class Config:
+        """Pydantic configuration class."""
+
+        allow_mutation = False
+
 
 class RepositoryConfiguration(BaseModel):
     """Pydantic object used for serializing repository configuration options.
@@ -118,9 +123,9 @@ class Repository:
         config_path = self._config_path()
         if fileio.file_exists(config_path):
             config_dict = yaml_utils.read_yaml(config_path)
-            self._config = RepositoryConfiguration.parse_obj(config_dict)
+            self.__config = RepositoryConfiguration.parse_obj(config_dict)
         else:
-            self._config = RepositoryConfiguration.empty_configuration()
+            self.__config = RepositoryConfiguration.empty_configuration()
 
         if self.version != zenml.__version__:
             # TODO [HIGH]: Create compatibility table so we don't have to
@@ -147,7 +152,7 @@ class Repository:
 
     def _write_config(self) -> None:
         """Writes the repository configuration file."""
-        config_dict = json.loads(self._config.json())
+        config_dict = json.loads(self.__config.json())
         yaml_utils.write_yaml(self._config_path(), config_dict)
 
     @staticmethod
@@ -183,7 +188,7 @@ class Repository:
     @property
     def version(self) -> str:
         """The version of the repository."""
-        return self._config.version
+        return self.__config.version
 
     @property
     def root(self) -> Path:
@@ -198,7 +203,23 @@ class Repository:
     @property
     def stacks(self) -> List[Stack]:
         """All stacks registered in this repository."""
-        return [self.get_stack(name=name) for name in self._config.stacks]
+        return [self.get_stack(name=name) for name in self.__config.stacks]
+
+    @property
+    def stack_configurations(self) -> Dict[str, StackConfiguration]:
+        """Configuration objects for all stacks registered in this repository.
+
+        This property is intended as a quick way to get information about the
+        components of the registered stacks without loading all installed
+        integrations. The contained stack configurations might be invalid if
+        they were modified by hand, to ensure you get valid stacks use
+        `repo.stacks()` instead.
+
+        Modifying the contents of the returned dictionary does not actually
+        register/deregister stacks, use `repo.register_stack(...)` or
+        `repo.deregister_stack(...)` instead.
+        """
+        return self.__config.stacks.copy()
 
     @property
     def active_stack(self) -> Stack:
@@ -209,18 +230,34 @@ class Repository:
             KeyError: If no stack was found for the configured name or one
                 of the stack components is not registered.
         """
-        if not self._config.active_stack_name:
+        if not self.__config.active_stack_name:
             raise RuntimeError(
                 "No active stack name configured. Run "
                 "`zenml stack set STACK_NAME` to update the active stack."
             )
 
-        return self.get_stack(name=self._config.active_stack_name)
+        return self.get_stack(name=self.__config.active_stack_name)
+
+    @property
+    def active_stack_name(self) -> str:
+        """The name of the active stack for this repository.
+
+        Raises:
+            RuntimeError: If no active stack name is configured.
+        """
+        if not self.__config.active_stack_name:
+            raise RuntimeError(
+                "No active stack name configured. Run "
+                "`zenml stack set STACK_NAME` to update the active stack."
+            )
+        return self.__config.active_stack_name
 
     # TODO [MEDIUM]: Should we replace the stack name by the actual stack
     #  object? It would be more consistent with the rest of the API but
     #  requires some additional care (checking if the stack + components are
-    #  actually registered in this repository)
+    #  actually registered in this repository). Downside: We would need to
+    #  load all the integrations to create the stack object which makes the CLI
+    #  command to set the active stack much slower.
     @track(event=SET_STACK)
     def activate_stack(self, name: str) -> None:
         """Activates the stack for the given name.
@@ -231,10 +268,10 @@ class Repository:
         Raises:
             KeyError: If no stack exists for the given name.
         """
-        if name not in self._config.stacks:
+        if name not in self.__config.stacks:
             raise KeyError(f"Unable to find stack for name '{name}'.")
 
-        self._config.active_stack_name = name
+        self.__config.active_stack_name = name
         self._write_config()
 
     def get_stack(self, name: str) -> Stack:
@@ -248,13 +285,13 @@ class Repository:
                 stacks components is not registered.
         """
         logger.debug("Fetching stack with name '%s'.", name)
-        if name not in self._config.stacks:
+        if name not in self.__config.stacks:
             raise KeyError(
                 f"Unable to find stack with name '{name}'. Available names: "
-                f"{set(self._config.stacks)}."
+                f"{set(self.__config.stacks)}."
             )
 
-        stack_configuration = self._config.stacks[name]
+        stack_configuration = self.__config.stacks[name]
         stack_components = {}
         for (
             component_type,
@@ -287,7 +324,7 @@ class Repository:
                 registered and a different component with the same name
                 already exists.
         """
-        if stack.name in self._config.stacks:
+        if stack.name in self.__config.stacks:
             raise StackExistsError(
                 f"Unable to register stack with name '{stack.name}': Found "
                 f"existing stack with this name."
@@ -312,7 +349,7 @@ class Repository:
             components[component_type.value] = component.name
 
         stack_configuration = StackConfiguration(**components)
-        self._config.stacks[stack.name] = stack_configuration
+        self.__config.stacks[stack.name] = stack_configuration
         self._write_config()
         logger.info("Registered stack with name '%s'.", stack.name)
 
@@ -323,7 +360,7 @@ class Repository:
             name: The name of the stack to deregister.
         """
         try:
-            del self._config.stacks[name]
+            del self.__config.stacks[name]
             self._write_config()
             logger.info("Deregistered stack with name '%s'.", name)
         except KeyError:
@@ -337,7 +374,7 @@ class Repository:
         self, component_type: StackComponentType
     ) -> List[StackComponent]:
         """Fetches all registered stack components of the given type."""
-        component_names = self._config.stack_components[component_type].keys()
+        component_names = self.__config.stack_components[component_type].keys()
         return [
             self.get_stack_component(component_type=component_type, name=name)
             for name in component_names
@@ -361,7 +398,7 @@ class Repository:
             name,
         )
 
-        components = self._config.stack_components[component_type]
+        components = self.__config.stack_components[component_type]
         if name not in components:
             raise KeyError(
                 f"Unable to find stack component (type: {component_type}) "
@@ -391,7 +428,7 @@ class Repository:
             StackComponentExistsError: If a stack component with the same type
                 and name already exists.
         """
-        components = self._config.stack_components.get(component.type)
+        components = self.__config.stack_components.get(component.type)
         if component.name in components:
             raise StackComponentExistsError(
                 f"Unable to register stack component (type: {component.type}) "
@@ -432,7 +469,7 @@ class Repository:
             component_type: The type of the component to deregister.
             name: The name of the component to deregister.
         """
-        components = self._config.stack_components[component_type]
+        components = self.__config.stack_components[component_type]
         try:
             del components[name]
             self._write_config()
