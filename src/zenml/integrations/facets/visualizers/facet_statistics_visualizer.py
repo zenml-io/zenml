@@ -14,7 +14,6 @@
 
 import base64
 import os
-import sys
 import tempfile
 import webbrowser
 from abc import abstractmethod
@@ -92,7 +91,7 @@ class FacetStatisticsVisualizer(BaseStepVisualizer):
             magic: Whether to magically materialize facet in a notebook.
         """
         if magic:
-            if "ipykernel" not in sys.modules:
+            if not self.running_in_notebook():
                 raise EnvironmentError(
                     "The magic functions are only usable in a Jupyter notebook."
                 )

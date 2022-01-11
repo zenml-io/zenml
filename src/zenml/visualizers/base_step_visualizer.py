@@ -28,3 +28,18 @@ class BaseStepVisualizer(BaseVisualizer):
     @abstractmethod
     def visualize(self, object: StepView, *args: Any, **kwargs: Any) -> Any:
         """Method to visualize steps."""
+
+    @staticmethod
+    def running_in_notebook() -> bool:
+        """Detect whether we're running in a Jupyter notebook or not"""
+        try:
+            from IPython import get_ipython  # type: ignore
+
+            if get_ipython() is None:
+                # IPython is installed but not running from a notebook
+                return False
+            else:
+                return True
+        except ImportError:
+            # We do not even have IPython installed
+            return False
