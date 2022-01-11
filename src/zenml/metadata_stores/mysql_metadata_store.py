@@ -16,10 +16,10 @@ from ml_metadata.proto import metadata_store_pb2
 from tfx.orchestration import metadata
 
 from zenml.enums import MetadataStoreFlavor
-from zenml.metadata_stores import MLMDMetadataStore
+from zenml.metadata_stores import BaseMetadataStore
 
 
-class MySQLMetadataStore(MLMDMetadataStore):
+class MySQLMetadataStore(BaseMetadataStore):
     """MySQL backend for ZenML metadata store."""
 
     host: str

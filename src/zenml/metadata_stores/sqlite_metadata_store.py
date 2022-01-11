@@ -19,10 +19,10 @@ from tfx.orchestration import metadata
 
 from zenml.enums import MetadataStoreFlavor
 from zenml.io import fileio
-from zenml.metadata_stores import MLMDMetadataStore
+from zenml.metadata_stores import BaseMetadataStore
 
 
-class SQLiteMetadataStore(MLMDMetadataStore):
+class SQLiteMetadataStore(BaseMetadataStore):
     """SQLite backend for ZenML metadata store."""
 
     uri: str

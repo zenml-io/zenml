@@ -22,13 +22,11 @@ inside the metadata store.
 """
 
 from zenml.metadata_stores.base_metadata_store import BaseMetadataStore
-from zenml.metadata_stores.mlmd_metadata_store import MLMDMetadataStore
 from zenml.metadata_stores.mysql_metadata_store import MySQLMetadataStore
 from zenml.metadata_stores.sqlite_metadata_store import SQLiteMetadataStore
 
 __all__ = [
     "BaseMetadataStore",
-    "MLMDMetadataStore",
     "MySQLMetadataStore",
     "SQLiteMetadataStore",
 ]
