@@ -22,6 +22,7 @@ Note: This requires Kubeflow Pipelines SDK to be installed.
 """
 import json
 import os.path
+import sys
 from typing import Dict, List, Set
 
 from google.protobuf import json_format
@@ -95,7 +96,7 @@ class KubeflowComponent:
         step_module: str,
         step_function_name: str,
         runtime_parameters: List[data_types.RuntimeParameter],
-        metadata_ui_path: str = "/mlpipeline-ui-metadata.json",
+        metadata_ui_path: str = "/tmp/mlpipeline-ui-metadata.json",
     ):
         """Creates a new Kubeflow-based component.
         This class essentially wraps a dsl.ContainerOp construct in Kubeflow
@@ -144,8 +145,10 @@ class KubeflowComponent:
         metadata_store = repo.get_active_stack().metadata_store
 
         volumes: Dict[str, k8s_client.V1Volume] = {}
+        has_local_repos = False
 
         if isinstance(artifact_store, LocalArtifactStore):
+            has_local_repos = True
             host_path = k8s_client.V1HostPathVolumeSource(
                 path=artifact_store.path, type="Directory"
             )
@@ -159,6 +162,7 @@ class KubeflowComponent:
             )
 
         if isinstance(metadata_store, SQLiteMetadataStore):
+            has_local_repos = True
             metadata_store_dir = os.path.dirname(metadata_store.uri)
             host_path = k8s_client.V1HostPathVolumeSource(
                 path=metadata_store_dir, type="Directory"
@@ -183,6 +187,26 @@ class KubeflowComponent:
             pvolumes=volumes,
         )
 
+        if has_local_repos:
+            if sys.platform == "win32":
+                # File permissions are not checked on Windows. This if clause
+                # prevents mypy from complaining about unused 'type: ignore'
+                # statements
+                pass
+            else:
+                # Run KFP containers in the context of the local UID/GID
+                # to ensure that the artifact and metadata stores can be shared
+                # with the local pipeline runs.
+                self.container_op.container.security_context = (
+                    k8s_client.V1SecurityContext(
+                        run_as_user=os.getuid(),
+                        run_as_group=os.getgid(),
+                    )
+                )
+                logger.debug(
+                    "Setting security context UID and GID to local user/group "
+                    "in kubeflow pipelines container."
+                )
         for op in depends_on:
             self.container_op.after(op)
 
