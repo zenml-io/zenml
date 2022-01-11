@@ -191,7 +191,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         self,
         pipeline: "BasePipeline",
         stack: "Stack",
-        runtime_configuration: RuntimeConfiguration,
+        runtime_configuration: "RuntimeConfiguration",
     ) -> None:
         """Checks whether airflow is running and copies the DAG file to the
         airflow DAGs directory.
