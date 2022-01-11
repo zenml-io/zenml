@@ -55,7 +55,7 @@ jobs:
       - name: Set path to bash for example runner
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
-          echo ('SHELL_EXECUTABLE="C:\Program Files\Git\bin\bash.exe"') >> $env:GITHUB_ENV
+          echo "SHELL_EXECUTABLE='C:\Program Files\Git\bin\bash.exe'" >> $GITHUB_ENV
           echo $env:SHELL_EXECUTABLE
 
 

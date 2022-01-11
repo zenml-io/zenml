@@ -637,9 +637,9 @@ def run(
         if not local_example.is_present():
             ctx.forward(pull)
 
-        example_runner = [shell_executable] * (shell_executable is not None) + [
-            git_examples_handler.examples_repo.examples_run_bash_script
-        ]
+        example_runner = (
+            [] if shell_executable is None else [shell_executable]
+        ) + [git_examples_handler.examples_repo.examples_run_bash_script]
         try:
             local_example.run_example(
                 example_runner=example_runner, force=force
