@@ -139,9 +139,7 @@ def test_run_mlflow(examples_dir: Path):
         bash script.
     """
     local_example = LocalExample(examples_dir / MLFLOW, name=MLFLOW)
-
-    bash_script_location = examples_dir / EXAMPLES_RUN_SCRIPT
-    local_example.run_example(bash_file=str(bash_script_location), force=True)
+    local_example.run_example(example_runner(examples_dir), force=True)
 
     # Verify the example run was successful
     repo = Repository(path=str(local_example.path))
