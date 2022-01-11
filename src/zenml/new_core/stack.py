@@ -149,7 +149,7 @@ class Stack:
         of this stack. See `StackComponent.runtime_options()` for
         more information.
         """
-        runtime_options = {}
+        runtime_options: Dict[str, Any] = {}
         for component in self.components.values():
             duplicate_runtime_options = (
                 runtime_options.keys() & component.runtime_options.keys()

@@ -32,7 +32,7 @@ from zenml.new_core.repository import Repository
     ),
 )
 def init(
-    path: Optional[str],
+    path: Optional[Path],
 ) -> None:
     """Initialize ZenML on given path.
 

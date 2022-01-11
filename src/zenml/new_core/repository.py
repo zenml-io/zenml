@@ -432,7 +432,7 @@ class Repository:
             StackComponentExistsError: If a stack component with the same type
                 and name already exists.
         """
-        components = self.__config.stack_components.get(component.type)
+        components = self.__config.stack_components[component.type]
         if component.name in components:
             raise StackComponentExistsError(
                 f"Unable to register stack component (type: {component.type}) "
@@ -566,10 +566,9 @@ class Repository:
         """
         if not path:
             # try to get path from the environment variable
-            try:
-                path = Path(os.getenv(ENV_ZENML_REPOSITORY_PATH))
-            except TypeError:
-                pass
+            env_var_path = os.getenv(ENV_ZENML_REPOSITORY_PATH)
+            if env_var_path:
+                path = Path(env_var_path)
 
         if path:
             # explicit path via parameter or environment variable, don't search

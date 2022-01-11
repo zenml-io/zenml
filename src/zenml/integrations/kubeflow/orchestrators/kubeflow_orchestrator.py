@@ -340,7 +340,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             self.list_manual_setup_steps(
                 container_registry_name, self._k3d_registry_config_path
             )
-            self.down()
+            self.deprovision()
 
     def deprovision(self) -> None:
         """Deprovisions a local Kubeflow Pipelines deployment."""
@@ -371,7 +371,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         if not self.is_provisioned:
             raise ProvisioningError(
-                "Unable to resume local kubeflow pipelines deployment: No resources provisioned for local deployment."
+                "Unable to resume local kubeflow pipelines deployment: No "
+                "resources provisioned for local deployment."
             )
 
         local_deployment_utils.start_k3d_cluster(
