@@ -17,6 +17,7 @@ import inspect
 import json
 import random
 from abc import abstractmethod
+from collections import Counter
 from typing import (
     Any,
     ClassVar,
@@ -164,11 +165,13 @@ class BaseStepMeta(type):
         # tfx requires them to be unique
         # TODO [ENG-155]: Can we prefix inputs and outputs to avoid this
         #  restriction?
-        all_keys = list(cls.INPUT_SIGNATURE) + list(cls.OUTPUT_SIGNATURE)
+        counter = Counter()
+        counter.update(list(cls.INPUT_SIGNATURE))
+        counter.update(list(cls.OUTPUT_SIGNATURE))
         if cls.CONFIG_CLASS:
-            all_keys += list(cls.CONFIG_CLASS.__fields__.keys())
+            counter.update(list(cls.CONFIG_CLASS.__fields__.keys()))
 
-        shared_keys = set([key for key in all_keys if all_keys.count(key) > 1])
+        shared_keys = {k for k in counter.elements() if counter[k] > 1}
         if shared_keys:
             raise StepInterfaceError(
                 f"The following keys are overlapping in the input, output and "
