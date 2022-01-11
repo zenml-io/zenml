@@ -156,7 +156,7 @@ def _render_artifact_as_mdstr(single_artifact: artifact.Artifact) -> str:
 def _dump_ui_metadata(
     node: pipeline_pb2.PipelineNode,  # type: ignore[valid-type]
     execution_info: data_types.ExecutionInfo,
-    ui_metadata_path: str = "/mlpipeline-ui-metadata.json",
+    ui_metadata_path: str = "/tmp/mlpipeline-ui-metadata.json",
 ) -> None:
     """Dump KFP UI metadata json file for visualization purpose.
 
@@ -427,7 +427,7 @@ def _parse_command_line_arguments() -> argparse.Namespace:
         "--metadata_ui_path",
         type=str,
         required=False,
-        default="/mlpipeline-ui-metadata.json",
+        default="/tmp/mlpipeline-ui-metadata.json",
     )
     parser.add_argument("--tfx_ir", type=str, required=True)
     parser.add_argument("--node_id", type=str, required=True)
