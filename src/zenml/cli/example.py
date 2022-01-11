@@ -141,10 +141,10 @@ class LocalExample:
                         "has no implementation for the "
                         "run method"
                     )
-            except FileNotFoundError:
-                raise FileNotFoundError(
-                    "Bash File to run Examples not found at" f"{bash_file}"
-                )
+        else:
+            raise FileNotFoundError(
+                "Bash File to run Examples not found at" f"{example_runner}"
+            )
 
         # Telemetry
         track_event(RUN_EXAMPLE, {"name": self.name})
