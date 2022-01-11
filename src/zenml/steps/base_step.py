@@ -12,15 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import collections
 import hashlib
 import inspect
 import json
 import random
 from abc import abstractmethod
-from collections import Counter
 from typing import (
     Any,
     ClassVar,
+    Counter,
     Dict,
     List,
     Optional,
@@ -165,7 +166,7 @@ class BaseStepMeta(type):
         # tfx requires them to be unique
         # TODO [ENG-155]: Can we prefix inputs and outputs to avoid this
         #  restriction?
-        counter = Counter()
+        counter: Counter[str] = collections.Counter()
         counter.update(list(cls.INPUT_SIGNATURE))
         counter.update(list(cls.OUTPUT_SIGNATURE))
         if cls.CONFIG_CLASS:
