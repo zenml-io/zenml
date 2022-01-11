@@ -35,8 +35,11 @@ from zenml.new_core.stack_component import StackComponent
 from zenml.new_core.stack_component_class_registry import (
     StackComponentClassRegistry,
 )
+from zenml.post_execution import PipelineView
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import (
+    GET_PIPELINE,
+    GET_PIPELINES,
     INITIALIZE_REPO,
     REGISTERED_STACK,
     REGISTERED_STACK_COMPONENT,
@@ -491,6 +494,51 @@ class Repository:
 
         if fileio.file_exists(component_config_path):
             fileio.remove(component_config_path)
+
+    # TODO [MEDIUM]: Discuss whether we want to unify these two methods.
+    @track(event=GET_PIPELINES)
+    def get_pipelines(
+        self, stack_name: Optional[str] = None
+    ) -> List[PipelineView]:
+        """Fetches post-execution pipeline views.
+
+        Args:
+            stack_name: If specified, pipelines in the metadata store of the
+                given stack are returned. Otherwise pipelines in the metadata
+                store of the currently active stack are returned.
+
+        Returns:
+            A list of post-execution pipeline views.
+
+        Raises:
+            KeyError: If no stack with the given name exists.
+        """
+        stack_name = stack_name or self.active_stack_name
+        metadata_store = self.get_stack(stack_name).metadata_store
+        return metadata_store.get_pipelines()
+
+    @track(event=GET_PIPELINE)
+    def get_pipeline(
+        self, pipeline_name: str, stack_name: Optional[str] = None
+    ) -> Optional[PipelineView]:
+        """Fetches a post-execution pipeline view.
+
+        Args:
+            pipeline_name: Name of the pipeline.
+            stack_name: If specified, pipelines in the metadata store of the
+                given stack are returned. Otherwise pipelines in the metadata
+                store of the currently active stack are returned.
+
+        Returns:
+            A post-execution pipeline view for the given name or `None` if
+            it doesn't exist.
+
+        Raises:
+            KeyError: If no stack with the given name exists.
+        """
+        stack_name = stack_name or self.active_stack_name
+        metadata_store = self.get_stack(stack_name).metadata_store
+        return metadata_store.get_pipeline(pipeline_name)
 
     @staticmethod
     def is_repository_directory(path: Path) -> bool:
