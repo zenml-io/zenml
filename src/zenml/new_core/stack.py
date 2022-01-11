@@ -18,6 +18,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, AbstractSet, Any, Dict, List, Optional
 
 from zenml.enums import StackComponentType
+from zenml.exceptions import ProvisioningError
 from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
 from zenml.new_core.runtime_configuration import RuntimeConfiguration
@@ -254,4 +255,76 @@ class Stack:
             component.cleanup_pipeline_run()
 
         return return_value
+
+    # TODO [MEDIUM]: Include provisioning status in CLI `zenml stack describe`
+    #  and `zenml stack-component describe` commands
+    @property
+    def is_provisioned(self) -> bool:
+        """If the stack provisioned resources to run locally."""
+        return all(
+            component.is_provisioned for component in self.components.values()
         )
+
+    @property
+    def is_running(self) -> bool:
+        """If the stack is running locally."""
+        return all(
+            component.is_running for component in self.components.values()
+        )
+
+    def provision(self) -> None:
+        """Provisions resources to run the stack locally."""
+        logger.info("Provisioning resources for stack '%s'.", self.name)
+        for component in self.components.values():
+            if not component.is_provisioned:
+                try:
+                    component.provision()
+                    logger.info("Provisioned resources for %s.", component)
+                except NotImplementedError as e:
+                    logger.debug(e)
+
+    def deprovision(self) -> None:
+        """Deprovisions all local resources of the stack."""
+        logger.info("Deprovisioning resources for stack '%s'.", self.name)
+        for component in self.components.values():
+            if component.is_provisioned:
+                component.deprovision()
+                logger.info("Deprovisioned resources for %s.", component)
+
+    def resume(self) -> None:
+        """Resumes the provisioned local resources of the stack.
+
+        Raises:
+            ProvisioningError: If any stack component is missing provisioned
+                resources.
+        """
+        logger.info("Resuming provisioned resources for stack '%s'.", self.name)
+        for component in self.components.values():
+            if component.is_provisioned:
+                try:
+                    component.resume()
+                    logger.info("Resumed resources for %s.", component)
+                except NotImplementedError as e:
+                    logger.debug(e)
+            else:
+                raise ProvisioningError(
+                    f"Unable to resume resources for {component}: No "
+                    f"resources have been provisioned for this component."
+                )
+
+    def suspend(self) -> None:
+        """Suspends the provisioned local resources of the stack."""
+        logger.info(
+            "Suspending provisioned resources for stack '%s'.", self.name
+        )
+        for component in self.components.values():
+            if component.is_running:
+                try:
+                    component.suspend()
+                    logger.info("Suspended resources for %s.", component)
+                except NotImplementedError:
+                    logger.warning(
+                        "Suspending provisioned resources not implemented "
+                        "for %s. Continuing without suspending resources...",
+                        component,
+                    )
