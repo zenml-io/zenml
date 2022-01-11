@@ -128,7 +128,7 @@ class TrainingPipeline(BasePipeline):
         datasource: BaseDatasourceStep,
         splitter: BaseSplitStep,
         analyzer: BaseAnalyzerStep,
-        preprocesser: BasePreprocesserStep,
+        preprocessor: BasePreprocessorStep,
         trainer: BaseTrainerStep,
         evaluator: BaseEvaluatorStep,
     ) -> None:
@@ -143,7 +143,7 @@ class TrainingPipeline(BasePipeline):
         statistics, schema = analyzer(dataset=train) 
 
         # Preprocessing the splits
-        train_t, test_t, validation_t = preprocesser( 
+        train_t, test_t, validation_t = preprocessor( 
             train_dataset=train,
             test_dataset=test,
             validation_dataset=validation,
@@ -168,7 +168,7 @@ pipeline_instance = TrainingPipeline(
     datasource=PandasDatasource(PandasDatasourceConfig(path=os.getenv("data"))),
     splitter=SklearnSplitter(SklearnSplitterConfig(ratios={"train": 0.7, "test": 0.15, "validation": 0.15})),
     analyzer=PandasAnalyzer(PandasAnalyzerConfig(percentiles=[0.2, 0.4, 0.6, 0.8, 1.0])),
-    preprocesser=SklearnStandardScaler(SklearnStandardScalerConfig(ignore_columns=["has_diabetes"])),
+    preprocessor=SklearnStandardScaler(SklearnStandardScalerConfig(ignore_columns=["has_diabetes"])),
     trainer=TensorflowBinaryClassifier(TensorflowBinaryClassifierConfig(target_column="has_diabetes")),
     evaluator=SklearnEvaluator(SklearnEvaluatorConfig(label_class_column="has_diabetes"))
 )

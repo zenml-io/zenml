@@ -4,7 +4,7 @@
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at:
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+#       https://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,12 +18,12 @@ from zenml.artifacts import DataArtifact, SchemaArtifact, StatisticsArtifact
 from zenml.steps import BaseStep, BaseStepConfig, Output, StepContext
 
 
-class BasePreprocesserConfig(BaseStepConfig):
-    """Base class for Preprocesser step configurations"""
+class BasePreprocessorConfig(BaseStepConfig):
+    """Base class for Preprocessor step configurations"""
 
 
-class BasePreprocesserStep(BaseStep):
-    """Base step implementation for any Preprocesser step implementation on
+class BasePreprocessorStep(BaseStep):
+    """Base step implementation for any Preprocessor step implementation on
     ZenML"""
 
     STEP_INNER_FUNC_NAME = "entrypoint"
@@ -36,11 +36,11 @@ class BasePreprocesserStep(BaseStep):
         validation_dataset: DataArtifact,
         statistics: StatisticsArtifact,
         schema: SchemaArtifact,
-        config: BasePreprocesserConfig,
+        config: BasePreprocessorConfig,
         context: StepContext,
     ) -> Output(  # type:ignore[valid-type]
         train_transformed=DataArtifact,
         test_transformed=DataArtifact,
-        valdation_transformed=DataArtifact,
+        validation_transformed=DataArtifact,
     ):
-        """Base entrypoint for any Preprocesser implementation"""
+        """Base entrypoint for any Preprocessor implementation"""

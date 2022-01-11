@@ -4,7 +4,7 @@
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at:
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+#       https://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,6 @@ from typing import Any, Dict, List, Tuple, Type, cast
 
 import pkg_resources
 
-from zenml.exceptions import DoesNotExistException
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 
@@ -50,13 +49,17 @@ class Integration(metaclass=IntegrationMeta):
     def check_installation(cls) -> bool:
         """Method to check whether the required packages are installed"""
         try:
-            for req, command in cls.SYSTEM_REQUIREMENTS.items():
+            for requirement, command in cls.SYSTEM_REQUIREMENTS.items():
                 result = shutil.which(command)
 
                 if result is None:
-                    raise DoesNotExistException(
-                        f"Unable to find the required packages for {req} on your system. Please install the packages on your system and try again."
+                    logger.debug(
+                        "Unable to find the required packages for %s on your "
+                        "system. Please install the packages on your system "
+                        "and try again.",
+                        requirement,
                     )
+                    return False
 
             for r in cls.REQUIREMENTS:
                 pkg_resources.get_distribution(r)

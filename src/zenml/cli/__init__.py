@@ -4,7 +4,7 @@
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at:
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+#       https://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
@@ -52,16 +52,9 @@ This will give you information about how to register a metadata store.
 Beginning a Project
 -------------------
 
-When you begin a project, you should first initialize your base project
-directory as a Git repository. To do this, type:
-
-.. code:: bash
-
-   git init
-
-Once your directory is setup with a (usually hidden) ``.git`` folder,
-initialize the directory with ZenML’s own config and resource management
-tools. Type:
+In order to start working on your project, initialize a ZenML repository
+within your current directory with ZenML’s own config and resource management
+tools:
 
 .. code:: bash
 
@@ -70,11 +63,10 @@ tools. Type:
 This is all you need to begin using all the MLOps goodness that ZenML
 provides!
 
-If your repository is not initialized as a ``git`` repository, the CLI
-will let you know with an error message. By default, ``zenml init`` will
-install its own hidden ``.zen`` folder inside the current directory from
-which you are running the command. You can also pass in a directory path
-manually using the ``--repo_path`` option:
+By default, ``zenml init`` will install its own hidden ``.zen`` folder
+inside the current directory from which you are running the command.
+You can also pass in a directory path manually using the
+``--repo_path`` option:
 
 .. code:: bash
 

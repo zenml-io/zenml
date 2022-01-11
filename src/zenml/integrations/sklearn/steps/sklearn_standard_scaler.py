@@ -4,7 +4,7 @@
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at:
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+#       https://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,15 +18,15 @@ from sklearn.preprocessing import StandardScaler
 
 from zenml.logger import get_logger
 from zenml.steps import Output
-from zenml.steps.step_interfaces.base_preprocesser_step import (
-    BasePreprocesserConfig,
-    BasePreprocesserStep,
+from zenml.steps.step_interfaces.base_preprocessor_step import (
+    BasePreprocessorConfig,
+    BasePreprocessorStep,
 )
 
 logger = get_logger(__name__)
 
 
-class SklearnStandardScalerConfig(BasePreprocesserConfig):
+class SklearnStandardScalerConfig(BasePreprocessorConfig):
     """Config class for the sklearn standard scaler
 
     ignore_columns: a list of column names which should not be scaled
@@ -37,7 +37,7 @@ class SklearnStandardScalerConfig(BasePreprocesserConfig):
     exclude_columns: List[str] = []
 
 
-class SklearnStandardScaler(BasePreprocesserStep):
+class SklearnStandardScaler(BasePreprocessorStep):
     """Simple step implementation which utilizes the StandardScaler from sklearn
     to transform the numeric columns of a pd.DataFrame"""
 
@@ -52,7 +52,7 @@ class SklearnStandardScaler(BasePreprocesserStep):
     ) -> Output(  # type:ignore[valid-type]
         train_transformed=pd.DataFrame,
         test_transformed=pd.DataFrame,
-        valdation_transformed=pd.DataFrame,
+        validation_transformed=pd.DataFrame,
     ):
         """Main entrypoint function for the StandardScaler
 

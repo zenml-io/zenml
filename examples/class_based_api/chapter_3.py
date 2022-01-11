@@ -4,7 +4,7 @@
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at:
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+#       https://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
@@ -57,7 +57,7 @@ analyzer = builtin_steps.PandasAnalyzer(
 )
 
 # Configuring the preprocessing step
-preprocesser = sklearn_steps.SklearnStandardScaler(
+preprocessor = sklearn_steps.SklearnStandardScaler(
     sklearn_steps.SklearnStandardScalerConfig(ignore_columns=["has_diabetes"])
 )
 
@@ -78,7 +78,7 @@ pipeline_instance = TrainingPipeline(
     datasource=datasource,
     splitter=splitter,
     analyzer=analyzer,
-    preprocesser=preprocesser,
+    preprocessor=preprocessor,
     trainer=trainer,
     evaluator=evaluator,
 )

@@ -4,7 +4,7 @@
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at:
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+#       https://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,9 +23,9 @@ from zenml.steps.step_interfaces.base_evaluator_step import (
     BaseEvaluatorConfig,
     BaseEvaluatorStep,
 )
-from zenml.steps.step_interfaces.base_preprocesser_step import (
-    BasePreprocesserConfig,
-    BasePreprocesserStep,
+from zenml.steps.step_interfaces.base_preprocessor_step import (
+    BasePreprocessorConfig,
+    BasePreprocessorStep,
 )
 from zenml.steps.step_interfaces.base_split_step import (
     BaseSplitStep,
@@ -43,8 +43,8 @@ __all__ = [
     "BaseDatasourceStep",
     "BaseEvaluatorConfig",
     "BaseEvaluatorStep",
-    "BasePreprocesserConfig",
-    "BasePreprocesserStep",
+    "BasePreprocessorConfig",
+    "BasePreprocessorStep",
     "BaseSplitStep",
     "BaseSplitStepConfig",
     "BaseTrainerStep",

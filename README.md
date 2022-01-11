@@ -66,7 +66,7 @@ ZenML pipelines are designed to be written early on the development lifecycle. D
 
 [ZenML 101]: https://docs.zenml.io/
 [Core Concepts]: https://docs.zenml.io/core-concepts
-[Functional API Guide]: https://docs.zenml.io/guides/functional-api
+[Functional API Guide]: https://docs.zenml.io/v/docs/guides/functional-api
 [New in v0.5.6]: https://blog.zenml.io/zero-five-six-release/
 [Vote for Features]: https://zenml.io/discussion
 [Docs]: https://docs.zenml.io/
@@ -120,7 +120,7 @@ We use the built-in FacetStatisticsVisualizer using the [Facets Overview](https:
 
 ### 6. 🧐 Introspect your Pipeline Results
 
-Once you've run your experiment, you need a way of seeing what was produced and how it was produced. We offer a flexible interface to support [post-execution workflows](https://docs.zenml.io/guides/post-execution-workflow). This allows you to access any of the artifacts produced by pipeline steps as well as any associated metadata.
+Once you've run your experiment, you need a way of seeing what was produced and how it was produced. We offer a flexible interface to support [post-execution workflows](https://docs.zenml.io/v/docs/guides/post-execution-workflow). This allows you to access any of the artifacts produced by pipeline steps as well as any associated metadata.
 
 ```python
 pipeline = repo.get_pipeline(pipeline_name=..., stack_key=...) # access a pipeline by name and/or stack key
@@ -171,10 +171,9 @@ pip install git+https://github.com/zenml-io/zenml.git@main --upgrade
 
 The quickest way to get started is to create a simple pipeline.
 
-#### Step 1: Initialize a ZenML repo from within a git repo
+#### Step 1: Initialize a ZenML repo
 
 ```bash
-git init
 zenml init
 zenml integration install sklearn # we use scikit-learn for this example
 ```

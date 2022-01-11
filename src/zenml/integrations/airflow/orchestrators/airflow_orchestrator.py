@@ -4,7 +4,7 @@
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at:
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+#       https://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
@@ -205,21 +205,28 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         from airflow.cli.commands.standalone_command import StandaloneCommand
 
-        command = StandaloneCommand()
-        # Run the daemon with a working directory inside the current
-        # zenml repo so the same repo will be used to run the DAGs
-        daemon.run_as_daemon(
-            command.run,
-            pid_file=self.pid_file,
-            log_file=self.log_file,
-            working_directory=zenml.io.utils.get_zenml_dir(),
-        )
-
-        while not self.is_running:
-            # Wait until the daemon started all the relevant airflow processes
-            time.sleep(0.1)
-
-        self._log_webserver_credentials()
+        try:
+            command = StandaloneCommand()
+            # Run the daemon with a working directory inside the current
+            # zenml repo so the same repo will be used to run the DAGs
+            daemon.run_as_daemon(
+                command.run,
+                pid_file=self.pid_file,
+                log_file=self.log_file,
+                working_directory=zenml.io.utils.get_zenml_dir(),
+            )
+            while not self.is_running:
+                # Wait until the daemon started all the relevant airflow processes
+                time.sleep(0.1)
+            self._log_webserver_credentials()
+        except Exception as e:
+            logger.error(e)
+            logger.error(
+                "An error occurred while starting the Airflow daemon. "
+                "If you want to start it manually, use the commands described "
+                "in the official Airflow quickstart guide for running Airflow locally."
+            )
+            self.down()
 
     def down(self) -> None:
         """Stops the airflow daemon if necessary and tears down resources."""

@@ -43,8 +43,6 @@ main() {
     python -m pip install -r requirements.txt
   fi
 
-  git init
-
   zenml_init
 
   if [ -f "setup.sh" ]; then

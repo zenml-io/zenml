@@ -4,7 +4,7 @@
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at:
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+#       https://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,7 +24,7 @@ class TrainingPipeline(BasePipeline):
         datasource: step_interfaces.BaseDatasourceStep,
         splitter: step_interfaces.BaseSplitStep,
         analyzer: step_interfaces.BaseAnalyzerStep,
-        preprocesser: step_interfaces.BasePreprocesserStep,
+        preprocessor: step_interfaces.BasePreprocessorStep,
         trainer: step_interfaces.BaseTrainerStep,
         evaluator: step_interfaces.BaseEvaluatorStep,
     ) -> None:
@@ -36,7 +36,7 @@ class TrainingPipeline(BasePipeline):
                 train, test, val
             analyzer: the step responsible for extracting the statistics and
                 the schema
-            preprocesser: the step responsible for preprocessing the data
+            preprocessor: the step responsible for preprocessing the data
             trainer: the step responsible for training a model
             evaluator: the step responsible for computing the evaluation of
                 the trained model
@@ -51,7 +51,7 @@ class TrainingPipeline(BasePipeline):
         statistics, schema = analyzer(dataset=train)  # type:ignore
 
         # Preprocessing the splits
-        train_t, test_t, validation_t = preprocesser(  # type:ignore
+        train_t, test_t, validation_t = preprocessor(  # type:ignore
             train_dataset=train,
             test_dataset=test,
             validation_dataset=validation,
