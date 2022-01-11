@@ -56,8 +56,6 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
           echo "SHELL_EXECUTABLE='C:\Program Files\Git\bin\bash.exe'" >> $GITHUB_ENV
-          echo $env:SHELL_EXECUTABLE
-
 
       - name: Install Dependencies
         run: |

@@ -53,6 +53,11 @@ jobs:
         run: |
           rm.exe "C:/WINDOWS/system32/bash.EXE"
 
+      - name: Set path to bash for example runner
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: |
+          echo "SHELL_EXECUTABLE='C:\Program Files\Git\bin\bash.exe'" >> $GITHUB_ENV
+
       - name: Install Dependencies
         run: |
           python -m poetry install
