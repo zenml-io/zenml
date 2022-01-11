@@ -43,6 +43,7 @@ logger = get_logger(__name__)
 
 EXAMPLES_GITHUB_REPO = "zenml_examples"
 EXAMPLES_RUN_SCRIPT = "run_example.sh"
+SHELL_EXECUTABLE = "SHELL_EXECUTABLE"
 
 
 class LocalExample:
@@ -113,7 +114,8 @@ class LocalExample:
         location
 
         Args:
-            bash_file: File location of the bash script to run examples
+            example_runner: Sequence of locations of executable file(s)
+                            to run the example
             force: Whether to force the install
         """
         if all(map(fileio.file_exists, example_runner)):
@@ -143,7 +145,7 @@ class LocalExample:
                     )
         else:
             raise FileNotFoundError(
-                "Bash File to run Examples not found at" f"{example_runner}"
+                "Bash File(s) to run Examples not found at" f"{example_runner}"
             )
 
         # Telemetry
@@ -602,7 +604,7 @@ def pull(
     "-x",
     type=click.Path(exists=True),
     required=False,
-    envvar="SHELL_EXECUTABLE",
+    envvar=SHELL_EXECUTABLE,
     help="Manually specify the path to the executable that runs .sh files. "
     "Can be helpful for compatibility with Windows or minimal linux "
     "distros without bash.",

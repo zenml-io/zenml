@@ -12,11 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import shutil
+from os import environ
 from pathlib import Path
 
 import pytest
 
-from zenml.cli import EXAMPLES_RUN_SCRIPT, LocalExample
+from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample
 from zenml.core.repo import Repository
 from zenml.enums import ExecutionStatus
 
@@ -33,6 +34,19 @@ def examples_dir(clean_repo):
     yield examples_path
 
 
+def example_runner(examples_dir):
+    """Get the executable that runs examples.
+
+    By default returns the path to an executable .sh file in the
+    repository, but can also prefix that with the path to a shell
+    / interpreter when the file is not executable on its own. The
+    latter option is needed for windows compatibility.
+    """
+    return (
+        [environ[SHELL_EXECUTABLE]] if SHELL_EXECUTABLE in environ else []
+    ) + [str(examples_dir / EXAMPLES_RUN_SCRIPT)]
+
+
 def test_run_quickstart(examples_dir: Path):
     """Testing the functionality of the quickstart example
 
@@ -42,8 +56,7 @@ def test_run_quickstart(examples_dir: Path):
     """
     local_example = LocalExample(examples_dir / QUICKSTART, name=QUICKSTART)
 
-    bash_script_location = examples_dir / EXAMPLES_RUN_SCRIPT
-    local_example.run_example([str(bash_script_location)], force=True)
+    local_example.run_example(example_runner(examples_dir), force=True)
 
     # Verify the example run was successful
     repo = Repository(path=str(local_example.path))
@@ -68,9 +81,7 @@ def test_run_not_so_quickstart(examples_dir: Path):
     local_example = LocalExample(
         examples_dir / NOT_SO_QUICKSTART, name=NOT_SO_QUICKSTART
     )
-
-    bash_script_location = examples_dir / EXAMPLES_RUN_SCRIPT
-    local_example.run_example([str(bash_script_location)], force=True)
+    local_example.run_example(example_runner(examples_dir), force=True)
 
     # Verify the example run was successful
     repo = Repository(path=str(local_example.path))
@@ -94,9 +105,7 @@ def test_run_caching(examples_dir: Path):
         bash script.
     """
     local_example = LocalExample(examples_dir / CACHING, name=CACHING)
-
-    bash_script_location = examples_dir / EXAMPLES_RUN_SCRIPT
-    local_example.run_example([str(bash_script_location)], force=True)
+    local_example.run_example(example_runner(examples_dir), force=True)
 
     # Verify the example run was successful
     repo = Repository(path=str(local_example.path))
