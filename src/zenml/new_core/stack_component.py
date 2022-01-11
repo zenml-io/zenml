@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -21,6 +21,10 @@ from zenml.enums import StackComponentFlavor, StackComponentType
 from zenml.integrations.utils import get_requirements_for_module
 from zenml.new_core.runtime_configuration import RuntimeConfiguration
 from zenml.new_core.stack_validator import StackValidator
+
+if TYPE_CHECKING:
+    from zenml.new_core.stack import Stack
+    from zenml.pipelines import BasePipeline
 
 
 class StackComponent(BaseModel, ABC):
@@ -72,7 +76,10 @@ class StackComponent(BaseModel, ABC):
         return get_requirements_for_module(self.__module__)
 
     def prepare_pipeline_deployment(
-        self, runtime_configuration: RuntimeConfiguration
+        self,
+        pipeline: "BasePipeline",
+        stack: "Stack",
+        runtime_configuration: RuntimeConfiguration,
     ) -> None:
         """Prepares deploying the pipeline.
 
@@ -81,11 +88,17 @@ class StackComponent(BaseModel, ABC):
         options or if they need to run code before the pipeline deployment.
 
         Args:
+            pipeline: The pipeline that will be deployed.
+            stack: The stack on which the pipeline will be deployed.
             runtime_configuration: Contains all the runtime configuration
                 options specified for the pipeline run.
         """
 
-    # TODO: post-deploy method
+    def prepare_pipeline_run(self) -> None:
+        """Prepares running the pipeline."""
+
+    def cleanup_pipeline_run(self) -> None:
+        """Cleans up resources after the pipeline run is finished."""
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -98,10 +111,9 @@ class StackComponent(BaseModel, ABC):
         """
         return None
 
-    # TODO: better names and docstrings
     @property
-    def is_deployed_locally(self) -> bool:
-        """If the component is deployed to run locally."""
+    def is_provisioned(self) -> bool:
+        """If the component provisioned resources to run locally."""
         return False
 
     @property
@@ -109,17 +121,17 @@ class StackComponent(BaseModel, ABC):
         """If the component is running locally."""
         return False
 
-    def setup(self) -> None:
-        pass
+    def provision(self) -> None:
+        """Provisions resources to run the component locally."""
 
-    def tear_down(self) -> None:
-        pass
+    def deprovision(self) -> None:
+        """Deprovisions all local resources of the component."""
 
-    def start(self) -> None:
-        pass
+    def resume(self) -> None:
+        """Resumes the provisioned local resources of the component."""
 
-    def stop(self) -> None:
-        pass
+    def suspend(self) -> None:
+        """Suspends the provisioned local resources of the component."""
 
     class Config:
         """Pydantic configuration class."""

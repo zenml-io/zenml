@@ -225,18 +225,18 @@ def generate_stack_component_up_command(
                 f"Local deployment is already running for {display_name} "
                 f"'{component.name}'."
             )
-        elif component.is_deployed_locally:
+        elif component.is_provisioned:
             cli_utils.declare(
-                f"Starting local deployment for {display_name} "
+                f"Resuming local resources for {display_name} "
                 f"'{component.name}'."
             )
-            component.start()
+            component.resume()
         else:
             cli_utils.declare(
-                f"Setting up local deployment for {display_name} "
+                f"Provisioning local resources for {display_name} "
                 f"'{component.name}'."
             )
-            component.setup()
+            component.provision()
 
     return up_stack_component_command
 
@@ -251,7 +251,7 @@ def generate_stack_component_down_command(
         "--force",
         "-f",
         is_flag=True,
-        help="Tears down the local deployment instead of stopping it.",
+        help="Deprovisions local resources instead of suspending them.",
     )
     def down_stack_component_command(
         name: Optional[str] = None, force: bool = False
@@ -262,16 +262,16 @@ def generate_stack_component_down_command(
 
         if component.is_running and not force:
             cli_utils.declare(
-                f"Stopping local deployment for {display_name} "
+                f"Suspending local resources for {display_name} "
                 f"'{component.name}'."
             )
-            component.stop()
+            component.suspend()
         elif force:
             cli_utils.declare(
-                f"Tearing down local deployment for {display_name} "
+                f"Deprovisioning resources for {display_name} "
                 f"'{component.name}'."
             )
-            component.tear_down()
+            component.deprovision()
 
     return down_stack_component_command
 
