@@ -12,9 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The Evidently integration provides a way to monitor the your models in production. It includes a way to detect data drift and different kinds of model performance issues.
+The Evidently integration provides a way to monitor your models in production.
+It includes a way to detect data drift and different kinds of model performance
+issues.
 
-The results of Evidently calculations can either be exported as an interactive dashboard (visualized as an html file or in your Jupyter notebook), or as a JSON file.
+The results of Evidently calculations can either be exported as an interactive
+dashboard (visualized as an html file or in your Jupyter notebook), or as a JSON
+file.
 """
 
 from zenml.integrations.constants import EVIDENTLY
