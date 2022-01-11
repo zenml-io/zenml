@@ -56,6 +56,7 @@ def trainer(
 ) -> ClassifierMixin:
     """Train a simple sklearn classifier for the digits dataset."""
     model = get_digits_model()
+
     model.fit(X_train, y_train)
     return model
 
