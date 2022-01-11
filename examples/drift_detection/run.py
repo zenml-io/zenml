@@ -84,6 +84,6 @@ pipeline = repo.get_pipelines()[0]
 runs = pipeline.runs
 run = runs[-1]
 steps = run.steps
-step = steps[3]
+step = steps[-1]
 output = step.output
 print(output.read())
