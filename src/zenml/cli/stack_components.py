@@ -235,7 +235,10 @@ def generate_stack_component_up_command(
             try:
                 component.provision()
             except NotImplementedError:
-                cli_utils.error("Provisioning local resources not implemented.")
+                cli_utils.error(
+                    f"Provisioning local resources not implemented for "
+                    f"{display_name} '{component.name}'."
+                )
 
         if not component.is_running:
             cli_utils.declare(
@@ -271,13 +274,26 @@ def generate_stack_component_down_command(
                 f"Suspending local resources for {display_name} "
                 f"'{component.name}'."
             )
-            component.suspend()
-        elif force:
+            try:
+                component.suspend()
+            except NotImplementedError:
+                cli_utils.error(
+                    f"Provisioning local resources not implemented for "
+                    f"{display_name} '{component.name}'. If you want to "
+                    f"deprovision all resources for this component, use the "
+                    f"`--force/-f` flag."
+                )
+        elif component.is_provisioned and force:
             cli_utils.declare(
                 f"Deprovisioning resources for {display_name} "
                 f"'{component.name}'."
             )
             component.deprovision()
+        else:
+            cli_utils.declare(
+                f"No provisioned resources found for {display_name} "
+                f"'{component.name}'."
+            )
 
     return down_stack_component_command
 
