@@ -122,7 +122,6 @@ class LocalExample:
                 + ["--executable", self.executable_python_example]
                 + ["-f"] * force
             )
-            print(f"{call=}")
             try:
                 # TODO [ENG-271]: Catch errors that might be thrown
                 #  in subprocess
