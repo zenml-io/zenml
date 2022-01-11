@@ -12,7 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
+import time
 import uuid
+from datetime import datetime
 from typing import TYPE_CHECKING, AbstractSet, Any, Dict, List, Optional
 
 from zenml.enums import StackComponentType
@@ -20,6 +22,7 @@ from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
 from zenml.new_core.runtime_configuration import RuntimeConfiguration
 from zenml.new_core.stack_component import StackComponent
+from zenml.utils import string_utils
 
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
@@ -204,47 +207,51 @@ class Stack:
         pipeline: "BasePipeline",
         runtime_configuration: RuntimeConfiguration,
     ) -> Any:
-        for component in self.components.values():
-            component.prepare_pipeline_deployment(runtime_configuration)
+        """Deploys a pipeline on this stack.
 
-        # TODO: caller filepath + run name
-        self.orchestrator.pre_run(pipeline=pipeline, caller_filepath="")
-        return_value = self.orchestrator.run(
-            pipeline=pipeline, run_name=runtime_configuration.run_name
+        Args:
+            pipeline: The pipeline to deploy.
+            runtime_configuration: Contains all the runtime configuration
+                options specified for the pipeline run.
+
+        Returns:
+            The return value of the call to `orchestrator.run_pipeline(...)`.
+        """
+        for component in self.components.values():
+            component.prepare_pipeline_deployment(
+                pipeline=pipeline,
+                stack=self,
+                runtime_configuration=runtime_configuration,
+            )
+
+        for component in self.components.values():
+            component.prepare_pipeline_run()
+
+        run_name = runtime_configuration.run_name or (
+            f"{pipeline.name}-"
+            f'{datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")}'
         )
-        self.orchestrator.post_run()
+
+        logger.info(
+            "Using stack `%s` to run pipeline `%s`...",
+            self.name,
+            pipeline.name,
+        )
+        start_time = time.time()
+
+        return_value = self.orchestrator.run_pipeline(
+            pipeline, stack=self, run_name=run_name
+        )
+
+        run_duration = time.time() - start_time
+        logger.info(
+            "Pipeline run `%s` has finished in %s.",
+            run_name,
+            string_utils.get_human_readable_time(run_duration),
+        )
+
+        for component in self.components.values():
+            component.cleanup_pipeline_run()
 
         return return_value
-
-    @classmethod
-    def default_local_stack(cls) -> "Stack":
-        """Creates a stack instance which is configured to run locally."""
-        from zenml.artifact_stores import LocalArtifactStore
-        from zenml.metadata_stores import SQLiteMetadataStore
-        from zenml.orchestrators import LocalOrchestrator
-
-        orchestrator = LocalOrchestrator(name="local_orchestrator")
-
-        artifact_store_uuid = uuid.uuid4()
-        artifact_store_path = os.path.join(
-            get_global_config_directory(),
-            "local_stores",
-            str(artifact_store_uuid),
-        )
-        artifact_store = LocalArtifactStore(
-            name="local_artifact_store",
-            uuid=artifact_store_uuid,
-            path=artifact_store_path,
-        )
-
-        metadata_store_path = os.path.join(artifact_store_path, "metadata.db")
-        metadata_store = SQLiteMetadataStore(
-            name="local_metadata_store", uri=metadata_store_path
-        )
-
-        return cls(
-            name="local_stack",
-            orchestrator=orchestrator,
-            metadata_store=metadata_store,
-            artifact_store=artifact_store,
         )
