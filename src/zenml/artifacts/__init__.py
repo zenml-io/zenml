@@ -31,14 +31,12 @@ deserialization logic of artifacts is defined by the appropriate Materializer.
 """
 
 from zenml.artifacts.data_artifact import DataArtifact
-from zenml.artifacts.data_drift_artifact import DataDriftArtifact
 from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.artifacts.schema_artifact import SchemaArtifact
 from zenml.artifacts.statistics_artifact import StatisticsArtifact
 
 __all__ = [
     "DataArtifact",
-    "DataDriftArtifact",
     "ModelArtifact",
     "SchemaArtifact",
     "StatisticsArtifact",
