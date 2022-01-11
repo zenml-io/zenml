@@ -51,7 +51,8 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
           rm.exe "C:/WINDOWS/system32/bash.EXE"
-          echo $env:PATH
+          $env:SHELL_EXECUTABLE = "C:\Program Files\Git\bin\bash.exe"
+          echo $env:SHELL_EXECUTABLE
           where.exe bash
 
       - name: Install Dependencies
