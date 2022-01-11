@@ -225,18 +225,24 @@ def generate_stack_component_up_command(
                 f"Local deployment is already running for {display_name} "
                 f"'{component.name}'."
             )
-        elif component.is_provisioned:
+            return
+
+        if not component.is_provisioned:
+            cli_utils.declare(
+                f"Provisioning local resources for {display_name} "
+                f"'{component.name}'."
+            )
+            try:
+                component.provision()
+            except NotImplementedError:
+                cli_utils.error("Provisioning local resources not implemented.")
+
+        if not component.is_running:
             cli_utils.declare(
                 f"Resuming local resources for {display_name} "
                 f"'{component.name}'."
             )
             component.resume()
-        else:
-            cli_utils.declare(
-                f"Provisioning local resources for {display_name} "
-                f"'{component.name}'."
-            )
-            component.provision()
 
     return up_stack_component_command
 
