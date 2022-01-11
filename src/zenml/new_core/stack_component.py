@@ -123,15 +123,41 @@ class StackComponent(BaseModel, ABC):
 
     def provision(self) -> None:
         """Provisions resources to run the component locally."""
+        raise NotImplementedError(
+            f"Provisioning local resource not implemented for {self}."
+        )
 
     def deprovision(self) -> None:
         """Deprovisions all local resources of the component."""
+        raise NotImplementedError(
+            f"Deprovisioning local resource not implemented for {self}."
+        )
 
     def resume(self) -> None:
         """Resumes the provisioned local resources of the component."""
+        NotImplementedError(
+            f"Resuming provisioned resources not implemented for {self}."
+        )
 
     def suspend(self) -> None:
         """Suspends the provisioned local resources of the component."""
+        NotImplementedError(
+            f"Suspending provisioned resources not implemented for {self}."
+        )
+
+    def __repr__(self) -> str:
+        """String representation of the stack component."""
+        attribute_representation = ", ".join(
+            f"{key}={value}" for key, value in self.dict().items()
+        )
+        return (
+            f"{self.__class__.__qualname__}(type={self.type}, "
+            f"flavor={self.flavor}, {attribute_representation})"
+        )
+
+    def __str__(self) -> str:
+        """String representation of the stack component."""
+        return self.__repr__()
 
     class Config:
         """Pydantic configuration class."""

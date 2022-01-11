@@ -32,9 +32,6 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.new_core.stack import Stack
 from zenml.new_core.stack_component import StackComponent
-from zenml.new_core.stack_component_class_registry import (
-    StackComponentClassRegistry,
-)
 from zenml.post_execution import PipelineView
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import (
@@ -407,6 +404,10 @@ class Repository:
                 f"Unable to find stack component (type: {component_type}) "
                 f"with name '{name}'. Available names: {set(components)}."
             )
+
+        from zenml.new_core.stack_component_class_registry import (
+            StackComponentClassRegistry,
+        )
 
         component_flavor = components[name]
         component_class = StackComponentClassRegistry.get_class(

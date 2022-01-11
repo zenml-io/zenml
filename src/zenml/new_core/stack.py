@@ -15,17 +15,17 @@ import os
 import uuid
 from typing import TYPE_CHECKING, AbstractSet, Any, Dict, List, Optional
 
-from zenml.artifact_stores import BaseArtifactStore
-from zenml.container_registries import BaseContainerRegistry
 from zenml.enums import StackComponentType
 from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
-from zenml.metadata_stores import BaseMetadataStore
 from zenml.new_core.runtime_configuration import RuntimeConfiguration
 from zenml.new_core.stack_component import StackComponent
-from zenml.orchestrators import BaseOrchestrator
 
 if TYPE_CHECKING:
+    from zenml.artifact_stores import BaseArtifactStore
+    from zenml.container_registries import BaseContainerRegistry
+    from zenml.metadata_stores import BaseMetadataStore
+    from zenml.orchestrators import BaseOrchestrator
     from zenml.pipelines import BasePipeline
 
 logger = get_logger(__name__)
@@ -45,10 +45,10 @@ class Stack:
         self,
         name: str,
         *,
-        orchestrator: BaseOrchestrator,
-        metadata_store: BaseMetadataStore,
-        artifact_store: BaseArtifactStore,
-        container_registry: Optional[BaseContainerRegistry] = None,
+        orchestrator: "BaseOrchestrator",
+        metadata_store: "BaseMetadataStore",
+        artifact_store: "BaseArtifactStore",
+        container_registry: Optional["BaseContainerRegistry"] = None,
     ):
         """Initializes and validates a stack instance.
 
@@ -62,6 +62,39 @@ class Stack:
         self._container_registry = container_registry
 
         self.validate()
+
+    @classmethod
+    def default_local_stack(cls) -> "Stack":
+        """Creates a stack instance which is configured to run locally."""
+        from zenml.artifact_stores import LocalArtifactStore
+        from zenml.metadata_stores import SQLiteMetadataStore
+        from zenml.orchestrators import LocalOrchestrator
+
+        orchestrator = LocalOrchestrator(name="local_orchestrator")
+
+        artifact_store_uuid = uuid.uuid4()
+        artifact_store_path = os.path.join(
+            get_global_config_directory(),
+            "local_stores",
+            str(artifact_store_uuid),
+        )
+        artifact_store = LocalArtifactStore(
+            name="local_artifact_store",
+            uuid=artifact_store_uuid,
+            path=artifact_store_path,
+        )
+
+        metadata_store_path = os.path.join(artifact_store_path, "metadata.db")
+        metadata_store = SQLiteMetadataStore(
+            name="local_metadata_store", uri=metadata_store_path
+        )
+
+        return cls(
+            name="local_stack",
+            orchestrator=orchestrator,
+            metadata_store=metadata_store,
+            artifact_store=artifact_store,
+        )
 
     @property
     def components(self) -> Dict[StackComponentType, StackComponent]:
@@ -83,22 +116,22 @@ class Stack:
         return self._name
 
     @property
-    def orchestrator(self) -> BaseOrchestrator:
+    def orchestrator(self) -> "BaseOrchestrator":
         """The orchestrator of the stack."""
         return self._orchestrator
 
     @property
-    def metadata_store(self) -> BaseMetadataStore:
+    def metadata_store(self) -> "BaseMetadataStore":
         """The metadata store of the stack."""
         return self._metadata_store
 
     @property
-    def artifact_store(self) -> BaseArtifactStore:
+    def artifact_store(self) -> "BaseArtifactStore":
         """The artifact store of the stack."""
         return self._artifact_store
 
     @property
-    def container_registry(self) -> Optional[BaseContainerRegistry]:
+    def container_registry(self) -> Optional["BaseContainerRegistry"]:
         """The container registry of the stack."""
         return self._container_registry
 
