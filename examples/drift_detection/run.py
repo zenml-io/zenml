@@ -80,7 +80,7 @@ pipeline = drift_detection_pipeline(
 pipeline.run()
 
 repo = Repository()
-pipeline = repo.get_pipelines()[0]
+pipeline = repo.get_pipelines()[-1]
 runs = pipeline.runs
 run = runs[-1]
 steps = run.steps
