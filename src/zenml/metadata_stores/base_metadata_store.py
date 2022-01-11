@@ -30,6 +30,7 @@ from zenml.artifacts.constants import (
     MATERIALIZER_PROPERTY_KEY,
 )
 from zenml.enums import ExecutionStatus, MetadataStoreFlavor, StackComponentType
+from zenml.logger import get_logger
 from zenml.new_core.stack_component import StackComponent
 from zenml.post_execution import (
     ArtifactView,
@@ -41,6 +42,8 @@ from zenml.steps.utils import (
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_PIPELINE_PARAMETER_NAME,
 )
+
+logger = get_logger(__name__)
 
 
 class BaseMetadataStore(StackComponent, ABC):
