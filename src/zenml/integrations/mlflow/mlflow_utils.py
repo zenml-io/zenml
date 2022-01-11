@@ -26,7 +26,7 @@ from zenml.steps import BaseStep
 def local_mlflow_backend() -> str:
     """Returns the local mlflow backend inside the global zenml directory"""
     local_mlflow_backend_uri = os.path.join(
-        get_global_config_directory(), "mlruns"
+        get_global_config_directory(), "local_stores", "mlruns"
     )
     if not os.path.exists(local_mlflow_backend_uri):
         os.mkdir(local_mlflow_backend_uri)
@@ -51,7 +51,6 @@ def setup_mlflow(
     if not backend_store_uri:
         backend_store_uri = local_mlflow_backend()
 
-    os.environ["MLFLOW_TRACKING_URI"] = backend_store_uri
     set_tracking_uri(backend_store_uri)
     # Set which experiment is used within mlflow
     set_experiment(experiment_name)
@@ -59,14 +58,14 @@ def setup_mlflow(
 
 def enable_mlflow_init(
     original_init: Callable[[BasePipeline, BaseStep, Any], None],
-    experiment_name: Optional[str] = None,
+    experiment: Optional[str] = None,
 ) -> Callable[..., None]:
     """Outer decorator function for extending the __init__ method for pipelines
     that should be run using mlflow
 
     Args:
         original_init: The __init__ method that should be extended
-        experiment_name: The users chosen experiment name to use for mlflow
+        experiment: The users chosen experiment name to use for mlflow
 
     Returns:
         the inner decorator which extends the __init__ method
@@ -80,8 +79,10 @@ def enable_mlflow_init(
         within one mlflow experiment that is associated with the pipeline
         """
         original_init(self, *args, **kwargs)
-        setup_mlflow()
-        mlflow.set_experiment(experiment_name if experiment_name else self.name)
+        setup_mlflow(
+            backend_store_uri=local_mlflow_backend(),
+            experiment_name=experiment if experiment else self.name,
+        )
 
     return inner_decorator
 
