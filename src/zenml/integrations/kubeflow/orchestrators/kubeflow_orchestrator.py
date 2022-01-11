@@ -14,7 +14,6 @@
 
 import os
 import sys
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 
 import kfp
@@ -42,6 +41,7 @@ from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.utils import create_tfx_pipeline
 
 if TYPE_CHECKING:
+    from zenml.new_core import RuntimeConfiguration, Stack
     from zenml.pipelines.base_pipeline import BasePipeline
 
 logger = get_logger(__name__)
@@ -100,7 +100,12 @@ class KubeflowOrchestrator(BaseOrchestrator):
         are stored."""
         return os.path.join(self.root_directory, "pipelines")
 
-    def pre_run(self, pipeline: "BasePipeline", caller_filepath: str) -> None:
+    def prepare_pipeline_deployment(
+        self,
+        pipeline: "BasePipeline",
+        stack: "Stack",
+        runtime_configuration: RuntimeConfiguration,
+    ) -> None:
         """Builds a docker image for the current environment and uploads it to
         a container registry if configured.
         """
@@ -111,10 +116,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         image_name = self.get_docker_image_name(pipeline.name)
 
-        repo = Repository()
         requirements = (
             ["kubernetes"]
-            + repo.active_stack.requirements(
+            + stack.requirements(
                 exclude_components={StackComponentType.ORCHESTRATOR}
             )
             + self._get_pipeline_requirements(pipeline)
@@ -122,50 +126,40 @@ class KubeflowOrchestrator(BaseOrchestrator):
         logger.debug("Kubeflow docker container requirements: %s", requirements)
 
         build_docker_image(
-            build_context_path=str(repo.root),
+            build_context_path=str(Repository().root),
             image_name=image_name,
             dockerignore_path=pipeline.dockerignore_file,
             requirements=requirements,
             base_image=self.custom_docker_base_image_name,
         )
 
-        if repo.active_stack.container_registry:
+        if stack.container_registry:
             push_docker_image(image_name)
 
-    def run(
-        self,
-        zenml_pipeline: "BasePipeline",
-        run_name: str,
-        **kwargs: Any,
-    ) -> None:
-        """Runs the pipeline on Kubeflow.
-
-        Args:
-            zenml_pipeline: The pipeline to run.
-            run_name: Name of the pipeline run.
-            **kwargs: Unused kwargs to conform with base signature
-        """
+    def run_pipeline(
+        self, pipeline: "BasePipeline", stack: "Stack", run_name: str
+    ) -> Any:
+        """Runs a pipeline on Kubeflow Pipelines."""
         from zenml.integrations.kubeflow.docker_utils import get_image_digest
 
-        image_name = self.get_docker_image_name(zenml_pipeline.name)
+        image_name = self.get_docker_image_name(pipeline.name)
         image_name = get_image_digest(image_name) or image_name
 
         fileio.make_dirs(self.pipeline_directory)
         pipeline_file_path = os.path.join(
-            self.pipeline_directory, f"{zenml_pipeline.name}.yaml"
+            self.pipeline_directory, f"{pipeline.name}.yaml"
         )
         runner_config = KubeflowDagRunnerConfig(image=image_name)
         runner = KubeflowDagRunner(
             config=runner_config, output_path=pipeline_file_path
         )
-        tfx_pipeline = create_tfx_pipeline(zenml_pipeline)
+        tfx_pipeline = create_tfx_pipeline(pipeline, stack=stack)
         runner.run(tfx_pipeline)
 
-        run_name = run_name or datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")
         self._upload_and_run_pipeline(
             pipeline_file_path=pipeline_file_path,
             run_name=run_name,
-            enable_cache=zenml_pipeline.enable_cache,
+            enable_cache=pipeline.enable_cache,
         )
 
     def _upload_and_run_pipeline(

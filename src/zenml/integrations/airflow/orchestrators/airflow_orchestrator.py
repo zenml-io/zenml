@@ -37,11 +37,11 @@ from zenml.utils import daemon
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    import airflow
-
+    from zenml.new_core import RuntimeConfiguration, Stack
     from zenml.pipelines.base_pipeline import BasePipeline
 
 AIRFLOW_ROOT_DIR = "airflow_root"
+DAG_FILEPATH_OPTION_KEY = "dag_filepath"
 
 
 @register_stack_component_class(
@@ -183,18 +183,22 @@ class AirflowOrchestrator(BaseOrchestrator):
             password,
         )
 
-    def pre_run(self, pipeline: "BasePipeline", caller_filepath: str) -> None:
+    def runtime_options(self) -> Dict[str, Any]:
+        """Runtime options for the airflow orchestrator."""
+        return {DAG_FILEPATH_OPTION_KEY: None}
+
+    def prepare_pipeline_deployment(
+        self,
+        pipeline: "BasePipeline",
+        stack: "Stack",
+        runtime_configuration: RuntimeConfiguration,
+    ) -> None:
         """Checks whether airflow is running and copies the DAG file to the
         airflow DAGs directory.
 
-        Args:
-            pipeline: Pipeline that will be run.
-            caller_filepath: Path to the file in which `pipeline.run()` was
-                called. This contains the airflow DAG that is returned by
-                the `run()` method.
-
         Raises:
-            RuntimeError: If airflow is not running.
+            RuntimeError: If airflow is not running or no DAG filepath runtime
+            option is provided.
         """
         if not self.is_running:
             raise RuntimeError(
@@ -203,7 +207,16 @@ class AirflowOrchestrator(BaseOrchestrator):
                 "orchestrator of the active stack."
             )
 
-        self._copy_to_dag_directory_if_necessary(dag_filepath=caller_filepath)
+        try:
+            dag_filepath = runtime_configuration[DAG_FILEPATH_OPTION_KEY]
+        except KeyError:
+            raise RuntimeError(
+                f"No DAG filepath found in runtime configuration. Make sure "
+                f"to add the filepath to your airflow DAG file as a runtime "
+                f"option (key: '{DAG_FILEPATH_OPTION_KEY}')."
+            )
+
+        self._copy_to_dag_directory_if_necessary(dag_filepath=dag_filepath)
 
     def up(self) -> None:
         """Ensures that Airflow is running."""
@@ -249,18 +262,13 @@ class AirflowOrchestrator(BaseOrchestrator):
         fileio.rm_dir(self.airflow_home)
         logger.info("Airflow spun down.")
 
-    def run(
-        self,
-        zenml_pipeline: "BasePipeline",
-        run_name: str,
-        **kwargs: Any,
-    ) -> "airflow.DAG":
-        """Prepares the pipeline so it can be run in Airflow.
+    def run_pipeline(
+        self, pipeline: "BasePipeline", stack: "Stack", run_name: str
+    ) -> Any:
+        """Schedules a pipeline to be run on Airflow.
 
-        Args:
-            zenml_pipeline: The pipeline to run.
-            run_name: Name of the pipeline run.
-            **kwargs: Unused argument to conform with base class signature.
+        Returns:
+            An Airflow DAG object that corresponds to the ZenML pipeline.
         """
         self.airflow_config = {
             "schedule_interval": datetime.timedelta(
@@ -271,5 +279,5 @@ class AirflowOrchestrator(BaseOrchestrator):
         }
 
         runner = AirflowDagRunner(AirflowPipelineConfig(self.airflow_config))
-        tfx_pipeline = create_tfx_pipeline(zenml_pipeline)
+        tfx_pipeline = create_tfx_pipeline(pipeline, stack=stack)
         return runner.run(tfx_pipeline, run_name=run_name)

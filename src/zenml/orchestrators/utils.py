@@ -23,13 +23,14 @@ from zenml.logger import get_logger
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
+    from zenml.new_core import Stack
     from zenml.pipelines.base_pipeline import BasePipeline
 
 logger = get_logger(__name__)
 
 
 def create_tfx_pipeline(
-    zenml_pipeline: "BasePipeline",
+    zenml_pipeline: "BasePipeline", stack: "Stack"
 ) -> tfx_pipeline.Pipeline:
     """Creates a tfx pipeline from a ZenML pipeline."""
     # Connect the inputs/outputs of all steps in the pipeline
@@ -37,8 +38,8 @@ def create_tfx_pipeline(
 
     tfx_components = [step.component for step in zenml_pipeline.steps.values()]
 
-    artifact_store = zenml_pipeline.stack.artifact_store
-    metadata_store = zenml_pipeline.stack.metadata_store
+    artifact_store = stack.artifact_store
+    metadata_store = stack.metadata_store
 
     return tfx_pipeline.Pipeline(
         pipeline_name=zenml_pipeline.name,

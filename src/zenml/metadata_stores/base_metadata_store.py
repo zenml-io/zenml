@@ -11,8 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.enums import MetadataStoreFlavor, StackComponentType
-from zenml.new_core.stack_component import StackComponent
 import json
 from abc import ABC, abstractmethod
 from collections import OrderedDict
@@ -31,8 +29,8 @@ from zenml.artifacts.constants import (
     DATATYPE_PROPERTY_KEY,
     MATERIALIZER_PROPERTY_KEY,
 )
-from zenml.enums import ExecutionStatus
-from zenml.logger import get_logger
+from zenml.enums import ExecutionStatus, MetadataStoreFlavor, StackComponentType
+from zenml.new_core.stack_component import StackComponent
 from zenml.post_execution import (
     ArtifactView,
     PipelineRunView,
