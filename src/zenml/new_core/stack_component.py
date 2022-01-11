@@ -124,7 +124,7 @@ class StackComponent(BaseModel, ABC):
     def provision(self) -> None:
         """Provisions resources to run the component locally."""
         raise NotImplementedError(
-            f"Provisioning local resource not implemented for {self}."
+            f"Provisioning local resources not implemented for {self}."
         )
 
     def deprovision(self) -> None:
