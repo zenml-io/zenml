@@ -99,37 +99,6 @@ class AirflowOrchestrator(BaseOrchestrator):
         """Returns path to the webserver password file."""
         return os.path.join(self.airflow_home, "standalone_admin_password.txt")
 
-    @property
-    def is_running(self) -> bool:
-        """Returns whether the airflow daemon is currently running."""
-        from airflow.cli.commands.standalone_command import StandaloneCommand
-        from airflow.jobs.triggerer_job import TriggererJob
-
-        daemon_running = daemon.check_if_daemon_is_running(self.pid_file)
-
-        command = StandaloneCommand()
-        webserver_port_open = command.port_open(8080)
-
-        if not daemon_running:
-            if webserver_port_open:
-                raise RuntimeError(
-                    "The airflow daemon does not seem to be running but "
-                    "local port 8080 is occupied. Make sure the port is "
-                    "available and try again."
-                )
-
-            # exit early so we don't check non-existing airflow databases
-            return False
-
-        # we can't use StandaloneCommand().is_ready() here as the
-        # Airflow SequentialExecutor apparently does not send a heartbeat
-        # while running a task which would result in this returning `False`
-        # even if Airflow is running.
-        airflow_running = webserver_port_open and command.job_running(
-            TriggererJob
-        )
-        return airflow_running
-
     def _set_env(self) -> None:
         """Sets environment variables to configure airflow."""
         os.environ["AIRFLOW_HOME"] = self.airflow_home
@@ -218,7 +187,43 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         self._copy_to_dag_directory_if_necessary(dag_filepath=dag_filepath)
 
-    def up(self) -> None:
+    @property
+    def is_running(self) -> bool:
+        """Returns whether the airflow daemon is currently running."""
+        from airflow.cli.commands.standalone_command import StandaloneCommand
+        from airflow.jobs.triggerer_job import TriggererJob
+
+        daemon_running = daemon.check_if_daemon_is_running(self.pid_file)
+
+        command = StandaloneCommand()
+        webserver_port_open = command.port_open(8080)
+
+        if not daemon_running:
+            if webserver_port_open:
+                raise RuntimeError(
+                    "The airflow daemon does not seem to be running but "
+                    "local port 8080 is occupied. Make sure the port is "
+                    "available and try again."
+                )
+
+            # exit early so we don't check non-existing airflow databases
+            return False
+
+        # we can't use StandaloneCommand().is_ready() here as the
+        # Airflow SequentialExecutor apparently does not send a heartbeat
+        # while running a task which would result in this returning `False`
+        # even if Airflow is running.
+        airflow_running = webserver_port_open and command.job_running(
+            TriggererJob
+        )
+        return airflow_running
+
+    @property
+    def is_provisioned(self) -> bool:
+        """Returns whether the airflow daemon is currently running."""
+        return self.is_running
+
+    def provision(self) -> None:
         """Ensures that Airflow is running."""
         if self.is_running:
             logger.info("Airflow is already running.")
@@ -254,7 +259,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             )
             self.down()
 
-    def down(self) -> None:
+    def deprovision(self) -> None:
         """Stops the airflow daemon if necessary and tears down resources."""
         if self.is_running:
             daemon.stop_daemon(self.pid_file, kill_children=True)
