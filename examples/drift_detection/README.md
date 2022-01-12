@@ -1,6 +1,6 @@
 # Explore Drift Detection
 
-Data Drift is something you often want to guard against in your pipelines.
+Data drift is something you often want to guard against in your pipelines.
 Machine learning pipelines are built on top of data inputs, so it is worth
 checking for drift if you have a model that was trained on a certain
 distribution of data.
@@ -11,15 +11,14 @@ features). At its core, Evidently's drift detection takes in a reference data
 set and compares it against another comparison dataset. These are both input in
 the form of a `pandas` dataframe, though CSV inputs are also possible.
 
-ZenML implements this functionality in the form of several standardized steps,
-the first of which we use in the example:
+ZenML implements this functionality in the form of several standardized steps. You select which of the profile sections you want to use in your step by passing a string into the `EvidentlyProfileConfig`. Possible options supported by Evidently are:
 
-- `EvidentlyDriftDetectionStep`
-- `EvidentlyNumericalTargetDriftDetectionStep`
-- `EvidentlyCategoricalTargetDriftDetectionStep`
-- `EvidentlyClassificationModelPerformanceStep`
-- `EvidentlyRegressionModelPerformanceStep`
-- `EvidentlyProbabilisticModelPerformanceStep`
+- "datadrift"
+- "categoricaltargetdrift"
+- "numericaltargetdrift"
+- "classificationmodelperformance"
+- "regressionmodelperformance"
+- "probabilisticmodelperformance"
 
 ## How the example is implemented
 
@@ -31,12 +30,18 @@ to illustrate how it works.
 
 ```python
 # ... other imports
-from zenml.integrations.evidently import steps as evidently_steps
+from zenml.integrations.evidently.steps import (
+    EvidentlyProfileConfig,
+    EvidentlyProfileStep,
+)
 
 # ... data loader and separate steps to get our full and partial dataframes
 
-drift_detector = evidently_steps.EvidentlyDriftDetectionStep(
-    evidently_steps.EvidentlyDriftDetectionConfig(column_mapping=None)
+drift_detector = EvidentlyProfileStep(
+    EvidentlyProfileConfig(
+        column_mapping=None,
+        profile_section="datadrift",
+    )
 )
 
 @pipeline
