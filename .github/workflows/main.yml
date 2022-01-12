@@ -63,6 +63,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m poetry install
+          python -m poetry run zenml analytics opt-out
           python -m poetry run zenml integration install airflow -f
           python -m poetry run zenml integration install pytorch -f
           python -m poetry run zenml integration install mlflow -f
