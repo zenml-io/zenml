@@ -31,7 +31,7 @@ def local_mlflow_backend() -> str:
     if not os.path.exists(local_mlflow_backend_uri):
         os.makedirs(local_mlflow_backend_uri)
         # TODO [medium]: safely access (possibly non-existent) artifact stores
-    return 'file:' + local_mlflow_backend_uri
+    return "file:" + local_mlflow_backend_uri
 
 
 def setup_mlflow(
