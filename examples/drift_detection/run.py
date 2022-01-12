@@ -76,20 +76,21 @@ def drift_detection_pipeline(
     drift_detector(reference_dataset=full_data, comparison_dataset=partial_data)
 
 
-pipeline = drift_detection_pipeline(
-    data_loader=data_loader(),
-    full_data=full_split(),
-    partial_data=partial_split(),
-    drift_detector=drift_detector,
-)
+if __name__ == '__main__':
+    pipeline = drift_detection_pipeline(
+        data_loader=data_loader(),
+        full_data=full_split(),
+        partial_data=partial_split(),
+        drift_detector=drift_detector,
+    )
 
-pipeline.run()
+    pipeline.run()
 
-repo = Repository()
-pipeline = repo.get_pipelines()[-1]
-runs = pipeline.runs
-run = runs[-1]
-steps = run.steps
-step = steps[-1]
-output = step.output
-print(output.read())
+    repo = Repository()
+    pipeline = repo.get_pipelines()[-1]
+    runs = pipeline.runs
+    run = runs[-1]
+    steps = run.steps
+    step = steps[-1]
+    output = step.output
+    print(output.read())
