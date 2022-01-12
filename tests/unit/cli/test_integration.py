@@ -89,7 +89,7 @@ def test_integration_install_specific_integration(
         return_value=None,
     )
 
-    result = runner.invoke(integration, ["install", integration_name])
+    result = runner.invoke(integration, ["install", "-f", integration_name])
     assert result.exit_code == 0
 
 
@@ -134,7 +134,7 @@ def test_integration_uninstall_specific_integration(
         return_value=None,
     )
 
-    result = runner.invoke(integration, ["uninstall", integration_name])
+    result = runner.invoke(integration, ["uninstall", "-f", integration_name])
     assert result.exit_code == 0
 
 
