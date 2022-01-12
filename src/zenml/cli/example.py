@@ -92,7 +92,7 @@ class LocalExample:
             return self.python_files_in_dir[0]
         elif self.has_any_python_file:
             logger.warning(
-                "This example has multiple executable python files"
+                "This example has multiple executable python files. "
                 "The last one in alphanumerical order is taken."
             )
             return sorted(self.python_files_in_dir)[-1]
