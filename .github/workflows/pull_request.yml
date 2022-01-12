@@ -1,5 +1,6 @@
 name: Testing
 
+# Controls when the action will run. Triggers the workflow on push of a tag
 on:
   pull_request:
     types: [opened, synchronize]
@@ -12,6 +13,10 @@ jobs:
       ZENML_ANALYTICS_OPT_IN: false
     # Exit if its a commit from Gitbook
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
+
+    defaults:
+      run:
+        shell: bash
 
     strategy:
       matrix:
@@ -37,7 +42,8 @@ jobs:
 
       - name: Install Windows System Dependencies
         if: runner.os=='Windows'
-        run: choco install graphviz
+        run: |
+          choco install graphviz
 
       - name: Install poetry
         run: |
@@ -46,8 +52,12 @@ jobs:
 
       - name: Delete error-causing bash
         if: ${{ matrix.os == 'windows-latest' }}
+        run: rm.exe "C:/WINDOWS/system32/bash.EXE"
+
+      - name: Set path to bash for example runner
+        if: ${{ matrix.os == 'windows-latest' }}
         run: |
-          rm.exe "C:/WINDOWS/system32/bash.EXE"
+          echo "SHELL_EXECUTABLE=C:\Program Files\Git\bin\bash.exe" >> $GITHUB_ENV
 
       - name: Install Dependencies
         run: |
@@ -59,13 +69,12 @@ jobs:
           python -m poetry run pip install click~=8.0.3
 
       - name: Lint
-        run: |
-          python -m poetry run bash scripts/lint.sh
+        run: python -m poetry run bash scripts/lint.sh
 
       - name: Test
-        run: python -m poetry run bash scripts/test-coverage-xml.sh unit
+        run: python -m poetry run bash scripts/test-coverage-xml.sh
 
       - name: Upload coverage
-        # only do it for python 3.6, we don't need to do it for every version
+        # only do it for python 3.8, we don't need to do it for every version
         if: ${{ matrix.python-version == '3.8' && matrix.os == 'ubuntu-latest' }}
         uses: codecov/codecov-action@v2
