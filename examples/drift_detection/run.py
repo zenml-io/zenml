@@ -57,7 +57,7 @@ def partial_split(
 drift_detector = EvidentlyProfileStep(
     EvidentlyProfileConfig(
         column_mapping=None,
-        profile_section="datadrift",
+        profile_section=["datadrift"],
     )
 )
 

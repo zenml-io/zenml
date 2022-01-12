@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Optional, cast
+from typing import Optional, Sequence, cast
 
 from evidently.model_profile import Profile  # type: ignore
 from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
@@ -58,9 +58,11 @@ class EvidentlyProfileConfig(BaseDriftDetectionConfig):
         - "probabilisticmodelperformance"
     """
 
-    def get_profile_section(self) -> ProfileSection:
+    def get_profile_sections(self) -> ProfileSection:
         try:
-            return profile_mapper[self.profile_section]()
+            return [
+                profile_mapper[profile]() for profile in self.profile_section
+            ]
         except KeyError:
             raise ValueError(
                 f"Invalid profile section: {self.profile_section}"
@@ -75,7 +77,7 @@ class EvidentlyProfileConfig(BaseDriftDetectionConfig):
             )
 
     column_mapping: Optional[ColumnMapping]
-    profile_section: str
+    profile_section: Sequence[str]
 
 
 class EvidentlyProfileStep(BaseDriftDetectionStep):
@@ -103,7 +105,7 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
             a dict containing the results of the drift detection
         """
 
-        data_drift_profile = Profile(sections=[config.get_profile_section()])
+        data_drift_profile = Profile(sections=config.get_profile_sections())
         data_drift_profile.calculate(
             reference_dataset,
             comparison_dataset,
