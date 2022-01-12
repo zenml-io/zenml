@@ -27,7 +27,7 @@ from zenml.steps import step
 logger = get_logger(__name__)
 
 
-@step()
+@step
 def data_loader() -> pd.DataFrame:
     """Load the breast cancer dataset."""
     breast_cancer = datasets.load_breast_cancer()
