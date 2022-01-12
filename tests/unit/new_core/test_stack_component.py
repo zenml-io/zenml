@@ -15,34 +15,11 @@ from contextlib import ExitStack as does_not_raise
 
 import pytest
 
-from zenml.enums import StackComponentFlavor, StackComponentType
-from zenml.new_core.stack_component import StackComponent
 
-
-class MockComponentFlavor(StackComponentFlavor):
-    MOCK = "mock"
-
-
-class MockComponent(StackComponent):
-    name = "MockComponent"
-    supports_local_execution = False
-    supports_remote_execution = False
-    some_public_attribute_name = "Aria"
-    _some_private_attribute_name = "Also Aria"
-
-    @property
-    def type(self) -> StackComponentType:
-        return StackComponentType.ORCHESTRATOR
-
-    @property
-    def flavor(self) -> MockComponentFlavor:
-        return MockComponentFlavor.MOCK
-
-
-def test_stack_component_default_method_implementations():
+def test_stack_component_default_method_implementations(mock_component_class):
     """Tests the return values for default implementations of some
     StackComponent methods."""
-    component = MockComponent()
+    component = mock_component_class()
 
     assert component.validator is None
     assert component.log_file is None
@@ -65,20 +42,22 @@ def test_stack_component_default_method_implementations():
         component.suspend()
 
 
-def test_stack_component_dict_only_contains_public_attributes():
+def test_stack_component_dict_only_contains_public_attributes(
+    mock_component_class,
+):
     """Tests that the `dict()` method which is used to serialize stack
     components does not include private attributes."""
-    component = MockComponent()
+    component = mock_component_class()
     assert component._some_private_attribute_name == "Also Aria"
 
     expected_dict_keys = {"some_public_attribute_name", "name", "uuid"}
     assert component.dict().keys() == expected_dict_keys
 
 
-def test_stack_component_public_attributes_are_immutable():
+def test_stack_component_public_attributes_are_immutable(mock_component_class):
     """Tests that stack component public attributes are immutable but private
     attribute can be modified."""
-    component = MockComponent()
+    component = mock_component_class()
 
     with pytest.raises(TypeError):
         component.some_public_attribute_name = "Not Aria"
