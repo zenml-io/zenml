@@ -29,6 +29,7 @@ MLFLOW = "mlflow"
 
 @pytest.fixture
 def examples_dir(clean_repo):
+    # TODO [high]: tests should store zenml artifacts in a new temp directory
     examples_path = Path(clean_repo.path) / "zenml_examples"
     source_path = Path(clean_repo.original_cwd) / "examples"
     shutil.copytree(source_path, examples_path)

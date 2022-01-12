@@ -29,7 +29,8 @@ def local_mlflow_backend() -> str:
         get_global_config_directory(), "local_stores", "mlruns"
     )
     if not os.path.exists(local_mlflow_backend_uri):
-        os.mkdir(local_mlflow_backend_uri)
+        os.makedirs(local_mlflow_backend_uri)
+        # TODO [medium]: safely access (possibly non-existent) artifact stores
     return local_mlflow_backend_uri
 
 
