@@ -16,7 +16,10 @@ from rich import print
 from sklearn import datasets
 
 from zenml.core.repo import Repository
-from zenml.integrations.evidently import steps as evidently_steps
+from zenml.integrations.evidently.steps import (
+    EvidentlyProfileConfig,
+    EvidentlyProfileStep,
+)
 from zenml.logger import get_logger
 from zenml.pipelines import pipeline
 from zenml.steps import step
@@ -51,8 +54,11 @@ def partial_split(
     return input[:100]
 
 
-drift_detector = evidently_steps.EvidentlyDriftDetectionStep(
-    evidently_steps.EvidentlyDriftDetectionConfig(column_mapping=None)
+drift_detector = EvidentlyProfileStep(
+    EvidentlyProfileConfig(
+        column_mapping=None,
+        profile_section="datadrift",
+    )
 )
 
 
