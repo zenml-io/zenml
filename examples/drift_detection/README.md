@@ -11,7 +11,10 @@ features). At its core, Evidently's drift detection takes in a reference data
 set and compares it against another comparison dataset. These are both input in
 the form of a `pandas` dataframe, though CSV inputs are also possible.
 
-ZenML implements this functionality in the form of several standardized steps. You select which of the profile sections you want to use in your step by passing a string into the `EvidentlyProfileConfig`. Possible options supported by Evidently are:
+ZenML implements this functionality in the form of several standardized steps.
+You select which of the profile sections you want to use in your step by passing
+a string into the `EvidentlyProfileConfig`. Possible options supported by
+Evidently are:
 
 - "datadrift"
 - "categoricaltargetdrift"
