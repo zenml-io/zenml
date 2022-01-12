@@ -265,8 +265,10 @@ class Stack:
         Raises:
              StackValidationError: If the stack configuration is not valid.
         """
-        # TODO [HIGH]: Check if all components support either local/remote
-        #  execution depending on the mode specified by the orchestrator
+        # TODO [HIGH]: Differentiate between orchestrators running a pipeline
+        #  locally and remotely (potentially using subclasses or an
+        #  `orchestrator.mode` property?) and make sure all components support
+        #  either local/remote execution
 
         for component in self.components.values():
             if component.validator:
