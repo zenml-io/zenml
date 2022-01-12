@@ -26,7 +26,3 @@ class Output(object):
     def items(self) -> Iterator[Tuple[str, Type[Any]]]:
         """Yields a tuple of type (output_name, output_type)."""
         yield from self.outputs.__annotations__.items()
-
-    def __len__(self) -> int:
-        """Returns the number of outputs."""
-        return len(self.outputs[1])
