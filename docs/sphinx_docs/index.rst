@@ -7,7 +7,7 @@ Welcome to ZenML's API reference!
 =================================
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Contents:
 
    api_reference/zenml
