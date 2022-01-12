@@ -66,7 +66,9 @@ class EvidentlyProfileConfig(BaseDriftDetectionConfig):
         except KeyError:
             nl = "\n"
             raise ValueError(
-                f'Invalid profile section: {self.profile_section} \n\nValid and supported options are: {nl}- {f"{nl}- ".join(list(profile_mapper.keys()))}'
+                f"Invalid profile section: {self.profile_section} \n\n"
+                f"Valid and supported options are: {nl}- "
+                f'{f"{nl}- ".join(list(profile_mapper.keys()))}'
             )
 
     column_mapping: Optional[ColumnMapping]
