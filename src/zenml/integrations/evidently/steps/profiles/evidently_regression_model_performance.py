@@ -43,7 +43,7 @@ class EvidentlyRegressionModelPerformanceStep(BaseDriftDetectionStep):
     def entrypoint(  # type: ignore[override]
         self,
         reference_dataset: DataArtifact,
-        comparison_dataset: None,
+        comparison_dataset: DataArtifact,
         config: EvidentlyRegressionModelPerformanceConfig,
         context: StepContext,
     ) -> dict:  # type: ignore[type-arg]
