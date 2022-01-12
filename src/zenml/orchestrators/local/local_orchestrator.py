@@ -33,6 +33,7 @@ class LocalOrchestrator(BaseOrchestrator):
 
     @property
     def flavor(self) -> OrchestratorFlavor:
+        """The orchestrator flavor."""
         return OrchestratorFlavor.LOCAL
 
     def run_pipeline(

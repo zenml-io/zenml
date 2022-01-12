@@ -31,6 +31,7 @@ class SQLiteMetadataStore(BaseMetadataStore):
 
     @property
     def flavor(self) -> MetadataStoreFlavor:
+        """The metadata store flavor."""
         return MetadataStoreFlavor.SQLITE
 
     def __init__(self, **data: Any):

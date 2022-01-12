@@ -27,6 +27,7 @@ class LocalArtifactStore(BaseArtifactStore):
 
     @property
     def flavor(self) -> ArtifactStoreFlavor:
+        """The artifact store flavor."""
         return ArtifactStoreFlavor.LOCAL
 
     @validator("path")
