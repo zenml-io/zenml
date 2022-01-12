@@ -15,7 +15,16 @@ import os
 import time
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, AbstractSet, Any, Dict, List, Optional
+from typing import (
+    TYPE_CHECKING,
+    AbstractSet,
+    Any,
+    Dict,
+    List,
+    NoReturn,
+    Optional,
+    Type,
+)
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
@@ -66,6 +75,66 @@ class Stack:
         self._container_registry = container_registry
 
         self.validate()
+
+    @classmethod
+    def from_components(
+        cls, name: str, components: Dict[StackComponentType, StackComponent]
+    ) -> "Stack":
+        """Creates a stack instance from a dict of stack components.
+
+        Args:
+            name: The name of the stack.
+            components: The components of the stack.
+
+        Returns:
+            A stack instance consisting of the given components.
+
+        Raises:
+            TypeError: If a required component is missing or a component
+                doesn't inherit from the expected base class.
+        """
+        from zenml.artifact_stores import BaseArtifactStore
+        from zenml.container_registries import BaseContainerRegistry
+        from zenml.metadata_stores import BaseMetadataStore
+        from zenml.orchestrators import BaseOrchestrator
+
+        def _raise_type_error(
+            component: Optional[StackComponent], expected_class: Type[Any]
+        ) -> NoReturn:
+            """Raises a TypeError that the component has an unexpected type."""
+            raise TypeError(
+                f"Unable to create stack: Wrong stack component type "
+                f"`{component.__class__.__name__}` (expected: subclass "
+                f"of `{expected_class.__name__}`)"
+            )
+
+        orchestrator = components.get(StackComponentType.ORCHESTRATOR)
+        if not isinstance(orchestrator, BaseOrchestrator):
+            _raise_type_error(orchestrator, BaseOrchestrator)
+
+        metadata_store = components.get(StackComponentType.METADATA_STORE)
+        if not isinstance(metadata_store, BaseMetadataStore):
+            _raise_type_error(metadata_store, BaseMetadataStore)
+
+        artifact_store = components.get(StackComponentType.ARTIFACT_STORE)
+        if not isinstance(artifact_store, BaseArtifactStore):
+            _raise_type_error(artifact_store, BaseArtifactStore)
+
+        container_registry = components.get(
+            StackComponentType.CONTAINER_REGISTRY
+        )
+        if container_registry is not None and not isinstance(
+            container_registry, BaseContainerRegistry
+        ):
+            _raise_type_error(container_registry, BaseContainerRegistry)
+
+        return Stack(
+            name=name,
+            orchestrator=orchestrator,
+            metadata_store=metadata_store,
+            artifact_store=artifact_store,
+            container_registry=container_registry,
+        )
 
     @classmethod
     def default_local_stack(cls) -> "Stack":

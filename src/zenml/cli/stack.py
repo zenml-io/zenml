@@ -34,6 +34,7 @@ def stack() -> None:
 @click.option(
     "-m",
     "--metadata-store",
+    "metadata_store_name",
     help="Name of the metadata store for this stack.",
     type=str,
     required=True,
@@ -41,6 +42,7 @@ def stack() -> None:
 @click.option(
     "-a",
     "--artifact-store",
+    "artifact_store_name",
     help="Name of the artifact store for this stack.",
     type=str,
     required=True,
@@ -48,6 +50,7 @@ def stack() -> None:
 @click.option(
     "-o",
     "--orchestrator",
+    "orchestrator_name",
     help="Name of the orchestrator for this stack.",
     type=str,
     required=True,
@@ -55,6 +58,7 @@ def stack() -> None:
 @click.option(
     "-c",
     "--container_registry",
+    "container_registry_name",
     help="Name of the container registry for this stack.",
     type=str,
     required=False,
@@ -62,33 +66,36 @@ def stack() -> None:
 @cli_utils.activate_integrations
 def register_stack(
     stack_name: str,
-    metadata_store: str,
-    artifact_store: str,
-    orchestrator: str,
-    container_registry: Optional[str] = None,
+    metadata_store_name: str,
+    artifact_store_name: str,
+    orchestrator_name: str,
+    container_registry_name: Optional[str] = None,
 ) -> None:
     """Register a stack."""
 
     repo = Repository()
 
     stack_components = {
-        "metadata_store": repo.get_stack_component(
-            StackComponentType.METADATA_STORE, name=metadata_store
+        StackComponentType.METADATA_STORE: repo.get_stack_component(
+            StackComponentType.METADATA_STORE, name=metadata_store_name
         ),
-        "artifact_store": repo.get_stack_component(
-            StackComponentType.ARTIFACT_STORE, name=artifact_store
+        StackComponentType.ARTIFACT_STORE: repo.get_stack_component(
+            StackComponentType.ARTIFACT_STORE, name=artifact_store_name
         ),
-        "orchestrator": repo.get_stack_component(
-            StackComponentType.ORCHESTRATOR, name=orchestrator
+        StackComponentType.ORCHESTRATOR: repo.get_stack_component(
+            StackComponentType.ORCHESTRATOR, name=orchestrator_name
         ),
     }
 
-    if container_registry:
-        stack_components["container_registry"] = repo.get_stack_component(
-            StackComponentType.CONTAINER_REGISTRY, name=container_registry
+    if container_registry_name:
+        stack_components[
+            StackComponentType.CONTAINER_REGISTRY
+        ] = repo.get_stack_component(
+            StackComponentType.CONTAINER_REGISTRY, name=container_registry_name
         )
 
-    repo.register_stack(Stack(name=stack_name, **stack_components))
+    stack_ = Stack.from_components(name=stack_name, components=stack_components)
+    repo.register_stack(stack_)
     cli_utils.declare(f"Stack `{stack_name}` successfully registered!")
 
 

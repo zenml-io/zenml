@@ -61,8 +61,8 @@ def k3d_cluster_running(cluster_name: str) -> bool:
     clusters = json.loads(output)
     for cluster in clusters:
         if cluster["name"] == cluster_name:
-            server_count = cluster["serversCount"]
-            servers_running = cluster["serversRunning"]
+            server_count: int = cluster["serversCount"]
+            servers_running: int = cluster["serversRunning"]
             return servers_running == server_count
     return False
 

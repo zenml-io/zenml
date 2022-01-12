@@ -90,7 +90,9 @@ class RepositoryConfiguration(BaseModel):
         )
 
     @validator("stack_components")
-    def _construct_defaultdict(cls, stack_components):
+    def _construct_defaultdict(
+        cls, stack_components: Dict[StackComponentType, Dict[str, str]]
+    ) -> DefaultDict[StackComponentType, Dict[str, str]]:
         """Ensures that `stack_components` is a defaultdict so stack
         components of a new component type can be added without issues."""
         return defaultdict(dict, stack_components)
@@ -294,19 +296,20 @@ class Repository:
         stack_configuration = self.__config.stacks[name]
         stack_components = {}
         for (
-            component_type,
+            component_type_name,
             component_name,
         ) in stack_configuration.dict().items():
+            component_type = StackComponentType(component_type_name)
             if not component_name:
                 # optional component which is not set, continue
                 continue
             component = self.get_stack_component(
-                component_type=StackComponentType(component_type),
+                component_type=component_type,
                 name=component_name,
             )
             stack_components[component_type] = component
 
-        return Stack(name=name, **stack_components)
+        return Stack.from_components(name=name, components=stack_components)
 
     @track(event=REGISTERED_STACK)
     def register_stack(self, stack: Stack) -> None:

@@ -135,13 +135,13 @@ class StackComponent(BaseModel, ABC):
 
     def resume(self) -> None:
         """Resumes the provisioned local resources of the component."""
-        NotImplementedError(
+        raise NotImplementedError(
             f"Resuming provisioned resources not implemented for {self}."
         )
 
     def suspend(self) -> None:
         """Suspends the provisioned local resources of the component."""
-        NotImplementedError(
+        raise NotImplementedError(
             f"Suspending provisioned resources not implemented for {self}."
         )
 
