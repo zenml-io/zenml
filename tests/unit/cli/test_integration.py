@@ -72,7 +72,7 @@ def test_integration_install_inexistent_integration(
     integrations to be installed"""
     runner = CliRunner()
 
-    result = runner.invoke(integration, ["install", not_an_integration])
+    result = runner.invoke(integration, ["install", not_an_integration, "-f"])
     assert result.exit_code == 1
 
 
@@ -89,7 +89,7 @@ def test_integration_install_specific_integration(
         return_value=None,
     )
 
-    result = runner.invoke(integration, ["install", integration_name])
+    result = runner.invoke(integration, ["install", integration_name, "-f"])
     assert result.exit_code == 0
 
 
@@ -104,7 +104,7 @@ def test_integration_install_all(mocker: MockFixture) -> None:
         return_value=None,
     )
 
-    result = runner.invoke(integration, ["install"])
+    result = runner.invoke(integration, ["install", "-f"])
     assert result.exit_code == 0
 
 
@@ -117,7 +117,7 @@ def test_integration_uninstall_inexistent_integration(
     integrations to be installed"""
     runner = CliRunner()
 
-    result = runner.invoke(integration, ["uninstall", not_an_integration])
+    result = runner.invoke(integration, ["uninstall", not_an_integration, "-f"])
     assert result.exit_code == 1
 
 
@@ -134,7 +134,7 @@ def test_integration_uninstall_specific_integration(
         return_value=None,
     )
 
-    result = runner.invoke(integration, ["uninstall", integration_name])
+    result = runner.invoke(integration, ["uninstall", integration_name, "-f"])
     assert result.exit_code == 0
 
 
@@ -149,5 +149,5 @@ def test_integration_uninstall_all(mocker: MockFixture) -> None:
         return_value=None,
     )
 
-    result = runner.invoke(integration, ["uninstall"])
+    result = runner.invoke(integration, ["uninstall", "-f"])
     assert result.exit_code == 0
