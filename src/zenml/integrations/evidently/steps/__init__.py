@@ -11,28 +11,3 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
-from zenml.integrations.evidently.steps.profiles.evidently_categorical_target_drift import (
-    EvidentlyCategoricalTargetDriftDetectionConfig,
-    EvidentlyCategoricalTargetDriftDetectionStep,
-)
-from zenml.integrations.evidently.steps.profiles.evidently_classification_model_performance import (
-    EvidentlyClassificationModelPerformanceConfig,
-    EvidentlyClassificationModelPerformanceStep,
-)
-from zenml.integrations.evidently.steps.profiles.evidently_data_drift import (
-    EvidentlyDriftDetectionConfig,
-    EvidentlyDriftDetectionStep,
-)
-from zenml.integrations.evidently.steps.profiles.evidently_numerical_target_drift import (
-    EvidentlyNumericalTargetDriftDetectionConfig,
-    EvidentlyNumericalTargetDriftDetectionStep,
-)
-from zenml.integrations.evidently.steps.profiles.evidently_probabilistic_model_performance import (
-    EvidentlyProbabilisticModelPerformanceConfig,
-    EvidentlyProbabilisticModelPerformanceStep,
-)
-from zenml.integrations.evidently.steps.profiles.evidently_regression_model_performance import (
-    EvidentlyRegressionModelPerformanceConfig,
-    EvidentlyRegressionModelPerformanceStep,
-)
