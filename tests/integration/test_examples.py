@@ -14,6 +14,7 @@
 import shutil
 from os import environ
 from pathlib import Path
+from typing import Dict
 
 import pytest
 
@@ -24,6 +25,7 @@ from zenml.enums import ExecutionStatus
 QUICKSTART = "quickstart"
 NOT_SO_QUICKSTART = "not_so_quickstart"
 CACHING = "caching"
+DRIFT_DETECTION = "drift_detection"
 MLFLOW = "mlflow"
 
 
@@ -97,6 +99,39 @@ def test_run_not_so_quickstart(examples_dir: Path):
     assert first_run.status == ExecutionStatus.COMPLETED
     assert second_run.status == ExecutionStatus.COMPLETED
     assert third_run.status == ExecutionStatus.COMPLETED
+
+
+def test_run_drift_detection(examples_dir: Path):
+    """Testing the functionality of the drift_detection example
+
+    Args:
+        Temporary folder containing all examples including the run_examples
+        bash script.
+    """
+    local_example = LocalExample(
+        examples_dir / DRIFT_DETECTION, name=DRIFT_DETECTION
+    )
+
+    local_example.run_example(example_runner(examples_dir), force=True)
+
+    # Verify the example run was successful
+    repo = Repository(path=str(local_example.path))
+    pipeline = repo.get_pipelines()[0]
+    assert pipeline.name == "drift_detection_pipeline"
+
+    run = pipeline.runs[0]
+
+    # Run should be completed
+    assert run.status == ExecutionStatus.COMPLETED
+
+    # The first run should not have any cached steps
+    for step in run.steps:
+        assert not step.is_cached
+
+    # Final step should have output a data drift report
+    output_obj = run.steps[3].output.read()
+    assert isinstance(output_obj, Dict)
+    assert output_obj.get("data_drift") is not None
 
 
 def test_run_caching(examples_dir: Path):
