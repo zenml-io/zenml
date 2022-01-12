@@ -6,9 +6,9 @@ Please note that at any moment this examples folder might be subject to change o
 
 - **airflow_local**: Running pipelines with airflow locally.
 - **caching**: Using caching to skip data-intensive tasks and save costs.
-- **class_based_api**: All the code for the class-based API guide found in the [docs](https://docs.zenml.io/guides/class-based-api).
+- **class_based_api**: All the code for the class-based API guide found in the [docs](https://docs.zenml.io/v/docs/guides/class-based-api).
 - **dag_visualizer**: Visualizing a pipeline.
-- **functional_api**: All the code for the functional API guide found in the [docs](https://docs.zenml.io/guides/functional-api).
+- **functional_api**: All the code for the functional API guide found in the [docs](https://docs.zenml.io/v/docs/guides/functional-api/).
 - **kubeflow**: Shows how to orchestrate a pipeline a local kubeflow stack.
 - **lineage**: Visualizing a pipeline run and showcasing artifact lineage.
 - **not_so_quickstart**: Shows of the modularity of the pipelines with hot-swapping of Tensorflow, PyTorch, and 

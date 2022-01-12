@@ -99,8 +99,10 @@ if you're returning something, it must be also be typed with the return operator
 under-the-hood, so all [Pydantic types](https://pydantic-docs.helpmanual.io/usage/types/) are 
 supported \[full list available soon].
 
-While this is just a function with a decorator, it is not super useful. ZenML steps really get powerful when you put 
-them together with [data artifacts](broken-reference/). Read about more of that here!
+While this is just a function with a decorator, it is not super useful. ZenML
+steps really get powerful when you put them together with data artifacts. Read
+about more of that
+[here](https://docs.zenml.io/v/docs/guides/functional-api/materialize-artifacts)!
 
 **Artifact Store**
 
@@ -122,7 +124,7 @@ def my_step(first_artifact: int, second_artifact: torch.nn.Module -> int:
 
 Artifacts can be serialized and deserialized (i.e. written and read from the Artifact Store) in different ways 
 like `TFRecord`s or saved model pickles, depending on what the step produces.The serialization and deserialization 
-logic of artifacts is defined by [materializers.md](reference/zenml/materializers.md "mention").
+logic of artifacts is defined by Materializers.
 
 **Materializers**
 

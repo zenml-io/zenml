@@ -4,7 +4,7 @@
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at:
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+#       https://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,6 +23,7 @@ from zenml.enums import ExecutionStatus
 QUICKSTART = "quickstart"
 NOT_SO_QUICKSTART = "not_so_quickstart"
 CACHING = "caching"
+MLFLOW = "mlflow"
 
 
 @pytest.fixture
@@ -119,3 +120,38 @@ def test_run_caching(examples_dir: Path):
     assert second_run.steps[1].is_cached
     assert not second_run.steps[2].is_cached
     assert not second_run.steps[3].is_cached
+
+
+def test_run_mlflow(examples_dir: Path):
+    """Testing the functionality of the quickstart example
+
+    Args:
+        Temporary folder containing all examples including the run_examples
+        bash script.
+    """
+    local_example = LocalExample(examples_dir / MLFLOW, name=MLFLOW)
+
+    bash_script_location = examples_dir / EXAMPLES_RUN_SCRIPT
+    local_example.run_example(bash_file=str(bash_script_location), force=True)
+
+    # Verify the example run was successful
+    repo = Repository(path=str(local_example.path))
+    pipeline = repo.get_pipelines()[0]
+    assert pipeline.name == "mlflow_example_pipeline"
+
+    first_run = pipeline.runs[-2]
+    second_run = pipeline.runs[-1]
+
+    # Both runs should be completed
+    assert first_run.status == ExecutionStatus.COMPLETED
+    assert second_run.status == ExecutionStatus.COMPLETED
+
+    for step in first_run.steps:
+        assert step.status == ExecutionStatus.COMPLETED
+    for step in second_run.steps:
+        assert step.status == ExecutionStatus.COMPLETED
+
+    # TODO [MEDIUM]: Add some mlflow specific assertions.
+    #  Currently this is a bit difficult as the mlruns do not end up in the
+    #  expected location within the temporary fixtures. This needs to be
+    #  investigated
