@@ -95,7 +95,7 @@ def test_find_files_when_file_absent(tmp_path):
 @pytest.mark.parametrize("filesystem", REMOTE_FS_PREFIX)
 def test_is_remote_when_using_remote_prefix(filesystem):
     """is_remote returns True when path starts with one of
-    the TFX remote file prefixes"""
+    the ZenML remote file prefixes"""
     some_random_path = os.path.join(filesystem + "some_directory")
     assert fileio.is_remote(some_random_path)
 
