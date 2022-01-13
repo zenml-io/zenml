@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import logging
 import sys
 
 import pytest
@@ -90,6 +91,14 @@ def test_integration_install_specific_integration(
     )
 
     result = runner.invoke(integration, ["install", integration_name, "-f"])
+    logging.error(f"result.exc_info: {result.exc_info}")
+    logging.error(f"result.exc_info[0]: {result.exc_info[0]}")
+    logging.error(f"result.exc_info[1]: {result.exc_info[1]}")
+    logging.error(f"result.exc_info[2]: {result.exc_info[2].tb_frame}")
+    logging.error(f"result.exit_code: {result.exit_code}")
+    logging.error(f"result.stdout: {result.stdout}")
+    logging.error(f"result.output: {result.output}")
+
     assert result.exit_code == 0
 
 
@@ -105,6 +114,13 @@ def test_integration_install_all(mocker: MockFixture) -> None:
     )
 
     result = runner.invoke(integration, ["install", "-f"])
+    logging.error(f"result.exc_info: {result.exc_info}")
+    logging.error(f"result.exc_info[0]: {result.exc_info[0]}")
+    logging.error(f"result.exc_info[1]: {result.exc_info[1]}")
+    logging.error(f"result.exc_info[2]: {result.exc_info[2].tb_frame}")
+    logging.error(f"result.exit_code: {result.exit_code}")
+    logging.error(f"result.stdout: {result.stdout}")
+    logging.error(f"result.output: {result.output}")
     assert result.exit_code == 0
 
 
@@ -135,6 +151,13 @@ def test_integration_uninstall_specific_integration(
     )
 
     result = runner.invoke(integration, ["uninstall", integration_name, "-f"])
+    logging.error(f"result.exc_info: {result.exc_info}")
+    logging.error(f"result.exc_info[0]: {result.exc_info[0]}")
+    logging.error(f"result.exc_info[1]: {result.exc_info[1]}")
+    logging.error(f"result.exc_info[2]: {result.exc_info[2].tb_frame}")
+    logging.error(f"result.exit_code: {result.exit_code}")
+    logging.error(f"result.stdout: {result.stdout}")
+    logging.error(f"result.output: {result.output}")
     assert result.exit_code == 0
 
 
@@ -150,4 +173,11 @@ def test_integration_uninstall_all(mocker: MockFixture) -> None:
     )
 
     result = runner.invoke(integration, ["uninstall", "-f"])
+    logging.error(f"result.exc_info: {result.exc_info}")
+    logging.error(f"result.exc_info[0]: {result.exc_info[0]}")
+    logging.error(f"result.exc_info[1]: {result.exc_info[1]}")
+    logging.error(f"result.exc_info[2]: {result.exc_info[2].tb_frame}")
+    logging.error(f"result.exit_code: {result.exit_code}")
+    logging.error(f"result.stdout: {result.stdout}")
+    logging.error(f"result.output: {result.output}")
     assert result.exit_code == 0
