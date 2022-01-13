@@ -21,7 +21,7 @@ import click
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.exceptions import InitializationException
-from zenml.new_core.repository import Repository
+from zenml.new_core import Repository
 
 
 @cli.command("init", help="Initialize a ZenML repository.")

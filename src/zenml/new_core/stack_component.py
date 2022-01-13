@@ -19,11 +19,10 @@ from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentFlavor, StackComponentType
 from zenml.integrations.utils import get_requirements_for_module
-from zenml.new_core.runtime_configuration import RuntimeConfiguration
-from zenml.new_core.stack_validator import StackValidator
+from zenml.new_core import RuntimeConfiguration, StackValidator
 
 if TYPE_CHECKING:
-    from zenml.new_core.stack import Stack
+    from zenml.new_core import Stack
     from zenml.pipelines import BasePipeline
 
 

@@ -18,7 +18,7 @@ from zenml.exceptions import StackValidationError
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    from zenml.new_core.stack import Stack
+    from zenml.new_core import Stack
 
 logger = get_logger(__name__)
 

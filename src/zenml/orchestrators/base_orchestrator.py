@@ -15,7 +15,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
 from zenml.enums import OrchestratorFlavor, StackComponentType
-from zenml.new_core.stack_component import StackComponent
+from zenml.new_core import StackComponent
 
 if TYPE_CHECKING:
     from zenml.new_core import Stack

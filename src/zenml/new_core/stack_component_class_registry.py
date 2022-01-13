@@ -26,7 +26,7 @@ from zenml.enums import (
 )
 from zenml.logger import get_logger
 from zenml.metadata_stores import MySQLMetadataStore, SQLiteMetadataStore
-from zenml.new_core.stack_component import StackComponent
+from zenml.new_core import StackComponent
 from zenml.orchestrators import LocalOrchestrator
 
 logger = get_logger(__name__)

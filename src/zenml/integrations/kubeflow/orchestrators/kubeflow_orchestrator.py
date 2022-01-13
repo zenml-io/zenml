@@ -33,11 +33,10 @@ from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.new_core import Repository
+from zenml.new_core import Repository, StackValidator
 from zenml.new_core.stack_component_class_registry import (
     register_stack_component_class,
 )
-from zenml.new_core.stack_validator import StackValidator
 from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.utils import create_tfx_pipeline
 from zenml.utils import networking_utils

@@ -17,8 +17,7 @@ import pytest
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
-from zenml.new_core import Stack
-from zenml.new_core.stack_validator import StackValidator
+from zenml.new_core import Stack, StackValidator
 
 
 def test_validator_with_custom_stack_validation_function():

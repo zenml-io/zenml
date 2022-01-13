@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from zenml.enums import ContainerRegistryFlavor, StackComponentType
-from zenml.new_core.stack_component import StackComponent
+from zenml.new_core import StackComponent
 
 
 class BaseContainerRegistry(StackComponent):

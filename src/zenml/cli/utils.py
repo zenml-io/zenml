@@ -22,7 +22,7 @@ from dateutil import tz
 from tabulate import tabulate
 
 from zenml.logger import get_logger
-from zenml.new_core.stack_component import StackComponent
+from zenml.new_core import StackComponent
 
 logger = get_logger(__name__)
 

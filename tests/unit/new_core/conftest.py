@@ -14,7 +14,7 @@
 import pytest
 
 from zenml.enums import StackComponentFlavor, StackComponentType
-from zenml.new_core.stack_component import StackComponent
+from zenml.new_core import StackComponent
 
 
 class MockComponentFlavor(StackComponentFlavor):

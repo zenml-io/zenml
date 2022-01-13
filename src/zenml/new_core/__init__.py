@@ -15,5 +15,13 @@
 from zenml.new_core.repository import Repository
 from zenml.new_core.runtime_configuration import RuntimeConfiguration
 from zenml.new_core.stack import Stack
+from zenml.new_core.stack_component import StackComponent
+from zenml.new_core.stack_validator import StackValidator
 
-__all__ = ["Repository", "RuntimeConfiguration", "Stack"]
+__all__ = [
+    "Repository",
+    "RuntimeConfiguration",
+    "Stack",
+    "StackComponent",
+    "StackValidator",
+]
