@@ -21,9 +21,6 @@ from zenml.cli.cli import cli
 from zenml.enums import StackComponentType
 from zenml.io import fileio
 from zenml.stack import StackComponent
-from zenml.stack.stack_component_class_registry import (
-    StackComponentClassRegistry,
-)
 from zenml.repository import Repository
 
 
@@ -180,6 +177,10 @@ def generate_stack_component_register_command(
         except AssertionError as e:
             cli_utils.error(str(e))
             return
+
+        from zenml.stack.stack_component_class_registry import (
+            StackComponentClassRegistry,
+        )
 
         component_class = StackComponentClassRegistry.get_class(
             component_type=component_type, component_flavor=flavor
