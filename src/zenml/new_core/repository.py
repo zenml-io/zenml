@@ -361,7 +361,14 @@ class Repository:
 
         Args:
             name: The name of the stack to deregister.
+
+        Raises:
+            ValueError: If the stack is the currently active stack for this
+                repository.
         """
+        if name == self.active_stack_name:
+            raise ValueError(f"Unable to deregister active stack '{name}'.")
+
         try:
             del self.__config.stacks[name]
             self._write_config()
