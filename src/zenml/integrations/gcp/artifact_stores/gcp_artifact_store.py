@@ -38,10 +38,11 @@ class GCPArtifactStore(BaseArtifactStore):
         return ArtifactStoreFlavor.GCP
 
     @validator("path")
-    def must_be_gcs_path(cls, v: str) -> str:
-        """Validates that the path is a valid gcs path."""
-        if not v.startswith("gs://"):
+    def ensure_gcs_path(cls, path: str) -> str:
+        """Ensures that the path is a valid gcs path."""
+        if not path.startswith("gs://"):
             raise ValueError(
-                "Must be a valid gcs path, i.e., starting with `gs://`"
+                f"Path '{path}' specified for GCPArtifactStore is not a "
+                f"valid gcs path, i.e., starting with `gs://`."
             )
-        return v
+        return path

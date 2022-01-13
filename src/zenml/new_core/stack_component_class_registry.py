@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from collections import defaultdict
-from typing import Callable, ClassVar, DefaultDict, Dict, Type, Union
+from typing import Callable, ClassVar, DefaultDict, Dict, Type, TypeVar, Union
 
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.container_registries import BaseContainerRegistry
@@ -111,9 +111,12 @@ class StackComponentClassRegistry:
             ) from None
 
 
+C = TypeVar("C", bound=StackComponent)
+
+
 def register_stack_component_class(
     component_type: StackComponentType, component_flavor: StackComponentFlavor
-) -> Callable[[Type[StackComponent]], Type[StackComponent]]:
+) -> Callable[[Type[C]], Type[C]]:
     """Parametrized decorator function to register stack component classes.
 
     Args:
@@ -125,7 +128,7 @@ def register_stack_component_class(
         component class.
     """
 
-    def decorator_function(cls: Type[StackComponent]) -> Type[StackComponent]:
+    def decorator_function(cls: Type[C]) -> Type[C]:
         """Registers the stack component class and returns it unmodified."""
         StackComponentClassRegistry.register_class(
             component_type=component_type,
