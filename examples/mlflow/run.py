@@ -40,7 +40,7 @@ def importer_mnist() -> Output(
     (x_train, y_train), (
         x_test,
         y_test,
-    ) = tf.keras.datasets.fashion_mnist.load_data()
+    ) = tf.keras.datasets.mnist.load_data()
     return x_train, y_train, x_test, y_test
 
 
@@ -65,7 +65,6 @@ def tf_trainer(
     model = tf.keras.Sequential(
         [
             tf.keras.layers.Flatten(input_shape=(28, 28)),
-            tf.keras.layers.Dense(10, activation="relu"),
             tf.keras.layers.Dense(10),
         ]
     )
@@ -120,7 +119,7 @@ def mlflow_example_pipeline(
 run_1 = mlflow_example_pipeline(
     importer=importer_mnist(),
     normalizer=normalizer(),
-    trainer=tf_trainer(config=TrainerConfig(epochs=5, lr=0.0001)),
+    trainer=tf_trainer(config=TrainerConfig(epochs=5, lr=0.0003)),
     evaluator=tf_evaluator(),
 )
 
@@ -130,7 +129,7 @@ run_1.run(run_name=f'run_1_{datetime.now().strftime("%d_%h_%y-%H_%M_%S")}')
 run_2 = mlflow_example_pipeline(
     importer=importer_mnist(),
     normalizer=normalizer(),
-    trainer=tf_trainer(config=TrainerConfig(epochs=10, lr=0.001)),
+    trainer=tf_trainer(config=TrainerConfig(epochs=5, lr=0.0001)),
     evaluator=tf_evaluator(),
 )
 
@@ -138,8 +137,8 @@ run_2.run(run_name=f'run_2_{datetime.now().strftime("%d_%h_%y-%H_%M_%S")}')
 
 print(
     "Now run \n "
-    f"`mlflow ui --backend-store-uri {local_mlflow_backend()}` \n"
-    "To inspect your experiment runs within the mlflow ui. \n"
-    "You can find your runs tracked within the `mlflow_example_pipeline` "
+    f"    mlflow ui --backend-store-uri {local_mlflow_backend()}\n"
+    "To inspect your experiment runs within the mlflow ui.\n"
+    "You can find your runs tracked within the `mlflow_example_pipeline`"
     "experiment. Here you'll also be able to compare the two runs.)"
 )
