@@ -76,7 +76,7 @@ def drift_detection_pipeline(
     drift_detector(reference_dataset=full_data, comparison_dataset=partial_data)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pipeline = drift_detection_pipeline(
         data_loader=data_loader(),
         full_data=full_split(),
