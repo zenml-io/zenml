@@ -19,11 +19,12 @@ from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentFlavor, StackComponentType
 from zenml.integrations.utils import get_requirements_for_module
-from zenml.new_core import RuntimeConfiguration, StackValidator
 
 if TYPE_CHECKING:
     from zenml.new_core import Stack
     from zenml.pipelines import BasePipeline
+    from zenml.new_core import StackValidator
+    from zenml.runtime_configuration import RuntimeConfiguration
 
 
 class StackComponent(BaseModel, ABC):
@@ -78,7 +79,7 @@ class StackComponent(BaseModel, ABC):
         self,
         pipeline: "BasePipeline",
         stack: "Stack",
-        runtime_configuration: RuntimeConfiguration,
+        runtime_configuration: "RuntimeConfiguration",
     ) -> None:
         """Prepares deploying the pipeline.
 
@@ -100,7 +101,7 @@ class StackComponent(BaseModel, ABC):
         """Cleans up resources after the pipeline run is finished."""
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> Optional["StackValidator"]:
         """The optional validator of the stack component.
 
         This validator will be called each time a stack with the stack

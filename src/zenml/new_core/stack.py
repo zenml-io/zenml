@@ -30,11 +30,11 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
-from zenml.new_core import StackComponent
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
+    from zenml.new_core import StackComponent
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.container_registries import BaseContainerRegistry
     from zenml.metadata_stores import BaseMetadataStore
@@ -78,7 +78,7 @@ class Stack:
 
     @classmethod
     def from_components(
-        cls, name: str, components: Dict[StackComponentType, StackComponent]
+        cls, name: str, components: Dict[StackComponentType, "StackComponent"]
     ) -> "Stack":
         """Creates a stack instance from a dict of stack components.
 
@@ -99,7 +99,7 @@ class Stack:
         from zenml.orchestrators import BaseOrchestrator
 
         def _raise_type_error(
-            component: Optional[StackComponent], expected_class: Type[Any]
+            component: Optional["StackComponent"], expected_class: Type[Any]
         ) -> NoReturn:
             """Raises a TypeError that the component has an unexpected type."""
             raise TypeError(
@@ -170,7 +170,7 @@ class Stack:
         )
 
     @property
-    def components(self) -> Dict[StackComponentType, StackComponent]:
+    def components(self) -> Dict[StackComponentType, "StackComponent"]:
         """All components of the stack."""
         return {
             component.type: component
