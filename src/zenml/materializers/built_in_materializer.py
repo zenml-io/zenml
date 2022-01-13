@@ -14,7 +14,7 @@
 import os
 from typing import Any, Type
 
-from zenml.artifacts import DataArtifact
+from zenml.artifacts import DataAnalysisArtifact, DataArtifact
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import yaml_utils
@@ -26,7 +26,13 @@ DEFAULT_FILENAME = "data.json"
 class BuiltInMaterializer(BaseMaterializer):
     """Read/Write JSON files."""
 
-    ASSOCIATED_ARTIFACT_TYPES = [DataArtifact]
+    # TODO [LOW]: consider adding typing.Dict and typing.List
+    # since these are the 'correct' way to annotate these types.
+
+    ASSOCIATED_ARTIFACT_TYPES = [
+        DataArtifact,
+        DataAnalysisArtifact,
+    ]
     ASSOCIATED_TYPES = [
         int,
         str,

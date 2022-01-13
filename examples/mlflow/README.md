@@ -65,3 +65,13 @@ In order to clean up, delete the remaining zenml references as well as the mlrun
 rm -rf zenml_examples
 rm -rf <SPECIFIC_MLRUNS_PATH_GOES_HERE>
 ```
+
+## SuperQuick `mlflow` run
+
+If you're really in a hurry and you want just to see this example pipeline run,
+without wanting to fiddle around with all the individual installation and
+configuration steps, just run the following:
+
+```shell
+zenml example run mlflow
+```

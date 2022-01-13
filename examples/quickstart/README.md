@@ -51,3 +51,13 @@ In order to clean up, delete the remaining zenml references.
 ```shell
 rm -rf zenml_examples
 ```
+
+## SuperQuick `quickstart` run
+
+If you're really in a hurry and you want just to see this example pipeline run,
+without wanting to fiddle around with all the individual installation and
+configuration steps, just run the following:
+
+```shell
+zenml example run quickstart
+```

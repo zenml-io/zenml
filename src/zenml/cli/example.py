@@ -43,6 +43,7 @@ logger = get_logger(__name__)
 
 EXAMPLES_GITHUB_REPO = "zenml_examples"
 EXAMPLES_RUN_SCRIPT = "run_example.sh"
+SHELL_EXECUTABLE = "SHELL_EXECUTABLE"
 
 
 class LocalExample:
@@ -92,7 +93,7 @@ class LocalExample:
             return self.python_files_in_dir[0]
         elif self.has_any_python_file:
             logger.warning(
-                "This example has multiple executable python files"
+                "This example has multiple executable python files. "
                 "The last one in alphanumerical order is taken."
             )
             return sorted(self.python_files_in_dir)[-1]
@@ -108,37 +109,27 @@ class LocalExample:
             str(self.path)
         )
 
-    def run_example(self, bash_file: str, force: bool) -> None:
+    def run_example(self, example_runner: List[str], force: bool) -> None:
         """Run the local example using the bash script at the supplied
         location
 
         Args:
-            bash_file: File location of the bash script to run examples
+            example_runner: Sequence of locations of executable file(s)
+                            to run the example
             force: Whether to force the install
         """
-        if fileio.file_exists(bash_file):
-            os.chdir(self.path)
+        if all(map(fileio.file_exists, example_runner)):
+            call = (
+                example_runner
+                + ["--executable", self.executable_python_example]
+                + ["-f"] * force
+            )
             try:
-                # TODO [ENG-271]: Catch errors that might be thrown in subprocess
-                if force:
-                    subprocess.check_call(
-                        [
-                            bash_file,
-                            "-f",
-                            "--executable",
-                            self.executable_python_example,
-                        ],
-                        cwd=str(self.path),
-                    )
-                else:
-                    subprocess.check_call(
-                        [
-                            bash_file,
-                            "--executable",
-                            self.executable_python_example,
-                        ],
-                        cwd=self.path,
-                    )
+                # TODO [ENG-271]: Catch errors that might be thrown
+                #  in subprocess
+                subprocess.check_call(
+                    call, cwd=str(self.path), shell=click._compat.WIN
+                )
             except RuntimeError:
                 raise NotImplementedError(
                     f"Currently the example {self.name} "
@@ -152,10 +143,10 @@ class LocalExample:
                         "has no implementation for the "
                         "run method"
                     )
-            except FileNotFoundError:
-                raise FileNotFoundError(
-                    "Bash File to run Examples not found at" f"{bash_file}"
-                )
+        else:
+            raise FileNotFoundError(
+                "Bash File(s) to run Examples not found at" f"{example_runner}"
+            )
 
         # Telemetry
         track_event(RUN_EXAMPLE, {"name": self.name})
@@ -606,9 +597,19 @@ def pull(
     "--force",
     "-f",
     is_flag=True,
-    help="Force the run of the example. This deletes the .zen folder from the"
+    help="Force the run of the example. This deletes the .zen folder from the "
     "example folder and force installs all necessary integration "
     "requirements.",
+)
+@click.option(
+    "--shell-executable",
+    "-x",
+    type=click.Path(exists=True),
+    required=False,
+    envvar=SHELL_EXECUTABLE,
+    help="Manually specify the path to the executable that runs .sh files. "
+    "Can be helpful for compatibility with Windows or minimal linux "
+    "distros without bash.",
 )
 @pass_git_examples_handler
 @click.pass_context
@@ -618,6 +619,7 @@ def run(
     example_name: str,
     path: str,
     force: bool,
+    shell_executable: Optional[str],
 ) -> None:
     """Run the example at the specified relative path.
     `zenml example pull EXAMPLE_NAME` has to be called with the same relative
@@ -639,12 +641,12 @@ def run(
         if not local_example.is_present():
             ctx.forward(pull)
 
-        bash_script_location = (
-            git_examples_handler.examples_repo.examples_run_bash_script
-        )
+        example_runner = (
+            [] if shell_executable is None else [shell_executable]
+        ) + [git_examples_handler.examples_repo.examples_run_bash_script]
         try:
             local_example.run_example(
-                bash_file=bash_script_location, force=force
+                example_runner=example_runner, force=force
             )
         except NotImplementedError as e:
             error(str(e))

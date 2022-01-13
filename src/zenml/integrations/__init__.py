@@ -19,6 +19,7 @@ like the ``facets`` library, as well as deep learning libraries like PyTorch.
 
 from zenml.integrations.airflow import AirflowIntegration  # noqa
 from zenml.integrations.dash import DashIntegration  # noqa
+from zenml.integrations.evidently import EvidentlyIntegration  # noqa
 from zenml.integrations.facets import FacetsIntegration  # noqa
 from zenml.integrations.gcp import GcpIntegration  # noqa
 from zenml.integrations.graphviz import GraphvizIntegration  # noqa

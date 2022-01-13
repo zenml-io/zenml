@@ -19,6 +19,10 @@ from zenml.steps.step_interfaces.base_datasource_step import (
     BaseDatasourceConfig,
     BaseDatasourceStep,
 )
+from zenml.steps.step_interfaces.base_drift_detection_step import (
+    BaseDriftDetectionConfig,
+    BaseDriftDetectionStep,
+)
 from zenml.steps.step_interfaces.base_evaluator_step import (
     BaseEvaluatorConfig,
     BaseEvaluatorStep,
@@ -41,6 +45,8 @@ __all__ = [
     "BaseAnalyzerStep",
     "BaseDatasourceConfig",
     "BaseDatasourceStep",
+    "BaseDriftDetectionConfig",
+    "BaseDriftDetectionStep",
     "BaseEvaluatorConfig",
     "BaseEvaluatorStep",
     "BasePreprocessorConfig",

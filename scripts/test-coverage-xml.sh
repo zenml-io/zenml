@@ -11,7 +11,12 @@ TEST_SRC="tests/"${1:-""}
 
 export ZENML_DEBUG=1
 export ZENML_ANALYTICS_OPT_IN=false
-coverage run -m pytest $TEST_SRC --color=yes
+if [ -n "$1" ]; then
+    coverage run -m pytest $TEST_SRC --color=yes
+else
+    coverage run -m pytest tests/unit --color=yes
+    coverage run -m pytest tests/integration --color=yes
+fi
 coverage combine
 coverage report --show-missing
 coverage xml

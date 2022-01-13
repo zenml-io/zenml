@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.5.6"
+version = "0.5.7"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -60,6 +60,7 @@ pydantic = "<=1.8.2"
 analytics-python = "^1.4.0"
 distro = "^1.6.0"
 tabulate = "^0.8.9"
+rich = "^11.0.0"
 
 
 [tool.poetry.dev-dependencies]
