@@ -72,6 +72,9 @@ jobs:
       - name: Lint
         run: python -m poetry run bash scripts/lint.sh
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
       - name: Test
         run: python -m poetry run bash scripts/test-coverage-xml.sh
 
