@@ -72,11 +72,12 @@ jobs:
       - name: Lint
         run: python -m poetry run bash scripts/lint.sh
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-
       - name: Test
         run: python -m poetry run bash scripts/test-coverage-xml.sh
+
+      - name: Setup tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
 
       - name: Upload coverage
         # only do it for python 3.8, we don't need to do it for every version
