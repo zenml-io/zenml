@@ -15,7 +15,7 @@ import datetime
 import functools
 import subprocess
 import sys
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, TypeVar, cast
+from typing import Any, Callable, Dict, List, TypeVar, cast
 
 import click
 from dateutil import tz
@@ -25,9 +25,6 @@ from zenml.logger import get_logger
 from zenml.new_core.stack_component import StackComponent
 
 logger = get_logger(__name__)
-
-if TYPE_CHECKING:
-    pass
 
 
 def title(text: str) -> None:
