@@ -1,3 +1,59 @@
+# 0.5.7
+
+ZenML 0.5.7 is here  :100:  and it brings not one, but :fire:TWO:fire: brand new integrations :rocket:! ZenML now support [MLFlow](https://www.mlflow.org/docs/latest/tracking.html) for tracking pipelines as experiments and [Evidently](https://github.com/evidentlyai/evidently) for detecting drift in your ML pipelines in production!
+
+## New Features
+* Introducing the [MLFLow Tracking](https://www.mlflow.org/docs/latest/tracking.html) Integration, a first step towards 
+our complete MLFlow Integration as described in the [#115 poll](https://github.com/zenml-io/zenml/discussions/115). 
+Full example found [here](https://github.com/zenml-io/zenml/tree/0.5.7/examples/mlflow).
+* Introducing the [Evidently](https://github.com/evidentlyai/evidently) integration. Use the standard 
+[Evidently drift detection step](https://github.com/zenml-io/zenml/blob/0.5.7/src/zenml/integrations/evidently/steps/evidently_profile.py) 
+to calculate drift automatically in your pipeline. Full example found [here](https://github.com/zenml-io/zenml/tree/0.5.7/examples/drift_detection).
+
+## Bugfixes
+* Prevent KFP install timeouts during `stack up` by @stefannica in https://github.com/zenml-io/zenml/pull/299
+* Prevent naming parameters same name as inputs/outputs to prevent kwargs-errors by @bcdurak in https://github.com/zenml-io/zenml/pull/300
+
+
+## What's Changed
+* Force pull overwrites local examples without user confirmation by @AlexejPenner in https://github.com/zenml-io/zenml/pull/278
+* Updated README with latest features by @htahir1 in https://github.com/zenml-io/zenml/pull/280
+* Integration test the examples within ci pipeline by @AlexejPenner in https://github.com/zenml-io/zenml/pull/282
+* Add exception for missing system requirements by @kamalesh0406 in https://github.com/zenml-io/zenml/pull/281
+* Examples are automatically pulled if not present before any example command is run by @AlexejPenner in https://github.com/zenml-io/zenml/pull/279
+* Add pipeline error for passing the same step object twice by @kamalesh0406 in https://github.com/zenml-io/zenml/pull/283
+* Create pytest fixture to use a temporary zenml repo in tests by @htahir1 in https://github.com/zenml-io/zenml/pull/287
+* Additional example run implementations for standard interfaces, functional and class based api by @AlexejPenner in https://github.com/zenml-io/zenml/pull/286
+* Make pull_request.yaml actually use os.runner instead of ubuntu by @htahir1 in https://github.com/zenml-io/zenml/pull/288
+* In pytest return to previous workdir before tearing down tmp_dir fixture by @AlexejPenner in https://github.com/zenml-io/zenml/pull/289
+* Don't raise an exception during integration installation if system requirement is not installed by @schustmi in https://github.com/zenml-io/zenml/pull/291
+* Update starting page for the API docs by @alex-zenml in https://github.com/zenml-io/zenml/pull/294
+* Add `stack up` failure prompts by @alex-zenml in https://github.com/zenml-io/zenml/pull/290
+* Spelling fixes by @alex-zenml in https://github.com/zenml-io/zenml/pull/295
+* Remove instructions to git init from docs by @bcdurak in https://github.com/zenml-io/zenml/pull/293
+* Fix the `stack up` and `orchestrator up` failure prompts by @stefannica in https://github.com/zenml-io/zenml/pull/297
+* Prevent KFP install timeouts during `stack up` by @stefannica in https://github.com/zenml-io/zenml/pull/299
+* Add stefannica to list of internal github users by @stefannica in https://github.com/zenml-io/zenml/pull/303
+* Improve KFP UI daemon error messages by @schustmi in https://github.com/zenml-io/zenml/pull/292
+* Replaced old diagrams with new ones in the docs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/306
+* Fix broken links & text formatting in docs by @alex-zenml in https://github.com/zenml-io/zenml/pull/302
+* Run KFP container as local user/group if local by @stefannica in https://github.com/zenml-io/zenml/pull/304
+* Add james to github team by @jwwwb in https://github.com/zenml-io/zenml/pull/308
+* Implement integration of mlflow tracking by @AlexejPenner in https://github.com/zenml-io/zenml/pull/301
+* Bugfix integration tests on windows by @jwwwb in https://github.com/zenml-io/zenml/pull/296
+* Prevent naming parameters same name as inputs/outputs to prevent kwargs-errors by @bcdurak in https://github.com/zenml-io/zenml/pull/300
+* Add tests for `fileio` by @alex-zenml in https://github.com/zenml-io/zenml/pull/298
+* Evidently integration (standard steps and example) by @alex-zenml in https://github.com/zenml-io/zenml/pull/307
+* Implemented evidently integration by @stefannica in https://github.com/zenml-io/zenml/pull/310
+* Make mlflow example faster by @AlexejPenner in https://github.com/zenml-io/zenml/pull/312
+
+## New Contributors
+* @kamalesh0406 made their first contribution in https://github.com/zenml-io/zenml/pull/281
+* @stefannica made their first contribution in https://github.com/zenml-io/zenml/pull/297
+* @jwwwb made their first contribution in https://github.com/zenml-io/zenml/pull/308
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.5.6...0.5.7
 # 0.5.6
 
         )                    *      (     
