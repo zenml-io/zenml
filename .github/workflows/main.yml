@@ -73,8 +73,11 @@ jobs:
       - name: Lint
         run: python -m poetry run bash scripts/lint.sh
 
-      - name: Test
-        run: python -m poetry run bash scripts/test-coverage-xml.sh
+      - name: Unit tests
+        run: python -m poetry run bash scripts/test-coverage-xml.sh unit
+
+      - name: Integration tests
+        run: python -m poetry run bash scripts/test-coverage-xml.sh integration
 
       - name: Upload coverage
         # only do it for python 3.8, we don't need to do it for every version

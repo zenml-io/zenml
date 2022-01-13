@@ -1,0 +1,20 @@
+INTEGRATIONS:
+
+INSTALLED    INTEGRATION        REQUIRED_PACKAGES
+-----------  -----------------  ----------------------------------------------------------------------------
+*            airflow            ['apache-airflow==2.2.0']
+*            dash               ['dash>=2.0.0', 'dash-cytoscape>=0.3.0', 'dash-bootstrap-components>=1.0.1']
+*            evidently          ['evidently>=v0.1.40.dev0']
+*            facets             ['facets-overview>=1.0.0', 'IPython']
+*            gcp                ['gcsfs']
+*            graphviz           ['graphviz>=0.17']
+*            kubeflow           ['kfp==1.8.9']
+*            mlflow             ['mlflow>=1.2.0']
+*            plotly             ['plotly>=5.4.0']
+*            pytorch            ['torch']
+*            pytorch_lightning  ['pytorch_lightning']
+*            sklearn            ['scikit-learn']
+*            tensorflow         ['tensorflow']
+
+To install the dependencies of a specific integration, type: 
+zenml integration install EXAMPLE_NAME
