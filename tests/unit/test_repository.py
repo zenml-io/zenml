@@ -30,7 +30,8 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.metadata_stores import MySQLMetadataStore, SQLiteMetadataStore
-from zenml.stack import Repository, Stack
+from zenml.repository import Repository
+from zenml.stack import Stack
 from zenml.orchestrators import LocalOrchestrator
 
 
@@ -51,7 +52,7 @@ def _create_local_stack(
     artifact_store_name = artifact_store_name or _random_name()
 
     orchestrator = LocalOrchestrator(name=orchestrator_name)
-    artifact_store = LocalArtifactStore(name=artifact_store_name, path=".")
+    artifact_store = LocalArtifactStore(name=artifact_store_name, path="stack")
     metadata_store = SQLiteMetadataStore(
         name=metadata_store_name, uri="./metadata.db"
     )
