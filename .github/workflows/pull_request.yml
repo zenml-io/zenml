@@ -68,6 +68,7 @@ jobs:
           python -m poetry run zenml integration install mlflow -f
           python -m poetry run zenml integration install gcp -f
           python -m poetry run pip install click~=8.0.3
+          python -m poetry run pip install six~=1.16.0
 
       - name: Lint
         run: python -m poetry run bash scripts/lint.sh
