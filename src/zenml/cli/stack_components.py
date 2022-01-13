@@ -20,10 +20,11 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.enums import StackComponentType
 from zenml.io import fileio
-from zenml.new_core import Repository, StackComponent
+from zenml.new_core import StackComponent
 from zenml.new_core.stack_component_class_registry import (
     StackComponentClassRegistry,
 )
+from zenml.repository import Repository
 
 
 def _component_display_name(

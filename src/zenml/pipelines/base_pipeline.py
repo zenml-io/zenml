@@ -38,7 +38,8 @@ from zenml.constants import (
 from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.new_core import Repository, RuntimeConfiguration
+from zenml.repository import Repository
+from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.steps import BaseStep
 from zenml.utils import analytics_utils, yaml_utils
 

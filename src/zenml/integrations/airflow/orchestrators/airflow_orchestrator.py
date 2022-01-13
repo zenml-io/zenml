@@ -37,8 +37,9 @@ from zenml.utils import daemon
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    from zenml.new_core import RuntimeConfiguration, Stack
+    from zenml.new_core import Stack
     from zenml.pipelines.base_pipeline import BasePipeline
+    from zenml.runtime_configuration import RuntimeConfiguration
 
 AIRFLOW_ROOT_DIR = "airflow_root"
 DAG_FILEPATH_OPTION_KEY = "dag_filepath"

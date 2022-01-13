@@ -37,7 +37,7 @@ from zenml.constants import ENV_ZENML_PREVENT_PIPELINE_EXECUTION
 from zenml.integrations.kubeflow.orchestrators import kubeflow_utils as utils
 from zenml.logger import get_logger
 from zenml.metadata_stores import SQLiteMetadataStore
-from zenml.new_core import Repository
+from zenml.repository import Repository
 from zenml.utils import source_utils
 
 logger = get_logger(__name__)

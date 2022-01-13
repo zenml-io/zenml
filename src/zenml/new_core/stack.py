@@ -30,7 +30,8 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
-from zenml.new_core import RuntimeConfiguration, StackComponent
+from zenml.new_core import StackComponent
+from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:

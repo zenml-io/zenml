@@ -12,15 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.new_core.repository import Repository
-from zenml.new_core.runtime_configuration import RuntimeConfiguration
 from zenml.new_core.stack import Stack
 from zenml.new_core.stack_component import StackComponent
 from zenml.new_core.stack_validator import StackValidator
 
 __all__ = [
-    "Repository",
-    "RuntimeConfiguration",
     "Stack",
     "StackComponent",
     "StackValidator",
