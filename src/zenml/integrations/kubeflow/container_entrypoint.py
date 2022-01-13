@@ -40,7 +40,7 @@ from tfx.types.channel import Property
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.type_registry import type_registry
 from zenml.core.repo import Repository
-from zenml.integrations.kubeflow.metadata import KubeflowMetadataStore
+from zenml.integrations.kubeflow.metadata_stores import KubeflowMetadataStore
 from zenml.integrations.registry import integration_registry
 from zenml.orchestrators.utils import execute_step
 from zenml.steps.utils import generate_component_class

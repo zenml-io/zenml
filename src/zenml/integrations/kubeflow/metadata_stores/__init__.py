@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.integrations.kubeflow.metadata.kubeflow_metadata_store import (
+from zenml.integrations.kubeflow.metadata_stores.kubeflow_metadata_store import (
     KubeflowMetadataStore,
 )
 
