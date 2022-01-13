@@ -11,8 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Optional, Sequence, cast
+from typing import List, Optional, Sequence, Tuple
 
+from evidently.dashboard import Dashboard  # type: ignore
 from evidently.model_profile import Profile  # type: ignore
 from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
 from evidently.profile_sections import (  # type: ignore
@@ -26,9 +27,18 @@ from evidently.profile_sections import (  # type: ignore
 from evidently.profile_sections.base_profile_section import (  # type: ignore
     ProfileSection,
 )
+from evidently.tabs import (  # type: ignore
+    CatTargetDriftTab,
+    ClassificationPerformanceTab,
+    DataDriftTab,
+    NumTargetDriftTab,
+    ProbClassificationPerformanceTab,
+    RegressionPerformanceTab,
+)
+from evidently.tabs.base_tab import Tab  # type: ignore
 
-from zenml.artifacts import DataArtifact
-from zenml.steps import StepContext
+from zenml.artifacts import DataAnalysisArtifact, DataArtifact
+from zenml.steps import Output, StepContext
 from zenml.steps.step_interfaces.base_drift_detection_step import (
     BaseDriftDetectionConfig,
     BaseDriftDetectionStep,
@@ -41,6 +51,15 @@ profile_mapper = {
     "classificationmodelperformance": ClassificationPerformanceProfileSection,
     "regressionmodelperformance": RegressionPerformanceProfileSection,
     "probabilisticmodelperformance": ProbClassificationPerformanceProfileSection,
+}
+
+dashboard_mapper = {
+    "datadrift": DataDriftTab,
+    "categoricaltargetdrift": CatTargetDriftTab,
+    "numericaltargetdrift": NumTargetDriftTab,
+    "classificationmodelperformance": ClassificationPerformanceTab,
+    "regressionmodelperformance": RegressionPerformanceTab,
+    "probabilisticmodelperformance": ProbClassificationPerformanceTab,
 }
 
 
@@ -58,26 +77,40 @@ class EvidentlyProfileConfig(BaseDriftDetectionConfig):
         - "probabilisticmodelperformance"
     """
 
-    def get_profile_sections(self) -> ProfileSection:
+    def get_profile_sections_and_tabs(
+        self,
+    ) -> Tuple[List[ProfileSection], List[Tab]]:
         try:
-            return [
-                profile_mapper[profile]() for profile in self.profile_section
-            ]
+            return (
+                [
+                    profile_mapper[profile]()
+                    for profile in self.profile_sections
+                ],
+                [
+                    dashboard_mapper[profile]()
+                    for profile in self.profile_sections
+                ],
+            )
         except KeyError:
             nl = "\n"
             raise ValueError(
-                f"Invalid profile section: {self.profile_section} \n\n"
+                f"Invalid profile section: {self.profile_sections} \n\n"
                 f"Valid and supported options are: {nl}- "
                 f'{f"{nl}- ".join(list(profile_mapper.keys()))}'
             )
 
     column_mapping: Optional[ColumnMapping]
-    profile_section: Sequence[str]
+    profile_sections: Sequence[str]
 
 
 class EvidentlyProfileStep(BaseDriftDetectionStep):
     """Simple step implementation which implements Evidently's functionality for
     creating a profile."""
+
+    OUTPUT_SPEC = {
+        "profile": DataAnalysisArtifact,
+        "dashboard": DataAnalysisArtifact,
+    }
 
     def entrypoint(  # type: ignore[override]
         self,
@@ -85,7 +118,9 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
         comparison_dataset: DataArtifact,
         config: EvidentlyProfileConfig,
         context: StepContext,
-    ) -> dict:  # type: ignore[type-arg]
+    ) -> Output(  # type:ignore[valid-type]
+        profile=dict, dashboard=str
+    ):
         """Main entrypoint for the Evidently categorical target drift detection
         step.
 
@@ -97,13 +132,22 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
             context: the context of the step
 
         Returns:
-            a dict containing the results of the drift detection
+            profile: dictionary report extracted from an Evidently Profile
+              generated for the data drift
+            dashboard: HTML report extracted from an Evidently Dashboard
+              generated for the data drift
         """
-
-        data_drift_profile = Profile(sections=config.get_profile_sections())
+        sections, tabs = config.get_profile_sections_and_tabs()
+        data_drift_dashboard = Dashboard(tabs=tabs)
+        data_drift_dashboard.calculate(
+            reference_dataset,
+            comparison_dataset,
+            column_mapping=config.column_mapping or None,
+        )
+        data_drift_profile = Profile(sections=sections)
         data_drift_profile.calculate(
             reference_dataset,
             comparison_dataset,
             column_mapping=config.column_mapping or None,
         )
-        return cast(dict, data_drift_profile.object())  # type: ignore[type-arg]
+        return [data_drift_profile.object(), data_drift_dashboard.html()]

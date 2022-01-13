@@ -11,6 +11,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import json
 import pandas as pd
 from rich import print
 from sklearn import datasets
@@ -20,6 +21,7 @@ from zenml.integrations.evidently.steps import (
     EvidentlyProfileConfig,
     EvidentlyProfileStep,
 )
+from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
 from zenml.logger import get_logger
 from zenml.pipelines import pipeline
 from zenml.steps import step
@@ -57,9 +59,18 @@ def partial_split(
 drift_detector = EvidentlyProfileStep(
     EvidentlyProfileConfig(
         column_mapping=None,
-        profile_section=["datadrift"],
+        profile_sections=["datadrift"],
     )
 )
+
+
+@step
+def analyze_drift(
+    input: dict,
+) -> bool:
+    """Analyze the Evidently drift report and return a true/false value indicating
+    whether data drift was detected."""
+    return input["data_drift"]["data"]["metrics"]["dataset_drift"]
 
 
 @pipeline
@@ -68,29 +79,47 @@ def drift_detection_pipeline(
     full_data,
     partial_data,
     drift_detector,
+    drift_analyzer,
 ):
     """Links all the steps together in a pipeline"""
     data_loader = data_loader()
     full_data = full_data(data_loader)
     partial_data = partial_data(data_loader)
-    drift_detector(reference_dataset=full_data, comparison_dataset=partial_data)
+    drift_report, _ = drift_detector(
+        reference_dataset=full_data, comparison_dataset=partial_data
+    )
+    drift_analyzer(drift_report)
 
 
-if __name__ == '__main__':
+def visualize_statistics():
+    repo = Repository()
+    pipe = repo.get_pipelines()[-1]
+    evidently_outputs = pipe.runs[-1].get_step(name="drift_detector")
+    EvidentlyVisualizer().visualize(evidently_outputs)
+
+
+if __name__ == "__main__":
     pipeline = drift_detection_pipeline(
         data_loader=data_loader(),
         full_data=full_split(),
         partial_data=partial_split(),
         drift_detector=drift_detector,
+        drift_analyzer=analyze_drift(),
     )
 
     pipeline.run()
 
     repo = Repository()
-    pipeline = repo.get_pipelines()[-1]
-    runs = pipeline.runs
-    run = runs[-1]
-    steps = run.steps
-    step = steps[-1]
-    output = step.output
-    print(output.read())
+    pipeline = repo.get_pipelines()[0]
+    last_run = pipeline.runs[-1]
+    drift_analysis_step = last_run.get_step(
+        name="drift_analyzer"
+    )
+    print(f'Data drift detected: {drift_analysis_step.output.read()}')
+
+    drift_detection_step = last_run.get_step(
+        name="drift_detector"
+    )
+    print(json.dumps(drift_detection_step.outputs['profile'].read(), indent=2))
+
+    visualize_statistics()
