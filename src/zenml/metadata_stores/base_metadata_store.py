@@ -31,7 +31,7 @@ from zenml.artifacts.constants import (
 )
 from zenml.enums import ExecutionStatus, MetadataStoreFlavor, StackComponentType
 from zenml.logger import get_logger
-from zenml.new_core import StackComponent
+from zenml.stack import StackComponent
 from zenml.post_execution import (
     ArtifactView,
     PipelineRunView,

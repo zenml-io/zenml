@@ -25,7 +25,7 @@ from zenml.enums import (
     StackComponentType,
 )
 from zenml.metadata_stores import SQLiteMetadataStore
-from zenml.new_core.stack_component_class_registry import (
+from zenml.stack.stack_component_class_registry import (
     StackComponentClassRegistry,
     register_stack_component_class,
 )

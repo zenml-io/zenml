@@ -12,9 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.new_core.stack import Stack
-from zenml.new_core.stack_component import StackComponent
-from zenml.new_core.stack_validator import StackValidator
+from zenml.stack.stack import Stack
+from zenml.stack.stack_component import StackComponent
+from zenml.stack.stack_validator import StackValidator
 
 __all__ = [
     "Stack",

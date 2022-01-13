@@ -33,8 +33,8 @@ from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.new_core import StackValidator
-from zenml.new_core.stack_component_class_registry import (
+from zenml.stack import StackValidator
+from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
 from zenml.orchestrators import BaseOrchestrator
@@ -43,7 +43,7 @@ from zenml.repository import Repository
 from zenml.utils import networking_utils
 
 if TYPE_CHECKING:
-    from zenml.new_core import Stack
+    from zenml.stack import Stack
     from zenml.pipelines.base_pipeline import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
 

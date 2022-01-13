@@ -34,7 +34,7 @@ from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.new_core import StackComponent
+    from zenml.stack import StackComponent
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.container_registries import BaseContainerRegistry
     from zenml.metadata_stores import BaseMetadataStore

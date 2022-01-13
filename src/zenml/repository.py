@@ -30,7 +30,7 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.new_core import Stack, StackComponent
+from zenml.stack import Stack, StackComponent
 from zenml.post_execution import PipelineView
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import (
@@ -414,7 +414,7 @@ class Repository:
                 f"with name '{name}'. Available names: {set(components)}."
             )
 
-        from zenml.new_core.stack_component_class_registry import (
+        from zenml.stack.stack_component_class_registry import (
             StackComponentClassRegistry,
         )
 

@@ -20,7 +20,7 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.enums import StackComponentType
-from zenml.new_core import Stack
+from zenml.stack import Stack
 from zenml.repository import Repository
 
 

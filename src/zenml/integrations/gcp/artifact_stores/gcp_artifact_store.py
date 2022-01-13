@@ -17,7 +17,7 @@ from pydantic import validator
 
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.enums import ArtifactStoreFlavor, StackComponentType
-from zenml.new_core.stack_component_class_registry import (
+from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
 

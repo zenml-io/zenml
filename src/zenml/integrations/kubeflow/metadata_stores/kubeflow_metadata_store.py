@@ -15,7 +15,7 @@
 
 from zenml.enums import MetadataStoreFlavor, StackComponentType
 from zenml.metadata_stores import MySQLMetadataStore
-from zenml.new_core.stack_component_class_registry import (
+from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
 

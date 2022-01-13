@@ -15,10 +15,10 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
 from zenml.enums import OrchestratorFlavor, StackComponentType
-from zenml.new_core import StackComponent
+from zenml.stack import StackComponent
 
 if TYPE_CHECKING:
-    from zenml.new_core import Stack
+    from zenml.stack import Stack
     from zenml.pipelines.base_pipeline import BasePipeline
 
 

@@ -14,7 +14,7 @@
 from abc import ABC, abstractmethod
 
 from zenml.enums import ArtifactStoreFlavor, StackComponentType
-from zenml.new_core import StackComponent
+from zenml.stack import StackComponent
 
 
 class BaseArtifactStore(StackComponent, ABC):

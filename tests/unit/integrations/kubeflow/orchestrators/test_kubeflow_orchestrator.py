@@ -21,7 +21,7 @@ from zenml.enums import OrchestratorFlavor, StackComponentType
 from zenml.exceptions import StackValidationError
 from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
 from zenml.metadata_stores import SQLiteMetadataStore
-from zenml.new_core import Stack
+from zenml.stack import Stack
 
 
 def test_kubeflow_orchestrator_attributes():
