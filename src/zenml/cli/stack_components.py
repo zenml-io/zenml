@@ -20,8 +20,8 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.enums import StackComponentType
 from zenml.io import fileio
-from zenml.stack import StackComponent
 from zenml.repository import Repository
+from zenml.stack import StackComponent
 
 
 def _component_display_name(

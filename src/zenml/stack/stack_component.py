@@ -21,10 +21,9 @@ from zenml.enums import StackComponentFlavor, StackComponentType
 from zenml.integrations.utils import get_requirements_for_module
 
 if TYPE_CHECKING:
-    from zenml.stack import Stack
     from zenml.pipelines import BasePipeline
-    from zenml.stack import StackValidator
     from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.stack import Stack, StackValidator
 
 
 class StackComponent(BaseModel, ABC):

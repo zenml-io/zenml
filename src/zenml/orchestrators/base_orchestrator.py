@@ -18,8 +18,8 @@ from zenml.enums import OrchestratorFlavor, StackComponentType
 from zenml.stack import StackComponent
 
 if TYPE_CHECKING:
-    from zenml.stack import Stack
     from zenml.pipelines.base_pipeline import BasePipeline
+    from zenml.stack import Stack
 
 
 class BaseOrchestrator(StackComponent, ABC):

@@ -33,19 +33,19 @@ from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators.utils import create_tfx_pipeline
+from zenml.repository import Repository
 from zenml.stack import StackValidator
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
-from zenml.orchestrators import BaseOrchestrator
-from zenml.orchestrators.utils import create_tfx_pipeline
-from zenml.repository import Repository
 from zenml.utils import networking_utils
 
 if TYPE_CHECKING:
-    from zenml.stack import Stack
     from zenml.pipelines.base_pipeline import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 

@@ -21,8 +21,8 @@ import pytest
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.constants import ENV_ZENML_DEBUG
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.repository import Repository
 from zenml.pipelines import pipeline
+from zenml.repository import Repository
 from zenml.steps import StepContext, step
 
 

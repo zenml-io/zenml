@@ -27,19 +27,19 @@ from zenml.integrations.airflow.orchestrators.airflow_dag_runner import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators.utils import create_tfx_pipeline
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
-from zenml.orchestrators import BaseOrchestrator
-from zenml.orchestrators.utils import create_tfx_pipeline
 from zenml.utils import daemon
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    from zenml.stack import Stack
     from zenml.pipelines.base_pipeline import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.stack import Stack
 
 AIRFLOW_ROOT_DIR = "airflow_root"
 DAG_FILEPATH_OPTION_KEY = "dag_filepath"

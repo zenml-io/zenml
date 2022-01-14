@@ -34,12 +34,12 @@ from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.stack import StackComponent
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.container_registries import BaseContainerRegistry
     from zenml.metadata_stores import BaseMetadataStore
     from zenml.orchestrators import BaseOrchestrator
     from zenml.pipelines import BasePipeline
+    from zenml.stack import StackComponent
 
 logger = get_logger(__name__)
 

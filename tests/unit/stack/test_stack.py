@@ -16,12 +16,12 @@ import os
 import pytest
 
 from zenml.artifact_stores import LocalArtifactStore
+from zenml.container_registries import BaseContainerRegistry
+from zenml.enums import StackComponentType
 from zenml.io.utils import get_global_config_directory
 from zenml.metadata_stores import SQLiteMetadataStore
-from zenml.stack import Stack
 from zenml.orchestrators import LocalOrchestrator
-from zenml.enums import StackComponentType
-from zenml.container_registries import BaseContainerRegistry
+from zenml.stack import Stack
 
 
 def test_default_local_stack():
@@ -53,10 +53,11 @@ def test_initializing_a_stack_from_components():
     metadata_store = SQLiteMetadataStore(name="", uri="")
     artifact_store = LocalArtifactStore(name="", path="")
 
-    components = {StackComponentType.ORCHESTRATOR: orchestrator,
-                  StackComponentType.METADATA_STORE: metadata_store,
-                  StackComponentType.ARTIFACT_STORE: artifact_store,
-                  }
+    components = {
+        StackComponentType.ORCHESTRATOR: orchestrator,
+        StackComponentType.METADATA_STORE: metadata_store,
+        StackComponentType.ARTIFACT_STORE: artifact_store,
+    }
 
     stack = Stack.from_components(name="", components=components)
 
@@ -84,10 +85,11 @@ def test_initializing_a_stack_with_wrong_components():
     orchestrator = LocalOrchestrator(name="")
 
     # orchestrators for all component types
-    components = {StackComponentType.ORCHESTRATOR: orchestrator,
-                  StackComponentType.METADATA_STORE: orchestrator,
-                  StackComponentType.ARTIFACT_STORE: orchestrator,
-                  }
+    components = {
+        StackComponentType.ORCHESTRATOR: orchestrator,
+        StackComponentType.METADATA_STORE: orchestrator,
+        StackComponentType.ARTIFACT_STORE: orchestrator,
+    }
 
     with pytest.raises(TypeError):
         Stack.from_components(name="", components=components)
@@ -114,5 +116,3 @@ def test_stack_validation():
 
 def test_stack_deployment():
     """"""
-
-

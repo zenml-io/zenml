@@ -25,11 +25,11 @@ from zenml.enums import (
     StackComponentType,
 )
 from zenml.metadata_stores import SQLiteMetadataStore
+from zenml.orchestrators import LocalOrchestrator
 from zenml.stack.stack_component_class_registry import (
     StackComponentClassRegistry,
     register_stack_component_class,
 )
-from zenml.orchestrators import LocalOrchestrator
 
 
 def test_stack_component_class_registry_has_local_classes_registered():

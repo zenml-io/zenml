@@ -30,9 +30,9 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.metadata_stores import MySQLMetadataStore, SQLiteMetadataStore
+from zenml.orchestrators import LocalOrchestrator
 from zenml.repository import Repository
 from zenml.stack import Stack
-from zenml.orchestrators import LocalOrchestrator
 
 
 def _create_local_stack(

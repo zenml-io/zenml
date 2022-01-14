@@ -31,13 +31,13 @@ from zenml.artifacts.constants import (
 )
 from zenml.enums import ExecutionStatus, MetadataStoreFlavor, StackComponentType
 from zenml.logger import get_logger
-from zenml.stack import StackComponent
 from zenml.post_execution import (
     ArtifactView,
     PipelineRunView,
     PipelineView,
     StepView,
 )
+from zenml.stack import StackComponent
 from zenml.steps.utils import (
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_PIPELINE_PARAMETER_NAME,

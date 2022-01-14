@@ -30,7 +30,9 @@ class RuntimeConfiguration(Dict[str, Any]):
     `runtime_configuration["some_key"] = 1`.
     """
 
-    def __init__(self, run_name: Optional[str] = None, **runtime_options: Any):
+    def __init__(
+        self, *, run_name: Optional[str] = None, **runtime_options: Any
+    ):
         """Initializes a RuntimeConfiguration object.
 
         Args:

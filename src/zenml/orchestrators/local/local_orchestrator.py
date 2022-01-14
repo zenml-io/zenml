@@ -21,8 +21,8 @@ from zenml.orchestrators.local.local_dag_runner import LocalDagRunner
 from zenml.orchestrators.utils import create_tfx_pipeline
 
 if TYPE_CHECKING:
-    from zenml.stack import Stack
     from zenml.pipelines.base_pipeline import BasePipeline
+    from zenml.stack import Stack
 
 
 class LocalOrchestrator(BaseOrchestrator):

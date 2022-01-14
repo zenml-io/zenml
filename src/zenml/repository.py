@@ -30,8 +30,8 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.stack import Stack, StackComponent
 from zenml.post_execution import PipelineView
+from zenml.stack import Stack, StackComponent
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import (
     GET_PIPELINE,
@@ -482,6 +482,7 @@ class Repository:
             component_type: The type of the component to deregister.
             name: The name of the component to deregister.
         """
+        # TODO: raise value error if component is part of any registered stack
         components = self.__config.stack_components[component_type]
         try:
             del components[name]

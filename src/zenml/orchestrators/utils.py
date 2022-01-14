@@ -23,8 +23,8 @@ from zenml.logger import get_logger
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.stack import Stack
     from zenml.pipelines.base_pipeline import BasePipeline
+    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
