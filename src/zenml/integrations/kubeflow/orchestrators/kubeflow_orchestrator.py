@@ -14,7 +14,7 @@
 
 import os
 import sys
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, Optional, Set
 
 import kfp
 import urllib3
@@ -121,13 +121,14 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         image_name = self.get_docker_image_name(pipeline.name)
 
-        requirements = (
-            ["kubernetes"]
-            + stack.requirements(
+        requirements = {
+            "kubernetes",
+            *stack.requirements(
                 exclude_components={StackComponentType.ORCHESTRATOR}
-            )
-            + self._get_pipeline_requirements(pipeline)
-        )
+            ),
+            *self._get_pipeline_requirements(pipeline),
+        }
+
         logger.debug("Kubeflow docker container requirements: %s", requirements)
 
         build_docker_image(
@@ -204,7 +205,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 error,
             )
 
-    def _get_pipeline_requirements(self, pipeline: "BasePipeline") -> List[str]:
+    def _get_pipeline_requirements(self, pipeline: "BasePipeline") -> Set[str]:
         """Gets list of requirements for a pipeline."""
         if pipeline.requirements_file and fileio.file_exists(
             pipeline.requirements_file
@@ -213,11 +214,11 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 "Using requirements from file %s.", pipeline.requirements_file
             )
             with fileio.open(pipeline.requirements_file, "r") as f:
-                return [
+                return {
                     requirement.strip() for requirement in f.read().split("\n")
-                ]
+                }
         else:
-            return []
+            return set()
 
     @property
     def _pid_file_path(self) -> str:

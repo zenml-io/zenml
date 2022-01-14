@@ -20,9 +20,9 @@ from typing import (
     AbstractSet,
     Any,
     Dict,
-    List,
     NoReturn,
     Optional,
+    Set,
     Type,
 )
 
@@ -234,9 +234,10 @@ class Stack:
         return runtime_options
 
     def requirements(
-        self, exclude_components: AbstractSet[StackComponentType]
-    ) -> List[str]:
-        """List of PyPI requirements for the stack.
+        self,
+        exclude_components: Optional[AbstractSet[StackComponentType]] = None,
+    ) -> Set[str]:
+        """Set of PyPI requirements for the stack.
 
         This method combines the requirements of all stack components (except
         the ones specified in `exclude_components`).
@@ -245,12 +246,13 @@ class Stack:
             exclude_components: Set of component types for which the
                 requirements should not be included in the output.
         """
-        requirements = []
-        for component_type, component in self.components.items():
-            if component_type not in exclude_components:
-                requirements.extend(component.requirements)
-
-        return requirements
+        exclude_components = exclude_components or set()
+        requirements = [
+            component.requirements
+            for component in self.components.values()
+            if component.type not in exclude_components
+        ]
+        return set.union(*requirements) if requirements else set()
 
     def validate(self) -> None:
         """Checks whether the stack configuration is valid.

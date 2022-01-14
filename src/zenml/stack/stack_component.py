@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional, Set
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -70,9 +70,9 @@ class StackComponent(BaseModel, ABC):
         return {}
 
     @property
-    def requirements(self) -> List[str]:
-        """List of PyPI requirements for the component."""
-        return get_requirements_for_module(self.__module__)
+    def requirements(self) -> Set[str]:
+        """Set of PyPI requirements for the component."""
+        return set(get_requirements_for_module(self.__module__))
 
     def prepare_pipeline_deployment(
         self,
@@ -166,3 +166,9 @@ class StackComponent(BaseModel, ABC):
         # all attributes with leading underscore are private and therefore
         # are mutable and not included in serialization
         underscore_attrs_are_private = True
+
+        # exclude these two fields from being serialized
+        fields = {
+            "supports_local_execution": {"exclude": True},
+            "supports_remote_execution": {"exclude": True},
+        }
