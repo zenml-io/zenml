@@ -65,39 +65,49 @@ def test_stack_component_class_registry_has_local_classes_registered():
     )
 
 
-def test_stack_component_class_registration(mock_component_class):
+def test_stack_component_class_registration(stub_component):
     """Tests that stack component classes are available after registration."""
-    component = mock_component_class()
 
     with pytest.raises(KeyError):
         StackComponentClassRegistry.get_class(
-            component_type=component.type, component_flavor=component.flavor
+            component_type=stub_component.type,
+            component_flavor=stub_component.flavor,
         )
 
     StackComponentClassRegistry.register_class(
-        component_type=component.type,
-        component_flavor=component.flavor,
-        component_class=mock_component_class,
+        component_type=stub_component.type,
+        component_flavor=stub_component.flavor,
+        component_class=type(stub_component),
     )
 
     with does_not_raise():
         returned_class = StackComponentClassRegistry.get_class(
-            component_type=component.type, component_flavor=component.flavor
+            component_type=stub_component.type,
+            component_flavor=stub_component.flavor,
         )
 
-    assert returned_class is mock_component_class
+    assert returned_class is type(stub_component)
+    # remove the registered component class so other tests aren't affected
+    StackComponentClassRegistry.component_classes[stub_component.type].pop(
+        stub_component.flavor.value
+    )
 
 
-def test_stack_component_class_registration_decorator(mock_component_class):
+def test_stack_component_class_registration_decorator(stub_component):
     """Tests that stack component classes can be registered using the
     decorator."""
-    component = mock_component_class()
-
     register_stack_component_class(
-        component_type=component.type, component_flavor=component.flavor
-    )(mock_component_class)
+        component_type=stub_component.type,
+        component_flavor=stub_component.flavor,
+    )(type(stub_component))
 
     with does_not_raise():
         StackComponentClassRegistry.get_class(
-            component_type=component.type, component_flavor=component.flavor
+            component_type=stub_component.type,
+            component_flavor=stub_component.flavor,
         )
+
+    # remove the registered component class so other tests aren't affected
+    StackComponentClassRegistry.component_classes[stub_component.type].pop(
+        stub_component.flavor.value
+    )

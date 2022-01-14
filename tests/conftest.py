@@ -130,7 +130,7 @@ def one_step_pipeline():
 
     @pipeline
     def _pipeline(step_):
-        pass
+        step_()
 
     return _pipeline
 
