@@ -88,12 +88,12 @@ def enable_mlflow_init(
     return inner_decorator
 
 
-def enable_mlflow_run(deploy: Callable[..., Any]) -> Callable[..., Any]:
-    """Outer decorator function for extending the deploy method for pipelines
+def enable_mlflow_run(run: Callable[..., Any]) -> Callable[..., Any]:
+    """Outer decorator function for extending the run method for pipelines
     that should be run using mlflow
 
     Args:
-        deploy: The deploy method that should be extended
+        run: The run method that should be extended
 
     Returns:
         the inner decorator which extends the run method
@@ -110,7 +110,7 @@ def enable_mlflow_run(deploy: Callable[..., Any]) -> Callable[..., Any]:
             run_name: Optional name for the run.
         """
         with mlflow.start_run(run_name=run_name):
-            deploy(self, run_name)
+            run(self, run_name)
 
     return inner_decorator
 
@@ -124,7 +124,7 @@ def enable_mlflow(
     In order for a pipeline to run within the context of mlflow, the mlflow
     experiment should be associated with the pipeline directly. Each separate
     pipeline run needs to be associated directly with a mlflow experiment. For
-    this, the __init__ and deploy methods need to be extended accordingly.
+    this, the __init__ and run methods need to be extended accordingly.
 
     Args:
         _pipeline: The decorated pipeline
@@ -138,7 +138,7 @@ def enable_mlflow(
         """Inner decorator function for the creation of a ZenML Pipeline with
         mlflow
 
-        The __init__ and deploy method are both extended.
+        The __init__ and run method are both extended.
 
         Args:
           pipeline: BasePipeline which will be extended
@@ -156,7 +156,7 @@ def enable_mlflow(
                 "__init__": enable_mlflow_init(
                     pipeline.__init__, experiment_name
                 ),
-                "deploy": enable_mlflow_run(pipeline.deploy),
+                "run": enable_mlflow_run(pipeline.run),
             },
         )
 

@@ -241,8 +241,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
     # TODO [HIGH]: Enable specifying runtime configuration options either using
     #  **kwargs here or by passing a `RuntimeConfiguration` object or a
     #  path to a config file.
-    def deploy(self, run_name: Optional[str] = None) -> Any:
-        """Deploys the pipeline on the active stack of the current repository.
+    def run(self, run_name: Optional[str] = None) -> Any:
+        """Runs the pipeline on the active stack of the current repository.
 
         Args:
             run_name: Name of the pipeline run.
@@ -277,8 +277,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
         stack = Repository().active_stack
 
-        # TODO [MEDIUM]: Should we rename this analytics event to
-        #  DEPLOY_PIPELINE and track runs separately?
         analytics_utils.track_event(
             event=analytics_utils.RUN_PIPELINE,
             metadata={
