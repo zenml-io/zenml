@@ -346,18 +346,25 @@ class Stack:
         )
 
     def provision(self) -> None:
-        """Provisions resources to run the stack locally."""
+        """Provisions resources to run the stack locally.
+
+        Raises:
+            NotImplementedError: If any unprovisioned component does not
+                implement provisioning.
+        """
         logger.info("Provisioning resources for stack '%s'.", self.name)
         for component in self.components.values():
             if not component.is_provisioned:
-                try:
-                    component.provision()
-                    logger.info("Provisioned resources for %s.", component)
-                except NotImplementedError as e:
-                    logger.debug(e)
+                component.provision()
+                logger.info("Provisioned resources for %s.", component)
 
     def deprovision(self) -> None:
-        """Deprovisions all local resources of the stack."""
+        """Deprovisions all local resources of the stack.
+
+        Raises:
+            NotImplementedError: If any provisioned component does not
+                implement deprovisioning.
+        """
         logger.info("Deprovisioning resources for stack '%s'.", self.name)
         for component in self.components.values():
             if component.is_provisioned:
@@ -373,12 +380,12 @@ class Stack:
         """
         logger.info("Resuming provisioned resources for stack '%s'.", self.name)
         for component in self.components.values():
-            if component.is_provisioned:
-                try:
-                    component.resume()
-                    logger.info("Resumed resources for %s.", component)
-                except NotImplementedError as e:
-                    logger.debug(e)
+            if component.is_running:
+                # the component is already running, no need to resume anything
+                pass
+            elif component.is_provisioned:
+                component.resume()
+                logger.info("Resumed resources for %s.", component)
             else:
                 raise ProvisioningError(
                     f"Unable to resume resources for {component}: No "
