@@ -478,7 +478,7 @@ def main() -> None:
     # available
     integration_registry.activate_integrations()
 
-    metadata_store = Repository().get_active_stack().metadata_store
+    metadata_store = Repository().active_stack.metadata_store
     if isinstance(metadata_store, KubeflowMetadataStore):
         # set up the metadata connection so it connects to the internal kubeflow
         # mysql database
