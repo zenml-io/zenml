@@ -56,6 +56,12 @@ class StackConfiguration(BaseModel):
     artifact_store: str
     container_registry: Optional[str]
 
+    def contains_component(
+        self, component_type: StackComponentType, name: str
+    ) -> bool:
+        """Checks if the stack contains a specific component."""
+        return self.dict().get(component_type.value) == name
+
     class Config:
         """Pydantic configuration class."""
 
@@ -482,7 +488,16 @@ class Repository:
             component_type: The type of the component to deregister.
             name: The name of the component to deregister.
         """
-        # TODO: raise value error if component is part of any registered stack
+        for stack_name, stack_config in self.stack_configurations.items():
+            if stack_config.contains_component(
+                component_type=component_type, name=name
+            ):
+                raise ValueError(
+                    f"Unable to deregister stack component (type: "
+                    f"{component_type}, name: {name}) that is part of a "
+                    f"registered stack (stack name: '{stack_name}')."
+                )
+
         components = self.__config.stack_components[component_type]
         try:
             del components[name]

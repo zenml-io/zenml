@@ -393,7 +393,9 @@ def test_registering_a_new_stack_component(clean_repo):
 
 def test_deregistering_a_stack_component(clean_repo):
     """Tests that deregistering a stack component works and is persisted."""
-    component = clean_repo.active_stack.orchestrator
+    component = LocalOrchestrator(name="unregistered_orchestrator")
+    clean_repo.register_stack_component(component)
+
     clean_repo.deregister_stack_component(
         component_type=component.type, name=component.name
     )
@@ -407,6 +409,19 @@ def test_deregistering_a_stack_component(clean_repo):
 
     with pytest.raises(KeyError):
         new_repo.get_stack_component(
+            component_type=component.type, name=component.name
+        )
+
+
+def test_deregistering_a_stack_component_that_is_part_of_a_registered_stack(
+    clean_repo,
+):
+    """Tests that deregistering a stack component that is part of a registered
+    stack fails."""
+    component = clean_repo.active_stack.orchestrator
+
+    with pytest.raises(ValueError):
+        clean_repo.deregister_stack_component(
             component_type=component.type, name=component.name
         )
 
