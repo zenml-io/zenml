@@ -339,9 +339,24 @@ def test_stack_deprovisioning_fails_if_any_component_raises_an_error(
         component.is_provisioned = True
 
     _, any_component = stack_with_mock_components.components.popitem()
+    any_component.deprovision.side_effect = ProvisioningError()
+
+    with pytest.raises(ProvisioningError):
+        stack_with_mock_components.deprovision()
+
+
+def test_stack_deprovisioning_does_not_fail_if_not_implemented_in_any_component(
+    stack_with_mock_components,
+):
+    """Tests that stack deprovisioning does not fail if any component hasn't
+    implemented the `deprovision()` method."""
+    for component in stack_with_mock_components.components.values():
+        component.is_provisioned = True
+
+    _, any_component = stack_with_mock_components.components.popitem()
     any_component.deprovision.side_effect = NotImplementedError()
 
-    with pytest.raises(NotImplementedError):
+    with does_not_raise():
         stack_with_mock_components.deprovision()
 
 

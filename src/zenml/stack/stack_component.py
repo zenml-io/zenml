@@ -113,12 +113,12 @@ class StackComponent(BaseModel, ABC):
     @property
     def is_provisioned(self) -> bool:
         """If the component provisioned resources to run locally."""
-        return False
+        return True
 
     @property
     def is_running(self) -> bool:
         """If the component is running locally."""
-        return False
+        return True
 
     def provision(self) -> None:
         """Provisions resources to run the component locally."""

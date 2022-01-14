@@ -24,8 +24,8 @@ def test_stack_component_default_method_implementations(stub_component):
     assert stub_component.runtime_options == {}
     assert stub_component.requirements == set()
 
-    assert stub_component.is_provisioned is False
-    assert stub_component.is_running is False
+    assert stub_component.is_provisioned is True
+    assert stub_component.is_running is True
 
     with pytest.raises(NotImplementedError):
         stub_component.provision()

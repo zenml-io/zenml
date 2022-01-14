@@ -368,8 +368,11 @@ class Stack:
         logger.info("Deprovisioning resources for stack '%s'.", self.name)
         for component in self.components.values():
             if component.is_provisioned:
-                component.deprovision()
-                logger.info("Deprovisioned resources for %s.", component)
+                try:
+                    component.deprovision()
+                    logger.info("Deprovisioned resources for %s.", component)
+                except NotImplementedError as e:
+                    logger.warning(e)
 
     def resume(self) -> None:
         """Resumes the provisioned local resources of the stack.
