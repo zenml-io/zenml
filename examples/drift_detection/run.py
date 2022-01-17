@@ -12,11 +12,11 @@
 #  permissions and limitations under the License.
 
 import json
+
 import pandas as pd
 from rich import print
 from sklearn import datasets
 
-from zenml.core.repo import Repository
 from zenml.integrations.evidently.steps import (
     EvidentlyProfileConfig,
     EvidentlyProfileStep,
@@ -24,6 +24,7 @@ from zenml.integrations.evidently.steps import (
 from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
 from zenml.logger import get_logger
 from zenml.pipelines import pipeline
+from zenml.repository import Repository
 from zenml.steps import step
 
 logger = get_logger(__name__)
@@ -112,14 +113,10 @@ if __name__ == "__main__":
     repo = Repository()
     pipeline = repo.get_pipelines()[0]
     last_run = pipeline.runs[-1]
-    drift_analysis_step = last_run.get_step(
-        name="drift_analyzer"
-    )
-    print(f'Data drift detected: {drift_analysis_step.output.read()}')
+    drift_analysis_step = last_run.get_step(name="drift_analyzer")
+    print(f"Data drift detected: {drift_analysis_step.output.read()}")
 
-    drift_detection_step = last_run.get_step(
-        name="drift_detector"
-    )
-    print(json.dumps(drift_detection_step.outputs['profile'].read(), indent=2))
+    drift_detection_step = last_run.get_step(name="drift_detector")
+    print(json.dumps(drift_detection_step.outputs["profile"].read(), indent=2))
 
     visualize_statistics()

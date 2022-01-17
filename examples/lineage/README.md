@@ -15,7 +15,7 @@ dataframes for us.
 This visualization is produced with the following code:
 
 ```python
-from zenml.core.repo import Repository
+from zenml.repository import Repository
 from zenml.integrations.dash.visualizers.pipeline_run_lineage_visualizer import (
     PipelineRunLineageVisualizer,
 )

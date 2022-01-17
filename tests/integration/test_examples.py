@@ -19,8 +19,8 @@ from typing import Dict
 import pytest
 
 from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample
-from zenml.core.repo import Repository
 from zenml.enums import ExecutionStatus
+from zenml.repository import Repository
 
 QUICKSTART = "quickstart"
 NOT_SO_QUICKSTART = "not_so_quickstart"

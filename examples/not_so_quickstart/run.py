@@ -20,8 +20,8 @@ from steps.sklearn_trainer import sklearn_evaluator, sklearn_trainer
 from steps.tf_steps import tf_evaluator, tf_trainer
 from steps.torch_steps import torch_evaluator, torch_trainer
 
-from zenml.core.repo import Repository
 from zenml.pipelines import pipeline
+from zenml.repository import Repository
 from zenml.steps import Output, step
 
 

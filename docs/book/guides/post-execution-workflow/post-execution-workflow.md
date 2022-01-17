@@ -20,7 +20,7 @@ repository -> pipelines -> runs -> steps -> outputs
 The highest level `repository` object is where to start from.
 
 ```python
-from zenml.core.repo import Repository
+from zenml.repository import Repository
 
 repo = Repository()
 ```

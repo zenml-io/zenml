@@ -104,7 +104,7 @@ straight to the new trainer and evaluator.
 If you add the following code to fetch the pipeline:
 
 ```python
-from zenml.core.repo import Repository
+from zenml.repository import Repository
 
 repo = Repository()
 p = repo.get_pipeline(pipeline_name="mnist_pipeline")
