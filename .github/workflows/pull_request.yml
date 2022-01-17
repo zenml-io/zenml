@@ -66,6 +66,7 @@ jobs:
           python -m poetry run zenml integration install pytorch -f
           python -m poetry run zenml integration install mlflow -f
           python -m poetry run zenml integration install gcp -f
+          python -m poetry run zenml integration install kubeflow -f
           python -m poetry run pip install click~=8.0.3
 
       - name: Lint
