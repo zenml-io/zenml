@@ -167,6 +167,13 @@ Alternatively, if you’re feeling brave, feel free to install the bleeding edge
 pip install git+https://github.com/zenml-io/zenml.git@main --upgrade
 ```
 
+ZenML is also available as a Docker image hosted publicly on [DockerHub](https://hub.docker.com/r/zenmldocker/zenml). 
+Use the following command to get started in a bash environment:
+
+```shell
+docker run -it zenmldocker/zenml:<VERSION> /bin/bash
+```
+
 ## 🚅 Quickstart
 
 The quickest way to get started is to create a simple pipeline.
