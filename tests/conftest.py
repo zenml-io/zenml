@@ -48,6 +48,10 @@ def base_repo(tmp_path_factory, session_mocker):
         return_value=str(tmp_path / "zenml"),
     )
 
+    session_mocker.patch.object(
+        sys.modules["zenml.utils.analytics_utils"], "track_event"
+    )
+
     # initialize repo at path
     Repository.initialize(root=tmp_path)
     repo = Repository(root=tmp_path)
