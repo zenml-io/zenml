@@ -50,6 +50,7 @@ class GlobalConfig(BaseSettings):
         if not fileio.file_exists(self.config_file()):
             # the config file hasn't been written to disk, make sure to persist
             # the unique user id
+            fileio.create_dir_recursive_if_not_exists(self.config_directory())
             self._write_config()
 
     def __setattr__(self, key: str, value: Any) -> None:
@@ -92,9 +93,9 @@ class GlobalConfig(BaseSettings):
         )
 
         config_values = {}
-        if fileio.file_exists(GlobalConfig.config_file()):
+        if fileio.file_exists(self.config_file()):
             config_values = cast(
-                Dict[str, Any], yaml_utils.read_yaml(GlobalConfig.config_file())
+                Dict[str, Any], yaml_utils.read_yaml(self.config_file())
             )
         elif fileio.file_exists(legacy_config_file):
             config_values = cast(
@@ -106,7 +107,7 @@ class GlobalConfig(BaseSettings):
     def _write_config(self) -> None:
         """Writes the global configuration options to disk."""
         yaml_dict = json.loads(self.json())
-        yaml_utils.write_yaml(GlobalConfig.config_file(), yaml_dict)
+        yaml_utils.write_yaml(self.config_file(), yaml_dict)
 
     @staticmethod
     def config_directory() -> str:
