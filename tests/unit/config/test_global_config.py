@@ -11,20 +11,26 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from uuid import uuid4
 
-import os
+import pytest
 
-from zenml.config.constants import GLOBAL_CONFIG_NAME
 from zenml.config.global_config import GlobalConfig
 from zenml.io import fileio
-from zenml.io.utils import get_global_config_directory
-
-APP_DIR = get_global_config_directory()
 
 
 def test_global_config_file_creation():
-    """A simple test to check whether the global config is created."""
+    """Tests whether a config file gets created when instantiating a global
+    config object."""
+    if fileio.file_exists(GlobalConfig.config_file()):
+        fileio.remove(GlobalConfig.config_file())
+
     GlobalConfig()
 
-    # Raw config should now exist
-    assert fileio.file_exists(os.path.join(APP_DIR, GLOBAL_CONFIG_NAME))
+    assert fileio.file_exists(GlobalConfig.config_file())
+
+
+def test_global_config_user_id_is_immutable():
+    """Tests that the global config user id attribute is immutable."""
+    with pytest.raises(TypeError):
+        GlobalConfig().user_id = uuid4()
