@@ -17,11 +17,11 @@ from pathlib import Path
 from click.testing import CliRunner
 
 from zenml.cli.base import init
-from zenml.core.constants import ZENML_DIR_NAME
+from zenml.repository import LOCAL_CONFIG_DIRECTORY_NAME
 
 
 def test_init_creates_zen_folder(tmp_path: Path) -> None:
     """Check that init command creates a .zen folder."""
     runner = CliRunner()
     runner.invoke(init, ["--path", str(tmp_path)])
-    assert (tmp_path / ZENML_DIR_NAME).exists()
+    assert (tmp_path / LOCAL_CONFIG_DIRECTORY_NAME).exists()
