@@ -120,7 +120,7 @@ def get_console_handler() -> Any:
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(CustomFormatter())
     # return console_handler
-    return RichHandler()
+    return RichHandler(show_path=False, omit_repeated_times=False)
 
 
 def get_file_handler() -> Any:
