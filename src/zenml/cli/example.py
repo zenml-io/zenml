@@ -226,7 +226,7 @@ class ExamplesRepo:
         latest_tag = parse(tags[-1].name)
         if type(latest_tag) is not Version:
             return "main"
-        return tags[-1].entrypoint_name  # type: ignore
+        return tags[-1].name  # type: ignore
 
     @property
     def is_cloned(self) -> bool:
