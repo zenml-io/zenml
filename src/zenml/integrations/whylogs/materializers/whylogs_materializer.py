@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -15,53 +15,46 @@
 import os
 from typing import Any, Type
 
-from whylogs.app.session import Session
-from whylogs.app.session import load_config, session_from_config
+from whylogs import DatasetProfile  # type: ignore
+from whylogs.whylabs_client.wrapper import upload_profile  # type: ignore
 
 from zenml.artifacts import StatisticsArtifact
+from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
-DEFAULT_FILENAME = "profile.pb"
-DEFAULT_PROJECT_NAME = "project"
-DEFAULT_PIPELINE_NAME = "pipeline"
-CONFIG_NAME = 'config.yaml'
-
-CONFIG = f"""
-project: {DEFAULT_PROJECT_NAME}
-pipeline: {DEFAULT_PIPELINE_NAME}
-verbose: false
-"""
+PROFILE_FILENAME = "profile.pb"
 
 
 class WhylogsMaterializer(BaseMaterializer):
     """Materializer to read/write Pytorch models."""
 
-    ASSOCIATED_TYPES = [Session]
+    ASSOCIATED_TYPES = [DatasetProfile]
     ASSOCIATED_ARTIFACT_TYPES = [StatisticsArtifact]
 
-    def handle_input(self, data_type: Type[Any]) -> Session:
-        """Reads and returns a Session.
+    def handle_input(self, data_type: Type[Any]) -> DatasetProfile:
+        """Reads and returns a whylogs DatasetProfile.
 
         Returns:
-            A loaded Session.
+            A loaded whylogs DatasetProfile.
         """
         super().handle_input(data_type)
-        config_path = os.path.join(self.artifact.uri, CONFIG_NAME)
-        session = session_from_config(config_path)
-        session.log_dataframe()
-        return Session.read_protobuf(
-            os.path.join(self.artifact.uri, DEFAULT_FILENAME)
-        )
+        filepath = os.path.join(self.artifact.uri, PROFILE_FILENAME)
+        with fileio.open(filepath, "rb") as f:
+            protobuf = DatasetProfile.parse_delimited(f.read())[0]
+        return protobuf
 
-    def handle_return(self, session: Session) -> None:
-        """Writes a Session.
+    def handle_return(self, profile: DatasetProfile) -> None:
+        """Writes a whylogs DatasetProfile.
 
         Args:
-            session: A Session object from whylogs.
+            profile: A DatasetProfile object from whylogs.
         """
-        super().handle_return(session)
-        session = session_from_config(config_path)
-        session.close()
-        profile.write_protobuf(
-            os.path.join(self.artifact.uri, DEFAULT_FILENAME)
-        )
+        super().handle_return(profile)
+        filepath = os.path.join(self.artifact.uri, PROFILE_FILENAME)
+        protobuf = profile.serialize_delimited()
+        with fileio.open(filepath, "wb") as f:
+            f.write(protobuf)
+
+        # TODO: find another way to detect if whylabs is enabled
+        if os.environ.get("WHYLABS_DEFAULT_ORG_ID"):
+            upload_profile(profile)
