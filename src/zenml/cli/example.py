@@ -22,13 +22,13 @@ import click
 from git.exc import GitCommandError, InvalidGitRepositoryError, NoSuchPathError
 from git.repo.base import Repo
 from packaging.version import Version, parse
-from rich.console import Console
 from rich.markdown import Markdown
 
 import zenml.io.utils
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error, warning
+from zenml.console import console
 from zenml.constants import GIT_REPO_URL
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -490,7 +490,6 @@ def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
         error(str(e))
 
     else:
-        console = Console()
         md = Markdown(example_obj.readme_content)
         console.print(md)
 
