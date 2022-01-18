@@ -12,6 +12,7 @@
 #  permissions and limitations under the License.
 
 import json
+
 import pandas as pd
 from rich import print
 from sklearn import datasets
@@ -112,14 +113,10 @@ if __name__ == "__main__":
     repo = Repository()
     pipeline = repo.get_pipelines()[0]
     last_run = pipeline.runs[-1]
-    drift_analysis_step = last_run.get_step(
-        name="drift_analyzer"
-    )
-    print(f'Data drift detected: {drift_analysis_step.output.read()}')
+    drift_analysis_step = last_run.get_step(name="drift_analyzer")
+    print(f"Data drift detected: {drift_analysis_step.output.read()}")
 
-    drift_detection_step = last_run.get_step(
-        name="drift_detector"
-    )
-    print(json.dumps(drift_detection_step.outputs['profile'].read(), indent=2))
+    drift_detection_step = last_run.get_step(name="drift_detector")
+    print(json.dumps(drift_detection_step.outputs["profile"].read(), indent=2))
 
     visualize_statistics()
