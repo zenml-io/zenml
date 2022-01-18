@@ -15,6 +15,11 @@ will train a classifier using [Tensorflow (Keras)](https://www.tensorflow.org/).
 We will run two experiments with different parameters (epochs and learning rate)
 and log these experiments into a local mlflow backend.
 
+This example is uses an mlflow setup that is based on the local filesystem for
+things like the artifact store. See the [mlflow
+documentation](https://www.mlflow.org/docs/latest/tracking.html#scenario-1-mlflow-on-localhost) 
+for details.
+
 In the example script the [mlflow autologger for
 Keras](https://www.mlflow.org/docs/latest/tracking.html#tensorflow-and-keras) is
 used within the training step to directly hook into the TensorFlow training and
@@ -33,15 +38,15 @@ In order to run this example, you need to install and initialize ZenML:
 
 ```shell
 # install CLI
-pip install zenml 
+pip install zenml
 
 # install ZenML integrations
 zenml integration install mlflow
 zenml integration install tensorflow
 
 # pull example
-zenml example pull mlflow
-cd zenml_examples/mlflow
+zenml example pull mlflow_tracking
+cd zenml_examples/mlflow_tracking
 
 # initialize
 zenml init
@@ -86,5 +91,5 @@ without wanting to fiddle around with all the individual installation and
 configuration steps, just run the following:
 
 ```shell
-zenml example run mlflow
+zenml example run mlflow_tracking
 ```
