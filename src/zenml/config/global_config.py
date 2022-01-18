@@ -16,14 +16,14 @@ import os
 import uuid
 from typing import Any, Dict, cast
 
-from pydantic import BaseSettings, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
 from zenml.io import fileio
 from zenml.io.utils import get_global_config_directory
 from zenml.utils import yaml_utils
 
 
-class GlobalConfig(BaseSettings):
+class GlobalConfig(BaseModel):
     """Stores global configuration options.
 
     Configuration options are read from a config file, but can be overwritten
