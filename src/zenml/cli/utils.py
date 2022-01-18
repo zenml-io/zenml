@@ -28,9 +28,11 @@ from typing import (
 
 import click
 from dateutil import tz
+from rich import print
 from tabulate import tabulate
 
 from zenml.cli import utils as cli_utils
+from zenml.console import console
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -45,7 +47,7 @@ def title(text: str) -> None:
     Args:
       text: Input text string.
     """
-    click.echo(click.style(text.upper(), fg="cyan", bold=True, underline=True))
+    console.print(text.upper(), style="title")
 
 
 def confirmation(text: str, *args: Any, **kwargs: Any) -> bool:
@@ -68,7 +70,7 @@ def declare(text: str) -> None:
     Args:
       text: Input text string.
     """
-    click.echo(click.style(text, fg="green"))
+    console.print(text, style="info")
 
 
 def error(text: str) -> None:
@@ -89,16 +91,17 @@ def warning(text: str) -> None:
     Args:
       text: Input text string.
     """
-    click.echo(click.style(text, fg="yellow", bold=True))
+    console.print(text, style="warning")
 
 
 def pretty_print(obj: Any) -> None:
-    """Pretty print an object on the CLI.
+    """Pretty print an object on the CLI using `rich.print`.
 
     Args:
       obj: Any object with a __str__ method defined.
+    # TODO: [LOW] check whether this needs to be converted to a string first
     """
-    click.echo(str(obj))
+    print(obj)
 
 
 def print_table(obj: List[Dict[str, Any]]) -> None:
