@@ -52,7 +52,7 @@ In general, we follow the ["fork-and-pull" Git workflow](https://github.com/susa
 4. Commit changes to the branch
 5. Following any formatting and testing guidelines specific to this repo
 6. Push changes to your fork
-7. Open a PR in our repository and follow the PR template so that we can efficiently review the changes.
+7. Open a PR in our repository (to the `develop` branch, NOT `main`) and follow the PR template so that we can efficiently review the changes.
 
 ### Linting, formatting, and tests
 
