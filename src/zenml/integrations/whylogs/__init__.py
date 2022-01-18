@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ class WhylogsIntegration(Integration):
     integration for ZenML."""
 
     NAME = WHYLOGS
-    REQUIREMENTS = ["whylogs"]
+    REQUIREMENTS = ["whylogs>=0.6.22", "pybars3>=0.9.7"]
 
     @classmethod
     def activate(cls) -> None:
