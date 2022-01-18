@@ -33,7 +33,7 @@ These are the third-party integrations that ZenML currently supports:
 | KServe | ⛏ | Inference | Looking for community implementors |   |
 | Kubeflow | ✅ | Orchestrator | Either full Kubeflow or Kubeflow Pipelines. Works for local environments currently. | [kubeflow](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow) |
 | MLFlow | ⛏ | Orchestrator | Looking for community implementors |   |
-| MLFlow Tracking | ✅ | Monitoring | Tracks your pipelines and your training runs. | [mlflow](https://github.com/zenml-io/zenml/tree/release/0.5.7/examples/mlflow) |
+| MLFlow Tracking | ✅ | Monitoring | Tracks your pipelines and your training runs. | [mlflow](https://github.com/zenml-io/zenml/tree/release/0.5.7/examples/mlflow_tracking) |
 | numpy | ✅ | Exploration |   |   |
 | pandas | ✅ | Exploration |   |   |
 | Plotly | ✅ | Visualizer | For Pipeline and PipelineRun visualization objects. | [lineage](https://github.com/zenml-io/zenml/tree/main/examples/lineage) |

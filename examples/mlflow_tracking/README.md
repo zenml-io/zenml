@@ -16,7 +16,7 @@ accuracy within the evaluation step.
 
 This example is uses an mlflow setup that is based on the local filesystem as backend
 and artifact store. See the [mlflow documentation](https://www.mlflow.org/docs/latest/tracking.html#scenario-1-mlflow-on-localhost) 
-for details. 
+for details.
 
 ## Run it locally
 
@@ -25,15 +25,15 @@ In order to run this example, you need to install and initialize ZenML:
 
 ```shell
 # install CLI
-pip install zenml 
+pip install zenml
 
 # install ZenML integrations
 zenml integration install mlflow
 zenml integration install tensorflow
 
 # pull example
-zenml example pull mlflow
-cd zenml_examples/mlflow
+zenml example pull mlflow_tracking
+cd zenml_examples/mlflow_tracking
 
 # initialize
 zenml init
@@ -73,5 +73,5 @@ without wanting to fiddle around with all the individual installation and
 configuration steps, just run the following:
 
 ```shell
-zenml example run mlflow
+zenml example run mlflow_tracking
 ```
