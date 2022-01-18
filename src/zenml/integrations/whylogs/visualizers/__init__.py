@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.integrations.whylogs.visualizers.whylogs_visualizer import (   # noqa
+from zenml.integrations.whylogs.visualizers.whylogs_visualizer import (  # noqa
+    WhylogsPlots,
     WhylogsVisualizer,
-    WhylogsPlots
 )

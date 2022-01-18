@@ -14,10 +14,10 @@
 
 import tempfile
 from enum import Enum
-from typing import List, Optional
+from typing import Any, List, Optional
 
-from whylogs import DatasetProfile
-from whylogs.viz import ProfileVisualizer, profile_viewer
+from whylogs import DatasetProfile  # type: ignore
+from whylogs.viz import ProfileVisualizer, profile_viewer  # type: ignore
 
 from zenml.logger import get_logger
 from zenml.post_execution import StepView
@@ -43,15 +43,19 @@ class WhylogsPlots(str, Enum):
         return self.value
 
     @classmethod
-    def list(cls):
-        return list(map(lambda c: c.name, cls))
+    def list(cls) -> List[str]:
+        return list(map(lambda c: c.name, cls))  # type: ignore
 
 
 class WhylogsVisualizer(BaseStepVisualizer):
     """The implementation of an Whylogs Visualizer."""
 
     def visualize(
-        self, object: StepView, plots: Optional[List[WhylogsPlots]] = None
+        self,
+        object: StepView,
+        *args: Any,
+        plots: Optional[List[WhylogsPlots]] = None,
+        **kwargs: Any,
     ) -> None:
         """Method to visualize components
 
@@ -72,7 +76,9 @@ class WhylogsVisualizer(BaseStepVisualizer):
                 self.visualize_profile(artifact_name, profile, plots)
 
     @staticmethod
-    def _get_plot_method(visualizer: ProfileVisualizer, plot: WhylogsPlots):
+    def _get_plot_method(
+        visualizer: ProfileVisualizer, plot: WhylogsPlots
+    ) -> Any:
         plot_method = getattr(visualizer, plot, None)
         if plot_method is None:
             nl = "\n"

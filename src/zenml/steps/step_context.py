@@ -40,7 +40,6 @@ class StepContext:
     def __init__(
         self,
         step_name: str,
-        pipeline_run_id: str,
         output_materializers: Dict[str, Type["BaseMaterializer"]],
         output_artifacts: Dict[str, "BaseArtifact"],
     ):
@@ -66,7 +65,6 @@ class StepContext:
             )
 
         self.step_name = step_name
-        self.pipeline_run_id = pipeline_run_id
         self._outputs = {
             key: StepContextOutput(
                 output_materializers[key], output_artifacts[key]

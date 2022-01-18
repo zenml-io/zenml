@@ -105,7 +105,7 @@ class WhylogsContext(StepContext):
         tags = dict()
         # TODO: add more tags when this information is available in the context:
         # tags["zenml.pipeline"] = self.pipeline_name
-        tags["zenml.pipeline_run"] = self.pipeline_run_id
+        # tags["zenml.pipeline_run"] = self.pipeline_run_id
         tags["zenml.step"] = self.step_name
         # the datasetId tag is used as a unique identifier for datasets in
         # whylabs

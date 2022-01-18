@@ -394,7 +394,6 @@ class _FunctionExecutor(BaseExecutor):
             elif issubclass(arg_type, StepContext):
                 output_artifacts = {k: v[0] for k, v in output_dict.items()}
                 context = arg_type(
-                    pipeline_run_id=self._context.pipeline_run_id,
                     step_name=getattr(self, PARAM_STEP_NAME),
                     output_materializers=self.materializers or {},
                     output_artifacts=output_artifacts,

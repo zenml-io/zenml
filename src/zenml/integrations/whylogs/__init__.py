@@ -25,8 +25,8 @@ class WhylogsIntegration(Integration):
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        from zenml.integrations.whylogs import visualizers  # noqa
         from zenml.integrations.whylogs import materializers  # noqa
+        from zenml.integrations.whylogs import visualizers  # noqa
 
 
 WhylogsIntegration.check_installation()
