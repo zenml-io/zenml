@@ -491,7 +491,8 @@ def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
 
     else:
         md = Markdown(example_obj.readme_content)
-        console.print(md)
+        with console.pager(styles=True):
+            console.print(md)
 
 
 @example.command(
