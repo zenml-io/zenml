@@ -187,7 +187,7 @@ class StepView:
         """Returns a string representation of this step."""
         return (
             f"{self.__class__.__qualname__}(id={self._id}, "
-            f"name='{self._name}', parameters={self._parameters})"
+            f"name='{self.pipeline_step_name}', parameters={self._parameters})"
         )
 
     def __eq__(self, other: Any) -> bool:
