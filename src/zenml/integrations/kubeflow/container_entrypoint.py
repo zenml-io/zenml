@@ -203,7 +203,7 @@ def _dump_ui_metadata(
             )
             # There must be at least a channel in a input, and all channels in
             # a input share the same artifact type.
-            artifact_type = spec.channels[0].artifact_query.type.name  # type: ignore[attr-defined] # noqa
+            artifact_type = spec.channels[0].artifact_query.type.entrypoint_name  # type: ignore[attr-defined] # noqa
             rendered_list.append(
                 "## {name}\n\n**Type**: {channel_type}\n\n{artifacts}".format(
                     name=_sanitize_underscore(name),
@@ -238,7 +238,7 @@ def _dump_ui_metadata(
             )
             # There must be at least a channel in a input, and all channels
             # in a input share the same artifact type.
-            artifact_type = spec.artifact_spec.type.name  # type: ignore[attr-defined] # noqa
+            artifact_type = spec.artifact_spec.type.entrypoint_name  # type: ignore[attr-defined] # noqa
             rendered_list.append(
                 "## {name}\n\n**Type**: {channel_type}\n\n{artifacts}".format(
                     name=_sanitize_underscore(name),
@@ -283,7 +283,7 @@ def _dump_ui_metadata(
     # Add Tensorboard view for ModelRun outputs.
     for name, spec in node.outputs.outputs.items():  # type: ignore[attr-defined] # noqa
         if (
-            spec.artifact_spec.type.name
+            spec.artifact_spec.type.entrypoint_name
             == standard_artifacts.ModelRun.TYPE_NAME
         ):
             output_model = execution_info.output_dict[name][0]
@@ -410,7 +410,7 @@ def _create_executor_class(
     }
 
     generate_component_class(
-        step_name=step_instance.name,
+        step_name=step_instance.entrypoint_name,
         step_module=executor_class_target_module_name,
         input_spec=input_spec,
         output_spec=output_spec,

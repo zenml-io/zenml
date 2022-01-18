@@ -33,7 +33,7 @@ def importer() -> Output(
 
 
 @step
-def trainer(
+def trainor(
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
@@ -69,7 +69,18 @@ def mnist_pipeline(
 
 pipeline = mnist_pipeline(
     importer=importer(),
-    trainer=trainer(),
+    trainer=trainor(),
     evaluator=evaluator(),
 )
 pipeline.run()
+
+from zenml.core.repo import Repository
+
+repo = Repository()
+pipelines = repo.get_pipelines()
+shot_predictor_pipeline = repo.get_pipeline(pipeline_name="mnist_pipeline")
+runs = shot_predictor_pipeline.runs  # chronologically ordered
+last_run = runs[-1]
+print(last_run.steps)
+print(last_run.get_step_names())
+model = last_run.get_step(name='trainer').output

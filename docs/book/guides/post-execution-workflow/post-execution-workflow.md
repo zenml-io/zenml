@@ -50,8 +50,8 @@ run = pipeline.get_run(run_name="custom_pipeline_run_name")
 ```python
 # at this point we switch from the `get_` paradigm to properties
 steps = run.steps  # all steps of a pipeline
-step = steps[0] 
-print(step.name)
+step = steps[0]
+print(step.entrypoint_name)
 ```
 
 #### Outputs

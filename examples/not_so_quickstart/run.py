@@ -102,6 +102,6 @@ print("***********************OUTPUT************************")
 for r in pipeline.runs[-3:]:
     eval_step = r.get_step("evaluator")
     print(
-        f"For {eval_step.name}, the accuracy is: "
+        f"For {eval_step.entrypoint_name}, the accuracy is: "
         f"{eval_step.output.read():.2f}"
     )
