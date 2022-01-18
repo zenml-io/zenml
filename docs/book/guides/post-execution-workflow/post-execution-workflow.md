@@ -59,7 +59,7 @@ print(step.name)
 ```python
 # The outputs of a step
 # if multiple outputs they are accessible by name
-outputs = step.outputs["step_name"]
+outputs = step.outputs["output_name"]
 
 # if one output, use the `.output` property instead 
 output = step.output 
