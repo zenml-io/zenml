@@ -1,22 +1,30 @@
-# Itegrating MLflow Tracking into your Zenml Pipeline
-[MLflow Tracking](https://www.mlflow.org/docs/latest/tracking.html) is a popular tool that tracks and visualizes
-experiment runs with their many parameters, metrics and output files.
+# Integrating MLflow Tracking into your ZenML Pipeline
+
+[MLflow Tracking](https://www.mlflow.org/docs/latest/tracking.html) is a popular
+tool that tracks and visualizes experiment runs with their many parameters,
+metrics and output files.
 
 ## Overview
-This example builds on the [quickstart](../quickstart) but showcases how easily mlflow tracking can be integrated into 
-a zenml pipeline
 
-We'll be using the [Fashion-MNIST](https://github.com/zalandoresearch/fashion-mnist) dataset and train a classifier 
-using [Tensorflow (Keras)](https://www.tensorflow.org/). We will run two experiments with different parameters (epochs 
-and learning rate) and log these experiments into a local mlflow backend. 
+This example builds on the [quickstart](../quickstart) but showcases how easily
+mlflow tracking can be integrated into a ZenML pipeline.
 
-In the example script the [mlflow autologger for keras](https://www.mlflow.org/docs/latest/tracking.html#tensorflow-and-keras) is used within the training step to directly hook into the tensorflow 
-training and log out all relevant parameters, metrics and output files. Additionally, we explicitly log the test 
-accuracy within the evaluation step.
+We'll be using the
+[Fashion-MNIST](https://github.com/zalandoresearch/fashion-mnist) dataset and
+will train a classifier using [Tensorflow (Keras)](https://www.tensorflow.org/).
+We will run two experiments with different parameters (epochs and learning rate)
+and log these experiments into a local mlflow backend.
 
-This example is uses an mlflow setup that is based on the local filesystem as backend
-and artifact store. See the [mlflow documentation](https://www.mlflow.org/docs/latest/tracking.html#scenario-1-mlflow-on-localhost) 
-for details. 
+In the example script the [mlflow autologger for
+Keras](https://www.mlflow.org/docs/latest/tracking.html#tensorflow-and-keras) is
+used within the training step to directly hook into the TensorFlow training and
+it will log out all relevant parameters, metrics and output files. Additionally,
+we explicitly log the test accuracy within the evaluation step.
+
+This example uses an mlflow setup that is based on the local filesystem as
+orchestrator and artifact store. See the [mlflow
+documentation](https://www.mlflow.org/docs/latest/tracking.html#scenario-1-mlflow-on-localhost)
+for details.
 
 ## Run it locally
 
@@ -47,19 +55,24 @@ python run.py
 ```
 
 ### See results
-Now we just need to start the mlflow ui to have a look at our two pipeline runs within the mlflow UI. To do this we need
-to run:
+Now we just need to start the mlflow UI to have a look at our two pipeline runs.
+To do this we need to run:
+
 ```shell
- mlflow ui --backend-store-uri <SPECIFIC_MLRUNS_PATH_GOES_HERE>
- ```
-Check the commandline output of the pipeline run to see the exact path for you. This will start mlflow at
-localhost:5000. In case this port is used on your machine you may have to specify another port:
+mlflow ui --backend-store-uri <SPECIFIC_MLRUNS_PATH_GOES_HERE>
+```
+
+Check the terminal output of the pipeline run to see the exact path appropriate
+in your specific case. This will start mlflow at `localhost:5000`. If this port
+is already in use on your machine you may have to specify another port:
+
 ```shell
  mlflow ui --backend-store-uri <SPECIFIC_MLRUNS_PATH_GOES_HERE> -p 5001
  ```
 
 ### Clean up
-In order to clean up, delete the remaining zenml references as well as the mlruns directory.
+In order to clean up, delete the remaining ZenML references as well as the
+`mlruns` directory.
 
 ```shell
 rm -rf zenml_examples
