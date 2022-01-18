@@ -26,7 +26,7 @@ QUICKSTART = "quickstart"
 NOT_SO_QUICKSTART = "not_so_quickstart"
 CACHING = "caching"
 DRIFT_DETECTION = "drift_detection"
-MLFLOW = "mlflow"
+MLFLOW = "mlflow_tracking"
 
 
 @pytest.fixture
