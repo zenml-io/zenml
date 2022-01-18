@@ -14,6 +14,7 @@
 """Definition of an Artifact Store"""
 
 import os
+from pathlib import Path
 from typing import Any, Optional
 
 from zenml.config.global_config import GlobalConfig
@@ -53,7 +54,7 @@ class BaseArtifactStore(BaseComponent):
         Returns:
             Name of the component.
         """
-        return fileio.get_grandparent(artifact_uri)
+        return fileio.get_parent(artifact_uri)
 
     def resolve_uri_locally(
         self, artifact_uri: str, path: Optional[str] = None
@@ -78,7 +79,7 @@ class BaseArtifactStore(BaseComponent):
                 GlobalConfig().get_serialization_dir(),
                 str(self.uuid),
                 BaseArtifactStore.get_component_name_from_uri(artifact_uri),
-                fileio.get_parent(artifact_uri),  # unique ID from MLMD
+                Path(artifact_uri).stem,  # unique ID from MLMD
             )
 
         # Create if not exists and download

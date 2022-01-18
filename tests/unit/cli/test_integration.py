@@ -21,7 +21,7 @@ from pytest_mock import MockFixture
 from zenml.cli.integration import integration
 from zenml.integrations.registry import integration_registry
 
-NOT_AN_INTEGRATIONS = ["zenflow", "Anti-Tensorflow", "123"]
+NOT_AN_INTEGRATION = ["zenflow", "Anti-Tensorflow", "123"]
 INTEGRATIONS = ["airflow", "plotly", "tensorflow"]
 
 
@@ -36,7 +36,7 @@ def test_integration_list() -> None:
         assert implemented_integration in result.output
 
 
-@pytest.mark.parametrize("not_an_integration", NOT_AN_INTEGRATIONS)
+@pytest.mark.parametrize("not_an_integration", NOT_AN_INTEGRATION)
 def test_integration_get_requirements_inexistent_integration(
     not_an_integration: str,
 ) -> None:
@@ -63,7 +63,7 @@ def test_integration_get_requirements_all() -> None:
     assert result.exit_code == 0
 
 
-@pytest.mark.parametrize("not_an_integration", NOT_AN_INTEGRATIONS)
+@pytest.mark.parametrize("not_an_integration", NOT_AN_INTEGRATION)
 def test_integration_install_inexistent_integration(
     not_an_integration: str,
 ) -> None:
@@ -89,7 +89,7 @@ def test_integration_install_specific_integration(
         return_value=None,
     )
 
-    result = runner.invoke(integration, ["install", integration_name])
+    result = runner.invoke(integration, ["install", "-f", integration_name])
     assert result.exit_code == 0
 
 
@@ -108,7 +108,7 @@ def test_integration_install_all(mocker: MockFixture) -> None:
     assert result.exit_code == 0
 
 
-@pytest.mark.parametrize("not_an_integration", NOT_AN_INTEGRATIONS)
+@pytest.mark.parametrize("not_an_integration", NOT_AN_INTEGRATION)
 def test_integration_uninstall_inexistent_integration(
     not_an_integration: str,
 ) -> None:
@@ -134,7 +134,7 @@ def test_integration_uninstall_specific_integration(
         return_value=None,
     )
 
-    result = runner.invoke(integration, ["uninstall", integration_name])
+    result = runner.invoke(integration, ["uninstall", "-f", integration_name])
     assert result.exit_code == 0
 
 

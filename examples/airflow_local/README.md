@@ -75,3 +75,12 @@ In order to clean up, shut down the airflow orchestrator and delete the remainin
 zenml orchestrator down
 rm -rf zenml_examples
 ```
+## SuperQuick `airflow_local` run
+
+If you're really in a hurry and you want just to see this example pipeline run,
+without wanting to fiddle around with all the individual installation and
+configuration steps, just run the following:
+
+```shell
+zenml example run airflow_local
+```
