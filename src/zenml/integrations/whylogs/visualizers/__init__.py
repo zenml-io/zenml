@@ -14,4 +14,5 @@
 
 from zenml.integrations.whylogs.visualizers.whylogs_visualizer import (   # noqa
     WhylogsVisualizer,
+    WhylogsPlots
 )

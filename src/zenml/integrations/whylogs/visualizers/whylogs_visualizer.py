@@ -13,20 +13,18 @@
 #  permissions and limitations under the License.
 
 import tempfile
-import webbrowser
-from typing import Any, Optional, List
+from enum import Enum
+from typing import List, Optional
+
 from whylogs import DatasetProfile
 from whylogs.viz import ProfileVisualizer, profile_viewer
 
-from enum import Enum
-from zenml.integrations.whylogs import visualizers
-
-import zenml.io.utils
 from zenml.logger import get_logger
 from zenml.post_execution import StepView
 from zenml.visualizers import BaseStepVisualizer
 
 logger = get_logger(__name__)
+
 
 class WhylogsPlots(str, Enum):
     """All supported whylogs plot types."""
@@ -46,17 +44,21 @@ class WhylogsPlots(str, Enum):
 
     @classmethod
     def list(cls):
-        return list(map(lambda c: c.value, cls))
+        return list(map(lambda c: c.name, cls))
 
 
 class WhylogsVisualizer(BaseStepVisualizer):
     """The implementation of an Whylogs Visualizer."""
 
-    def visualize(self, object: StepView, plots: Optional[List[WhylogsPlots]] = None) -> None:
+    def visualize(
+        self, object: StepView, plots: Optional[List[WhylogsPlots]] = None
+    ) -> None:
         """Method to visualize components
 
         Args:
             object: StepView fetched from run.get_step().
+            plots: optional list of whylogs plots to visualize. Defaults to
+                using all available plot types if not set
         """
         for artifact_name, artifact_view in object.outputs.items():
             # filter out anything but whylog dataset profile artifacts
@@ -71,18 +73,21 @@ class WhylogsVisualizer(BaseStepVisualizer):
 
     @staticmethod
     def _get_plot_method(visualizer: ProfileVisualizer, plot: WhylogsPlots):
-        plot_method = getattr(visualizer, plot)
+        plot_method = getattr(visualizer, plot, None)
         if plot_method is None:
             nl = "\n"
             raise ValueError(
-                f"Invalid plot type: {plot} \n\n"
+                f"Invalid whylogs plot type: {plot} \n\n"
                 f"Valid and supported options are: {nl}- "
                 f'{f"{nl}- ".join(WhylogsPlots.list())}'
             )
         return plot_method
 
     def visualize_profile(
-        self, name: str, profile: DatasetProfile, plots: Optional[List[WhylogsPlots]] = None
+        self,
+        name: str,
+        profile: DatasetProfile,
+        plots: Optional[List[WhylogsPlots]] = None,
     ) -> None:
         """Generate a Facet Overview to visualize a whylogs dataset profile
 
@@ -91,7 +96,7 @@ class WhylogsVisualizer(BaseStepVisualizer):
                 displayed at the same time
             profile: whylogs DatasetProfile to visualize
             plots: optional list of whylogs plots to visualize. Defaults to
-                using all available plot types if not set 
+                using all available plot types if not set
         """
         if self.running_in_notebook():
             from IPython.core.display import display
@@ -100,10 +105,10 @@ class WhylogsVisualizer(BaseStepVisualizer):
                 # default to using all plots if none are supplied
                 plots = list(WhylogsPlots)
 
-            visualizer = ProfileVisualizer()
-            visualizer.set_profiles([profile])
             for column in sorted(profile.columns):
                 for plot in plots:
+                    visualizer = ProfileVisualizer()
+                    visualizer.set_profiles([profile])
                     plot_method = self._get_plot_method(visualizer, plot)
                     display(plot_method(column))
         else:
