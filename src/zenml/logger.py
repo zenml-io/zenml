@@ -20,6 +20,7 @@ from logging.handlers import TimedRotatingFileHandler
 from typing import Any, Dict
 
 from absl import logging as absl_logging
+from rich.logging import RichHandler
 
 from zenml.constants import ZENML_LOGGING_VERBOSITY
 from zenml.enums import LoggingLevels
@@ -118,7 +119,8 @@ def get_console_handler() -> Any:
     """Get console handler for logging."""
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(CustomFormatter())
-    return console_handler
+    # return console_handler
+    return RichHandler()
 
 
 def get_file_handler() -> Any:
