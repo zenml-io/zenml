@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import datetime
-from typing import Optional
+from typing import Dict, Optional
 
 import pandas as pd
 from whylogs import DatasetProfile  # type: ignore
@@ -83,6 +83,7 @@ class WhylogsContext(StepContext):
         df: pd.DataFrame,
         dataset_name: Optional[str] = None,
         dataset_timestamp: Optional[datetime.datetime] = None,
+        tags: Optional[Dict[str, str]] = None,
     ) -> DatasetProfile:
         """Log the statistics of a Pandas dataframe.
 
@@ -93,6 +94,7 @@ class WhylogsContext(StepContext):
             dataset_timestamp: timestamp to associate with the generated
                 dataset profile (Optional). The current time is used if not
                 supplied.
+            tags: custom metadata tags associated with the whylogs profile
 
         Returns:
             A whylogs DatasetProfile with the statistics generated from the
@@ -102,14 +104,15 @@ class WhylogsContext(StepContext):
         # TODO: the step name is not sufficient to create a unique dataset
         # name across different pipelines. The pipeline name is also required
         dataset_name = dataset_name or self.step_name
-        tags = dict()
+        tags = tags or dict()
         # TODO: add more tags when this information is available in the context:
         # tags["zenml.pipeline"] = self.pipeline_name
         # tags["zenml.pipeline_run"] = self.pipeline_run_id
         tags["zenml.step"] = self.step_name
-        # the datasetId tag is used as a unique identifier for datasets in
-        # whylabs
-        tags["datasetId"] = dataset_name
+        # the datasetId tag is used to identify dataset profiles in whylabs.
+        # dataset profiles with the same datasetID are considered to belong
+        # to the same dataset/model.
+        tags.setdefault("datasetId", dataset_name)
         logger = session.logger(
             dataset_name, dataset_timestamp=dataset_timestamp, tags=tags
         )

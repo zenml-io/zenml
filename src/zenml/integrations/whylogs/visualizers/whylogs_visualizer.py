@@ -14,7 +14,7 @@
 
 import tempfile
 from enum import Enum
-from typing import Any, List, Optional
+from typing import Any, List, Optional, cast
 
 from whylogs import DatasetProfile  # type: ignore
 from whylogs.viz import ProfileVisualizer, profile_viewer  # type: ignore
@@ -44,7 +44,8 @@ class WhylogsPlots(str, Enum):
 
     @classmethod
     def list(cls) -> List[str]:
-        return list(map(lambda c: c.name, cls))  # type: ignore
+        names = map(lambda c: c.name, cls)  # type: ignore
+        return list(cast(List[str], names))
 
 
 class WhylogsVisualizer(BaseStepVisualizer):
@@ -71,8 +72,8 @@ class WhylogsVisualizer(BaseStepVisualizer):
             ):
                 profile = artifact_view.read()
                 # whylogs doesn't currently support visualizing multiple
-                # profiles in the same window, so we open them in separate
-                # viewers for now
+                # non-related profiles side-by-side, so we open them in
+                # separate viewers for now
                 self.visualize_profile(artifact_name, profile, plots)
 
     @staticmethod

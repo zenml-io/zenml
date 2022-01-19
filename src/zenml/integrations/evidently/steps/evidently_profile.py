@@ -38,7 +38,7 @@ from evidently.tabs import (  # type: ignore
 from evidently.tabs.base_tab import Tab  # type: ignore
 
 from zenml.artifacts import DataAnalysisArtifact, DataArtifact
-from zenml.steps import Output, StepContext
+from zenml.steps import Output
 from zenml.steps.step_interfaces.base_drift_detection_step import (
     BaseDriftDetectionConfig,
     BaseDriftDetectionStep,
@@ -117,7 +117,6 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
         reference_dataset: DataArtifact,
         comparison_dataset: DataArtifact,
         config: EvidentlyProfileConfig,
-        context: StepContext,
     ) -> Output(  # type:ignore[valid-type]
         profile=dict, dashboard=str
     ):
