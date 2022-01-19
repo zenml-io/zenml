@@ -5,7 +5,6 @@ on:
     branches:
       - main
       - develop
-      - bugfix/ENG-325-fix-todo-parser
 
 jobs:
   update_todos:
