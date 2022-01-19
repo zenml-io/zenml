@@ -22,6 +22,8 @@ from zenml.io import fileio
 from zenml.io.utils import get_global_config_directory
 from zenml.utils import yaml_utils
 
+LEGACY_CONFIG_FILE_NAME = ".zenglobal.json"
+
 
 class GlobalConfig(BaseModel):
     """Stores global configuration options.
@@ -89,7 +91,7 @@ class GlobalConfig(BaseModel):
         options from a legacy config file or returns an empty dictionary.
         """
         legacy_config_file = os.path.join(
-            GlobalConfig.config_directory(), ".zenglobal.json"
+            GlobalConfig.config_directory(), LEGACY_CONFIG_FILE_NAME
         )
 
         config_values = {}

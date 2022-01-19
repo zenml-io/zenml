@@ -66,9 +66,11 @@ class StackValidator:
                 f"stack: {stack}"
             )
 
-        if self._custom_validation_function:
-            if not self._custom_validation_function(stack):
-                raise StackValidationError(
-                    f"Custom validation function failed to validate "
-                    f"stack: {stack}"
-                )
+        if (
+            self._custom_validation_function
+            and not self._custom_validation_function(stack)
+        ):
+            raise StackValidationError(
+                f"Custom validation function failed to validate "
+                f"stack: {stack}"
+            )

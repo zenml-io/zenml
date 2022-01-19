@@ -52,13 +52,13 @@ def _get_stack_component(
     repo = Repository()
     if component_name:
         return repo.get_stack_component(component_type, name=component_name)
-    else:
-        component = repo.active_stack.components[component_type]
-        cli_utils.declare(
-            f"No orchestrator name given, using `{component.name}` "
-            f"from active stack."
-        )
-        return component
+
+    component = repo.active_stack.components[component_type]
+    cli_utils.declare(
+        f"No orchestrator name given, using `{component.name}` "
+        f"from active stack."
+    )
+    return component
 
 
 def generate_stack_component_get_command(
