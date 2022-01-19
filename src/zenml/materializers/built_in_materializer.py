@@ -26,7 +26,7 @@ DEFAULT_FILENAME = "data.json"
 class BuiltInMaterializer(BaseMaterializer):
     """Read/Write JSON files."""
 
-    # TODO [LOW]: consider adding typing.Dict and typing.List
+    # TODO [ENG-331]: consider adding typing.Dict and typing.List
     # since these are the 'correct' way to annotate these types.
 
     ASSOCIATED_ARTIFACT_TYPES = [

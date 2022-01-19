@@ -31,7 +31,7 @@ NOT_CONTAINER_REGISTRIES = [
 
 def test_container_registry_describe_fails_gracefully_when_no_registry_present() -> None:
     """Test that the container_registry describe command fails when no registry present (as per default)"""
-    # TODO [HIGH]: add a fixture that spins up a test env each time
+    # TODO [ENG-341]: add a fixture that spins up a test env each time
     runner = CliRunner()
     result = runner.invoke(describe_container_registry)
     assert result.exit_code == 0
@@ -43,7 +43,7 @@ def test_container_registry_describe_works(
     not_a_container_registry: str,
 ) -> None:
     """Test that the container_registry describe command works when passing in correct parameters"""
-    # TODO [HIGH]: add a fixture that spins up a test env each time
+    # TODO [ENG-342]: add a fixture that spins up a test env each time
     runner = CliRunner()
     runner.invoke(
         register_container_registry, [not_a_container_registry, "some_uri"]

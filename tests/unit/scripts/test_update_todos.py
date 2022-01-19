@@ -41,24 +41,23 @@ def test_todo_detection(tmp_path):
 
     file.write_text(
         """
-            # TODO [LOW]: valid todo
+            # TODO [ENG-345]: valid todo
 
             # TODO: missing priority
 
             # TODO [MEDIU]: invalid priority
 
-            # TODO[MEDIUM]: multiline
+            # TODO[ENG-346]: multiline
             #  todo
 
-            # TODO[HIGH]: invalid multiline
+            # TODO[ENG-347]: invalid multiline
             # todo (no indentation)
 
-            # TODO [ABC-123]: valid issue key
 
             # TODO [123-ABC]: invalid issue key
 
-            # TODO [LOWEST]:
-            # TODO [HIGHEST]: invalid multiline
+            # TODO [ENG-348]:
+            # TODO [ENG-349]: invalid multiline
                 #  over-indented
         """
     )
@@ -105,13 +104,12 @@ def test_todo_issue_key_insertion(tmp_path):
 
     file.write_text(
         """
-            # TODO [LOW]: some valid todo
+            # TODO [ENG-350]: some valid todo
 
-            # TODO [ABC-123]: todo with existing issue key
 
             # TODO: missing priority
 
-            # TODO [HIGHEST]: another
+            # TODO [ENG-351]: another
             #  valid todo
         """
     )
@@ -138,14 +136,10 @@ def test_todo_issue_key_insertion(tmp_path):
     update_file_with_issue_keys(file, todos)
 
     expected_file_content = """
-            # TODO [TEST-1]: some valid todo
 
-            # TODO [ABC-123]: todo with existing issue key
 
             # TODO: missing priority
 
-            # TODO [TEST-2]: another
-            #  valid todo
         """
 
     assert file.read_text() == expected_file_content
@@ -164,13 +158,10 @@ def test_removing_of_closed_todos(tmp_path):
 
     file.write_text(
         """
-            # TODO [LOW]: todo without issue reference
+            # TODO [ENG-352]: todo without issue reference
 
-            # TODO [TEST-1]: todo for
-            #  closed issue
             # TODO: missing priority
 
-            # TODO [TEST-2]: todo with open issue
         """
     )
 
@@ -199,11 +190,10 @@ def test_removing_of_closed_todos(tmp_path):
     remove_todos_for_closed_issues(file, todos, issues)
 
     expected_file_content = """
-            # TODO [LOW]: todo without issue reference
+            # TODO [ENG-353]: todo without issue reference
 
             # TODO: missing priority
 
-            # TODO [TEST-2]: todo with open issue
         """
 
     assert file.read_text() == expected_file_content
