@@ -251,7 +251,7 @@ def find_todos(file: Path) -> Tuple[List[Todo], List[Todo]]:
         r" ?:(.*$\n(\1 {2}.*$\n)*)",
         file_content,
         flags=re.MULTILINE,
-    )
+    ) if "# notodo" not in file_content.split("\n") else ()
 
     todos_without_issue = []
     todos_with_issue = []

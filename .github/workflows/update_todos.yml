@@ -3,7 +3,6 @@ name: Update TODOs
 on:
   push:
     branches:
-      - main
       - develop
 
 jobs:
