@@ -22,6 +22,7 @@ zenml_custom_theme = Theme(
         "warning": "magenta",
         "danger": "bold red",
         "title": "bold cyan underline",
+        "error": "red",
     }
 )
 console = Console(theme=zenml_custom_theme)
