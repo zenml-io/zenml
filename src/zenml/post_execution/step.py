@@ -30,8 +30,8 @@ class StepView:
         self,
         id_: int,
         parents_step_ids: List[int],
+        entrypoint_name: str,
         name: str,
-        pipeline_step_name: str,
         parameters: Dict[str, Any],
         metadata_store: "BaseMetadataStore",
     ):
@@ -43,16 +43,16 @@ class StepView:
         Args:
             id_: The execution id of this step.
             parents_step_ids: The execution ids of the parents of this step.
-            name: The name of this step.
-            pipeline_step_name: The name of this step within the pipeline
+            entrypoint_name: The name of this step.
+            name: The name of this step within the pipeline
             parameters: Parameters that were used to run this step.
             metadata_store: The metadata store which should be used to fetch
                 additional information related to this step.
         """
         self._id = id_
         self._parents_step_ids = parents_step_ids
+        self._entrypoint_name = entrypoint_name
         self._name = name
-        self._pipeline_step_name = pipeline_step_name
         self._parameters = parameters
         self._metadata_store = metadata_store
 
@@ -79,26 +79,26 @@ class StepView:
         return steps
 
     @property
-    def name(self) -> str:
-        """Returns the step name.
+    def entrypoint_name(self) -> str:
+        """Returns the step entrypoint_name.
 
         This name is equal to the name argument passed to the @step decorator
         or the actual function name if no explicit name was given.
 
         Examples:
-            # the step name will be "my_step"
+            # the step entrypoint_name will be "my_step"
             @step(name="my_step")
             def my_step_function(...)
 
-            # the step name will be "my_step_function"
+            # the step entrypoint_name will be "my_step_function"
             @step
             def my_step_function(...)
         """
-        return self._name
+        return self._entrypoint_name
 
     @property
-    def pipeline_step_name(self) -> str:
-        """Returns the pipeline step name as it is defined in the pipeline.
+    def name(self) -> str:
+        """Returns the name as it is defined in the pipeline.
 
         This name is equal to the name given to the step within the pipeline
         context
@@ -114,9 +114,9 @@ class StepView:
                     step_a = my_step_function()
                 )
 
-            The pipeline step name will be `step_a`
+            The name will be `step_a`
         """
-        return self._pipeline_step_name
+        return self._name
 
     @property
     def parameters(self) -> Dict[str, Any]:
@@ -187,7 +187,8 @@ class StepView:
         """Returns a string representation of this step."""
         return (
             f"{self.__class__.__qualname__}(id={self._id}, "
-            f"name='{self._name}', parameters={self._parameters})"
+            f"name='{self.name}', entrypoint_name='{self.entrypoint_name}'"
+            f"parameters={self._parameters})"
         )
 
     def __eq__(self, other: Any) -> bool:
