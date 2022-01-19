@@ -20,7 +20,7 @@ zenml init
 ```
 
 The initialization creates a local `.zen` folder where various information about your local configuration lives, 
-e.g., the active [Stack](guides/deploy\_to\_production.md) that you are using to run pipelines.
+e.g., the active [Stack](../guides/functional-api/deploy-to-production.md) that you are using to run pipelines.
 
 **Pipeline**
 
@@ -61,7 +61,7 @@ p = mnist_pipeline(
 p.run()
 ```
 
-Pipelines consist of many [steps](broken-reference/) that define what actually happens to the data flowing through 
+Pipelines consist of many steps that define what actually happens to the data flowing through 
 the pipelines.
 
 **Step**
