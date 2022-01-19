@@ -379,6 +379,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "directory",
         type=Path,
+        nargs='*',
         help="The directory to search for python files.",
     )
 
@@ -388,8 +389,8 @@ def _parse_args() -> argparse.Namespace:
 def main():
     """Updates todos for all python files in the directory specified as
     command line argument."""
-    root_directory = _parse_args().directory
-    python_files = root_directory.rglob("*.py")
+    folders = _parse_args().directory
+    python_files = [f for folder in folders for f in folder.rglob("*.py")]
     update_todos(python_files)
 
 
