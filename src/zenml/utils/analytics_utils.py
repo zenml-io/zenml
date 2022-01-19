@@ -189,6 +189,7 @@ def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> bool:
         metadata.update(
             {
                 "environment": get_environment(),
+                "python_version": platform.python_version(),
                 "version": __version__,
             }
         )
