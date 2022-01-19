@@ -24,6 +24,10 @@ jobs:
     - run: npm install
     - run: npm install html-minifier -g
 
+    - name: Get the version from the github tag ref
+      id: get_version
+      run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+
     - name: Install poetry
       run: |
         python -m pip install --upgrade pip
@@ -37,12 +41,4 @@ jobs:
         python -m poetry run pip install awscli
 
     - name: Runs docs generation
-      run: poetry run bash scripts/generate-docs.sh
-
-    - name: Runs deploy
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_BUCKET: apidocs.zenml.io
-        CLOUDFRONT_DISTRIBUTION_ID: EB0YZNLQR50S5
-      run: poetry run bash scripts/deploy-docs.sh
+      run: poetry run bash scripts/generate-docs.sh -s src/zenml/ -v ${{ steps.get_version.outputs.VERSION }} --push --latest
