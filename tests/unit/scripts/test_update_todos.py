@@ -17,6 +17,7 @@ import pytest
 
 # notodo
 
+
 @pytest.fixture(scope="module", autouse=True)
 def setup_environment():
     os.environ["JIRA_BASE_URL"] = ""
@@ -61,6 +62,7 @@ def test_no_todo_flag(tmp_path):
     todos_without_issue, todos_with_issue = find_todos(file)
     assert len(todos_with_issue) == 0
     assert len(todos_without_issue) == 0
+
 
 def test_todo_detection(tmp_path):
     """Tests that only correctly specified todos are detected."""
