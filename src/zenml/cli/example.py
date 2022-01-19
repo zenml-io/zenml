@@ -16,7 +16,7 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, cast
 
 import click
 from git.exc import GitCommandError, InvalidGitRepositoryError, NoSuchPathError
@@ -207,20 +207,15 @@ class ExamplesRepo:
     def active_version(self) -> Optional[str]:
         """In case a release branch is checked out, this property returns
         that version, else None is returned"""
-        active_release_branch = next(
-            (
-                branch
-                for branch in self.repo.branches
-                if branch.name.startswith("release/")
+        for branch in self.repo.heads:
+            branch_name = cast(str, branch.name)
+            if (
+                branch_name.startswith("release/")
                 and branch.commit == self.repo.head.commit
-            ),
-            None,
-        )
+            ):
+                return branch_name[len("release/") :]
 
-        if active_release_branch:
-            return active_release_branch.name[len("release/") :]
-        else:
-            return None
+        return None
 
     @property
     def latest_release(self) -> str:
