@@ -27,7 +27,7 @@ NOT_ARTIFACT_STORES = [
 
 def test_artifact_describe_contains_local_orchestrator() -> None:
     """Test that the artifact describe command contains the default local artifact store"""
-    # TODO [HIGH]: add a fixture that spins up a test env each time
+    # TODO [ENG-333]: add a fixture that spins up a test env each time
     runner = CliRunner()
     result = runner.invoke(describe_artifact_store)
     assert result.exit_code == 0
@@ -39,7 +39,7 @@ def test_artifact_describe_fails_for_bad_input(
     not_an_artifact_store: str,
 ) -> None:
     """Test that the artifact describe command fails when passing in bad parameters"""
-    # TODO [HIGH]: add a fixture that spins up a test env each time
+    # TODO [ENG-334]: add a fixture that spins up a test env each time
     runner = CliRunner()
     result = runner.invoke(describe_artifact_store, [not_an_artifact_store])
     assert result.exit_code == 1

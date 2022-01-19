@@ -194,7 +194,7 @@ def test_run_mlflow(examples_dir: Path):
     for step in second_run.steps:
         assert step.status == ExecutionStatus.COMPLETED
 
-    # TODO [MEDIUM]: Add some mlflow specific assertions.
+    # TODO [ENG-359]: Add some mlflow specific assertions.
     #  Currently this is a bit difficult as the mlruns do not end up in the
     #  expected location within the temporary fixtures. This needs to be
     #  investigated
