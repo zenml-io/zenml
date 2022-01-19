@@ -201,20 +201,26 @@ class ExamplesRepo:
                 "Automatically cloning the examples."
             )
             self.clone()
-            self.checkout(branch=self.latest_release)
+            self.checkout_latest_release()
 
     @property
     def active_version(self) -> Optional[str]:
         """In case a tagged version is checked out, this property returns
         that version, else None is returned"""
-        return next(
+        active_release_branch = next(
             (
-                tag
-                for tag in self.repo.tags
-                if tag.commit == self.repo.head.commit
+                branch
+                for branch in self.repo.branches
+                if branch.name.startswith("release/")
+                and branch.commit == self.repo.head.commit
             ),
             None,
         )
+
+        if active_release_branch:
+            return active_release_branch.name[len("release/") :]
+        else:
+            return None
 
     @property
     def latest_release(self) -> str:
@@ -279,7 +285,8 @@ class ExamplesRepo:
 
     def checkout_latest_release(self) -> None:
         """Checks out the latest release of the examples repository."""
-        self.checkout(self.latest_release)
+        release_branch = f"release/{self.latest_release}"
+        self.checkout(release_branch)
 
 
 class GitExamplesHandler(object):
@@ -366,7 +373,8 @@ class GitExamplesHandler(object):
             if branch != "main":
                 self.examples_repo.checkout(branch=branch)
             else:
-                self.examples_repo.checkout(version)
+                release_branch = f"release/{version}"
+                self.examples_repo.checkout(release_branch)
         except GitCommandError:
             logger.warning(
                 f"Version {version} does not exist in remote repository. "
