@@ -61,7 +61,7 @@ p = mnist_pipeline(
 p.run()
 ```
 
-Pipelines consist of many [steps](broken-reference/) that define what actually happens to the data flowing through 
+Pipelines consist of many steps that define what actually happens to the data flowing through 
 the pipelines.
 
 **Step**
