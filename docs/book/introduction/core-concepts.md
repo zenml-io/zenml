@@ -20,7 +20,7 @@ zenml init
 ```
 
 The initialization creates a local `.zen` folder where various information about your local configuration lives, 
-e.g., the active [Stack](guides/deploy\_to\_production.md) that you are using to run pipelines.
+e.g., the active [Stack](../guides/functional-api/deploy\_to\_production.md) that you are using to run pipelines.
 
 **Pipeline**
 
