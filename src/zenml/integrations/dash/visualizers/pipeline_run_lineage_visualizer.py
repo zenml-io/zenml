@@ -139,7 +139,8 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
                     "data": {
                         "id": step_id,
                         "execution_id": execution_id,
-                        "label": f"{execution_id} / {step.name}",
+                        "label": f"{execution_id} / {step.entrypoint_name}",
+                        "entrypoint_name": step.entrypoint_name,  # redundant for consistency
                         "name": step.name,  # redundant for consistency
                         "type": "step",
                         "parameters": step.parameters,

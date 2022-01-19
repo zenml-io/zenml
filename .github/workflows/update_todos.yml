@@ -3,7 +3,7 @@ name: Update TODOs
 on:
   push:
     branches:
-      - main
+      - develop
 
 jobs:
   update_todos:
@@ -36,7 +36,7 @@ jobs:
           JIRA_ISSUE_LABEL: todo_comment
           JIRA_REMOVED_TODO_LABEL: todo_removed
           JIRA_GITHUB_URL_FIELD_NAME: customfield_10029
-        run: python scripts/update_todos.py src/zenml
+        run: python scripts/update_todos.py src/zenml tests
       - name: Commit report
         run: |
           git config --global user.name 'Code Monkey'

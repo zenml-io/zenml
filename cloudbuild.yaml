@@ -6,69 +6,44 @@ steps:
     args: ['-c', 'docker login --username=$$USERNAME --password=$$PASSWORD']
     secretEnv: ['USERNAME', 'PASSWORD']
 
-
-  # build base development image with tag
+  # build base development image
   - name : 'gcr.io/cloud-builders/docker'
     id: 'build-base-dev'
     waitFor: ['docker-login']
     entrypoint: 'bash'
-    args: ['-c', 'docker build -t $$USERNAME/zenml:$TAG_NAME-dev -f docker/base-dev.Dockerfile .']
-    secretEnv: ['USERNAME']
-  # push base development image
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'push-base-dev'
-    waitFor: ['build-base-dev']
-    entrypoint: 'bash'
-    args: ['-c', 'docker push $$USERNAME/zenml:$TAG_NAME-dev']
+    args: ['-c', 'docker build -t $$USERNAME/zenml:$TAG_NAME-dev -t $$USERNAME/zenml:latest-dev -f docker/base-dev.Dockerfile .']
     secretEnv: ['USERNAME']
 
-
-  # build CUDA development image with tag
+  # build CUDA development image
   - name : 'gcr.io/cloud-builders/docker'
     id: 'build-cuda-dev'
     waitFor: [ 'docker-login' ]
     entrypoint: 'bash'
-    args: ['-c', 'docker build -t $$USERNAME/zenml:$TAG_NAME-cuda-dev -f docker/cuda-dev.Dockerfile .']
-    secretEnv: ['USERNAME']
-  # push CUDA development image
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'push-cuda-dev'
-    waitFor: [ 'build-cuda-dev' ]
-    entrypoint: 'bash'
-    args: ['-c', 'docker push $$USERNAME/zenml:$TAG_NAME-cuda-dev']
+    args: ['-c', 'docker build -t $$USERNAME/zenml:$TAG_NAME-cuda-dev -t $$USERNAME/zenml:latest-cuda-dev -f docker/cuda-dev.Dockerfile .']
     secretEnv: ['USERNAME']
 
-
-  # build base image with tag
+  # build base image
   - name : 'gcr.io/cloud-builders/docker'
     id: 'build-base'
     waitFor: ['build-base-dev']
     entrypoint: 'bash'
-    args: ['-c', 'docker build --build-arg ZENML_VERSION=$TAG_NAME -t $$USERNAME/zenml:$TAG_NAME -f docker/base.Dockerfile .']
-    secretEnv: ['USERNAME']
-  # push base image
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'push-base'
-    waitFor: ['build-base']
-    entrypoint: 'bash'
-    args: ['-c', 'docker push $$USERNAME/zenml:$TAG_NAME']
+    args: ['-c', 'docker build --build-arg ZENML_VERSION=$TAG_NAME -t $$USERNAME/zenml:$TAG_NAME -t $$USERNAME/zenml:latest -f docker/base.Dockerfile .']
     secretEnv: ['USERNAME']
 
-
-  # build CUDA image with tag
+  # build CUDA image
   - name : 'gcr.io/cloud-builders/docker'
     id: 'build-cuda'
     waitFor: [ 'build-cuda-dev' ]
     entrypoint: 'bash'
-    args: ['-c', 'docker build --build-arg ZENML_VERSION=$TAG_NAME -t $$USERNAME/zenml:$TAG_NAME-cuda -f docker/cuda.Dockerfile .']
+    args: ['-c', 'docker build --build-arg ZENML_VERSION=$TAG_NAME -t $$USERNAME/zenml:$TAG_NAME-cuda -t $$USERNAME/zenml:latest-cuda -f docker/cuda.Dockerfile .']
     secretEnv: ['USERNAME']
-  # push CUDA image
+
+  # push all images
   - name: 'gcr.io/cloud-builders/docker'
-    id: 'push-cuda'
-    waitFor: ['build-cuda']
+    id: 'push'
     entrypoint: 'bash'
-    args: ['-c', 'docker push $$USERNAME/zenml:$TAG_NAME-cuda']
-    secretEnv: ['USERNAME']
+    args: [ '-c', 'docker push $$USERNAME/zenml' ]
+    secretEnv: [ 'USERNAME' ]
 
 
 availableSecrets:

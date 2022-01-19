@@ -251,7 +251,7 @@ def find_todos(file: Path) -> Tuple[List[Todo], List[Todo]]:
         r" ?:(.*$\n(\1 {2}.*$\n)*)",
         file_content,
         flags=re.MULTILINE,
-    )
+    ) if "# notodo" not in file_content.split("\n") else ()
 
     todos_without_issue = []
     todos_with_issue = []
@@ -379,6 +379,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "directory",
         type=Path,
+        nargs='*',
         help="The directory to search for python files.",
     )
 
@@ -388,8 +389,8 @@ def _parse_args() -> argparse.Namespace:
 def main():
     """Updates todos for all python files in the directory specified as
     command line argument."""
-    root_directory = _parse_args().directory
-    python_files = root_directory.rglob("*.py")
+    folders = _parse_args().directory
+    python_files = [f for folder in folders for f in folder.rglob("*.py")]
     update_todos(python_files)
 
 

@@ -117,7 +117,7 @@ def test_register_stack_works_as_expected(tmp_path: str) -> None:
     assert local_stack2.orchestrator == local_stack1.orchestrator
     assert local_stack2.artifact_store == local_stack1.artifact_store
     assert local_stack2.metadata_store == local_stack1.metadata_store
-    # TODO [MEDIUM]: rework this as a fixture to be run after the test completes
+    # TODO [ENG-357]: rework this as a fixture to be run after the test completes
     local_service.delete_stack("local_stack_2")
 
 
@@ -330,7 +330,7 @@ def test_delete_orchestrator_works(tmp_path: str) -> None:
         local_service.get_orchestrator("local_orchestrator_2")
 
 
-# TODO [LOW]: remove this legacy test code if we don't need it anymore
+# TODO [ENG-358]: remove this legacy test code if we don't need it anymore
 # def test_service_crud(tmp_path):
 #     """Test basic service crud."""
 #     # TODO [LOW]: Need to improve this logic, potentially with

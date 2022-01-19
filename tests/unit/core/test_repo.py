@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-# TODO [MEDIUM]: add basic CRUD tests back in
+# TODO [ENG-354]: add basic CRUD tests back in
 
 import os
 from contextlib import ExitStack as does_not_raise
@@ -35,7 +35,7 @@ ZENML_ROOT = str(Path(zenml.__path__[0]).parent)
 TEST_ROOT = os.path.join(ZENML_ROOT, "tests")
 
 
-# TODO [LOW]: Add this back in. Currently it does not work on Windows because
+# TODO [ENG-355]: Add this back in. Currently it does not work on Windows because
 #  os.chdir("/") resolve to "D://" on Windows.
 # def test_initializing_repository_from_root_sets_cwd_as_repo_path() -> None:
 #     """Check initializing repository from root sets current directory
@@ -156,7 +156,7 @@ def test_get_pipelines_returns_list(tmp_path: str) -> None:
 
 def test_get_pipelines_returns_same_list_when_stack_specified(tmp_path) -> None:
     """Check get_pipelines returns the same list when stack specified"""
-    # TODO [MEDIUM]: update test once we have custom environments being created
+    # TODO [ENG-356]: update test once we have custom environments being created
     #  to check with actual pipelines
     Repo.init(tmp_path)
     Repository.init_repo(str(tmp_path))
