@@ -205,7 +205,7 @@ class ExamplesRepo:
 
     @property
     def active_version(self) -> Optional[str]:
-        """In case a tagged version is checked out, this property returns
+        """In case a release branch is checked out, this property returns
         that version, else None is returned"""
         active_release_branch = next(
             (
