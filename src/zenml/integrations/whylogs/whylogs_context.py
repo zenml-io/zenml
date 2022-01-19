@@ -69,7 +69,6 @@ class WhylogsContext(StepContext):
 
         self._session = Session(
             project=self.step_name,
-            # TODO: replace with pipeline name when available in the context
             pipeline=self.step_name,
             # keeping the writers list empty, serialization is done in the
             # materializer
@@ -78,17 +77,17 @@ class WhylogsContext(StepContext):
 
         return self._session
 
-    def log_dataframe(
+    def profile_dataframe(
         self,
         df: pd.DataFrame,
         dataset_name: Optional[str] = None,
         dataset_timestamp: Optional[datetime.datetime] = None,
         tags: Optional[Dict[str, str]] = None,
     ) -> DatasetProfile:
-        """Log the statistics of a Pandas dataframe.
+        """Generate whylogs statistics for a Pandas dataframe.
 
         Args:
-            df: a Pandas dataframe to log.
+            df: a Pandas dataframe to profile.
             dataset_name: the name of the dataset (Optional). If not specified,
                 the pipeline step name is used
             dataset_timestamp: timestamp to associate with the generated
@@ -101,13 +100,12 @@ class WhylogsContext(StepContext):
             input dataset.
         """
         session = self.get_whylogs_session()
-        # TODO: the step name is not sufficient to create a unique dataset
-        # name across different pipelines. The pipeline name is also required
+        # TODO [LOW]: use a default whylogs dataset_name that is unique across
+        #  multiple pipelines
         dataset_name = dataset_name or self.step_name
         tags = tags or dict()
-        # TODO: add more tags when this information is available in the context:
-        # tags["zenml.pipeline"] = self.pipeline_name
-        # tags["zenml.pipeline_run"] = self.pipeline_run_id
+        # TODO [LOW]: add more zenml specific tags to the whylogs profile, such
+        #  as the pipeline name and run ID
         tags["zenml.step"] = self.step_name
         # the datasetId tag is used to identify dataset profiles in whylabs.
         # dataset profiles with the same datasetID are considered to belong

@@ -13,20 +13,20 @@
 #  permissions and limitations under the License.
 
 import tempfile
-from enum import Enum
-from typing import Any, List, Optional, cast
+from typing import Any, List, Optional
 
 from whylogs import DatasetProfile  # type: ignore
 from whylogs.viz import ProfileVisualizer, profile_viewer  # type: ignore
 
 from zenml.logger import get_logger
 from zenml.post_execution import StepView
+from zenml.utils.enum_utils import StrEnum
 from zenml.visualizers import BaseStepVisualizer
 
 logger = get_logger(__name__)
 
 
-class WhylogsPlots(str, Enum):
+class WhylogsPlots(StrEnum):
     """All supported whylogs plot types."""
 
     distribution = "plot_distribution"
@@ -38,18 +38,9 @@ class WhylogsPlots(str, Enum):
     char_pos = "plot_char_pos"
     string = "plot_string"
 
-    def __str__(self) -> str:
-        """Returns the enum string value."""
-        return self.value
-
-    @classmethod
-    def list(cls) -> List[str]:
-        names = map(lambda c: c.name, cls)  # type: ignore
-        return list(cast(List[str], names))
-
 
 class WhylogsVisualizer(BaseStepVisualizer):
-    """The implementation of an Whylogs Visualizer."""
+    """The implementation of a Whylogs Visualizer."""
 
     def visualize(
         self,
@@ -58,18 +49,20 @@ class WhylogsVisualizer(BaseStepVisualizer):
         plots: Optional[List[WhylogsPlots]] = None,
         **kwargs: Any,
     ) -> None:
-        """Method to visualize components
+        """Visualize all whylogs dataset profiles present as outputs in the
+        step view
 
         Args:
             object: StepView fetched from run.get_step().
             plots: optional list of whylogs plots to visualize. Defaults to
                 using all available plot types if not set
         """
+        whylogs_artifact_datatype = (
+            f"{DatasetProfile.__module__}.{DatasetProfile.__name__}"
+        )
         for artifact_name, artifact_view in object.outputs.items():
             # filter out anything but whylog dataset profile artifacts
-            if artifact_view.data_type == ".".join(
-                [DatasetProfile.__module__, DatasetProfile.__name__]
-            ):
+            if artifact_view.data_type == whylogs_artifact_datatype:
                 profile = artifact_view.read()
                 # whylogs doesn't currently support visualizing multiple
                 # non-related profiles side-by-side, so we open them in
@@ -96,7 +89,7 @@ class WhylogsVisualizer(BaseStepVisualizer):
         profile: DatasetProfile,
         plots: Optional[List[WhylogsPlots]] = None,
     ) -> None:
-        """Generate a Facet Overview to visualize a whylogs dataset profile
+        """Generate a visualization of a whylogs dataset profile.
 
         Args:
             name: name identifying the profile if multiple profiles are
@@ -119,7 +112,7 @@ class WhylogsVisualizer(BaseStepVisualizer):
                     plot_method = self._get_plot_method(visualizer, plot)
                     display(plot_method(column))
         else:
-            logger.warn(
+            logger.warning(
                 "The magic functions are only usable in a Jupyter notebook."
             )
             with tempfile.NamedTemporaryFile(

@@ -17,7 +17,7 @@ from typing import Dict, Optional, cast
 import pandas as pd
 from whylogs import DatasetProfile  # type: ignore
 
-from zenml.integrations.whylogs.whylogs_utils import WhylogsContext
+from zenml.integrations.whylogs.whylogs_context import WhylogsContext
 from zenml.steps.step_interfaces.base_analyzer_step import (
     BaseAnalyzerConfig,
     BaseAnalyzerStep,
@@ -32,7 +32,7 @@ from zenml.steps.utils import (
 class WhylogsProfilerConfig(BaseAnalyzerConfig):
     """Config class for the WhylogsProfiler step.
 
-    The configuration fields are:
+    Attributes:
 
         dataset_name: the name of the dataset (Optional). If not specified,
             the pipeline step name is used
@@ -42,7 +42,6 @@ class WhylogsProfilerConfig(BaseAnalyzerConfig):
         tags: custom metadata tags associated with the whylogs profile
 
     Also see `WhylogsContext.log_dataframe`.
-
     """
 
     dataset_name: Optional[str] = None
@@ -68,7 +67,7 @@ class WhylogsProfilerStep(BaseAnalyzerStep):
         Returns:
             whylogs profile with statistics generated for the input dataset
         """
-        profile = context.log_dataframe(
+        profile = context.profile_dataframe(
             dataset, dataset_name=config.dataset_name, tags=config.tags
         )
         return profile
@@ -98,7 +97,6 @@ def whylogs_profiler_step(
         tags: custom metadata tags associated with the whylogs profile
     Returns:
         a WhylogsProfilerStep step instance
-
     """
 
     # enable cache explicitly to compensate for the fact that this step

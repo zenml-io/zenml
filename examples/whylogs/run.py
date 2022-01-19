@@ -18,7 +18,7 @@ from sklearn import datasets
 from whylogs import DatasetProfile
 
 from zenml.integrations.whylogs.visualizers import WhylogsVisualizer
-from zenml.integrations.whylogs.whylogs_utils import WhylogsContext
+from zenml.integrations.whylogs.whylogs_context import WhylogsContext
 from zenml.integrations.whylogs.steps import (
     whylogs_profiler_step,
 )
@@ -55,7 +55,7 @@ def data_loader(
         )
     )
 
-    profile = context.log_dataframe(df, dataset_name="input_data")
+    profile = context.profile_dataframe(df, dataset_name="input_data")
 
     return df, profile
 

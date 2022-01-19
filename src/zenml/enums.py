@@ -15,8 +15,9 @@
 import logging
 from enum import Enum
 
+from zenml.utils.enum_utils import StrEnum
 
-class ExecutionStatus(Enum):
+class ExecutionStatus(StrEnum):
     """Enum that represents the current status of a step or pipeline run."""
 
     FAILED = "failed"
@@ -36,7 +37,7 @@ class LoggingLevels(Enum):
     CRITICAL = logging.CRITICAL
 
 
-class StackComponentFlavor(str, Enum):
+class StackComponentFlavor(StrEnum):
     """Abstract base class for all stack component flavors."""
 
 
@@ -69,7 +70,7 @@ class OrchestratorFlavor(StackComponentFlavor):
     AIRFLOW = "airflow"
 
 
-class StackComponentType(str, Enum):
+class StackComponentType(StrEnum):
     """All possible types a `StackComponent` can have."""
 
     ORCHESTRATOR = "orchestrator"
