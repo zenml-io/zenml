@@ -42,7 +42,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     id: 'push'
     entrypoint: 'bash'
-    args: [ '-c', 'docker push $$USERNAME/zenml --all-tags' ]
+    args: [ '-c', 'docker push $$USERNAME/zenml' ]
     secretEnv: [ 'USERNAME' ]
 
 
