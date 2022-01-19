@@ -148,7 +148,8 @@ def unconnected_two_step_pipeline():
 
     @pipeline
     def _pipeline(step_1, step_2):
-        pass
+        step_1()
+        step_2()
 
     return _pipeline
 

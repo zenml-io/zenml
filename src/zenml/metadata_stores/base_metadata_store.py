@@ -176,8 +176,8 @@ class BaseMetadataStore(StackComponent, ABC):
         return StepView(
             id_=execution.id,
             parents_step_ids=list(parents_step_ids),
-            name=impl_name,
-            pipeline_step_name=step_name,
+            entrypoint_name=impl_name,
+            name=step_name,
             parameters=step_parameters,
             metadata_store=self,
         )
@@ -278,7 +278,7 @@ class BaseMetadataStore(StackComponent, ABC):
         # order from the metadata store
         for execution in reversed(pipeline_run._executions):  # noqa
             step = self._get_step_view_from_execution(execution)
-            steps[step.pipeline_step_name] = step
+            steps[step.name] = step
 
         logger.debug(
             "Fetched %d steps for pipeline run '%s'.",
@@ -377,7 +377,7 @@ class BaseMetadataStore(StackComponent, ABC):
             "Fetched %d inputs and %d outputs for step '%s'.",
             len(inputs),
             len(outputs),
-            step.name,
+            step.entrypoint_name,
         )
 
         return inputs, outputs

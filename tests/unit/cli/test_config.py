@@ -54,7 +54,7 @@ def test_set_logging_verbosity_stops_when_not_real_level(
     not_a_level: str,
 ) -> None:
     """Check that set_logging_verbosity doesn't run when no real level"""
-    # TODO [MEDIUM]: replace the pytest params with hypothesis params
+    # TODO [ENG-332]: replace the pytest params with hypothesis params
     pre_test_logging_status = ZENML_LOGGING_VERBOSITY
     runner = CliRunner()
     result = runner.invoke(set_logging_verbosity, [not_a_level])

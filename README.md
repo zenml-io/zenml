@@ -171,7 +171,7 @@ ZenML is also available as a Docker image hosted publicly on [DockerHub](https:/
 Use the following command to get started in a bash environment:
 
 ```shell
-docker run -it zenmldocker/zenml:<VERSION> /bin/bash
+docker run -it zenmldocker/zenml /bin/bash
 ```
 
 ## 🚅 Quickstart
