@@ -21,6 +21,7 @@ from zenml.cli.utils import (
     confirmation,
     declare,
     error,
+    format_integration_list,
     install_package,
     print_table,
     title,
@@ -41,21 +42,10 @@ def integration() -> None:
 @integration.command(name="list", help="List the available integrations.")
 def list_integrations() -> None:
     """List all available integrations with their installation status."""
-    title("Integrations:\n")
-
-    table_rows = []
-    for name, integration_impl in integration_registry.integrations.items():
-        is_installed = integration_impl.check_installation()
-        # TODO [ENG-253]: Make the installed column right-aligned once we
-        #  add rich or some other similar dependency
-        table_rows.append(
-            {
-                "INSTALLED": "*" if is_installed else "",
-                "INTEGRATION": name,
-                "REQUIRED_PACKAGES": integration_impl.REQUIREMENTS,
-            }
-        )
-    print_table(table_rows)
+    formatted_table = format_integration_list(
+        list(integration_registry.integrations.items())
+    )
+    print_table(formatted_table)
 
     warning(
         "\n" + "To install the dependencies of a specific integration, type: "

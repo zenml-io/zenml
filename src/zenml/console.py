@@ -25,4 +25,4 @@ zenml_custom_theme = Theme(
         "error": "red",
     }
 )
-console = Console(theme=zenml_custom_theme)
+console = Console(theme=zenml_custom_theme, markup=True)

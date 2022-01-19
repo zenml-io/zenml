@@ -22,14 +22,14 @@ from typing import (
     Dict,
     List,
     Mapping,
+    Tuple,
     TypeVar,
     cast,
 )
 
 import click
 from dateutil import tz
-from rich import print
-from tabulate import tabulate
+from rich import table
 
 from zenml.cli import utils as cli_utils
 from zenml.console import console
@@ -39,6 +39,7 @@ logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from zenml.core.base_component import BaseComponent
+    from zenml.integrations.integration import IntegrationMeta
 
 
 def title(text: str) -> None:
@@ -78,11 +79,9 @@ def error(text: str) -> None:
 
     Args:
       text: Input text string.
-
-    Raises:
-        click.ClickException when called.
     """
     raise click.ClickException(message=click.style(text, fg="red", bold=True))
+    # console.print(text, style="error")
 
 
 def warning(text: str) -> None:
@@ -101,11 +100,11 @@ def pretty_print(obj: Any) -> None:
       obj: Any object with a __str__ method defined.
     # TODO: [LOW] check whether this needs to be converted to a string first
     """
-    print(obj)
+    console.print(obj)
 
 
 def print_table(obj: List[Dict[str, Any]]) -> None:
-    """Echoes the list of dicts in a table format. The input object should be a
+    """Prints the list of dicts in a table format. The input object should be a
     List of Dicts. Each item in that list represent a line in the Table. Each
     dict should have the same keys. The keys of the dict will be used as
     headers of the resulting table.
@@ -113,7 +112,32 @@ def print_table(obj: List[Dict[str, Any]]) -> None:
     Args:
       obj: A List containing dictionaries.
     """
-    click.echo(tabulate(obj, headers="keys"))
+    rich_table = table.Table()
+    for key, _ in obj[0].items():
+        rich_table.add_column(key.upper(), [row[key] for row in obj])  # type: ignore[arg-type]
+    for item in obj:
+        rich_table.add_row(*list(item.values()))
+    console.print(rich_table)
+
+
+def format_integration_list(
+    integrations: List[Tuple[str, "IntegrationMeta"]]
+) -> List[Dict[str, str]]:
+    """Formats a list of integrations into a List of Dicts. This list of dicts
+    can then be printed in a table style using cli_utils.print_table."""
+    list_of_dicts = []
+    for name, integration_impl in integrations:
+        is_installed = integration_impl.check_installation()  # type: ignore[attr-defined]
+        # TODO [ENG-253]: Make the installed column right-aligned once we
+        #  add rich or some other similar dependency
+        list_of_dicts.append(
+            {
+                "INSTALLED": ":white_check_mark:" if is_installed else "",
+                "INTEGRATION": name,
+                "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),  # type: ignore[attr-defined]
+            }
+        )
+    return list_of_dicts
 
 
 def format_component_list(
@@ -133,11 +157,14 @@ def format_component_list(
         # Make sure that the `name` key is not taken in the component dict
         # In case `name` exists, it is replaced inplace with `component_name`
         component_dict = {
-            "COMPONENT_NAME" if k == "name" else k.upper(): v
+            "COMPONENT_NAME" if k == "name" else k.upper(): str(v)
             for k, v in c.dict(exclude={"_superfluous_options"}).items()
         }
 
-        data = {"ACTIVE": "*" if key == active_component else "", "NAME": key}
+        data = {
+            "ACTIVE": ":right_arrow:" if key == active_component else "",
+            "NAME": key,
+        }
         data.update(component_dict)
         list_of_dicts.append(data)
     return list_of_dicts
