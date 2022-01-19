@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import os
 from uuid import uuid4
 
 import pytest
@@ -34,3 +35,18 @@ def test_global_config_user_id_is_immutable():
     """Tests that the global config user id attribute is immutable."""
     with pytest.raises(TypeError):
         GlobalConfig().user_id = uuid4()
+
+
+def test_global_config_returns_value_from_environment_variable():
+    """Tests that global config attributes can be overwritten by environment
+    variables."""
+    config = GlobalConfig()
+
+    # delete the environment variable that is set at the beginning of all tests
+    del os.environ["ZENML_ANALYTICS_OPT_IN"]
+    assert config.analytics_opt_in is True
+
+    # make sure the environment variable is set, then the global config should
+    # return the corresponding value
+    os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
+    assert config.analytics_opt_in is False
