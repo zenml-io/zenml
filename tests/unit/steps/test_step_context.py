@@ -135,6 +135,4 @@ def test_step_context_returns_metadata_store_of_active_stack(clean_repo):
     context = StepContext(
         step_name="some_step_name", output_materializers={}, output_artifacts={}
     )
-    assert (
-        clean_repo.get_active_stack().metadata_store == context.metadata_store
-    )
+    assert clean_repo.active_stack.metadata_store == context.metadata_store
