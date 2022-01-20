@@ -628,7 +628,7 @@ def run(
         local_example = LocalExample(example_dir, example_name)
 
         if not local_example.is_present():
-            ctx.forward(pull)
+            ctx.invoke(pull, example_name=example_name, path=path, force=force)
 
         example_runner = (
             [] if shell_executable is None else [shell_executable]
