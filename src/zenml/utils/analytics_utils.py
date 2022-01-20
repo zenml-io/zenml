@@ -49,6 +49,10 @@ OPT_OUT_ANALYTICS = "Analytics opt-out"
 
 # Examples
 RUN_EXAMPLE = "Example run"
+PULL_EXAMPLE = "Example pull"
+
+# Integrations
+INSTALL_INTEGRATION = "Integration installed"
 
 # Test event
 EVENT_TEST = "Test event"
