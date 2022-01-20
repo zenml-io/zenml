@@ -218,8 +218,8 @@ class ExamplesRepo:
         return None
 
     @property
-    def latest_release(self) -> str:
-        """Returns the latest release for the examples repository."""
+    def latest_release_branch(self) -> str:
+        """Returns the name of the latest release branch."""
         tags = sorted(
             self.repo.tags,
             key=lambda t: t.commit.committed_datetime,  # type: ignore
@@ -227,7 +227,9 @@ class ExamplesRepo:
         latest_tag = parse(tags[-1].name)
         if type(latest_tag) is not Version:
             return "main"
-        return tags[-1].name  # type: ignore
+
+        latest_release_version: str = tags[-1].name
+        return f"release/{latest_release_version}"
 
     @property
     def is_cloned(self) -> bool:
@@ -280,8 +282,7 @@ class ExamplesRepo:
 
     def checkout_latest_release(self) -> None:
         """Checks out the latest release of the examples repository."""
-        release_branch = f"release/{self.latest_release}"
-        self.checkout(release_branch)
+        self.checkout(branch=self.latest_release_branch)
 
 
 class GitExamplesHandler(object):
@@ -362,14 +363,13 @@ class GitExamplesHandler(object):
         except GitCommandError:
             warning(
                 f"The specified branch {branch} not found in "
-                "repo, falling back to use main."
+                "repo, falling back to the latest release."
             )
-            self.examples_repo.checkout(branch="main")
+            self.examples_repo.checkout_latest_release()
 
     def pull_latest_examples(self) -> None:
         """Pulls the latest examples from the examples repository."""
-        release_branch = f"release/{self.examples_repo.latest_release}"
-        self.pull(branch=release_branch, force=True)
+        self.pull(branch=self.examples_repo.latest_release_branch, force=True)
 
     def copy_example(self, example: Example, destination_dir: str) -> None:
         """Copies an example to the destination_dir."""
