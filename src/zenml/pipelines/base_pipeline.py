@@ -63,7 +63,7 @@ class BasePipelineMeta(type):
         cls.STEP_SPEC = {}
 
         connect_spec = inspect.getfullargspec(
-            getattr(cls, PIPELINE_INNER_FUNC_NAME)
+            inspect.unwrap(getattr(cls, PIPELINE_INNER_FUNC_NAME))
         )
         connect_args = connect_spec.args
 

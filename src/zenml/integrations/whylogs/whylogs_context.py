@@ -21,29 +21,15 @@ from whylogs.app import Session  # type: ignore
 from zenml.steps.step_context import StepContext
 
 
-class WhylogsContext(StepContext):
-    """Extends the base step context with whylogs session and logger management
-    to facilitate whylogs data logging and profiling inside a step function.
-
-    To use it, add a `WhylogsContext` object to the signature of your step
-    function like this:
-
-    @step
-    def my_step(context: WhylogsContext, ...)
-        ...
-        context.log_dataframe(...)
-
-    See `StepContext` for additional information on how step contexts can
-    be used.
-
-    **Note**: When using a `WhylogsContext` inside a step, ZenML disables
-    caching for this step by default as the context provides access to external
-    resources which might influence the result of your step execution. To
-    enable caching anyway, explicitly enable it in the `@step` decorator or when
-    initializing your custom step class.
+class WhylogsContext:
+    """Step context extension used to facilitate whylogs data logging and profiling
+    inside a step function.
     """
 
     _session: Session = None
+
+    def __init__(self, step_context: StepContext) -> None:
+        self._step_context = step_context
 
     def get_whylogs_session(
         self,
@@ -68,8 +54,8 @@ class WhylogsContext(StepContext):
             return self._session
 
         self._session = Session(
-            project=self.step_name,
-            pipeline=self.step_name,
+            project=self._step_context.step_name,
+            pipeline=self._step_context.step_name,
             # keeping the writers list empty, serialization is done in the
             # materializer
             writers=[],
@@ -102,11 +88,11 @@ class WhylogsContext(StepContext):
         session = self.get_whylogs_session()
         # TODO [LOW]: use a default whylogs dataset_name that is unique across
         #  multiple pipelines
-        dataset_name = dataset_name or self.step_name
+        dataset_name = dataset_name or self._step_context.step_name
         tags = tags or dict()
         # TODO [LOW]: add more zenml specific tags to the whylogs profile, such
         #  as the pipeline name and run ID
-        tags["zenml.step"] = self.step_name
+        tags["zenml.step"] = self._step_context.step_name
         # the datasetId tag is used to identify dataset profiles in whylabs.
         # dataset profiles with the same datasetID are considered to belong
         # to the same dataset/model.

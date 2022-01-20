@@ -12,21 +12,19 @@
 #  permissions and limitations under the License.
 
 import os
-import pandas as pd
 
+import pandas as pd
 from sklearn import datasets
 from whylogs import DatasetProfile
 
-from zenml.integrations.whylogs.visualizers import WhylogsVisualizer
-from zenml.integrations.whylogs.whylogs_context import WhylogsContext
-from zenml.integrations.whylogs.steps import (
-    whylogs_profiler_step,
-)
-
 from zenml.core.repo import Repository
+from zenml.integrations.whylogs.steps import whylogs_profiler_step
+from zenml.integrations.whylogs.visualizers import WhylogsVisualizer
+from zenml.integrations.whylogs.whylogs_step_decorator import enable_whylogs
 from zenml.logger import get_logger
 from zenml.pipelines import pipeline
-from zenml.steps import step, Output
+from zenml.steps import Output, step
+from zenml.steps.step_context import StepContext
 
 logger = get_logger(__name__)
 
@@ -39,9 +37,10 @@ logger = get_logger(__name__)
 
 # NOTE: cache needs to be explicitly enabled for steps that take in step
 # contexts
+@enable_whylogs
 @step(enable_cache=True)
 def data_loader(
-    context: WhylogsContext,
+    context: StepContext,
 ) -> Output(data=pd.DataFrame, profile=DatasetProfile,):
     """Load the breast cancer dataset."""
     print("Loading data...")
@@ -55,7 +54,7 @@ def data_loader(
         )
     )
 
-    profile = context.profile_dataframe(df, dataset_name="input_data")
+    profile = context.whylogs.profile_dataframe(df, dataset_name="input_data")
 
     return df, profile
 
@@ -93,11 +92,10 @@ def visualize_statistics(step_name: str):
     WhylogsVisualizer().visualize(whylogs_outputs)
 
 
-
 if __name__ == "__main__":
 
     pipeline = data_split_pipeline(
-        data_loader=data_loader(),
+        data_loader=data_loader(enable_cache=True),
         partial_data=partial_split(),
         partial_data_logger=log_partial_data,
     )

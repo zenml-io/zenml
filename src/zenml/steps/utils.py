@@ -367,7 +367,7 @@ class _FunctionExecutor(BaseExecutor):
         function_params = {}
 
         # First, we parse the inputs, i.e., params and input artifacts.
-        spec = inspect.getfullargspec(self._FUNCTION)
+        spec = inspect.getfullargspec(inspect.unwrap(self._FUNCTION))
         args = spec.args
 
         if args and args[0] == "self":
@@ -406,7 +406,7 @@ class _FunctionExecutor(BaseExecutor):
                 )
 
         return_values = self._FUNCTION(**function_params)
-        spec = inspect.getfullargspec(self._FUNCTION)
+        spec = inspect.getfullargspec(inspect.unwrap(self._FUNCTION))
         return_type: Type[Any] = spec.annotations.get("return", None)
         if return_type is not None:
             if isinstance(return_type, Output):

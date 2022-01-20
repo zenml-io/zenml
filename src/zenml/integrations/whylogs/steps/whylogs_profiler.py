@@ -18,6 +18,7 @@ import pandas as pd
 from whylogs import DatasetProfile  # type: ignore
 
 from zenml.integrations.whylogs.whylogs_context import WhylogsContext
+from zenml.steps.step_context import StepContext
 from zenml.steps.step_interfaces.base_analyzer_step import (
     BaseAnalyzerConfig,
     BaseAnalyzerStep,
@@ -57,7 +58,7 @@ class WhylogsProfilerStep(BaseAnalyzerStep):
         self,
         dataset: pd.DataFrame,
         config: WhylogsProfilerConfig,
-        context: WhylogsContext,
+        context: StepContext,
     ) -> DatasetProfile:
         """Main entrypoint function for the whylogs profiler
 
@@ -67,7 +68,8 @@ class WhylogsProfilerStep(BaseAnalyzerStep):
         Returns:
             whylogs profile with statistics generated for the input dataset
         """
-        profile = context.profile_dataframe(
+        whylogs_context = WhylogsContext(context)
+        profile = whylogs_context.profile_dataframe(
             dataset, dataset_name=config.dataset_name, tags=config.tags
         )
         return profile
