@@ -29,6 +29,7 @@ from zenml.cli.utils import (
 )
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
+from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 logger = get_logger(__name__)
 
@@ -109,11 +110,11 @@ def install(integrations: Tuple[str], force: bool = False) -> None:
     is specified all required packages for all integrations are installed
     using pip"""
     if not integrations:
-        # no integrations specified, insert `None` which indicates all
-        # integrations should be installed
-        integrations = (None,)
+        # no integrations specified, use all registered integrations
+        integrations = tuple(integration_registry.integrations.keys())
 
     requirements = []
+    integrations_to_install = []
     for integration_name in integrations:
         try:
             if force or not integration_registry.is_installed(integration_name):
@@ -122,15 +123,11 @@ def install(integrations: Tuple[str], force: bool = False) -> None:
                         integration_name
                     )
                 )
+                integrations_to_install.append(integration_name)
             else:
-                integration_display_name = (
-                    f"integration '{integration_name}'"
-                    if integration_name
-                    else "all integrations"
-                )
-                warning(
-                    f"All required packages for {integration_display_name} "
-                    f"are already installed. Nothing will be done."
+                declare(
+                    f"All required packages for integration "
+                    f"'{integration_name}' are already installed."
                 )
         except KeyError:
             warning(f"Unable to find integration '{integration_name}'.")
@@ -143,6 +140,12 @@ def install(integrations: Tuple[str], force: bool = False) -> None:
         ):
             for requirement in requirements:
                 install_package(requirement)
+
+            for integration_name in integrations_to_install:
+                track_event(
+                    AnalyticsEvent.INSTALL_INTEGRATION,
+                    {"integration_name": integration_name},
+                )
 
 
 @integration.command(
@@ -161,9 +164,8 @@ def uninstall(integrations: Tuple[str], force: bool = False) -> None:
     is specified all required packages for all integrations are installed
     using pip"""
     if not integrations:
-        # no integrations specified, insert `None` which indicates all
-        # integrations should be uninstalled
-        integrations = (None,)
+        # no integrations specified, use all registered integrations
+        integrations = tuple(integration_registry.integrations.keys())
 
     requirements = []
     for integration_name in integrations:
@@ -175,14 +177,9 @@ def uninstall(integrations: Tuple[str], force: bool = False) -> None:
                     )
                 )
             else:
-                integration_display_name = (
-                    f"integration '{integration_name}'"
-                    if integration_name
-                    else "all integrations"
-                )
                 warning(
-                    f"Requirements for {integration_display_name} already"
-                    f"not installed. Nothing will be done."
+                    f"Requirements for integration '{integration_name}' "
+                    f"already not installed."
                 )
         except KeyError:
             warning(f"Unable to find integration '{integration_name}'.")
