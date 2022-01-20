@@ -3,11 +3,11 @@
 set -Eeo pipefail
 
 pre_run () {
-  zenml integration install evidently
+  pip install "evidently<=0.1.40.dev0"
   zenml integration install sklearn
 }
 
 pre_run_forced () {
-  zenml integration install evidently -f
+  pip install "evidently<=0.1.40.dev0"
   zenml integration install sklearn -f
 }
