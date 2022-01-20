@@ -52,7 +52,7 @@ def base_repo(tmp_path_factory, session_mocker):
         "zenml.config.global_config.GlobalConfig.config_directory",
         return_value=str(tmp_path / "zenml"),
     )
-    session_mocker.patch("zenml.utils.analytics_utils.track_event")
+    session_mocker.patch("analytics.track")
 
     # initialize repo at path
     Repository.initialize(root=tmp_path)

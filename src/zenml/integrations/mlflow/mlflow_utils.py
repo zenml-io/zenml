@@ -147,7 +147,7 @@ def enable_mlflow(
             the class of a newly generated ZenML Pipeline with mlflow
 
         """
-        # TODO [MEDIUM]: Do we need to create a new class here or can we simply
+        # TODO [ENG-369]: Do we need to create a new class here or can we simply
         #  extend the methods of the original pipeline class?
         return type(  # noqa
             pipeline.__name__,

@@ -238,7 +238,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         """
         raise PipelineInterfaceError("Cannot set steps manually!")
 
-    # TODO [HIGH]: Enable specifying runtime configuration options either using
+    # TODO [ENG-376]: Enable specifying runtime configuration options either using
     #  **kwargs here or by passing a `RuntimeConfiguration` object or a
     #  path to a config file.
     def run(self, run_name: Optional[str] = None) -> Any:
