@@ -16,11 +16,11 @@
 import pandas as pd
 import tensorflow as tf
 
-from zenml.core.repo import Repository
 from zenml.integrations.dash.visualizers.pipeline_run_lineage_visualizer import (
     PipelineRunLineageVisualizer,
 )
 from zenml.pipelines import pipeline
+from zenml.repository import Repository
 from zenml.steps import Output, step
 
 FEATURE_COLS = [

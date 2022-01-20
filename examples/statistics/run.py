@@ -16,11 +16,11 @@
 import pandas as pd
 import tensorflow as tf
 
-from zenml.core.repo import Repository
 from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
     FacetStatisticsVisualizer,
 )
 from zenml.pipelines import pipeline
+from zenml.repository import Repository
 from zenml.steps import Output, step
 
 FEATURE_COLS = [

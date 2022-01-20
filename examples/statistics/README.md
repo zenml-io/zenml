@@ -17,7 +17,7 @@ dataframes for us.
 This visualization is produced with the following code:
 
 ```python
-from zenml.core.repo import Repository
+from zenml.repository import Repository
 from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
     FacetStatisticsVisualizer,
 )

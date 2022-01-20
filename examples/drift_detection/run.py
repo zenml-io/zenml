@@ -17,7 +17,6 @@ import pandas as pd
 from rich import print
 from sklearn import datasets
 
-from zenml.core.repo import Repository
 from zenml.integrations.evidently.steps import (
     EvidentlyProfileConfig,
     EvidentlyProfileStep,
@@ -25,6 +24,7 @@ from zenml.integrations.evidently.steps import (
 from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
 from zenml.logger import get_logger
 from zenml.pipelines import pipeline
+from zenml.repository import Repository
 from zenml.steps import step
 
 logger = get_logger(__name__)
