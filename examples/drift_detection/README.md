@@ -78,7 +78,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install evidently
+pip install "evidently<=0.1.40.dev0"
 zenml integration install sklearn
 
 # pull example
@@ -101,14 +101,4 @@ In order to clean up, delete the remaining ZenML references.
 
 ```shell
 rm -rf zenml_examples
-```
-
-## SuperQuick `drift_detection` run
-
-If you're really in a hurry and you want just to see this example pipeline run,
-without wanting to fiddle around with all the individual installation and
-configuration steps, just run the following:
-
-```shell
-zenml example run drift_detection
 ```
