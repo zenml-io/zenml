@@ -21,13 +21,12 @@ from typing import Any, Dict
 
 from absl import logging as absl_logging
 
-from zenml.constants import ZENML_LOGGING_VERBOSITY
-from zenml.enums import LoggingLevels
-
-from zenml.constants import (  # isort: skip
+from zenml.constants import (
     ABSL_LOGGING_VERBOSITY,
     APP_NAME,
+    ZENML_LOGGING_VERBOSITY,
 )
+from zenml.enums import LoggingLevels
 
 
 class CustomFormatter(logging.Formatter):
@@ -119,9 +118,11 @@ def get_console_handler() -> Any:
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(CustomFormatter())
     return console_handler
-    # return RichHandler(
+    # console_handler = RichHandler(
     #     show_path=False, omit_repeated_times=False, console=console
     # )
+    # console_handler.setFormatter(CustomFormatter())
+    # return console_handler
 
 
 def get_file_handler() -> Any:
