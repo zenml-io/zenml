@@ -88,7 +88,7 @@ Even if our data originally lives in an external API, we have now downloaded it 
 this pipeline. So we can fetch it and inspect it:
 
 ```python
-from zenml.core.repo import Repository
+from zenml.repository import Repository
 
 repo = Repository()
 p = repo.get_pipeline(pipeline_name="mnist_pipeline")

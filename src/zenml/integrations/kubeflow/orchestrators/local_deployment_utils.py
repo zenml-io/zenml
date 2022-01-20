@@ -53,6 +53,20 @@ def k3d_cluster_exists(cluster_name: str) -> bool:
     return False
 
 
+def k3d_cluster_running(cluster_name: str) -> bool:
+    """Checks whether the K3D cluster with the given name is running."""
+    output = subprocess.check_output(
+        ["k3d", "cluster", "list", "--output", "json"]
+    )
+    clusters = json.loads(output)
+    for cluster in clusters:
+        if cluster["name"] == cluster_name:
+            server_count: int = cluster["serversCount"]
+            servers_running: int = cluster["serversRunning"]
+            return servers_running == server_count
+    return False
+
+
 def create_k3d_cluster(
     cluster_name: str, registry_name: str, registry_config_path: str
 ) -> None:
@@ -80,6 +94,18 @@ def create_k3d_cluster(
         ]
     )
     logger.info("Finished K3D cluster creation.")
+
+
+def start_k3d_cluster(cluster_name: str) -> None:
+    """Starts a K3D cluster with the given name."""
+    subprocess.check_call(["k3d", "cluster", "start", cluster_name])
+    logger.info("Started local k3d cluster '%s'.", cluster_name)
+
+
+def stop_k3d_cluster(cluster_name: str) -> None:
+    """Stops a K3D cluster with the given name."""
+    subprocess.check_call(["k3d", "cluster", "stop", cluster_name])
+    logger.info("Stopped local k3d cluster '%s'.", cluster_name)
 
 
 def delete_k3d_cluster(cluster_name: str) -> None:

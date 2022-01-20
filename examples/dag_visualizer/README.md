@@ -14,7 +14,7 @@ the post-execution workflow we then plug in the visualization class that visuali
 This visualization is produced with the following code:
 
 ```python
-from zenml.core.repo import Repository
+from zenml.repository import Repository
 from zenml.integrations.graphviz.visualizers.pipeline_run_dag_visualizer import (
     PipelineRunDagVisualizer,
 )

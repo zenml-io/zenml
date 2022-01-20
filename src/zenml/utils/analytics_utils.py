@@ -37,10 +37,7 @@ GET_PIPELINE = "Pipeline fetched"
 INITIALIZE_REPO = "ZenML initialized"
 
 # Components
-REGISTERED_METADATA_STORE = "Metadata Store registered"
-REGISTERED_ARTIFACT_STORE = "Artifact Store registered"
-REGISTERED_ORCHESTRATOR = "Orchestrator registered"
-REGISTERED_CONTAINER_REGISTRY = "Container Registry registered"
+REGISTERED_STACK_COMPONENT = "Stack component registered"
 
 # Stack
 REGISTERED_STACK = "Stack registered"

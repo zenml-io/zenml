@@ -19,7 +19,7 @@ times.
 Once the pipeline run is finished we can easily access this specific run during our post-execution workflow:
 
 ```python
-from zenml.core.repo import Repository
+from zenml.repository import Repository
 
 repo = Repository()
 pipeline = repo.get_pipeline(pipeline_name="my_pipeline")

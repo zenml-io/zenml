@@ -16,19 +16,33 @@
 from pydantic import validator
 
 from zenml.artifact_stores import BaseArtifactStore
-from zenml.core.component_factory import artifact_store_factory
-from zenml.enums import ArtifactStoreTypes
+from zenml.enums import ArtifactStoreFlavor, StackComponentType
+from zenml.stack.stack_component_class_registry import (
+    register_stack_component_class,
+)
 
 
-@artifact_store_factory.register(ArtifactStoreTypes.gcp)
+@register_stack_component_class(
+    component_type=StackComponentType.ARTIFACT_STORE,
+    component_flavor=ArtifactStoreFlavor.GCP,
+)
 class GCPArtifactStore(BaseArtifactStore):
     """Artifact Store for Google Cloud Storage based artifacts."""
 
+    supports_local_execution = True
+    supports_remote_execution = True
+
+    @property
+    def flavor(self) -> ArtifactStoreFlavor:
+        """The artifact store flavor."""
+        return ArtifactStoreFlavor.GCP
+
     @validator("path")
-    def must_be_gcs_path(cls, v: str) -> str:
-        """Validates that the path is a valid gcs path."""
-        if not v.startswith("gs://"):
+    def ensure_gcs_path(cls, path: str) -> str:
+        """Ensures that the path is a valid gcs path."""
+        if not path.startswith("gs://"):
             raise ValueError(
-                "Must be a valid gcs path, i.e., starting with `gs://`"
+                f"Path '{path}' specified for GCPArtifactStore is not a "
+                f"valid gcs path, i.e., starting with `gs://`."
             )
-        return v
+        return path
