@@ -1,79 +1,48 @@
-import os
-from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Optional
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any
 
-from zenml.core.base_component import BaseComponent
-from zenml.io.utils import get_zenml_config_dir
+from zenml.enums import OrchestratorFlavor, StackComponentType
+from zenml.stack import StackComponent
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
+    from zenml.stack import Stack
 
 
-class BaseOrchestrator(BaseComponent):
-    """Base Orchestrator class to orchestrate ZenML pipelines."""
+class BaseOrchestrator(StackComponent, ABC):
+    """Base class for all ZenML orchestrators."""
 
-    _ORCHESTRATOR_STORE_DIR_NAME: str = "orchestrators"
+    @property
+    def type(self) -> StackComponentType:
+        """The component type."""
+        return StackComponentType.ORCHESTRATOR
 
-    def __init__(self, repo_path: str, **kwargs: Any) -> None:
-        """Initializes a BaseOrchestrator instance.
-
-        Args:
-            repo_path: Path to the repository of this orchestrator.
-        """
-        serialization_dir = os.path.join(
-            get_zenml_config_dir(repo_path),
-            self._ORCHESTRATOR_STORE_DIR_NAME,
-        )
-        super().__init__(serialization_dir=serialization_dir, **kwargs)
+    @property
+    @abstractmethod
+    def flavor(self) -> OrchestratorFlavor:
+        """The orchestrator flavor."""
 
     @abstractmethod
-    def run(
-        self, zenml_pipeline: "BasePipeline", run_name: str, **kwargs: Any
+    def run_pipeline(
+        self, pipeline: "BasePipeline", stack: "Stack", run_name: str
     ) -> Any:
-        """Abstract method to run a pipeline. Overwrite this in subclasses
-        with a concrete implementation on how to run the given pipeline.
+        """Runs a pipeline.
 
         Args:
-            zenml_pipeline: The pipeline to run.
+            pipeline: The pipeline to run.
+            stack: The stack on which the pipeline is run.
             run_name: Name of the pipeline run.
-            **kwargs: Potential additional parameters used in subclass
-                implementations.
         """
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def is_running(self) -> bool:
-        """Returns whether the orchestrator is currently running."""
-
-    @property
-    def log_file(self) -> Optional[str]:
-        """Returns path to a log file if available."""
-        # TODO [ENG-136]: make this more generic in case an orchestrator has
-        #  multiple log files, e.g. change to a monitor() method which yields
-        #  new logs to output to the CLI
-        return None
-
-    def pre_run(self, pipeline: "BasePipeline", caller_filepath: str) -> None:
-        """Should be run before the `run()` function to prepare orchestrator.
-
-        Args:
-            pipeline: Pipeline that will be run.
-            caller_filepath: Path to the file in which `pipeline.run()` was
-                called. This is necessary for airflow so we know the file in
-                which the DAG is defined.
-        """
-
-    def post_run(self) -> None:
-        """Should be run after the `run()` to clean up."""
-
-    def up(self) -> None:
-        """Provisions resources for the orchestrator."""
-
-    def down(self) -> None:
-        """Destroys resources for the orchestrator."""
-
-    class Config:
-        """Configuration of settings."""
-
-        env_prefix = "zenml_orchestrator_"

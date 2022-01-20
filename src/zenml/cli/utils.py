@@ -15,28 +15,16 @@ import datetime
 import functools
 import subprocess
 import sys
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    List,
-    Mapping,
-    TypeVar,
-    cast,
-)
+from typing import Any, Callable, Dict, List, TypeVar, cast
 
 import click
 from dateutil import tz
 from tabulate import tabulate
 
-from zenml.cli import utils as cli_utils
 from zenml.logger import get_logger
+from zenml.stack import StackComponent
 
 logger = get_logger(__name__)
-
-if TYPE_CHECKING:
-    from zenml.core.base_component import BaseComponent
 
 
 def title(text: str) -> None:
@@ -113,41 +101,35 @@ def print_table(obj: List[Dict[str, Any]]) -> None:
     click.echo(tabulate(obj, headers="keys"))
 
 
-def format_component_list(
-    component_list: Mapping[str, "BaseComponent"], active_component: str
-) -> List[Dict[str, str]]:
-    """Formats a list of components into a List of Dicts. This list of dicts
-    can then be printed in a table style using cli_utils.print_table.
+def print_stack_component_list(
+    components: List[StackComponent], active_component_name: str
+) -> None:
+    """Prints a table with configuration options for a list of stack components.
+
+    If a component is active (its name matches the `active_component_name`),
+    it will be highlighted in a separate table column.
 
     Args:
-        component_list: The component_list is a mapping of component key to component class with its relevant attributes
-        active_component: The component that is currently active
-    Returns:
-        list_of_dicts: A list of all components with each component as a dict
+        components: List of stack components to print.
+        active_component_name: Name of the component that is currently active.
     """
-    list_of_dicts = []
-    for key, c in component_list.items():
-        # Make sure that the `name` key is not taken in the component dict
-        # In case `name` exists, it is replaced inplace with `component_name`
-        component_dict = {
-            "COMPONENT_NAME" if k == "name" else k.upper(): v
-            for k, v in c.dict(exclude={"_superfluous_options"}).items()
+    configurations = []
+    for component in components:
+        is_active = component.name == active_component_name
+        component_config = {
+            "ACTIVE": "*" if is_active else "",
+            **{key.upper(): value for key, value in component.dict().items()},
         }
+        configurations.append(component_config)
 
-        data = {"ACTIVE": "*" if key == active_component else "", "NAME": key}
-        data.update(component_dict)
-        list_of_dicts.append(data)
-    return list_of_dicts
+    print_table(configurations)
 
 
-def print_component_properties(properties: Dict[str, str]) -> None:
-    """Prints the properties of a component.
-
-    Args:
-        properties: A dictionary of properties.
-    """
-    for key, value in properties.items():
-        cli_utils.declare(f"{key.upper()}: {value}")
+def print_stack_component_configuration(component: StackComponent) -> None:
+    """Prints the configuration options of a stack component."""
+    declare(f"NAME: {component.name}")
+    for key, value in component.dict(exclude={"name"}).items():
+        declare(f"{key.upper()}: {value}")
 
 
 def format_date(

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import json
 import os
-from typing import Any, Dict, Iterable, List, Optional, cast
+from typing import AbstractSet, Any, Dict, Iterable, List, Optional, cast
 
 import pkg_resources
 from docker.client import DockerClient
@@ -54,7 +54,7 @@ def _parse_dockerignore(dockerignore_path: str) -> List[str]:
 def generate_dockerfile_contents(
     base_image: str,
     command: Optional[str] = None,
-    requirements: Optional[List[str]] = None,
+    requirements: Optional[AbstractSet[str]] = None,
 ) -> str:
     """Generates a Dockerfile.
 
@@ -173,7 +173,7 @@ def build_docker_image(
     image_name: str,
     dockerfile_path: Optional[str] = None,
     dockerignore_path: Optional[str] = None,
-    requirements: Optional[List[str]] = None,
+    requirements: Optional[AbstractSet[str]] = None,
     use_local_requirements: bool = False,
     base_image: Optional[str] = None,
 ) -> None:
@@ -199,11 +199,11 @@ def build_docker_image(
     """
     if not requirements and use_local_requirements:
         local_requirements = get_current_environment_requirements()
-        requirements = [
+        requirements = {
             f"{package}=={version}"
             for package, version in local_requirements.items()
             if package != "zenml"  # exclude ZenML
-        ]
+        }
         logger.info(
             "Using requirements from local environment to build "
             "docker image: %s",

@@ -240,6 +240,7 @@ class ExamplesRepo:
 
     @property
     def examples_run_bash_script(self) -> str:
+        """Path to the bash script that runs the example."""
         return os.path.join(self.examples_dir, EXAMPLES_RUN_SCRIPT)
 
     def clone(self) -> None:
@@ -400,6 +401,7 @@ pass_git_examples_handler = click.make_pass_decorator(
 def check_for_version_mismatch(
     git_examples_handler: GitExamplesHandler,
 ) -> None:
+    """Prints a warning if the example version and ZenML version don't match."""
     if git_examples_handler.is_matching_versions:
         return
     else:

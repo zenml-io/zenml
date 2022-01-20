@@ -11,3 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from zenml.enums import OrchestratorFlavor, StackComponentType
+from zenml.orchestrators import LocalOrchestrator
+
+
+def test_local_orchestrator_attributes():
+    """Tests that the basic attributes of the local orchestrator are set
+    correctly."""
+    orchestrator = LocalOrchestrator(name="")
+    assert orchestrator.supports_local_execution is True
+    assert orchestrator.supports_remote_execution is False
+    assert orchestrator.type == StackComponentType.ORCHESTRATOR
+    assert orchestrator.flavor == OrchestratorFlavor.LOCAL

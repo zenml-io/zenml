@@ -48,7 +48,6 @@ def opt_in() -> None:
     """Opt-in to analytics"""
     gc = GlobalConfig()
     gc.analytics_opt_in = True
-    gc.update()
     cli_utils.declare("Opted in to analytics.")
     track_event(OPT_IN_ANALYTICS)
 
@@ -60,7 +59,6 @@ def opt_out() -> None:
     """Opt-out to analytics"""
     gc = GlobalConfig()
     gc.analytics_opt_in = False
-    gc.update()
     cli_utils.declare("Opted out of analytics.")
     track_event(OPT_OUT_ANALYTICS)
 
