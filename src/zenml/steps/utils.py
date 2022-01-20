@@ -380,7 +380,7 @@ class _FunctionExecutor(BaseExecutor):
                     config_object = arg_type.parse_obj(exec_properties)
                 except pydantic.ValidationError as e:
                     missing_fields = [
-                        field
+                        str(field)
                         for error_dict in e.errors()
                         for field in error_dict["loc"]
                     ]

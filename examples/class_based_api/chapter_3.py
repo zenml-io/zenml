@@ -15,11 +15,11 @@
 import os
 from urllib.request import urlopen
 
-from zenml.core.repo import Repository
 from zenml.integrations.sklearn import steps as sklearn_steps
 from zenml.integrations.tensorflow import steps as tf_steps
 from zenml.logger import get_logger
 from zenml.pipelines.builtin_pipelines import TrainingPipeline
+from zenml.repository import Repository
 from zenml.steps import builtin_steps
 
 logger = get_logger(__name__)

@@ -15,8 +15,8 @@
 import numpy as np
 import tensorflow as tf
 
-from zenml.core.repo import Repository
 from zenml.pipelines import pipeline
+from zenml.repository import Repository
 from zenml.steps import Output, step
 
 

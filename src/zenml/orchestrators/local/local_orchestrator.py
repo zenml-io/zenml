@@ -15,41 +15,30 @@
 
 from typing import TYPE_CHECKING, Any
 
-from pydantic import PrivateAttr
-
+from zenml.enums import OrchestratorFlavor
 from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.local.local_dag_runner import LocalDagRunner
 from zenml.orchestrators.utils import create_tfx_pipeline
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
+    from zenml.stack import Stack
 
 
 class LocalOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines locally."""
 
-    _is_running: bool = PrivateAttr(default=False)
+    supports_local_execution = True
+    supports_remote_execution = False
 
     @property
-    def is_running(self) -> bool:
-        """Returns whether the orchestrator is currently running."""
-        return self._is_running
+    def flavor(self) -> OrchestratorFlavor:
+        """The orchestrator flavor."""
+        return OrchestratorFlavor.LOCAL
 
-    def run(
-        self,
-        zenml_pipeline: "BasePipeline",
-        run_name: str,
-        **pipeline_args: Any
-    ) -> None:
-        """Runs a pipeline locally.
-
-        Args:
-            zenml_pipeline: The pipeline to run.
-            run_name: Name of the pipeline run.
-            **pipeline_args: Unused kwargs to conform with base signature.
-        """
-        self._is_running = True
-        runner = LocalDagRunner()
-        tfx_pipeline = create_tfx_pipeline(zenml_pipeline)
-        runner.run(tfx_pipeline, run_name)
-        self._is_running = False
+    def run_pipeline(
+        self, pipeline: "BasePipeline", stack: "Stack", run_name: str
+    ) -> Any:
+        """Runs a pipeline locally."""
+        tfx_pipeline = create_tfx_pipeline(pipeline, stack=stack)
+        LocalDagRunner().run(tfx_pipeline, run_name)

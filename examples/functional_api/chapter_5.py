@@ -23,9 +23,9 @@ from sqlalchemy import Column, Float, Integer, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-from zenml.core.repo import Repository
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
+from zenml.repository import Repository
 from zenml.steps import BaseStepConfig, Output, step
 
 Base = declarative_base()

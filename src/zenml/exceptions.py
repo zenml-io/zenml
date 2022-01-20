@@ -20,12 +20,13 @@ if TYPE_CHECKING:
 
 
 class InitializationException(Exception):
-    """Raises exception when a function is run before zenml initialization."""
+    """Raised when an error occurred during initialization of a ZenML
+    repository."""
 
-    def __init__(
-        self, message: str = "ZenML config is none. Did you do `zenml init`?"
-    ):
-        super().__init__(message)
+
+class RepositoryNotFoundError(Exception):
+    """Raised when no ZenML repository directory is found when creating a
+    ZenML repository instance."""
 
 
 class EmptyDatasourceException(Exception):
@@ -165,3 +166,22 @@ class DuplicateRunNameError(RuntimeError):
         "already exists.",
     ):
         super().__init__(message)
+
+
+class StackExistsError(Exception):
+    """Raised when trying to register a stack with a name that already
+    exists."""
+
+
+class StackComponentExistsError(Exception):
+    """Raised when trying to register a stack component with a name that
+    already exists."""
+
+
+class StackValidationError(Exception):
+    """Raised when a stack configuration is not valid."""
+
+
+class ProvisioningError(Exception):
+    """Raised when an error occurs when provisioning resources for a
+    StackComponent."""
