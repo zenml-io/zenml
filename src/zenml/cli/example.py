@@ -346,12 +346,11 @@ class GitExamplesHandler(object):
             return self.examples
 
     def pull(
-        self, version: str = "", force: bool = False, branch: str = "main"
+        self,
+        branch: str,
+        force: bool = False,
     ) -> None:
         """Pulls the examples from the main git examples repository."""
-        if version == "":
-            version = zenml_version_installed
-
         if not self.examples_repo.is_cloned:
             self.examples_repo.clone()
         elif force:
@@ -359,27 +358,18 @@ class GitExamplesHandler(object):
             self.examples_repo.clone()
 
         try:
-            if branch not in self.examples_repo.repo.references:
-                warning(
-                    f"The specified branch {branch} not found in "
-                    "repo, falling back to use main."
-                )
-                branch = "main"
-            if branch != "main":
-                self.examples_repo.checkout(branch=branch)
-            else:
-                release_branch = f"release/{version}"
-                self.examples_repo.checkout(release_branch)
+            self.examples_repo.checkout(branch=branch)
         except GitCommandError:
-            logger.warning(
-                f"Version {version} does not exist in remote repository. "
-                f"Reverting to `main`."
+            warning(
+                f"The specified branch {branch} not found in "
+                "repo, falling back to use main."
             )
-            self.examples_repo.checkout("main")
+            self.examples_repo.checkout(branch="main")
 
     def pull_latest_examples(self) -> None:
         """Pulls the latest examples from the examples repository."""
-        self.pull(version=self.examples_repo.latest_release, force=True)
+        release_branch = f"release/{self.examples_repo.latest_release}"
+        self.pull(branch=release_branch, force=True)
 
     def copy_example(self, example: Example, destination_dir: str) -> None:
         """Copies an example to the destination_dir."""
@@ -521,9 +511,10 @@ def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
     "--branch",
     "-b",
     type=click.STRING,
-    default="main",
+    default=None,
+    hidden=True,
     help="The branch of the ZenML repo to use for the force-redownloaded "
-    "examples. A non main-branch overrules the version number.",
+    "examples.",
 )
 @click.option(
     "--path",
@@ -538,15 +529,14 @@ def pull(
     force: bool,
     version: str,
     path: str,
-    branch: str,
+    branch: Optional[str],
 ) -> None:
     """Pull examples straight into your current working directory.
     Add the flag --force or -f to redownload all the examples afresh.
     Use the flag --version or -v and the version number to specify
     which version of ZenML you wish to use for the examples."""
-    git_examples_handler.pull(
-        force=force, version=version, branch=branch.strip()
-    )
+    branch = branch.strip() if branch else f"release/{version}"
+    git_examples_handler.pull(branch=branch, force=force)
 
     examples_dir = os.path.join(os.getcwd(), path)
     fileio.create_dir_if_not_exists(examples_dir)
