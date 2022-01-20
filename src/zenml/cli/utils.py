@@ -60,6 +60,7 @@ def confirmation(text: str, *args: Any, **kwargs: Any) -> bool:
     Returns:
         Boolean based on user response.
     """
+    # return Confirm.ask(text, console=console)
     return click.confirm(click.style(text, fg="yellow"), *args, **kwargs)
 
 
