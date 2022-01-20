@@ -15,6 +15,7 @@
 from typing import Optional
 
 import click
+from rich.progress import track
 
 from zenml.cli.cli import cli
 from zenml.cli.utils import (
@@ -93,7 +94,7 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
 )
 def install(
     integration_name: Optional[str] = None, force: bool = False
-) -> None:
+) -> None:  # sourcery skip: merge-duplicate-blocks, merge-nested-ifs
     """Installs the required packages for a given integration. If no integration
     is specified all required packages for all integrations are installed
     using pip"""
@@ -113,20 +114,21 @@ def install(
     else:
         if requirements:
             if force:
-                declare(
-                    f"Installing all required packages for "
-                    f"{integration_name if integration_name else 'all integrations'}"
-                )
-                for requirement in requirements:
-                    install_package(requirement)
-            else:
-                if confirmation(
-                    "Are you sure you want to install the following "
-                    "packages to the current environment?\n"
-                    f"{requirements}"
+                for n in track(
+                    range(len(requirements)),
+                    description=f'Installing all required packages for {integration_name or "all integrations"}\n',
                 ):
-                    for requirement in requirements:
-                        install_package(requirement)
+                    install_package(requirements[n])
+            elif confirmation(
+                "Are you sure you want to install the following "
+                "packages to the current environment?\n"
+                f"{requirements}"
+            ):
+                for n in track(
+                    range(len(requirements)),
+                    description=f'Installing all required packages for {integration_name or "all integrations"}\n',
+                ):
+                    install_package(requirements[n])
 
 
 @integration.command(
@@ -166,13 +168,21 @@ def uninstall(
                     f"Installing all required packages for "
                     f"{integration_name if integration_name else 'all integrations'}"
                 )
-                for requirement in requirements:
-                    uninstall_package(requirement)
+                for n in track(
+                    range(len(requirements)),
+                    description=f'Uninstalling all required packages for {integration_name or "all integrations"}',
+                ):
+                    uninstall_package(requirements[n])
+                # for requirement in requirements:
+                #     uninstall_package(requirement)
             else:
                 if confirmation(
                     "Are you sure you want to uninstall the following "
                     "packages from the current environment?\n"
                     f"{requirements}"
                 ):
-                    for requirement in requirements:
-                        uninstall_package(requirement)
+                    for n in track(
+                        range(len(requirements)),
+                        description=f'Uninstalling all required packages for {integration_name or "all integrations"}',
+                    ):
+                        uninstall_package(requirements[n])
