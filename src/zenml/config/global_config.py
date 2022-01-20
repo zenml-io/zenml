@@ -114,7 +114,7 @@ class GlobalConfig(BaseModel):
     @staticmethod
     def config_directory() -> str:
         """Path to the global configuration directory."""
-        # TODO [MEDIUM]: Remove the util method to get global config directory,
+        # TODO [ENG-370]: Remove the util method to get global config directory,
         #  the remaining codebase should use `GlobalConfig.config_directory()`
         #  instead.
         return get_global_config_directory()
