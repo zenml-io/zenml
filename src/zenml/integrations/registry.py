@@ -100,7 +100,7 @@ class IntegrationRegistry(object):
                 self._integrations[item].check_installation()
                 for item in self.list_integration_names
             ]
-            return any(all_installed)
+            return all(all_installed)
         else:
             raise KeyError(
                 f"Integration '{integration_name}' not found. "
