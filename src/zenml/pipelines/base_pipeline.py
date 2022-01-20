@@ -41,7 +41,8 @@ from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.steps import BaseStep
-from zenml.utils import analytics_utils, yaml_utils
+from zenml.utils import yaml_utils
+from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
@@ -277,8 +278,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
         stack = Repository().active_stack
 
-        analytics_utils.track_event(
-            event=analytics_utils.RUN_PIPELINE,
+        track_event(
+            event=AnalyticsEvent.RUN_PIPELINE,
             metadata={
                 "total_steps": len(self.steps),
             },

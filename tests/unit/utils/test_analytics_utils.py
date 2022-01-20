@@ -17,9 +17,7 @@ from contextlib import ExitStack as does_not_raise
 
 from zenml.constants import VALID_OPERATING_SYSTEMS
 from zenml.utils.analytics_utils import (
-    EVENT_TEST,
-    OPT_IN_ANALYTICS,
-    OPT_OUT_ANALYTICS,
+    AnalyticsEvent,
     get_segment_key,
     get_system_info,
     track_event,
@@ -53,6 +51,6 @@ def test_platform_info_correctness():
 def test_track_event_conditions():
     """It should return true for the analytics events but false for everything
     else."""
-    assert track_event(OPT_OUT_ANALYTICS)
-    assert track_event(OPT_IN_ANALYTICS)
-    assert not track_event(EVENT_TEST)
+    assert track_event(AnalyticsEvent.OPT_IN_ANALYTICS)
+    assert track_event(AnalyticsEvent.OPT_OUT_ANALYTICS)
+    assert not track_event(AnalyticsEvent.EVENT_TEST)
