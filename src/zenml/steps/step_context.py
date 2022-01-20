@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Dict, NamedTuple, Optional, Type, cast
 
-from zenml.repository import Repository
 from zenml.exceptions import StepContextError
+from zenml.repository import Repository
 
 if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
