@@ -17,10 +17,10 @@ from contextlib import ExitStack as does_not_raise
 import pytest
 
 from zenml.artifact_stores import LocalArtifactStore
+from zenml.config.global_config import GlobalConfig
 from zenml.container_registries import BaseContainerRegistry
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
-from zenml.io.utils import get_global_config_directory
 from zenml.metadata_stores import SQLiteMetadataStore
 from zenml.orchestrators import LocalOrchestrator
 from zenml.runtime_configuration import RuntimeConfiguration
@@ -38,7 +38,7 @@ def test_default_local_stack():
     assert stack.container_registry is None
 
     expected_artifact_store_path = os.path.join(
-        get_global_config_directory(),
+        GlobalConfig.config_directory(),
         "local_stores",
         str(stack.artifact_store.uuid),
     )
