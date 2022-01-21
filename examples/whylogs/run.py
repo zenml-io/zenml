@@ -13,6 +13,7 @@
 
 import pandas as pd
 from sklearn import datasets
+from sklearn.model_selection import train_test_split
 from whylogs import DatasetProfile  # type: ignore
 
 from zenml.repository import Repository
@@ -56,52 +57,53 @@ logger = get_logger(__name__)
 def data_loader(
     context: StepContext,
 ) -> Output(data=pd.DataFrame, profile=DatasetProfile,):
-    """Load the breast cancer dataset."""
-    print("Loading data...")
-    breast_cancer = datasets.load_breast_cancer()
-    df = pd.DataFrame(
-        data=breast_cancer.data, columns=breast_cancer.feature_names
-    )
-    df["class"] = pd.Categorical(
-        pd.Series(breast_cancer.target).map(
-            lambda x: breast_cancer.target_names[x]
-        )
-    )
+    """Load the diabetes dataset."""
+    X, y = datasets.load_diabetes(return_X_y=True, as_frame=True)
+
+    # merge X an y together
+    df = pd.merge(X, y, left_index=True, right_index=True)
 
     # leverage the whylogs sub-context to generate a whylogs profile
-    profile = context.whylogs.profile_dataframe(df, dataset_name="input_data")
+    profile = context.whylogs.profile_dataframe(
+        df, dataset_name="input_data", tags={"datasetId": "model-14"}
+    )
 
     return df, profile
 
 
 @step
-def partial_split(
+def data_splitter(
     input: pd.DataFrame,
-) -> pd.DataFrame:
-    """Returns a slice of the input dataset as a Pandas dataframe."""
-    split = input[:100]
-    return split
+) -> Output(train=pd.DataFrame, test=pd.DataFrame,):
+    """Splits the input dataset into train and test slices."""
+    train, test = train_test_split(input, test_size=0.1, random_state=13)
+    return train, test
 
 
 # Another quick way of enhancing your pipeline with whylogs profiling features
 # is with the `whylogs_profiler_step` function, which creates a step that runs
 # whylogs data profiling on an input dataframe and returns the generated
 # profile as an output artifact.
-log_partial_data = whylogs_profiler_step(
-    "partial_data_logger", dataset_name="partial"
+train_data_profiler = whylogs_profiler_step(
+    "train_data_profiler", dataset_name="train", tags={"datasetId": "model-15"}
+)
+test_data_profiler = whylogs_profiler_step(
+    "test_data_profiler", dataset_name="test", tags={"datasetId": "model-16"}
 )
 
 
 @pipeline(enable_cache=True)
 def data_profiling_pipeline(
     data_loader,
-    partial_data,
-    partial_data_logger,
+    data_splitter,
+    train_data_profiler,
+    test_data_profiler,
 ):
     """Links all the steps together in a pipeline"""
     data, _ = data_loader()
-    split = partial_data(data)
-    partial_data_logger(split)
+    train, test = data_splitter(data)
+    train_data_profiler(train)
+    test_data_profiler(test)
 
 
 def visualize_statistics(step_name: str):
@@ -114,12 +116,14 @@ def visualize_statistics(step_name: str):
 if __name__ == "__main__":
 
     pipeline = data_profiling_pipeline(
-        data_loader=data_loader(enable_cache=True),
-        partial_data=partial_split(),
-        partial_data_logger=log_partial_data,
+        data_loader=data_loader(),
+        data_splitter=data_splitter(),
+        train_data_profiler=train_data_profiler,
+        test_data_profiler=test_data_profiler,
     )
 
     pipeline.run()
 
     visualize_statistics("data_loader")
-    visualize_statistics("partial_data_logger")
+    visualize_statistics("train_data_profiler")
+    visualize_statistics("test_data_profiler")

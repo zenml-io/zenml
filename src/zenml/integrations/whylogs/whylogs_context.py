@@ -110,8 +110,6 @@ class WhylogsContext:
         #  multiple pipelines
         dataset_name = dataset_name or self._step_context.step_name
         final_tags = self._tags.copy() if self._tags else dict()
-        if tags:
-            final_tags.update(tags)
         # TODO [LOW]: add more zenml specific tags to the whylogs profile, such
         #  as the pipeline name and run ID
         final_tags["zenml.step"] = self._step_context.step_name
@@ -119,8 +117,10 @@ class WhylogsContext:
         # dataset profiles with the same datasetID are considered to belong
         # to the same dataset/model.
         final_tags.setdefault("datasetId", dataset_name)
+        if tags:
+            final_tags.update(tags)
         logger = session.logger(
-            dataset_name, dataset_timestamp=dataset_timestamp, tags=tags
+            dataset_name, dataset_timestamp=dataset_timestamp, tags=final_tags
         )
         logger.log_dataframe(df)
         return logger.close()
