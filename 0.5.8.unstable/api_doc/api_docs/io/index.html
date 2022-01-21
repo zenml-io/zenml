@@ -1,0 +1,4329 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/io/">
+      
+      <link rel="icon" href="../../../_assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.7">
+    
+    
+      
+        <title>Io - ZenML API Reference</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.cd566b2a.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.e6a45f82.min.css">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="none" data-md-color-accent="none">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#io" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        <aside class="md-banner md-banner--warning">
+          
+        </aside>
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="ZenML API Reference" class="md-header__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ZenML API Reference
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Io
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/zenml-io/zenml/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="ZenML API Reference" class="md-nav__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    ZenML API Reference
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/zenml-io/zenml/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../index.md" class="md-nav__link">
+        ZenML
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cli/" class="md-nav__link">
+        CLI docs
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Api doc
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Api doc" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Api doc
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../" class="md-nav__link">
+        Welcome to the ZenML Api Docs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2" type="checkbox" id="__nav_3_2" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_2">
+          Api docs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Api docs" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_2">
+          <span class="md-nav__icon md-icon"></span>
+          Api docs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../artifact_stores/" class="md-nav__link">
+        Artifact Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../artifacts/" class="md-nav__link">
+        Artifacts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        Config
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../constants/" class="md-nav__link">
+        Constants
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../container_registries/" class="md-nav__link">
+        Container Registries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core/" class="md-nav__link">
+        Core
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../enums/" class="md-nav__link">
+        Enums
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exceptions/" class="md-nav__link">
+        Exceptions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/" class="md-nav__link">
+        Integrations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Io
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Io
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.io" class="md-nav__link">
+    io
+  </a>
+  
+    <nav class="md-nav" aria-label="io">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio" class="md-nav__link">
+    fileio
+  </a>
+  
+    <nav class="md-nav" aria-label="fileio">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.append_file" class="md-nav__link">
+    append_file()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.convert_to_str" class="md-nav__link">
+    convert_to_str()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.copy" class="md-nav__link">
+    copy()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.copy_dir" class="md-nav__link">
+    copy_dir()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.create_dir_if_not_exists" class="md-nav__link">
+    create_dir_if_not_exists()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.create_dir_recursive_if_not_exists" class="md-nav__link">
+    create_dir_recursive_if_not_exists()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.create_file_if_not_exists" class="md-nav__link">
+    create_file_if_not_exists()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.file_exists" class="md-nav__link">
+    file_exists()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.find_files" class="md-nav__link">
+    find_files()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.get_grandparent" class="md-nav__link">
+    get_grandparent()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.get_parent" class="md-nav__link">
+    get_parent()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.glob" class="md-nav__link">
+    glob()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.is_dir" class="md-nav__link">
+    is_dir()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.is_remote" class="md-nav__link">
+    is_remote()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.is_root" class="md-nav__link">
+    is_root()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.list_dir" class="md-nav__link">
+    list_dir()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.make_dirs" class="md-nav__link">
+    make_dirs()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.mkdir" class="md-nav__link">
+    mkdir()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.move" class="md-nav__link">
+    move()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.open" class="md-nav__link">
+    open()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.remove" class="md-nav__link">
+    remove()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.rename" class="md-nav__link">
+    rename()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.resolve_relative_path" class="md-nav__link">
+    resolve_relative_path()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.rm_dir" class="md-nav__link">
+    rm_dir()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.stat" class="md-nav__link">
+    stat()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.walk" class="md-nav__link">
+    walk()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio_registry" class="md-nav__link">
+    fileio_registry
+  </a>
+  
+    <nav class="md-nav" aria-label="fileio_registry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio_registry.FileIORegistry" class="md-nav__link">
+    FileIORegistry
+  </a>
+  
+    <nav class="md-nav" aria-label="FileIORegistry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio_registry.FileIORegistry.get_filesystem_for_path" class="md-nav__link">
+    get_filesystem_for_path()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio_registry.FileIORegistry.get_filesystem_for_scheme" class="md-nav__link">
+    get_filesystem_for_scheme()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio_registry.FileIORegistry.register" class="md-nav__link">
+    register()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.filesystem" class="md-nav__link">
+    filesystem
+  </a>
+  
+    <nav class="md-nav" aria-label="filesystem">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.filesystem.FileSystemMeta" class="md-nav__link">
+    FileSystemMeta
+  </a>
+  
+    <nav class="md-nav" aria-label="FileSystemMeta">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.filesystem.FileSystemMeta.__new__" class="md-nav__link">
+    __new__()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.filesystem.Filesystem" class="md-nav__link">
+    Filesystem
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.filesystem.NotFoundError" class="md-nav__link">
+    NotFoundError
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.utils" class="md-nav__link">
+    utils
+  </a>
+  
+    <nav class="md-nav" aria-label="utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.utils.create_tarfile" class="md-nav__link">
+    create_tarfile()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.utils.extract_tarfile" class="md-nav__link">
+    extract_tarfile()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.utils.get_global_config_directory" class="md-nav__link">
+    get_global_config_directory()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.utils.get_zenml_config_dir" class="md-nav__link">
+    get_zenml_config_dir()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.utils.get_zenml_dir" class="md-nav__link">
+    get_zenml_dir()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.utils.is_gcs_path" class="md-nav__link">
+    is_gcs_path()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.utils.is_zenml_dir" class="md-nav__link">
+    is_zenml_dir()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.utils.read_file_contents_as_string" class="md-nav__link">
+    read_file_contents_as_string()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.utils.write_file_contents_as_string" class="md-nav__link">
+    write_file_contents_as_string()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logger/" class="md-nav__link">
+        Logger
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../materializers/" class="md-nav__link">
+        Materializers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metadata_stores/" class="md-nav__link">
+        Metadata Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../orchestrators/" class="md-nav__link">
+        Orchestrators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipelines/" class="md-nav__link">
+        Pipelines
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../post_execution/" class="md-nav__link">
+        Post Execution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stacks/" class="md-nav__link">
+        Stacks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../steps/" class="md-nav__link">
+        Steps
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../visualizers/" class="md-nav__link">
+        Visualizers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2_21" type="checkbox" id="__nav_3_2_21" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_2_21">
+          Cli
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Cli" data-md-level="3">
+        <label class="md-nav__title" for="__nav_3_2_21">
+          <span class="md-nav__icon md-icon"></span>
+          Cli
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/artifact_store/" class="md-nav__link">
+        Artifact Store
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/cli/" class="md-nav__link">
+        Cli
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/config/" class="md-nav__link">
+        Config
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/container_registry/" class="md-nav__link">
+        Container Registry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/example/" class="md-nav__link">
+        Example
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/integration/" class="md-nav__link">
+        Integration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/metadata_store/" class="md-nav__link">
+        Metadata Store
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/orchestrator/" class="md-nav__link">
+        Orchestrator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/pipeline/" class="md-nav__link">
+        Pipeline
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/stack/" class="md-nav__link">
+        Stack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/utils/" class="md-nav__link">
+        Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/version/" class="md-nav__link">
+        Version
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.io" class="md-nav__link">
+    io
+  </a>
+  
+    <nav class="md-nav" aria-label="io">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio" class="md-nav__link">
+    fileio
+  </a>
+  
+    <nav class="md-nav" aria-label="fileio">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.append_file" class="md-nav__link">
+    append_file()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.convert_to_str" class="md-nav__link">
+    convert_to_str()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.copy" class="md-nav__link">
+    copy()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.copy_dir" class="md-nav__link">
+    copy_dir()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.create_dir_if_not_exists" class="md-nav__link">
+    create_dir_if_not_exists()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.create_dir_recursive_if_not_exists" class="md-nav__link">
+    create_dir_recursive_if_not_exists()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.create_file_if_not_exists" class="md-nav__link">
+    create_file_if_not_exists()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.file_exists" class="md-nav__link">
+    file_exists()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.find_files" class="md-nav__link">
+    find_files()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.get_grandparent" class="md-nav__link">
+    get_grandparent()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.get_parent" class="md-nav__link">
+    get_parent()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.glob" class="md-nav__link">
+    glob()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.is_dir" class="md-nav__link">
+    is_dir()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.is_remote" class="md-nav__link">
+    is_remote()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.is_root" class="md-nav__link">
+    is_root()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.list_dir" class="md-nav__link">
+    list_dir()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.make_dirs" class="md-nav__link">
+    make_dirs()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.mkdir" class="md-nav__link">
+    mkdir()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.move" class="md-nav__link">
+    move()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.open" class="md-nav__link">
+    open()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.remove" class="md-nav__link">
+    remove()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.rename" class="md-nav__link">
+    rename()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.resolve_relative_path" class="md-nav__link">
+    resolve_relative_path()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.rm_dir" class="md-nav__link">
+    rm_dir()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.stat" class="md-nav__link">
+    stat()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio.walk" class="md-nav__link">
+    walk()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio_registry" class="md-nav__link">
+    fileio_registry
+  </a>
+  
+    <nav class="md-nav" aria-label="fileio_registry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio_registry.FileIORegistry" class="md-nav__link">
+    FileIORegistry
+  </a>
+  
+    <nav class="md-nav" aria-label="FileIORegistry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio_registry.FileIORegistry.get_filesystem_for_path" class="md-nav__link">
+    get_filesystem_for_path()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio_registry.FileIORegistry.get_filesystem_for_scheme" class="md-nav__link">
+    get_filesystem_for_scheme()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.fileio_registry.FileIORegistry.register" class="md-nav__link">
+    register()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.filesystem" class="md-nav__link">
+    filesystem
+  </a>
+  
+    <nav class="md-nav" aria-label="filesystem">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.filesystem.FileSystemMeta" class="md-nav__link">
+    FileSystemMeta
+  </a>
+  
+    <nav class="md-nav" aria-label="FileSystemMeta">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.filesystem.FileSystemMeta.__new__" class="md-nav__link">
+    __new__()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.filesystem.Filesystem" class="md-nav__link">
+    Filesystem
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.filesystem.NotFoundError" class="md-nav__link">
+    NotFoundError
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.utils" class="md-nav__link">
+    utils
+  </a>
+  
+    <nav class="md-nav" aria-label="utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.utils.create_tarfile" class="md-nav__link">
+    create_tarfile()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.utils.extract_tarfile" class="md-nav__link">
+    extract_tarfile()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.utils.get_global_config_directory" class="md-nav__link">
+    get_global_config_directory()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.utils.get_zenml_config_dir" class="md-nav__link">
+    get_zenml_config_dir()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.utils.get_zenml_dir" class="md-nav__link">
+    get_zenml_dir()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.utils.is_gcs_path" class="md-nav__link">
+    is_gcs_path()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.utils.is_zenml_dir" class="md-nav__link">
+    is_zenml_dir()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.utils.read_file_contents_as_string" class="md-nav__link">
+    read_file_contents_as_string()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.io.utils.write_file_contents_as_string" class="md-nav__link">
+    write_file_contents_as_string()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+<a href="https://github.com/zenml-io/zenml/docs/api_doc/api_docs/io.md" title="Edit this page" class="md-content__button md-icon">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+</a>
+
+
+<h1 id="io">Io</h1>
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h2 id="zenml.io" class="doc doc-heading">
+        <code>zenml.io</code>
+
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h2>
+
+    <div class="doc doc-contents first">
+
+      <p>The <code>io</code> module handles file operations for the ZenML package. It offers a
+standard interface for reading, writing and manipulating files and directories.
+It is heavily influenced and inspired by the <code>io</code> module of <code>tfx</code>.</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.io.fileio" class="doc doc-heading">
+        <code>fileio</code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.append_file" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">append_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">file_contents</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Appends file_contents to file.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>file_path</code></td>
+        <td><code>str</code></td>
+        <td><p>Local path in filesystem.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>file_contents</code></td>
+        <td><code>str</code></td>
+        <td><p>Contents of file.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">append_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">file_contents</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Appends file_contents to file.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path: Local path in filesystem.</span>
+<span class="sd">        file_contents: Contents of file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># with file_io.FileIO(file_path, mode=&#39;a&#39;) as f:</span>
+    <span class="c1">#     f.write(file_contents)</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.convert_to_str" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">convert_to_str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Converts a PathType to a str using UTF-8.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">convert_to_str</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Converts a PathType to a str using UTF-8.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">path</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">path</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.copy" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">copy</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Copy a file from the source to the destination.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Copy a file from the source to the destination.&quot;&quot;&quot;</span>
+    <span class="n">src_fs</span> <span class="o">=</span> <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
+    <span class="n">dst_fs</span> <span class="o">=</span> <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">dst</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">src_fs</span> <span class="ow">is</span> <span class="n">dst_fs</span><span class="p">:</span>
+        <span class="n">src_fs</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">overwrite</span> <span class="ow">and</span> <span class="n">file_exists</span><span class="p">(</span><span class="n">dst</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">FileExistsError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Destination file &#39;</span><span class="si">{</span><span class="n">convert_to_str</span><span class="p">(</span><span class="n">dst</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39; already exists &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;and `overwrite` is false.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">contents</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="nb">open</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">contents</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.copy_dir" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">copy_dir</span><span class="p">(</span><span class="n">source_dir</span><span class="p">,</span> <span class="n">destination_dir</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Copies dir from source to destination.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>source_dir</code></td>
+        <td><code>str</code></td>
+        <td><p>Path to copy from.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>destination_dir</code></td>
+        <td><code>str</code></td>
+        <td><p>Path to copy to.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>overwrite</code></td>
+        <td><code>bool</code></td>
+        <td><p>Boolean. If false, function throws an error before overwrite.</p></td>
+        <td><code>False</code></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">copy_dir</span><span class="p">(</span>
+    <span class="n">source_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">destination_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Copies dir from source to destination.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        source_dir: Path to copy from.</span>
+<span class="sd">        destination_dir: Path to copy to.</span>
+<span class="sd">        overwrite: Boolean. If false, function throws an error before overwrite.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">source_file</span> <span class="ow">in</span> <span class="n">list_dir</span><span class="p">(</span><span class="n">source_dir</span><span class="p">):</span>
+        <span class="n">source_file_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">source_file</span><span class="p">)</span>
+        <span class="n">destination_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">destination_dir</span><span class="p">,</span> <span class="n">source_file_path</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">is_dir</span><span class="p">(</span><span class="n">source_file</span><span class="p">):</span>
+            <span class="n">copy_dir</span><span class="p">(</span><span class="n">source_file</span><span class="p">,</span> <span class="n">destination_name</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">create_dir_recursive_if_not_exists</span><span class="p">(</span>
+                <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">destination_name</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">copy</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">source_file_path</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">destination_name</span><span class="p">),</span> <span class="n">overwrite</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.create_dir_if_not_exists" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">create_dir_if_not_exists</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Creates directory if it does not exist.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>dir_path(str)</code></td>
+        <td></td>
+        <td><p>Local path in filesystem.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_dir_if_not_exists</span><span class="p">(</span><span class="n">dir_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Creates directory if it does not exist.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        dir_path(str): Local path in filesystem.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_dir</span><span class="p">(</span><span class="n">dir_path</span><span class="p">):</span>
+        <span class="n">mkdir</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.create_dir_recursive_if_not_exists" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">create_dir_recursive_if_not_exists</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Creates directory recursively if it does not exist.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>dir_path</code></td>
+        <td><code>str</code></td>
+        <td><p>Local path in filesystem.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_dir_recursive_if_not_exists</span><span class="p">(</span><span class="n">dir_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Creates directory recursively if it does not exist.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        dir_path: Local path in filesystem.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_dir</span><span class="p">(</span><span class="n">dir_path</span><span class="p">):</span>
+        <span class="n">make_dirs</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.create_file_if_not_exists" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">create_file_if_not_exists</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">file_contents</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">&#39;</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Creates file if it does not exist.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>file_path</code></td>
+        <td><code>str</code></td>
+        <td><p>Local path in filesystem.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>file_contents</code></td>
+        <td><code>str</code></td>
+        <td><p>Contents of file.</p></td>
+        <td><code>&#39;{}&#39;</code></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_file_if_not_exists</span><span class="p">(</span>
+    <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">file_contents</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Creates file if it does not exist.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path: Local path in filesystem.</span>
+<span class="sd">        file_contents: Contents of file.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># if not fileio.exists(file_path):</span>
+    <span class="c1">#     fileio.(file_path, file_contents)</span>
+    <span class="n">full_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+    <span class="n">create_dir_recursive_if_not_exists</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">full_path</span><span class="o">.</span><span class="n">parent</span><span class="p">))</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">full_path</span><span class="p">),</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">file_contents</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.file_exists" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">file_exists</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns <code>True</code> if the given path exists.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">file_exists</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns `True` if the given path exists.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.find_files" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">find_files</span><span class="p">(</span><span class="n">dir_path</span><span class="p">,</span> <span class="n">pattern</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Find files in a directory that match pattern.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>dir_path</code></td>
+        <td><code>Union[bytes, str]</code></td>
+        <td><p>Path to directory.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>pattern</code></td>
+        <td><code>str</code></td>
+        <td><p>pattern like *.png.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Yields:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Iterable[str]</code></td>
+      <td><p>All matching filenames if found, else None.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">find_files</span><span class="p">(</span><span class="n">dir_path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="c1"># TODO [ENG-189]: correct docstring since &#39;None&#39; is never returned</span>
+    <span class="sd">&quot;&quot;&quot;Find files in a directory that match pattern.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        dir_path: Path to directory.</span>
+<span class="sd">        pattern: pattern like *.png.</span>
+
+<span class="sd">    Yields:</span>
+<span class="sd">         All matching filenames if found, else None.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">root</span><span class="p">,</span> <span class="n">dirs</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">walk</span><span class="p">(</span><span class="n">dir_path</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">basename</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">fnmatch</span><span class="o">.</span><span class="n">fnmatch</span><span class="p">(</span><span class="n">convert_to_str</span><span class="p">(</span><span class="n">basename</span><span class="p">),</span> <span class="n">pattern</span><span class="p">):</span>
+                <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                    <span class="n">convert_to_str</span><span class="p">(</span><span class="n">root</span><span class="p">),</span> <span class="n">convert_to_str</span><span class="p">(</span><span class="n">basename</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="k">yield</span> <span class="n">filename</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.get_grandparent" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_grandparent</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Get grandparent of dir.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>dir_path</code></td>
+        <td><code>str</code></td>
+        <td><p>Path to directory.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>str</code></td>
+      <td><p>The input paths parents parent.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_grandparent</span><span class="p">(</span><span class="n">dir_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Get grandparent of dir.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        dir_path: Path to directory.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The input paths parents parent.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">stem</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.get_parent" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_parent</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Get parent of dir.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>dir_path(str)</code></td>
+        <td></td>
+        <td><p>Path to directory.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>str</code></td>
+      <td><p>Parent (stem) of the dir as a string.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_parent</span><span class="p">(</span><span class="n">dir_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Get parent of dir.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        dir_path(str): Path to directory.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Parent (stem) of the dir as a string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">stem</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.glob" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Return the paths that match a glob pattern.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Return the paths that match a glob pattern.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.is_dir" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">is_dir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns whether the given path points to a directory.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_dir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns whether the given path points to a directory.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.is_remote" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">is_remote</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns True if path exists remotely.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>path</code></td>
+        <td><code>str</code></td>
+        <td><p>Any path as a string.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>bool</code></td>
+      <td><p>True if remote path, else False.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_remote</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns True if path exists remotely.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        path: Any path as a string.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        True if remote path, else False.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span> <span class="k">for</span> <span class="n">prefix</span> <span class="ow">in</span> <span class="n">REMOTE_FS_PREFIX</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.is_root" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">is_root</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns true if path has no parent in local filesystem.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>path</code></td>
+        <td><code>str</code></td>
+        <td><p>Local path in filesystem.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>bool</code></td>
+      <td><p>True if root, else False.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_root</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns true if path has no parent in local filesystem.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        path: Local path in filesystem.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        True if root, else False.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">==</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.list_dir" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">list_dir</span><span class="p">(</span><span class="n">dir_path</span><span class="p">,</span> <span class="n">only_file_names</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns a list of files under dir.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>dir_path</code></td>
+        <td><code>str</code></td>
+        <td><p>Path in filesystem.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>only_file_names</code></td>
+        <td><code>bool</code></td>
+        <td><p>Returns only file names if True.</p></td>
+        <td><code>False</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>List[str]</code></td>
+      <td><p>List of full qualified paths.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">list_dir</span><span class="p">(</span><span class="n">dir_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">only_file_names</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Returns a list of files under dir.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        dir_path: Path in filesystem.</span>
+<span class="sd">        only_file_names: Returns only file names if True.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List of full qualified paths.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dir_path</span><span class="p">,</span> <span class="n">convert_to_str</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">only_file_names</span>
+            <span class="k">else</span> <span class="n">convert_to_str</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span>
+        <span class="p">]</span>
+    <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dir </span><span class="si">{</span><span class="n">dir_path</span><span class="si">}</span><span class="s2"> not found.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[]</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.make_dirs" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">make_dirs</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Make a directory at the given path, recursively creating parents.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">make_dirs</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Make a directory at the given path, recursively creating parents.&quot;&quot;&quot;</span>
+    <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.mkdir" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">mkdir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Make a directory at the given path; parent directory must exist.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">mkdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Make a directory at the given path; parent directory must exist.&quot;&quot;&quot;</span>
+    <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.move" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">move</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">destination</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Moves dir or file from source to destination. Can be used to rename.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>source</code></td>
+        <td><code>str</code></td>
+        <td><p>Local path to copy from.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>destination</code></td>
+        <td><code>str</code></td>
+        <td><p>Local path to copy to.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>overwrite</code></td>
+        <td><code>bool</code></td>
+        <td><p>boolean, if false, then throws an error before overwrite.</p></td>
+        <td><code>False</code></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">move</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">destination</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Moves dir or file from source to destination. Can be used to rename.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        source: Local path to copy from.</span>
+<span class="sd">        destination: Local path to copy to.</span>
+<span class="sd">        overwrite: boolean, if false, then throws an error before overwrite.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rename</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">destination</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.open" class="doc doc-heading">
+<code class="highlight language-python"><span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Open a file at the given path.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>  <span class="c1"># noqa</span>
+    <span class="sd">&quot;&quot;&quot;Open a file at the given path.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.remove" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">remove</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Remove the file at the given path. Dangerous operation.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Remove the file at the given path. Dangerous operation.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">file_exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">convert_to_str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="si">}</span><span class="s2"> does not exist!&quot;</span><span class="p">)</span>
+    <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.rename" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">rename</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Rename source file to destination file.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>src</code></td>
+        <td><code>Union[bytes, str]</code></td>
+        <td><p>The path of the file to rename.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>dst</code></td>
+        <td><code>Union[bytes, str]</code></td>
+        <td><p>The path to rename the source file to.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>overwrite</code></td>
+        <td><code>bool</code></td>
+        <td><p>If a file already exists at the destination, this
+method will overwrite it if overwrite=<code>True</code> and
+raise a FileExistsError otherwise.</p></td>
+        <td><code>False</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>FileExistsError</code></td>
+        <td><p>If a file already exists at the destination
+and overwrite is not set to <code>True</code>.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">rename</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Rename source file to destination file.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        src: The path of the file to rename.</span>
+<span class="sd">        dst: The path to rename the source file to.</span>
+<span class="sd">        overwrite: If a file already exists at the destination, this</span>
+<span class="sd">            method will overwrite it if overwrite=`True` and</span>
+<span class="sd">            raise a FileExistsError otherwise.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        FileExistsError: If a file already exists at the destination</span>
+<span class="sd">            and overwrite is not set to `True`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">src_fs</span> <span class="o">=</span> <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
+    <span class="n">dst_fs</span> <span class="o">=</span> <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">dst</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">src_fs</span> <span class="ow">is</span> <span class="n">dst_fs</span><span class="p">:</span>
+        <span class="n">src_fs</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Renaming from </span><span class="si">{</span><span class="n">convert_to_str</span><span class="p">(</span><span class="n">src</span><span class="p">)</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">convert_to_str</span><span class="p">(</span><span class="n">dst</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;using different filesystems plugins is currently not supported.&quot;</span>
+        <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.resolve_relative_path" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">resolve_relative_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Takes relative path and resolves it absolutely.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>path</code></td>
+        <td><code>str</code></td>
+        <td><p>Local path in filesystem.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>str</code></td>
+      <td><p>Resolved path.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">resolve_relative_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Takes relative path and resolves it absolutely.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">      path: Local path in filesystem.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Resolved path.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">is_remote</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">path</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">())</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.rm_dir" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">rm_dir</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Deletes dir recursively. Dangerous operation.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>dir_path</code></td>
+        <td><code>str</code></td>
+        <td><p>Dir to delete.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">rm_dir</span><span class="p">(</span><span class="n">dir_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Deletes dir recursively. Dangerous operation.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        dir_path: Dir to delete.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.stat" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">stat</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Return the stat descriptor for a given file path.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">stat</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Return the stat descriptor for a given file path.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.fileio.walk" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">walk</span><span class="p">(</span><span class="n">top</span><span class="p">,</span> <span class="n">topdown</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">onerror</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Return an iterator that walks the contents of the given directory.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>top</code></td>
+        <td><code>Union[bytes, str]</code></td>
+        <td><p>Path of directory to walk.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>topdown</code></td>
+        <td><code>bool</code></td>
+        <td><p>Whether to walk directories topdown or bottom-up.</p></td>
+        <td><code>True</code></td>
+      </tr>
+      <tr>
+        <td><code>onerror</code></td>
+        <td><code>Optional[Callable[..., NoneType]]</code></td>
+        <td><p>Callable that gets called if an error occurs.</p></td>
+        <td><code>None</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Iterable[Tuple[Union[bytes, str], List[Union[bytes, str]], List[Union[bytes, str]]]]</code></td>
+      <td><p>An Iterable of Tuples, each of which contain the path of the current
+directory path, a list of directories inside the current directory
+and a list of files inside the current directory.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">walk</span><span class="p">(</span>
+    <span class="n">top</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span>
+    <span class="n">topdown</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">onerror</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">PathType</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]]]:</span>
+    <span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        top: Path of directory to walk.</span>
+<span class="sd">        topdown: Whether to walk directories topdown or bottom-up.</span>
+<span class="sd">        onerror: Callable that gets called if an error occurs.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        An Iterable of Tuples, each of which contain the path of the current</span>
+<span class="sd">        directory path, a list of directories inside the current directory</span>
+<span class="sd">        and a list of files inside the current directory.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">top</span><span class="p">)</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">top</span><span class="p">,</span> <span class="n">topdown</span><span class="o">=</span><span class="n">topdown</span><span class="p">,</span> <span class="n">onerror</span><span class="o">=</span><span class="n">onerror</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.io.fileio_registry" class="doc doc-heading">
+        <code>fileio_registry</code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Filesystem registry managing filesystem plugins.</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.io.fileio_registry.FileIORegistry" class="doc doc-heading">
+        <code>
+FileIORegistry        </code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Registry of pluggable filesystem implementations used in TFX components.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">FileIORegistry</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Registry of pluggable filesystem implementations used in TFX components.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_filesystems</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">PathType</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n">Filesystem</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_registration_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filesystem_cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Filesystem</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Register a filesystem implementation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">          filesystem_cls: Subclass of `tfx.dsl.io.filesystem.Filesystem`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_registration_lock</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">scheme</span> <span class="ow">in</span> <span class="n">filesystem_cls</span><span class="o">.</span><span class="n">SUPPORTED_SCHEMES</span><span class="p">:</span>
+                <span class="n">current_preferred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filesystems</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">scheme</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">current_preferred</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="c1"># TODO: [LOW] Decide what to do here. Do we overwrite,</span>
+                    <span class="c1">#   give out a warning or do we fail?</span>
+                    <span class="k">pass</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_filesystems</span><span class="p">[</span><span class="n">scheme</span><span class="p">]</span> <span class="o">=</span> <span class="n">filesystem_cls</span>
+
+    <span class="k">def</span> <span class="nf">get_filesystem_for_scheme</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheme</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">Filesystem</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get filesystem plugin for given scheme string.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">scheme</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+            <span class="n">scheme</span> <span class="o">=</span> <span class="n">scheme</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">scheme</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filesystems</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;No filesystems were found for the scheme: &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s2">. Please make sure that you are using &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;the right path and the all the necessary &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;integrations are properly installed.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filesystems</span><span class="p">[</span><span class="n">scheme</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">get_filesystem_for_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">Filesystem</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get filesystem plugin for given path.&quot;&quot;&quot;</span>
+        <span class="c1"># Assume local path by default, but extract filesystem prefix if available.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">path_bytes</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+            <span class="n">path_bytes</span> <span class="o">=</span> <span class="n">path</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid path type: </span><span class="si">%r</span><span class="s2">.&quot;</span> <span class="o">%</span> <span class="n">path</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;^([a-z0-9]+://)&quot;</span><span class="p">,</span> <span class="n">path_bytes</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
+            <span class="n">scheme</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">scheme</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_filesystem_for_scheme</span><span class="p">(</span><span class="n">scheme</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.io.fileio_registry.FileIORegistry.get_filesystem_for_path" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_filesystem_for_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Get filesystem plugin for given path.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_filesystem_for_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">Filesystem</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Get filesystem plugin for given path.&quot;&quot;&quot;</span>
+    <span class="c1"># Assume local path by default, but extract filesystem prefix if available.</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">path_bytes</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+        <span class="n">path_bytes</span> <span class="o">=</span> <span class="n">path</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid path type: </span><span class="si">%r</span><span class="s2">.&quot;</span> <span class="o">%</span> <span class="n">path</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;^([a-z0-9]+://)&quot;</span><span class="p">,</span> <span class="n">path_bytes</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
+        <span class="n">scheme</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">scheme</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_filesystem_for_scheme</span><span class="p">(</span><span class="n">scheme</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.io.fileio_registry.FileIORegistry.get_filesystem_for_scheme" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_filesystem_for_scheme</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheme</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Get filesystem plugin for given scheme string.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_filesystem_for_scheme</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheme</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">Filesystem</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Get filesystem plugin for given scheme string.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">scheme</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+        <span class="n">scheme</span> <span class="o">=</span> <span class="n">scheme</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">scheme</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filesystems</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;No filesystems were found for the scheme: &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s2">. Please make sure that you are using &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;the right path and the all the necessary &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;integrations are properly installed.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filesystems</span><span class="p">[</span><span class="n">scheme</span><span class="p">]</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.io.fileio_registry.FileIORegistry.register" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">register</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filesystem_cls</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Register a filesystem implementation.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>filesystem_cls</code></td>
+        <td><code>Type[tfx.dsl.io.filesystem.Filesystem]</code></td>
+        <td><p>Subclass of <code>tfx.dsl.io.filesystem.Filesystem</code>.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/fileio_registry.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filesystem_cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Filesystem</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Register a filesystem implementation.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">      filesystem_cls: Subclass of `tfx.dsl.io.filesystem.Filesystem`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_registration_lock</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">scheme</span> <span class="ow">in</span> <span class="n">filesystem_cls</span><span class="o">.</span><span class="n">SUPPORTED_SCHEMES</span><span class="p">:</span>
+            <span class="n">current_preferred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filesystems</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">scheme</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">current_preferred</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># TODO: [LOW] Decide what to do here. Do we overwrite,</span>
+                <span class="c1">#   give out a warning or do we fail?</span>
+                <span class="k">pass</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_filesystems</span><span class="p">[</span><span class="n">scheme</span><span class="p">]</span> <span class="o">=</span> <span class="n">filesystem_cls</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.io.filesystem" class="doc doc-heading">
+        <code>filesystem</code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.io.filesystem.FileSystemMeta" class="doc doc-heading">
+        <code>
+FileSystemMeta            (<span title="type">type</span>)
+        </code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Metaclass which is responsible for registering the defined filesystem
+in the default fileio registry.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/filesystem.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">FileSystemMeta</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Metaclass which is responsible for registering the defined filesystem</span>
+<span class="sd">    in the default fileio registry.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span>
+        <span class="n">mcs</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">bases</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="o">...</span><span class="p">],</span> <span class="n">dct</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;FileSystemMeta&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Creates the filesystem class and registers it&quot;&quot;&quot;</span>
+        <span class="bp">cls</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;Filesystem&quot;</span><span class="p">],</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="n">mcs</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">dct</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">!=</span> <span class="s2">&quot;Filesystem&quot;</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="bp">cls</span><span class="o">.</span><span class="n">SUPPORTED_SCHEMES</span><span class="p">,</span> <span class="p">(</span>
+                <span class="s2">&quot;You should specify a list of SUPPORTED_SCHEMES when creating &quot;</span>
+                <span class="s2">&quot;a filesystem&quot;</span>
+            <span class="p">)</span>
+            <span class="n">default_fileio_registry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.io.filesystem.FileSystemMeta.__new__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__new__</span><span class="p">(</span><span class="n">mcs</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">dct</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+      <small class="doc doc-property doc-property-staticmethod"><code>staticmethod</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Creates the filesystem class and registers it</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/filesystem.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span>
+    <span class="n">mcs</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">bases</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="o">...</span><span class="p">],</span> <span class="n">dct</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;FileSystemMeta&quot;</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Creates the filesystem class and registers it&quot;&quot;&quot;</span>
+    <span class="bp">cls</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;Filesystem&quot;</span><span class="p">],</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="n">mcs</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">dct</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">!=</span> <span class="s2">&quot;Filesystem&quot;</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">cls</span><span class="o">.</span><span class="n">SUPPORTED_SCHEMES</span><span class="p">,</span> <span class="p">(</span>
+            <span class="s2">&quot;You should specify a list of SUPPORTED_SCHEMES when creating &quot;</span>
+            <span class="s2">&quot;a filesystem&quot;</span>
+        <span class="p">)</span>
+        <span class="n">default_fileio_registry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="bp">cls</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.io.filesystem.Filesystem" class="doc doc-heading">
+        <code>
+Filesystem            (<span title="tfx.dsl.io.filesystem.Filesystem">Filesystem</span>)
+        </code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Abstract Filesystem class.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/filesystem.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Filesystem</span><span class="p">(</span><span class="n">BaseFileSystem</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">FileSystemMeta</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Abstract Filesystem class.&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.io.filesystem.NotFoundError" class="doc doc-heading">
+        <code>
+NotFoundError            (<span title="OSError">OSError</span>)
+        </code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Auxiliary not found error</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/filesystem.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">NotFoundError</span><span class="p">(</span><span class="ne">IOError</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Auxiliary not found error&quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.io.utils" class="doc doc-heading">
+        <code>utils</code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.utils.create_tarfile" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">create_tarfile</span><span class="p">(</span><span class="n">source_dir</span><span class="p">,</span> <span class="n">output_filename</span><span class="o">=</span><span class="s1">&#39;zipped.tar.gz&#39;</span><span class="p">,</span> <span class="n">exclude_function</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Create a compressed representation of source_dir.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>source_dir</code></td>
+        <td><code>str</code></td>
+        <td><p>Path to source dir.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>output_filename</code></td>
+        <td><code>str</code></td>
+        <td><p>Name of outputted gz.</p></td>
+        <td><code>&#39;zipped.tar.gz&#39;</code></td>
+      </tr>
+      <tr>
+        <td><code>exclude_function</code></td>
+        <td><code>Optional[Callable[[tarfile.TarInfo], Union[tarfile.TarInfo, NoneType]]]</code></td>
+        <td><p>Function that determines whether to exclude file.</p></td>
+        <td><code>None</code></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_tarfile</span><span class="p">(</span>
+    <span class="n">source_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">output_filename</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;zipped.tar.gz&quot;</span><span class="p">,</span>
+    <span class="n">exclude_function</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
+        <span class="n">Callable</span><span class="p">[[</span><span class="n">tarfile</span><span class="o">.</span><span class="n">TarInfo</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">tarfile</span><span class="o">.</span><span class="n">TarInfo</span><span class="p">]]</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Create a compressed representation of source_dir.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        source_dir: Path to source dir.</span>
+<span class="sd">        output_filename: Name of outputted gz.</span>
+<span class="sd">        exclude_function: Function that determines whether to exclude file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">exclude_function</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># default is to exclude the .zenml directory</span>
+        <span class="k">def</span> <span class="nf">exclude_function</span><span class="p">(</span>
+            <span class="n">tarinfo</span><span class="p">:</span> <span class="n">tarfile</span><span class="o">.</span><span class="n">TarInfo</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">tarfile</span><span class="o">.</span><span class="n">TarInfo</span><span class="p">]:</span>
+            <span class="sd">&quot;&quot;&quot;Exclude files from tar.</span>
+
+<span class="sd">            Args:</span>
+<span class="sd">              tarinfo: Any</span>
+
+<span class="sd">            Returns:</span>
+<span class="sd">                tarinfo required for exclude.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="n">tarinfo</span><span class="o">.</span><span class="n">name</span>
+            <span class="k">if</span> <span class="s2">&quot;.zenml/&quot;</span> <span class="ow">in</span> <span class="n">filename</span> <span class="ow">or</span> <span class="s2">&quot;venv/&quot;</span> <span class="ow">in</span> <span class="n">filename</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">tarinfo</span>
+
+    <span class="k">with</span> <span class="n">tarfile</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">output_filename</span><span class="p">,</span> <span class="s2">&quot;w:gz&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">tar</span><span class="p">:</span>
+        <span class="n">tar</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">source_dir</span><span class="p">,</span> <span class="n">arcname</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="n">exclude_function</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.utils.extract_tarfile" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">extract_tarfile</span><span class="p">(</span><span class="n">source_tar</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Extracts all files in a compressed tar file to output_dir.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>source_tar</code></td>
+        <td><code>str</code></td>
+        <td><p>Path to a tar compressed file.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>output_dir</code></td>
+        <td><code>str</code></td>
+        <td><p>Directory where to extract.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">extract_tarfile</span><span class="p">(</span><span class="n">source_tar</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Extracts all files in a compressed tar file to output_dir.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        source_tar: Path to a tar compressed file.</span>
+<span class="sd">        output_dir: Directory where to extract.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">is_remote</span><span class="p">(</span><span class="n">source_tar</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Use local tars for now.&quot;</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="n">tarfile</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">source_tar</span><span class="p">,</span> <span class="s2">&quot;r:gz&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">tar</span><span class="p">:</span>
+        <span class="n">tar</span><span class="o">.</span><span class="n">extractall</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.utils.get_global_config_directory" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_global_config_directory</span><span class="p">()</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns the global config directory for ZenML.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_global_config_directory</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns the global config directory for ZenML.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">click</span><span class="o">.</span><span class="n">get_app_dir</span><span class="p">(</span><span class="n">APP_NAME</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.utils.get_zenml_config_dir" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_zenml_config_dir</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Recursive function to find the zenml config starting from path.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>path</code></td>
+        <td><code>Default value = os.getcwd</code></td>
+        <td><p>Path to check.</p></td>
+        <td><code>None</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>str</code></td>
+      <td><p>The full path with the resolved zenml directory.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_zenml_config_dir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Recursive function to find the zenml config starting from path.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        path (Default value = os.getcwd()): Path to check.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The full path with the resolved zenml directory.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InitializationException if directory not found until root of OS.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">get_zenml_dir</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="n">ZENML_DIR_NAME</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.utils.get_zenml_dir" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_zenml_dir</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns path to a ZenML repository directory.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>path</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>Optional path to look for the repository. If no path is given,
+this function tries to find the repository using the environment
+variable <code>ZENML_REPOSITORY_PATH</code> (if set) and recursively searching
+in the parent directories of the current working directory.</p></td>
+        <td><code>None</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>str</code></td>
+      <td><p>Absolute path to a ZenML repository directory.</p></td>
+    </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>InitializationException</code></td>
+        <td><p>If no ZenML repository is found.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_zenml_dir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns path to a ZenML repository directory.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        path: Optional path to look for the repository. If no path is given,</span>
+<span class="sd">            this function tries to find the repository using the environment</span>
+<span class="sd">            variable `ZENML_REPOSITORY_PATH` (if set) and recursively searching</span>
+<span class="sd">            in the parent directories of the current working directory.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Absolute path to a ZenML repository directory.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InitializationException: If no ZenML repository is found.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="p">:</span>
+        <span class="c1"># try to get path from the environment variable</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="n">ENV_ZENML_REPOSITORY_PATH</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">path</span><span class="p">:</span>
+        <span class="c1"># explicit path via parameter or environment variable, don&#39;t search</span>
+        <span class="c1"># parent directories</span>
+        <span class="n">search_parent_directories</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">error_message</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Unable to find ZenML repository at path &#39;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&#39;. Make sure to &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;create a ZenML repository by calling `zenml init` when &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;specifying an explicit repository path in code or via the &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;environment variable &#39;</span><span class="si">{</span><span class="n">ENV_ZENML_REPOSITORY_PATH</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># try to find the repo in the parent directories of the</span>
+        <span class="c1"># current working directory</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+        <span class="n">search_parent_directories</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">error_message</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Unable to find ZenML repository in your current working &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;directory (</span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span><span class="si">}</span><span class="s2">) or any parent directories. If you &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;want to use an existing repository which is in a different &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;location, set the environment variable &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">ENV_ZENML_REPOSITORY_PATH</span><span class="si">}</span><span class="s2">&#39;. If you want to create a new &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;repository, run `zenml init`.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_find_repo_helper</span><span class="p">(</span><span class="n">repo_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Helper function to recursively search parent directories for a</span>
+<span class="sd">        ZenML repository.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">is_zenml_dir</span><span class="p">(</span><span class="n">repo_path</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">repo_path</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">search_parent_directories</span> <span class="ow">or</span> <span class="n">is_root</span><span class="p">(</span><span class="n">repo_path</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InitializationException</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">_find_repo_helper</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">repo_path</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="p">))</span>
+
+    <span class="n">path</span> <span class="o">=</span> <span class="n">_find_repo_helper</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">())</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.utils.is_gcs_path" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">is_gcs_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns True if path is on Google Cloud Storage.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>path</code></td>
+        <td><code>str</code></td>
+        <td><p>Any path as a string.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>bool</code></td>
+      <td><p>True if gcs path, else False.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_gcs_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns True if path is on Google Cloud Storage.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        path: Any path as a string.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        True if gcs path, else False.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;gs://&quot;</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.utils.is_zenml_dir" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">is_zenml_dir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Check if dir is a zenml dir or not.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>path</code></td>
+        <td><code>str</code></td>
+        <td><p>Path to the root.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>bool</code></td>
+      <td><p>True if path contains a zenml dir, False if not.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_zenml_dir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Check if dir is a zenml dir or not.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        path: Path to the root.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        True if path contains a zenml dir, False if not.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">config_dir_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">ZENML_DIR_NAME</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">is_dir</span><span class="p">(</span><span class="n">config_dir_path</span><span class="p">))</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.utils.read_file_contents_as_string" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">read_file_contents_as_string</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Reads contents of file.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>file_path</code></td>
+        <td><code>str</code></td>
+        <td><p>Path to file.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">read_file_contents_as_string</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Reads contents of file.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path: Path to file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">file_exists</span><span class="p">(</span><span class="n">file_path</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2"> does not exist!&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>  <span class="c1"># type: ignore[no-any-return]</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.io.utils.write_file_contents_as_string" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">write_file_contents_as_string</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Writes contents of file.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>file_path</code></td>
+        <td><code>str</code></td>
+        <td><p>Path to file.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>content</code></td>
+        <td><code>str</code></td>
+        <td><p>Contents of file.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/io/utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">write_file_contents_as_string</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Writes contents of file.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path: Path to file.</span>
+<span class="sd">        content: Contents of file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="../integrations/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Integrations" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Integrations
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../logger/" class="md-footer__link md-footer__link--next" aria-label="Next: Logger" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Logger
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2022 ZenML GmbH
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "../../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../../assets/javascripts/workers/search.22074ed6.min.js", "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.01de222e.min.js"></script>
+      
+    
+  </body>
+</html>

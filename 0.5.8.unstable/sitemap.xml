@@ -1,177 +1,177 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/</loc>
-         <lastmod>2022-01-21</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://apidocs.zenml.io/0.5.8.unstable/cli/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/artifact_stores/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/artifacts/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/artifact_stores/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/config/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/artifacts/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/constants/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/config/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/container_registries/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/constants/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/core/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/container_registries/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/enums/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/core/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/exceptions/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/enums/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/integrations/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/exceptions/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/io/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/integrations/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/logger/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/io/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/materializers/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/logger/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/metadata_stores/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/materializers/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/orchestrators/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/metadata_stores/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/pipelines/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/orchestrators/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/post_execution/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/pipelines/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/stacks/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/post_execution/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/steps/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/stacks/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/utils/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/steps/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/visualizers/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/utils/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/cli/artifact_store/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/visualizers/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/cli/base/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/cli/artifact_store/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/cli/cli/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/cli/base/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/cli/config/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/cli/cli/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/cli/container_registry/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/cli/config/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/cli/example/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/cli/container_registry/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/cli/integration/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/cli/example/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/cli/metadata_store/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/cli/integration/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/cli/orchestrator/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/cli/metadata_store/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/cli/pipeline/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/cli/orchestrator/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/cli/stack/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/cli/pipeline/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/cli/utils/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/cli/stack/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_docs/cli/version/</loc>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/cli/utils/</loc>
+         <lastmod>2022-01-21</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://apidocs.zenml.io/0.5.8.unstable/api_doc/api_docs/cli/version/</loc>
          <lastmod>2022-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
