@@ -30,7 +30,7 @@ def write_yaml(file_path: str, contents: Dict[Any, Any]) -> None:
         contents: Contents of YAML file as dict.
 
     Raises:
-        FileNotFoundError if directory does not exist.
+        FileNotFoundError: if directory does not exist.
     """
     if not fileio.is_remote(file_path):
         dir_ = str(Path(file_path).parent)
@@ -49,7 +49,7 @@ def read_yaml(file_path: str) -> Any:
         Contents of the file in a dict.
 
     Raises:
-        FileNotFoundError if file does not exist.
+        FileNotFoundError: if file does not exist.
     """
     if fileio.file_exists(file_path):
         contents = zenml.io.utils.read_file_contents_as_string(file_path)
@@ -83,7 +83,7 @@ def write_json(file_path: str, contents: Dict[str, Any]) -> None:
         Contents of the file in a dict.
 
     Raises:
-        FileNotFoundError if directory does not exist.
+        FileNotFoundError: if directory does not exist.
     """
     if not fileio.is_remote(file_path):
         dir_ = str(Path(file_path).parent)

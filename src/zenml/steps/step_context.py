@@ -21,9 +21,11 @@ class StepContext:
     a step function. To use it, add a `StepContext` object to the signature
     of your step function like this:
 
+    ```python
     @step
     def my_step(context: StepContext, ...)
         context.get_output_materializer(...)
+    ```
 
     You do not need to create a `StepContext` object yourself and pass it
     when creating the step, as long as you specify it in the signature ZenML
@@ -48,13 +50,13 @@ class StepContext:
         Args:
             step_name: The name of the step that this context is used in.
             output_materializers: The output materializers of the step that
-                this context is used in.
+                                  this context is used in.
             output_artifacts: The output artifacts of the step that this
-                context is used in.
+                              context is used in.
 
         Raises:
              StepInterfaceError: If the keys of the output materializers and
-             output artifacts do not match.
+                                 output artifacts do not match.
         """
         if output_materializers.keys() != output_artifacts.keys():
             raise StepContextError(
