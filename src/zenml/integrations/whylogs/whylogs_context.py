@@ -22,40 +22,60 @@ from zenml.steps.step_context import StepContext
 
 
 class WhylogsContext:
-    """Step context extension used to facilitate whylogs data logging and profiling
-    inside a step function.
+    """This is a step context extension that can be used to facilitate whylogs
+    data logging and profiling inside a step function.
+
+    It acts as a wrapper built around the whylogs API that transparently
+    incorporates ZenML specific information into the generated whylogs dataset
+    profiles that can be used to associate whylogs profiles with the
+    corresponding ZenML step run that produces them.
+
+    It also simplifies the whylogs profile generation process by abstracting
+    away some of the whylogs specific details, such as whylogs session and
+    logger initialization and management.
     """
 
     _session: Session = None
 
-    def __init__(self, step_context: StepContext) -> None:
+    def __init__(
+        self,
+        step_context: StepContext,
+        project: Optional[str] = None,
+        pipeline: Optional[str] = None,
+        tags: Optional[Dict[str, str]] = None,
+    ) -> None:
+        """Create a ZenML whylogs context based on a generic step context.
+
+        Args:
+            step_context: a StepContext instance that provides information
+                about the currently running step, such as the step name
+            project: optional project name to use for the whylogs session
+            pipeline: optional pipeline name to use for the whylogs session
+            tags: optional list of tags to apply to all whylogs profiles
+                generated through this context
+        """
         self._step_context = step_context
+        self._project = project
+        self._pipeline = pipeline
+        self._tags = tags
 
     def get_whylogs_session(
         self,
     ) -> Session:
-        """Returns the whylogs session associated with the current step.
+        """Get the whylogs session associated with the current step.
 
         Args:
-            output_name: Optional name of the output for which to get the
-                materializer. If no name is given and the step only has a
-                single output, the materializer of this output will be
-                returned. If the step has multiple outputs, an exception
-                will be raised.
-            custom_materializer_class: If given, this `BaseMaterializer`
-                subclass will be initialized with the output artifact instead
-                of the materializer that was registered for this step output.
+            None
 
         Returns:
-            A materializer initialized with the output artifact for
-            the given output.
+            The whylogs Session instance associated with the current step
         """
         if self._session is not None:
             return self._session
 
         self._session = Session(
-            project=self._step_context.step_name,
-            pipeline=self._step_context.step_name,
+            project=self._project or self._step_context.step_name,
+            pipeline=self._pipeline or self._step_context.step_name,
             # keeping the writers list empty, serialization is done in the
             # materializer
             writers=[],
@@ -89,14 +109,16 @@ class WhylogsContext:
         # TODO [LOW]: use a default whylogs dataset_name that is unique across
         #  multiple pipelines
         dataset_name = dataset_name or self._step_context.step_name
-        tags = tags or dict()
+        final_tags = self._tags.copy() if self._tags else dict()
+        if tags:
+            final_tags.update(tags)
         # TODO [LOW]: add more zenml specific tags to the whylogs profile, such
         #  as the pipeline name and run ID
-        tags["zenml.step"] = self._step_context.step_name
+        final_tags["zenml.step"] = self._step_context.step_name
         # the datasetId tag is used to identify dataset profiles in whylabs.
         # dataset profiles with the same datasetID are considered to belong
         # to the same dataset/model.
-        tags.setdefault("datasetId", dataset_name)
+        final_tags.setdefault("datasetId", dataset_name)
         logger = session.logger(
             dataset_name, dataset_timestamp=dataset_timestamp, tags=tags
         )
