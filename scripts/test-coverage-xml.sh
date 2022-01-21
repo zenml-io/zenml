@@ -12,6 +12,7 @@ TEST_SRC="tests/"${1:-""}
 export ZENML_DEBUG=1
 export ZENML_ANALYTICS_OPT_IN=false
 export EVIDENTLY_DISABLE_TELEMETRY=1
+
 if [ -n "$1" ]; then
     coverage run -m pytest $TEST_SRC --color=yes
 else
