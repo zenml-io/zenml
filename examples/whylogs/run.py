@@ -15,7 +15,7 @@ import pandas as pd
 from sklearn import datasets
 from whylogs import DatasetProfile  # type: ignore
 
-from zenml.core.repo import Repository
+from zenml.repository import Repository
 from zenml.integrations.whylogs.steps import whylogs_profiler_step
 from zenml.integrations.whylogs.visualizers import WhylogsVisualizer
 from zenml.integrations.whylogs.whylogs_step_decorator import enable_whylogs
@@ -93,7 +93,7 @@ log_partial_data = whylogs_profiler_step(
 
 
 @pipeline(enable_cache=True)
-def data_split_pipeline(
+def data_profiling_pipeline(
     data_loader,
     partial_data,
     partial_data_logger,
@@ -113,7 +113,7 @@ def visualize_statistics(step_name: str):
 
 if __name__ == "__main__":
 
-    pipeline = data_split_pipeline(
+    pipeline = data_profiling_pipeline(
         data_loader=data_loader(enable_cache=True),
         partial_data=partial_split(),
         partial_data_logger=log_partial_data,

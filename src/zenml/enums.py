@@ -17,6 +17,7 @@ from enum import Enum
 
 from zenml.utils.enum_utils import StrEnum
 
+
 class ExecutionStatus(StrEnum):
     """Enum that represents the current status of a step or pipeline run."""
 
