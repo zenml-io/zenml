@@ -232,6 +232,8 @@ def test_whylogs_profiling(examples_dir: Path):
     output_obj = run.get_step("data_loader").outputs["profile"].read()
     assert isinstance(output_obj, DatasetProfile)
 
-    # Third step should also have output a whylogs dataset profile
-    output_obj = run.get_step("partial_data_logger").output.read()
+    # Second and third step should also have output a whylogs dataset profile
+    output_obj = run.get_step("train_data_profiler").output.read()
+    assert isinstance(output_obj, DatasetProfile)
+    output_obj = run.get_step("test_data_profiler").output.read()
     assert isinstance(output_obj, DatasetProfile)
