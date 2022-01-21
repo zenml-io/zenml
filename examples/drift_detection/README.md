@@ -37,6 +37,7 @@ from zenml.integrations.evidently.steps import (
     EvidentlyProfileConfig,
     EvidentlyProfileStep,
 )
+from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
 
 # ... data loader and separate steps to get our full and partial dataframes
 
