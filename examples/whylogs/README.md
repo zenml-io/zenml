@@ -37,7 +37,7 @@ capabilities to all the points in your ML pipeline where data is involved.
 The first step in the pipeline shows how applying the `enable_whylogs`
 decorator to an existing step adds the `whylogs` data profiling extension
 to the step context. The Whylogs data profiles are returned as step artifacts
-which will version and persist them in the Artifact Store just as any other
+which will be versioned and persisted in the Artifact Store just as any other
 artifacts.
 
 ```python
