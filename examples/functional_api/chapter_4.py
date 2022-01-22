@@ -17,8 +17,8 @@ import tensorflow as tf
 from sklearn.base import ClassifierMixin
 from sklearn.linear_model import LogisticRegression
 
-from zenml.core.repo import Repository
 from zenml.pipelines import pipeline
+from zenml.repository import Repository
 from zenml.steps import BaseStepConfig, Output, step
 
 
@@ -165,6 +165,6 @@ print(f"Pipeline `mnist_pipeline` has {len(p.runs)} run(s)")
 for r in p.runs[0:2]:
     eval_step = r.get_step("evaluator")
     print(
-        f"For {eval_step.name}, the accuracy is: "
+        f"For {eval_step.entrypoint_name}, the accuracy is: "
         f"{eval_step.output.read():.2f}"
     )

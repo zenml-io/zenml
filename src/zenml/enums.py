@@ -16,47 +16,6 @@ import logging
 from enum import Enum
 
 
-class ArtifactStoreTypes(str, Enum):
-    """All supported Artifact Store types."""
-
-    local = "local"
-    gcp = "gcp"
-
-    def __str__(self) -> str:
-        """Returns the enum string value."""
-        return self.value
-
-
-class MLMetadataTypes(str, Enum):
-    """All supported ML Metadata types."""
-
-    sqlite = "sqlite"
-    mysql = "mysql"
-    kubeflow = "kubeflow"
-
-    def __str__(self) -> str:
-        """Returns the enum string value."""
-        return self.value
-
-
-class OrchestratorTypes(str, Enum):
-    """All supported Orchestrator types"""
-
-    local = "local"
-    airflow = "airflow"
-    kubeflow = "kubeflow"
-
-    def __str__(self) -> str:
-        """Returns the enum string value."""
-        return self.value
-
-
-class StackTypes(str, Enum):
-    """All supported Stack types."""
-
-    base = "base"
-
-
 class ExecutionStatus(Enum):
     """Enum that represents the current status of a step or pipeline run."""
 
@@ -75,3 +34,53 @@ class LoggingLevels(Enum):
     INFO = logging.INFO
     DEBUG = logging.DEBUG
     CRITICAL = logging.CRITICAL
+
+
+class StackComponentFlavor(str, Enum):
+    """Abstract base class for all stack component flavors."""
+
+
+class ArtifactStoreFlavor(StackComponentFlavor):
+    """All supported artifact store flavors."""
+
+    LOCAL = "local"
+    GCP = "gcp"
+
+
+class MetadataStoreFlavor(StackComponentFlavor):
+    """All supported metadata store flavors."""
+
+    SQLITE = "sqlite"
+    MYSQL = "mysql"
+    KUBEFLOW = "kubeflow"
+
+
+class ContainerRegistryFlavor(StackComponentFlavor):
+    """All supported container registry flavors."""
+
+    DEFAULT = "default"
+
+
+class OrchestratorFlavor(StackComponentFlavor):
+    """All supported orchestrator flavors."""
+
+    LOCAL = "local"
+    KUBEFLOW = "kubeflow"
+    AIRFLOW = "airflow"
+
+
+class StackComponentType(str, Enum):
+    """All possible types a `StackComponent` can have."""
+
+    ORCHESTRATOR = "orchestrator"
+    METADATA_STORE = "metadata_store"
+    ARTIFACT_STORE = "artifact_store"
+    CONTAINER_REGISTRY = "container_registry"
+
+    @property
+    def plural(self) -> str:
+        """Returns the plural of the enum value."""
+        if self == StackComponentType.CONTAINER_REGISTRY:
+            return "container_registries"
+
+        return f"{self.value}s"

@@ -2,9 +2,9 @@
 
 ## Setting step parameters using Config
 
-Sometimes you don't want to flexibly adjust parameters when you run your pipeline. This is where the step 
+Sometimes you want to flexibly adjust parameters when you run your pipeline. This is where the step 
 configurations come into play. In the following example we want to be able to change the learning rate for each 
-pipeline run. For this we create a `TrainerConfig` that contains all the parameters that concern the trainer step.
+pipeline run. For this, we create a `TrainerConfig` that contains all the parameters that concern the trainer step.
 
 
 

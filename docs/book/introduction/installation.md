@@ -52,7 +52,7 @@ If you would like to learn more about the current release, please visit our[PyPi
 `zenml` is available as a docker image hosted publicly on [DockerHub](https://hub.docker.com/r/zenmldocker/zenml). Use the following command to get started in a bash environment with `zenml` available:
 
 ```
-docker run -it zenmldocker/zenml:<VERSION> /bin/bash
+docker run -it zenmldocker/zenml /bin/bash
 ```
 
 ## Enabling auto-completion on the CLI

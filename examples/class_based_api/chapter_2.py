@@ -14,10 +14,10 @@
 import os
 from urllib.request import urlopen
 
-from zenml.core.repo import Repository
 from zenml.integrations.sklearn import steps as sklearn_steps
 from zenml.logger import get_logger
 from zenml.pipelines import BasePipeline
+from zenml.repository import Repository
 from zenml.steps import builtin_steps, step_interfaces
 
 logger = get_logger(__name__)

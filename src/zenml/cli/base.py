@@ -12,29 +12,32 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os
 import sys
+from pathlib import Path
 from typing import Optional
 
 import click
 
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error, warning
-from zenml.core.repo import Repository
 from zenml.exceptions import InitializationException
-from zenml.utils.analytics_utils import INITIALIZE_REPO, track
+from zenml.repository import Repository
 
 
-@cli.command("init", help="Initialize zenml on a given path.")
-@click.option("--repo_path", type=click.Path(exists=True))
-@track(event=INITIALIZE_REPO)
+@cli.command("init", help="Initialize a ZenML repository.")
+@click.option(
+    "--path",
+    type=click.Path(
+        exists=True, file_okay=False, dir_okay=True, path_type=Path
+    ),
+)
 def init(
-    repo_path: Optional[str],
+    path: Optional[Path],
 ) -> None:
     """Initialize ZenML on given path.
 
     Args:
-      repo_path: Path to the repository.
+      path: Path to the repository.
 
     Raises:
         InitializationException: If the repo is already initialized.
@@ -45,14 +48,14 @@ def init(
             "consider upgrading your Python version to ensure ZenML works "
             "properly in the future."
         )
-    if repo_path is None:
-        repo_path = os.getcwd()
+    if path is None:
+        path = Path.cwd()
 
-    declare(f"Initializing at {repo_path}")
+    declare(f"Initializing ZenML repository at {path}.")
 
     try:
-        Repository.init_repo(path=repo_path)
-        declare(f"ZenML repo initialized at {repo_path}")
+        Repository.initialize(root=path)
+        declare(f"ZenML repository initialized at {path}.")
     except InitializationException as e:
         error(f"{e}")
 

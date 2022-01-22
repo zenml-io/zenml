@@ -14,17 +14,15 @@
 
 import os
 import sys
-from datetime import datetime
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, Optional, Set
 
 import kfp
 import urllib3
 from kubernetes import config
 
 import zenml.io.utils
-from zenml.core.component_factory import orchestrator_store_factory
-from zenml.core.repo import Repository
-from zenml.enums import OrchestratorTypes
+from zenml.enums import OrchestratorFlavor, StackComponentType
+from zenml.exceptions import ProvisioningError
 from zenml.integrations.kubeflow.orchestrators import local_deployment_utils
 from zenml.integrations.kubeflow.orchestrators.kubeflow_dag_runner import (
     KubeflowDagRunner,
@@ -33,34 +31,57 @@ from zenml.integrations.kubeflow.orchestrators.kubeflow_dag_runner import (
 from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
     KFP_VERSION,
 )
-from zenml.integrations.utils import get_requirements_for_module
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.utils import create_tfx_pipeline
+from zenml.repository import Repository
+from zenml.stack import StackValidator
+from zenml.stack.stack_component_class_registry import (
+    register_stack_component_class,
+)
 from zenml.utils import networking_utils
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
+    from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
 DEFAULT_KFP_UI_PORT = 8080
 
 
-@orchestrator_store_factory.register(OrchestratorTypes.kubeflow)
+@register_stack_component_class(
+    component_type=StackComponentType.ORCHESTRATOR,
+    component_flavor=OrchestratorFlavor.KUBEFLOW,
+)
 class KubeflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Kubeflow."""
 
     custom_docker_base_image_name: Optional[str] = None
     kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT
     kubernetes_context: Optional[str] = None
+    supports_local_execution = True
+    supports_remote_execution = True
+
+    @property
+    def flavor(self) -> OrchestratorFlavor:
+        """The orchestrator flavor."""
+        return OrchestratorFlavor.KUBEFLOW
+
+    @property
+    def validator(self) -> Optional[StackValidator]:
+        """Validates that the stack contains a container registry."""
+        return StackValidator(
+            required_components={StackComponentType.CONTAINER_REGISTRY}
+        )
 
     def get_docker_image_name(self, pipeline_name: str) -> str:
         """Returns the full docker image name including registry and tag."""
 
         base_image_name = f"zenml-kubeflow:{pipeline_name}"
-        container_registry = Repository().get_active_stack().container_registry
+        container_registry = Repository().active_stack.container_registry
 
         if container_registry:
             registry_uri = container_registry.uri.rstrip("/")
@@ -84,7 +105,12 @@ class KubeflowOrchestrator(BaseOrchestrator):
         are stored."""
         return os.path.join(self.root_directory, "pipelines")
 
-    def pre_run(self, pipeline: "BasePipeline", caller_filepath: str) -> None:
+    def prepare_pipeline_deployment(
+        self,
+        pipeline: "BasePipeline",
+        stack: "Stack",
+        runtime_configuration: "RuntimeConfiguration",
+    ) -> None:
         """Builds a docker image for the current environment and uploads it to
         a container registry if configured.
         """
@@ -95,59 +121,51 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         image_name = self.get_docker_image_name(pipeline.name)
 
-        repository_root = Repository().path
-        requirements = (
-            ["kubernetes"]
-            + self._get_stack_requirements()
-            + self._get_pipeline_requirements(pipeline)
-        )
+        requirements = {
+            "kubernetes",
+            *stack.requirements(
+                exclude_components={StackComponentType.ORCHESTRATOR}
+            ),
+            *self._get_pipeline_requirements(pipeline),
+        }
+
         logger.debug("Kubeflow docker container requirements: %s", requirements)
 
         build_docker_image(
-            build_context_path=repository_root,
+            build_context_path=str(Repository().root),
             image_name=image_name,
             dockerignore_path=pipeline.dockerignore_file,
             requirements=requirements,
             base_image=self.custom_docker_base_image_name,
         )
 
-        if Repository().get_active_stack().container_registry:
+        if stack.container_registry:
             push_docker_image(image_name)
 
-    def run(
-        self,
-        zenml_pipeline: "BasePipeline",
-        run_name: str,
-        **kwargs: Any,
-    ) -> None:
-        """Runs the pipeline on Kubeflow.
-
-        Args:
-            zenml_pipeline: The pipeline to run.
-            run_name: Name of the pipeline run.
-            **kwargs: Unused kwargs to conform with base signature
-        """
+    def run_pipeline(
+        self, pipeline: "BasePipeline", stack: "Stack", run_name: str
+    ) -> Any:
+        """Runs a pipeline on Kubeflow Pipelines."""
         from zenml.integrations.kubeflow.docker_utils import get_image_digest
 
-        image_name = self.get_docker_image_name(zenml_pipeline.name)
+        image_name = self.get_docker_image_name(pipeline.name)
         image_name = get_image_digest(image_name) or image_name
 
         fileio.make_dirs(self.pipeline_directory)
         pipeline_file_path = os.path.join(
-            self.pipeline_directory, f"{zenml_pipeline.name}.yaml"
+            self.pipeline_directory, f"{pipeline.name}.yaml"
         )
         runner_config = KubeflowDagRunnerConfig(image=image_name)
         runner = KubeflowDagRunner(
             config=runner_config, output_path=pipeline_file_path
         )
-        tfx_pipeline = create_tfx_pipeline(zenml_pipeline)
+        tfx_pipeline = create_tfx_pipeline(pipeline, stack=stack)
         runner.run(tfx_pipeline)
 
-        run_name = run_name or datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")
         self._upload_and_run_pipeline(
             pipeline_file_path=pipeline_file_path,
             run_name=run_name,
-            enable_cache=zenml_pipeline.enable_cache,
+            enable_cache=pipeline.enable_cache,
         )
 
     def _upload_and_run_pipeline(
@@ -187,20 +205,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 error,
             )
 
-    def _get_stack_requirements(self) -> List[str]:
-        """Gets list of requirements for the current active stack."""
-        stack = Repository().get_active_stack()
-        requirements = []
-
-        artifact_store_module = stack.artifact_store.__module__
-        requirements += get_requirements_for_module(artifact_store_module)
-
-        metadata_store_module = stack.metadata_store.__module__
-        requirements += get_requirements_for_module(metadata_store_module)
-
-        return requirements
-
-    def _get_pipeline_requirements(self, pipeline: "BasePipeline") -> List[str]:
+    def _get_pipeline_requirements(self, pipeline: "BasePipeline") -> Set[str]:
         """Gets list of requirements for a pipeline."""
         if pipeline.requirements_file and fileio.file_exists(
             pipeline.requirements_file
@@ -209,11 +214,11 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 "Using requirements from file %s.", pipeline.requirements_file
             )
             with fileio.open(pipeline.requirements_file, "r") as f:
-                return [
+                return {
                     requirement.strip() for requirement in f.read().split("\n")
-                ]
+                }
         else:
-            return []
+            return set()
 
     @property
     def _pid_file_path(self) -> str:
@@ -241,18 +246,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Returns the path to the K3D registry config yaml."""
         return os.path.join(self.root_directory, "k3d_registry.yaml")
 
-    @property
-    def is_running(self) -> bool:
-        """Returns whether the orchestrator is running."""
-        if not local_deployment_utils.check_prerequisites():
-            # if any prerequisites are missing there is certainly no
-            # local deployment running
-            return False
-
-        return local_deployment_utils.k3d_cluster_exists(
-            cluster_name=self._k3d_cluster_name
-        )
-
     def list_manual_setup_steps(
         self, container_registry_name: str, container_registry_path: str
     ) -> None:
@@ -273,8 +266,30 @@ class KubeflowOrchestrator(BaseOrchestrator):
         )
         logger.info("\n".join(kubeflow_commands))
 
-    def up(self) -> None:
-        """Spins up a local Kubeflow Pipelines deployment."""
+    @property
+    def is_provisioned(self) -> bool:
+        """Returns if a local k3d cluster for this orchestrator exists."""
+        if not local_deployment_utils.check_prerequisites():
+            # if any prerequisites are missing there is certainly no
+            # local deployment running
+            return False
+
+        return local_deployment_utils.k3d_cluster_exists(
+            cluster_name=self._k3d_cluster_name
+        )
+
+    @property
+    def is_running(self) -> bool:
+        """Returns if the local k3d cluster for this orchestrator is running."""
+        if not self.is_provisioned:
+            return False
+
+        return local_deployment_utils.k3d_cluster_running(
+            cluster_name=self._k3d_cluster_name
+        )
+
+    def provision(self) -> None:
+        """Provisions a local Kubeflow Pipelines deployment."""
         if self.is_running:
             logger.info(
                 "Found already existing local Kubeflow Pipelines deployment. "
@@ -285,20 +300,20 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         if not local_deployment_utils.check_prerequisites():
             logger.error(
-                "Unable to spin up local Kubeflow Pipelines deployment: "
+                "Unable to provision local Kubeflow Pipelines deployment: "
                 "Please install 'k3d' and 'kubectl' and try again."
             )
             return
 
-        container_registry = Repository().get_active_stack().container_registry
+        container_registry = Repository().active_stack.container_registry
         if not container_registry:
             logger.error(
-                "Unable to spin up local Kubeflow Pipelines deployment: "
+                "Unable to provision local Kubeflow Pipelines deployment: "
                 "Missing container registry in current stack."
             )
             return
 
-        logger.info("Spinning up local Kubeflow Pipelines deployment...")
+        logger.info("Provisioning local Kubeflow Pipelines deployment...")
         fileio.make_dirs(self.root_directory)
         container_registry_port = int(container_registry.uri.split(":")[-1])
         container_registry_name = self._get_k3d_registry_name(
@@ -340,10 +355,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
             self.list_manual_setup_steps(
                 container_registry_name, self._k3d_registry_config_path
             )
-            self.down()
+            self.deprovision()
 
-    def down(self) -> None:
-        """Tears down a local Kubeflow Pipelines deployment."""
+    def deprovision(self) -> None:
+        """Deprovisions a local Kubeflow Pipelines deployment."""
         if self.is_running:
             local_deployment_utils.delete_k3d_cluster(
                 cluster_name=self._k3d_cluster_name
@@ -364,4 +379,30 @@ class KubeflowOrchestrator(BaseOrchestrator):
         if fileio.file_exists(self.log_file):
             fileio.remove(self.log_file)
 
-        logger.info("Local kubeflow pipelines deployment spun down.")
+        logger.info("Local kubeflow pipelines deployment deprovisioned.")
+
+    def resume(self) -> None:
+        """Resumes the local k3d cluster."""
+        if self.is_running:
+            logger.info("Local kubeflow pipelines deployment already running.")
+            return
+
+        if not self.is_provisioned:
+            raise ProvisioningError(
+                "Unable to resume local kubeflow pipelines deployment: No "
+                "resources provisioned for local deployment."
+            )
+
+        local_deployment_utils.start_k3d_cluster(
+            cluster_name=self._k3d_cluster_name
+        )
+
+    def suspend(self) -> None:
+        """Suspends the local k3d cluster."""
+        if not self.is_running:
+            logger.info("Local kubeflow pipelines deployment not running.")
+            return
+
+        local_deployment_utils.stop_k3d_cluster(
+            cluster_name=self._k3d_cluster_name
+        )

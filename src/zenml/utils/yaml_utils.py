@@ -53,7 +53,7 @@ def read_yaml(file_path: str) -> Any:
     """
     if fileio.file_exists(file_path):
         contents = zenml.io.utils.read_file_contents_as_string(file_path)
-        return yaml.load(contents, Loader=yaml.FullLoader)
+        return yaml.safe_load(contents)
     else:
         raise FileNotFoundError(f"{file_path} does not exist.")
 

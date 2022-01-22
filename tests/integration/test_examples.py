@@ -19,20 +19,20 @@ from typing import Dict
 import pytest
 
 from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample
-from zenml.core.repo import Repository
 from zenml.enums import ExecutionStatus
+from zenml.repository import Repository
 
 QUICKSTART = "quickstart"
 NOT_SO_QUICKSTART = "not_so_quickstart"
 CACHING = "caching"
 DRIFT_DETECTION = "drift_detection"
-MLFLOW = "mlflow"
+MLFLOW = "mlflow_tracking"
 
 
 @pytest.fixture
 def examples_dir(clean_repo):
     # TODO [high]: tests should store zenml artifacts in a new temp directory
-    examples_path = Path(clean_repo.path) / "zenml_examples"
+    examples_path = Path(clean_repo.root) / "zenml_examples"
     source_path = Path(clean_repo.original_cwd) / "examples"
     shutil.copytree(source_path, examples_path)
     yield examples_path
@@ -63,7 +63,7 @@ def test_run_quickstart(examples_dir: Path):
     local_example.run_example(example_runner(examples_dir), force=True)
 
     # Verify the example run was successful
-    repo = Repository(path=str(local_example.path))
+    repo = Repository(local_example.path)
     pipeline = repo.get_pipelines()[0]
     assert pipeline.name == "mnist_pipeline"
 
@@ -88,7 +88,7 @@ def test_run_not_so_quickstart(examples_dir: Path):
     local_example.run_example(example_runner(examples_dir), force=True)
 
     # Verify the example run was successful
-    repo = Repository(path=str(local_example.path))
+    repo = Repository(local_example.path)
     pipeline = repo.get_pipelines()[0]
     assert pipeline.name == "mnist_pipeline"
 
@@ -115,7 +115,7 @@ def test_run_drift_detection(examples_dir: Path):
     local_example.run_example(example_runner(examples_dir), force=True)
 
     # Verify the example run was successful
-    repo = Repository(path=str(local_example.path))
+    repo = Repository(local_example.path)
     pipeline = repo.get_pipelines()[0]
     assert pipeline.name == "drift_detection_pipeline"
 
@@ -145,7 +145,7 @@ def test_run_caching(examples_dir: Path):
     local_example.run_example(example_runner(examples_dir), force=True)
 
     # Verify the example run was successful
-    repo = Repository(path=str(local_example.path))
+    repo = Repository(local_example.path)
     pipeline = repo.get_pipelines()[0]
     assert pipeline.name == "mnist_pipeline"
 
@@ -178,7 +178,7 @@ def test_run_mlflow(examples_dir: Path):
     local_example.run_example(example_runner(examples_dir), force=True)
 
     # Verify the example run was successful
-    repo = Repository(path=str(local_example.path))
+    repo = Repository(local_example.path)
     pipeline = repo.get_pipelines()[0]
     assert pipeline.name == "mlflow_example_pipeline"
 
@@ -194,7 +194,7 @@ def test_run_mlflow(examples_dir: Path):
     for step in second_run.steps:
         assert step.status == ExecutionStatus.COMPLETED
 
-    # TODO [MEDIUM]: Add some mlflow specific assertions.
+    # TODO [ENG-359]: Add some mlflow specific assertions.
     #  Currently this is a bit difficult as the mlruns do not end up in the
     #  expected location within the temporary fixtures. This needs to be
     #  investigated

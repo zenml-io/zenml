@@ -39,10 +39,10 @@ from tfx.types.channel import Property
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.type_registry import type_registry
-from zenml.core.repo import Repository
-from zenml.integrations.kubeflow.metadata import KubeflowMetadataStore
+from zenml.integrations.kubeflow.metadata_stores import KubeflowMetadataStore
 from zenml.integrations.registry import integration_registry
 from zenml.orchestrators.utils import execute_step
+from zenml.repository import Repository
 from zenml.steps.utils import generate_component_class
 from zenml.utils import source_utils
 
@@ -478,7 +478,7 @@ def main() -> None:
     # available
     integration_registry.activate_integrations()
 
-    metadata_store = Repository().get_active_stack().metadata_store
+    metadata_store = Repository().active_stack.metadata_store
     if isinstance(metadata_store, KubeflowMetadataStore):
         # set up the metadata connection so it connects to the internal kubeflow
         # mysql database

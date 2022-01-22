@@ -52,9 +52,9 @@ def is_standard_pin(pin: str) -> bool:
 
 def is_inside_repository(file_path: str) -> bool:
     """Returns whether a file is inside a zenml repository."""
-    from zenml.core.repo import Repository
+    from zenml.repository import Repository
 
-    repo_path = pathlib.Path(Repository().path).resolve()
+    repo_path = Repository().root.resolve()
     absolute_file_path = pathlib.Path(file_path).resolve()
     return repo_path in absolute_file_path.parents
 
@@ -126,9 +126,9 @@ def get_module_source_from_file_path(file_path: str) -> str:
     Args:
         file_path: Absolute file path to a file within the module.
     """
-    from zenml.core.repo import Repository
+    from zenml.repository import Repository
 
-    repo_path = Repository().path
+    repo_path = str(Repository().root)
 
     # Replace repo_path with file_path to get relative path left over
     relative_file_path = file_path.replace(repo_path, "")[1:]

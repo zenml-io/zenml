@@ -12,22 +12,34 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import pydantic
 import pytest
-from pydantic import ValidationError
 
 from zenml.artifact_stores import LocalArtifactStore
+from zenml.enums import ArtifactStoreFlavor, StackComponentType
 
 
-def test_must_be_local_path():
-    """Checks must_be_gcs_path validator"""
-    with pytest.raises(ValidationError):
-        LocalArtifactStore(path="gs://remote/path", repo_path="")
+def test_local_artifact_store_attributes():
+    """Tests that the basic attributes of the local artifact store are set
+    correctly."""
+    artifact_store = LocalArtifactStore(name="", path="/tmp")
+    assert artifact_store.supports_local_execution is True
+    assert artifact_store.supports_remote_execution is False
+    assert artifact_store.type == StackComponentType.ARTIFACT_STORE
+    assert artifact_store.flavor == ArtifactStoreFlavor.LOCAL
 
-    with pytest.raises(ValidationError):
-        LocalArtifactStore(path="s3://remote/path", repo_path="")
 
-    with pytest.raises(ValidationError):
-        LocalArtifactStore(path="hdfs://remote/path", repo_path="")
+def test_local_artifact_store_only_supports_local_paths():
+    """Checks that a local artifact store can only be initialized with a local
+    path."""
+    with pytest.raises(pydantic.ValidationError):
+        LocalArtifactStore(name="", path="gs://remote/path")
 
-    gcp_as = LocalArtifactStore(path="/local/path", repo_path="")
-    assert gcp_as.path == "/local/path"
+    with pytest.raises(pydantic.ValidationError):
+        LocalArtifactStore(name="", path="s3://remote/path")
+
+    with pytest.raises(pydantic.ValidationError):
+        LocalArtifactStore(name="", path="hdfs://remote/path")
+
+    artifact_store = LocalArtifactStore(name="", path="/local/path")
+    assert artifact_store.path == "/local/path"

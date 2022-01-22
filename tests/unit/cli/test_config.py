@@ -17,54 +17,36 @@ import pytest
 from click.testing import CliRunner
 
 from zenml.cli.config import opt_in, opt_out, set_logging_verbosity
-from zenml.config.constants import GLOBAL_CONFIG_NAME
 from zenml.config.global_config import GlobalConfig
 from zenml.constants import ZENML_LOGGING_VERBOSITY
-from zenml.io.utils import get_global_config_directory
-from zenml.utils.yaml_utils import read_json
+from zenml.utils import yaml_utils
 
 NOT_LOGGING_LEVELS = ["abc", "my_cat_is_called_aria", "pipeline123"]
 
 
 def read_global_config():
     """Read the global config file"""
-    config_file = os.path.join(
-        get_global_config_directory(), GLOBAL_CONFIG_NAME
-    )
-    return read_json(config_file)
-
-
-def get_analytics_opt_in_status():
-    """Get the analytics opt-in status"""
-    gc = GlobalConfig()
-    return gc.analytics_opt_in
-
-
-def set_analytics_opt_in_status(status: bool):
-    """Set the analytics opt-in status"""
-    gc = GlobalConfig()
-    gc.analytics_opt_in = status
-    gc.update()
+    return yaml_utils.read_yaml(GlobalConfig.config_file())
 
 
 def test_analytics_opt_in_amends_global_config():
     """Check to make sure that analytics opt-in amends global config"""
-    pre_test_status = get_analytics_opt_in_status()
+    pre_test_status = GlobalConfig().analytics_opt_in
     runner = CliRunner()
     result = runner.invoke(opt_in)
     assert result.exit_code == 0
     assert read_global_config()["analytics_opt_in"]
-    set_analytics_opt_in_status(pre_test_status)
+    GlobalConfig().analytics_opt_in = pre_test_status
 
 
 def test_analytics_opt_out_amends_global_config():
     """Check to make sure that analytics opt-out amends global config"""
-    pre_test_status = get_analytics_opt_in_status()
+    pre_test_status = GlobalConfig().analytics_opt_in
     runner = CliRunner()
     result = runner.invoke(opt_out)
     assert result.exit_code == 0
     assert not read_global_config()["analytics_opt_in"]
-    set_analytics_opt_in_status(pre_test_status)
+    GlobalConfig().analytics_opt_in = pre_test_status
 
 
 @pytest.mark.parametrize("not_a_level", NOT_LOGGING_LEVELS)
@@ -72,7 +54,7 @@ def test_set_logging_verbosity_stops_when_not_real_level(
     not_a_level: str,
 ) -> None:
     """Check that set_logging_verbosity doesn't run when no real level"""
-    # TODO [MEDIUM]: replace the pytest params with hypothesis params
+    # TODO [ENG-332]: replace the pytest params with hypothesis params
     pre_test_logging_status = ZENML_LOGGING_VERBOSITY
     runner = CliRunner()
     result = runner.invoke(set_logging_verbosity, [not_a_level])

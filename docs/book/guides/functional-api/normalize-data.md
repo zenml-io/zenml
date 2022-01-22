@@ -64,7 +64,7 @@ Step `normalize_mnist` has finished in 1.848s.
 You can add the following code to fetch the pipeline:
 
 ```python
-from zenml.core.repo import Repository
+from zenml.repository import Repository
 
 repo = Repository()
 p = repo.get_pipeline(pipeline_name="load_and_normalize_pipeline")
