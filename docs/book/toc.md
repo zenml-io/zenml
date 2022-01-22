@@ -38,6 +38,7 @@
 * [Integrations](features/integrations.md)
 * [Standardized Artifacts](features/artifacts.md)
 * [Run Your Pipelines in the Cloud](features/cloud-pipelines.md)
+* [Step Fixtures](features/step-fixtures.md)
 
 ## Support
 
