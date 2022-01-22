@@ -22,8 +22,9 @@
   * [Train & evaluate](guides/class-based-api/train-and-evaluate.md)
   * [Caching](guides/class-based-api/caching.md)
   * [Materialize artifacts](guides/class-based-api/materialize-artifacts.md)
-* [Post Execution Workflow](guides/post-execution-workflow/post-execution-workflow.md)
-  * [Naming a pipeline run](guides/post-execution-workflow/naming-a-pipeline-run.md)
+* [General](guides/common-usecases/index.md)
+  * [Post Execution Workflow](guides/common-usecases/post-execution-workflow.md)
+  * [Naming a pipeline run](guides/common-usecases/naming-a-pipeline-run.md)
 
 ## Features
 
