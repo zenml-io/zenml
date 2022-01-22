@@ -25,6 +25,11 @@
 * [General](guides/common-usecases/index.md)
   * [Post Execution Workflow](guides/common-usecases/post-execution-workflow.md)
   * [Naming a pipeline run](guides/common-usecases/naming-a-pipeline-run.md)
+  * [Fetch pipelines and artifacts after running them](guides/common-usecases/post-execution-workflow.md)
+  * [Use `zenml example run`](guides/common-usecases/zenml-example-cli.md)
+  * [Creating a custom `materializer`](guides/common-usecases/custom-materializer.md)
+  * [Fetching historic runs using `StepContext`](guides/common-usecases/historic-runs.md)
+  * [Developing and using `visualizers`](guides/common-usecases/visualizers.md)
 
 ## Features
 
