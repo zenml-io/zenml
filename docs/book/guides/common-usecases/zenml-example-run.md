@@ -1,107 +1,32 @@
+---
+description: Use a simple CLI command to quickly run ZenML examples.
+---
+
 # Run ZenML Examples Quickly
 
-## Post-execution workflow
+One of the best ways to learn ZenML is [through examples](https://github.com/zenml-io/zenml/tree/main/examples). ZenML 
+has a [growing list of examples](https://github.com/zenml-io/zenml/tree/main/examples) showcasing many features and 
+integrations.
 
-After executing a pipeline, the user needs to be able to fetch it from history and perform certain tasks. This page 
-captures these workflows at an orbital level.
+There is no need to clone the ZenML repository to get access to examples quickly. 
+Use the series of commands that begin with `zenml example` to download and even run examples.
 
-## Component Hierarchy
-
-In the context of a post-execution workflow, there is an implied hierarchy of some basic ZenML components:
+Get the full list of examples available:
 
 ```bash
-repository -> pipelines -> runs -> steps -> outputs
-
-# where -> implies a 1-many relationship.
+zenml example list
 ```
 
-### Repository
+Pick an example to download into your current working directory:
 
-The highest level `repository` object is where to start from.
-
-```python
-from zenml.core.repo import Repository
-
-repo = Repository()
+```bash
+zenml example pull quickstart
+# at this point a `zenml_examples` dir would be created with the example(s) inside it
 ```
 
-#### Pipelines
+When ready to run the example, simply type the following command. If there are any dependencies needed to be 
+downloaded for the example to run, the CLI will prompt you to install them.
 
-```python
-# get all pipelines from all stacks
-pipelines = repo.get_pipelines()  
-
-# or get one pipeline by name and/or stack key
-pipeline = repo.get_pipeline(pipeline_name=..., stack_key=...)
+```bash
+zenml example run quickstart
 ```
-
-#### Runs
-
-```python
-runs = pipeline.runs  # all runs of a pipeline chronlogically ordered
-run = runs[-1]  # latest run
-
-# or get it by name
-run = pipeline.get_run(run_name="custom_pipeline_run_name")
-```
-
-#### Steps
-
-```python
-# at this point we switch from the `get_` paradigm to properties
-steps = run.steps  # all steps of a pipeline
-step = steps[0] 
-print(step.name)
-```
-
-#### Outputs
-
-```python
-# The outputs of a step
-# if multiple outputs they are accessible by name
-outputs = step.outputs["step_name"]
-
-# if one output, use the `.output` property instead 
-output = step.output 
-
-# will get you the value from the original materializer used in the pipeline
-output.read()  
-```
-
-### Materializing outputs (or inputs)
-
-Once an output artifact is acquired from history, one can visualize it with any chosen `Visualizer`.
-
-```python
-from zenml.materializers import PandasMaterializer
-
-
-df = output.read(materializer_class=PandasMaterializer)
-df.head()
-```
-
-### Retrieving Model
-
-```python
-from zenml.integrations.tensorflow.materializers.keras_materializer import KerasMaterializer    
-
-
-model = output.read(materializer_class=KerasMaterializer)
-model  # read keras.Model
-```
-
-## Visuals
-
-### Seeing statistics
-
-```python
-from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
-    FacetStatisticsVisualizer,
-)
-
-FacetStatisticsVisualizer().visualize(output)
-```
-
-It produces the following visualization:
-
-![Statistics for boston housing dataset](../../.gitbook/assets/statistics\_boston\_housing.png)
