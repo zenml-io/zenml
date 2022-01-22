@@ -42,5 +42,5 @@
 ## Reference
 
 * [Glossary](reference/glossary.md)
-* [CLI Reference](reference/cli-command-reference.md)
-* [API Reference](https://apidocs.zenml.io/api_reference/zenml.html)
+* [CLI Reference](https://apidocs.zenml.io/0.5.7/cli/)
+* [API Reference](https://apidocs.zenml.io/0.5.7/)
