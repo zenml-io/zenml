@@ -20,9 +20,9 @@ import pytest
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.constants import ENV_ZENML_DEBUG
-from zenml.core.repo import Repository
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
+from zenml.repository import Repository
 from zenml.steps import StepContext, step
 
 
@@ -48,9 +48,15 @@ def base_repo(tmp_path_factory, session_mocker):
         return_value=str(tmp_path / "zenml"),
     )
 
+    session_mocker.patch(
+        "zenml.config.global_config.GlobalConfig.config_directory",
+        return_value=str(tmp_path / "zenml"),
+    )
+    session_mocker.patch("analytics.track")
+
     # initialize repo at path
-    Repository.init_repo(str(tmp_path))
-    repo = Repository(str(tmp_path))
+    Repository.initialize(root=tmp_path)
+    repo = Repository(root=tmp_path)
 
     # monkey patch original cwd in for later use and yield
     repo.original_cwd = orig_cwd
@@ -76,15 +82,15 @@ def clean_repo(tmp_path_factory, mocker, base_repo: Repository):
     )
 
     # initialize repo with new tmp path
-    Repository.init_repo(str(tmp_path))
-    repo = Repository(str(tmp_path))
+    Repository.initialize(root=tmp_path)
+    repo = Repository(root=tmp_path)
 
     # monkey patch base repo cwd for later user and yield
     repo.original_cwd = base_repo.original_cwd
     yield repo
 
     # remove all traces, and change working directory back to base path
-    os.chdir(base_repo.path)
+    os.chdir(str(base_repo.root))
     shutil.rmtree(tmp_path)
 
 
@@ -130,7 +136,7 @@ def one_step_pipeline():
 
     @pipeline
     def _pipeline(step_):
-        pass
+        step_()
 
     return _pipeline
 
@@ -142,7 +148,8 @@ def unconnected_two_step_pipeline():
 
     @pipeline
     def _pipeline(step_1, step_2):
-        pass
+        step_1()
+        step_2()
 
     return _pipeline
 

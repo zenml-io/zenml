@@ -48,11 +48,11 @@ class PipelineLineageVisualizer(BasePipelineVisualizer):
             for step in run.steps:
                 category_dict[run.name].update(
                     {
-                        step.name: str(step.id),
+                        step.entrypoint_name: str(step.id),
                     }
                 )
-                if step.name not in dimensions:
-                    dimensions.append(f"{step.name}")
+                if step.entrypoint_name not in dimensions:
+                    dimensions.append(f"{step.entrypoint_name}")
 
         category_df = pd.DataFrame.from_dict(category_dict, orient="index")
 

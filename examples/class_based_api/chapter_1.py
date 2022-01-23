@@ -18,9 +18,9 @@ from urllib.request import urlopen
 
 import pandas as pd
 
-from zenml.core.repo import Repository
 from zenml.logger import get_logger
 from zenml.pipelines import BasePipeline
+from zenml.repository import Repository
 from zenml.steps.step_interfaces.base_datasource_step import (
     BaseDatasourceConfig,
     BaseDatasourceStep,

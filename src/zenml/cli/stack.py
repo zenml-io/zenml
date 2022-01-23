@@ -19,8 +19,9 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
-from zenml.core.repo import Repository
-from zenml.stacks import BaseStack
+from zenml.enums import StackComponentType
+from zenml.repository import Repository
+from zenml.stack import Stack
 
 
 # Stacks
@@ -30,52 +31,72 @@ def stack() -> None:
 
 
 @stack.command("register", context_settings=dict(ignore_unknown_options=True))
-@click.argument("stack_name", type=click.STRING, required=True)
+@click.argument("stack_name", type=str, required=True)
 @click.option(
     "-m",
     "--metadata-store",
-    help="The name of the metadata store that you would like to register as part of the new stack.",
-    type=click.STRING,
+    "metadata_store_name",
+    help="Name of the metadata store for this stack.",
+    type=str,
     required=True,
 )
 @click.option(
     "-a",
     "--artifact-store",
-    help="The name of the artifact store that you would like to register as part of the new stack.",
-    type=click.STRING,
+    "artifact_store_name",
+    help="Name of the artifact store for this stack.",
+    type=str,
     required=True,
 )
 @click.option(
     "-o",
     "--orchestrator",
-    help="The name of the orchestrator that you would like to register as part of the new stack.",
-    type=click.STRING,
+    "orchestrator_name",
+    help="Name of the orchestrator for this stack.",
+    type=str,
     required=True,
 )
 @click.option(
     "-c",
     "--container_registry",
-    help="The name of the container_registry that you would like to register as part of the new stack.",
-    type=click.STRING,
+    "container_registry_name",
+    help="Name of the container registry for this stack.",
+    type=str,
     required=False,
 )
+@cli_utils.activate_integrations
 def register_stack(
     stack_name: str,
-    metadata_store: str,
-    artifact_store: str,
-    orchestrator: str,
-    container_registry: Optional[str] = None,
+    metadata_store_name: str,
+    artifact_store_name: str,
+    orchestrator_name: str,
+    container_registry_name: Optional[str] = None,
 ) -> None:
     """Register a stack."""
 
-    service = Repository().get_service()
-    stack = BaseStack(
-        artifact_store_name=artifact_store,
-        orchestrator_name=orchestrator,
-        metadata_store_name=metadata_store,
-        container_registry_name=container_registry,
-    )
-    service.register_stack(stack_name, stack)
+    repo = Repository()
+
+    stack_components = {
+        StackComponentType.METADATA_STORE: repo.get_stack_component(
+            StackComponentType.METADATA_STORE, name=metadata_store_name
+        ),
+        StackComponentType.ARTIFACT_STORE: repo.get_stack_component(
+            StackComponentType.ARTIFACT_STORE, name=artifact_store_name
+        ),
+        StackComponentType.ORCHESTRATOR: repo.get_stack_component(
+            StackComponentType.ORCHESTRATOR, name=orchestrator_name
+        ),
+    }
+
+    if container_registry_name:
+        stack_components[
+            StackComponentType.CONTAINER_REGISTRY
+        ] = repo.get_stack_component(
+            StackComponentType.CONTAINER_REGISTRY, name=container_registry_name
+        )
+
+    stack_ = Stack.from_components(name=stack_name, components=stack_components)
+    repo.register_stack(stack_)
     cli_utils.declare(f"Stack `{stack_name}` successfully registered!")
 
 
@@ -83,18 +104,27 @@ def register_stack(
 def list_stacks() -> None:
     """List all available stacks from service."""
     repo = Repository()
-    service = repo.get_service()
-    if len(service.stacks) == 0:
+
+    if len(repo.stack_configurations) == 0:
         cli_utils.warning("No stacks registered!")
         return
 
     cli_utils.title("Stacks:")
-    # TODO [ENG-144]: once there is a common superclass for Stack/ArtifactStore etc.,
-    #  remove the mypy ignore
-    active_stack = repo.get_active_stack_key()
-    cli_utils.print_table(
-        cli_utils.format_component_list(service.stacks, active_stack)  # type: ignore[arg-type]
-    )
+    active_stack_name = repo.active_stack_name
+
+    stack_dicts = []
+    for stack_name, stack_configuration in repo.stack_configurations.items():
+        is_active = stack_name == active_stack_name
+        stack_config = {
+            "ACTIVE": "*" if is_active else "",
+            **{
+                key.upper(): value
+                for key, value in stack_configuration.dict().items()
+            },
+        }
+        stack_dicts.append(stack_config)
+
+    cli_utils.print_table(stack_dicts)
 
 
 @stack.command(
@@ -109,77 +139,80 @@ def list_stacks() -> None:
 def describe_stack(stack_name: Optional[str]) -> None:
     """Show details about the current active stack."""
     repo = Repository()
-    stack_name = stack_name or repo.get_active_stack_key()
+    active_stack_name = repo.active_stack_name
+    stack_name = stack_name or active_stack_name
 
-    stacks = repo.get_service().stacks
-    if len(stacks) == 0:
+    stack_configurations = repo.stack_configurations
+    if len(stack_configurations) == 0:
         cli_utils.warning("No stacks registered!")
         return
 
     try:
-        stack_details = stacks[stack_name]
+        stack_configuration = stack_configurations[stack_name]
     except KeyError:
         cli_utils.error(f"Stack `{stack_name}` does not exist.")
         return
     cli_utils.title("Stack:")
-    if repo.get_active_stack_key() == stack_name:
+
+    if stack_name == active_stack_name:
         cli_utils.declare("**ACTIVE**\n")
     else:
         cli_utils.declare("")
+
     cli_utils.declare(f"NAME: {stack_name}")
-    cli_utils.print_component_properties(stack_details.dict())
+    for key, value in stack_configuration.dict().items():
+        cli_utils.declare(f"{key.upper()}: {value}")
 
 
 @stack.command("delete")
 @click.argument("stack_name", type=str)
 def delete_stack(stack_name: str) -> None:
     """Delete a stack."""
-    service = Repository().get_service()
-    cli_utils.declare(f"Deleting stack: {stack_name}")
-    service.delete_stack(stack_name)
-    cli_utils.declare("Deleted!")
+    Repository().deregister_stack(stack_name)
+    cli_utils.declare(f"Deleted stack {stack_name}.")
 
 
 @stack.command("set")
 @click.argument("stack_name", type=str)
 def set_active_stack(stack_name: str) -> None:
     """Sets a stack active."""
-    repo = Repository()
-    repo.set_active_stack(stack_name)
+    Repository().activate_stack(stack_name)
     cli_utils.declare(f"Active stack: {stack_name}")
 
 
 @stack.command("get")
 def get_active_stack() -> None:
     """Gets the active stack."""
-    repo = Repository()
-    key = repo.get_active_stack_key()
-    cli_utils.declare(f"Active stack: {key}")
+    cli_utils.declare(f"Active stack: {Repository().active_stack_name}")
 
 
 @stack.command("up")
+@cli_utils.activate_integrations
 def up_stack() -> None:
     """Provisions resources for the stack."""
-    active_stack = Repository().get_active_stack()
-    orchestrator_name = active_stack.orchestrator_name
-
-    cli_utils.declare(
-        f"Bootstrapping resources for orchestrator: `{orchestrator_name}`. "
-        f"This might take a few seconds..."
-    )
-    active_stack.orchestrator.up()
+    stack_ = Repository().active_stack
+    cli_utils.declare(f"Provisioning resources for stack '{stack_.name}'.")
+    stack_.provision()
+    stack_.resume()
 
 
 @stack.command("down")
-def down_stack() -> None:
+@click.option(
+    "--force",
+    "-f",
+    is_flag=True,
+    help="Deprovisions local resources instead of suspending them.",
+)
+@cli_utils.activate_integrations
+def down_stack(force: bool = False) -> None:
     """Tears down resources for the stack."""
-    active_stack = Repository().get_active_stack()
-    orchestrator_name = active_stack.orchestrator_name
+    stack_ = Repository().active_stack
 
-    cli_utils.declare(
-        f"Tearing down resources for orchestrator: `{orchestrator_name}`."
-    )
-    active_stack.orchestrator.down()
-    cli_utils.declare(
-        f"Orchestrator: `{orchestrator_name}` resources are now torn down."
-    )
+    if force:
+        cli_utils.declare(
+            f"Deprovisioning resources for stack '{stack_.name}'."
+        )
+        stack_.deprovision()
+    else:
+        cli_utils.declare(f"Suspending resources for stack '{stack_.name}'.")
+        stack_.suspend()

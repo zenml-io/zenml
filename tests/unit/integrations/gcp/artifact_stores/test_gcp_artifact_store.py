@@ -16,18 +16,30 @@
 import pytest
 from pydantic import ValidationError
 
+from zenml.enums import ArtifactStoreFlavor, StackComponentType
 from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (
     GCPArtifactStore,
 )
 
 
+def test_gcp_artifact_store_attributes():
+    """Tests that the basic attributes of the gcp artifact store are set
+    correctly."""
+    artifact_store = GCPArtifactStore(name="", path="gs://tmp")
+    assert artifact_store.supports_local_execution is True
+    assert artifact_store.supports_remote_execution is True
+    assert artifact_store.type == StackComponentType.ARTIFACT_STORE
+    assert artifact_store.flavor == ArtifactStoreFlavor.GCP
+
+
 def test_must_be_gcs_path():
-    """Checks must_be_gcs_path validator"""
+    """Checks that a gcp artifact store can only be initialized with a gcs
+    path."""
     with pytest.raises(ValidationError):
-        GCPArtifactStore(path="/local/path", repo_path="")
+        GCPArtifactStore(name="", path="/local/path")
 
     with pytest.raises(ValidationError):
-        GCPArtifactStore(path="s3://local/path", repo_path="")
+        GCPArtifactStore(name="", path="s3://local/path")
 
-    gcp_as = GCPArtifactStore(path="gs://mybucket", repo_path="")
-    assert gcp_as.path == "gs://mybucket"
+    artifact_store = GCPArtifactStore(name="", path="gs://mybucket")
+    assert artifact_store.path == "gs://mybucket"

@@ -20,8 +20,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 from pydantic import root_validator
 
 import zenml.io.utils
-from zenml.core.component_factory import orchestrator_store_factory
-from zenml.enums import OrchestratorTypes
+from zenml.enums import OrchestratorFlavor, StackComponentType
 from zenml.integrations.airflow.orchestrators.airflow_dag_runner import (
     AirflowDagRunner,
     AirflowPipelineConfig,
@@ -30,30 +29,44 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.utils import create_tfx_pipeline
+from zenml.stack.stack_component_class_registry import (
+    register_stack_component_class,
+)
 from zenml.utils import daemon
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    import airflow
-
     from zenml.pipelines.base_pipeline import BasePipeline
+    from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.stack import Stack
 
 AIRFLOW_ROOT_DIR = "airflow_root"
+DAG_FILEPATH_OPTION_KEY = "dag_filepath"
 
 
-@orchestrator_store_factory.register(OrchestratorTypes.airflow)
+@register_stack_component_class(
+    component_type=StackComponentType.ORCHESTRATOR,
+    component_flavor=OrchestratorFlavor.AIRFLOW,
+)
 class AirflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
 
     airflow_home: str = ""
     airflow_config: Optional[Dict[str, Any]] = {}
     schedule_interval_minutes: int = 1
+    supports_local_execution = True
+    supports_remote_execution = False
 
     def __init__(self, **values: Any):
         """Sets environment variables to configure airflow."""
         super().__init__(**values)
         self._set_env()
+
+    @property
+    def flavor(self) -> OrchestratorFlavor:
+        """The orchestrator flavor."""
+        return OrchestratorFlavor.AIRFLOW
 
     @root_validator
     def set_airflow_home(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -86,37 +99,6 @@ class AirflowOrchestrator(BaseOrchestrator):
     def password_file(self) -> str:
         """Returns path to the webserver password file."""
         return os.path.join(self.airflow_home, "standalone_admin_password.txt")
-
-    @property
-    def is_running(self) -> bool:
-        """Returns whether the airflow daemon is currently running."""
-        from airflow.cli.commands.standalone_command import StandaloneCommand
-        from airflow.jobs.triggerer_job import TriggererJob
-
-        daemon_running = daemon.check_if_daemon_is_running(self.pid_file)
-
-        command = StandaloneCommand()
-        webserver_port_open = command.port_open(8080)
-
-        if not daemon_running:
-            if webserver_port_open:
-                raise RuntimeError(
-                    "The airflow daemon does not seem to be running but "
-                    "local port 8080 is occupied. Make sure the port is "
-                    "available and try again."
-                )
-
-            # exit early so we don't check non-existing airflow databases
-            return False
-
-        # we can't use StandaloneCommand().is_ready() here as the
-        # Airflow SequentialExecutor apparently does not send a heartbeat
-        # while running a task which would result in this returning `False`
-        # even if Airflow is running.
-        airflow_running = webserver_port_open and command.job_running(
-            TriggererJob
-        )
-        return airflow_running
 
     def _set_env(self) -> None:
         """Sets environment variables to configure airflow."""
@@ -171,18 +153,22 @@ class AirflowOrchestrator(BaseOrchestrator):
             password,
         )
 
-    def pre_run(self, pipeline: "BasePipeline", caller_filepath: str) -> None:
+    def runtime_options(self) -> Dict[str, Any]:
+        """Runtime options for the airflow orchestrator."""
+        return {DAG_FILEPATH_OPTION_KEY: None}
+
+    def prepare_pipeline_deployment(
+        self,
+        pipeline: "BasePipeline",
+        stack: "Stack",
+        runtime_configuration: "RuntimeConfiguration",
+    ) -> None:
         """Checks whether airflow is running and copies the DAG file to the
         airflow DAGs directory.
 
-        Args:
-            pipeline: Pipeline that will be run.
-            caller_filepath: Path to the file in which `pipeline.run()` was
-                called. This contains the airflow DAG that is returned by
-                the `run()` method.
-
         Raises:
-            RuntimeError: If airflow is not running.
+            RuntimeError: If airflow is not running or no DAG filepath runtime
+            option is provided.
         """
         if not self.is_running:
             raise RuntimeError(
@@ -191,9 +177,54 @@ class AirflowOrchestrator(BaseOrchestrator):
                 "orchestrator of the active stack."
             )
 
-        self._copy_to_dag_directory_if_necessary(dag_filepath=caller_filepath)
+        try:
+            dag_filepath = runtime_configuration[DAG_FILEPATH_OPTION_KEY]
+        except KeyError:
+            raise RuntimeError(
+                f"No DAG filepath found in runtime configuration. Make sure "
+                f"to add the filepath to your airflow DAG file as a runtime "
+                f"option (key: '{DAG_FILEPATH_OPTION_KEY}')."
+            )
 
-    def up(self) -> None:
+        self._copy_to_dag_directory_if_necessary(dag_filepath=dag_filepath)
+
+    @property
+    def is_running(self) -> bool:
+        """Returns whether the airflow daemon is currently running."""
+        from airflow.cli.commands.standalone_command import StandaloneCommand
+        from airflow.jobs.triggerer_job import TriggererJob
+
+        daemon_running = daemon.check_if_daemon_is_running(self.pid_file)
+
+        command = StandaloneCommand()
+        webserver_port_open = command.port_open(8080)
+
+        if not daemon_running:
+            if webserver_port_open:
+                raise RuntimeError(
+                    "The airflow daemon does not seem to be running but "
+                    "local port 8080 is occupied. Make sure the port is "
+                    "available and try again."
+                )
+
+            # exit early so we don't check non-existing airflow databases
+            return False
+
+        # we can't use StandaloneCommand().is_ready() here as the
+        # Airflow SequentialExecutor apparently does not send a heartbeat
+        # while running a task which would result in this returning `False`
+        # even if Airflow is running.
+        airflow_running = webserver_port_open and command.job_running(
+            TriggererJob
+        )
+        return airflow_running
+
+    @property
+    def is_provisioned(self) -> bool:
+        """Returns whether the airflow daemon is currently running."""
+        return self.is_running
+
+    def provision(self) -> None:
         """Ensures that Airflow is running."""
         if self.is_running:
             logger.info("Airflow is already running.")
@@ -216,19 +247,20 @@ class AirflowOrchestrator(BaseOrchestrator):
                 working_directory=zenml.io.utils.get_zenml_dir(),
             )
             while not self.is_running:
-                # Wait until the daemon started all the relevant airflow processes
+                # Wait until the daemon started all the relevant airflow
+                # processes
                 time.sleep(0.1)
             self._log_webserver_credentials()
         except Exception as e:
             logger.error(e)
             logger.error(
-                "An error occurred while starting the Airflow daemon. "
-                "If you want to start it manually, use the commands described "
-                "in the official Airflow quickstart guide for running Airflow locally."
+                "An error occurred while starting the Airflow daemon. If you "
+                "want to start it manually, use the commands described in the "
+                "official Airflow quickstart guide for running Airflow locally."
             )
             self.down()
 
-    def down(self) -> None:
+    def deprovision(self) -> None:
         """Stops the airflow daemon if necessary and tears down resources."""
         if self.is_running:
             daemon.stop_daemon(self.pid_file, kill_children=True)
@@ -236,18 +268,13 @@ class AirflowOrchestrator(BaseOrchestrator):
         fileio.rm_dir(self.airflow_home)
         logger.info("Airflow spun down.")
 
-    def run(
-        self,
-        zenml_pipeline: "BasePipeline",
-        run_name: str,
-        **kwargs: Any,
-    ) -> "airflow.DAG":
-        """Prepares the pipeline so it can be run in Airflow.
+    def run_pipeline(
+        self, pipeline: "BasePipeline", stack: "Stack", run_name: str
+    ) -> Any:
+        """Schedules a pipeline to be run on Airflow.
 
-        Args:
-            zenml_pipeline: The pipeline to run.
-            run_name: Name of the pipeline run.
-            **kwargs: Unused argument to conform with base class signature.
+        Returns:
+            An Airflow DAG object that corresponds to the ZenML pipeline.
         """
         self.airflow_config = {
             "schedule_interval": datetime.timedelta(
@@ -258,5 +285,5 @@ class AirflowOrchestrator(BaseOrchestrator):
         }
 
         runner = AirflowDagRunner(AirflowPipelineConfig(self.airflow_config))
-        tfx_pipeline = create_tfx_pipeline(zenml_pipeline)
+        tfx_pipeline = create_tfx_pipeline(pipeline, stack=stack)
         return runner.run(tfx_pipeline, run_name=run_name)

@@ -20,7 +20,7 @@ repository -> pipelines -> runs -> steps -> outputs
 The highest level `repository` object is where to start from.
 
 ```python
-from zenml.core.repo import Repository
+from zenml.repository import Repository
 
 repo = Repository()
 ```
@@ -50,8 +50,8 @@ run = pipeline.get_run(run_name="custom_pipeline_run_name")
 ```python
 # at this point we switch from the `get_` paradigm to properties
 steps = run.steps  # all steps of a pipeline
-step = steps[0] 
-print(step.name)
+step = steps[0]
+print(step.entrypoint_name)
 ```
 
 #### Outputs
@@ -59,7 +59,7 @@ print(step.name)
 ```python
 # The outputs of a step
 # if multiple outputs they are accessible by name
-outputs = step.outputs["step_name"]
+outputs = step.outputs["output_name"]
 
 # if one output, use the `.output` property instead 
 output = step.output 

@@ -56,7 +56,7 @@ class PipelineRunDagVisualizer(BasePipelineRunVisualizer):
             # add each step as a node
             dot.node(
                 self.STEP_PREFIX + str(step.id),
-                step.name,
+                step.entrypoint_name,
                 shape=self.STEP_SHAPE,
             )
             # for each parent of a step, add an edge

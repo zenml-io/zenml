@@ -25,4 +25,8 @@ from zenml.metadata_stores.base_metadata_store import BaseMetadataStore
 from zenml.metadata_stores.mysql_metadata_store import MySQLMetadataStore
 from zenml.metadata_stores.sqlite_metadata_store import SQLiteMetadataStore
 
-__all__ = ["BaseMetadataStore", "MySQLMetadataStore", "SQLiteMetadataStore"]
+__all__ = [
+    "BaseMetadataStore",
+    "MySQLMetadataStore",
+    "SQLiteMetadataStore",
+]
