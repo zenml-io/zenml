@@ -299,7 +299,8 @@ class BaseStep(metaclass=BaseStepMeta):
                         f"using `step.with_return_materializers(...)` or "
                         f"registering a default materializer for specific "
                         f"types by subclassing `BaseMaterializer` and setting "
-                        f"its `ASSOCIATED_TYPES` class variable."
+                        f"its `ASSOCIATED_TYPES` class variable.",
+                        url="https://docs.zenml.io/guides/common-usecases/custom-materializer"
                     )
 
         return materializers
