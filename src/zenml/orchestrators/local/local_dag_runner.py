@@ -72,6 +72,8 @@ class LocalDagRunner(tfx_runner.TfxRunner):
           pipeline: Logical pipeline containing pipeline args and components.
           runtime_configuration: Runtime configuration of the pipeline run.
         """
+        if runtime_configuration is None:
+            runtime_configuration = RuntimeConfiguration()
         for component in pipeline.components:
             if isinstance(component, base_component.BaseComponent):
                 component._resolve_pip_dependencies(
