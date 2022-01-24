@@ -117,6 +117,7 @@ def list_stacks() -> None:
         is_active = stack_name == active_stack_name
         stack_config = {
             "ACTIVE": "*" if is_active else "",
+            "NAME": stack_name,
             **{
                 key.upper(): value
                 for key, value in stack_configuration.dict().items()
