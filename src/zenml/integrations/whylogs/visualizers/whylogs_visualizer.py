@@ -73,6 +73,21 @@ class WhylogsVisualizer(BaseStepVisualizer):
     def _get_plot_method(
         visualizer: ProfileVisualizer, plot: WhylogsPlots
     ) -> Any:
+        """Get the Whylogs ProfileVisualizer plot method corresponding to a
+        WhylogsPlots enum value.
+
+        Args:
+            visualizer: a ProfileVisualizer instance
+            plot: a WhylogsPlots enum value
+
+        Raises:
+            ValueError: if the supplied WhylogsPlots enum value does not
+                correspond to a valid ProfileVisualizer plot method
+
+        Returns:
+            The ProfileVisualizer plot method corresponding to the input
+            WhylogsPlots enum value
+        """
         plot_method = getattr(visualizer, plot, None)
         if plot_method is None:
             nl = "\n"

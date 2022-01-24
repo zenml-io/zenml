@@ -88,7 +88,7 @@ def whylogs_profiler_step(
     whylogs DatasetProfile from a given pd.DataFrame and save it as an artifact.
 
     Args:
-        name: The name of the step
+        step_name: The name of the step
         enable_cache: Specify whether caching is enabled for this step. If no
             value is passed, caching is enabled by default
         dataset_name: the dataset name to be used for the whylogs profile
