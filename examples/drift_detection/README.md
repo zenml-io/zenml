@@ -115,7 +115,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-pip install "evidently<=0.1.40.dev0"
+zenml integration install evidently
 zenml integration install sklearn
 
 # pull example
