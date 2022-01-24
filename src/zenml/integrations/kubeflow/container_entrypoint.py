@@ -17,13 +17,11 @@ import argparse
 import importlib
 import json
 import logging
-import os
 import sys
 import textwrap
 from typing import Dict, List, MutableMapping, Optional, Tuple
 
 from google.protobuf import json_format
-from ml_metadata.proto import metadata_store_pb2
 from tfx.dsl.compiler import constants
 from tfx.orchestration import metadata
 from tfx.orchestration.local import runner_utils
@@ -39,20 +37,11 @@ from tfx.types.channel import Property
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.type_registry import type_registry
-from zenml.integrations.kubeflow.metadata_stores import KubeflowMetadataStore
 from zenml.integrations.registry import integration_registry
 from zenml.orchestrators.utils import execute_step
 from zenml.repository import Repository
 from zenml.steps.utils import generate_component_class
 from zenml.utils import source_utils
-
-
-def _get_grpc_metadata_connection_config() -> metadata_store_pb2.MetadataStoreClientConfig:
-    """Constructs a metadata grpc connection config."""
-    connection_config = metadata_store_pb2.MetadataStoreClientConfig()
-    connection_config.host = os.environ["METADATA_GRPC_SERVICE_HOST"]
-    connection_config.port = int(os.environ["METADATA_GRPC_SERVICE_PORT"])
-    return connection_config
 
 
 def _sanitize_underscore(name: str) -> Optional[str]:
@@ -479,14 +468,9 @@ def main() -> None:
     integration_registry.activate_integrations()
 
     metadata_store = Repository().active_stack.metadata_store
-    if isinstance(metadata_store, KubeflowMetadataStore):
-        # set up the metadata connection so it connects to the internal kubeflow
-        # mysql database
-        connection_config = _get_grpc_metadata_connection_config()
-    else:
-        connection_config = deployment_config.metadata_connection_config  # type: ignore[attr-defined] # noqa
-
-    metadata_connection = metadata.Metadata(connection_config)
+    metadata_connection = metadata.Metadata(
+        metadata_store.get_tfx_metadata_config()
+    )
 
     # import the user main module to register all the materializers
     importlib.import_module(args.main_module)

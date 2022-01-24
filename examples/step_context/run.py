@@ -20,7 +20,7 @@ from zenml.integrations.sklearn.helpers.digits import (
     get_digits_model,
 )
 from zenml.pipelines import pipeline
-from zenml.steps import Output, step
+from zenml.steps import Output, StepContext, step
 
 
 @step
@@ -44,15 +44,29 @@ def trainer(
 
 
 @step
-def evaluator(
+def evaluate_and_store_best_model(
+    context: StepContext,
     X_test: np.ndarray,
     y_test: np.ndarray,
     model: ClassifierMixin,
-) -> float:
-    """Calculate the accuracy on the test set"""
-    test_acc = model.score(X_test, y_test)
-    print(f"Test accuracy: {test_acc}")
-    return test_acc
+) -> ClassifierMixin:
+    """Evaluate all models and return the best one."""
+    best_accuracy = model.score(X_test, y_test)
+    best_model = model
+
+    pipeline_runs = context.metadata_store.get_pipeline("mnist_pipeline").runs
+    for run in pipeline_runs:
+        # get the trained model of all pipeline runs
+        model = run.get_step("trainer").output.read()
+        accuracy = model.score(X_test, y_test)
+        if accuracy > best_accuracy:
+            # if the model accuracy is better than our currently best model,
+            # store it
+            best_accuracy = accuracy
+            best_model = model
+
+    print(f"Best test accuracy: {best_accuracy}")
+    return best_model
 
 
 @pipeline
@@ -70,6 +84,6 @@ def mnist_pipeline(
 pipeline = mnist_pipeline(
     importer=importer(),
     trainer=trainer(),
-    evaluator=evaluator(),
+    evaluator=evaluate_and_store_best_model(),
 )
 pipeline.run()

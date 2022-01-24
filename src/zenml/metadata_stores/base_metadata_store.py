@@ -15,7 +15,7 @@ import json
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from json import JSONDecodeError
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 from ml_metadata import proto
 from ml_metadata.metadata_store import metadata_store
@@ -68,7 +68,12 @@ class BaseMetadataStore(StackComponent, ABC):
         )
 
     @abstractmethod
-    def get_tfx_metadata_config(self) -> metadata_store_pb2.ConnectionConfig:
+    def get_tfx_metadata_config(
+        self,
+    ) -> Union[
+        metadata_store_pb2.ConnectionConfig,
+        metadata_store_pb2.MetadataStoreClientConfig,
+    ]:
         """Return tfx metadata config."""
         raise NotImplementedError
 
