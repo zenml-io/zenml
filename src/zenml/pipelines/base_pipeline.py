@@ -38,6 +38,7 @@ from zenml.constants import (
 from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.pipelines import Schedule
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.steps import BaseStep
@@ -242,11 +243,16 @@ class BasePipeline(metaclass=BasePipelineMeta):
     # TODO [ENG-376]: Enable specifying runtime configuration options either using
     #  **kwargs here or by passing a `RuntimeConfiguration` object or a
     #  path to a config file.
-    def run(self, run_name: Optional[str] = None) -> Any:
+    def run(
+        self,
+        run_name: Optional[str] = None,
+        schedule: Optional[Schedule] = None,
+    ) -> Any:
         """Runs the pipeline on the active stack of the current repository.
 
         Args:
             run_name: Name of the pipeline run.
+            schedule: Optional schedule of the pipeline.
         """
         if SHOULD_PREVENT_PIPELINE_EXECUTION:
             # An environment variable was set to stop the execution of
@@ -274,7 +280,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr] # noqa
         )
         runtime_configuration = RuntimeConfiguration(
-            run_name=run_name, dag_filepath=dag_filepath
+            run_name=run_name, dag_filepath=dag_filepath, schedule=schedule
         )
         stack = Repository().active_stack
 
