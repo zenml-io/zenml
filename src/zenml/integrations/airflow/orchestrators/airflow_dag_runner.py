@@ -29,6 +29,8 @@ from tfx.orchestration.local import runner_utils
 from tfx.orchestration.portable import runtime_parameter_utils
 from tfx.utils.json_utils import json  # type: ignore[attr-defined]
 
+from zenml.repository import Repository
+
 if TYPE_CHECKING:
     import airflow
 
@@ -129,7 +131,9 @@ class AirflowDagRunner(tfx_runner.TfxRunner):
         deployment_config = runner_utils.extract_local_deployment_config(
             pipeline
         )
-        connection_config = deployment_config.metadata_connection_config  # type: ignore[attr-defined] # noqa
+        connection_config = (
+            Repository().active_stack.metadata_store.get_tfx_metadata_config()
+        )
 
         component_impl_map = {}
 
