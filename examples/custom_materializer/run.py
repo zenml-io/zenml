@@ -12,64 +12,55 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import numpy as np
-from sklearn.base import ClassifierMixin
+import os
+from typing import Type
 
-from zenml.integrations.sklearn.helpers.digits import (
-    get_digits,
-    get_digits_model,
-)
+from zenml.artifacts import DataArtifact
+from zenml.io import fileio
+from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
-from zenml.steps import Output, step
+from zenml.steps import step
+
+
+class MyObj:
+    def __init__(self, name: str):
+        self.name = name
+
+
+class MyMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = [MyObj]
+    ASSOCIATED_ARTIFACT_TYPES = [DataArtifact]
+
+    def handle_input(self, data_type: Type[MyObj]) -> MyObj:
+        """Read from artifact store"""
+        super().handle_input(data_type)
+        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'), 'r') as f:
+            name = f.read()
+        return MyObj(name=name)
+
+    def handle_return(self, my_obj: MyObj) -> None:
+        """Write to artifact store"""
+        super().handle_return(my_obj)
+        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'), 'w') as f:
+            f.write(my_obj.name)
 
 
 @step
-def importer() -> Output(
-    X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
-):
-    """Loads the digits array as normal numpy arrays."""
-    X_train, X_test, y_train, y_test = get_digits()
-    return X_train, X_test, y_train, y_test
+def step1() -> MyObj:
+    return MyObj("jk")
 
 
 @step
-def trainer(
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-) -> ClassifierMixin:
-    """Train a simple sklearn classifier for the digits dataset."""
-    model = get_digits_model()
-    model.fit(X_train, y_train)
-    return model
-
-
-@step
-def evaluator(
-    X_test: np.ndarray,
-    y_test: np.ndarray,
-    model: ClassifierMixin,
-) -> float:
-    """Calculate the accuracy on the test set"""
-    test_acc = model.score(X_test, y_test)
-    print(f"Test accuracy: {test_acc}")
-    return test_acc
+def step2(my_obj: MyObj):
+    print(my_obj.name)
 
 
 @pipeline
-def mnist_pipeline(
-    importer,
-    trainer,
-    evaluator,
-):
-    """Links all the steps together in a pipeline"""
-    X_train, X_test, y_train, y_test = importer()
-    model = trainer(X_train=X_train, y_train=y_train)
-    evaluator(X_test=X_test, y_test=y_test, model=model)
+def pipe(step1, step2):
+    step2(step1())
 
 
-pipeline = mnist_pipeline(
-    importer=importer(),
-    trainer=trainer(),
-    evaluator=evaluator(),
-)
-pipeline.run()
+pipe(
+    step1=step1().with_return_materializers(MyMaterializer),
+    step2=step2()
+).run()
