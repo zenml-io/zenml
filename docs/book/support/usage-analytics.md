@@ -44,25 +44,29 @@ file in the GitHub repository.
 ```python
 # Pipelines
 RUN_PIPELINE = "Pipeline run"
-
 GET_PIPELINES = "Pipelines fetched"
+GET_PIPELINE = "Pipeline fetched"
 
 # Repo
 INITIALIZE_REPO = "ZenML initialized"
 
 # Components
-REGISTERED_METADATA_STORE = "Metadata Store registered"
-REGISTERED_ARTIFACT_STORE = "Artifact Store registered"
-REGISTERED_ORCHESTRATOR = "Orchestrator registered"
-REGISTERED_CONTAINER_REGISTRY = "Container Registry registered"
+REGISTERED_STACK_COMPONENT = "Stack component registered"
 
 # Stack
 REGISTERED_STACK = "Stack registered"
 SET_STACK = "Stack set"
 
 # Analytics opt in and out
-ANALYTICS_OPT_IN = "Analytics opt-in"
-ANALYTICS_OPT_OUT = "Analytics opt-out"
+OPT_IN_ANALYTICS = "Analytics opt-in"
+OPT_OUT_ANALYTICS = "Analytics opt-out"
+
+# Examples
+RUN_EXAMPLE = "Example run"
+PULL_EXAMPLE = "Example pull"
+
+# Integrations
+INSTALL_INTEGRATION = "Integration installed"
 ```
 
 In addition, each Segment Track event collects the following metadata:

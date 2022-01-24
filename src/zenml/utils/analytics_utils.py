@@ -15,7 +15,8 @@
 
 import os
 import platform
-from typing import Any, Callable, Dict, Optional
+from enum import Enum
+from typing import Any, Callable, Dict, Optional, Union
 
 import distro
 
@@ -25,33 +26,36 @@ from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
-# EVENTS
 
-# Pipelines
+class AnalyticsEvent(str, Enum):
+    # Pipelines
+    RUN_PIPELINE = "Pipeline run"
+    GET_PIPELINES = "Pipelines fetched"
+    GET_PIPELINE = "Pipeline fetched"
 
-RUN_PIPELINE = "Pipeline run"
-GET_PIPELINES = "Pipelines fetched"
-GET_PIPELINE = "Pipeline fetched"
+    # Repo
+    INITIALIZE_REPO = "ZenML initialized"
 
-# Repo
-INITIALIZE_REPO = "ZenML initialized"
+    # Components
+    REGISTERED_STACK_COMPONENT = "Stack component registered"
 
-# Components
-REGISTERED_STACK_COMPONENT = "Stack component registered"
+    # Stack
+    REGISTERED_STACK = "Stack registered"
+    SET_STACK = "Stack set"
 
-# Stack
-REGISTERED_STACK = "Stack registered"
-SET_STACK = "Stack set"
+    # Analytics opt in and out
+    OPT_IN_ANALYTICS = "Analytics opt-in"
+    OPT_OUT_ANALYTICS = "Analytics opt-out"
 
-# Analytics opt in and out
-OPT_IN_ANALYTICS = "Analytics opt-in"
-OPT_OUT_ANALYTICS = "Analytics opt-out"
+    # Examples
+    RUN_EXAMPLE = "Example run"
+    PULL_EXAMPLE = "Example pull"
 
-# Examples
-RUN_EXAMPLE = "Example run"
+    # Integrations
+    INSTALL_INTEGRATION = "Integration installed"
 
-# Test event
-EVENT_TEST = "Test event"
+    # Test event
+    EVENT_TEST = "Test event"
 
 
 def get_segment_key() -> str:
@@ -138,7 +142,9 @@ def get_environment() -> str:
         return "native"
 
 
-def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> bool:
+def track_event(
+    event: Union[str, AnalyticsEvent], metadata: Optional[Dict[str, Any]] = None
+) -> bool:
     """
     Track segment event if user opted-in.
 
@@ -165,6 +171,8 @@ def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> bool:
         analytics.max_retries = 1
 
         gc = GlobalConfig()
+        if isinstance(event, AnalyticsEvent):
+            event = event.value
 
         logger.debug(
             f"Attempting analytics: User: {gc.user_id}, "
@@ -172,10 +180,10 @@ def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> bool:
             f"Metadata: {metadata}"
         )
 
-        if not gc.analytics_opt_in and event not in [
-            OPT_OUT_ANALYTICS,
-            OPT_IN_ANALYTICS,
-        ]:
+        if not gc.analytics_opt_in and event not in {
+            AnalyticsEvent.OPT_OUT_ANALYTICS,
+            AnalyticsEvent.OPT_IN_ANALYTICS,
+        }:
             return False
 
         if metadata is None:
@@ -186,6 +194,7 @@ def track_event(event: str, metadata: Optional[Dict[str, Any]] = None) -> bool:
         metadata.update(
             {
                 "environment": get_environment(),
+                "python_version": platform.python_version(),
                 "version": __version__,
             }
         )
@@ -225,7 +234,7 @@ def parametrized(
 
 @parametrized
 def track(
-    func: Callable[..., Any], event: Optional[str] = None
+    func: Callable[..., Any], event: Optional[Union[str, AnalyticsEvent]] = None
 ) -> Callable[..., Any]:
     """Decorator to track event.
 
