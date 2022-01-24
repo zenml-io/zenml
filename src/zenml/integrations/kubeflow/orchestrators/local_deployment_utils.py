@@ -5,6 +5,7 @@ import sys
 import time
 
 import zenml.io.utils
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import networking_utils, yaml_utils
 
@@ -270,3 +271,22 @@ def start_kfp_ui_daemon(
             log_file_path,
             port,
         )
+
+
+def stop_kfp_ui_daemon(pid_file_path: str) -> None:
+    """Stops the KFP UI daemon process if it is running.
+
+    Args:
+        pid_file_path: Path to the file with the daemons process ID.
+    """
+    if fileio.file_exists(pid_file_path):
+        if sys.platform == "win32":
+            # Daemon functionality is not supported on Windows, so the PID
+            # file won't exist. This if clause exists just for mypy to not
+            # complain about missing functions
+            pass
+        else:
+            from zenml.utils import daemon
+
+            daemon.stop_daemon(pid_file_path, kill_children=True)
+            fileio.remove(pid_file_path)
