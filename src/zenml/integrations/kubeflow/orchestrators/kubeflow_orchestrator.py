@@ -200,22 +200,43 @@ class KubeflowOrchestrator(BaseOrchestrator):
             # upload the pipeline to Kubeflow and start it
             client = kfp.Client()
             if runtime_configuration.schedule:
-                # TODO [HIGH]: Find duplicate experiments.
-                experiment = client.create_experiment(pipeline_name)
+                try:
+                    experiment = client.get_experiment(pipeline_name)
+                    logger.info(
+                        "A recurring run has already been created with this pipeline. Creating new recurring run now.."
+                    )
+                except ValueError:
+                    experiment = client.create_experiment(pipeline_name)
+                    logger.info(
+                        f"Creating a new recurring run for pipeline '%s'.. ",
+                        pipeline_name,
+                    )
+                logger.info(
+                    "You can see all recurring runs under the '%s' experiment.'",
+                    pipeline_name,
+                )
                 result = client.create_recurring_run(
                     experiment_id=experiment.id,
                     job_name=runtime_configuration.run_name,
                     pipeline_package_path=pipeline_file_path,
                     enable_caching=enable_cache,
                 )
+                logger.info(
+                    "Started recurring run with ID '%s'.", result.run_id
+                )
             else:
+                logger.info(
+                    "No schedule detected. Creating a one-off pipeline run.."
+                )
                 result = client.create_run_from_pipeline_package(
                     pipeline_file_path,
                     arguments={},
                     run_name=runtime_configuration.run_name,
                     enable_caching=enable_cache,
                 )
-            logger.info("Started pipeline run with ID '%s'.", result.run_id)
+                logger.info(
+                    "Started one-off pipeline run with ID '%s'.", result.run_id
+                )
         except urllib3.exceptions.HTTPError as error:
             logger.warning(
                 "Failed to upload Kubeflow pipeline: %s. "
