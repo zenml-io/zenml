@@ -42,5 +42,10 @@ jobs:
         python -m poetry run pip install click~=8.0.3 typing-extensions~=3.10.0.2
         python -m poetry run pip install awscli
 
+    - name: Setup git user
+      run: |
+        git config --global user.name 'Code Monkey'
+        git config --global user.email 'codemonkey@zenml.io'
+
     - name: Runs docs generation
       run: poetry run bash scripts/generate-docs.sh -s src/zenml/ -v ${{ steps.get_version.outputs.VERSION }} --push --latest
