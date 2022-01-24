@@ -27,8 +27,9 @@ jobs:
     - name: Get the version from the github branch name
       id: get_version
       run:
-        BRANCH=${{github.ref_name}}
-        echo ::set-output name=VERSION::${BRANCH#release/}
+        BRANCH='${{github.ref_name}}'
+        VERSION=${BRANCH#release/}
+        echo ::set-output name=VERSION::${VERSION}
 
     - name: Install poetry
       run: |
@@ -48,4 +49,4 @@ jobs:
         git config --global user.email 'codemonkey@zenml.io'
 
     - name: Runs docs generation
-      run: poetry run bash scripts/generate-docs.sh -s src/zenml/ -v ${{ steps.get_version.outputs.VERSION }} --push --latest
+      run: poetry run bash scripts/generate-docs.sh -s src/zenml/ --push --latest -v ${{ steps.get_version.outputs.VERSION }}
