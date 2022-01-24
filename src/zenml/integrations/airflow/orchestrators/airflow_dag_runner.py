@@ -65,7 +65,7 @@ class AirflowDagRunner(tfx_runner.TfxRunner):
 
         Args:
           config: Optional Airflow pipeline config for customizing the
-          launching of each component.
+                  launching of each component.
         """
         if isinstance(config, dict):
             warnings.warn(

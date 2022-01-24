@@ -66,7 +66,7 @@ def error(text: str) -> None:
       text: Input text string.
 
     Raises:
-        click.ClickException when called.
+        click.ClickException: when called.
     """
     raise click.ClickException(message=click.style(text, fg="red", bold=True))
 

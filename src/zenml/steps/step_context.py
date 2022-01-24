@@ -23,9 +23,11 @@ class StepContext:
     artifacts inside a step function. To use it, add a `StepContext` object
     to the signature of your step function like this:
 
+    ```python
     @step
     def my_step(context: StepContext, ...)
         context.get_output_materializer(...)
+    ```
 
     You do not need to create a `StepContext` object yourself and pass it
     when creating the step, as long as you specify it in the signature ZenML
@@ -50,13 +52,13 @@ class StepContext:
         Args:
             step_name: The name of the step that this context is used in.
             output_materializers: The output materializers of the step that
-                this context is used in.
+                                  this context is used in.
             output_artifacts: The output artifacts of the step that this
-                context is used in.
+                              context is used in.
 
         Raises:
              StepContextError: If the keys of the output materializers and
-             output artifacts do not match.
+                               output artifacts do not match.
         """
         if output_materializers.keys() != output_artifacts.keys():
             raise StepContextError(
@@ -90,8 +92,8 @@ class StepContext:
 
         Raises:
             StepContextError: If the step has no outputs, no output for
-                the given `output_name` or if no `output_name` was given but
-                the step has multiple outputs.
+                              the given `output_name` or if no `output_name`
+                              was given but the step has multiple outputs.
         """
         output_count = len(self._outputs)
         if output_count == 0:
@@ -121,9 +123,11 @@ class StepContext:
 
     @property
     def metadata_store(self) -> "BaseMetadataStore":
-        """Returns an instance of the metadata store that is used to store
+        """
+        Returns an instance of the metadata store that is used to store
         metadata about the step (and the corresponding pipeline) which is
-        being executed."""
+        being executed.
+        """
         return self._metadata_store
 
     def get_output_materializer(
@@ -149,8 +153,8 @@ class StepContext:
 
         Raises:
             StepContextError: If the step has no outputs, no output for
-                the given `output_name` or if no `output_name` was given but
-                the step has multiple outputs.
+                              the given `output_name` or if no `output_name`
+                              was given but the step has multiple outputs.
         """
         materializer_class, artifact = self._get_output(output_name)
         # use custom materializer class if provided or fallback to default
@@ -172,7 +176,7 @@ class StepContext:
 
         Raises:
             StepContextError: If the step has no outputs, no output for
-                the given `output_name` or if no `output_name` was given but
-                the step has multiple outputs.
+                              the given `output_name` or if no `output_name`
+                              was given but the step has multiple outputs.
         """
         return cast(str, self._get_output(output_name).artifact.uri)
