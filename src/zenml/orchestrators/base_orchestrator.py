@@ -18,7 +18,8 @@ from zenml.enums import OrchestratorFlavor, StackComponentType
 from zenml.stack import StackComponent
 
 if TYPE_CHECKING:
-    from zenml.pipelines.base_pipeline import BasePipeline
+    from zenml.pipelines import BasePipeline
+    from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack
 
 
@@ -37,12 +38,15 @@ class BaseOrchestrator(StackComponent, ABC):
 
     @abstractmethod
     def run_pipeline(
-        self, pipeline: "BasePipeline", stack: "Stack", run_name: str
+        self,
+        pipeline: "BasePipeline",
+        stack: "Stack",
+        runtime_configuration: RuntimeConfiguration,
     ) -> Any:
         """Runs a pipeline.
 
         Args:
             pipeline: The pipeline to run.
             stack: The stack on which the pipeline is run.
-            run_name: Name of the pipeline run.
+            runtime_configuration: Runtime configuration of the pipeline run.
         """
