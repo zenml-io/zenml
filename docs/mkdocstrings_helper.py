@@ -103,7 +103,7 @@ def create_cli_docs(cli_dev_doc_file_dir: Path,
                     ignored_modules: List[str],
                     sources_path: Path,
                     ) -> None:
-    # TODO [MED]: Find Solution for issue with click-decorated functions
+    # TODO [MEDIUM]: Find Solution for issue with click-decorated functions
     #  Some resources concerning this issue can be found here
     #  https://github.com/mkdocstrings/mkdocstrings/issues/162
     #  https://mkdocstrings.github.io/troubleshooting/#my-wrapped-function-shows-documentationcode-for-its-wrapper-instead-of-its-own
