@@ -206,7 +206,7 @@ def up_stack() -> None:
 )
 @cli_utils.activate_integrations
 def down_stack(force: bool = False) -> None:
-    """Tears down resources for the stack."""
+    """Suspends resources of the local stack deployment."""
     stack_ = Repository().active_stack
 
     if force:
