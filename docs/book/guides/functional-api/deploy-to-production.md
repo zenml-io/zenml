@@ -62,7 +62,7 @@ Let's stick with the `local_metadata_store` and a `local_artifact_store` for now
 
 ```bash
 # Make sure to create the local registry on port 5000 for it to work 
-zenml container-registry register local_registry --uri localhost:5000
+zenml container-registry register local_registry --uri=localhost:5000 --type=default
 zenml orchestrator register kubeflow_orchestrator --type=kubeflow
 zenml stack register local_kubeflow_stack \
     -m local_metadata_store \
@@ -159,7 +159,7 @@ When running the upcoming commands, make sure to replace `$PATH_TO_YOUR_CONTAINE
 zenml integration install gcp
 
 # Create the stack and its components
-zenml container-registry register gcp_registry --uri=$PATH_TO_YOUR_CONTAINER_REGISTRY
+zenml container-registry register gcp_registry --uri=$PATH_TO_YOUR_CONTAINER_REGISTRY --type=default
 zenml metadata-store register kubeflow_metadata_store --type=kubeflow
 zenml artifact-store register gcp_artifact_store --type=gcp --path=$PATH_TO_YOUR_GCP_BUCKET
 zenml stack register gcp_kubeflow_stack \
