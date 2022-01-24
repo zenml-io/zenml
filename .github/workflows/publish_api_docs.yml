@@ -4,8 +4,8 @@ name: Publish API Docs
 # Controls when the action will run.
 on:
   push:
-    tags:
-      - '*'
+    branches:
+      - 'release/**'
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -24,9 +24,11 @@ jobs:
     - run: npm install
     - run: npm install html-minifier -g
 
-    - name: Get the version from the github tag ref
+    - name: Get the version from the github branch name
       id: get_version
-      run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+      run:
+        BRANCH=${{github.ref_name}}
+        echo ::set-output name=VERSION::${BRANCH#release/}
 
     - name: Install poetry
       run: |
