@@ -34,14 +34,14 @@ class MyMaterializer(BaseMaterializer):
     def handle_input(self, data_type: Type[MyObj]) -> MyObj:
         """Read from artifact store"""
         super().handle_input(data_type)
-        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'), 'r') as f:
+        with fileio.open(os.path.join(self.artifact.uri, "data.txt"), "r") as f:
             name = f.read()
         return MyObj(name=name)
 
     def handle_return(self, my_obj: MyObj) -> None:
         """Write to artifact store"""
         super().handle_return(my_obj)
-        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'), 'w') as f:
+        with fileio.open(os.path.join(self.artifact.uri, "data.txt"), "w") as f:
             f.write(my_obj.name)
 
 
@@ -61,6 +61,5 @@ def pipe(step1, step2):
 
 
 pipe(
-    step1=step1().with_return_materializers(MyMaterializer),
-    step2=step2()
+    step1=step1().with_return_materializers(MyMaterializer), step2=step2()
 ).run()
