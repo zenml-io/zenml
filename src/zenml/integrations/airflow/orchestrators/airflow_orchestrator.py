@@ -168,7 +168,7 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         Raises:
             RuntimeError: If airflow is not running or no DAG filepath runtime
-            option is provided.
+                          option is provided.
         """
         if not self.is_running:
             raise RuntimeError(

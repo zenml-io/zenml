@@ -5,7 +5,7 @@ description: Train some models.
 # Train & Evaluate
 
 If you want to see the code for this chapter of the guide, head over to the 
-[GitHub](https://github.com/zenml-io/zenml/tree/main/examples/low\_level\_guide/chapter\_3.py).
+[GitHub](https://github.com/zenml-io/zenml/blob/main/examples/functional_api/chapter_3.py).
 
 ## Train and evaluate the model
 
@@ -33,7 +33,7 @@ class TrainerConfig(BaseStepConfig):
 
 @step
 def tf_trainer(
-    config: TrainerConfig,  # not an artifact, passed in when
+    config: TrainerConfig,  # not an artifact; used for quickly changing params in runs
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> tf.keras.Model:

@@ -117,7 +117,7 @@ def test_get_step_context_output_for_non_existing_output_key(
         step_context_with_two_outputs.get_output_materializer("output_2")
 
 
-def test_step_context_returns_isntance_of_custom_materializer_class(
+def test_step_context_returns_instance_of_custom_materializer_class(
     step_context_with_single_output,
 ):
     """Tests that the returned materializer is an instance of the custom
@@ -127,3 +127,12 @@ def test_step_context_returns_isntance_of_custom_materializer_class(
         custom_materializer_class=BuiltInMaterializer
     )
     assert isinstance(materializer, BuiltInMaterializer)
+
+
+def test_step_context_returns_metadata_store_of_active_stack(clean_repo):
+    """Tests that the step context returns the metadata store of the active
+    stack."""
+    context = StepContext(
+        step_name="some_step_name", output_materializers={}, output_artifacts={}
+    )
+    assert clean_repo.active_stack.metadata_store == context.metadata_store

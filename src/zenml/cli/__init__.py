@@ -25,26 +25,24 @@ How to use the CLI
 Our CLI behaves similarly to many other CLIs for basic features. In
 order to find out which version of ZenML you are running, type:
 
-.. code:: bash
-
+```bash
    zenml version
-
+```
 If you ever need more information on exactly what a certain command will
 do, use the ``--help`` flag attached to the end of your command string.
 
 For example, to get a sense of all of the commands available to you
 while using the ``zenml`` command, type:
 
-.. code:: bash
-
+```bash
    zenml --help
-
+```
 If you were instead looking to know more about a specific command, you
 can type something like this:
 
-.. code:: bash
-
+```bash
    zenml metadata-store register --help
+```
 
 This will give you information about how to register a metadata store.
 (See below for more on that).
@@ -56,9 +54,9 @@ In order to start working on your project, initialize a ZenML repository
 within your current directory with ZenML’s own config and resource management
 tools:
 
-.. code:: bash
-
-   zenml init
+```bash
+zenml init
+```
 
 This is all you need to begin using all the MLOps goodness that ZenML
 provides!
@@ -68,18 +66,16 @@ inside the current directory from which you are running the command.
 You can also pass in a directory path manually using the
 ``--repo_path`` option:
 
-.. code:: bash
-
-   zenml init --repo_path /path/to/dir
-
+```bash
+zenml init --repo_path /path/to/dir
+```
 If you wish to specify that you do not want analytics to be transmitted
 back to ZenML about your usage of the tool, pass in ``False`` to the
 ``--analytics_opt_in`` option:
 
-.. code:: bash
-
-   zenml init --analytics_opt_in false
-
+```bash
+zenml init --analytics_opt_in false
+```
 If you wish to delete all data relating to your project from the
 directory, use the ``zenml clean`` command. This will:
 
@@ -104,59 +100,52 @@ something that will grow as we add more).
 
 To list all the examples available to you, type:
 
-.. code:: bash
-
-   zenml example list
-
+```bash
+zenml example list
+```
 If you want more detailed information about a specific example, use the
 ``info`` subcommand in combination with the name of the example, like
 this:
 
-.. code:: bash
-
-   zenml example info quickstart
-
+```bash
+zenml example info quickstart
+```
 If you want to pull all the examples into your current working directory
 (wherever you are executing the ``zenml`` command from in your
 terminal), the CLI will create a ``zenml_examples`` folder for you if it
 doesn’t already exist whenever you use the ``pull`` subcommand. The
 default is to copy all the examples, like this:
 
-.. code:: bash
-
-   zenml example pull
-
+```bash
+zenml example pull
+```
 If you’d only like to pull a single example, add the name of that
 example (for example, ``quickstart``) as an argument to the same
 command, as follows:
 
-.. code:: bash
-
-   zenml example pull quickstart
-
+```bash
+zenml example pull quickstart
+```
 If you would like to force-redownload the examples, use the ``--force``
 or ``-f`` flag as in this example:
 
-.. code:: bash
-
-   zenml example pull --force
-
+```bash
+zenml example pull --force
+```
 This will redownload all the examples afresh, using the same version of
 ZenML as you currently have installed. If for some reason you want to
 download examples corresponding to a previous release of ZenML, use the
 ``--version`` or ``-v`` flag to specify, as in the following example:
 
-.. code:: bash
-
-   zenml example pull --force --version 0.3.8
-
+```bash
+zenml example pull --force --version 0.3.8
+```
 If you wish to run the example, allowing the ZenML CLI to do the work of setting
 up whatever dependencies are required, use the ``run`` subcommand:
 
-.. code:: bash
-
-   zenml example run quickstart
-
+```bash
+zenml example run quickstart
+```
 Using integrations
 ------------------
 
@@ -204,24 +193,21 @@ initializes your repository with a metadata store kept on your local
 machine. If you wish to register a new metadata store, do so with the
 ``register`` command:
 
-.. code:: bash
-
-   zenml metadata-store register METADATA_STORE_NAME --type METADATA_STORE_TYPE [--OPTIONS]
-
+```bash
+zenml metadata-store register METADATA_STORE_NAME --type METADATA_STORE_TYPE [--OPTIONS]
+```
 If you wish to list the metadata stores that have already been
 registered within your ZenML project / repository, type:
 
-.. code:: bash
-
-   zenml metadata-store list
-
+```bash
+zenml metadata-store list
+```
 If you wish to delete a particular metadata store, pass the name of the
 metadata store into the CLI with the following command:
 
-.. code:: bash
-
-   zenml metadata-store delete METADATA_STORE_NAME
-
+```bash
+zenml metadata-store delete METADATA_STORE_NAME
+```
 Customizing your Artifact Store
 -------------------------------
 
@@ -230,24 +216,21 @@ steps are stored. By default, ZenML initializes your repository with an
 artifact store with everything kept on your local machine. If you wish
 to register a new artifact store, do so with the ``register`` command:
 
-.. code:: bash
-
-   zenml artifact-store register ARTIFACT_STORE_NAME --type ARTIFACT_STORE_TYPE [--OPTIONS]
-
+```bash
+zenml artifact-store register ARTIFACT_STORE_NAME --type ARTIFACT_STORE_TYPE [--OPTIONS]
+```
 If you wish to list the artifact stores that have already been
 registered within your ZenML project / repository, type:
 
-.. code:: bash
-
-   zenml artifact-store list
-
+```bash
+zenml artifact-store list
+```
 If you wish to delete a particular artifact store, pass the name of the
 artifact store into the CLI with the following command:
 
-.. code:: bash
-
-   zenml artifact-store delete ARTIFACT_STORE_NAME
-
+```bash
+zenml artifact-store delete ARTIFACT_STORE_NAME
+```
 Customizing your Orchestrator
 -----------------------------
 
@@ -259,24 +242,21 @@ that runs everything on your local machine.
 If you wish to register a new orchestrator, do so with the ``register``
 command:
 
-.. code:: bash
-
-   zenml orchestrator register ORCHESTRATOR_NAME --type ORCHESTRATOR_TYPE [--ORCHESTRATOR_OPTIONS]
-
+```bash
+zenml orchestrator register ORCHESTRATOR_NAME --type ORCHESTRATOR_TYPE [--ORCHESTRATOR_OPTIONS]
+```
 If you wish to list the orchestrators that have already been registered
 within your ZenML project / repository, type:
 
-.. code:: bash
-
-   zenml orchestrator list
-
+```bash
+zenml orchestrator list
+```
 If you wish to delete a particular orchestrator, pass the name of the
 orchestrator into the CLI with the following command:
 
-.. code:: bash
-
-   zenml orchestrator delete ORCHESTRATOR_NAME
-
+```bash
+zenml orchestrator delete ORCHESTRATOR_NAME
+```
 Customizing your Container Registry
 -----------------------------------
 
@@ -331,13 +311,12 @@ components of the stack using the commands listed above.
 Use the ``zenml stack register`` command to register your stack. It
 takes four arguments as in the following example:
 
-.. code:: bash
-
-   zenml stack register STACK_NAME \
+```bash
+zenml stack register STACK_NAME \
        -m METADATA_STORE_NAME \
        -a ARTIFACT_STORE_NAME \
        -o ORCHESTRATOR_NAME
-
+```
 Each corresponding argument should be the name you passed in as an
 identifier for the artifact store, metadata store or orchestrator when
 you originally registered it.
@@ -345,32 +324,28 @@ you originally registered it.
 To list the stacks that you have registered within your current ZenML
 project, type:
 
-.. code:: bash
-
-   zenml stack list
-
+```bash
+zenml stack list
+```
 To delete a stack that you have previously registered, type:
 
-.. code:: bash
-
-   zenml stack delete STACK_NAME
-
+```bash
+zenml stack delete STACK_NAME
+```
 By default, ZenML uses a local stack whereby all pipelines run on your
 local computer. If you wish to set a different stack as the current
 active stack to be used when running your pipeline, type:
 
-.. code:: bash
-
-   zenml stack set STACK_NAME
-
+```bash
+zenml stack set STACK_NAME
+```
 This changes a configuration property within your local environment.
 
 To see which stack is currently set as the default active stack, type:
 
-.. code:: bash
-
-   zenml stack get
-
+```bash
+zenml stack get
+```
 """
 
 from zenml.cli.base import *  # noqa

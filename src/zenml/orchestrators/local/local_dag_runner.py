@@ -47,6 +47,7 @@ from tfx.orchestration.portable import (
 
 from zenml.logger import get_logger
 from zenml.orchestrators.utils import execute_step
+from zenml.repository import Repository
 
 logger = get_logger(__name__)
 
@@ -84,7 +85,9 @@ class LocalDagRunner(tfx_runner.TfxRunner):
         deployment_config = runner_utils.extract_local_deployment_config(
             pipeline
         )
-        connection_config = deployment_config.metadata_connection_config  # type: ignore[attr-defined] # noqa
+        connection_config = (
+            Repository().active_stack.metadata_store.get_tfx_metadata_config()
+        )
 
         logger.debug(f"Using deployment config:\n {deployment_config}")
         logger.debug(f"Using connection config:\n {connection_config}")

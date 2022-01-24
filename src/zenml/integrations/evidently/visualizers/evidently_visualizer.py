@@ -49,7 +49,7 @@ class EvidentlyVisualizer(BaseStepVisualizer):
         """Generate a Facet Overview
 
         Args:
-            h: HTML represented as a string.
+            html_: HTML represented as a string.
         """
         if self.running_in_notebook():
             from IPython.core.display import HTML, display
