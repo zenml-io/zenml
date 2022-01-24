@@ -14,20 +14,7 @@
 from typing import List, Optional, Sequence, Tuple
 
 from evidently.dashboard import Dashboard  # type: ignore
-from evidently.model_profile import Profile  # type: ignore
-from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
-from evidently.profile_sections import (  # type: ignore
-    CatTargetDriftProfileSection,
-    ClassificationPerformanceProfileSection,
-    DataDriftProfileSection,
-    NumTargetDriftProfileSection,
-    ProbClassificationPerformanceProfileSection,
-    RegressionPerformanceProfileSection,
-)
-from evidently.profile_sections.base_profile_section import (  # type: ignore
-    ProfileSection,
-)
-from evidently.tabs import (  # type: ignore
+from evidently.dashboard.tabs import (  # type: ignore
     CatTargetDriftTab,
     ClassificationPerformanceTab,
     DataDriftTab,
@@ -35,7 +22,20 @@ from evidently.tabs import (  # type: ignore
     ProbClassificationPerformanceTab,
     RegressionPerformanceTab,
 )
-from evidently.tabs.base_tab import Tab  # type: ignore
+from evidently.dashboard.tabs.base_tab import Tab  # type: ignore
+from evidently.model_profile import Profile  # type: ignore
+from evidently.model_profile.sections import (  # type: ignore
+    CatTargetDriftProfileSection,
+    ClassificationPerformanceProfileSection,
+    DataDriftProfileSection,
+    NumTargetDriftProfileSection,
+    ProbClassificationPerformanceProfileSection,
+    RegressionPerformanceProfileSection,
+)
+from evidently.model_profile.sections.base_profile_section import (  # type: ignore
+    ProfileSection,
+)
+from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
 
 from zenml.artifacts import DataAnalysisArtifact, DataArtifact
 from zenml.steps import Output, StepContext
