@@ -60,7 +60,7 @@ def data_loader(
     """Load the diabetes dataset."""
     X, y = datasets.load_diabetes(return_X_y=True, as_frame=True)
 
-    # merge X an y together
+    # merge X and y together
     df = pd.merge(X, y, left_index=True, right_index=True)
 
     # leverage the whylogs sub-context to generate a whylogs profile

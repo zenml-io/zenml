@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 from enum import Enum
-from typing import List, cast
+from typing import List
 
 
 class StrEnum(str, Enum):
@@ -26,5 +26,4 @@ class StrEnum(str, Enum):
     @classmethod
     def list(cls) -> List[str]:
         """Get all enum names as a list of strings"""
-        names = map(lambda c: c.name, cls)  # type: ignore
-        return list(cast(List[str], names))
+        return [c.name for c in cls]

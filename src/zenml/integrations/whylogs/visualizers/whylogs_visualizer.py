@@ -29,14 +29,14 @@ logger = get_logger(__name__)
 class WhylogsPlots(StrEnum):
     """All supported whylogs plot types."""
 
-    distribution = "plot_distribution"
-    missing_values = "plot_missing_values"
-    uniqueness = "plot_uniqueness"
-    data_types = "plot_data_types"
-    string_length = "plot_string_length"
-    token_length = "plot_token_length"
-    char_pos = "plot_char_pos"
-    string = "plot_string"
+    DISTRIBUTION = "plot_distribution"
+    MISSING_VALUES = "plot_missing_values"
+    UNIQUENESS = "plot_uniqueness"
+    DATA_TYPES = "plot_data_types"
+    STRING_LENGTH = "plot_string_length"
+    TOKEN_LENGTH = "plot_token_length"
+    CHAR_POS = "plot_char_pos"
+    STRING = "plot_string"
 
 
 class WhylogsVisualizer(BaseStepVisualizer):
