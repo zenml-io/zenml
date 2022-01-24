@@ -14,9 +14,11 @@
 from typing import Any, Dict, Optional, cast
 
 from zenml.logger import get_logger
+from zenml.pipelines import Schedule
 
 logger = get_logger(__name__)
 RUN_NAME_OPTION_KEY = "run_name"
+SCHEDULE_OPTION_KEY = "schedule"
 
 
 class RuntimeConfiguration(Dict[str, Any]):
@@ -31,18 +33,29 @@ class RuntimeConfiguration(Dict[str, Any]):
     """
 
     def __init__(
-        self, *, run_name: Optional[str] = None, **runtime_options: Any
+        self,
+        *,
+        run_name: Optional[str] = None,
+        schedule: Optional[Schedule] = None,
+        **runtime_options: Any
     ):
         """Initializes a RuntimeConfiguration object.
 
         Args:
             run_name: Optional name of the pipeline run.
+            schedule: Optional schedule of the pipeline run.
             **runtime_options: Additional runtime options.
         """
         runtime_options[RUN_NAME_OPTION_KEY] = run_name
+        runtime_options[SCHEDULE_OPTION_KEY] = schedule
         super().__init__(runtime_options)
 
     @property
     def run_name(self) -> Optional[str]:
         """Name of the pipeline run."""
         return cast(Optional[str], self[RUN_NAME_OPTION_KEY])
+
+    @property
+    def schedule(self) -> Optional[Schedule]:
+        """Schedule of the pipeline run."""
+        return cast(Optional[Schedule], self[SCHEDULE_OPTION_KEY])
