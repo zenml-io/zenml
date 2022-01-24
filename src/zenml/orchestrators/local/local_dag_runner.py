@@ -33,6 +33,8 @@ by Google at: https://github.com/tensorflow/tfx/blob/master/tfx/orchestration
 /local/local_dag_runner.py"""
 
 
+from typing import Optional
+
 import tfx.orchestration.pipeline as tfx_pipeline
 from tfx.dsl.compiler import compiler
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
@@ -48,6 +50,7 @@ from tfx.orchestration.portable import (
 from zenml.logger import get_logger
 from zenml.orchestrators.utils import execute_step
 from zenml.repository import Repository
+from zenml.runtime_configuration import RuntimeConfiguration
 
 logger = get_logger(__name__)
 
@@ -58,12 +61,16 @@ class LocalDagRunner(tfx_runner.TfxRunner):
     def __init__(self) -> None:
         """Initializes LocalDagRunner as a TFX orchestrator."""
 
-    def run(self, pipeline: tfx_pipeline.Pipeline, run_name: str = "") -> None:
+    def run(
+        self,
+        pipeline: tfx_pipeline.Pipeline,
+        runtime_configuration: Optional[RuntimeConfiguration] = None,
+    ) -> None:
         """Runs given logical pipeline locally.
 
         Args:
           pipeline: Logical pipeline containing pipeline args and components.
-          run_name: Name of the pipeline run.
+          runtime_configuration: Runtime configuration of the pipeline run.
         """
         for component in pipeline.components:
             if isinstance(component, base_component.BaseComponent):
@@ -78,7 +85,7 @@ class LocalDagRunner(tfx_runner.TfxRunner):
         runtime_parameter_utils.substitute_runtime_parameter(
             pipeline,
             {
-                PIPELINE_RUN_ID_PARAMETER_NAME: run_name,
+                PIPELINE_RUN_ID_PARAMETER_NAME: runtime_configuration.run_name,
             },
         )
 
