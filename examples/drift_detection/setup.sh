@@ -8,6 +8,6 @@ pre_run () {
 }
 
 pre_run_forced () {
-  zenml integration install evidently
+  zenml integration install evidently -f
   zenml integration install sklearn -f
 }
