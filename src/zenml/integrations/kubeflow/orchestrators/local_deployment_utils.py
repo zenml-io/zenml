@@ -145,6 +145,37 @@ def kubeflow_pipelines_ready(kubernetes_context: str) -> bool:
         return False
 
 
+def wait_until_kubeflow_pipelines_ready(kubernetes_context: str) -> None:
+    """Waits until all Kubeflow Pipelines pods are ready.
+
+    Args:
+        kubernetes_context: The kubernetes context in which the pods
+            should be checked.
+    """
+    logger.info(
+        "Waiting for all Kubeflow Pipelines pods to be ready (this might "
+        "take a few minutes)."
+    )
+    while True:
+        logger.info("Current pod status:")
+        subprocess.check_call(
+            [
+                "kubectl",
+                "--context",
+                kubernetes_context,
+                "--namespace",
+                "kubeflow",
+                "get",
+                "pods",
+            ]
+        )
+        if kubeflow_pipelines_ready(kubernetes_context=kubernetes_context):
+            break
+
+        logger.info("One or more pods not ready yet, waiting for 30 seconds...")
+        time.sleep(30)
+
+
 def deploy_kubeflow_pipelines(kubernetes_context: str) -> None:
     """Deploys Kubeflow Pipelines.
 
@@ -186,29 +217,7 @@ def deploy_kubeflow_pipelines(kubernetes_context: str) -> None:
         ]
     )
 
-    logger.info(
-        "Waiting for all Kubeflow Pipelines pods to be ready (this might "
-        "take a few minutes)."
-    )
-    while True:
-        logger.info("Current pod status:")
-        subprocess.check_call(
-            [
-                "kubectl",
-                "--context",
-                kubernetes_context,
-                "--namespace",
-                "kubeflow",
-                "get",
-                "pods",
-            ]
-        )
-        if kubeflow_pipelines_ready(kubernetes_context=kubernetes_context):
-            break
-
-        logger.info("One or more pods not ready yet, waiting for 30 seconds...")
-        time.sleep(30)
-
+    wait_until_kubeflow_pipelines_ready(kubernetes_context=kubernetes_context)
     logger.info("Finished Kubeflow Pipelines setup.")
 
 

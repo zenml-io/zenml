@@ -390,6 +390,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
             cluster_name=self._k3d_cluster_name
         )
 
+        kubernetes_context = f"k3d-{self._k3d_cluster_name}"
+        local_deployment_utils.wait_until_kubeflow_pipelines_ready(
+            kubernetes_context=kubernetes_context
+        )
         local_deployment_utils.start_kfp_ui_daemon(
             pid_file_path=self._pid_file_path,
             log_file_path=self.log_file,
