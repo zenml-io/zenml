@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The airflow integration enables the use of airflow as pipeline orchestrator.
+The Airflow integration enables the use of Airflow as a pipeline orchestrator.
 """
 
 from zenml.integrations.airflow.orchestrators.airflow_orchestrator import (  # noqa
