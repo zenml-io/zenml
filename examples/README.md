@@ -13,6 +13,7 @@ or visit the link directly:
 - **caching**: Using caching to skip data-intensive tasks and save costs.
 - **class_based_api**: All the code for the class-based API guide found in the
   [docs](https://docs.zenml.io/v/docs/guides/class-based-api).
+- **custom_materializer**: Create a custom materializer to control data flowing between steps.
 - **dag_visualizer**: Visualizing a pipeline.
 - **drift_detection**: Detect drift with our Evidently integration
 - **functional_api**: All the code for the functional API guide found in the
