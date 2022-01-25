@@ -53,7 +53,7 @@ following four parts:
 
 ```bash
 # Make sure to create the local registry on port 5000 for it to work 
-zenml container-registry register local_registry --uri=localhost:5000 --type=default
+zenml container-registry register local_registry --type=default --uri=localhost:5000 
 zenml orchestrator register kubeflow_orchestrator --type=kubeflow
 zenml stack register local_kubeflow_stack \
     -m local_metadata_store \
