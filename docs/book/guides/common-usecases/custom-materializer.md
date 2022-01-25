@@ -152,7 +152,7 @@ class MyMaterializer(BaseMaterializer):
             f.write(my_obj.name)
 ```
 
-Pro-tip: Use the ZenML `fileio` handle to ensure your materialization logic works across artifact stores (local and 
+Pro-tip: Use the ZenML `fileio` handler to ensure your materialization logic works across artifact stores (local and 
 remote like S3 buckets).
 
 Then edit the pipeline as follows:
