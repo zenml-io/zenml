@@ -26,9 +26,9 @@ from typing import (
     Type,
 )
 
+from zenml.config.global_config import GlobalConfig
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
-from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.utils import string_utils
@@ -147,7 +147,7 @@ class Stack:
 
         artifact_store_uuid = uuid.uuid4()
         artifact_store_path = os.path.join(
-            get_global_config_directory(),
+            GlobalConfig.config_directory(),
             "local_stores",
             str(artifact_store_uuid),
         )
@@ -208,7 +208,7 @@ class Stack:
         """The container registry of the stack."""
         return self._container_registry
 
-    # TODO [LOW]: Implement CLI method to generate configuration file from a
+    # TODO [ENG-371]: Implement CLI method to generate configuration file from a
     #  stack's available runtime options
     @property
     def runtime_options(self) -> Dict[str, Any]:
@@ -276,7 +276,7 @@ class Stack:
         Raises:
              StackValidationError: If the stack configuration is not valid.
         """
-        # TODO [HIGH]: Differentiate between orchestrators running a pipeline
+        # TODO [ENG-372]: Differentiate between orchestrators running a pipeline
         #  locally and remotely (potentially using subclasses or an
         #  `orchestrator.mode` property?) and make sure all components support
         #  either local/remote execution
@@ -338,7 +338,7 @@ class Stack:
 
         return return_value
 
-    # TODO [MEDIUM]: Include provisioning status in CLI `zenml stack describe`
+    # TODO [ENG-373]: Include provisioning status in CLI `zenml stack describe`
     #  and `zenml stack-component describe` commands
     @property
     def is_provisioned(self) -> bool:

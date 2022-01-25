@@ -41,7 +41,8 @@ from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.steps import BaseStep
-from zenml.utils import analytics_utils, yaml_utils
+from zenml.utils import yaml_utils
+from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
@@ -63,7 +64,7 @@ class BasePipelineMeta(type):
         cls.STEP_SPEC = {}
 
         connect_spec = inspect.getfullargspec(
-            getattr(cls, PIPELINE_INNER_FUNC_NAME)
+            inspect.unwrap(getattr(cls, PIPELINE_INNER_FUNC_NAME))
         )
         connect_args = connect_spec.args
 
@@ -238,7 +239,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         """
         raise PipelineInterfaceError("Cannot set steps manually!")
 
-    # TODO [HIGH]: Enable specifying runtime configuration options either using
+    # TODO [ENG-376]: Enable specifying runtime configuration options either using
     #  **kwargs here or by passing a `RuntimeConfiguration` object or a
     #  path to a config file.
     def run(self, run_name: Optional[str] = None) -> Any:
@@ -277,8 +278,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
         stack = Repository().active_stack
 
-        analytics_utils.track_event(
-            event=analytics_utils.RUN_PIPELINE,
+        track_event(
+            event=AnalyticsEvent.RUN_PIPELINE,
             metadata={
                 "total_steps": len(self.steps),
             },

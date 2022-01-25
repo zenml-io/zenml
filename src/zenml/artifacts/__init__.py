@@ -16,14 +16,12 @@ Artifacts are the data that power your experimentation and model training. It is
 actually steps that produce artifacts, which are then stored in the artifact
 store. Artifacts are written in the signature of a step like so:
 
-.. code:: python
-
-   // Some code
+```python
     def my_step(first_artifact: int, second_artifact: torch.nn.Module -> int:
         # first_artifact is an integer
         # second_artifact is a torch.nn.Module
         return 1
-
+```
 Artifacts can be serialized and deserialized (i.e. written and read from the
 Artifact Store) in various ways like ``TFRecords`` or saved model
 pickles, depending on what the step produces.The serialization and

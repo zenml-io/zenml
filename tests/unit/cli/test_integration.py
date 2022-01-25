@@ -65,15 +65,21 @@ def test_integration_get_requirements_all() -> None:
 
 @pytest.mark.parametrize("not_an_integration", NOT_AN_INTEGRATION)
 def test_integration_install_inexistent_integration(
-    not_an_integration: str,
+    not_an_integration: str, mocker: MockFixture
 ) -> None:
     """Tests that the install command behaves as expected when supplied with
     no specific integration. This should lead to all packages for all
     integrations to be installed"""
     runner = CliRunner()
-
+    mock_install_package = mocker.patch.object(
+        sys.modules["zenml.cli.integration"],
+        "install_package",
+        return_value=None,
+    )
     result = runner.invoke(integration, ["install", not_an_integration])
-    assert result.exit_code == 1
+
+    assert result.exit_code == 0
+    mock_install_package.assert_not_called()
 
 
 @pytest.mark.parametrize("integration_name", INTEGRATIONS)
@@ -83,14 +89,40 @@ def test_integration_install_specific_integration(
     """Tests that the install command behaves as expected when supplied with
     a specific integration"""
     runner = CliRunner()
-    mocker.patch.object(
+
+    mock_install_package = mocker.patch.object(
         sys.modules["zenml.cli.integration"],
         "install_package",
         return_value=None,
     )
+    mocker.patch(
+        "zenml.integrations.registry.IntegrationRegistry.is_installed",
+        return_value=False,
+    )
 
     result = runner.invoke(integration, ["install", "-f", integration_name])
     assert result.exit_code == 0
+    mock_install_package.assert_called()
+
+
+def test_integration_install_multiple_integrations(mocker: MockFixture) -> None:
+    """Tests that the install command behaves as expected when supplied with
+    multiple integration"""
+    runner = CliRunner()
+
+    mock_install_package = mocker.patch.object(
+        sys.modules["zenml.cli.integration"],
+        "install_package",
+        return_value=None,
+    )
+    mocker.patch(
+        "zenml.integrations.registry.IntegrationRegistry.is_installed",
+        return_value=False,
+    )
+
+    result = runner.invoke(integration, ["install", "-f", *INTEGRATIONS])
+    assert result.exit_code == 0
+    mock_install_package.assert_called()
 
 
 def test_integration_install_all(mocker: MockFixture) -> None:
@@ -98,27 +130,37 @@ def test_integration_install_all(mocker: MockFixture) -> None:
     no specific integration. This should lead to all packages for all
     integrations to be installed"""
     runner = CliRunner()
-    mocker.patch.object(
+    mock_install_package = mocker.patch.object(
         sys.modules["zenml.cli.integration"],
         "install_package",
         return_value=None,
     )
+    mocker.patch(
+        "zenml.integrations.registry.IntegrationRegistry.is_installed",
+        return_value=False,
+    )
 
-    result = runner.invoke(integration, ["install"])
+    result = runner.invoke(integration, ["install", "-f"])
     assert result.exit_code == 0
+    mock_install_package.assert_called()
 
 
 @pytest.mark.parametrize("not_an_integration", NOT_AN_INTEGRATION)
 def test_integration_uninstall_inexistent_integration(
-    not_an_integration: str,
+    not_an_integration: str, mocker: MockFixture
 ) -> None:
     """Tests that the install command behaves as expected when supplied with
     no specific integration. This should lead to all packages for all
     integrations to be installed"""
     runner = CliRunner()
-
+    mock_uninstall_package = mocker.patch.object(
+        sys.modules["zenml.cli.integration"],
+        "uninstall_package",
+        return_value=None,
+    )
     result = runner.invoke(integration, ["uninstall", not_an_integration])
-    assert result.exit_code == 1
+    assert result.exit_code == 0
+    mock_uninstall_package.assert_not_called()
 
 
 @pytest.mark.parametrize("integration_name", INTEGRATIONS)
@@ -128,14 +170,19 @@ def test_integration_uninstall_specific_integration(
     """Tests that the uninstall command behaves as expected when supplied with
     a specific integration"""
     runner = CliRunner()
-    mocker.patch.object(
+    mock_uninstall_package = mocker.patch.object(
         sys.modules["zenml.cli.integration"],
         "uninstall_package",
         return_value=None,
     )
+    mocker.patch(
+        "zenml.integrations.registry.IntegrationRegistry.is_installed",
+        return_value=True,
+    )
 
     result = runner.invoke(integration, ["uninstall", "-f", integration_name])
     assert result.exit_code == 0
+    mock_uninstall_package.assert_called()
 
 
 def test_integration_uninstall_all(mocker: MockFixture) -> None:
@@ -143,11 +190,16 @@ def test_integration_uninstall_all(mocker: MockFixture) -> None:
     no specific integration. This should lead to all packages for all
     integrations to be uninstalled"""
     runner = CliRunner()
-    mocker.patch.object(
+    mock_uninstall_package = mocker.patch.object(
         sys.modules["zenml.cli.integration"],
         "uninstall_package",
         return_value=None,
     )
+    mocker.patch(
+        "zenml.integrations.registry.IntegrationRegistry.is_installed",
+        return_value=True,
+    )
 
-    result = runner.invoke(integration, ["uninstall"])
+    result = runner.invoke(integration, ["uninstall", "-f"])
     assert result.exit_code == 0
+    mock_uninstall_package.assert_called()

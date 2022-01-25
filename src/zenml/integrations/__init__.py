@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -32,3 +32,4 @@ from zenml.integrations.pytorch_lightning import (  # noqa
 )
 from zenml.integrations.sklearn import SklearnIntegration  # noqa
 from zenml.integrations.tensorflow import TensorflowIntegration  # noqa
+from zenml.integrations.whylogs import WhylogsIntegration  # noqa

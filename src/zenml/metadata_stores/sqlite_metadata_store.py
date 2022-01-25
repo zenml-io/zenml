@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import Union
 
 from ml_metadata.proto import metadata_store_pb2
 from pydantic import validator
@@ -33,7 +34,12 @@ class SQLiteMetadataStore(BaseMetadataStore):
         """The metadata store flavor."""
         return MetadataStoreFlavor.SQLITE
 
-    def get_tfx_metadata_config(self) -> metadata_store_pb2.ConnectionConfig:
+    def get_tfx_metadata_config(
+        self,
+    ) -> Union[
+        metadata_store_pb2.ConnectionConfig,
+        metadata_store_pb2.MetadataStoreClientConfig,
+    ]:
         """Return tfx metadata config for sqlite metadata store."""
         return metadata.sqlite_metadata_connection_config(self.uri)
 

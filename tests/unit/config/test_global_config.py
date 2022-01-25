@@ -37,16 +37,21 @@ def test_global_config_user_id_is_immutable():
         GlobalConfig().user_id = uuid4()
 
 
-def test_global_config_returns_value_from_environment_variable():
+def test_global_config_returns_value_from_environment_variable(mocker):
     """Tests that global config attributes can be overwritten by environment
     variables."""
+    if fileio.file_exists(GlobalConfig.config_file()):
+        fileio.remove(GlobalConfig.config_file())
+
     config = GlobalConfig()
 
     # delete the environment variable that is set at the beginning of all tests
-    del os.environ["ZENML_ANALYTICS_OPT_IN"]
+    mocker.patch.dict(os.environ, values={}, clear=True)
     assert config.analytics_opt_in is True
 
     # make sure the environment variable is set, then the global config should
     # return the corresponding value
-    os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
+    mocker.patch.dict(
+        os.environ, values={"ZENML_ANALYTICS_OPT_IN": "false"}, clear=True
+    )
     assert config.analytics_opt_in is False

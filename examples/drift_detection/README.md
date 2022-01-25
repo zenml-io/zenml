@@ -37,6 +37,7 @@ from zenml.integrations.evidently.steps import (
     EvidentlyProfileConfig,
     EvidentlyProfileStep,
 )
+from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
 
 # ... data loader and separate steps to get our full and partial dataframes
 
@@ -137,14 +138,4 @@ In order to clean up, delete the remaining ZenML references.
 
 ```shell
 rm -rf zenml_examples
-```
-
-## SuperQuick `drift_detection` run
-
-If you're really in a hurry and you want just to see this example pipeline run,
-without wanting to fiddle around with all the individual installation and
-configuration steps, just run the following:
-
-```shell
-zenml example run drift_detection
 ```

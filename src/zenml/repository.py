@@ -33,16 +33,7 @@ from zenml.logger import get_logger
 from zenml.post_execution import PipelineView
 from zenml.stack import Stack, StackComponent
 from zenml.utils import yaml_utils
-from zenml.utils.analytics_utils import (
-    GET_PIPELINE,
-    GET_PIPELINES,
-    INITIALIZE_REPO,
-    REGISTERED_STACK,
-    REGISTERED_STACK_COMPONENT,
-    SET_STACK,
-    track,
-    track_event,
-)
+from zenml.utils.analytics_utils import AnalyticsEvent, track, track_event
 
 logger = get_logger(__name__)
 LOCAL_CONFIG_DIRECTORY_NAME = ".zen"
@@ -135,7 +126,7 @@ class Repository:
             self.__config = RepositoryConfiguration.empty_configuration()
 
         if self.version != zenml.__version__:
-            # TODO [HIGH]: Create compatibility table so we don't have to
+            # TODO [ENG-366]: Create compatibility table so we don't have to
             #  warn about mismatching repository and ZenML version each time
             logger.warning(
                 "This ZenML repository was created with a different version "
@@ -163,7 +154,7 @@ class Repository:
         yaml_utils.write_yaml(self._config_path(), config_dict)
 
     @staticmethod
-    @track(event=INITIALIZE_REPO)
+    @track(event=AnalyticsEvent.INITIALIZE_REPO)
     def initialize(root: Path = Path.cwd()) -> None:
         """Initializes a new ZenML repository at the given path.
 
@@ -259,13 +250,13 @@ class Repository:
             )
         return self.__config.active_stack_name
 
-    # TODO [MEDIUM]: Should we replace the stack name by the actual stack
+    # TODO [ENG-367]: Should we replace the stack name by the actual stack
     #  object? It would be more consistent with the rest of the API but
     #  requires some additional care (checking if the stack + components are
     #  actually registered in this repository). Downside: We would need to
     #  load all the integrations to create the stack object which makes the CLI
     #  command to set the active stack much slower.
-    @track(event=SET_STACK)
+    @track(event=AnalyticsEvent.SET_STACK)
     def activate_stack(self, name: str) -> None:
         """Activates the stack for the given name.
 
@@ -316,7 +307,7 @@ class Repository:
 
         return Stack.from_components(name=name, components=stack_components)
 
-    @track(event=REGISTERED_STACK)
+    @track(event=AnalyticsEvent.REGISTERED_STACK)
     def register_stack(self, stack: Stack) -> None:
         """Registers a stack and it's components.
 
@@ -477,7 +468,10 @@ class Repository:
             "type": component.type.value,
             "flavor": component.flavor.value,
         }
-        track_event(REGISTERED_STACK_COMPONENT, metadata=analytics_metadata)
+        track_event(
+            AnalyticsEvent.REGISTERED_STACK_COMPONENT,
+            metadata=analytics_metadata,
+        )
 
     def deregister_stack_component(
         self, component_type: StackComponentType, name: str
@@ -521,8 +515,8 @@ class Repository:
         if fileio.file_exists(component_config_path):
             fileio.remove(component_config_path)
 
-    # TODO [MEDIUM]: Discuss whether we want to unify these two methods.
-    @track(event=GET_PIPELINES)
+    # TODO [ENG-368]: Discuss whether we want to unify these two methods.
+    @track(event=AnalyticsEvent.GET_PIPELINES)
     def get_pipelines(
         self, stack_name: Optional[str] = None
     ) -> List[PipelineView]:
@@ -543,7 +537,7 @@ class Repository:
         metadata_store = self.get_stack(stack_name).metadata_store
         return metadata_store.get_pipelines()
 
-    @track(event=GET_PIPELINE)
+    @track(event=AnalyticsEvent.GET_PIPELINE)
     def get_pipeline(
         self, pipeline_name: str, stack_name: Optional[str] = None
     ) -> Optional[PipelineView]:

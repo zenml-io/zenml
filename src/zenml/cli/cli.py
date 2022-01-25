@@ -12,12 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-# !/usr/bin/env python
-# -*- coding: utf-8 -*-
-"""
-.. currentmodule:: ce_cli.cli
-.. moduleauthor:: ZenML GmbH <support@zenml.io>
-"""
 
 import click
 
