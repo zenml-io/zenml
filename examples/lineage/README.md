@@ -30,7 +30,7 @@ visualize_lineage()
 
 It produces the following visualization:
 
-![Lineage Diagram](../../docs/book/assets/zenml-pipeline-run-lineage-dash.png)
+![Lineage Diagram](assets/zenml-pipeline-run-lineage-dash.png)
 
 ## Run it locally
 
