@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import datetime
 import os
 from typing import TYPE_CHECKING, Any, Optional, Set
 
@@ -211,11 +212,21 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     "You can see all recurring runs under the '%s' experiment.'",
                     pipeline_name,
                 )
+                start_time = runtime_configuration.start_time.astimezone(
+                    datetime.timezone.utc
+                )
+                end_time = runtime_configuration.end_time.astimezone(
+                    datetime.timezone.utc
+                )
                 result = client.create_recurring_run(
                     experiment_id=experiment.id,
                     job_name=runtime_configuration.run_name,
                     pipeline_package_path=pipeline_file_path,
                     enable_caching=enable_cache,
+                    start_time=start_time.isoformat(),
+                    end_time=end_time.isoformat(),
+                    interval_second=runtime_configuration.interval_second,
+                    no_catchup=not runtime_configuration.catchup,
                 )
                 logger.info(
                     "Started recurring run with ID '%s'.", result.run_id
