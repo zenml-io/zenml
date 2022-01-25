@@ -1,5 +1,7 @@
 # Creating a custom materializer
 
+All code in this guide can be found [here](https://github.com/zenml-io/zenml/tree/main/examples/custom_materializer).
+
 ## What is a materializer
 
 The precise way that data passes between the steps is dictated by `materializers`. The data that flows through steps 

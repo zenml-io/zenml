@@ -1,5 +1,7 @@
 # Fetching historic runs
 
+All code in this guide can be found [here](https://github.com/zenml-io/zenml/tree/main/examples/fetch_historical_runs).
+
 ## The need to fetch historic runs
 
 ## Utilizing `StepContext`
