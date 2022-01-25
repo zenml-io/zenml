@@ -32,7 +32,7 @@ from zenml.console import console
 from zenml.constants import GIT_REPO_URL
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.utils.analytics_utils import RUN_EXAMPLE, track_event
+from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 logger = get_logger(__name__)
 
@@ -144,7 +144,7 @@ class LocalExample:
             )
 
         # Telemetry
-        track_event(RUN_EXAMPLE, {"name": self.name})
+        track_event(AnalyticsEvent.RUN_EXAMPLE, {"example_name": self.name})
 
 
 class Example:
@@ -568,6 +568,9 @@ def pull(
             fileio.create_dir_if_not_exists(destination_dir)
             git_examples_handler.copy_example(example, destination_dir)
             declare(f"Example pulled in directory: {destination_dir}")
+            track_event(
+                AnalyticsEvent.PULL_EXAMPLE, {"example_name": example.name}
+            )
 
 
 @example.command(
@@ -628,7 +631,7 @@ def run(
         local_example = LocalExample(example_dir, example_name)
 
         if not local_example.is_present():
-            ctx.forward(pull)
+            ctx.invoke(pull, example_name=example_name, path=path, force=force)
 
         example_runner = (
             [] if shell_executable is None else [shell_executable]

@@ -367,7 +367,7 @@ class _FunctionExecutor(BaseExecutor):
         function_params = {}
 
         # First, we parse the inputs, i.e., params and input artifacts.
-        spec = inspect.getfullargspec(self._FUNCTION)
+        spec = inspect.getfullargspec(inspect.unwrap(self._FUNCTION))
         args = spec.args
 
         if args and args[0] == "self":
@@ -393,7 +393,7 @@ class _FunctionExecutor(BaseExecutor):
                 function_params[arg] = config_object
             elif issubclass(arg_type, StepContext):
                 output_artifacts = {k: v[0] for k, v in output_dict.items()}
-                context = StepContext(
+                context = arg_type(
                     step_name=getattr(self, PARAM_STEP_NAME),
                     output_materializers=self.materializers or {},
                     output_artifacts=output_artifacts,
@@ -406,7 +406,7 @@ class _FunctionExecutor(BaseExecutor):
                 )
 
         return_values = self._FUNCTION(**function_params)
-        spec = inspect.getfullargspec(self._FUNCTION)
+        spec = inspect.getfullargspec(inspect.unwrap(self._FUNCTION))
         return_type: Type[Any] = spec.annotations.get("return", None)
         if return_type is not None:
             if isinstance(return_type, Output):

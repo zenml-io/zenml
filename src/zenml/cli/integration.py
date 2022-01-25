@@ -12,10 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Optional
+from typing import Optional, Tuple
 
 import click
-from rich.progress import track
 
 from zenml.cli.cli import cli
 from zenml.cli.utils import (
@@ -31,6 +30,7 @@ from zenml.cli.utils import (
 )
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
+from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 logger = get_logger(__name__)
 
@@ -47,11 +47,27 @@ def list_integrations() -> None:
         list(integration_registry.integrations.items())
     )
     print_table(formatted_table)
+    # title("Integrations:\n")
 
-    warning(
-        "\n" + "To install the dependencies of a specific integration, type: "
-    )
-    warning("zenml integration install EXAMPLE_NAME")
+    # table_rows = []
+    # for name, integration_impl in integration_registry.integrations.items():
+    #     is_installed = integration_impl.check_installation()
+    #     table_rows.append(
+    #         {
+    #             "INSTALLED": "*" if is_installed else "",
+    #             "INTEGRATION": name,
+    #             "PYTHON REQUIREMENTS": integration_impl.REQUIREMENTS,
+    #             "SYSTEM REQUIREMENTS": list(
+    #                 integration_impl.SYSTEM_REQUIREMENTS.keys()
+    #             ),
+    #         }
+    #     )
+    # print_table(table_rows)
+
+    # warning(
+    #     "\n" + "To install the dependencies of a specific integration, type: "
+    # )
+    # warning("zenml integration install EXAMPLE_NAME")
 
 
 @integration.command(
@@ -84,7 +100,7 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
 @integration.command(
     help="Install the required packages for the integration of choice."
 )
-@click.argument("integration_name", required=False, default=None)
+@click.argument("integrations", nargs=-1, required=False)
 @click.option(
     "--force",
     "-f",
@@ -92,49 +108,53 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
     help="Force the installation of the required packages. This will skip the "
     "confirmation step and reinstall existing packages as well",
 )
-def install(
-    integration_name: Optional[str] = None, force: bool = False
-) -> None:  # sourcery skip: merge-duplicate-blocks, merge-nested-ifs
+def install(integrations: Tuple[str], force: bool = False) -> None:
     """Installs the required packages for a given integration. If no integration
     is specified all required packages for all integrations are installed
     using pip"""
-    try:
-        if not integration_registry.is_installed(integration_name) or force:
-            requirements = integration_registry.select_integration_requirements(
-                integration_name
-            )
-        else:
-            warning(
-                "All required packages are already installed. "
-                "Nothing will be done."
-            )
-            requirements = []
-    except KeyError as e:
-        error(str(e))
-    else:
-        if requirements:
-            if force:
-                for n in track(
-                    range(len(requirements)),
-                    description=f'Installing all required packages for {integration_name or "all integrations"}\n',
-                ):
-                    install_package(requirements[n])
-            elif confirmation(
-                "Are you sure you want to install the following "
-                "packages to the current environment?\n"
-                f"{requirements}"
-            ):
-                for n in track(
-                    range(len(requirements)),
-                    description=f'Installing all required packages for {integration_name or "all integrations"}\n',
-                ):
-                    install_package(requirements[n])
+    if not integrations:
+        # no integrations specified, use all registered integrations
+        integrations = tuple(integration_registry.integrations.keys())
+
+    requirements = []
+    integrations_to_install = []
+    for integration_name in integrations:
+        try:
+            if force or not integration_registry.is_installed(integration_name):
+                requirements += (
+                    integration_registry.select_integration_requirements(
+                        integration_name
+                    )
+                )
+                integrations_to_install.append(integration_name)
+            else:
+                declare(
+                    f"All required packages for integration "
+                    f"'{integration_name}' are already installed."
+                )
+        except KeyError:
+            warning(f"Unable to find integration '{integration_name}'.")
+
+    if requirements:
+        if force or confirmation(
+            "Are you sure you want to install the following "
+            "packages to the current environment?\n"
+            f"{requirements}"
+        ):
+            for requirement in requirements:
+                install_package(requirement)
+
+            for integration_name in integrations_to_install:
+                track_event(
+                    AnalyticsEvent.INSTALL_INTEGRATION,
+                    {"integration_name": integration_name},
+                )
 
 
 @integration.command(
     help="Uninstall the required packages for the integration of choice."
 )
-@click.argument("integration_name", required=False, default=None)
+@click.argument("integrations", nargs=-1, required=False)
 @click.option(
     "--force",
     "-f",
@@ -142,47 +162,36 @@ def install(
     help="Force the uninstallation of the required packages. This will skip "
     "the confirmation step",
 )
-def uninstall(
-    integration_name: Optional[str] = None, force: bool = False
-) -> None:
+def uninstall(integrations: Tuple[str], force: bool = False) -> None:
     """Installs the required packages for a given integration. If no integration
     is specified all required packages for all integrations are installed
     using pip"""
-    try:
-        if integration_registry.is_installed(integration_name):
-            requirements = integration_registry.select_integration_requirements(
-                integration_name
-            )
-        else:
-            warning(
-                "The specified requirements already not installed. "
-                "Nothing will be done."
-            )
-            requirements = []
-    except KeyError as e:
-        error(str(e))
-    else:
-        if requirements:
-            if force:
-                declare(
-                    f"Installing all required packages for "
-                    f"{integration_name if integration_name else 'all integrations'}"
+    if not integrations:
+        # no integrations specified, use all registered integrations
+        integrations = tuple(integration_registry.integrations.keys())
+
+    requirements = []
+    for integration_name in integrations:
+        try:
+            if integration_registry.is_installed(integration_name):
+                requirements += (
+                    integration_registry.select_integration_requirements(
+                        integration_name
+                    )
                 )
-                for n in track(
-                    range(len(requirements)),
-                    description=f'Uninstalling all required packages for {integration_name or "all integrations"}',
-                ):
-                    uninstall_package(requirements[n])
-                # for requirement in requirements:
-                #     uninstall_package(requirement)
             else:
-                if confirmation(
-                    "Are you sure you want to uninstall the following "
-                    "packages from the current environment?\n"
-                    f"{requirements}"
-                ):
-                    for n in track(
-                        range(len(requirements)),
-                        description=f'Uninstalling all required packages for {integration_name or "all integrations"}',
-                    ):
-                        uninstall_package(requirements[n])
+                warning(
+                    f"Requirements for integration '{integration_name}' "
+                    f"already not installed."
+                )
+        except KeyError:
+            warning(f"Unable to find integration '{integration_name}'.")
+
+    if requirements:
+        if force or confirmation(
+            "Are you sure you want to uninstall the following "
+            "packages from the current environment?\n"
+            f"{requirements}"
+        ):
+            for requirement in requirements:
+                uninstall_package(requirement)

@@ -106,27 +106,24 @@ def empty_step():
 
 
 @pytest.fixture
-def multiple_empty_steps():
-    """Pytest fixture that returns multiple unique empty step functions."""
+def generate_empty_steps():
+    """Pytest fixture that returns a function that generates multiple empty
+    steps."""
 
-    def _multiple_empty_steps():
-        @step
-        def _empty_step_1():
-            pass
+    def _generate_empty_steps(count: int):
+        output = []
 
-        @step
-        def _empty_step_2():
-            pass
+        for i in range(count):
 
-        @step
-        def _empty_step_3():
-            pass
+            @step(name=f"step_{i}")
+            def _step_function():
+                pass
 
-        output = [_empty_step_1, _empty_step_2, _empty_step_3]
+            output.append(_step_function)
 
         return output
 
-    return _multiple_empty_steps
+    return _generate_empty_steps
 
 
 @pytest.fixture

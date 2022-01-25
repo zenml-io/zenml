@@ -19,7 +19,6 @@ from typing import (
     Dict,
     NoReturn,
     Optional,
-    Set,
     Text,
     Tuple,
     Type,
@@ -41,7 +40,8 @@ from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.steps import BaseStep
-from zenml.utils import analytics_utils, yaml_utils
+from zenml.utils import yaml_utils
+from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
@@ -63,7 +63,7 @@ class BasePipelineMeta(type):
         cls.STEP_SPEC = {}
 
         connect_spec = inspect.getfullargspec(
-            getattr(cls, PIPELINE_INNER_FUNC_NAME)
+            inspect.unwrap(getattr(cls, PIPELINE_INNER_FUNC_NAME))
         )
         connect_args = connect_spec.args
 
@@ -134,10 +134,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
 
         combined_steps = {}
-        step_cls_args: Set[Type[BaseStep]] = set()
+        step_classes: Dict[Type[BaseStep], str] = {}
 
         for i, step in enumerate(steps):
             step_class = type(step)
+            key = input_step_keys[i]
 
             if not isinstance(step, BaseStep):
                 raise PipelineInterfaceError(
@@ -148,18 +149,18 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"a pipeline."
                 )
 
-            if step_class in step_cls_args:
+            if step_class in step_classes:
+                previous_key = step_classes[step_class]
                 raise PipelineInterfaceError(
-                    f"Step object (`{step_class}`) has been used twice. Step "
-                    f"objects should be unique for each argument."
+                    f"Found multiple step objects of the same class "
+                    f"(`{step_class}`) for arguments '{previous_key}' and "
+                    f"'{key}' in pipeline '{self.name}'. Only one step object "
+                    f"per class is allowed inside a ZenML pipeline."
                 )
 
-            key = input_step_keys[i]
             step.pipeline_parameter_name = key
             combined_steps[key] = step
-            step_cls_args.add(step_class)
-
-        step_cls_kwargs: Dict[Type[BaseStep], str] = {}
+            step_classes[step_class] = key
 
         for key, step in kw_steps.items():
             step_class = type(step)
@@ -182,23 +183,18 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"a pipeline."
                 )
 
-            if step_class in step_cls_kwargs:
-                prev_key = step_cls_kwargs[step_class]
+            if step_class in step_classes:
+                previous_key = step_classes[step_class]
                 raise PipelineInterfaceError(
-                    f"Same step object (`{step_class}`) passed for arguments "
-                    f"'{key}' and '{prev_key}'. Step objects should be "
-                    f"unique for each argument."
-                )
-
-            if step_class in step_cls_args:
-                raise PipelineInterfaceError(
-                    f"Step object (`{step_class}`) has been used twice. Step "
-                    f"objects should be unique for each argument."
+                    f"Found multiple step objects of the same class "
+                    f"(`{step_class}`) for arguments '{previous_key}' and "
+                    f"'{key}' in pipeline '{self.name}'. Only one step object "
+                    f"per class is allowed inside a ZenML pipeline."
                 )
 
             step.pipeline_parameter_name = key
             combined_steps[key] = step
-            step_cls_kwargs[step_class] = key
+            step_classes[step_class] = key
 
         # check if there are any missing or unexpected steps
         expected_steps = set(self.STEP_SPEC.keys())
@@ -277,8 +273,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
         stack = Repository().active_stack
 
-        analytics_utils.track_event(
-            event=analytics_utils.RUN_PIPELINE,
+        track_event(
+            event=AnalyticsEvent.RUN_PIPELINE,
             metadata={
                 "total_steps": len(self.steps),
             },

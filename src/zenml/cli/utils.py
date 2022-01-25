@@ -78,6 +78,9 @@ def error(text: str) -> None:
 
     Args:
       text: Input text string.
+
+    Raises:
+        click.ClickException: when called.
     """
     raise click.ClickException(message=click.style(text, fg="red", bold=True))
     # console.print(text, style="error")
