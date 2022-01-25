@@ -202,7 +202,8 @@ module = [
     "docker.*",
     "kfp.*",
     "kubernetes.*",
-    "urllib3.*"
+    "urllib3.*",
+    "kfp_server_api.*"
 ]
 ignore_missing_imports = true
 
