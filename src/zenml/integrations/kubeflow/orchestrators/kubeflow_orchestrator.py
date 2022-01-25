@@ -34,7 +34,6 @@ from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.orchestrators.utils import create_tfx_pipeline
 from zenml.repository import Repository
 from zenml.stack import StackValidator
 from zenml.stack.stack_component_class_registry import (
@@ -159,8 +158,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
         runner = KubeflowDagRunner(
             config=runner_config, output_path=pipeline_file_path
         )
-        tfx_pipeline = create_tfx_pipeline(pipeline, stack=stack)
-        runner.run(tfx_pipeline)
+
+        runner.run(pipeline=pipeline, stack=stack)
 
         self._upload_and_run_pipeline(
             pipeline_file_path=pipeline_file_path,
