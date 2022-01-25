@@ -58,7 +58,7 @@ def test_run_quickstart(examples_dir: Path):
     """Testing the functionality of the quickstart example
 
     Args:
-        Temporary folder containing all examples including the run_examples
+        examples_dir: Temporary folder containing all examples including the run_examples
         bash script.
     """
     local_example = LocalExample(examples_dir / QUICKSTART, name=QUICKSTART)
@@ -82,7 +82,7 @@ def test_run_not_so_quickstart(examples_dir: Path):
     """Testing the functionality of the not_so_quickstart example
 
     Args:
-        Temporary folder containing all examples including the run_examples
+        examples_dir: Temporary folder containing all examples including the run_examples
         bash script.
     """
     local_example = LocalExample(
@@ -108,7 +108,7 @@ def test_run_drift_detection(examples_dir: Path):
     """Testing the functionality of the drift_detection example
 
     Args:
-        Temporary folder containing all examples including the run_examples
+        examples_dir: Temporary folder containing all examples including the run_examples
         bash script.
     """
     local_example = LocalExample(
@@ -141,7 +141,7 @@ def test_run_caching(examples_dir: Path):
     """Testing the functionality of the caching example
 
     Args:
-        Temporary folder containing all examples including the run_examples
+        examples_dir: Temporary folder containing all examples including the run_examples
         bash script.
     """
     local_example = LocalExample(examples_dir / CACHING, name=CACHING)
@@ -174,7 +174,7 @@ def test_run_mlflow(examples_dir: Path):
     """Testing the functionality of the quickstart example
 
     Args:
-        Temporary folder containing all examples including the run_examples
+        examples_dir: Temporary folder containing all examples including the run_examples
         bash script.
     """
     local_example = LocalExample(examples_dir / MLFLOW, name=MLFLOW)
@@ -207,7 +207,7 @@ def test_whylogs_profiling(examples_dir: Path):
     """Testing the functionality of the whylogs example
 
     Args:
-        Temporary folder containing all examples including the run_examples
+        examples_dir: Temporary folder containing all examples including the run_examples
         bash script.
     """
     local_example = LocalExample(examples_dir / WHYLOGS, name=WHYLOGS)
@@ -245,7 +245,7 @@ def test_run_custom_materializer(examples_dir: Path):
     """Testing the functionality of the custom materializer example.
 
     Args:
-        Temporary folder containing all examples including the run_examples
+        examples_dir: Temporary folder containing all examples including the run_examples
         bash script.
     """
     local_example = LocalExample(
@@ -266,7 +266,7 @@ def test_run_fetch_historical_runs(examples_dir: Path):
     """Testing the functionality of the fetch_historical_runs example.
 
     Args:
-        Temporary folder containing all examples including the run_examples
+        examples_dir: Temporary folder containing all examples including the run_examples
         bash script.
     """
     local_example = LocalExample(
