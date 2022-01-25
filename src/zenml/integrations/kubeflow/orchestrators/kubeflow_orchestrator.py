@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any, Optional, Set
 
 import kfp
 import urllib3
+from kfp_server_api.exceptions import ApiException
 from kubernetes import config
 
 import zenml.io.utils
@@ -202,7 +203,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                         "A recurring run has already been created with this "
                         "pipeline. Creating new recurring run now.."
                     )
-                except Exception:
+                except (ValueError, ApiException):
                     experiment = client.create_experiment(pipeline_name)
                     logger.info(
                         "Creating a new recurring run for pipeline '%s'.. ",
@@ -224,9 +225,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     interval_second=schedule.interval_second,
                     no_catchup=not schedule.catchup,
                 )
-            #                logger.info(
-            #                    "Started recurring run with ID '%s'.", result.run_id
-            #                )
+
+                logger.info("Started recurring run with ID '%s'.", result.id)
             else:
                 logger.info(
                     "No schedule detected. Creating a one-off pipeline run.."
