@@ -25,21 +25,20 @@ class ZenMLBaseException(Exception):
     def __init__(
         self,
         message: Optional[str] = None,
-        url: str = "https://docs.zenml.io",
-        override_message: bool = False,
+        url: Optional[str] = None,
     ):
         """BaseException used to format messages displayed to the user.
 
         Args:
             message: Message with details of exception. This message
             will be appended with another message directing user to
-            `url` for more information. If message is None, then default
+            `url` for more information. If None, then default
             Exception behavior is used.
-            url: URL to point to in exception message.
-            override_message: If True, then no `url` message is added.
+            url: URL to point to in exception message. If None, then no url
+            is appended.
         """
         if message:
-            if not override_message:
+            if url:
                 message += f" For more information, visit {url}."
         super().__init__(message)
 
