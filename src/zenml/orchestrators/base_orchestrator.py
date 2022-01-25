@@ -41,7 +41,7 @@ class BaseOrchestrator(StackComponent, ABC):
         self,
         pipeline: "BasePipeline",
         stack: "Stack",
-        runtime_configuration: RuntimeConfiguration,
+        runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
         """Runs a pipeline.
 

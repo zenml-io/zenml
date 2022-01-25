@@ -41,7 +41,7 @@ class LocalOrchestrator(BaseOrchestrator):
         self,
         pipeline: "BasePipeline",
         stack: "Stack",
-        runtime_configuration: RuntimeConfiguration,
+        runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
         """Runs a pipeline locally."""
         tfx_pipeline = create_tfx_pipeline(pipeline, stack=stack)

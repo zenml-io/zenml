@@ -11,10 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Any, Dict, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 
 from zenml.logger import get_logger
-from zenml.pipelines import Schedule
+
+if TYPE_CHECKING:
+    from zenml.pipelines import Schedule
 
 logger = get_logger(__name__)
 RUN_NAME_OPTION_KEY = "run_name"
@@ -36,7 +38,7 @@ class RuntimeConfiguration(Dict[str, Any]):
         self,
         *,
         run_name: Optional[str] = None,
-        schedule: Optional[Schedule] = None,
+        schedule: Optional["Schedule"] = None,
         **runtime_options: Any
     ):
         """Initializes a RuntimeConfiguration object.
@@ -56,6 +58,8 @@ class RuntimeConfiguration(Dict[str, Any]):
         return cast(Optional[str], self[RUN_NAME_OPTION_KEY])
 
     @property
-    def schedule(self) -> Optional[Schedule]:
+    def schedule(self) -> Optional["Schedule"]:
         """Schedule of the pipeline run."""
+        from zenml.pipelines import Schedule
+
         return cast(Optional[Schedule], self[SCHEDULE_OPTION_KEY])
