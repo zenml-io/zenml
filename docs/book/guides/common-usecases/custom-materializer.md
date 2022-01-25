@@ -89,6 +89,8 @@ For example, let's say you a custom object called MyObject that flows between tw
 ```python
 from zenml.steps import step
 from zenml.pipelines import pipeline
+
+
 class MyObj:
     def __init__(self, name: str):
         self.name = name
