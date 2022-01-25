@@ -48,8 +48,8 @@ def example_runner(examples_dir):
     latter option is needed for windows compatibility.
     """
     return (
-               [environ[SHELL_EXECUTABLE]] if SHELL_EXECUTABLE in environ else []
-           ) + [str(examples_dir / EXAMPLES_RUN_SCRIPT)]
+        [environ[SHELL_EXECUTABLE]] if SHELL_EXECUTABLE in environ else []
+    ) + [str(examples_dir / EXAMPLES_RUN_SCRIPT)]
 
 
 def test_run_quickstart(examples_dir: Path):
@@ -208,7 +208,9 @@ def test_run_custom_materializer(examples_dir: Path):
         Temporary folder containing all examples including the run_examples
         bash script.
     """
-    local_example = LocalExample(examples_dir / CUSTOM_MATERIALIZER, name=CUSTOM_MATERIALIZER)
+    local_example = LocalExample(
+        examples_dir / CUSTOM_MATERIALIZER, name=CUSTOM_MATERIALIZER
+    )
     local_example.run_example(example_runner(examples_dir), force=True)
 
     # Verify the example run was successful
