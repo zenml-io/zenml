@@ -245,8 +245,8 @@ def test_run_custom_materializer(examples_dir: Path):
     """Testing the functionality of the custom materializer example.
 
     Args:
-        examples_dir: Temporary folder containing all examples including the run_examples
-        bash script.
+        examples_dir: Temporary folder containing all examples including the
+                      run_examples bash script.
     """
     local_example = LocalExample(
         examples_dir / CUSTOM_MATERIALIZER, name=CUSTOM_MATERIALIZER
@@ -266,8 +266,8 @@ def test_run_fetch_historical_runs(examples_dir: Path):
     """Testing the functionality of the fetch_historical_runs example.
 
     Args:
-        examples_dir: Temporary folder containing all examples including the run_examples
-        bash script.
+        examples_dir: Temporary folder containing all examples including the
+                      run_examples bash script.
     """
     local_example = LocalExample(
         examples_dir / FETCH_HISTORICAL_RUNS, name=FETCH_HISTORICAL_RUNS

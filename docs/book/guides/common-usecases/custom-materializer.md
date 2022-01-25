@@ -167,7 +167,7 @@ pipe(
 Please note that for multiple outputs a dictionary can be supplied of type `{OUTPUT_NAME: MATERIALIZER_CLASS}` to the 
 `with_return_materializers` function.
 
-Also, notice that `with_return_materializers` need only be called on step1, all downstream steps will use the same 
+Also, notice that `with_return_materializers` need only be called on `step1`, all downstream steps will use the same 
 materializer by default.
 
 This will yield the proper response as follows:
