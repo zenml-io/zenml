@@ -28,7 +28,7 @@ class ZenMLBaseException(Exception):
         url: str = "https://docs.zenml.io",
         override_message: bool = False,
     ):
-        """Aadssaddsa
+        """BaseException used to format messages displayed to the user.
 
         Args:
             message: Message with details of exception. This message
