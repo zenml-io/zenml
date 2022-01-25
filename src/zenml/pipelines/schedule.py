@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from datetime import datetime
+import datetime
 from typing import Optional
 
 from pydantic import BaseModel
@@ -35,8 +35,21 @@ class Schedule(BaseModel):
         for details of the cron expression format.
     """
 
-    start_time: datetime
-    end_time: Optional[datetime] = None
+    start_time: datetime.datetime
+    end_time: Optional[datetime.datetime] = None
     interval_second: int
     catchup: bool = False
     cron_expression: Optional[str] = None
+
+    @property
+    def utc_start_time(self) -> str:
+        """ISO-formatted string of the UTC start time."""
+        return self.start_time.astimezone(datetime.timezone.utc).isoformat()
+
+    @property
+    def utc_end_time(self) -> Optional[str]:
+        """Optional ISO-formatted string of the UTC end time."""
+        if not self.end_time:
+            return None
+
+        return self.end_time.astimezone(datetime.timezone.utc).isoformat()

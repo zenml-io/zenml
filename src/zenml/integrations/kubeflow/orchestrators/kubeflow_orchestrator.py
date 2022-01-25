@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import datetime
 import os
 from typing import TYPE_CHECKING, Any, Optional, Set
 
@@ -200,33 +199,30 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 try:
                     experiment = client.get_experiment(pipeline_name)
                     logger.info(
-                        "A recurring run has already been created with this pipeline. Creating new recurring run now.."
+                        "A recurring run has already been created with this "
+                        "pipeline. Creating new recurring run now.."
                     )
                 except ValueError:
                     experiment = client.create_experiment(pipeline_name)
                     logger.info(
-                        f"Creating a new recurring run for pipeline '%s'.. ",
+                        "Creating a new recurring run for pipeline '%s'.. ",
                         pipeline_name,
                     )
                 logger.info(
                     "You can see all recurring runs under the '%s' experiment.'",
                     pipeline_name,
                 )
-                start_time = runtime_configuration.start_time.astimezone(
-                    datetime.timezone.utc
-                )
-                end_time = runtime_configuration.end_time.astimezone(
-                    datetime.timezone.utc
-                )
+
+                schedule = runtime_configuration.schedule
                 result = client.create_recurring_run(
                     experiment_id=experiment.id,
                     job_name=runtime_configuration.run_name,
                     pipeline_package_path=pipeline_file_path,
                     enable_caching=enable_cache,
-                    start_time=start_time.isoformat(),
-                    end_time=end_time.isoformat(),
-                    interval_second=runtime_configuration.interval_second,
-                    no_catchup=not runtime_configuration.catchup,
+                    start_time=schedule.utc_start_time,
+                    end_time=schedule.utc_end_time,
+                    interval_second=schedule.interval_second,
+                    no_catchup=not schedule.catchup,
                 )
                 logger.info(
                     "Started recurring run with ID '%s'.", result.run_id
