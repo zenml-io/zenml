@@ -169,6 +169,7 @@ temp/*
 local_test/
 .zen/
 !cloudbuild.yaml
+!cloudbuild-develop.yaml
 docs/book/_build/
 zenml_examples/
 
