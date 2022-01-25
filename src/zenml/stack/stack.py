@@ -234,6 +234,7 @@ class Stack:
         return runtime_options
 
     def dict(self):
+        """Converts the stack into a dictionary."""
         component_dict = {
             component_type.value: component.json(sort_keys=True)
             for component_type, component in self.components.items()
