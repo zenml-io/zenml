@@ -40,8 +40,6 @@ class MyStep(BaseStep):
 
 Please note in both examples above that the name of the parameter can be anything, but the type hint is what is important.
 
-<<<<<<< HEAD
-=======
 ## Using the `StepContext`
 
 `StepContext` provides additional context inside a step function.  It is used to access materializers and artifact URIs inside a step function. 
