@@ -122,10 +122,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         image_name = self.get_docker_image_name(pipeline.name)
 
         requirements = {
-            "kubernetes",
-            *stack.requirements(
-                exclude_components={StackComponentType.ORCHESTRATOR}
-            ),
+            *stack.requirements(),
             *self._get_pipeline_requirements(pipeline),
         }
 
