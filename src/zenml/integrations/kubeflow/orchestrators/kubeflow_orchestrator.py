@@ -224,9 +224,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     interval_second=schedule.interval_second,
                     no_catchup=not schedule.catchup,
                 )
-#                logger.info(
-#                    "Started recurring run with ID '%s'.", result.run_id
-#                )
+            #                logger.info(
+            #                    "Started recurring run with ID '%s'.", result.run_id
+            #                )
             else:
                 logger.info(
                     "No schedule detected. Creating a one-off pipeline run.."

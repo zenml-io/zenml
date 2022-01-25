@@ -133,8 +133,8 @@ class KubeflowComponent:
             "--input_artifact_types",
             json.dumps(input_artifact_type_mapping),
             "--run_name",
-	    "some_run_name",
-#            "{{workflow.annotations.pipelines.kubeflow.org/run_name}}",
+            "some_run_name",
+            #            "{{workflow.annotations.pipelines.kubeflow.org/run_name}}",
         ]
 
         for param in runtime_parameters:

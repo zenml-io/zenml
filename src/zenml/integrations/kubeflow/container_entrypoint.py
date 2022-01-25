@@ -445,10 +445,10 @@ def main() -> None:
     json_format.Parse(args.tfx_ir, tfx_pipeline)
     from datetime import datetime
 
-    run_name = f"pipeline_name-{datetime.now().strftime('%d_%h_%y-%H_%M_%S_%f')}"
-    _resolve_runtime_parameters(
-        tfx_pipeline, run_name, args.runtime_parameter
+    run_name = (
+        f"pipeline_name-{datetime.now().strftime('%d_%h_%y-%H_%M_%S_%f')}"
     )
+    _resolve_runtime_parameters(tfx_pipeline, run_name, args.runtime_parameter)
 
     node_id = args.node_id
     pipeline_node = _get_pipeline_node(tfx_pipeline, node_id)

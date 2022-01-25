@@ -16,12 +16,12 @@ from sklearn import datasets
 from sklearn.model_selection import train_test_split
 from whylogs import DatasetProfile  # type: ignore
 
-from zenml.repository import Repository
 from zenml.integrations.whylogs.steps import whylogs_profiler_step
 from zenml.integrations.whylogs.visualizers import WhylogsVisualizer
 from zenml.integrations.whylogs.whylogs_step_decorator import enable_whylogs
 from zenml.logger import get_logger
 from zenml.pipelines import pipeline
+from zenml.repository import Repository
 from zenml.steps import Output, step
 from zenml.steps.step_context import StepContext
 
