@@ -572,7 +572,7 @@ def test_call_step_with_wrong_arg_type(
 def test_call_step_with_wrong_kwarg_type(
     int_step_output, step_with_two_int_inputs
 ):
-    """Test that calling a step fails when an kwarg has a wrong type."""
+    """Test that calling a step fails when a kwarg has a wrong type."""
     with pytest.raises(StepInterfaceError):
         step_with_two_int_inputs()(input_1=1, input_2=int_step_output)
 
@@ -687,3 +687,19 @@ def test_returning_an_object_of_the_wrong_type_raises_an_error(
 
         with pytest.raises(StepInterfaceError):
             pipeline_.run()
+
+
+def test_calling_a_step_twice_raises_an_exception():
+    """Tests that calling once step instance twice raises an exception."""
+
+    @step
+    def my_step():
+        pass
+
+    step_instance = my_step()
+
+    # calling once works
+    step_instance()
+
+    with pytest.raises(StepInterfaceError):
+        step_instance()

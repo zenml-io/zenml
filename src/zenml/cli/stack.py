@@ -117,6 +117,7 @@ def list_stacks() -> None:
         is_active = stack_name == active_stack_name
         stack_config = {
             "ACTIVE": "*" if is_active else "",
+            "NAME": stack_name,
             **{
                 key.upper(): value
                 for key, value in stack_configuration.dict().items()
@@ -205,7 +206,7 @@ def up_stack() -> None:
 )
 @cli_utils.activate_integrations
 def down_stack(force: bool = False) -> None:
-    """Tears down resources for the stack."""
+    """Suspends resources of the local stack deployment."""
     stack_ = Repository().active_stack
 
     if force:
