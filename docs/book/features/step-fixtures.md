@@ -9,7 +9,7 @@ integration-specific libraries.
 be used to send parameters to a step that are not artifacts.
 
 These special parameters are similar to [pytest fixtures](https://docs.pytest.org/en/6.2.x/fixture.html), and so we borrow that 
-nomenclature for ZenML: We call them `Step Fixtures`. 
+nomenclature for ZenML: We call them `Step Fixtures`.
 
 `Step Fixtures` are simple to use: Simply pass a parameter in with the right type hint as follows:
 
@@ -40,8 +40,6 @@ class MyStep(BaseStep):
 
 Please note in both examples above that the name of the parameter can be anything, but the typehint is what is important.
 
-
-
 ## Using the `StepContext`
 
 `StepContext` provides additional context inside a step function.  It is used to access materializers and artifact URIs inside a step function. 
@@ -71,7 +69,10 @@ For more information, check the [API reference](https://apidocs.zenml.io/latest/
 
 ## Using the `BaseStepConfig`
 
-Unlike `StepContext`, we cannot pass in the `BaseStepConfig` directly to a step. We first need to sub-class it:
+Unlike `StepContext`, we cannot pass in the `BaseStepConfig` directly to a step, but config instances can actually be 
+passed when creating a step. 
+
+We first need to sub-class it:
 
 ```python
 from zenml.steps import BaseStepConfig
@@ -94,4 +95,18 @@ def my_step(
     ...
 ):
     config.param_1, config.param_2, config.param_3
+```
+
+If all properties in `MyConfig` has default values, then that is already enough. If they don't all have default values, 
+then one must pass the config in during pipeline run time. You can also override default values here and therefore 
+dynamically parameterize your pipeline runs.
+
+```python
+@pipeline
+def my_pipeline(my_step):
+    ...
+
+pipeline = my_pipeline(
+    my_step=my_step(config=MyConfig(param_1=2)),
+)
 ```
