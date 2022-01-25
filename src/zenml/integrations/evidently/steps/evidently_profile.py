@@ -38,7 +38,7 @@ from evidently.model_profile.sections.base_profile_section import (  # type: ign
 from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
 
 from zenml.artifacts import DataAnalysisArtifact, DataArtifact
-from zenml.steps import Output, StepContext
+from zenml.steps import Output
 from zenml.steps.step_interfaces.base_drift_detection_step import (
     BaseDriftDetectionConfig,
     BaseDriftDetectionStep,
@@ -117,7 +117,6 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
         reference_dataset: DataArtifact,
         comparison_dataset: DataArtifact,
         config: EvidentlyProfileConfig,
-        context: StepContext,
     ) -> Output(  # type:ignore[valid-type]
         profile=dict, dashboard=str
     ):

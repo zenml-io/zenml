@@ -85,7 +85,7 @@ class BaseStepMeta(type):
 
         # Get the signature of the step function
         step_function_signature = inspect.getfullargspec(
-            getattr(cls, STEP_INNER_FUNC_NAME)
+            inspect.unwrap(getattr(cls, STEP_INNER_FUNC_NAME))
         )
 
         if bases:
