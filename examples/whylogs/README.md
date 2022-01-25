@@ -89,7 +89,7 @@ visualize_statistics("data_loader")
 visualize_statistics("train_data_profiler")
 visualize_statistics("test_data_profiler")
 ```
-![](./whylogs-visualizer.png)
+![WhyLogs visualizer](assets/whylogs-visualizer.png)
 
 Furthermore, all the generated profiles are uploaded to Whylabs
 automatically if the Whylabs environment variables are set:
@@ -103,8 +103,8 @@ os.environ["WHYLABS_DEFAULT_ORG_ID"] = "YOUR-ORG-ID"
 The `datasetId` tags set for the profiles are used to associate
 the datasets models with the models in the Whylogs platform. 
 
-![](./whylabs-ui-01.png)
-![](./whylabs-ui-02.png)
+![WhyLabs UI image 1](assets/whylabs-ui-01.png)
+![WhyLabs UI image 2](assets/whylabs-ui-02.png)
 
 
 ## Run it locally

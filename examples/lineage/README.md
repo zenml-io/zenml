@@ -30,9 +30,7 @@ visualize_lineage()
 
 It produces the following visualization:
 
-![Statistics for boston housing dataset](../../docs/book/assets/zenml-pipeline-run-lineage-dash.png)
-
-
+![Lineage Diagram](../../docs/book/assets/zenml-pipeline-run-lineage-dash.png)
 
 ## Run it locally
 
