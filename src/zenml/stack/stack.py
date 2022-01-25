@@ -233,6 +233,14 @@ class Stack:
 
         return runtime_options
 
+    def dict(self):
+        component_dict = {
+            component_type.value: component.json(sort_keys=True)
+            for component_type, component in self.components.items()
+        }
+        component_dict.update({"name": self.name})
+        return component_dict
+
     def requirements(
         self,
         exclude_components: Optional[AbstractSet[StackComponentType]] = None,
