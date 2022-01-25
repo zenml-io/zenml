@@ -1,11 +1,10 @@
-# Creating custom materializer
+# Creating a custom materializer
 
 The precise way that data passes between the steps is dictated by `materializers`. The data that flows through steps 
 is called `artifacts` and artifacts are stored in `artifact stores`. The logic that governs the reading and writing of 
 data to and from the `artifact stores` lives in the `materializers`. In order to control more precisely how data 
 flows between steps, one can simply create a custom materializer by sub-classing the `BaseMaterializer` class.
 
-## Overview
 ```python
 class BaseMaterializer(metaclass=BaseMaterializerMeta):
     """Base Materializer to realize artifact data."""
@@ -58,6 +57,14 @@ at the right time. E.g. If a ZenML step returns a `pd.DataFrame`, ZenML will try
 - `ASSOCIATED_ARTIFACT_TYPES` simply define what `type` of artifacts are being stored. This can be `DataArtifact`, 
 `StatisticsArtifact`, `DriftArtifact`, etc. This is simply a tag to query certain artifact types in the post-execution 
 workflow.
+
+
+## Overview
+
+This example builds a simple custom materializer for a custom object that is passed between two steps.
+
+What's important to know: Use the ZenML `fileio` handle to ensure materialization logic works across artifact stores 
+(local and remote like S3 buckets).
 
 ## Run it locally
 
