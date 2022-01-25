@@ -127,11 +127,12 @@ The above basically means that ZenML does not know how to persist the object of 
 it, we just created this!). Therefore, one can create our own materializer:
 
 ```python
-from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.artifacts import DataArtifact
-from zenml.io import fileio
 import os
 from typing import Type
+
+from zenml.artifacts import DataArtifact
+from zenml.io import fileio
+from zenml.materializers.base_materializer import BaseMaterializer
 
 class MyMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = [MyObj]
@@ -166,7 +167,7 @@ pipe(
 Please note that for multiple outputs a dictionary can be supplied of type {OUTPUT_NAME: MATERIALIZER_CLASS} to the 
 `with_return_materializers` function.
 
-Also notice that `with_return_materializers` need only be called on step1, all downstream steps will use the same 
+Also, notice that `with_return_materializers` need only be called on step1, all downstream steps will use the same 
 `materializer` by default.
 
 This will yield the proper response as follows:

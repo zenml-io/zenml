@@ -1,7 +1,7 @@
 # Step Fixtures
 
 Whether defining steps using the [Functional API](../guides/functional-api) or [Class-based API](../guides/class-based-api), 
-there are some special parameters that can be passed into a step function, which serve different needs.
+some special parameters can be passed into a step function, which serves different needs.
 
 * A `StepContext` object: This object gives access to the artifact store, metadata store, materializers, and special 
 integration-specific libraries.
@@ -47,7 +47,7 @@ Please note in both examples above that the name of the parameter can be anythin
 You do not need to create a StepContext object yourself and pass it when creating the step, as long as you specify 
 it in the signature ZenML will create the `StepContext` and automatically pass it when executing your step.
 
-Note: When using a StepContext inside a step, ZenML disables caching for this step by default as the context provides 
+Note: When using a `StepContext` inside a step, ZenML disables caching for this step by default as the context provides 
 access to external resources which might influence the result of your step execution. 
 To enable caching anyway, explicitly enable it in the @step decorator or when initializing your custom step class.
 

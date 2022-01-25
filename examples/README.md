@@ -16,7 +16,7 @@ or visit the link directly:
 - **custom_materializer**: Create a custom materializer to control data flowing between steps.
 - **dag_visualizer**: Visualizing a pipeline.
 - **drift_detection**: Detect drift with our Evidently integration.
-- **fetch_historical_runs**: Show-cases dynamically fetching historical runs from within a step.
+- **fetch_historical_runs**: Showcases dynamically fetching historical runs from within a step.
 - **functional_api**: All the code for the functional API guide found in the
   [docs](https://docs.zenml.io/v/docs/guides/functional-api/).
 - **kubeflow**: Shows how to orchestrate a pipeline a local kubeflow stack.
@@ -30,7 +30,7 @@ integrated standard interfaces to showcase their effect on the overall
 smoothness of the user experience.
 - **statistics**: Show-cases how ZenML can automatically extract statistics
   using facets.
-- **whylogs**: Show-cases [whylogs](https://github.com/whylabs/whylogs) integration.
+- **whylogs**: Showcases [whylogs](https://github.com/whylabs/whylogs) integration.
 
 For each of these examples, ZenML provides a handy CLI command to pull them
 directly into your local environment. First install `zenml`:
