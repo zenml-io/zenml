@@ -132,8 +132,6 @@ class KubeflowComponent:
             step_function_name,
             "--input_artifact_types",
             json.dumps(input_artifact_type_mapping),
-            "--run_id",
-            "{{workflow.uid}}",
         ]
 
         for param in runtime_parameters:
