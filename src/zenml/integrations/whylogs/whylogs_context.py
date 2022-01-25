@@ -106,11 +106,11 @@ class WhylogsContext:
             input dataset.
         """
         session = self.get_whylogs_session()
-        # TODO [LOW]: use a default whylogs dataset_name that is unique across
+        # TODO [ENG-437]: use a default whylogs dataset_name that is unique across
         #  multiple pipelines
         dataset_name = dataset_name or self._step_context.step_name
         final_tags = self._tags.copy() if self._tags else dict()
-        # TODO [LOW]: add more zenml specific tags to the whylogs profile, such
+        # TODO [ENG-438]: add more zenml specific tags to the whylogs profile, such
         #  as the pipeline name and run ID
         final_tags["zenml.step"] = self._step_context.step_name
         # the datasetId tag is used to identify dataset profiles in whylabs.

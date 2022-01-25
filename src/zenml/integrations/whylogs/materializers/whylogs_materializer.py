@@ -55,7 +55,7 @@ class WhylogsMaterializer(BaseMaterializer):
         with fileio.open(filepath, "wb") as f:
             f.write(protobuf)
 
-        # TODO [LOW]: uploading profiles to whylabs should be enabled and
+        # TODO [ENG-439]: uploading profiles to whylabs should be enabled and
         #  configurable at step level or pipeline level instead of being
         #  globally enabled.
         if os.environ.get("WHYLABS_DEFAULT_ORG_ID"):
