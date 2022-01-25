@@ -299,7 +299,7 @@ class KubeflowDagRunner:
         component_to_kfp_op: Dict[base_node.BaseNode, dsl.ContainerOp] = {}
         tfx_ir = self._generate_tfx_ir(pipeline)
 
-        for node in tfx_ir.nodes:
+        for node in tfx_ir.nodes:  # type:ignore[attr-defined]
             context = node.pipeline_node.contexts.contexts.add()
             context_utils.add_stack_as_context(context=context, stack=stack)
 
@@ -382,7 +382,7 @@ class KubeflowDagRunner:
 
     def _generate_tfx_ir(
         self, pipeline: tfx_pipeline.Pipeline
-    ) -> Optional[pipeline_pb2.Pipeline]:  # type: ignore[valid-type]
+    ) -> pipeline_pb2.Pipeline:  # type: ignore[valid-type]
         """Generate the TFX IR from the logical TFX pipeline."""
         result = self._tfx_compiler.compile(pipeline)
         return result

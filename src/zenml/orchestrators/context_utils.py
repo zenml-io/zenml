@@ -27,12 +27,15 @@ from typing import TYPE_CHECKING
 from zenml.enums import ContextTypes
 
 if TYPE_CHECKING:
-    from tfx.proto.orchestration.pipeline_pb2 import ContextSpec
+    from tfx.proto.orchestration import pipeline_pb2
 
     from zenml.stack import Stack
 
 
-def add_stack_as_context(stack: "Stack", context: "ContextSpec") -> None:
+def add_stack_as_context(
+    stack: "Stack",
+    context: "pipeline_pb2.ContextSpec",  # type: ignore[valid-type]
+) -> None:
     """Given an instance of a stack object, the function adds it to the context
     of a pipeline node in proper format
 
@@ -41,15 +44,16 @@ def add_stack_as_context(stack: "Stack", context: "ContextSpec") -> None:
         context: a context proto message within a pipeline node
     """
     # Adding the type of context
-    context.type.name = ContextTypes.STACK.name
+    context.type.name = ContextTypes.STACK.name  # type:ignore[attr-defined]
 
     # Converting the stack into a dict to prepare for hashing
     stack_dict = stack.dict()
 
     # Setting the name of the context
     name = str(hash(json.dumps(stack_dict, sort_keys=True)))
-    context.name.field_value.string_value = name
+    context.name.field_value.string_value = name  # type:ignore[attr-defined]
 
     # Setting the properties of the context
     for k, v in stack_dict.items():
-        context.properties[k].field_value.string_value = v
+        c_property = context.properties[k]  # type:ignore[attr-defined]
+        c_property.field_value.string_value = v

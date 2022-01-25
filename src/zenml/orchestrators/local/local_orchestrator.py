@@ -77,7 +77,7 @@ class LocalOrchestrator(BaseOrchestrator):
 
         # Run each component. Note that the pipeline.components list is in
         # topological order.
-        for node in pipeline_proto.nodes:
+        for node in pipeline_proto.nodes:  # type:ignore[attr-defined]
             context = node.pipeline_node.contexts.contexts.add()
 
             context_utils.add_stack_as_context(context=context, stack=stack)
@@ -91,11 +91,13 @@ class LocalOrchestrator(BaseOrchestrator):
                 deployment_config, node_id
             )
 
+            p_info = pipeline_proto.pipeline_info  # type:ignore[attr-defined]
+            r_spec = pipeline_proto.runtime_spec  # type:ignore[attr-defined]
             component_launcher = launcher.Launcher(
                 pipeline_node=pipeline_node,
                 mlmd_connection=metadata.Metadata(connection_config),
-                pipeline_info=pipeline_proto.pipeline_info,
-                pipeline_runtime_spec=pipeline_proto.runtime_spec,
+                pipeline_info=p_info,
+                pipeline_runtime_spec=r_spec,
                 executor_spec=executor_spec,
                 custom_driver_spec=custom_driver_spec,
             )
