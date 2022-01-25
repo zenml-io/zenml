@@ -88,4 +88,5 @@ class StackComponentType(str, Enum):
 
 class ContextTypes(Enum):
     """All possible types that contexts can have within pipeline nodes"""
+
     STACK = "stack"
