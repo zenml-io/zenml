@@ -6,7 +6,20 @@ description: An image speaks a thousand words.
 
 ## What is a visualizer
 
-Sometimes it makes sense in the [post-execution workflow](post-execution-workflow.md) to actually visualize step outputs.
+Sometimes it makes sense in the [post-execution workflow](post-execution-workflow.md) to actually visualize step outputs. 
+ZenML has a standard, extensible interface for all visualizers:
+
+```python
+class BaseVisualizer:
+    """Base class for all ZenML Visualizers."""
+
+    @abstractmethod
+    def visualize(self, object: Any, *args: Any, **kwargs: Any) -> None:
+        """Method to visualize objects."""
+```
+
+The `object` can currently be a `StepView`, a `PipelineRunView` , or a `PipelineView` (these are all different 
+post-execution objects.)
 
 ## Examples of visualizations
 
