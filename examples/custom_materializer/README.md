@@ -63,7 +63,7 @@ workflow.
 
 This example builds a simple custom materializer for a custom object that is passed between two steps.
 
-What's important to know: Use the ZenML `fileio` handle to ensure materialization logic works across artifact stores 
+What's important to know: Use the ZenML `fileio` handler to ensure materialization logic works across artifact stores 
 (local and remote like S3 buckets).
 
 ## Run it locally
