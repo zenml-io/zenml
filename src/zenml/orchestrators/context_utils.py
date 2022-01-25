@@ -22,11 +22,17 @@ pipelines in a local environment. We also support using Apache Airflow as the
 orchestrator to handle the steps of your pipeline.
 """
 import json
+from typing import TYPE_CHECKING
 
 from zenml.enums import ContextTypes
 
+if TYPE_CHECKING:
+    from tfx.proto.orchestration.pipeline_pb2 import ContextSpec
 
-def add_stack_as_context(stack, context):
+    from zenml.stack import Stack
+
+
+def add_stack_as_context(stack: "Stack", context: "ContextSpec") -> None:
     """Given an instance of a stack object, the function adds it to the context
     of a pipeline node in proper format
 
