@@ -84,3 +84,8 @@ class StackComponentType(str, Enum):
             return "container_registries"
 
         return f"{self.value}s"
+
+
+class ContextTypes(Enum):
+    """All possible types that contexts can have within pipeline nodes"""
+    STACK = "stack"
