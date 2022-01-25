@@ -4,11 +4,11 @@ description: All code in this guide can be found [here](https://github.com/zenml
 
 # Creating a custom materializer
 
-## What is a materializer
+## What is a materializer?
 
-The precise way that data passes between the steps is dictated by `materializers`. The data that flows through steps 
-is called `artifacts` and artifacts are stored in `artifact stores`. The logic that governs the reading and writing of 
-data to and from the `artifact stores` lives in the `materializers`.
+The precise way that data passes between the steps is dictated by materializers. The data that flows through steps 
+are stored as artifacts and artifacts are stored in artifact stores. The logic that governs the reading and writing of 
+data to and from the artifact stores lives in the materializers.
 
 ```python
 class BaseMaterializer(metaclass=BaseMaterializerMeta):
@@ -44,21 +44,21 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
 ```
 
 Above you can see the basic definition of the `BaseMaterializer`. All other materializers inherit from this class, and 
-this class defines the interface of all `materializers`. 
+this class defines the interface of all materializers. 
 
-Each `materializer` has an `artifact` object. The most important property of an `artifact` object is the `uri`. The 
-`uri` is created by ZenML on pipeline run time and points to the directory of a file system (the artifact store).
+Each materializer has an `artifact` object. The most important property of an `artifact` object is the `uri`. The 
+`uri` is created by ZenML at pipeline run time and points to the directory of a file system (the artifact store).
 
 The `handle_input` and `handle_return` functions are important. 
 
 - `handle_input` is responsible for **reading** the artifact from the artifact store.
 - `handle_return` is responsible for **writing** the artifact to the artifact store.
 
-Each `materializer` has `ASSOCIATED_TYPES` and `ASSOCIATED_ARTIFACT_TYPES`.
+Each materializer has `ASSOCIATED_TYPES` and `ASSOCIATED_ARTIFACT_TYPES`.
 
 - `ASSOCIATED_TYPES` is the data type that is being stored. ZenML uses this information to call the right materializer 
-at the right time. E.g. If a ZenML step returns a `pd.DataFrame`, ZenML will try to find any materializer that has 
-`pd.DataFrame` (or its subclasses) in its ` ASSOCIATED_TYPES`.
+at the right time. i.e. If a ZenML step returns a `pd.DataFrame`, ZenML will try to find any materializer that has 
+`pd.DataFrame` (or its subclasses) in its `ASSOCIATED_TYPES`.
 - `ASSOCIATED_ARTIFACT_TYPES` simply define what `type` of artifacts are being stored. This can be `DataArtifact`, 
 `StatisticsArtifact`, `DriftArtifact`, etc. This is simply a tag to query certain artifact types in the post-execution 
 workflow.
@@ -84,7 +84,7 @@ class MyCustomMaterializer(BaseMaterializer):
         ...
 ```
 
-For example, let's say you a custom object called MyObject that flows between two steps in a pipeline:
+For example, let's say you a custom object called `MyObject` that flows between two steps in a pipeline:
 
 ```python
 from zenml.steps import step
@@ -124,7 +124,7 @@ For more information, visit https://docs.zenml.io/guides/common-usecases/custom-
 ```
 
 The above basically means that ZenML does not know how to persist the object of type `MyObj` between steps (how could 
-it, we just created this!). Therefore, one can create our own materializer:
+it? We just created this!). Therefore, we can create our own materializer:
 
 ```python
 import os
@@ -164,11 +164,11 @@ pipe(
 ).run()
 ```
 
-Please note that for multiple outputs a dictionary can be supplied of type {OUTPUT_NAME: MATERIALIZER_CLASS} to the 
+Please note that for multiple outputs a dictionary can be supplied of type `{OUTPUT_NAME: MATERIALIZER_CLASS}` to the 
 `with_return_materializers` function.
 
 Also, notice that `with_return_materializers` need only be called on step1, all downstream steps will use the same 
-`materializer` by default.
+materializer by default.
 
 This will yield the proper response as follows:
 

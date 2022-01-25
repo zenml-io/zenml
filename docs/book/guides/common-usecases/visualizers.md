@@ -4,7 +4,7 @@ description: An image speaks a thousand words.
 
 # Visualizers
 
-## What is a visualizer
+## What is a visualizer?
 
 Sometimes it makes sense in the [post-execution workflow](post-execution-workflow.md) to actually visualize step outputs. 
 ZenML has a standard, extensible interface for all visualizers:
@@ -18,12 +18,12 @@ class BaseVisualizer:
         """Method to visualize objects."""
 ```
 
-The `object` can currently be a `StepView`, a `PipelineRunView` , or a `PipelineView` (these are all different 
+The `object` can currently be a `StepView`, a `PipelineRunView` , or a `PipelineView`. (These are all different 
 post-execution objects.)
 
 ## Examples of visualizations
 
-### Lineage with [dash](https://plotly.com/dash/)
+### Lineage with [`dash`](https://plotly.com/dash/)
 
 ```python
 from zenml.repository import Repository
@@ -40,7 +40,7 @@ It produces the following visualization:
 
 ![Lineage Diagram](../../assets/zenml-pipeline-run-lineage-dash.png)
 
-### Statistics with [Facets](https://github.com/PAIR-code/facets)
+### Statistics with [`facets`](https://github.com/PAIR-code/facets)
 
 ```python
 from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
@@ -54,7 +54,7 @@ It produces the following visualization:
 
 ![Statistics for boston housing dataset](../../assets/statistics-boston-housing.png)
 
-### Distributions with [whylogs](https://github.com/whylabs/whylogs)
+### Distributions with [`whylogs`](https://github.com/whylabs/whylogs)
 
 ```python
 repo = Repository()
@@ -67,7 +67,7 @@ It produces the following visualization:
 
 ![WhyLogs visualization](../../assets/whylogs/whylogs-visualizer.png)
 
-### Drift with [evidently](https://github.com/evidentlyai/evidently)
+### Drift with [`evidently`](https://github.com/evidentlyai/evidently)
 
 ```python
 from zenml.integrations.evidently.visualizers import EvidentlyVisualizer

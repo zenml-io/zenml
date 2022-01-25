@@ -32,9 +32,9 @@ class ZenMLBaseException(Exception):
         Args:
             message: Message with details of exception. This message
             will be appended with another message directing user to
-            `url` for more information. If None, then default
+            `url` for more information. If `None`, then default
             Exception behavior is used.
-            url: URL to point to in exception message. If None, then no url
+            url: URL to point to in exception message. If `None`, then no url
             is appended.
         """
         if message:

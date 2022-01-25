@@ -11,7 +11,7 @@ integrations.
 There is no need to clone the ZenML repository to get access to examples quickly. 
 Use the series of commands that begin with `zenml example` to download and even run examples.
 
-Get the full list of examples available:
+Get the full list of available examples:
 
 ```bash
 zenml example list
@@ -21,7 +21,7 @@ Pick an example to download into your current working directory:
 
 ```bash
 zenml example pull quickstart
-# at this point a `zenml_examples` dir would be created with the example(s) inside it
+# at this point a `zenml_examples` dir will be created with the example(s) inside it
 ```
 
 When ready to run the example, simply type the following command. If there are any dependencies needed to be 

@@ -11,9 +11,9 @@ integration-specific libraries.
 These special parameters are similar to [pytest fixtures](https://docs.pytest.org/en/6.2.x/fixture.html), and so we borrow that 
 nomenclature for ZenML: We call them `Step Fixtures`.
 
-`Step Fixtures` are simple to use: Simply pass a parameter in with the right type hint as follows:
+`Step fixtures` are simple to use: Simply pass a parameter in with the right type hint as follows:
 
-## Using fixtures in Functional API
+## Using fixtures in the Functional API
 
 ```python
 @step
@@ -25,7 +25,7 @@ def my_step(
     ...
 ```
 
-## Use fixtures in Class-based API
+## Using fixtures in the Class-based API
 
 ```python
 class MyStep(BaseStep):
@@ -38,7 +38,7 @@ class MyStep(BaseStep):
         ...
 ```
 
-Please note in both examples above that the name of the parameter can be anything, but the typehint is what is important.
+Please note in both examples above that the name of the parameter can be anything, but the type hint is what is important.
 
 <<<<<<< HEAD
 =======
@@ -46,14 +46,14 @@ Please note in both examples above that the name of the parameter can be anythin
 
 `StepContext` provides additional context inside a step function.  It is used to access materializers and artifact URIs inside a step function. 
 
-You do not need to create a StepContext object yourself and pass it when creating the step, as long as you specify 
-it in the signature ZenML will create the `StepContext` and automatically pass it when executing your step.
+You do not need to create a `StepContext` object yourself and pass it when creating the step, as long as you specify 
+it in the signature. ZenML will create the `StepContext` and automatically pass it when executing your step.
 
 Note: When using a `StepContext` inside a step, ZenML disables caching for this step by default as the context provides 
 access to external resources which might influence the result of your step execution. 
-To enable caching anyway, explicitly enable it in the @step decorator or when initializing your custom step class.
+To enable caching anyway, explicitly enable it in the `@step` decorator or when initializing your custom step class.
 
-Within a step, there are many things that you can use the `StepContext` object for. E.g.: 
+Within a step, there are many things for which you can use the `StepContext` object. For example: 
 
 ```python
 @enable_INTEGRATION  # can be `enable_whylogs`, `enable_mlflow` etc. 
@@ -85,8 +85,8 @@ class MyConfig(BaseStepConfig):
     param_3: bool = True
 ```
 
-Behind the scenes, this class is essentially a [pydantic BaseModel](https://pydantic-docs.helpmanual.io/usage/models/). 
-Therefore, any type that [pydantic supports](https://pydantic-docs.helpmanual.io/usage/types/) is supported. 
+Behind the scenes, this class is essentially a [Pydantic BaseModel](https://pydantic-docs.helpmanual.io/usage/models/). 
+Therefore, any type that [Pydantic supports](https://pydantic-docs.helpmanual.io/usage/types/) is supported. 
 
 You can then pass it in a step as follows:
 
@@ -99,7 +99,7 @@ def my_step(
     config.param_1, config.param_2, config.param_3
 ```
 
-If all properties in `MyConfig` has default values, then that is already enough. If they don't all have default values, 
+If all properties in `MyConfig` have default values, then that is already enough. If they don't all have default values, 
 then one must pass the config in during pipeline run time. You can also override default values here and therefore 
 dynamically parameterize your pipeline runs.
 

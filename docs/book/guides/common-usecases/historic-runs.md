@@ -11,7 +11,7 @@ description: All code in this guide can be found [here](https://github.com/zenml
 Sometimes, it is necessary to fetch information from previous runs in order to make a decision within a currently 
 executing step. Examples of this:
 
-* Fetch the best model evaluation results from history to decide whether to deploy a newly trained model.
+* Fetch the best model evaluation results from history to decide whether to deploy a newly-trained model.
 * Fetching best model out of a list of trained models.
 * Fetching the latest model before running an inference.
 
@@ -22,7 +22,7 @@ And so on.
 ZenML allows users to fetch historical parameters and artifacts using the `StepContext` 
 [fixture](../../features/step-fixtures.md).
 
-As an example, see below a step that uses the `StepContext` to query the metadata store while running a step.
+As an example, see this step that uses the `StepContext` to query the metadata store while running a step.
 We use this to evaluate all models of past training pipeline runs and store the current best model. 
 In our inference pipeline, we could then easily query the metadata store the fetch the best performing model.
 
@@ -44,7 +44,7 @@ def evaluate_and_store_best_model(
         model = run.get_step("trainer").output.read()
         accuracy = model.score(X_test, y_test)
         if accuracy > best_accuracy:
-            # if the model accuracy is better than our currently best model,
+            # if the model accuracy is better than our currently-best model,
             # store it
             best_accuracy = accuracy
             best_model = model
