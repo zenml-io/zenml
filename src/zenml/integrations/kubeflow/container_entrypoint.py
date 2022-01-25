@@ -21,7 +21,9 @@ import sys
 import textwrap
 from typing import Dict, List, MutableMapping, Optional, Tuple
 
+import kfp
 from google.protobuf import json_format
+from kubernetes import config as k8s_config
 from tfx.dsl.compiler import constants
 from tfx.orchestration import metadata
 from tfx.orchestration.local import runner_utils
@@ -426,10 +428,16 @@ def _parse_command_line_arguments() -> argparse.Namespace:
     parser.add_argument("--main_module", type=str, required=True)
     parser.add_argument("--step_module", type=str, required=True)
     parser.add_argument("--step_function_name", type=str, required=True)
-    parser.add_argument("--run_name", type=str, required=True)
+    parser.add_argument("--run_id", type=str, required=True)
     parser.add_argument("--input_artifact_types", type=str, required=True)
 
     return parser.parse_args()
+
+
+def _get_run_name(run_id: str) -> str:
+    """Gets the KFP run name from a run id."""
+    k8s_config.load_incluster_config()
+    return kfp.Client().get_run(run_id).run.name  # type: ignore[no-any-return]
 
 
 def main() -> None:
@@ -443,11 +451,8 @@ def main() -> None:
 
     tfx_pipeline = pipeline_pb2.Pipeline()
     json_format.Parse(args.tfx_ir, tfx_pipeline)
-    from datetime import datetime
 
-    run_name = (
-        f"pipeline_name-{datetime.now().strftime('%d_%h_%y-%H_%M_%S_%f')}"
-    )
+    run_name = _get_run_name(args.run_id)
     _resolve_runtime_parameters(tfx_pipeline, run_name, args.runtime_parameter)
 
     node_id = args.node_id
