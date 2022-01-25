@@ -3,9 +3,9 @@
 set -Eeo pipefail
 
 pre_run () {
-  zenml integration install sklearn
+  echo "No pre-requisites"
 }
 
 pre_run_forced () {
-  zenml integration install sklearn -f
+  echo "No pre-requisites"
 }

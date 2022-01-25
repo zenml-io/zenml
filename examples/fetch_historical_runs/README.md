@@ -18,8 +18,8 @@ pip install zenml
 zenml integration install sklearn
 
 # pull example
-zenml example pull step_context
-cd zenml_examples/step_context
+zenml example pull fetch_historical_runs
+cd zenml_examples/fetch_historical_runs
 
 # initialize
 zenml init
@@ -46,5 +46,5 @@ without wanting to fiddle around with all the individual installation and
 configuration steps, just run the following:
 
 ```shell
-zenml example run step_context
+zenml example run fetch_historical_runs
 ```

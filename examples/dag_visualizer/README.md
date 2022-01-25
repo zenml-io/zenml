@@ -30,7 +30,7 @@ visualizer_graph()
 
 It produces the following visualization:
 
-![Boston Housing Dataset Pipeline Visualization](../../docs/book/assets/dag-visualization.png)
+![Boston Housing Dataset Pipeline Visualization](assets/dag-visualization.png)
 
 
 ## Run it locally
