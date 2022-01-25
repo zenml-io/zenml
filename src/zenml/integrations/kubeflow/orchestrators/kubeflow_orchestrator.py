@@ -202,7 +202,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                         "A recurring run has already been created with this "
                         "pipeline. Creating new recurring run now.."
                     )
-                except ValueError:
+                except Exception:
                     experiment = client.create_experiment(pipeline_name)
                     logger.info(
                         "Creating a new recurring run for pipeline '%s'.. ",
@@ -224,9 +224,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     interval_second=schedule.interval_second,
                     no_catchup=not schedule.catchup,
                 )
-                logger.info(
-                    "Started recurring run with ID '%s'.", result.run_id
-                )
+#                logger.info(
+#                    "Started recurring run with ID '%s'.", result.run_id
+#                )
             else:
                 logger.info(
                     "No schedule detected. Creating a one-off pipeline run.."

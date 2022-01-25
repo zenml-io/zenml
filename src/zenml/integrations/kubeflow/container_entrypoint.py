@@ -443,8 +443,11 @@ def main() -> None:
 
     tfx_pipeline = pipeline_pb2.Pipeline()
     json_format.Parse(args.tfx_ir, tfx_pipeline)
+    from datetime import datetime
+
+    run_name = f"pipeline_name-{datetime.now().strftime('%d_%h_%y-%H_%M_%S_%f')}"
     _resolve_runtime_parameters(
-        tfx_pipeline, args.run_name, args.runtime_parameter
+        tfx_pipeline, run_name, args.runtime_parameter
     )
 
     node_id = args.node_id
