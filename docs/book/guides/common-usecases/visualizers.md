@@ -1,98 +1,33 @@
+---
+description: An image speaks a thousand words.
+---
+
 # Visualizers
 
-## What is a materializer
+## What is a visualizer
 
-After executing a pipeline, the user needs to be able to fetch it from history and perform certain tasks. This page 
-captures these workflows at an orbital level.
+Sometimes it makes sense in the [post-execution workflow](post-execution-workflow.md) to actually visualize step outputs.
 
-## Extending the `BaseMaterializer`
+## Examples of visualizations
 
-In the context of a post-execution workflow, there is an implied hierarchy of some basic ZenML components:
-
-```bash
-repository -> pipelines -> runs -> steps -> outputs
-
-# where -> implies a 1-many relationship.
-```
-
-### Repository
-
-The highest level `repository` object is where to start from.
+### Lineage with [dash](https://plotly.com/dash/)
 
 ```python
-from zenml.core.repo import Repository
+from zenml.repository import Repository
+from zenml.integrations.dash.visualizers.pipeline_run_lineage_visualizer import (
+    PipelineRunLineageVisualizer,
+)
 
 repo = Repository()
+latest_run = repo.get_pipelines()[-1].runs[-1]
+PipelineRunLineageVisualizer().visualize(latest_run)
 ```
 
-#### Pipelines
+It produces the following visualization:
 
-```python
-# get all pipelines from all stacks
-pipelines = repo.get_pipelines()  
+![Lineage Diagram](../../assets/zenml-pipeline-run-lineage-dash.png)
 
-# or get one pipeline by name and/or stack key
-pipeline = repo.get_pipeline(pipeline_name=..., stack_key=...)
-```
-
-#### Runs
-
-```python
-runs = pipeline.runs  # all runs of a pipeline chronlogically ordered
-run = runs[-1]  # latest run
-
-# or get it by name
-run = pipeline.get_run(run_name="custom_pipeline_run_name")
-```
-
-#### Steps
-
-```python
-# at this point we switch from the `get_` paradigm to properties
-steps = run.steps  # all steps of a pipeline
-step = steps[0] 
-print(step.name)
-```
-
-#### Outputs
-
-```python
-# The outputs of a step
-# if multiple outputs they are accessible by name
-outputs = step.outputs["step_name"]
-
-# if one output, use the `.output` property instead 
-output = step.output 
-
-# will get you the value from the original materializer used in the pipeline
-output.read()  
-```
-
-### Materializing outputs (or inputs)
-
-Once an output artifact is acquired from history, one can visualize it with any chosen `Visualizer`.
-
-```python
-from zenml.materializers import PandasMaterializer
-
-
-df = output.read(materializer_class=PandasMaterializer)
-df.head()
-```
-
-### Retrieving Model
-
-```python
-from zenml.integrations.tensorflow.materializers.keras_materializer import KerasMaterializer    
-
-
-model = output.read(materializer_class=KerasMaterializer)
-model  # read keras.Model
-```
-
-## Visuals
-
-### Seeing statistics
+### Statistics with [Facets](https://github.com/PAIR-code/facets)
 
 ```python
 from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
@@ -104,4 +39,32 @@ FacetStatisticsVisualizer().visualize(output)
 
 It produces the following visualization:
 
-![Statistics for boston housing dataset](../../.gitbook/assets/statistics\_boston\_housing.png)
+![Statistics for boston housing dataset](../../assets/statistics-boston-housing.png)
+
+### Distributions with [whylogs](https://github.com/whylabs/whylogs)
+
+```python
+repo = Repository()
+pipe = repo.get_pipelines()[-1]
+whylogs_outputs = pipe.runs[-1].get_step(name=step_name)
+WhylogsVisualizer().visualize(whylogs_outputs)
+```
+
+It produces the following visualization:
+
+![WhyLogs visualization](../../assets/whylogs/whylogs-visualizer.png)
+
+### Drift with [evidently](https://github.com/evidentlyai/evidently)
+
+```python
+from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
+
+repo = Repository()
+pipe = repo.get_pipelines()[-1]
+evidently_outputs = pipe.runs[-1].get_step(name="drift_detector")
+EvidentlyVisualizer().visualize(evidently_outputs)
+```
+
+It produces the following visualization:
+
+![Evidently Drift Detection](../../assets/evidently/drift_visualization.png)

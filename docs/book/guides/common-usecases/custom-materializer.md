@@ -1,6 +1,8 @@
-# Creating a custom materializer
+---
+description: All code in this guide can be found [here](https://github.com/zenml-io/zenml/tree/main/examples/custom_materializer).
+---
 
-All code in this guide can be found [here](https://github.com/zenml-io/zenml/tree/main/examples/custom_materializer).
+# Creating a custom materializer
 
 ## What is a materializer
 
