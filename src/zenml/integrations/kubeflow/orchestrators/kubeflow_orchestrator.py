@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 
 import os
-import sys
 from typing import TYPE_CHECKING, Any, Optional, Set
 
 import kfp
@@ -246,6 +245,17 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Returns the path to the K3D registry config yaml."""
         return os.path.join(self.root_directory, "k3d_registry.yaml")
 
+    def _get_kfp_ui_daemon_port(self) -> int:
+        """Port to use for the KFP UI daemon."""
+        port = self.kubeflow_pipelines_ui_port
+        if port == DEFAULT_KFP_UI_PORT and not networking_utils.port_available(
+            port
+        ):
+            # if the user didn't specify a specific port and the default
+            # port is occupied, fallback to a random open port
+            port = networking_utils.find_available_port()
+        return port
+
     def list_manual_setup_steps(
         self, container_registry_name: str, container_registry_path: str
     ) -> None:
@@ -336,19 +346,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 kubernetes_context=kubernetes_context
             )
 
-            port = self.kubeflow_pipelines_ui_port
-            if (
-                port == DEFAULT_KFP_UI_PORT
-                and not networking_utils.port_available(port)
-            ):
-                # if the user didn't specify a specific port and the default
-                # port is occupied, fallback to a random open port
-                port = networking_utils.find_available_port()
-
             local_deployment_utils.start_kfp_ui_daemon(
                 pid_file_path=self._pid_file_path,
                 log_file_path=self.log_file,
-                port=port,
+                port=self._get_kfp_ui_daemon_port(),
             )
         except Exception as e:
             logger.error(e)
@@ -364,17 +365,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 cluster_name=self._k3d_cluster_name
             )
 
-        if fileio.file_exists(self._pid_file_path):
-            if sys.platform == "win32":
-                # Daemon functionality is not supported on Windows, so the PID
-                # file won't exist. This if clause exists just for mypy to not
-                # complain about missing functions
-                pass
-            else:
-                from zenml.utils import daemon
-
-                daemon.stop_daemon(self._pid_file_path, kill_children=True)
-                fileio.remove(self._pid_file_path)
+        local_deployment_utils.stop_kfp_ui_daemon(
+            pid_file_path=self._pid_file_path
+        )
 
         if fileio.file_exists(self.log_file):
             fileio.remove(self.log_file)
@@ -397,6 +390,16 @@ class KubeflowOrchestrator(BaseOrchestrator):
             cluster_name=self._k3d_cluster_name
         )
 
+        kubernetes_context = f"k3d-{self._k3d_cluster_name}"
+        local_deployment_utils.wait_until_kubeflow_pipelines_ready(
+            kubernetes_context=kubernetes_context
+        )
+        local_deployment_utils.start_kfp_ui_daemon(
+            pid_file_path=self._pid_file_path,
+            log_file_path=self.log_file,
+            port=self._get_kfp_ui_daemon_port(),
+        )
+
     def suspend(self) -> None:
         """Suspends the local k3d cluster."""
         if not self.is_running:
@@ -405,4 +408,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         local_deployment_utils.stop_k3d_cluster(
             cluster_name=self._k3d_cluster_name
+        )
+        local_deployment_utils.stop_kfp_ui_daemon(
+            pid_file_path=self._pid_file_path
         )
