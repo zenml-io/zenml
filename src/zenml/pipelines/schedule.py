@@ -19,27 +19,26 @@ from pydantic import BaseModel
 
 
 class Schedule(BaseModel):
-    """Class that let's user define a schedule for a pipeline.
+    """Class for defining a pipeline schedule.
 
     Attributes:
         start_time: Datetime object to indicate when to start the schedule.
         end_time: Datetime object to indicate when to start the schedule.
-        interval_second: Integer indicating the seconds between two recurring runs in for a periodic schedule.
-        catchup: Whether the recurring run should catch up if behind schedule. For example, if the recurring run is
-        paused for a while and re-enabled afterwards. If catchup=True, the scheduler will catch up on (backfill)
-        each missed interval. Otherwise, it only schedules the latest interval if more than one interval is ready to
-        be scheduled. Usually, if your pipeline handles backfill internally, you should turn catchup off to avoid
-        duplicate backfill.
-        cron_expression: A cron expression representing a set of times, using 6 space-separated fields,
-        e.g. “0 0 9 ? * 2-6”. See [here](https://pkg.go.dev/github.com/robfig/cron#hdr-CRON_Expression_Format)
-        for details of the cron expression format.
+        interval_second: Integer indicating the seconds between two recurring
+            runs in for a periodic schedule.
+        catchup: Whether the recurring run should catch up if behind schedule.
+            For example, if the recurring run is paused for a while and
+            re-enabled afterwards. If catchup=True, the scheduler will catch
+            up on (backfill) each missed interval. Otherwise, it only
+            schedules the latest interval if more than one interval is ready to
+            be scheduled. Usually, if your pipeline handles backfill
+            internally, you should turn catchup off to avoid duplicate backfill.
     """
 
     start_time: datetime.datetime
     end_time: Optional[datetime.datetime] = None
     interval_second: int
     catchup: bool = False
-    cron_expression: Optional[str] = None
 
     @property
     def utc_start_time(self) -> str:
