@@ -148,7 +148,13 @@ def rm_dir(dir_path: str) -> None:
 
     Args:
         dir_path: Dir to delete.
+
+    Raises:
+        TypeError: If the path is not pointing to a directory.
     """
+    if not is_dir(dir_path):
+        raise TypeError(f"Path '{dir_path}' is not a directory.")
+
     _get_filesystem(dir_path).rmtree(dir_path)
 
 
