@@ -17,7 +17,7 @@ It inherits from the base Filesystem created by TFX and overwrites the
 corresponding functions thanks to s3fs.
 """
 
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, cast
 
 import s3fs
 from tfx.dsl.io.fileio import NotFoundError
@@ -118,9 +118,24 @@ class ZenS3(Filesystem):
     def listdir(path: PathType) -> List[PathType]:
         """Return a list of files in a directory."""
         ZenS3._ensure_filesystem_set()
+
+        # remove s3 prefix if given so we can remove the directory later as
+        # this method is expected to only return filenames
+        path = convert_to_str(path)
+        if path.startswith("s3://"):
+            path = path[5:]
+
+        def _extract_basename(file_dict: Dict[str, Any]) -> str:
+            """Extracts the basename from a file info dict returned by the S3
+            filesystem."""
+            file_path = cast(str, file_dict["Key"])
+            base_name = file_path[len(path) :]
+            return base_name.lstrip("/")
+
         try:
             return [
-                f"s3://{dict_['Key']}" for dict_ in ZenS3.fs.listdir(path=path)
+                _extract_basename(dict_)
+                for dict_ in ZenS3.fs.listdir(path=path)
             ]
         except FileNotFoundError as e:
             raise NotFoundError() from e
