@@ -17,13 +17,21 @@ It inherits from the base Filesystem created by TFX and overwrites the
 corresponding functions thanks to s3fs.
 """
 
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+
 import s3fs
+from tfx.dsl.io.fileio import NotFoundError
 
-from zenml.io.cloud_filesystem import CloudFilesystem
+from zenml.io.fileio import convert_to_str
+from zenml.io.filesystem import Filesystem, PathType
 
 
-class ZenS3(CloudFilesystem):
-    """Filesystem that delegates to S3 storage using s3fs."""
+class ZenS3(Filesystem):
+    """Filesystem that delegates to S3 storage using s3fs.
+
+    **Note**: To allow TFX to check for various error conditions, we need to
+    raise their custom `NotFoundError` instead of the builtin python
+    FileNotFoundError."""
 
     SUPPORTED_SCHEMES = ["s3://"]
     fs: s3fs.S3FileSystem = None
@@ -33,3 +41,172 @@ class ZenS3(CloudFilesystem):
         """Ensures that the filesystem is set."""
         if cls.fs is None:
             cls.fs = s3fs.S3FileSystem()
+
+    @staticmethod
+    def open(path: PathType, mode: str = "r") -> Any:
+        """Open a file at the given path.
+        Args:
+            path: Path of the file to open.
+            mode: Mode in which to open the file. Currently only
+                'rb' and 'wb' to read and write binary files are supported.
+        """
+        ZenS3._ensure_filesystem_set()
+
+        try:
+            return ZenS3.fs.open(path=path, mode=mode)
+        except FileNotFoundError as e:
+            raise NotFoundError() from e
+
+    @staticmethod
+    def copy(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+        """Copy a file.
+        Args:
+            src: The path to copy from.
+            dst: The path to copy to.
+            overwrite: If a file already exists at the destination, this
+                method will overwrite it if overwrite=`True` and
+                raise a FileExistsError otherwise.
+        Raises:
+            FileNotFoundError: If the source file does not exist.
+            FileExistsError: If a file already exists at the destination
+                and overwrite is not set to `True`.
+        """
+        ZenS3._ensure_filesystem_set()
+        if not overwrite and ZenS3.fs.exists(dst):
+            raise FileExistsError(
+                f"Unable to copy to destination '{convert_to_str(dst)}', "
+                f"file already exists. Set `overwrite=True` to copy anyway."
+            )
+
+        # TODO [ENG-151]: Check if it works with overwrite=True or if we need to
+        #  manually remove it first
+        try:
+            ZenS3.fs.copy(path1=src, path2=dst)
+        except FileNotFoundError as e:
+            raise NotFoundError() from e
+
+    @staticmethod
+    def exists(path: PathType) -> bool:
+        """Check whether a path exists."""
+        ZenS3._ensure_filesystem_set()
+        return ZenS3.fs.exists(path=path)  # type: ignore[no-any-return]
+
+    @staticmethod
+    def glob(pattern: PathType) -> List[PathType]:
+        """Return all paths that match the given glob pattern.
+        The glob pattern may include:
+        - '*' to match any number of characters
+        - '?' to match a single character
+        - '[...]' to match one of the characters inside the brackets
+        - '**' as the full name of a path component to match to search
+          in subdirectories of any depth (e.g. '/some_dir/**/some_file)
+        Args:
+            pattern: The glob pattern to match, see details above.
+        Returns:
+            A list of paths that match the given glob pattern.
+        """
+        ZenS3._ensure_filesystem_set()
+        return ZenS3.fs.glob(path=pattern)  # type: ignore[no-any-return]
+
+    @staticmethod
+    def isdir(path: PathType) -> bool:
+        """Check whether a path is a directory."""
+        ZenS3._ensure_filesystem_set()
+        return ZenS3.fs.isdir(path=path)  # type: ignore[no-any-return]
+
+    @staticmethod
+    def listdir(path: PathType) -> List[PathType]:
+        """Return a list of files in a directory."""
+        ZenS3._ensure_filesystem_set()
+        try:
+            return ZenS3.fs.listdir(path=path)  # type: ignore[no-any-return]
+        except FileNotFoundError as e:
+            raise NotFoundError() from e
+
+    @staticmethod
+    def makedirs(path: PathType) -> None:
+        """Create a directory at the given path. If needed also
+        create missing parent directories."""
+        ZenS3._ensure_filesystem_set()
+        ZenS3.fs.makedirs(path=path, exist_ok=True)
+
+    @staticmethod
+    def mkdir(path: PathType) -> None:
+        """Create a directory at the given path."""
+        ZenS3._ensure_filesystem_set()
+        ZenS3.fs.makedir(path=path)
+
+    @staticmethod
+    def remove(path: PathType) -> None:
+        """Remove the file at the given path."""
+        ZenS3._ensure_filesystem_set()
+        try:
+            ZenS3.fs.rm_file(path=path)
+        except FileNotFoundError as e:
+            raise NotFoundError() from e
+
+    @staticmethod
+    def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+        """Rename source file to destination file.
+        Args:
+            src: The path of the file to rename.
+            dst: The path to rename the source file to.
+            overwrite: If a file already exists at the destination, this
+                method will overwrite it if overwrite=`True` and
+                raise a FileExistsError otherwise.
+        Raises:
+            FileNotFoundError: If the source file does not exist.
+            FileExistsError: If a file already exists at the destination
+                and overwrite is not set to `True`.
+        """
+        ZenS3._ensure_filesystem_set()
+        if not overwrite and ZenS3.fs.exists(dst):
+            raise FileExistsError(
+                f"Unable to rename file to '{convert_to_str(dst)}', "
+                f"file already exists. Set `overwrite=True` to rename anyway."
+            )
+
+        # TODO [ENG-152]: Check if it works with overwrite=True or if we need
+        #  to manually remove it first
+        try:
+            ZenS3.fs.rename(path1=src, path2=dst)
+        except FileNotFoundError as e:
+            raise NotFoundError() from e
+
+    @staticmethod
+    def rmtree(path: PathType) -> None:
+        """Remove the given directory."""
+        ZenS3._ensure_filesystem_set()
+        try:
+            ZenS3.fs.delete(path=path, recursive=True)
+        except FileNotFoundError as e:
+            raise NotFoundError() from e
+
+    @staticmethod
+    def stat(path: PathType) -> Dict[str, Any]:
+        """Return stat info for the given path."""
+        ZenS3._ensure_filesystem_set()
+        try:
+            return ZenS3.fs.stat(path=path)  # type: ignore[no-any-return]
+        except FileNotFoundError as e:
+            raise NotFoundError() from e
+
+    @staticmethod
+    def walk(
+        top: PathType,
+        topdown: bool = True,
+        onerror: Optional[Callable[..., None]] = None,
+    ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
+        """Return an iterator that walks the contents of the given directory.
+        Args:
+            top: Path of directory to walk.
+            topdown: Unused argument to conform to interface.
+            onerror: Unused argument to conform to interface.
+        Returns:
+            An Iterable of Tuples, each of which contain the path of the current
+            directory path, a list of directories inside the current directory
+            and a list of files inside the current directory.
+        """
+        ZenS3._ensure_filesystem_set()
+        # TODO [ENG-153]: Additional params
+        return ZenS3.fs.walk(path=top)  # type: ignore[no-any-return]
