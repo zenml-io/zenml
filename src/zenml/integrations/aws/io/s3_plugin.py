@@ -40,7 +40,7 @@ class ZenS3(Filesystem):
     def _ensure_filesystem_set(cls) -> None:
         """Ensures that the filesystem is set."""
         if cls.fs is None:
-            cls.fs = s3fs.S3FileSystem()
+            cls.fs = s3fs.S3FileSystem(anon=True)
 
     @staticmethod
     def open(path: PathType, mode: str = "r") -> Any:
@@ -106,7 +106,7 @@ class ZenS3(Filesystem):
             A list of paths that match the given glob pattern.
         """
         ZenS3._ensure_filesystem_set()
-        return ZenS3.fs.glob(path=pattern)  # type: ignore[no-any-return]
+        return [f"s3://{path}" for path in ZenS3.fs.glob(path=pattern)]
 
     @staticmethod
     def isdir(path: PathType) -> bool:
@@ -119,7 +119,9 @@ class ZenS3(Filesystem):
         """Return a list of files in a directory."""
         ZenS3._ensure_filesystem_set()
         try:
-            return ZenS3.fs.listdir(path=path)  # type: ignore[no-any-return]
+            return [
+                f"s3://{dict_['Key']}" for dict_ in ZenS3.fs.listdir(path=path)
+            ]
         except FileNotFoundError as e:
             raise NotFoundError() from e
 
@@ -209,4 +211,5 @@ class ZenS3(Filesystem):
         """
         ZenS3._ensure_filesystem_set()
         # TODO [ENG-153]: Additional params
-        return ZenS3.fs.walk(path=top)  # type: ignore[no-any-return]
+        for directory, subdirectories, files in ZenS3.fs.walk(path=top):
+            yield f"s3://{directory}", subdirectories, files
