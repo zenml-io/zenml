@@ -59,6 +59,7 @@ from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
+from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.step_output import Output
 from zenml.utils import source_utils
 
@@ -409,7 +410,21 @@ class _FunctionExecutor(BaseExecutor):
                     input_dict[arg][0], arg_type
                 )
 
-        with Environment._layer(step_is_running=True):
+        # Wrap the execution of the step function in an environment layer
+        # that the step function code can access to retrieve information about
+        # the pipeline runtime, such as the current step name and the current
+        # pipeline run ID
+        if self._context is None:
+            raise RuntimeError(
+                "No TFX context is set for the currently running pipeline. "
+                "Cannot retrieve pipeline runtime information."
+            )
+        with Environment._layer(
+            step_is_running=True,
+            pipeline_name=self._context.pipeline_info.id,  # type: ignore[attr-defined]
+            pipeline_run_id=self._context.pipeline_run_id,
+            step_name=getattr(self, PARAM_STEP_NAME),
+        ):
             return_values = self._FUNCTION(**function_params)
 
         spec = inspect.getfullargspec(inspect.unwrap(self._FUNCTION))

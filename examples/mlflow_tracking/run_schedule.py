@@ -16,6 +16,8 @@ from datetime import datetime, timedelta
 
 from zenml.integrations.mlflow.mlflow_utils import local_mlflow_backend
 
+from zenml.pipelines import Schedule
+
 from pipeline import (
     TrainerConfig,
     mlflow_example_pipeline,
@@ -27,6 +29,12 @@ from pipeline import (
 
 if __name__ == "__main__":
 
+    schedule=Schedule(
+        start_time=datetime.now(),
+        end_time=datetime.now() + timedelta(minutes=10),
+        interval_second=60,
+    )
+
     # Initialize a pipeline run
     run_1 = mlflow_example_pipeline(
         importer=importer_mnist(),
@@ -35,7 +43,7 @@ if __name__ == "__main__":
         evaluator=tf_evaluator(),
     )
 
-    run_1.run()
+    run_1.run(schedule=schedule)
 
     # Initialize a pipeline run again
     run_2 = mlflow_example_pipeline(
@@ -45,7 +53,7 @@ if __name__ == "__main__":
         evaluator=tf_evaluator(),
     )
 
-    run_2.run()
+    run_2.run(schedule=schedule)
     print(
         "Now run \n "
         f"    mlflow ui --backend-store-uri {local_mlflow_backend()}\n"
