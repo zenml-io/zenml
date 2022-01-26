@@ -47,6 +47,7 @@ class ArtifactStoreFlavor(StackComponentFlavor):
 
     LOCAL = "local"
     GCP = "gcp"
+    S3 = "s3"
 
 
 class MetadataStoreFlavor(StackComponentFlavor):
