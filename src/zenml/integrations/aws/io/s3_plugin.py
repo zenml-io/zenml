@@ -40,7 +40,7 @@ class ZenS3(Filesystem):
     def _ensure_filesystem_set(cls) -> None:
         """Ensures that the filesystem is set."""
         if cls.fs is None:
-            cls.fs = s3fs.S3FileSystem(anon=True)
+            cls.fs = s3fs.S3FileSystem()
 
     @staticmethod
     def open(path: PathType, mode: str = "r") -> Any:
