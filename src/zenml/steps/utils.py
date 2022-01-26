@@ -38,6 +38,7 @@ from typing import (
     KeysView,
     List,
     Optional,
+    Sequence,
     Set,
     Type,
     ValuesView,
@@ -421,14 +422,14 @@ class _FunctionExecutor(BaseExecutor):
             # return value as the return for that output
             if len(output_annotations) == 1:
                 return_values = [return_values]
-            elif not isinstance(return_values, tuple):
-                # if the user defined multiple outputs, they should be returned
-                # as an (implicit) tuple from the step function
+            elif not isinstance(return_values, Sequence):
+                # if the user defined multiple outputs, they return value must
+                # be a sequence
                 raise StepInterfaceError(
                     f"Wrong step function output type for step '{step_name}: "
                     f"Expected multiple outputs ({output_annotations}) but "
-                    f"the function did not return a tuple (actual return "
-                    f"value: {return_values})."
+                    f"the function did not return a sequence-like object "
+                    f"(actual return value: {return_values})."
                 )
 
             for return_value, (output_name, output_type) in zip(
