@@ -22,6 +22,7 @@ from zenml.orchestrators.utils import create_tfx_pipeline
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
+    from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack
 
 
@@ -37,8 +38,11 @@ class LocalOrchestrator(BaseOrchestrator):
         return OrchestratorFlavor.LOCAL
 
     def run_pipeline(
-        self, pipeline: "BasePipeline", stack: "Stack", run_name: str
+        self,
+        pipeline: "BasePipeline",
+        stack: "Stack",
+        runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
         """Runs a pipeline locally."""
         tfx_pipeline = create_tfx_pipeline(pipeline, stack=stack)
-        LocalDagRunner().run(tfx_pipeline, run_name)
+        LocalDagRunner().run(tfx_pipeline, runtime_configuration)

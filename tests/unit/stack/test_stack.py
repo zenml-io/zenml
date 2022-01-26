@@ -233,7 +233,9 @@ def test_stack_deployment(
         component.cleanup_pipeline_run.assert_called_once()
 
     stack_with_mock_components.orchestrator.run_pipeline.assert_called_once_with(
-        pipeline, stack=stack_with_mock_components, run_name=run_name
+        pipeline,
+        stack=stack_with_mock_components,
+        runtime_configuration=runtime_config,
     )
     assert return_value is pipeline_run_return_value
 

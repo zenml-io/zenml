@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any, Optional, Set
 
 import kfp
 import urllib3
+from kfp_server_api.exceptions import ApiException
 from kubernetes import config
 
 import zenml.io.utils
@@ -139,7 +140,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
             push_docker_image(image_name)
 
     def run_pipeline(
-        self, pipeline: "BasePipeline", stack: "Stack", run_name: str
+        self,
+        pipeline: "BasePipeline",
+        stack: "Stack",
+        runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
         """Runs a pipeline on Kubeflow Pipelines."""
         from zenml.integrations.kubeflow.docker_utils import get_image_digest
@@ -159,19 +163,25 @@ class KubeflowOrchestrator(BaseOrchestrator):
         runner.run(tfx_pipeline)
 
         self._upload_and_run_pipeline(
+            pipeline_name=pipeline.name,
             pipeline_file_path=pipeline_file_path,
-            run_name=run_name,
+            runtime_configuration=runtime_configuration,
             enable_cache=pipeline.enable_cache,
         )
 
     def _upload_and_run_pipeline(
-        self, pipeline_file_path: str, run_name: str, enable_cache: bool
+        self,
+        pipeline_name: str,
+        pipeline_file_path: str,
+        runtime_configuration: "RuntimeConfiguration",
+        enable_cache: bool,
     ) -> None:
         """Tries to upload and run a KFP pipeline.
 
         Args:
+            pipeline_name: Name of the pipeline.
             pipeline_file_path: Path to the pipeline definition file.
-            run_name: A name for the pipeline run that will be started.
+            runtime_configuration: Runtime configuration of the pipeline run.
             enable_cache: Whether caching is enabled for this pipeline run.
         """
         try:
@@ -186,13 +196,50 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
             # upload the pipeline to Kubeflow and start it
             client = kfp.Client()
-            result = client.create_run_from_pipeline_package(
-                pipeline_file_path,
-                arguments={},
-                run_name=run_name,
-                enable_caching=enable_cache,
-            )
-            logger.info("Started pipeline run with ID '%s'.", result.run_id)
+            if runtime_configuration.schedule:
+                try:
+                    experiment = client.get_experiment(pipeline_name)
+                    logger.info(
+                        "A recurring run has already been created with this "
+                        "pipeline. Creating new recurring run now.."
+                    )
+                except (ValueError, ApiException):
+                    experiment = client.create_experiment(pipeline_name)
+                    logger.info(
+                        "Creating a new recurring run for pipeline '%s'.. ",
+                        pipeline_name,
+                    )
+                logger.info(
+                    "You can see all recurring runs under the '%s' experiment.'",
+                    pipeline_name,
+                )
+
+                schedule = runtime_configuration.schedule
+                result = client.create_recurring_run(
+                    experiment_id=experiment.id,
+                    job_name=runtime_configuration.run_name,
+                    pipeline_package_path=pipeline_file_path,
+                    enable_caching=enable_cache,
+                    start_time=schedule.utc_start_time,
+                    end_time=schedule.utc_end_time,
+                    interval_second=schedule.interval_second,
+                    no_catchup=not schedule.catchup,
+                )
+
+                logger.info("Started recurring run with ID '%s'.", result.id)
+            else:
+                logger.info(
+                    "No schedule detected. Creating a one-off pipeline run.."
+                )
+                result = client.create_run_from_pipeline_package(
+                    pipeline_file_path,
+                    arguments={},
+                    run_name=runtime_configuration.run_name,
+                    enable_caching=enable_cache,
+                )
+                logger.info(
+                    "Started one-off pipeline run with ID '%s'.", result.run_id
+                )
         except urllib3.exceptions.HTTPError as error:
             logger.warning(
                 "Failed to upload Kubeflow pipeline: %s. "

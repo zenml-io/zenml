@@ -25,5 +25,6 @@ Pipelines can be written as simple functions. They are created by using decorato
 
 from zenml.pipelines.base_pipeline import BasePipeline
 from zenml.pipelines.pipeline_decorator import pipeline
+from zenml.pipelines.schedule import Schedule
 
-__all__ = ["BasePipeline", "pipeline"]
+__all__ = ["BasePipeline", "pipeline", "Schedule"]
