@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,25 +12,24 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-""" Plugin which is created to add Google Cloud Store support to ZenML.
+""" Plugin which is created to add S3 storage support to ZenML.
 It inherits from the base Filesystem created by TFX and overwrites the
-corresponding functions thanks to gcsfs.
+corresponding functions thanks to s3fs.
 """
 
-
-import gcsfs
+import s3fs
 
 from zenml.io.cloud_filesystem import CloudFilesystem
 
 
-class ZenGCS(CloudFilesystem):
-    """Filesystem that delegates to Google Cloud Store using gcsfs."""
+class ZenS3(CloudFilesystem):
+    """Filesystem that delegates to S3 storage using s3fs."""
 
-    SUPPORTED_SCHEMES = ["gs://"]
-    fs: gcsfs.GCSFileSystem = None
+    SUPPORTED_SCHEMES = ["s3://"]
+    fs: s3fs.S3FileSystem = None
 
     @classmethod
     def _ensure_filesystem_set(cls) -> None:
         """Ensures that the filesystem is set."""
         if cls.fs is None:
-            cls.fs = gcsfs.GCSFileSystem()
+            cls.fs = s3fs.S3FileSystem()
