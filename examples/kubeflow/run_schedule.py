@@ -14,7 +14,7 @@
 
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import numpy as np
 from sklearn.base import ClassifierMixin
@@ -99,6 +99,7 @@ if __name__ == "__main__":
     p.run(
         schedule=Schedule(
             start_time=datetime.now(),
+            end_time=datetime.now() + timedelta(minutes=10),
             interval_second=60,
         )
     )
