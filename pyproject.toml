@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.5.7"
+version = "0.6.0"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -187,6 +187,8 @@ module = [
     "analytics.*",
     "absl.*",
     "gcsfs.*",
+    "s3fs.*",
+    "fsspec.*",
     "torch.*",
     "pytorch_lightning.*",
     "sklearn.*",

@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,18 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-AIRFLOW = "airflow"
-AWS = "aws"
-DASH = "dash"
-EVIDENTLY = "evidently"
-FACETS = "facets"
-GCP = "gcp"
-GRAPHVIZ = "graphviz"
-KUBEFLOW = "kubeflow"
-MLFLOW = "mlflow"
-PLOTLY = "plotly"
-PYTORCH = "pytorch"
-PYTORCH_L = "pytorch_lightning"
-SKLEARN = "sklearn"
-TENSORFLOW = "tensorflow"
-WHYLOGS = "whylogs"
+from tfx.dsl.io.filesystem_registry import DEFAULT_FILESYSTEM_REGISTRY
+
+from zenml.integrations.aws.io.s3_plugin import ZenS3
+
+DEFAULT_FILESYSTEM_REGISTRY.register(ZenS3, 15)
