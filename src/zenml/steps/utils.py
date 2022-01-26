@@ -356,6 +356,8 @@ class _FunctionExecutor(BaseExecutor):
             output_dict: dictionary containing the output artifacts
             exec_properties: dictionary containing the execution parameters
         """
+        step_name = getattr(self, PARAM_STEP_NAME)
+
         # remove all ZenML internal execution properties
         exec_properties = {
             k: json.loads(v)
@@ -386,7 +388,7 @@ class _FunctionExecutor(BaseExecutor):
                     ]
 
                     raise MissingStepParameterError(
-                        getattr(self, PARAM_STEP_NAME),
+                        step_name,
                         missing_fields,
                         arg_type,
                     ) from None
@@ -394,7 +396,7 @@ class _FunctionExecutor(BaseExecutor):
             elif issubclass(arg_type, StepContext):
                 output_artifacts = {k: v[0] for k, v in output_dict.items()}
                 context = arg_type(
-                    step_name=getattr(self, PARAM_STEP_NAME),
+                    step_name=step_name,
                     output_materializers=self.materializers or {},
                     output_artifacts=output_artifacts,
                 )
@@ -419,6 +421,15 @@ class _FunctionExecutor(BaseExecutor):
             # return value as the return for that output
             if len(output_annotations) == 1:
                 return_values = [return_values]
+            elif not isinstance(return_values, tuple):
+                # if the user defined multiple outputs, they should be returned
+                # as an (implicit) tuple from the step function
+                raise StepInterfaceError(
+                    f"Wrong step function output type for step '{step_name}: "
+                    f"Expected multiple outputs ({output_annotations}) but "
+                    f"the function did not return a tuple (actual return "
+                    f"value: {return_values})."
+                )
 
             for return_value, (output_name, output_type) in zip(
                 return_values, output_annotations
@@ -426,8 +437,8 @@ class _FunctionExecutor(BaseExecutor):
                 if not isinstance(return_value, output_type):
                     raise StepInterfaceError(
                         f"Wrong type for output '{output_name}' of step "
-                        f"'{getattr(self, PARAM_STEP_NAME)}' (expected type: "
-                        f"{output_type}, actual type: {type(return_value)})."
+                        f"'{step_name}' (expected type: {output_type}, "
+                        f"actual type: {type(return_value)})."
                     )
 
                 self.resolve_output_artifact(
