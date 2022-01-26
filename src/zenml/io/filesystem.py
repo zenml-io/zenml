@@ -33,7 +33,7 @@ class FileSystemMeta(type):
     ) -> "FileSystemMeta":
         """Creates the filesystem class and registers it"""
         cls = cast(Type["Filesystem"], super().__new__(mcs, name, bases, dct))
-        if name not in ["Filesystem", "CloudFilesystem"]:
+        if name != "Filesystem":
             assert cls.SUPPORTED_SCHEMES, (
                 "You should specify a list of SUPPORTED_SCHEMES when creating "
                 "a filesystem"
