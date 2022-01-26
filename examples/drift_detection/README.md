@@ -103,7 +103,7 @@ the comparison to take place.
 We even allow you to use the Evidently visualization tool easily to display data
 drift diagrams in your browser or within a Jupyter notebook:
 
-![](./drift_visualization.png)
+![Evidently drift visualization UI](assets/drift_visualization.png)
 
 ## Run it locally
 

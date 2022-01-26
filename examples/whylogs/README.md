@@ -1,10 +1,10 @@
 # Profiling Datasets with WhyLogs/Whylabs
 
-Data logging and profiling is a an important part of any production ML
+Data logging and profiling is an important part of any production ML
 pipeline. [Whylogs](https://whylabs.ai/whylogs) is an open source library
 that analyzes your data and creates statistical summaries called whylogs
 profiles. Whylogs profiles can be visualized locally or uploaded to the
-WhyLabs platform where more comprehensive analyses can be carried out.
+[WhyLabs](https://whylabs.ai/) platform where more comprehensive analyses can be carried out.
 
 ZenML integrates seamlessly with Whylogs and WhyLabs. This example shows
 how easy it is to enhance steps in an existing ML pipeline with Whylogs
@@ -27,7 +27,7 @@ use of the `whylogs_profiler_step` function.
 
 ## How the example is implemented
 
-The ZenML pipeline in this example is rather simple, it consists of a couple
+The ZenML pipeline in this example is rather simple, consisting of a couple
 of steps involving some processing of datasets. How these datasets are used in
 the pipeline is irrelevant for the example - it could be data ingestion, feature
 engineering, data processing, model training and validation or inference. What
@@ -89,7 +89,7 @@ visualize_statistics("data_loader")
 visualize_statistics("train_data_profiler")
 visualize_statistics("test_data_profiler")
 ```
-![](./whylogs-visualizer.png)
+![WhyLogs visualizer](assets/whylogs-visualizer.png)
 
 Furthermore, all the generated profiles are uploaded to Whylabs
 automatically if the Whylabs environment variables are set:
@@ -103,8 +103,8 @@ os.environ["WHYLABS_DEFAULT_ORG_ID"] = "YOUR-ORG-ID"
 The `datasetId` tags set for the profiles are used to associate
 the datasets models with the models in the Whylogs platform. 
 
-![](./whylabs-ui-01.png)
-![](./whylabs-ui-02.png)
+![WhyLabs UI image 1](assets/whylabs-ui-01.png)
+![WhyLabs UI image 2](assets/whylabs-ui-02.png)
 
 
 ## Run it locally

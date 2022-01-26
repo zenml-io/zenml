@@ -56,7 +56,7 @@ key                   stack_type    metadata_store_name    artifact_store_name  
 local_stack           base          local_metadata_store   local_artifact_store   local_orchestrator
 ```
 
-![Your local stack when you start.](../../.gitbook/assets/localstack.png)
+![Your local stack when you start.](../../assets/localstack.png)
 
 Let's stick with the `local_metadata_store` and a `local_artifact_store` for now and create a stack with a Kubeflow orchestrator and a local container registry
 
