@@ -12,16 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import inspect
-import time
 from abc import abstractmethod
-from datetime import datetime
 from typing import (
     Any,
     ClassVar,
     Dict,
     NoReturn,
     Optional,
-    Set,
     Text,
     Tuple,
     Type,
@@ -37,17 +34,15 @@ from zenml.constants import (
     ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
     SHOULD_PREVENT_PIPELINE_EXECUTION,
 )
-from zenml.core.repo import Repository
-from zenml.exceptions import (
-    DoesNotExistException,
-    PipelineConfigurationError,
-    PipelineInterfaceError,
-)
+from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.stacks import BaseStack
+from zenml.pipelines.schedule import Schedule
+from zenml.repository import Repository
+from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.steps import BaseStep
-from zenml.utils import analytics_utils, string_utils, yaml_utils
+from zenml.utils import yaml_utils
+from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
@@ -69,7 +64,7 @@ class BasePipelineMeta(type):
         cls.STEP_SPEC = {}
 
         connect_spec = inspect.getfullargspec(
-            getattr(cls, PIPELINE_INNER_FUNC_NAME)
+            inspect.unwrap(getattr(cls, PIPELINE_INNER_FUNC_NAME))
         )
         connect_args = connect_spec.args
 
@@ -101,14 +96,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
     INSTANCE_CONFIGURATION: Dict[Text, Any] = {}
 
     def __init__(self, *args: BaseStep, **kwargs: Any) -> None:
-        try:
-            self.__stack = Repository().get_active_stack()
-        except DoesNotExistException as exc:
-            raise DoesNotExistException(
-                "Could not retrieve any active stack. Make sure to set a "
-                "stack active via `zenml stack set STACK_NAME`"
-            ) from exc
-
         kwargs.update(getattr(self, INSTANCE_CONFIGURATION))
         self.enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, True)
         self.requirements_file = kwargs.pop(PARAM_REQUIREMENTS_FILE, None)
@@ -148,10 +135,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
 
         combined_steps = {}
-        step_cls_args: Set[Type[BaseStep]] = set()
+        step_classes: Dict[Type[BaseStep], str] = {}
 
         for i, step in enumerate(steps):
             step_class = type(step)
+            key = input_step_keys[i]
 
             if not isinstance(step, BaseStep):
                 raise PipelineInterfaceError(
@@ -162,18 +150,18 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"a pipeline."
                 )
 
-            if step_class in step_cls_args:
+            if step_class in step_classes:
+                previous_key = step_classes[step_class]
                 raise PipelineInterfaceError(
-                    f"Step object (`{step_class}`) has been used twice. Step "
-                    f"objects should be unique for each argument."
+                    f"Found multiple step objects of the same class "
+                    f"(`{step_class}`) for arguments '{previous_key}' and "
+                    f"'{key}' in pipeline '{self.name}'. Only one step object "
+                    f"per class is allowed inside a ZenML pipeline."
                 )
 
-            key = input_step_keys[i]
             step.pipeline_parameter_name = key
             combined_steps[key] = step
-            step_cls_args.add(step_class)
-
-        step_cls_kwargs: Dict[Type[BaseStep], str] = {}
+            step_classes[step_class] = key
 
         for key, step in kw_steps.items():
             step_class = type(step)
@@ -196,23 +184,18 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"a pipeline."
                 )
 
-            if step_class in step_cls_kwargs:
-                prev_key = step_cls_kwargs[step_class]
+            if step_class in step_classes:
+                previous_key = step_classes[step_class]
                 raise PipelineInterfaceError(
-                    f"Same step object (`{step_class}`) passed for arguments "
-                    f"'{key}' and '{prev_key}'. Step objects should be "
-                    f"unique for each argument."
-                )
-
-            if step_class in step_cls_args:
-                raise PipelineInterfaceError(
-                    f"Step object (`{step_class}`) has been used twice. Step "
-                    f"objects should be unique for each argument."
+                    f"Found multiple step objects of the same class "
+                    f"(`{step_class}`) for arguments '{previous_key}' and "
+                    f"'{key}' in pipeline '{self.name}'. Only one step object "
+                    f"per class is allowed inside a ZenML pipeline."
                 )
 
             step.pipeline_parameter_name = key
             combined_steps[key] = step
-            step_cls_kwargs[step_class] = key
+            step_classes[step_class] = key
 
         # check if there are any missing or unexpected steps
         expected_steps = set(self.STEP_SPEC.keys())
@@ -241,21 +224,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
         raise NotImplementedError
 
     @property
-    def stack(self) -> BaseStack:
-        """Returns the stack for this pipeline."""
-        return self.__stack
-
-    @stack.setter
-    def stack(self, stack: BaseStack) -> NoReturn:
-        """Setting the stack property is not allowed. This method always
-        raises a PipelineInterfaceError.
-        """
-        raise PipelineInterfaceError(
-            "The stack will be automatically inferred from your environment. "
-            "Please do no attempt to manually change it."
-        )
-
-    @property
     def steps(self) -> Dict[str, BaseStep]:
         """Returns a dictionary of pipeline steps."""
         return self.__steps
@@ -267,11 +235,19 @@ class BasePipeline(metaclass=BasePipelineMeta):
         """
         raise PipelineInterfaceError("Cannot set steps manually!")
 
-    def run(self, run_name: Optional[str] = None) -> Any:
-        """Runs the pipeline using the orchestrator of the pipeline stack.
+    # TODO [ENG-376]: Enable specifying runtime configuration options either using
+    #  **kwargs here or by passing a `RuntimeConfiguration` object or a
+    #  path to a config file.
+    def run(
+        self,
+        run_name: Optional[str] = None,
+        schedule: Optional[Schedule] = None,
+    ) -> Any:
+        """Runs the pipeline on the active stack of the current repository.
 
         Args:
-            run_name: Optional name for the run.
+            run_name: Name of the pipeline run.
+            schedule: Optional schedule of the pipeline.
         """
         if SHOULD_PREVENT_PIPELINE_EXECUTION:
             # An environment variable was set to stop the execution of
@@ -292,44 +268,27 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         integration_registry.activate_integrations()
 
-        if not run_name:
-            run_name = (
-                f"{self.name}-"
-                f'{datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")}'
-            )
+        # Path of the file where pipeline.run() was called. This is needed by
+        # the airflow orchestrator so it knows which file to copy into the DAG
+        # directory
+        dag_filepath = fileio.resolve_relative_path(
+            inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr] # noqa
+        )
+        runtime_configuration = RuntimeConfiguration(
+            run_name=run_name, dag_filepath=dag_filepath, schedule=schedule
+        )
+        stack = Repository().active_stack
 
-        analytics_utils.track_event(
-            event=analytics_utils.RUN_PIPELINE,
+        track_event(
+            event=AnalyticsEvent.RUN_PIPELINE,
             metadata={
-                "stack_type": self.stack.stack_type,
                 "total_steps": len(self.steps),
             },
         )
 
-        start_time = time.time()
-        logger.info(
-            "Using stack `%s` for pipeline `%s`. Running pipeline..",
-            Repository().get_active_stack_key(),
-            self.name,
+        return stack.deploy_pipeline(
+            self, runtime_configuration=runtime_configuration
         )
-
-        # filepath of the file where pipeline.run() was called
-        caller_filepath = fileio.resolve_relative_path(
-            inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr] # noqa
-        )
-
-        self.stack.orchestrator.pre_run(
-            pipeline=self, caller_filepath=caller_filepath
-        )
-        ret = self.stack.orchestrator.run(self, run_name=run_name)
-        self.stack.orchestrator.post_run()
-        run_duration = time.time() - start_time
-        logger.info(
-            "Pipeline run `%s` has finished in %s.",
-            run_name,
-            string_utils.get_human_readable_time(run_duration),
-        )
-        return ret
 
     def with_config(
         self: T, config_file: str, overwrite_step_parameters: bool = False

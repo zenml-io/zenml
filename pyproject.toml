@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.5.7"
+version = "0.6.0"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -56,7 +56,7 @@ pyyaml = "^5.4.1"
 python-dateutil = "^2.8.1"
 gitpython = "^3.1.18"
 click = "^8.0.1"
-pydantic = "<=1.8.2"
+pydantic = "^1.9.0"
 analytics-python = "^1.4.0"
 distro = "^1.6.0"
 tabulate = "^0.8.9"
@@ -81,6 +81,15 @@ furo = "^2021.10.9" # sphinx theme
 sphinx-copybutton = "^0.4.0"
 typing-extensions = ">=3.7.4"
 pytest-randomly = "^3.10.1"
+
+# mkdocs including plugins
+mkdocs="^1.2.3"
+mkdocs-material="^8.1.7"
+mkdocs-awesome-pages-plugin="^2.6.1"
+mkdocstrings="^0.17.0"
+pydocstyle="^6.1.1"
+mike="^1.1.2"
+
 
 # mypy type stubs
 types-certifi = "^2021.10.8.0"
@@ -178,6 +187,8 @@ module = [
     "analytics.*",
     "absl.*",
     "gcsfs.*",
+    "s3fs.*",
+    "fsspec.*",
     "torch.*",
     "pytorch_lightning.*",
     "sklearn.*",
@@ -193,7 +204,8 @@ module = [
     "docker.*",
     "kfp.*",
     "kubernetes.*",
-    "urllib3.*"
+    "urllib3.*",
+    "kfp_server_api.*"
 ]
 ignore_missing_imports = true
 

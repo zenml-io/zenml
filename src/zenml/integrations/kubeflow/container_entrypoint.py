@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Main entrypoint for containers with Kubeflow TFX component executors."""
-
 import argparse
 import importlib
 import json
@@ -22,8 +21,9 @@ import sys
 import textwrap
 from typing import Dict, List, MutableMapping, Optional, Tuple
 
+import kfp
 from google.protobuf import json_format
-from ml_metadata.proto import metadata_store_pb2
+from kubernetes import config as k8s_config
 from tfx.dsl.compiler import constants
 from tfx.orchestration import metadata
 from tfx.orchestration.local import runner_utils
@@ -39,20 +39,11 @@ from tfx.types.channel import Property
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.type_registry import type_registry
-from zenml.core.repo import Repository
-from zenml.integrations.kubeflow.metadata import KubeflowMetadataStore
 from zenml.integrations.registry import integration_registry
 from zenml.orchestrators.utils import execute_step
+from zenml.repository import Repository
 from zenml.steps.utils import generate_component_class
 from zenml.utils import source_utils
-
-
-def _get_grpc_metadata_connection_config() -> metadata_store_pb2.MetadataStoreClientConfig:
-    """Constructs a metadata grpc connection config."""
-    connection_config = metadata_store_pb2.MetadataStoreClientConfig()
-    connection_config.host = os.environ["METADATA_GRPC_SERVICE_HOST"]
-    connection_config.port = int(os.environ["METADATA_GRPC_SERVICE_PORT"])
-    return connection_config
 
 
 def _sanitize_underscore(name: str) -> Optional[str]:
@@ -437,10 +428,16 @@ def _parse_command_line_arguments() -> argparse.Namespace:
     parser.add_argument("--main_module", type=str, required=True)
     parser.add_argument("--step_module", type=str, required=True)
     parser.add_argument("--step_function_name", type=str, required=True)
-    parser.add_argument("--run_name", type=str, required=True)
     parser.add_argument("--input_artifact_types", type=str, required=True)
 
     return parser.parse_args()
+
+
+def _get_run_name() -> str:
+    """Gets the KFP run name."""
+    k8s_config.load_incluster_config()
+    run_id = os.environ["KFP_RUN_ID"]
+    return kfp.Client().get_run(run_id).run.name  # type: ignore[no-any-return]
 
 
 def main() -> None:
@@ -454,9 +451,9 @@ def main() -> None:
 
     tfx_pipeline = pipeline_pb2.Pipeline()
     json_format.Parse(args.tfx_ir, tfx_pipeline)
-    _resolve_runtime_parameters(
-        tfx_pipeline, args.run_name, args.runtime_parameter
-    )
+
+    run_name = _get_run_name()
+    _resolve_runtime_parameters(tfx_pipeline, run_name, args.runtime_parameter)
 
     node_id = args.node_id
     pipeline_node = _get_pipeline_node(tfx_pipeline, node_id)
@@ -478,15 +475,10 @@ def main() -> None:
     # available
     integration_registry.activate_integrations()
 
-    metadata_store = Repository().get_active_stack().metadata_store
-    if isinstance(metadata_store, KubeflowMetadataStore):
-        # set up the metadata connection so it connects to the internal kubeflow
-        # mysql database
-        connection_config = _get_grpc_metadata_connection_config()
-    else:
-        connection_config = deployment_config.metadata_connection_config  # type: ignore[attr-defined] # noqa
-
-    metadata_connection = metadata.Metadata(connection_config)
+    metadata_store = Repository().active_stack.metadata_store
+    metadata_connection = metadata.Metadata(
+        metadata_store.get_tfx_metadata_config()
+    )
 
     # import the user main module to register all the materializers
     importlib.import_module(args.main_module)

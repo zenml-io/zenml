@@ -85,7 +85,7 @@ class BaseStepMeta(type):
 
         # Get the signature of the step function
         step_function_signature = inspect.getfullargspec(
-            getattr(cls, STEP_INNER_FUNC_NAME)
+            inspect.unwrap(getattr(cls, STEP_INNER_FUNC_NAME))
         )
 
         if bases:
@@ -248,6 +248,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
         self._explicit_materializers: Dict[str, Type[BaseMaterializer]] = {}
         self._component: Optional[_ZenMLSimpleComponent] = None
+        self._has_been_called = False
 
         self._verify_init_arguments(*args, **kwargs)
         self._verify_output_spec()
@@ -299,7 +300,8 @@ class BaseStep(metaclass=BaseStepMeta):
                         f"using `step.with_return_materializers(...)` or "
                         f"registering a default materializer for specific "
                         f"types by subclassing `BaseMaterializer` and setting "
-                        f"its `ASSOCIATED_TYPES` class variable."
+                        f"its `ASSOCIATED_TYPES` class variable.",
+                        url="https://docs.zenml.io/guides/common-usecases/custom-materializer",
                     )
 
         return materializers
@@ -557,11 +559,18 @@ class BaseStep(metaclass=BaseStepMeta):
 
         return combined_artifacts
 
+    # TODO [ENG-157]: replaces Channels with ZenML class (BaseArtifact?)
     def __call__(
         self, *artifacts: Channel, **kw_artifacts: Channel
     ) -> Union[Channel, List[Channel]]:
         """Generates a component when called."""
-        # TODO [ENG-157]: replaces Channels with ZenML class (BaseArtifact?)
+        if self._has_been_called:
+            raise StepInterfaceError(
+                f"Step {self.name} has already been called. A ZenML step "
+                f"instance can only be called once per pipeline run."
+            )
+        self._has_been_called = True
+
         self._update_and_verify_parameter_spec()
 
         # Prepare the input artifacts and spec

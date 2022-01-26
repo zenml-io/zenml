@@ -15,7 +15,7 @@ dataframes for us.
 This visualization is produced with the following code:
 
 ```python
-from zenml.core.repo import Repository
+from zenml.repository import Repository
 from zenml.integrations.dash.visualizers.pipeline_run_lineage_visualizer import (
     PipelineRunLineageVisualizer,
 )
@@ -30,9 +30,7 @@ visualize_lineage()
 
 It produces the following visualization:
 
-![Statistics for boston housing dataset](../../docs/book/assets/zenml-pipeline-run-lineage-dash.png)
-
-
+![Lineage Diagram](assets/zenml-pipeline-run-lineage-dash.png)
 
 ## Run it locally
 

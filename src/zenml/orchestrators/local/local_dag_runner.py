@@ -33,6 +33,8 @@ by Google at: https://github.com/tensorflow/tfx/blob/master/tfx/orchestration
 /local/local_dag_runner.py"""
 
 
+from typing import Optional
+
 import tfx.orchestration.pipeline as tfx_pipeline
 from tfx.dsl.compiler import compiler
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
@@ -47,6 +49,8 @@ from tfx.orchestration.portable import (
 
 from zenml.logger import get_logger
 from zenml.orchestrators.utils import execute_step
+from zenml.repository import Repository
+from zenml.runtime_configuration import RuntimeConfiguration
 
 logger = get_logger(__name__)
 
@@ -57,13 +61,19 @@ class LocalDagRunner(tfx_runner.TfxRunner):
     def __init__(self) -> None:
         """Initializes LocalDagRunner as a TFX orchestrator."""
 
-    def run(self, pipeline: tfx_pipeline.Pipeline, run_name: str = "") -> None:
+    def run(
+        self,
+        pipeline: tfx_pipeline.Pipeline,
+        runtime_configuration: Optional[RuntimeConfiguration] = None,
+    ) -> None:
         """Runs given logical pipeline locally.
 
         Args:
           pipeline: Logical pipeline containing pipeline args and components.
-          run_name: Name of the pipeline run.
+          runtime_configuration: Runtime configuration of the pipeline run.
         """
+        if runtime_configuration is None:
+            runtime_configuration = RuntimeConfiguration()
         for component in pipeline.components:
             if isinstance(component, base_component.BaseComponent):
                 component._resolve_pip_dependencies(
@@ -77,14 +87,16 @@ class LocalDagRunner(tfx_runner.TfxRunner):
         runtime_parameter_utils.substitute_runtime_parameter(
             pipeline,
             {
-                PIPELINE_RUN_ID_PARAMETER_NAME: run_name,
+                PIPELINE_RUN_ID_PARAMETER_NAME: runtime_configuration.run_name,
             },
         )
 
         deployment_config = runner_utils.extract_local_deployment_config(
             pipeline
         )
-        connection_config = deployment_config.metadata_connection_config  # type: ignore[attr-defined] # noqa
+        connection_config = (
+            Repository().active_stack.metadata_store.get_tfx_metadata_config()
+        )
 
         logger.debug(f"Using deployment config:\n {deployment_config}")
         logger.debug(f"Using connection config:\n {connection_config}")

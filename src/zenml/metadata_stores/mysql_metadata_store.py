@@ -11,10 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import Union
 
 from ml_metadata.proto import metadata_store_pb2
 from tfx.orchestration import metadata
 
+from zenml.enums import MetadataStoreFlavor
 from zenml.metadata_stores import BaseMetadataStore
 
 
@@ -26,8 +28,20 @@ class MySQLMetadataStore(BaseMetadataStore):
     database: str
     username: str
     password: str
+    supports_local_execution = True
+    supports_remote_execution = True
 
-    def get_tfx_metadata_config(self) -> metadata_store_pb2.ConnectionConfig:
+    @property
+    def flavor(self) -> MetadataStoreFlavor:
+        """The metadata store flavor."""
+        return MetadataStoreFlavor.MYSQL
+
+    def get_tfx_metadata_config(
+        self,
+    ) -> Union[
+        metadata_store_pb2.ConnectionConfig,
+        metadata_store_pb2.MetadataStoreClientConfig,
+    ]:
         """Return tfx metadata config for mysql metadata store."""
         return metadata.mysql_metadata_connection_config(
             host=self.host,

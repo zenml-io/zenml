@@ -169,7 +169,9 @@ temp/*
 local_test/
 .zen/
 !cloudbuild.yaml
+!cloudbuild-develop.yaml
 docs/book/_build/
+docs/mkdocs/api_docs(/
 zenml_examples/
 
 # GitHub Folder YAML files not to be ignored

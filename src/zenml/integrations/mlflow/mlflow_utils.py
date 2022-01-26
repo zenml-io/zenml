@@ -4,7 +4,7 @@
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at:
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+#       https://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
@@ -123,8 +123,8 @@ def enable_mlflow(
 
     In order for a pipeline to run within the context of mlflow, the mlflow
     experiment should be associated with the pipeline directly. Each separate
-    pipeline run needs to be associated directly with a pipeline run. For this,
-    the __init__ and run method need to be extended accordingly.
+    pipeline run needs to be associated directly with a mlflow experiment. For
+    this, the __init__ and run methods need to be extended accordingly.
 
     Args:
         _pipeline: The decorated pipeline
@@ -147,6 +147,8 @@ def enable_mlflow(
             the class of a newly generated ZenML Pipeline with mlflow
 
         """
+        # TODO [ENG-369]: Do we need to create a new class here or can we simply
+        #  extend the methods of the original pipeline class?
         return type(  # noqa
             pipeline.__name__,
             (pipeline,),

@@ -20,8 +20,8 @@ from steps.sklearn_trainer import sklearn_evaluator, sklearn_trainer
 from steps.tf_steps import tf_evaluator, tf_trainer
 from steps.torch_steps import torch_evaluator, torch_trainer
 
-from zenml.core.repo import Repository
 from zenml.pipelines import pipeline
+from zenml.repository import Repository
 from zenml.steps import Output, step
 
 
@@ -102,6 +102,6 @@ print("***********************OUTPUT************************")
 for r in pipeline.runs[-3:]:
     eval_step = r.get_step("evaluator")
     print(
-        f"For {eval_step.name}, the accuracy is: "
+        f"For {eval_step.entrypoint_name}, the accuracy is: "
         f"{eval_step.output.read():.2f}"
     )

@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 AIRFLOW = "airflow"
+AWS = "aws"
 DASH = "dash"
 EVIDENTLY = "evidently"
 FACETS = "facets"
@@ -25,3 +26,4 @@ PYTORCH = "pytorch"
 PYTORCH_L = "pytorch_lightning"
 SKLEARN = "sklearn"
 TENSORFLOW = "tensorflow"
+WHYLOGS = "whylogs"

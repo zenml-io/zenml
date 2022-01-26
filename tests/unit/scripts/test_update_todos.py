@@ -15,6 +15,8 @@ import os
 
 import pytest
 
+# notodo
+
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_environment():
@@ -31,6 +33,35 @@ def setup_environment():
 
     os.environ["GITHUB_REPOSITORY"] = ""
     os.environ["GITHUB_SHA"] = ""
+
+
+def test_no_todo_flag(tmp_path):
+    """Tests that files with "# notodo" line are ignored."""
+    from scripts.update_todos import find_todos
+
+    file = tmp_path / "test.py"
+
+    file.write_text(
+        """# notodo
+
+           # TODO [LOW]: valid todo
+
+           # TODO: missing priority
+
+           # TODO [MEDIU]: invalid priority
+
+           # TODO[MEDIUM]: multiline
+           #  todo
+
+           # TODO[HIGH]: invalid multiline
+           # todo (no indentation)
+
+           # TODO [ABC-123]: valid issue key
+        """
+    )
+    todos_without_issue, todos_with_issue = find_todos(file)
+    assert len(todos_with_issue) == 0
+    assert len(todos_without_issue) == 0
 
 
 def test_todo_detection(tmp_path):

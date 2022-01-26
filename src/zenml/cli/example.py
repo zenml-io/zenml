@@ -16,28 +16,23 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, cast
 
 import click
 from git.exc import GitCommandError, InvalidGitRepositoryError, NoSuchPathError
 from git.repo.base import Repo
 from packaging.version import Version, parse
+from rich.console import Console
+from rich.markdown import Markdown
 
 import zenml.io.utils
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
-from zenml.cli.utils import (
-    confirmation,
-    declare,
-    error,
-    pretty_print,
-    title,
-    warning,
-)
+from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.constants import GIT_REPO_URL
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.utils.analytics_utils import RUN_EXAMPLE, track_event
+from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 logger = get_logger(__name__)
 
@@ -149,7 +144,7 @@ class LocalExample:
             )
 
         # Telemetry
-        track_event(RUN_EXAMPLE, {"name": self.name})
+        track_event(AnalyticsEvent.RUN_EXAMPLE, {"example_name": self.name})
 
 
 class Example:
@@ -206,24 +201,25 @@ class ExamplesRepo:
                 "Automatically cloning the examples."
             )
             self.clone()
-            self.checkout(branch=self.latest_release)
+            self.checkout_latest_release()
 
     @property
     def active_version(self) -> Optional[str]:
-        """In case a tagged version is checked out, this property returns
+        """In case a release branch is checked out, this property returns
         that version, else None is returned"""
-        return next(
-            (
-                tag
-                for tag in self.repo.tags
-                if tag.commit == self.repo.head.commit
-            ),
-            None,
-        )
+        for branch in self.repo.heads:
+            branch_name = cast(str, branch.name)
+            if (
+                branch_name.startswith("release/")
+                and branch.commit == self.repo.head.commit
+            ):
+                return branch_name[len("release/") :]
+
+        return None
 
     @property
-    def latest_release(self) -> str:
-        """Returns the latest release for the examples repository."""
+    def latest_release_branch(self) -> str:
+        """Returns the name of the latest release branch."""
         tags = sorted(
             self.repo.tags,
             key=lambda t: t.commit.committed_datetime,  # type: ignore
@@ -231,7 +227,9 @@ class ExamplesRepo:
         latest_tag = parse(tags[-1].name)
         if type(latest_tag) is not Version:
             return "main"
-        return tags[-1].name  # type: ignore
+
+        latest_release_version: str = tags[-1].name
+        return f"release/{latest_release_version}"
 
     @property
     def is_cloned(self) -> bool:
@@ -245,6 +243,7 @@ class ExamplesRepo:
 
     @property
     def examples_run_bash_script(self) -> str:
+        """Path to the bash script that runs the example."""
         return os.path.join(self.examples_dir, EXAMPLES_RUN_SCRIPT)
 
     def clone(self) -> None:
@@ -284,7 +283,7 @@ class ExamplesRepo:
 
     def checkout_latest_release(self) -> None:
         """Checks out the latest release of the examples repository."""
-        self.checkout(self.latest_release)
+        self.checkout(branch=self.latest_release_branch)
 
 
 class GitExamplesHandler(object):
@@ -349,12 +348,11 @@ class GitExamplesHandler(object):
             return self.examples
 
     def pull(
-        self, version: str = "", force: bool = False, branch: str = "main"
+        self,
+        branch: str,
+        force: bool = False,
     ) -> None:
         """Pulls the examples from the main git examples repository."""
-        if version == "":
-            version = zenml_version_installed
-
         if not self.examples_repo.is_cloned:
             self.examples_repo.clone()
         elif force:
@@ -362,26 +360,17 @@ class GitExamplesHandler(object):
             self.examples_repo.clone()
 
         try:
-            if branch not in self.examples_repo.repo.references:
-                warning(
-                    f"The specified branch {branch} not found in "
-                    "repo, falling back to use main."
-                )
-                branch = "main"
-            if branch != "main":
-                self.examples_repo.checkout(branch=branch)
-            else:
-                self.examples_repo.checkout(version)
+            self.examples_repo.checkout(branch=branch)
         except GitCommandError:
-            logger.warning(
-                f"Version {version} does not exist in remote repository. "
-                f"Reverting to `main`."
+            warning(
+                f"The specified branch {branch} not found in "
+                "repo, falling back to the latest release."
             )
-            self.examples_repo.checkout("main")
+            self.examples_repo.checkout_latest_release()
 
     def pull_latest_examples(self) -> None:
         """Pulls the latest examples from the examples repository."""
-        self.pull(version=self.examples_repo.latest_release, force=True)
+        self.pull(branch=self.examples_repo.latest_release_branch, force=True)
 
     def copy_example(self, example: Example, destination_dir: str) -> None:
         """Copies an example to the destination_dir."""
@@ -405,6 +394,7 @@ pass_git_examples_handler = click.make_pass_decorator(
 def check_for_version_mismatch(
     git_examples_handler: GitExamplesHandler,
 ) -> None:
+    """Prints a warning if the example version and ZenML version don't match."""
     if git_examples_handler.is_matching_versions:
         return
     else:
@@ -495,8 +485,9 @@ def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
         error(str(e))
 
     else:
-        title(example_obj.name)
-        pretty_print(example_obj.readme_content)
+        console = Console()
+        md = Markdown(example_obj.readme_content)
+        console.print(md)
 
 
 @example.command(
@@ -522,9 +513,10 @@ def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
     "--branch",
     "-b",
     type=click.STRING,
-    default="main",
+    default=None,
+    hidden=True,
     help="The branch of the ZenML repo to use for the force-redownloaded "
-    "examples. A non main-branch overrules the version number.",
+    "examples.",
 )
 @click.option(
     "--path",
@@ -539,15 +531,14 @@ def pull(
     force: bool,
     version: str,
     path: str,
-    branch: str,
+    branch: Optional[str],
 ) -> None:
     """Pull examples straight into your current working directory.
     Add the flag --force or -f to redownload all the examples afresh.
     Use the flag --version or -v and the version number to specify
     which version of ZenML you wish to use for the examples."""
-    git_examples_handler.pull(
-        force=force, version=version, branch=branch.strip()
-    )
+    branch = branch.strip() if branch else f"release/{version}"
+    git_examples_handler.pull(branch=branch, force=force)
 
     examples_dir = os.path.join(os.getcwd(), path)
     fileio.create_dir_if_not_exists(examples_dir)
@@ -577,6 +568,9 @@ def pull(
             fileio.create_dir_if_not_exists(destination_dir)
             git_examples_handler.copy_example(example, destination_dir)
             declare(f"Example pulled in directory: {destination_dir}")
+            track_event(
+                AnalyticsEvent.PULL_EXAMPLE, {"example_name": example.name}
+            )
 
 
 @example.command(
@@ -637,7 +631,7 @@ def run(
         local_example = LocalExample(example_dir, example_name)
 
         if not local_example.is_present():
-            ctx.forward(pull)
+            ctx.invoke(pull, example_name=example_name, path=path, force=force)
 
         example_runner = (
             [] if shell_executable is None else [shell_executable]

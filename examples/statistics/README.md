@@ -17,7 +17,7 @@ dataframes for us.
 This visualization is produced with the following code:
 
 ```python
-from zenml.core.repo import Repository
+from zenml.repository import Repository
 from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
     FacetStatisticsVisualizer,
 )
@@ -33,7 +33,7 @@ visualize_statistics()
 
 It produces the following visualization:
 
-![Statistics for boston housing dataset](../../docs/book/assets/statistics-boston-housing.png)
+![Statistics for Boston housing dataset](assets/statistics-boston-housing.png)
 
 
 

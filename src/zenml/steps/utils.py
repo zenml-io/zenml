@@ -52,7 +52,7 @@ from tfx.types.channel import Channel
 from tfx.utils import json_utils
 
 from zenml.artifacts.base_artifact import BaseArtifact
-from zenml.exceptions import MissingStepParameterError
+from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps.base_step_config import BaseStepConfig
@@ -367,7 +367,7 @@ class _FunctionExecutor(BaseExecutor):
         function_params = {}
 
         # First, we parse the inputs, i.e., params and input artifacts.
-        spec = inspect.getfullargspec(self._FUNCTION)
+        spec = inspect.getfullargspec(inspect.unwrap(self._FUNCTION))
         args = spec.args
 
         if args and args[0] == "self":
@@ -380,7 +380,7 @@ class _FunctionExecutor(BaseExecutor):
                     config_object = arg_type.parse_obj(exec_properties)
                 except pydantic.ValidationError as e:
                     missing_fields = [
-                        field
+                        str(field)
                         for error_dict in e.errors()
                         for field in error_dict["loc"]
                     ]
@@ -393,7 +393,7 @@ class _FunctionExecutor(BaseExecutor):
                 function_params[arg] = config_object
             elif issubclass(arg_type, StepContext):
                 output_artifacts = {k: v[0] for k, v in output_dict.items()}
-                context = StepContext(
+                context = arg_type(
                     step_name=getattr(self, PARAM_STEP_NAME),
                     output_materializers=self.materializers or {},
                     output_artifacts=output_artifacts,
@@ -406,23 +406,30 @@ class _FunctionExecutor(BaseExecutor):
                 )
 
         return_values = self._FUNCTION(**function_params)
-        spec = inspect.getfullargspec(self._FUNCTION)
+        spec = inspect.getfullargspec(inspect.unwrap(self._FUNCTION))
         return_type: Type[Any] = spec.annotations.get("return", None)
         if return_type is not None:
             if isinstance(return_type, Output):
-                # Resolve named (and multi-) outputs.
-                if len(list(return_type.items())) == 1:
-                    return_values = [return_values]
-                for i, output_tuple in enumerate(return_type.items()):
-                    self.resolve_output_artifact(
-                        output_tuple[0],
-                        output_dict[output_tuple[0]][0],
-                        return_values[i],  # order preserved.
-                    )
+                output_annotations = list(return_type.items())
             else:
-                # Resolve single output
+                output_annotations = [(SINGLE_RETURN_OUT_NAME, return_type)]
+
+            # if there is only one output annotation (either directly specified
+            # or contained in an `Output` tuple) we treat the step function
+            # return value as the return for that output
+            if len(output_annotations) == 1:
+                return_values = [return_values]
+
+            for return_value, (output_name, output_type) in zip(
+                return_values, output_annotations
+            ):
+                if not isinstance(return_value, output_type):
+                    raise StepInterfaceError(
+                        f"Wrong type for output '{output_name}' of step "
+                        f"'{getattr(self, PARAM_STEP_NAME)}' (expected type: "
+                        f"{output_type}, actual type: {type(return_value)})."
+                    )
+
                 self.resolve_output_artifact(
-                    SINGLE_RETURN_OUT_NAME,
-                    output_dict[SINGLE_RETURN_OUT_NAME][0],
-                    return_values,
+                    output_name, output_dict[output_name][0], return_value
                 )

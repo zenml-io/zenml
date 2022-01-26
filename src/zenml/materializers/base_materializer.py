@@ -87,7 +87,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         """Write logic here to handle return of the step function.
 
         Args:
-            Any object that is specified as an input artifact of the step.
+            data: Any object that is specified as an input artifact of the step.
         """
         # TODO [ENG-141]: Put proper type checking
         # if data_type not in self.ASSOCIATED_TYPES:

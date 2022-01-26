@@ -572,7 +572,7 @@ def test_call_step_with_wrong_arg_type(
 def test_call_step_with_wrong_kwarg_type(
     int_step_output, step_with_two_int_inputs
 ):
-    """Test that calling a step fails when an kwarg has a wrong type."""
+    """Test that calling a step fails when a kwarg has a wrong type."""
     with pytest.raises(StepInterfaceError):
         step_with_two_int_inputs()(input_1=1, input_2=int_step_output)
 
@@ -662,3 +662,44 @@ def test_step_config_allows_none_as_default_value():
 
     with does_not_raise():
         step_instance._update_and_verify_parameter_spec()
+
+
+def test_returning_an_object_of_the_wrong_type_raises_an_error(
+    clean_repo, one_step_pipeline
+):
+    """Tests that returning an object of a type that wasn't specified (either
+    directly or as part of the `Output` tuple annotation) raises an error."""
+
+    @step
+    def some_step_1() -> int:
+        return "not_an_int"
+
+    @step
+    def some_step_2() -> Output(some_output_name=int):
+        return "not_an_int"
+
+    @step
+    def some_step_3() -> Output(out1=int, out2=int):
+        return 1, "not_an_int"
+
+    for step_function in [some_step_1, some_step_2, some_step_3]:
+        pipeline_ = one_step_pipeline(step_function())
+
+        with pytest.raises(StepInterfaceError):
+            pipeline_.run()
+
+
+def test_calling_a_step_twice_raises_an_exception():
+    """Tests that calling once step instance twice raises an exception."""
+
+    @step
+    def my_step():
+        pass
+
+    step_instance = my_step()
+
+    # calling once works
+    step_instance()
+
+    with pytest.raises(StepInterfaceError):
+        step_instance()

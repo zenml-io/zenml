@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,13 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
 import json
-import os
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from collections import OrderedDict
 from json import JSONDecodeError
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 from ml_metadata import proto
 from ml_metadata.metadata_store import metadata_store
@@ -31,9 +29,7 @@ from zenml.artifacts.constants import (
     DATATYPE_PROPERTY_KEY,
     MATERIALIZER_PROPERTY_KEY,
 )
-from zenml.core.base_component import BaseComponent
-from zenml.enums import ExecutionStatus
-from zenml.io.utils import get_zenml_config_dir
+from zenml.enums import ExecutionStatus, MetadataStoreFlavor, StackComponentType
 from zenml.logger import get_logger
 from zenml.post_execution import (
     ArtifactView,
@@ -41,6 +37,7 @@ from zenml.post_execution import (
     PipelineView,
     StepView,
 )
+from zenml.stack import StackComponent
 from zenml.steps.utils import (
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_PIPELINE_PARAMETER_NAME,
@@ -49,25 +46,18 @@ from zenml.steps.utils import (
 logger = get_logger(__name__)
 
 
-class BaseMetadataStore(BaseComponent):
-    """Metadata store base class to track metadata of zenml first class
-    citizens."""
+class BaseMetadataStore(StackComponent, ABC):
+    """Base class for all ZenML metadata stores."""
 
-    _run_type_name: str = "pipeline_run"
-    _node_type_name: str = "node"
-    _METADATA_STORE_DIR_NAME = "metadata_stores"
+    @property
+    def type(self) -> StackComponentType:
+        """The component type."""
+        return StackComponentType.METADATA_STORE
 
-    def __init__(self, repo_path: str, **kwargs: Any) -> None:
-        """Initializes a BaseMetadataStore instance.
-
-        Args:
-            repo_path: Path to the repository of this metadata store.
-        """
-        serialization_dir = os.path.join(
-            get_zenml_config_dir(repo_path),
-            self._METADATA_STORE_DIR_NAME,
-        )
-        super().__init__(serialization_dir=serialization_dir, **kwargs)
+    @property
+    @abstractmethod
+    def flavor(self) -> MetadataStoreFlavor:
+        """The metadata store flavor."""
 
     @property
     def store(self) -> metadata_store.MetadataStore:
@@ -78,7 +68,12 @@ class BaseMetadataStore(BaseComponent):
         )
 
     @abstractmethod
-    def get_tfx_metadata_config(self) -> metadata_store_pb2.ConnectionConfig:
+    def get_tfx_metadata_config(
+        self,
+    ) -> Union[
+        metadata_store_pb2.ConnectionConfig,
+        metadata_store_pb2.MetadataStoreClientConfig,
+    ]:
         """Return tfx metadata config."""
         raise NotImplementedError
 
@@ -186,8 +181,8 @@ class BaseMetadataStore(BaseComponent):
         return StepView(
             id_=execution.id,
             parents_step_ids=list(parents_step_ids),
-            name=impl_name,
-            pipeline_step_name=step_name,
+            entrypoint_name=impl_name,
+            name=step_name,
             parameters=step_parameters,
             metadata_store=self,
         )
@@ -288,7 +283,7 @@ class BaseMetadataStore(BaseComponent):
         # order from the metadata store
         for execution in reversed(pipeline_run._executions):  # noqa
             step = self._get_step_view_from_execution(execution)
-            steps[step.pipeline_step_name] = step
+            steps[step.name] = step
 
         logger.debug(
             "Fetched %d steps for pipeline run '%s'.",
@@ -387,7 +382,7 @@ class BaseMetadataStore(BaseComponent):
             "Fetched %d inputs and %d outputs for step '%s'.",
             len(inputs),
             len(outputs),
-            step.name,
+            step.entrypoint_name,
         )
 
         return inputs, outputs
@@ -410,8 +405,3 @@ class BaseMetadataStore(BaseComponent):
         )
         execution = self.store.get_executions_by_id(executions_ids)[0]
         return self._get_step_view_from_execution(execution)
-
-    class Config:
-        """Configuration of settings."""
-
-        env_prefix = "zenml_metadata_store_"

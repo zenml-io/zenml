@@ -34,10 +34,10 @@ from tfx.proto.orchestration import pipeline_pb2
 
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.constants import ENV_ZENML_PREVENT_PIPELINE_EXECUTION
-from zenml.core.repo import Repository
 from zenml.integrations.kubeflow.orchestrators import kubeflow_utils as utils
 from zenml.logger import get_logger
 from zenml.metadata_stores import SQLiteMetadataStore
+from zenml.repository import Repository
 from zenml.utils import source_utils
 
 logger = get_logger(__name__)
@@ -132,17 +132,15 @@ class KubeflowComponent:
             step_function_name,
             "--input_artifact_types",
             json.dumps(input_artifact_type_mapping),
-            "--run_name",
-            "{{workflow.annotations.pipelines.kubeflow.org/run_name}}",
         ]
 
         for param in runtime_parameters:
             arguments.append("--runtime_parameter")
             arguments.append(_encode_runtime_parameter(param))
 
-        repo = Repository()
-        artifact_store = repo.get_active_stack().artifact_store
-        metadata_store = repo.get_active_stack().metadata_store
+        stack = Repository().active_stack
+        artifact_store = stack.artifact_store
+        metadata_store = stack.metadata_store
 
         volumes: Dict[str, k8s_client.V1Volume] = {}
         has_local_repos = False

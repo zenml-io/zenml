@@ -4,7 +4,7 @@
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at:
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+#       https://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,20 +14,7 @@
 from typing import List, Optional, Sequence, Tuple
 
 from evidently.dashboard import Dashboard  # type: ignore
-from evidently.model_profile import Profile  # type: ignore
-from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
-from evidently.profile_sections import (  # type: ignore
-    CatTargetDriftProfileSection,
-    ClassificationPerformanceProfileSection,
-    DataDriftProfileSection,
-    NumTargetDriftProfileSection,
-    ProbClassificationPerformanceProfileSection,
-    RegressionPerformanceProfileSection,
-)
-from evidently.profile_sections.base_profile_section import (  # type: ignore
-    ProfileSection,
-)
-from evidently.tabs import (  # type: ignore
+from evidently.dashboard.tabs import (  # type: ignore
     CatTargetDriftTab,
     ClassificationPerformanceTab,
     DataDriftTab,
@@ -35,10 +22,23 @@ from evidently.tabs import (  # type: ignore
     ProbClassificationPerformanceTab,
     RegressionPerformanceTab,
 )
-from evidently.tabs.base_tab import Tab  # type: ignore
+from evidently.dashboard.tabs.base_tab import Tab  # type: ignore
+from evidently.model_profile import Profile  # type: ignore
+from evidently.model_profile.sections import (  # type: ignore
+    CatTargetDriftProfileSection,
+    ClassificationPerformanceProfileSection,
+    DataDriftProfileSection,
+    NumTargetDriftProfileSection,
+    ProbClassificationPerformanceProfileSection,
+    RegressionPerformanceProfileSection,
+)
+from evidently.model_profile.sections.base_profile_section import (  # type: ignore
+    ProfileSection,
+)
+from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
 
 from zenml.artifacts import DataAnalysisArtifact, DataArtifact
-from zenml.steps import Output, StepContext
+from zenml.steps import Output
 from zenml.steps.step_interfaces.base_drift_detection_step import (
     BaseDriftDetectionConfig,
     BaseDriftDetectionStep,
@@ -117,7 +117,6 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
         reference_dataset: DataArtifact,
         comparison_dataset: DataArtifact,
         config: EvidentlyProfileConfig,
-        context: StepContext,
     ) -> Output(  # type:ignore[valid-type]
         profile=dict, dashboard=str
     ):

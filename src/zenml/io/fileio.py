@@ -148,7 +148,13 @@ def rm_dir(dir_path: str) -> None:
 
     Args:
         dir_path: Dir to delete.
+
+    Raises:
+        TypeError: If the path is not pointing to a directory.
     """
+    if not is_dir(dir_path):
+        raise TypeError(f"Path '{dir_path}' is not a directory.")
+
     _get_filesystem(dir_path).rmtree(dir_path)
 
 
@@ -243,7 +249,7 @@ def create_dir_if_not_exists(dir_path: str) -> None:
     """Creates directory if it does not exist.
 
     Args:
-        dir_path(str): Local path in filesystem.
+        dir_path: Local path in filesystem.
     """
     if not is_dir(dir_path):
         mkdir(dir_path)
@@ -322,7 +328,7 @@ def get_parent(dir_path: str) -> str:
     """Get parent of dir.
 
     Args:
-        dir_path(str): Path to directory.
+        dir_path: Path to directory.
 
     Returns:
         Parent (stem) of the dir as a string.

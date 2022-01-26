@@ -9,7 +9,7 @@ This example uses [`evidently`](https://github.com/evidentlyai/evidently), a
 useful open-source library to painlessly check for data drift (among other
 features). At its core, Evidently's drift detection takes in a reference data
 set and compares it against another comparison dataset. These are both input in
-the form of a `pandas` dataframe, though CSV inputs are also possible.
+the form of a `pandas` dataframe, though CSV inputs are also possible. You can receive these results in the form of a standard dictionary object containing all the relevant information, or as a visualization. We support both outputs.
 
 ZenML implements this functionality in the form of several standardized steps.
 You select which of the profile sections you want to use in your step by passing
@@ -37,6 +37,7 @@ from zenml.integrations.evidently.steps import (
     EvidentlyProfileConfig,
     EvidentlyProfileStep,
 )
+from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
 
 # ... data loader and separate steps to get our full and partial dataframes
 
@@ -47,26 +48,62 @@ drift_detector = EvidentlyProfileStep(
     )
 )
 
+@step
+def analyze_drift(
+    input: dict,
+) -> bool:
+    """Analyze the Evidently drift report and return a true/false value indicating
+    whether data drift was detected."""
+    return input["data_drift"]["data"]["metrics"]["dataset_drift"]
+
 @pipeline
-def drift_detection_pipeline(data_loader, full_data, partial_data, drift_detector):
+def drift_detection_pipeline(
+    data_loader,
+    full_data,
+    partial_data,
+    drift_detector,
+    drift_analyzer,
+):
+    """Links all the steps together in a pipeline"""
     data_loader = data_loader()
     full_data = full_data(data_loader)
     partial_data = partial_data(data_loader)
-    drift_detector(reference_dataset=full_data, comparison_dataset=partial_data)
+    drift_report, _ = drift_detector(
+        reference_dataset=full_data, comparison_dataset=partial_data
+    )
+    drift_analyzer(drift_report)
+
+
+def visualize_statistics():
+    repo = Repository()
+    pipe = repo.get_pipelines()[-1]
+    evidently_outputs = pipe.runs[-1].get_step(name="drift_detector")
+    EvidentlyVisualizer().visualize(evidently_outputs)
+
 
 pipeline = drift_detection_pipeline(
-    data_loader=data_loader(),
-    full_data=full_split(),
-    partial_data=partial_split(),
-    drift_detector=drift_detector,
+        data_loader=data_loader(),
+        full_data=full_split(),
+        partial_data=partial_split(),
+        drift_detector=drift_detector,
+        drift_analyzer=analyze_drift(),
 )
 
 pipeline.run()
+
+# ... get the relevant artifacts
+
+visualize_statistics()
 ```
 
 Here you can see that defining the step is extremely simple using our
 class-based interface and then you just have to pass in the two dataframes for
 the comparison to take place.
+
+We even allow you to use the Evidently visualization tool easily to display data
+drift diagrams in your browser or within a Jupyter notebook:
+
+![Evidently drift visualization UI](assets/drift_visualization.png)
 
 ## Run it locally
 
@@ -78,7 +115,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-pip install "evidently<=0.1.40.dev0"
+zenml integration install evidently
 zenml integration install sklearn
 
 # pull example
