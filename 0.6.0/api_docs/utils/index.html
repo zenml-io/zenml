@@ -1,0 +1,4217 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://apidocs.zenml.io/0.6.0/api_docs/utils/">
+      
+      <link rel="icon" href="../../_assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.8">
+    
+    
+      
+        <title>Utils - ZenML API Reference</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.6e60f8b8.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.e6a45f82.min.css">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="none" data-md-color-accent="none">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#utils" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        <aside class="md-banner md-banner--warning">
+          
+        </aside>
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="ZenML API Reference" class="md-header__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ZenML API Reference
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Utils
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/zenml-io/zenml/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="ZenML API Reference" class="md-nav__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    ZenML API Reference
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/zenml-io/zenml/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        ZenML
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        CLI docs
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Api docs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Api docs" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Api docs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../artifact_stores/" class="md-nav__link">
+        Artifact Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../artifacts/" class="md-nav__link">
+        Artifacts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        Config
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../constants/" class="md-nav__link">
+        Constants
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../container_registries/" class="md-nav__link">
+        Container Registries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../enums/" class="md-nav__link">
+        Enums
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exceptions/" class="md-nav__link">
+        Exceptions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/" class="md-nav__link">
+        Integrations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../io/" class="md-nav__link">
+        Io
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logger/" class="md-nav__link">
+        Logger
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../materializers/" class="md-nav__link">
+        Materializers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metadata_stores/" class="md-nav__link">
+        Metadata Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../orchestrators/" class="md-nav__link">
+        Orchestrators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipelines/" class="md-nav__link">
+        Pipelines
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../post_execution/" class="md-nav__link">
+        Post Execution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repository/" class="md-nav__link">
+        Repository
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runtime_configuration/" class="md-nav__link">
+        Runtime Configuration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stack/" class="md-nav__link">
+        Stack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../steps/" class="md-nav__link">
+        Steps
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Utils
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Utils
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.utils" class="md-nav__link">
+    utils
+  </a>
+  
+    <nav class="md-nav" aria-label="utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.analytics_utils" class="md-nav__link">
+    analytics_utils
+  </a>
+  
+    <nav class="md-nav" aria-label="analytics_utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.analytics_utils.AnalyticsEvent" class="md-nav__link">
+    AnalyticsEvent
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.analytics_utils.get_environment" class="md-nav__link">
+    get_environment()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.analytics_utils.get_segment_key" class="md-nav__link">
+    get_segment_key()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.analytics_utils.get_system_info" class="md-nav__link">
+    get_system_info()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.analytics_utils.in_docker" class="md-nav__link">
+    in_docker()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.analytics_utils.in_google_colab" class="md-nav__link">
+    in_google_colab()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.analytics_utils.in_paperspace_gradient" class="md-nav__link">
+    in_paperspace_gradient()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.analytics_utils.parametrized" class="md-nav__link">
+    parametrized()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.analytics_utils.track" class="md-nav__link">
+    track()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.analytics_utils.track_event" class="md-nav__link">
+    track_event()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.daemon" class="md-nav__link">
+    daemon
+  </a>
+  
+    <nav class="md-nav" aria-label="daemon">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.daemon.check_if_daemon_is_running" class="md-nav__link">
+    check_if_daemon_is_running()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.daemon.run_as_daemon" class="md-nav__link">
+    run_as_daemon()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.daemon.stop_daemon" class="md-nav__link">
+    stop_daemon()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.enum_utils" class="md-nav__link">
+    enum_utils
+  </a>
+  
+    <nav class="md-nav" aria-label="enum_utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.enum_utils.StrEnum" class="md-nav__link">
+    StrEnum
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.networking_utils" class="md-nav__link">
+    networking_utils
+  </a>
+  
+    <nav class="md-nav" aria-label="networking_utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.networking_utils.find_available_port" class="md-nav__link">
+    find_available_port()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.networking_utils.port_available" class="md-nav__link">
+    port_available()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils" class="md-nav__link">
+    source_utils
+  </a>
+  
+    <nav class="md-nav" aria-label="source_utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.create_zenml_pin" class="md-nav__link">
+    create_zenml_pin()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.get_absolute_path_from_module_source" class="md-nav__link">
+    get_absolute_path_from_module_source()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.get_class_source_from_source" class="md-nav__link">
+    get_class_source_from_source()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.get_module_source_from_class" class="md-nav__link">
+    get_module_source_from_class()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.get_module_source_from_file_path" class="md-nav__link">
+    get_module_source_from_file_path()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.get_module_source_from_source" class="md-nav__link">
+    get_module_source_from_source()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.get_relative_path_from_module_source" class="md-nav__link">
+    get_relative_path_from_module_source()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.import_class_by_path" class="md-nav__link">
+    import_class_by_path()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.import_python_file" class="md-nav__link">
+    import_python_file()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.is_inside_repository" class="md-nav__link">
+    is_inside_repository()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.is_standard_pin" class="md-nav__link">
+    is_standard_pin()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.is_standard_source" class="md-nav__link">
+    is_standard_source()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.is_third_party_module" class="md-nav__link">
+    is_third_party_module()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.load_source_path_class" class="md-nav__link">
+    load_source_path_class()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.resolve_class" class="md-nav__link">
+    resolve_class()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.resolve_standard_source" class="md-nav__link">
+    resolve_standard_source()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.string_utils" class="md-nav__link">
+    string_utils
+  </a>
+  
+    <nav class="md-nav" aria-label="string_utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.string_utils.get_human_readable_filesize" class="md-nav__link">
+    get_human_readable_filesize()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.string_utils.get_human_readable_time" class="md-nav__link">
+    get_human_readable_time()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.yaml_utils" class="md-nav__link">
+    yaml_utils
+  </a>
+  
+    <nav class="md-nav" aria-label="yaml_utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.yaml_utils.is_yaml" class="md-nav__link">
+    is_yaml()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.yaml_utils.read_json" class="md-nav__link">
+    read_json()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.yaml_utils.read_yaml" class="md-nav__link">
+    read_yaml()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.yaml_utils.write_json" class="md-nav__link">
+    write_json()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.yaml_utils.write_yaml" class="md-nav__link">
+    write_yaml()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../visualizers/" class="md-nav__link">
+        Visualizers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_22" type="checkbox" id="__nav_3_22" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_22">
+          Cli
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Cli" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_22">
+          <span class="md-nav__icon md-icon"></span>
+          Cli
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/cli/" class="md-nav__link">
+        Cli
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/config/" class="md-nav__link">
+        Config
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/example/" class="md-nav__link">
+        Example
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/integration/" class="md-nav__link">
+        Integration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/pipeline/" class="md-nav__link">
+        Pipeline
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/stack/" class="md-nav__link">
+        Stack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/stack_components/" class="md-nav__link">
+        Stack Components
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/utils/" class="md-nav__link">
+        Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/version/" class="md-nav__link">
+        Version
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.utils" class="md-nav__link">
+    utils
+  </a>
+  
+    <nav class="md-nav" aria-label="utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.analytics_utils" class="md-nav__link">
+    analytics_utils
+  </a>
+  
+    <nav class="md-nav" aria-label="analytics_utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.analytics_utils.AnalyticsEvent" class="md-nav__link">
+    AnalyticsEvent
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.analytics_utils.get_environment" class="md-nav__link">
+    get_environment()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.analytics_utils.get_segment_key" class="md-nav__link">
+    get_segment_key()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.analytics_utils.get_system_info" class="md-nav__link">
+    get_system_info()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.analytics_utils.in_docker" class="md-nav__link">
+    in_docker()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.analytics_utils.in_google_colab" class="md-nav__link">
+    in_google_colab()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.analytics_utils.in_paperspace_gradient" class="md-nav__link">
+    in_paperspace_gradient()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.analytics_utils.parametrized" class="md-nav__link">
+    parametrized()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.analytics_utils.track" class="md-nav__link">
+    track()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.analytics_utils.track_event" class="md-nav__link">
+    track_event()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.daemon" class="md-nav__link">
+    daemon
+  </a>
+  
+    <nav class="md-nav" aria-label="daemon">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.daemon.check_if_daemon_is_running" class="md-nav__link">
+    check_if_daemon_is_running()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.daemon.run_as_daemon" class="md-nav__link">
+    run_as_daemon()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.daemon.stop_daemon" class="md-nav__link">
+    stop_daemon()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.enum_utils" class="md-nav__link">
+    enum_utils
+  </a>
+  
+    <nav class="md-nav" aria-label="enum_utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.enum_utils.StrEnum" class="md-nav__link">
+    StrEnum
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.networking_utils" class="md-nav__link">
+    networking_utils
+  </a>
+  
+    <nav class="md-nav" aria-label="networking_utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.networking_utils.find_available_port" class="md-nav__link">
+    find_available_port()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.networking_utils.port_available" class="md-nav__link">
+    port_available()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils" class="md-nav__link">
+    source_utils
+  </a>
+  
+    <nav class="md-nav" aria-label="source_utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.create_zenml_pin" class="md-nav__link">
+    create_zenml_pin()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.get_absolute_path_from_module_source" class="md-nav__link">
+    get_absolute_path_from_module_source()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.get_class_source_from_source" class="md-nav__link">
+    get_class_source_from_source()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.get_module_source_from_class" class="md-nav__link">
+    get_module_source_from_class()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.get_module_source_from_file_path" class="md-nav__link">
+    get_module_source_from_file_path()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.get_module_source_from_source" class="md-nav__link">
+    get_module_source_from_source()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.get_relative_path_from_module_source" class="md-nav__link">
+    get_relative_path_from_module_source()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.import_class_by_path" class="md-nav__link">
+    import_class_by_path()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.import_python_file" class="md-nav__link">
+    import_python_file()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.is_inside_repository" class="md-nav__link">
+    is_inside_repository()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.is_standard_pin" class="md-nav__link">
+    is_standard_pin()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.is_standard_source" class="md-nav__link">
+    is_standard_source()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.is_third_party_module" class="md-nav__link">
+    is_third_party_module()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.load_source_path_class" class="md-nav__link">
+    load_source_path_class()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.resolve_class" class="md-nav__link">
+    resolve_class()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.source_utils.resolve_standard_source" class="md-nav__link">
+    resolve_standard_source()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.string_utils" class="md-nav__link">
+    string_utils
+  </a>
+  
+    <nav class="md-nav" aria-label="string_utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.string_utils.get_human_readable_filesize" class="md-nav__link">
+    get_human_readable_filesize()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.string_utils.get_human_readable_time" class="md-nav__link">
+    get_human_readable_time()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.yaml_utils" class="md-nav__link">
+    yaml_utils
+  </a>
+  
+    <nav class="md-nav" aria-label="yaml_utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.yaml_utils.is_yaml" class="md-nav__link">
+    is_yaml()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.yaml_utils.read_json" class="md-nav__link">
+    read_json()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.yaml_utils.read_yaml" class="md-nav__link">
+    read_yaml()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.yaml_utils.write_json" class="md-nav__link">
+    write_json()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.utils.yaml_utils.write_yaml" class="md-nav__link">
+    write_yaml()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+<a href="https://github.com/zenml-io/zenml/docs/api_docs/utils.md" title="Edit this page" class="md-content__button md-icon">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+</a>
+
+
+<h1 id="utils">Utils</h1>
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h2 id="zenml.utils" class="doc doc-heading">
+        <code>zenml.utils</code>
+
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h2>
+
+    <div class="doc doc-contents first">
+
+      <p>The <code>utils</code> module contains utility functions handling analytics, reading and
+writing YAML data as well as other general purpose functions.</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.utils.analytics_utils" class="doc doc-heading">
+        <code>analytics_utils</code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Analytics code for ZenML</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.utils.analytics_utils.AnalyticsEvent" class="doc doc-heading">
+        <code>
+AnalyticsEvent            (<span title="str">str</span>, <span title="enum.Enum">Enum</span>)
+        </code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>An enumeration.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/analytics_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AnalyticsEvent</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+    <span class="c1"># Pipelines</span>
+    <span class="n">RUN_PIPELINE</span> <span class="o">=</span> <span class="s2">&quot;Pipeline run&quot;</span>
+    <span class="n">GET_PIPELINES</span> <span class="o">=</span> <span class="s2">&quot;Pipelines fetched&quot;</span>
+    <span class="n">GET_PIPELINE</span> <span class="o">=</span> <span class="s2">&quot;Pipeline fetched&quot;</span>
+
+    <span class="c1"># Repo</span>
+    <span class="n">INITIALIZE_REPO</span> <span class="o">=</span> <span class="s2">&quot;ZenML initialized&quot;</span>
+
+    <span class="c1"># Components</span>
+    <span class="n">REGISTERED_STACK_COMPONENT</span> <span class="o">=</span> <span class="s2">&quot;Stack component registered&quot;</span>
+
+    <span class="c1"># Stack</span>
+    <span class="n">REGISTERED_STACK</span> <span class="o">=</span> <span class="s2">&quot;Stack registered&quot;</span>
+    <span class="n">SET_STACK</span> <span class="o">=</span> <span class="s2">&quot;Stack set&quot;</span>
+
+    <span class="c1"># Analytics opt in and out</span>
+    <span class="n">OPT_IN_ANALYTICS</span> <span class="o">=</span> <span class="s2">&quot;Analytics opt-in&quot;</span>
+    <span class="n">OPT_OUT_ANALYTICS</span> <span class="o">=</span> <span class="s2">&quot;Analytics opt-out&quot;</span>
+
+    <span class="c1"># Examples</span>
+    <span class="n">RUN_EXAMPLE</span> <span class="o">=</span> <span class="s2">&quot;Example run&quot;</span>
+    <span class="n">PULL_EXAMPLE</span> <span class="o">=</span> <span class="s2">&quot;Example pull&quot;</span>
+
+    <span class="c1"># Integrations</span>
+    <span class="n">INSTALL_INTEGRATION</span> <span class="o">=</span> <span class="s2">&quot;Integration installed&quot;</span>
+
+    <span class="c1"># Test event</span>
+    <span class="n">EVENT_TEST</span> <span class="o">=</span> <span class="s2">&quot;Test event&quot;</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.analytics_utils.get_environment" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_environment</span><span class="p">()</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns a string representing the execution environment of the pipeline.
+Currently, one of <code>docker</code>, <code>paperspace</code>, 'colab', or <code>native</code></p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/analytics_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_environment</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns a string representing the execution environment of the pipeline.</span>
+<span class="sd">    Currently, one of `docker`, `paperspace`, &#39;colab&#39;, or `native`&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">in_docker</span><span class="p">():</span>
+        <span class="k">return</span> <span class="s2">&quot;docker&quot;</span>
+    <span class="k">elif</span> <span class="n">in_google_colab</span><span class="p">():</span>
+        <span class="k">return</span> <span class="s2">&quot;colab&quot;</span>
+    <span class="k">elif</span> <span class="n">in_paperspace_gradient</span><span class="p">():</span>
+        <span class="k">return</span> <span class="s2">&quot;paperspace&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;native&quot;</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.analytics_utils.get_segment_key" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_segment_key</span><span class="p">()</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Get key for authorizing to Segment backend.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>str</code></td>
+      <td><p>Segment key as a string.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/analytics_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_segment_key</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Get key for authorizing to Segment backend.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Segment key as a string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">IS_DEBUG_ENV</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">SEGMENT_KEY_DEV</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">SEGMENT_KEY_PROD</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.analytics_utils.get_system_info" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_system_info</span><span class="p">()</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns system info as a dict.</p>
+
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Dict[str, Any]</code></td>
+      <td><p>A dict of system information.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/analytics_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_system_info</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Returns system info as a dict.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A dict of system information.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">system</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">system</span> <span class="o">==</span> <span class="s2">&quot;Windows&quot;</span><span class="p">:</span>
+        <span class="n">release</span><span class="p">,</span> <span class="n">version</span><span class="p">,</span> <span class="n">csd</span><span class="p">,</span> <span class="n">ptype</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">win32_ver</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;os&quot;</span><span class="p">:</span> <span class="s2">&quot;windows&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;windows_version_release&quot;</span><span class="p">:</span> <span class="n">release</span><span class="p">,</span>
+            <span class="s2">&quot;windows_version&quot;</span><span class="p">:</span> <span class="n">version</span><span class="p">,</span>
+            <span class="s2">&quot;windows_version_service_pack&quot;</span><span class="p">:</span> <span class="n">csd</span><span class="p">,</span>
+            <span class="s2">&quot;windows_version_os_type&quot;</span><span class="p">:</span> <span class="n">ptype</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">if</span> <span class="n">system</span> <span class="o">==</span> <span class="s2">&quot;Darwin&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;os&quot;</span><span class="p">:</span> <span class="s2">&quot;mac&quot;</span><span class="p">,</span> <span class="s2">&quot;mac_version&quot;</span><span class="p">:</span> <span class="n">platform</span><span class="o">.</span><span class="n">mac_ver</span><span class="p">()[</span><span class="mi">0</span><span class="p">]}</span>
+
+    <span class="k">if</span> <span class="n">system</span> <span class="o">==</span> <span class="s2">&quot;Linux&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;os&quot;</span><span class="p">:</span> <span class="s2">&quot;linux&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;linux_distro&quot;</span><span class="p">:</span> <span class="n">distro</span><span class="o">.</span><span class="n">id</span><span class="p">(),</span>
+            <span class="s2">&quot;linux_distro_like&quot;</span><span class="p">:</span> <span class="n">distro</span><span class="o">.</span><span class="n">like</span><span class="p">(),</span>
+            <span class="s2">&quot;linux_distro_version&quot;</span><span class="p">:</span> <span class="n">distro</span><span class="o">.</span><span class="n">version</span><span class="p">(),</span>
+        <span class="p">}</span>
+
+    <span class="c1"># We don&#39;t collect data for any other system.</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;os&quot;</span><span class="p">:</span> <span class="s2">&quot;unknown&quot;</span><span class="p">}</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.analytics_utils.in_docker" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">in_docker</span><span class="p">()</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns: True if running in a Docker container, else False</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/analytics_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">in_docker</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns: True if running in a Docker container, else False&quot;&quot;&quot;</span>
+    <span class="c1"># TODO [ENG-167]: Make this more reliable and add test.</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;/proc/1/cgroup&quot;</span><span class="p">,</span> <span class="s2">&quot;rt&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">ifh</span><span class="p">:</span>
+            <span class="n">info</span> <span class="o">=</span> <span class="n">ifh</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="k">return</span> <span class="s2">&quot;docker&quot;</span> <span class="ow">in</span> <span class="n">info</span> <span class="ow">or</span> <span class="s2">&quot;kubepod&quot;</span> <span class="ow">in</span> <span class="n">info</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">FileNotFoundError</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.analytics_utils.in_google_colab" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">in_google_colab</span><span class="p">()</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns: True if running in a Google Colab env, else False</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/analytics_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">in_google_colab</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns: True if running in a Google Colab env, else False&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;COLAB_GPU&quot;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">False</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.analytics_utils.in_paperspace_gradient" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">in_paperspace_gradient</span><span class="p">()</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns: True if running in a Paperspace Gradient env, else False</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/analytics_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">in_paperspace_gradient</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns: True if running in a Paperspace Gradient env, else False&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;PAPERSPACE_NOTEBOOK_REPO_ID&quot;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">False</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.analytics_utils.parametrized" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">parametrized</span><span class="p">(</span><span class="n">dec</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>This is a meta-decorator, that is, a decorator for decorators.
+As a decorator is a function, it actually works as a regular decorator
+with arguments:</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/analytics_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">parametrized</span><span class="p">(</span>
+    <span class="n">dec</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]:</span>
+    <span class="sd">&quot;&quot;&quot;This is a meta-decorator, that is, a decorator for decorators.</span>
+<span class="sd">    As a decorator is a function, it actually works as a regular decorator</span>
+<span class="sd">    with arguments:&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">layer</span><span class="p">(</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Internal layer&quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">repl</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+            <span class="sd">&quot;&quot;&quot;Internal repl&quot;&quot;&quot;</span>
+            <span class="k">return</span> <span class="n">dec</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">repl</span>
+
+    <span class="k">return</span> <span class="n">layer</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.analytics_utils.track" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">track</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Internal layer</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/analytics_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">layer</span><span class="p">(</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;Internal layer&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">repl</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Internal repl&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">dec</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">repl</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.analytics_utils.track_event" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">track_event</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Track segment event if user opted-in.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>event</code></td>
+        <td><code>Union[str, zenml.utils.analytics_utils.AnalyticsEvent]</code></td>
+        <td><p>Name of event to track in segment.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>metadata</code></td>
+        <td><code>Optional[Dict[str, Any]]</code></td>
+        <td><p>Dict of metadata to track.</p></td>
+        <td><code>None</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>bool</code></td>
+      <td><p>True if event is sent successfully, False is not.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/analytics_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">track_event</span><span class="p">(</span>
+    <span class="n">event</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">AnalyticsEvent</span><span class="p">],</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Track segment event if user opted-in.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        event: Name of event to track in segment.</span>
+<span class="sd">        metadata: Dict of metadata to track.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        True if event is sent successfully, False is not.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">analytics</span>
+
+        <span class="kn">from</span> <span class="nn">zenml.config.global_config</span> <span class="kn">import</span> <span class="n">GlobalConfig</span>
+
+        <span class="k">if</span> <span class="n">analytics</span><span class="o">.</span><span class="n">write_key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">analytics</span><span class="o">.</span><span class="n">write_key</span> <span class="o">=</span> <span class="n">get_segment_key</span><span class="p">()</span>
+
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="n">analytics</span><span class="o">.</span><span class="n">write_key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="p">),</span> <span class="s2">&quot;Analytics key not set but trying to make telemetry call.&quot;</span>
+
+        <span class="c1"># Set this to 1 to avoid backoff loop</span>
+        <span class="n">analytics</span><span class="o">.</span><span class="n">max_retries</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="n">gc</span> <span class="o">=</span> <span class="n">GlobalConfig</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">AnalyticsEvent</span><span class="p">):</span>
+            <span class="n">event</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Attempting analytics: User: </span><span class="si">{</span><span class="n">gc</span><span class="o">.</span><span class="n">user_id</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Event: </span><span class="si">{</span><span class="n">event</span><span class="si">}</span><span class="s2">,&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Metadata: </span><span class="si">{</span><span class="n">metadata</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">gc</span><span class="o">.</span><span class="n">analytics_opt_in</span> <span class="ow">and</span> <span class="n">event</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span>
+            <span class="n">AnalyticsEvent</span><span class="o">.</span><span class="n">OPT_OUT_ANALYTICS</span><span class="p">,</span>
+            <span class="n">AnalyticsEvent</span><span class="o">.</span><span class="n">OPT_IN_ANALYTICS</span><span class="p">,</span>
+        <span class="p">}:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="n">metadata</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">metadata</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># add basics</span>
+        <span class="n">metadata</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">get_system_info</span><span class="p">())</span>
+        <span class="n">metadata</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;environment&quot;</span><span class="p">:</span> <span class="n">get_environment</span><span class="p">(),</span>
+                <span class="s2">&quot;python_version&quot;</span><span class="p">:</span> <span class="n">platform</span><span class="o">.</span><span class="n">python_version</span><span class="p">(),</span>
+                <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="n">__version__</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+
+        <span class="n">analytics</span><span class="o">.</span><span class="n">track</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">gc</span><span class="o">.</span><span class="n">user_id</span><span class="p">),</span> <span class="n">event</span><span class="p">,</span> <span class="n">metadata</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Analytics sent: User: </span><span class="si">{</span><span class="n">gc</span><span class="o">.</span><span class="n">user_id</span><span class="si">}</span><span class="s2">, Event: </span><span class="si">{</span><span class="n">event</span><span class="si">}</span><span class="s2">, Metadata: &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metadata</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="c1"># We should never fail main thread</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Analytics failed due to: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.utils.daemon" class="doc doc-heading">
+        <code>daemon</code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Utility functions to start/stop daemon processes.</p>
+<p>This is only implemented for UNIX systems and therefore doesn't work on
+Windows. Based on
+https://www.jejik.com/articles/2007/02/a_simple_unix_linux_daemon_in_python/</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.daemon.check_if_daemon_is_running" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">check_if_daemon_is_running</span><span class="p">(</span><span class="n">pid_file</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Checks whether a daemon process indicated by the PID file is running.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>pid_file</code></td>
+        <td><code>str</code></td>
+        <td><p>Path to file containing the PID of the daemon
+process to check.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/daemon.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">check_if_daemon_is_running</span><span class="p">(</span><span class="n">pid_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Checks whether a daemon process indicated by the PID file is running.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pid_file: Path to file containing the PID of the daemon</span>
+<span class="sd">            process to check.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">pid_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">pid</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">IOError</span><span class="p">,</span> <span class="ne">FileNotFoundError</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">return</span> <span class="n">psutil</span><span class="o">.</span><span class="n">pid_exists</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.daemon.run_as_daemon" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">run_as_daemon</span><span class="p">(</span><span class="n">daemon_function</span><span class="p">,</span> <span class="n">pid_file</span><span class="p">,</span> <span class="n">log_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">working_directory</span><span class="o">=</span><span class="s1">&#39;/&#39;</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Runs a function as a daemon process.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>daemon_function</code></td>
+        <td><code>Callable[..., Any]</code></td>
+        <td><p>The function to run as a daemon.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>pid_file</code></td>
+        <td><code>str</code></td>
+        <td><p>Path to file in which to store the PID of the daemon process.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>log_file</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>Optional file to which the daemons stdout/stderr will be
+redirected to.</p></td>
+        <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>working_directory</code></td>
+        <td><code>str</code></td>
+        <td><p>Working directory for the daemon process, defaults
+to the root directory.</p></td>
+        <td><code>&#39;/&#39;</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>FileExistsError</code></td>
+        <td><p>If the PID file already exists.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/daemon.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">run_as_daemon</span><span class="p">(</span>
+    <span class="n">daemon_function</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="n">pid_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">log_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">working_directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Runs a function as a daemon process.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        daemon_function: The function to run as a daemon.</span>
+<span class="sd">        pid_file: Path to file in which to store the PID of the daemon process.</span>
+<span class="sd">        log_file: Optional file to which the daemons stdout/stderr will be</span>
+<span class="sd">            redirected to.</span>
+<span class="sd">        working_directory: Working directory for the daemon process, defaults</span>
+<span class="sd">            to the root directory.</span>
+<span class="sd">    Raises:</span>
+<span class="sd">        FileExistsError: If the PID file already exists.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># convert to absolute path as we will change working directory later</span>
+    <span class="n">pid_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">pid_file</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">log_file</span><span class="p">:</span>
+        <span class="n">log_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">log_file</span><span class="p">)</span>
+
+    <span class="c1"># check if PID file exists</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">pid_file</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">FileExistsError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;The PID file &#39;</span><span class="si">{</span><span class="n">pid_file</span><span class="si">}</span><span class="s2">&#39; already exists, either the daemon &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;process is already running or something went wrong.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># first fork</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">pid</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">fork</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">pid</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># this is the process that called `run_as_daemon` so we</span>
+            <span class="c1"># simply return so it can keep running</span>
+            <span class="k">return</span>
+    <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Unable to fork (error code: </span><span class="si">%d</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">errno</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># decouple from parent environment</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">working_directory</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">setsid</span><span class="p">()</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">umask</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># second fork</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">pid</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">fork</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">pid</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># this is the parent of the future daemon process, kill it</span>
+            <span class="c1"># so the daemon gets adopted by the init process</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unable to fork (error code: </span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">errno</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># redirect standard file descriptors to devnull (or the given logfile)</span>
+    <span class="n">devnull</span> <span class="o">=</span> <span class="s2">&quot;/dev/null&quot;</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">os</span><span class="p">,</span> <span class="s2">&quot;devnull&quot;</span><span class="p">):</span>
+        <span class="n">devnull</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">devnull</span>
+
+    <span class="n">devnull_fd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">devnull</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">O_RDWR</span><span class="p">)</span>
+    <span class="n">log_fd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">log_file</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">O_CREAT</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">O_RDWR</span><span class="p">)</span> <span class="k">if</span> <span class="n">log_file</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="n">out_fd</span> <span class="o">=</span> <span class="n">log_fd</span> <span class="ow">or</span> <span class="n">devnull_fd</span>
+
+    <span class="n">os</span><span class="o">.</span><span class="n">dup2</span><span class="p">(</span><span class="n">devnull_fd</span><span class="p">,</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">dup2</span><span class="p">(</span><span class="n">out_fd</span><span class="p">,</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">dup2</span><span class="p">(</span><span class="n">out_fd</span><span class="p">,</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
+
+    <span class="c1"># write the PID file</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">pid_file</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">()</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># register actions in case this process exits/gets killed</span>
+    <span class="k">def</span> <span class="nf">sigterm</span><span class="p">(</span><span class="n">signum</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">frame</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">types</span><span class="o">.</span><span class="n">FrameType</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Removes the PID file.&quot;&quot;&quot;</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">pid_file</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">cleanup</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Removes the PID file.&quot;&quot;&quot;</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">pid_file</span><span class="p">)</span>
+
+    <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGTERM</span><span class="p">,</span> <span class="n">sigterm</span><span class="p">)</span>
+    <span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">cleanup</span><span class="p">)</span>
+
+    <span class="c1"># finally run the actual daemon code</span>
+    <span class="n">daemon_function</span><span class="p">()</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.daemon.stop_daemon" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">stop_daemon</span><span class="p">(</span><span class="n">pid_file</span><span class="p">,</span> <span class="n">kill_children</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Stops a daemon process.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>pid_file</code></td>
+        <td><code>str</code></td>
+        <td><p>Path to file containing the PID of the daemon process to kill.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>kill_children</code></td>
+        <td><code>bool</code></td>
+        <td><p>If <code>True</code>, all child processes of the daemon process
+will be killed as well.</p></td>
+        <td><code>True</code></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/daemon.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">stop_daemon</span><span class="p">(</span><span class="n">pid_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">kill_children</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Stops a daemon process.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pid_file: Path to file containing the PID of the daemon process to kill.</span>
+<span class="sd">        kill_children: If `True`, all child processes of the daemon process</span>
+<span class="sd">            will be killed as well.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">pid_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">pid</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">IOError</span><span class="p">,</span> <span class="ne">FileNotFoundError</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Daemon PID file &#39;</span><span class="si">%s</span><span class="s2">&#39; does not exist.&quot;</span><span class="p">,</span> <span class="n">pid_file</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="k">if</span> <span class="n">psutil</span><span class="o">.</span><span class="n">pid_exists</span><span class="p">(</span><span class="n">pid</span><span class="p">):</span>
+        <span class="n">process</span> <span class="o">=</span> <span class="n">psutil</span><span class="o">.</span><span class="n">Process</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">kill_children</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">process</span><span class="o">.</span><span class="n">children</span><span class="p">(</span><span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+                <span class="n">child</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
+        <span class="n">process</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;PID from &#39;</span><span class="si">%s</span><span class="s2">&#39; does not exist.&quot;</span><span class="p">,</span> <span class="n">pid_file</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.utils.enum_utils" class="doc doc-heading">
+        <code>enum_utils</code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.utils.enum_utils.StrEnum" class="doc doc-heading">
+        <code>
+StrEnum            (<span title="str">str</span>, <span title="enum.Enum">Enum</span>)
+        </code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Base enum type for string enum values</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/enum_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StrEnum</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base enum type for string enum values&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns the enum string value.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span>  <span class="c1"># type: ignore</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">list</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get all enum names as a list of strings&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">cls</span><span class="p">]</span>
+</code></pre></div>
+        </details>
+
+
+    </div>
+
+  </div>
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.utils.networking_utils" class="doc doc-heading">
+        <code>networking_utils</code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.networking_utils.find_available_port" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">find_available_port</span><span class="p">()</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Finds a local unoccupied port.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/networking_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">find_available_port</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Finds a local unoccupied port.&quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">bind</span><span class="p">((</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">port</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">getsockname</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.networking_utils.port_available" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">port_available</span><span class="p">(</span><span class="n">port</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Checks if a local port is available.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/networking_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">port_available</span><span class="p">(</span><span class="n">port</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Checks if a local port is available.&quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">bind</span><span class="p">((</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="n">port</span><span class="p">))</span>
+    <span class="k">except</span> <span class="n">socket</span><span class="o">.</span><span class="n">error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Port </span><span class="si">%d</span><span class="s2"> unavailable: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">return</span> <span class="kc">True</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.utils.source_utils" class="doc doc-heading">
+        <code>source_utils</code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>These utils are predicated on the following definitions:</p>
+<ul>
+<li>class_source: This is a python-import type path to a class, e.g.
+    some.mod.class</li>
+<li>module_source: This is a python-import type path to a module, e.g. some.mod</li>
+<li>file_path, relative_path, absolute_path: These are file system paths.</li>
+<li>source: This is a class_source or module_source. If it is a class_source, it
+    can also be optionally pinned.</li>
+<li>pin: Whatever comes after the <code>@</code> symbol from a source, usually the git sha
+    or the version of zenml as a string.</li>
+</ul>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.source_utils.create_zenml_pin" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">create_zenml_pin</span><span class="p">()</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Creates a ZenML pin for source pinning from release version.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/source_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_zenml_pin</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Creates a ZenML pin for source pinning from release version.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">APP_NAME</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">__version__</span><span class="si">}</span><span class="s2">&quot;</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.source_utils.get_absolute_path_from_module_source" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_absolute_path_from_module_source</span><span class="p">(</span><span class="n">module</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Get a directory path from module source.</p>
+<p>E.g. <code>zenml.core.step</code> will return <code>full/path/to/zenml/core/step</code>.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>module</code></td>
+        <td><code>str</code></td>
+        <td><p>A module e.g. <code>zenml.core.step</code>.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/source_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_absolute_path_from_module_source</span><span class="p">(</span><span class="n">module</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Get a directory path from module source.</span>
+
+<span class="sd">    E.g. `zenml.core.step` will return `full/path/to/zenml/core/step`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        module: A module e.g. `zenml.core.step`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mod</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">mod</span><span class="o">.</span><span class="n">__path__</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># type: ignore[no-any-return, attr-defined]</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.source_utils.get_class_source_from_source" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_class_source_from_source</span><span class="p">(</span><span class="n">source</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Gets class source from source, i.e. module.path@version, returns version.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>source</code></td>
+        <td><code>str</code></td>
+        <td><p>source pointing to potentially pinned sha.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/source_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_class_source_from_source</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Gets class source from source, i.e. module.path@version, returns version.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        source: source pointing to potentially pinned sha.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># source need not even be pinned</span>
+    <span class="k">return</span> <span class="n">source</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;@&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.source_utils.get_module_source_from_class" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_module_source_from_class</span><span class="p">(</span><span class="n">class_</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Takes class input and returns module_source. If class is already string
+then returns the same.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>class_</code></td>
+        <td><code>Union[Type[Any], str]</code></td>
+        <td><p>object of type class.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/source_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_module_source_from_class</span><span class="p">(</span>
+    <span class="n">class_</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="nb">str</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Takes class input and returns module_source. If class is already string</span>
+<span class="sd">    then returns the same.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        class_: object of type class.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">class_</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">module_source</span> <span class="o">=</span> <span class="n">class_</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Infer it from the class provided</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">(</span><span class="n">class_</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;step_type is neither string nor class.&quot;</span><span class="p">)</span>
+        <span class="n">module_source</span> <span class="o">=</span> <span class="n">class_</span><span class="o">.</span><span class="vm">__module__</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="n">class_</span><span class="o">.</span><span class="vm">__name__</span>
+    <span class="k">return</span> <span class="n">module_source</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.source_utils.get_module_source_from_file_path" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_module_source_from_file_path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Gets module_source from a file_path. E.g. <code>/home/myrepo/step/trainer.py</code>
+returns <code>myrepo.step.trainer</code> if <code>myrepo</code> is the root of the repo.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>file_path</code></td>
+        <td><code>str</code></td>
+        <td><p>Absolute file path to a file within the module.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/source_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_module_source_from_file_path</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Gets module_source from a file_path. E.g. `/home/myrepo/step/trainer.py`</span>
+<span class="sd">    returns `myrepo.step.trainer` if `myrepo` is the root of the repo.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path: Absolute file path to a file within the module.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">zenml.repository</span> <span class="kn">import</span> <span class="n">Repository</span>
+
+    <span class="n">repo_path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">Repository</span><span class="p">()</span><span class="o">.</span><span class="n">root</span><span class="p">)</span>
+
+    <span class="c1"># Replace repo_path with file_path to get relative path left over</span>
+    <span class="n">relative_file_path</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">repo_path</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">:]</span>
+
+    <span class="c1"># Kick out the .py and replace `/` with `.` to get the module source</span>
+    <span class="n">relative_file_path</span> <span class="o">=</span> <span class="n">relative_file_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.py&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">module_source</span> <span class="o">=</span> <span class="n">relative_file_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="s2">&quot;.&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">module_source</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.source_utils.get_module_source_from_source" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_module_source_from_source</span><span class="p">(</span><span class="n">source</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Gets module source from source. E.g. <code>some.module.file.class@version</code>,
+returns <code>some.module</code>.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>source</code></td>
+        <td><code>str</code></td>
+        <td><p>source pointing to potentially pinned sha.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/source_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_module_source_from_source</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Gets module source from source. E.g. `some.module.file.class@version`,</span>
+<span class="sd">    returns `some.module`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        source: source pointing to potentially pinned sha.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">class_source</span> <span class="o">=</span> <span class="n">get_class_source_from_source</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">class_source</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.source_utils.get_relative_path_from_module_source" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_relative_path_from_module_source</span><span class="p">(</span><span class="n">module_source</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Get a directory path from module, relative to root of repository.</p>
+<p>E.g. zenml.core.step will return zenml/core/step.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>module_source</code></td>
+        <td><code>str</code></td>
+        <td><p>A module e.g. zenml.core.step</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/source_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_relative_path_from_module_source</span><span class="p">(</span><span class="n">module_source</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Get a directory path from module, relative to root of repository.</span>
+
+<span class="sd">    E.g. zenml.core.step will return zenml/core/step.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        module_source: A module e.g. zenml.core.step</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">module_source</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.source_utils.import_class_by_path" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">import_class_by_path</span><span class="p">(</span><span class="n">class_path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Imports a class based on a given path</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>class_path</code></td>
+        <td><code>str</code></td>
+        <td><p>str, class_source e.g. this.module.Class</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>      <p>Returns: the given class</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/source_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">import_class_by_path</span><span class="p">(</span><span class="n">class_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Imports a class based on a given path</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        class_path: str, class_source e.g. this.module.Class</span>
+
+<span class="sd">    Returns: the given class</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">classname</span> <span class="o">=</span> <span class="n">class_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">modulename</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">class_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">mod</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="n">modulename</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="n">classname</span><span class="p">)</span>  <span class="c1"># type: ignore[no-any-return]</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.source_utils.import_python_file" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">import_python_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Imports a python file.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>file_path</code></td>
+        <td><code>str</code></td>
+        <td><p>Path to python file that should be imported.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>module</code></td>
+      <td><p>The imported module.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/source_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">import_python_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Imports a python file.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path: Path to python file that should be imported.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The imported module.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Add directory of python file to PYTHONPATH so we can import it</span>
+    <span class="n">file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">file_path</span><span class="p">))</span>
+
+    <span class="n">module_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">file_path</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="n">module_name</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.source_utils.is_inside_repository" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">is_inside_repository</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns whether a file is inside a zenml repository.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/source_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_inside_repository</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns whether a file is inside a zenml repository.&quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">zenml.repository</span> <span class="kn">import</span> <span class="n">Repository</span>
+
+    <span class="n">repo_path</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">()</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+    <span class="n">absolute_file_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">repo_path</span> <span class="ow">in</span> <span class="n">absolute_file_path</span><span class="o">.</span><span class="n">parents</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.source_utils.is_standard_pin" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">is_standard_pin</span><span class="p">(</span><span class="n">pin</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns <code>True</code> if pin is valid ZenML pin, else False.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>pin</code></td>
+        <td><code>str</code></td>
+        <td><p>potential ZenML pin like 'zenml_0.1.1'</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/source_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_standard_pin</span><span class="p">(</span><span class="n">pin</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns `True` if pin is valid ZenML pin, else False.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pin: potential ZenML pin like &#39;zenml_0.1.1&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">pin</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">APP_NAME</span><span class="si">}</span><span class="s2">_&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">False</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.source_utils.is_standard_source" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">is_standard_source</span><span class="p">(</span><span class="n">source</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns <code>True</code> if source is a standard ZenML source.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>source</code></td>
+        <td><code>str</code></td>
+        <td><p>class_source e.g. this.module.Class[@pin].</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/source_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_standard_source</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns `True` if source is a standard ZenML source.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        source: class_source e.g. this.module.Class[@pin].</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">source</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;zenml&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">False</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.source_utils.is_third_party_module" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">is_third_party_module</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns whether a file belongs to a third party package.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/source_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_third_party_module</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns whether a file belongs to a third party package.&quot;&quot;&quot;</span>
+    <span class="n">absolute_file_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">site</span><span class="o">.</span><span class="n">getsitepackages</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="n">site</span><span class="o">.</span><span class="n">getusersitepackages</span><span class="p">()]:</span>
+        <span class="k">if</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span> <span class="ow">in</span> <span class="n">absolute_file_path</span><span class="o">.</span><span class="n">parents</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">return</span> <span class="kc">False</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.source_utils.load_source_path_class" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">load_source_path_class</span><span class="p">(</span><span class="n">source</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Loads a Python class from the source.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>source</code></td>
+        <td><code>str</code></td>
+        <td><p>class_source e.g. this.module.Class[@sha]</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/source_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load_source_path_class</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Loads a Python class from the source.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        source: class_source e.g. this.module.Class[@sha]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;@&quot;</span> <span class="ow">in</span> <span class="n">source</span><span class="p">:</span>
+        <span class="n">source</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;@&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+        <span class="s2">&quot;Unpinned step found with no git sha. Attempting to &quot;</span>
+        <span class="s2">&quot;load class from current repository state.&quot;</span>
+    <span class="p">)</span>
+    <span class="n">class_</span> <span class="o">=</span> <span class="n">import_class_by_path</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">class_</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.source_utils.resolve_class" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">resolve_class</span><span class="p">(</span><span class="n">class_</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Resolves a class into a serializable source string.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>class_</code></td>
+        <td><code>Type[Any]</code></td>
+        <td><p>A Python Class reference.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>      <p>Returns: source_path e.g. this.module.Class.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/source_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">resolve_class</span><span class="p">(</span><span class="n">class_</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Resolves a class into a serializable source string.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        class_: A Python Class reference.</span>
+
+<span class="sd">    Returns: source_path e.g. this.module.Class.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">initial_source</span> <span class="o">=</span> <span class="n">class_</span><span class="o">.</span><span class="vm">__module__</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="n">class_</span><span class="o">.</span><span class="vm">__name__</span>
+    <span class="k">if</span> <span class="n">is_standard_source</span><span class="p">(</span><span class="n">initial_source</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">resolve_standard_source</span><span class="p">(</span><span class="n">initial_source</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getfile</span><span class="p">(</span><span class="n">class_</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+        <span class="c1"># builtin file</span>
+        <span class="k">return</span> <span class="n">initial_source</span>
+
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">initial_source</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;__main__&quot;</span><span class="p">)</span>
+        <span class="ow">or</span> <span class="ow">not</span> <span class="n">is_inside_repository</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="ow">or</span> <span class="n">is_third_party_module</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+    <span class="p">):</span>
+        <span class="k">return</span> <span class="n">initial_source</span>
+
+    <span class="c1"># Regular user file inside the repository -&gt; get the full module</span>
+    <span class="c1"># path relative to the repository</span>
+    <span class="n">module_source</span> <span class="o">=</span> <span class="n">get_module_source_from_file_path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+
+    <span class="c1"># ENG-123 Sanitize for Windows OS</span>
+    <span class="c1"># module_source = module_source.replace(&quot;\\&quot;, &quot;.&quot;)</span>
+
+    <span class="k">return</span> <span class="n">module_source</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="n">class_</span><span class="o">.</span><span class="vm">__name__</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.source_utils.resolve_standard_source" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">resolve_standard_source</span><span class="p">(</span><span class="n">source</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Creates a ZenML pin for source pinning from release version.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>source</code></td>
+        <td><code>str</code></td>
+        <td><p>class_source e.g. this.module.Class.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/source_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">resolve_standard_source</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Creates a ZenML pin for source pinning from release version.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        source: class_source e.g. this.module.Class.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;@&quot;</span> <span class="ow">in</span> <span class="n">source</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;source </span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s2"> is already pinned.&quot;</span><span class="p">)</span>
+    <span class="n">pin</span> <span class="o">=</span> <span class="n">create_zenml_pin</span><span class="p">()</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">pin</span><span class="si">}</span><span class="s2">&quot;</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.utils.string_utils" class="doc doc-heading">
+        <code>string_utils</code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.string_utils.get_human_readable_filesize" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_human_readable_filesize</span><span class="p">(</span><span class="n">bytes_</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Convert a file size in bytes into a human-readable string.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/string_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_human_readable_filesize</span><span class="p">(</span><span class="n">bytes_</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Convert a file size in bytes into a human-readable string.&quot;&quot;&quot;</span>
+    <span class="n">size</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">bytes_</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;KiB&quot;</span><span class="p">,</span> <span class="s2">&quot;MiB&quot;</span><span class="p">,</span> <span class="s2">&quot;GiB&quot;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">size</span> <span class="o">&lt;</span> <span class="mf">1024.0</span> <span class="ow">or</span> <span class="n">unit</span> <span class="o">==</span> <span class="s2">&quot;GiB&quot;</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="n">size</span> <span class="o">/=</span> <span class="mf">1024.0</span>
+
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">size</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">unit</span><span class="si">}</span><span class="s2">&quot;</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.string_utils.get_human_readable_time" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_human_readable_time</span><span class="p">(</span><span class="n">seconds</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Convert seconds into a human-readable string.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/string_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_human_readable_time</span><span class="p">(</span><span class="n">seconds</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Convert seconds into a human-readable string.&quot;&quot;&quot;</span>
+    <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span> <span class="k">if</span> <span class="n">seconds</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">seconds</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">seconds</span><span class="p">)</span>
+    <span class="n">int_seconds</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">seconds</span><span class="p">)</span>
+    <span class="n">days</span><span class="p">,</span> <span class="n">int_seconds</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">int_seconds</span><span class="p">,</span> <span class="mi">86400</span><span class="p">)</span>
+    <span class="n">hours</span><span class="p">,</span> <span class="n">int_seconds</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">int_seconds</span><span class="p">,</span> <span class="mi">3600</span><span class="p">)</span>
+    <span class="n">minutes</span><span class="p">,</span> <span class="n">int_seconds</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">int_seconds</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">days</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">time_string</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">days</span><span class="si">}</span><span class="s2">d</span><span class="si">{</span><span class="n">hours</span><span class="si">}</span><span class="s2">h</span><span class="si">{</span><span class="n">minutes</span><span class="si">}</span><span class="s2">m</span><span class="si">{</span><span class="n">int_seconds</span><span class="si">}</span><span class="s2">s&quot;</span>
+    <span class="k">elif</span> <span class="n">hours</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">time_string</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">hours</span><span class="si">}</span><span class="s2">h</span><span class="si">{</span><span class="n">minutes</span><span class="si">}</span><span class="s2">m</span><span class="si">{</span><span class="n">int_seconds</span><span class="si">}</span><span class="s2">s&quot;</span>
+    <span class="k">elif</span> <span class="n">minutes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">time_string</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">minutes</span><span class="si">}</span><span class="s2">m</span><span class="si">{</span><span class="n">int_seconds</span><span class="si">}</span><span class="s2">s&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">time_string</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">seconds</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">s&quot;</span>
+
+    <span class="k">return</span> <span class="n">prefix</span> <span class="o">+</span> <span class="n">time_string</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.utils.yaml_utils" class="doc doc-heading">
+        <code>yaml_utils</code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.yaml_utils.is_yaml" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">is_yaml</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns True if file_path is YAML, else False</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>file_path</code></td>
+        <td><code>str</code></td>
+        <td><p>Path to YAML file.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>bool</code></td>
+      <td><p>True if is yaml, else False.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/yaml_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_yaml</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns True if file_path is YAML, else False</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path: Path to YAML file.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        True if is yaml, else False.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">file_path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;yaml&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">file_path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;yml&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">False</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.yaml_utils.read_json" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">read_json</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Read JSON on file path and returns contents as dict.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>file_path</code></td>
+        <td><code>str</code></td>
+        <td><p>Path to JSON file.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/yaml_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">read_json</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Read JSON on file path and returns contents as dict.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path: Path to JSON file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">fileio</span><span class="o">.</span><span class="n">file_exists</span><span class="p">(</span><span class="n">file_path</span><span class="p">):</span>
+        <span class="n">contents</span> <span class="o">=</span> <span class="n">zenml</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">read_file_contents_as_string</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">contents</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2"> does not exist.&quot;</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.yaml_utils.read_yaml" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">read_yaml</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Read YAML on file path and returns contents as dict.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>file_path</code></td>
+        <td><code>str</code></td>
+        <td><p>Path to YAML file.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Any</code></td>
+      <td><p>Contents of the file in a dict.</p></td>
+    </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>FileNotFoundError</code></td>
+        <td><p>if file does not exist.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/yaml_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">read_yaml</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Read YAML on file path and returns contents as dict.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path: Path to YAML file.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Contents of the file in a dict.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        FileNotFoundError: if file does not exist.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">fileio</span><span class="o">.</span><span class="n">file_exists</span><span class="p">(</span><span class="n">file_path</span><span class="p">):</span>
+        <span class="n">contents</span> <span class="o">=</span> <span class="n">zenml</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">read_file_contents_as_string</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">contents</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2"> does not exist.&quot;</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.yaml_utils.write_json" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">write_json</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">contents</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Write contents as JSON format to file_path.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>file_path</code></td>
+        <td><code>str</code></td>
+        <td><p>Path to JSON file.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>contents</code></td>
+        <td><code>Dict[str, Any]</code></td>
+        <td><p>Contents of JSON file as dict.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>None</code></td>
+      <td><p>Contents of the file in a dict.</p></td>
+    </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>FileNotFoundError</code></td>
+        <td><p>if directory does not exist.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/yaml_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">write_json</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">contents</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Write contents as JSON format to file_path.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path: Path to JSON file.</span>
+<span class="sd">        contents: Contents of JSON file as dict.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Contents of the file in a dict.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        FileNotFoundError: if directory does not exist.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">fileio</span><span class="o">.</span><span class="n">is_remote</span><span class="p">(</span><span class="n">file_path</span><span class="p">):</span>
+        <span class="n">dir_</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">fileio</span><span class="o">.</span><span class="n">is_dir</span><span class="p">(</span><span class="n">dir_</span><span class="p">):</span>
+            <span class="c1"># If it is a local path and it doesn&#39;t exist, raise Exception.</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Directory </span><span class="si">{</span><span class="n">dir_</span><span class="si">}</span><span class="s2"> does not exist.&quot;</span><span class="p">)</span>
+    <span class="n">zenml</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">write_file_contents_as_string</span><span class="p">(</span>
+        <span class="n">file_path</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">contents</span><span class="p">)</span>
+    <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.utils.yaml_utils.write_yaml" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">write_yaml</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">contents</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Write contents as YAML format to file_path.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>file_path</code></td>
+        <td><code>str</code></td>
+        <td><p>Path to YAML file.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>contents</code></td>
+        <td><code>Dict[Any, Any]</code></td>
+        <td><p>Contents of YAML file as dict.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>FileNotFoundError</code></td>
+        <td><p>if directory does not exist.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/utils/yaml_utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">write_yaml</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">contents</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Write contents as YAML format to file_path.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path: Path to YAML file.</span>
+<span class="sd">        contents: Contents of YAML file as dict.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        FileNotFoundError: if directory does not exist.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">fileio</span><span class="o">.</span><span class="n">is_remote</span><span class="p">(</span><span class="n">file_path</span><span class="p">):</span>
+        <span class="n">dir_</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">fileio</span><span class="o">.</span><span class="n">is_dir</span><span class="p">(</span><span class="n">dir_</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Directory </span><span class="si">{</span><span class="n">dir_</span><span class="si">}</span><span class="s2"> does not exist.&quot;</span><span class="p">)</span>
+    <span class="n">zenml</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">write_file_contents_as_string</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">contents</span><span class="p">))</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="../steps/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Steps" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Steps
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../visualizers/" class="md-footer__link md-footer__link--next" aria-label="Next: Visualizers" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Visualizers
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2022 ZenML GmbH
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.22074ed6.min.js", "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.960e086b.min.js"></script>
+      
+    
+  </body>
+</html>

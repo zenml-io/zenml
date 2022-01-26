@@ -1,0 +1,3378 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://apidocs.zenml.io/0.6.0/api_docs/repository/">
+      
+      <link rel="icon" href="../../_assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.8">
+    
+    
+      
+        <title>Repository - ZenML API Reference</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.6e60f8b8.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.e6a45f82.min.css">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="none" data-md-color-accent="none">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#repository" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        <aside class="md-banner md-banner--warning">
+          
+        </aside>
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="ZenML API Reference" class="md-header__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ZenML API Reference
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Repository
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/zenml-io/zenml/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="ZenML API Reference" class="md-nav__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    ZenML API Reference
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/zenml-io/zenml/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        ZenML
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        CLI docs
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Api docs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Api docs" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Api docs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../artifact_stores/" class="md-nav__link">
+        Artifact Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../artifacts/" class="md-nav__link">
+        Artifacts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        Config
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../constants/" class="md-nav__link">
+        Constants
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../container_registries/" class="md-nav__link">
+        Container Registries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../enums/" class="md-nav__link">
+        Enums
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exceptions/" class="md-nav__link">
+        Exceptions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/" class="md-nav__link">
+        Integrations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../io/" class="md-nav__link">
+        Io
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logger/" class="md-nav__link">
+        Logger
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../materializers/" class="md-nav__link">
+        Materializers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metadata_stores/" class="md-nav__link">
+        Metadata Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../orchestrators/" class="md-nav__link">
+        Orchestrators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipelines/" class="md-nav__link">
+        Pipelines
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../post_execution/" class="md-nav__link">
+        Post Execution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Repository
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Repository
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.repository" class="md-nav__link">
+    repository
+  </a>
+  
+    <nav class="md-nav" aria-label="repository">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository" class="md-nav__link">
+    Repository
+  </a>
+  
+    <nav class="md-nav" aria-label="Repository">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.active_stack" class="md-nav__link">
+    active_stack
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.active_stack_name" class="md-nav__link">
+    active_stack_name
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.config_directory" class="md-nav__link">
+    config_directory
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.root" class="md-nav__link">
+    root
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.stack_configurations" class="md-nav__link">
+    stack_configurations
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.stacks" class="md-nav__link">
+    stacks
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.version" class="md-nav__link">
+    version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.activate_stack" class="md-nav__link">
+    activate_stack()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.deregister_stack" class="md-nav__link">
+    deregister_stack()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.deregister_stack_component" class="md-nav__link">
+    deregister_stack_component()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.find_repository" class="md-nav__link">
+    find_repository()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.get_pipeline" class="md-nav__link">
+    get_pipeline()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.get_pipelines" class="md-nav__link">
+    get_pipelines()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.get_stack" class="md-nav__link">
+    get_stack()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.get_stack_component" class="md-nav__link">
+    get_stack_component()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.get_stack_components" class="md-nav__link">
+    get_stack_components()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.initialize" class="md-nav__link">
+    initialize()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.is_repository_directory" class="md-nav__link">
+    is_repository_directory()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.register_stack" class="md-nav__link">
+    register_stack()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.register_stack_component" class="md-nav__link">
+    register_stack_component()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.RepositoryConfiguration" class="md-nav__link">
+    RepositoryConfiguration
+  </a>
+  
+    <nav class="md-nav" aria-label="RepositoryConfiguration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.RepositoryConfiguration.empty_configuration" class="md-nav__link">
+    empty_configuration()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.StackConfiguration" class="md-nav__link">
+    StackConfiguration
+  </a>
+  
+    <nav class="md-nav" aria-label="StackConfiguration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.StackConfiguration.Config" class="md-nav__link">
+    Config
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.StackConfiguration.contains_component" class="md-nav__link">
+    contains_component()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runtime_configuration/" class="md-nav__link">
+        Runtime Configuration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stack/" class="md-nav__link">
+        Stack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../steps/" class="md-nav__link">
+        Steps
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../visualizers/" class="md-nav__link">
+        Visualizers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_22" type="checkbox" id="__nav_3_22" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_22">
+          Cli
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Cli" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_22">
+          <span class="md-nav__icon md-icon"></span>
+          Cli
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/cli/" class="md-nav__link">
+        Cli
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/config/" class="md-nav__link">
+        Config
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/example/" class="md-nav__link">
+        Example
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/integration/" class="md-nav__link">
+        Integration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/pipeline/" class="md-nav__link">
+        Pipeline
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/stack/" class="md-nav__link">
+        Stack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/stack_components/" class="md-nav__link">
+        Stack Components
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/utils/" class="md-nav__link">
+        Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/version/" class="md-nav__link">
+        Version
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.repository" class="md-nav__link">
+    repository
+  </a>
+  
+    <nav class="md-nav" aria-label="repository">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository" class="md-nav__link">
+    Repository
+  </a>
+  
+    <nav class="md-nav" aria-label="Repository">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.active_stack" class="md-nav__link">
+    active_stack
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.active_stack_name" class="md-nav__link">
+    active_stack_name
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.config_directory" class="md-nav__link">
+    config_directory
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.root" class="md-nav__link">
+    root
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.stack_configurations" class="md-nav__link">
+    stack_configurations
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.stacks" class="md-nav__link">
+    stacks
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.version" class="md-nav__link">
+    version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.activate_stack" class="md-nav__link">
+    activate_stack()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.deregister_stack" class="md-nav__link">
+    deregister_stack()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.deregister_stack_component" class="md-nav__link">
+    deregister_stack_component()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.find_repository" class="md-nav__link">
+    find_repository()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.get_pipeline" class="md-nav__link">
+    get_pipeline()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.get_pipelines" class="md-nav__link">
+    get_pipelines()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.get_stack" class="md-nav__link">
+    get_stack()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.get_stack_component" class="md-nav__link">
+    get_stack_component()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.get_stack_components" class="md-nav__link">
+    get_stack_components()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.initialize" class="md-nav__link">
+    initialize()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.is_repository_directory" class="md-nav__link">
+    is_repository_directory()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.register_stack" class="md-nav__link">
+    register_stack()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.Repository.register_stack_component" class="md-nav__link">
+    register_stack_component()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.RepositoryConfiguration" class="md-nav__link">
+    RepositoryConfiguration
+  </a>
+  
+    <nav class="md-nav" aria-label="RepositoryConfiguration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.RepositoryConfiguration.empty_configuration" class="md-nav__link">
+    empty_configuration()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.StackConfiguration" class="md-nav__link">
+    StackConfiguration
+  </a>
+  
+    <nav class="md-nav" aria-label="StackConfiguration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.StackConfiguration.Config" class="md-nav__link">
+    Config
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.repository.StackConfiguration.contains_component" class="md-nav__link">
+    contains_component()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+<a href="https://github.com/zenml-io/zenml/docs/api_docs/repository.md" title="Edit this page" class="md-content__button md-icon">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+</a>
+
+
+<h1 id="repository">Repository</h1>
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h2 id="zenml.repository" class="doc doc-heading">
+        <code>zenml.repository</code>
+
+
+
+</h2>
+
+    <div class="doc doc-contents first">
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.repository.Repository" class="doc doc-heading">
+        <code>
+Repository        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>ZenML repository class.</p>
+<p>ZenML repositories store configuration options for ZenML stacks as well as
+their components.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/repository.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Repository</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;ZenML repository class.</span>
+
+<span class="sd">    ZenML repositories store configuration options for ZenML stacks as well as</span>
+<span class="sd">    their components.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initializes a repository instance.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            root: Optional root directory of the repository. If no path is</span>
+<span class="sd">                given, this function tries to find the repository using the</span>
+<span class="sd">                environment variable `ZENML_REPOSITORY_PATH` (if set) and</span>
+<span class="sd">                recursively searching in the parent directories of the current</span>
+<span class="sd">                working directory.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            RepositoryNotFoundError: If no ZenML repository directory is found.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_root</span> <span class="o">=</span> <span class="n">Repository</span><span class="o">.</span><span class="n">find_repository</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+
+        <span class="c1"># load the repository configuration file if it exists, otherwise use</span>
+        <span class="c1"># an empty configuration as default</span>
+        <span class="n">config_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config_path</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">fileio</span><span class="o">.</span><span class="n">file_exists</span><span class="p">(</span><span class="n">config_path</span><span class="p">):</span>
+            <span class="n">config_dict</span> <span class="o">=</span> <span class="n">yaml_utils</span><span class="o">.</span><span class="n">read_yaml</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__config</span> <span class="o">=</span> <span class="n">RepositoryConfiguration</span><span class="o">.</span><span class="n">parse_obj</span><span class="p">(</span><span class="n">config_dict</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__config</span> <span class="o">=</span> <span class="n">RepositoryConfiguration</span><span class="o">.</span><span class="n">empty_configuration</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">!=</span> <span class="n">zenml</span><span class="o">.</span><span class="n">__version__</span><span class="p">:</span>
+            <span class="c1"># TODO [ENG-366]: Create compatibility table so we don&#39;t have to</span>
+            <span class="c1">#  warn about mismatching repository and ZenML version each time</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;This ZenML repository was created with a different version &quot;</span>
+                <span class="s2">&quot;of ZenML (Repository version: </span><span class="si">%s</span><span class="s2">, current ZenML version: </span><span class="si">%s</span><span class="s2">). &quot;</span>
+                <span class="s2">&quot;In case you encounter any errors, please delete and &quot;</span>
+                <span class="s2">&quot;reinitialize this repository.&quot;</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">version</span><span class="p">,</span>
+                <span class="n">zenml</span><span class="o">.</span><span class="n">__version__</span><span class="p">,</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_config_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Path to the repository configuration file.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config_directory</span> <span class="o">/</span> <span class="s2">&quot;config.yaml&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_stack_component_config_path</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">component_type</span><span class="p">:</span> <span class="n">StackComponentType</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Path to the configuration file of a stack component.&quot;&quot;&quot;</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_directory</span> <span class="o">/</span> <span class="n">component_type</span><span class="o">.</span><span class="n">plural</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">.yaml&quot;</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_write_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Writes the repository configuration file.&quot;&quot;&quot;</span>
+        <span class="n">config_dict</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+        <span class="n">yaml_utils</span><span class="o">.</span><span class="n">write_yaml</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_config_path</span><span class="p">(),</span> <span class="n">config_dict</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="nd">@track</span><span class="p">(</span><span class="n">event</span><span class="o">=</span><span class="n">AnalyticsEvent</span><span class="o">.</span><span class="n">INITIALIZE_REPO</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">root</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">())</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Initializes a new ZenML repository at the given path.</span>
+
+<span class="sd">        The newly created repository will contain a single stack with a local</span>
+<span class="sd">        orchestrator, a local artifact store and a local SQLite metadata store.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            root: The root directory where the repository should be created.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            InitializationException: If the root directory already contains a</span>
+<span class="sd">                ZenML repository.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Initializing new repository at path </span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="n">root</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">Repository</span><span class="o">.</span><span class="n">is_repository_directory</span><span class="p">(</span><span class="n">root</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InitializationException</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Found existing ZenML repository at path &#39;</span><span class="si">{</span><span class="n">root</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">config_directory</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">root</span> <span class="o">/</span> <span class="n">LOCAL_CONFIG_DIRECTORY_NAME</span><span class="p">)</span>
+        <span class="n">fileio</span><span class="o">.</span><span class="n">create_dir_recursive_if_not_exists</span><span class="p">(</span><span class="n">config_directory</span><span class="p">)</span>
+
+        <span class="c1"># register and activate a local stack</span>
+        <span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">)</span>
+        <span class="n">stack</span> <span class="o">=</span> <span class="n">Stack</span><span class="o">.</span><span class="n">default_local_stack</span><span class="p">()</span>
+        <span class="n">repo</span><span class="o">.</span><span class="n">register_stack</span><span class="p">(</span><span class="n">stack</span><span class="p">)</span>
+        <span class="n">repo</span><span class="o">.</span><span class="n">activate_stack</span><span class="p">(</span><span class="n">stack</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;The version of the repository.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">version</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">root</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;The root directory of this repository.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_root</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">config_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;The configuration directory of this repository.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="o">/</span> <span class="n">LOCAL_CONFIG_DIRECTORY_NAME</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">stacks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Stack</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;All stacks registered in this repository.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_stack</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">stacks</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">stack_configurations</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">StackConfiguration</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Configuration objects for all stacks registered in this repository.</span>
+
+<span class="sd">        This property is intended as a quick way to get information about the</span>
+<span class="sd">        components of the registered stacks without loading all installed</span>
+<span class="sd">        integrations. The contained stack configurations might be invalid if</span>
+<span class="sd">        they were modified by hand, to ensure you get valid stacks use</span>
+<span class="sd">        `repo.stacks()` instead.</span>
+
+<span class="sd">        Modifying the contents of the returned dictionary does not actually</span>
+<span class="sd">        register/deregister stacks, use `repo.register_stack(...)` or</span>
+<span class="sd">        `repo.deregister_stack(...)` instead.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">stacks</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">active_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Stack</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;The active stack for this repository.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            RuntimeError: If no active stack name is configured.</span>
+<span class="sd">            KeyError: If no stack was found for the configured name or one</span>
+<span class="sd">                of the stack components is not registered.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">active_stack_name</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;No active stack name configured. Run &quot;</span>
+                <span class="s2">&quot;`zenml stack set STACK_NAME` to update the active stack.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_stack</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">active_stack_name</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">active_stack_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;The name of the active stack for this repository.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            RuntimeError: If no active stack name is configured.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">active_stack_name</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;No active stack name configured. Run &quot;</span>
+                <span class="s2">&quot;`zenml stack set STACK_NAME` to update the active stack.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">active_stack_name</span>
+
+    <span class="c1"># TODO [ENG-367]: Should we replace the stack name by the actual stack</span>
+    <span class="c1">#  object? It would be more consistent with the rest of the API but</span>
+    <span class="c1">#  requires some additional care (checking if the stack + components are</span>
+    <span class="c1">#  actually registered in this repository). Downside: We would need to</span>
+    <span class="c1">#  load all the integrations to create the stack object which makes the CLI</span>
+    <span class="c1">#  command to set the active stack much slower.</span>
+    <span class="nd">@track</span><span class="p">(</span><span class="n">event</span><span class="o">=</span><span class="n">AnalyticsEvent</span><span class="o">.</span><span class="n">SET_STACK</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">activate_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Activates the stack for the given name.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name: Name of the stack to activate.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError: If no stack exists for the given name.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">stacks</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unable to find stack for name &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">active_stack_name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write_config</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">get_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Stack</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Fetches a stack.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name: The name of the stack to fetch.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError: If no stack exists for the given name or one of the</span>
+<span class="sd">                stacks components is not registered.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Fetching stack with name &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">stacks</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unable to find stack with name &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;. Available names: &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">stacks</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">stack_configuration</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">stacks</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="n">stack_components</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="p">(</span>
+            <span class="n">component_type_name</span><span class="p">,</span>
+            <span class="n">component_name</span><span class="p">,</span>
+        <span class="p">)</span> <span class="ow">in</span> <span class="n">stack_configuration</span><span class="o">.</span><span class="n">dict</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">component_type</span> <span class="o">=</span> <span class="n">StackComponentType</span><span class="p">(</span><span class="n">component_type_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">component_name</span><span class="p">:</span>
+                <span class="c1"># optional component which is not set, continue</span>
+                <span class="k">continue</span>
+            <span class="n">component</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_stack_component</span><span class="p">(</span>
+                <span class="n">component_type</span><span class="o">=</span><span class="n">component_type</span><span class="p">,</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">component_name</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">stack_components</span><span class="p">[</span><span class="n">component_type</span><span class="p">]</span> <span class="o">=</span> <span class="n">component</span>
+
+        <span class="k">return</span> <span class="n">Stack</span><span class="o">.</span><span class="n">from_components</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="n">stack_components</span><span class="p">)</span>
+
+    <span class="nd">@track</span><span class="p">(</span><span class="n">event</span><span class="o">=</span><span class="n">AnalyticsEvent</span><span class="o">.</span><span class="n">REGISTERED_STACK</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">register_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="n">Stack</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Registers a stack and it&#39;s components.</span>
+
+<span class="sd">        If any of the stacks&#39; components aren&#39;t registered in the repository</span>
+<span class="sd">        yet, this method will try to register them as well.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            stack: The stack to register.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            StackExistsError: If a stack with the same name already exists.</span>
+<span class="sd">            StackComponentExistsError: If a component of the stack wasn&#39;t</span>
+<span class="sd">                registered and a different component with the same name</span>
+<span class="sd">                already exists.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">stack</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">stacks</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">StackExistsError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unable to register stack with name &#39;</span><span class="si">{</span><span class="n">stack</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;: Found &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;existing stack with this name.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">components</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">component_type</span><span class="p">,</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">stack</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">existing_component</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_stack_component</span><span class="p">(</span>
+                    <span class="n">component_type</span><span class="o">=</span><span class="n">component_type</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">component</span><span class="o">.</span><span class="n">name</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">existing_component</span><span class="o">.</span><span class="n">uuid</span> <span class="o">!=</span> <span class="n">component</span><span class="o">.</span><span class="n">uuid</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">StackComponentExistsError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Unable to register one of the stacks components: &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;A component of type &#39;</span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2">&#39; and name &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">component</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; already exists.&quot;</span>
+                    <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="c1"># a component of the stack isn&#39;t registered yet -&gt; register it</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">register_stack_component</span><span class="p">(</span><span class="n">component</span><span class="p">)</span>
+
+            <span class="n">components</span><span class="p">[</span><span class="n">component_type</span><span class="o">.</span><span class="n">value</span><span class="p">]</span> <span class="o">=</span> <span class="n">component</span><span class="o">.</span><span class="n">name</span>
+
+        <span class="n">stack_configuration</span> <span class="o">=</span> <span class="n">StackConfiguration</span><span class="p">(</span><span class="o">**</span><span class="n">components</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">stacks</span><span class="p">[</span><span class="n">stack</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">stack_configuration</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write_config</span><span class="p">()</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Registered stack with name &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="n">stack</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">deregister_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Deregisters a stack.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name: The name of the stack to deregister.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If the stack is the currently active stack for this</span>
+<span class="sd">                repository.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_stack_name</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unable to deregister active stack &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">stacks</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_write_config</span><span class="p">()</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Deregistered stack with name &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Unable to deregister stack with name &#39;</span><span class="si">%s</span><span class="s2">&#39;: No stack exists &quot;</span>
+                <span class="s2">&quot;with this name.&quot;</span><span class="p">,</span>
+                <span class="n">name</span><span class="p">,</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_stack_components</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">component_type</span><span class="p">:</span> <span class="n">StackComponentType</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">StackComponent</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Fetches all registered stack components of the given type.&quot;&quot;&quot;</span>
+        <span class="n">component_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">stack_components</span><span class="p">[</span><span class="n">component_type</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_stack_component</span><span class="p">(</span><span class="n">component_type</span><span class="o">=</span><span class="n">component_type</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">component_names</span>
+        <span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">get_stack_component</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">component_type</span><span class="p">:</span> <span class="n">StackComponentType</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackComponent</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Fetches a registered stack component.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            component_type: The type of the component to fetch.</span>
+<span class="sd">            name: The name of the component to fetch.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError: If no stack component exists for the given type and name.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s2">&quot;Fetching stack component of type &#39;</span><span class="si">%s</span><span class="s2">&#39; with name &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span>
+            <span class="n">component_type</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="n">name</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">components</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">stack_components</span><span class="p">[</span><span class="n">component_type</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">components</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unable to find stack component (type: </span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2">) &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;with name &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;. Available names: </span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">components</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="kn">from</span> <span class="nn">zenml.stack.stack_component_class_registry</span> <span class="kn">import</span> <span class="p">(</span>
+            <span class="n">StackComponentClassRegistry</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">component_flavor</span> <span class="o">=</span> <span class="n">components</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="n">component_class</span> <span class="o">=</span> <span class="n">StackComponentClassRegistry</span><span class="o">.</span><span class="n">get_class</span><span class="p">(</span>
+            <span class="n">component_type</span><span class="o">=</span><span class="n">component_type</span><span class="p">,</span> <span class="n">component_flavor</span><span class="o">=</span><span class="n">component_flavor</span>
+        <span class="p">)</span>
+        <span class="n">component_config_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_stack_component_config_path</span><span class="p">(</span>
+            <span class="n">component_type</span><span class="o">=</span><span class="n">component_type</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span>
+        <span class="p">)</span>
+        <span class="n">component_config</span> <span class="o">=</span> <span class="n">yaml_utils</span><span class="o">.</span><span class="n">read_yaml</span><span class="p">(</span><span class="n">component_config_path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">component_class</span><span class="o">.</span><span class="n">parse_obj</span><span class="p">(</span><span class="n">component_config</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">register_stack_component</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">component</span><span class="p">:</span> <span class="n">StackComponent</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Registers a stack component.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            component: The component to register.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            StackComponentExistsError: If a stack component with the same type</span>
+<span class="sd">                and name already exists.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">components</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">stack_components</span><span class="p">[</span><span class="n">component</span><span class="o">.</span><span class="n">type</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">component</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">components</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">StackComponentExistsError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unable to register stack component (type: </span><span class="si">{</span><span class="n">component</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s2">) &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;with name &#39;</span><span class="si">{</span><span class="n">component</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;: Found existing stack component &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;with this name.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># write the component configuration file</span>
+        <span class="n">component_config_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_stack_component_config_path</span><span class="p">(</span>
+            <span class="n">component_type</span><span class="o">=</span><span class="n">component</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">component</span><span class="o">.</span><span class="n">name</span>
+        <span class="p">)</span>
+        <span class="n">fileio</span><span class="o">.</span><span class="n">create_dir_recursive_if_not_exists</span><span class="p">(</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">component_config_path</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">yaml_utils</span><span class="o">.</span><span class="n">write_yaml</span><span class="p">(</span>
+            <span class="n">component_config_path</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">component</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+        <span class="p">)</span>
+
+        <span class="c1"># add the component to the repository configuration and write it to disk</span>
+        <span class="n">components</span><span class="p">[</span><span class="n">component</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">component</span><span class="o">.</span><span class="n">flavor</span><span class="o">.</span><span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write_config</span><span class="p">()</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;Registered stack component with name &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="n">component</span><span class="o">.</span><span class="n">name</span>
+        <span class="p">)</span>
+
+        <span class="n">analytics_metadata</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="n">component</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="s2">&quot;flavor&quot;</span><span class="p">:</span> <span class="n">component</span><span class="o">.</span><span class="n">flavor</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">track_event</span><span class="p">(</span>
+            <span class="n">AnalyticsEvent</span><span class="o">.</span><span class="n">REGISTERED_STACK_COMPONENT</span><span class="p">,</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="n">analytics_metadata</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">deregister_stack_component</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">component_type</span><span class="p">:</span> <span class="n">StackComponentType</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Deregisters a stack component.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            component_type: The type of the component to deregister.</span>
+<span class="sd">            name: The name of the component to deregister.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">stack_name</span><span class="p">,</span> <span class="n">stack_config</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">stack_configurations</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">stack_config</span><span class="o">.</span><span class="n">contains_component</span><span class="p">(</span>
+                <span class="n">component_type</span><span class="o">=</span><span class="n">component_type</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span>
+            <span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Unable to deregister stack component (type: &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2">, name: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">) that is part of a &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;registered stack (stack name: &#39;</span><span class="si">{</span><span class="n">stack_name</span><span class="si">}</span><span class="s2">&#39;).&quot;</span>
+                <span class="p">)</span>
+
+        <span class="n">components</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">stack_components</span><span class="p">[</span><span class="n">component_type</span><span class="p">]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">del</span> <span class="n">components</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_write_config</span><span class="p">()</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;Deregistered stack component (type: </span><span class="si">%s</span><span class="s2">) with name &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span>
+                <span class="n">component_type</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+                <span class="n">name</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Unable to deregister stack component (type: </span><span class="si">%s</span><span class="s2">) with name &quot;</span>
+                <span class="s2">&quot;&#39;</span><span class="si">%s</span><span class="s2">&#39;: No stack component exists with this name.&quot;</span><span class="p">,</span>
+                <span class="n">component_type</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+                <span class="n">name</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">component_config_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_stack_component_config_path</span><span class="p">(</span>
+            <span class="n">component_type</span><span class="o">=</span><span class="n">component_type</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">fileio</span><span class="o">.</span><span class="n">file_exists</span><span class="p">(</span><span class="n">component_config_path</span><span class="p">):</span>
+            <span class="n">fileio</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">component_config_path</span><span class="p">)</span>
+
+    <span class="c1"># TODO [ENG-368]: Discuss whether we want to unify these two methods.</span>
+    <span class="nd">@track</span><span class="p">(</span><span class="n">event</span><span class="o">=</span><span class="n">AnalyticsEvent</span><span class="o">.</span><span class="n">GET_PIPELINES</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">get_pipelines</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">stack_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PipelineView</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Fetches post-execution pipeline views.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            stack_name: If specified, pipelines in the metadata store of the</span>
+<span class="sd">                given stack are returned. Otherwise pipelines in the metadata</span>
+<span class="sd">                store of the currently active stack are returned.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A list of post-execution pipeline views.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError: If no stack with the given name exists.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">stack_name</span> <span class="o">=</span> <span class="n">stack_name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_stack_name</span>
+        <span class="n">metadata_store</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_stack</span><span class="p">(</span><span class="n">stack_name</span><span class="p">)</span><span class="o">.</span><span class="n">metadata_store</span>
+        <span class="k">return</span> <span class="n">metadata_store</span><span class="o">.</span><span class="n">get_pipelines</span><span class="p">()</span>
+
+    <span class="nd">@track</span><span class="p">(</span><span class="n">event</span><span class="o">=</span><span class="n">AnalyticsEvent</span><span class="o">.</span><span class="n">GET_PIPELINE</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">get_pipeline</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">stack_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PipelineView</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Fetches a post-execution pipeline view.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pipeline_name: Name of the pipeline.</span>
+<span class="sd">            stack_name: If specified, pipelines in the metadata store of the</span>
+<span class="sd">                given stack are returned. Otherwise pipelines in the metadata</span>
+<span class="sd">                store of the currently active stack are returned.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A post-execution pipeline view for the given name or `None` if</span>
+<span class="sd">            it doesn&#39;t exist.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError: If no stack with the given name exists.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">stack_name</span> <span class="o">=</span> <span class="n">stack_name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_stack_name</span>
+        <span class="n">metadata_store</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_stack</span><span class="p">(</span><span class="n">stack_name</span><span class="p">)</span><span class="o">.</span><span class="n">metadata_store</span>
+        <span class="k">return</span> <span class="n">metadata_store</span><span class="o">.</span><span class="n">get_pipeline</span><span class="p">(</span><span class="n">pipeline_name</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">is_repository_directory</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Checks whether a ZenML repository exists at the given path.&quot;&quot;&quot;</span>
+        <span class="n">config_dir</span> <span class="o">=</span> <span class="n">path</span> <span class="o">/</span> <span class="n">LOCAL_CONFIG_DIRECTORY_NAME</span>
+        <span class="k">return</span> <span class="n">fileio</span><span class="o">.</span><span class="n">is_dir</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">config_dir</span><span class="p">))</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">find_repository</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Finds path of a ZenML repository directory.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            path: Optional path to look for the repository. If no path is</span>
+<span class="sd">                given, this function tries to find the repository using the</span>
+<span class="sd">                environment variable `ZENML_REPOSITORY_PATH` (if set) and</span>
+<span class="sd">                recursively searching in the parent directories of the current</span>
+<span class="sd">                working directory.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Absolute path to a ZenML repository directory.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            RepositoryNotFoundError: If no ZenML repository is found.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="p">:</span>
+            <span class="c1"># try to get path from the environment variable</span>
+            <span class="n">env_var_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="n">ENV_ZENML_REPOSITORY_PATH</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">env_var_path</span><span class="p">:</span>
+                <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">env_var_path</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">path</span><span class="p">:</span>
+            <span class="c1"># explicit path via parameter or environment variable, don&#39;t search</span>
+            <span class="c1"># parent directories</span>
+            <span class="n">search_parent_directories</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">error_message</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unable to find ZenML repository at path &#39;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&#39;. Make sure &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;to create a ZenML repository by calling `zenml init` when &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;specifying an explicit repository path in code or via the &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;environment variable &#39;</span><span class="si">{</span><span class="n">ENV_ZENML_REPOSITORY_PATH</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># try to find the repo in the parent directories of the current</span>
+            <span class="c1"># working directory</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">()</span>
+            <span class="n">search_parent_directories</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">error_message</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unable to find ZenML repository in your current working &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;directory (</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">) or any parent directories. If you &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;want to use an existing repository which is in a different &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;location, set the environment variable &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">ENV_ZENML_REPOSITORY_PATH</span><span class="si">}</span><span class="s2">&#39;. If you want to create a new &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;repository, run `zenml init`.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">_find_repo_helper</span><span class="p">(</span><span class="n">path_</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+            <span class="sd">&quot;&quot;&quot;Helper function to recursively search parent directories for a</span>
+<span class="sd">            ZenML repository.&quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="n">Repository</span><span class="o">.</span><span class="n">is_repository_directory</span><span class="p">(</span><span class="n">path_</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">path_</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">search_parent_directories</span> <span class="ow">or</span> <span class="n">fileio</span><span class="o">.</span><span class="n">is_root</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">path_</span><span class="p">)):</span>
+                <span class="k">raise</span> <span class="n">RepositoryNotFoundError</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">_find_repo_helper</span><span class="p">(</span><span class="n">path_</span><span class="o">.</span><span class="n">parent</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">_find_repo_helper</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="zenml.repository.Repository.active_stack" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">active_stack</span><span class="p">:</span> <span class="n">Stack</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>The active stack for this repository.</p>
+
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>RuntimeError</code></td>
+        <td><p>If no active stack name is configured.</p></td>
+      </tr>
+      <tr>
+        <td><code>KeyError</code></td>
+        <td><p>If no stack was found for the configured name or one
+of the stack components is not registered.</p></td>
+      </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="zenml.repository.Repository.active_stack_name" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">active_stack_name</span><span class="p">:</span> <span class="nb">str</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>The name of the active stack for this repository.</p>
+
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>RuntimeError</code></td>
+        <td><p>If no active stack name is configured.</p></td>
+      </tr>
+  </tbody>
+</table>    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="zenml.repository.Repository.config_directory" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">config_directory</span><span class="p">:</span> <span class="n">Path</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>The configuration directory of this repository.</p>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="zenml.repository.Repository.root" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">root</span><span class="p">:</span> <span class="n">Path</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>The root directory of this repository.</p>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="zenml.repository.Repository.stack_configurations" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">stack_configurations</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">zenml</span><span class="o">.</span><span class="n">repository</span><span class="o">.</span><span class="n">StackConfiguration</span><span class="p">]</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Configuration objects for all stacks registered in this repository.</p>
+<p>This property is intended as a quick way to get information about the
+components of the registered stacks without loading all installed
+integrations. The contained stack configurations might be invalid if
+they were modified by hand, to ensure you get valid stacks use
+<code>repo.stacks()</code> instead.</p>
+<p>Modifying the contents of the returned dictionary does not actually
+register/deregister stacks, use <code>repo.register_stack(...)</code> or
+<code>repo.deregister_stack(...)</code> instead.</p>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="zenml.repository.Repository.stacks" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">stacks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">zenml</span><span class="o">.</span><span class="n">stack</span><span class="o">.</span><span class="n">stack</span><span class="o">.</span><span class="n">Stack</span><span class="p">]</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>All stacks registered in this repository.</p>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="zenml.repository.Repository.version" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">version</span><span class="p">:</span> <span class="nb">str</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>The version of the repository.</p>
+    </div>
+
+  </div>
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.repository.Repository.__init__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Initializes a repository instance.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>root</code></td>
+        <td><code>Optional[pathlib.Path]</code></td>
+        <td><p>Optional root directory of the repository. If no path is
+given, this function tries to find the repository using the
+environment variable <code>ZENML_REPOSITORY_PATH</code> (if set) and
+recursively searching in the parent directories of the current
+working directory.</p></td>
+        <td><code>None</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>RepositoryNotFoundError</code></td>
+        <td><p>If no ZenML repository directory is found.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/repository.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Initializes a repository instance.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        root: Optional root directory of the repository. If no path is</span>
+<span class="sd">            given, this function tries to find the repository using the</span>
+<span class="sd">            environment variable `ZENML_REPOSITORY_PATH` (if set) and</span>
+<span class="sd">            recursively searching in the parent directories of the current</span>
+<span class="sd">            working directory.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        RepositoryNotFoundError: If no ZenML repository directory is found.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_root</span> <span class="o">=</span> <span class="n">Repository</span><span class="o">.</span><span class="n">find_repository</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+
+    <span class="c1"># load the repository configuration file if it exists, otherwise use</span>
+    <span class="c1"># an empty configuration as default</span>
+    <span class="n">config_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config_path</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">fileio</span><span class="o">.</span><span class="n">file_exists</span><span class="p">(</span><span class="n">config_path</span><span class="p">):</span>
+        <span class="n">config_dict</span> <span class="o">=</span> <span class="n">yaml_utils</span><span class="o">.</span><span class="n">read_yaml</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__config</span> <span class="o">=</span> <span class="n">RepositoryConfiguration</span><span class="o">.</span><span class="n">parse_obj</span><span class="p">(</span><span class="n">config_dict</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__config</span> <span class="o">=</span> <span class="n">RepositoryConfiguration</span><span class="o">.</span><span class="n">empty_configuration</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">!=</span> <span class="n">zenml</span><span class="o">.</span><span class="n">__version__</span><span class="p">:</span>
+        <span class="c1"># TODO [ENG-366]: Create compatibility table so we don&#39;t have to</span>
+        <span class="c1">#  warn about mismatching repository and ZenML version each time</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">&quot;This ZenML repository was created with a different version &quot;</span>
+            <span class="s2">&quot;of ZenML (Repository version: </span><span class="si">%s</span><span class="s2">, current ZenML version: </span><span class="si">%s</span><span class="s2">). &quot;</span>
+            <span class="s2">&quot;In case you encounter any errors, please delete and &quot;</span>
+            <span class="s2">&quot;reinitialize this repository.&quot;</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">version</span><span class="p">,</span>
+            <span class="n">zenml</span><span class="o">.</span><span class="n">__version__</span><span class="p">,</span>
+        <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.repository.Repository.activate_stack" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">activate_stack</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Inner decorator function.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/repository.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">inner_func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Inner decorator function.&quot;&quot;&quot;</span>
+    <span class="n">track_event</span><span class="p">(</span><span class="n">event_name</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.repository.Repository.deregister_stack" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">deregister_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Deregisters a stack.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>name</code></td>
+        <td><code>str</code></td>
+        <td><p>The name of the stack to deregister.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>ValueError</code></td>
+        <td><p>If the stack is the currently active stack for this
+repository.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/repository.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">deregister_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Deregisters a stack.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: The name of the stack to deregister.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If the stack is the currently active stack for this</span>
+<span class="sd">            repository.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_stack_name</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unable to deregister active stack &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">stacks</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write_config</span><span class="p">()</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Deregistered stack with name &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">&quot;Unable to deregister stack with name &#39;</span><span class="si">%s</span><span class="s2">&#39;: No stack exists &quot;</span>
+            <span class="s2">&quot;with this name.&quot;</span><span class="p">,</span>
+            <span class="n">name</span><span class="p">,</span>
+        <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.repository.Repository.deregister_stack_component" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">deregister_stack_component</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component_type</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Deregisters a stack component.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>component_type</code></td>
+        <td><code>StackComponentType</code></td>
+        <td><p>The type of the component to deregister.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>name</code></td>
+        <td><code>str</code></td>
+        <td><p>The name of the component to deregister.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/repository.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">deregister_stack_component</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">component_type</span><span class="p">:</span> <span class="n">StackComponentType</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Deregisters a stack component.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        component_type: The type of the component to deregister.</span>
+<span class="sd">        name: The name of the component to deregister.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">stack_name</span><span class="p">,</span> <span class="n">stack_config</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">stack_configurations</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">stack_config</span><span class="o">.</span><span class="n">contains_component</span><span class="p">(</span>
+            <span class="n">component_type</span><span class="o">=</span><span class="n">component_type</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unable to deregister stack component (type: &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2">, name: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">) that is part of a &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;registered stack (stack name: &#39;</span><span class="si">{</span><span class="n">stack_name</span><span class="si">}</span><span class="s2">&#39;).&quot;</span>
+            <span class="p">)</span>
+
+    <span class="n">components</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">stack_components</span><span class="p">[</span><span class="n">component_type</span><span class="p">]</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">del</span> <span class="n">components</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write_config</span><span class="p">()</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;Deregistered stack component (type: </span><span class="si">%s</span><span class="s2">) with name &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span>
+            <span class="n">component_type</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="n">name</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">&quot;Unable to deregister stack component (type: </span><span class="si">%s</span><span class="s2">) with name &quot;</span>
+            <span class="s2">&quot;&#39;</span><span class="si">%s</span><span class="s2">&#39;: No stack component exists with this name.&quot;</span><span class="p">,</span>
+            <span class="n">component_type</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="n">name</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">component_config_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_stack_component_config_path</span><span class="p">(</span>
+        <span class="n">component_type</span><span class="o">=</span><span class="n">component_type</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">fileio</span><span class="o">.</span><span class="n">file_exists</span><span class="p">(</span><span class="n">component_config_path</span><span class="p">):</span>
+        <span class="n">fileio</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">component_config_path</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.repository.Repository.find_repository" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">find_repository</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-staticmethod"><code>staticmethod</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Finds path of a ZenML repository directory.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>path</code></td>
+        <td><code>Optional[pathlib.Path]</code></td>
+        <td><p>Optional path to look for the repository. If no path is
+given, this function tries to find the repository using the
+environment variable <code>ZENML_REPOSITORY_PATH</code> (if set) and
+recursively searching in the parent directories of the current
+working directory.</p></td>
+        <td><code>None</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Path</code></td>
+      <td><p>Absolute path to a ZenML repository directory.</p></td>
+    </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>RepositoryNotFoundError</code></td>
+        <td><p>If no ZenML repository is found.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/repository.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
+<span class="k">def</span> <span class="nf">find_repository</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Finds path of a ZenML repository directory.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        path: Optional path to look for the repository. If no path is</span>
+<span class="sd">            given, this function tries to find the repository using the</span>
+<span class="sd">            environment variable `ZENML_REPOSITORY_PATH` (if set) and</span>
+<span class="sd">            recursively searching in the parent directories of the current</span>
+<span class="sd">            working directory.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Absolute path to a ZenML repository directory.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        RepositoryNotFoundError: If no ZenML repository is found.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="p">:</span>
+        <span class="c1"># try to get path from the environment variable</span>
+        <span class="n">env_var_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="n">ENV_ZENML_REPOSITORY_PATH</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">env_var_path</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">env_var_path</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">path</span><span class="p">:</span>
+        <span class="c1"># explicit path via parameter or environment variable, don&#39;t search</span>
+        <span class="c1"># parent directories</span>
+        <span class="n">search_parent_directories</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">error_message</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Unable to find ZenML repository at path &#39;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&#39;. Make sure &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;to create a ZenML repository by calling `zenml init` when &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;specifying an explicit repository path in code or via the &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;environment variable &#39;</span><span class="si">{</span><span class="n">ENV_ZENML_REPOSITORY_PATH</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># try to find the repo in the parent directories of the current</span>
+        <span class="c1"># working directory</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">()</span>
+        <span class="n">search_parent_directories</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">error_message</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Unable to find ZenML repository in your current working &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;directory (</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">) or any parent directories. If you &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;want to use an existing repository which is in a different &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;location, set the environment variable &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">ENV_ZENML_REPOSITORY_PATH</span><span class="si">}</span><span class="s2">&#39;. If you want to create a new &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;repository, run `zenml init`.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_find_repo_helper</span><span class="p">(</span><span class="n">path_</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Helper function to recursively search parent directories for a</span>
+<span class="sd">        ZenML repository.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">Repository</span><span class="o">.</span><span class="n">is_repository_directory</span><span class="p">(</span><span class="n">path_</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">path_</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">search_parent_directories</span> <span class="ow">or</span> <span class="n">fileio</span><span class="o">.</span><span class="n">is_root</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">path_</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="n">RepositoryNotFoundError</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">_find_repo_helper</span><span class="p">(</span><span class="n">path_</span><span class="o">.</span><span class="n">parent</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">_find_repo_helper</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.repository.Repository.get_pipeline" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_pipeline</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Inner decorator function.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/repository.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">inner_func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Inner decorator function.&quot;&quot;&quot;</span>
+    <span class="n">track_event</span><span class="p">(</span><span class="n">event_name</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.repository.Repository.get_pipelines" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_pipelines</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Inner decorator function.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/repository.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">inner_func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Inner decorator function.&quot;&quot;&quot;</span>
+    <span class="n">track_event</span><span class="p">(</span><span class="n">event_name</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.repository.Repository.get_stack" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Fetches a stack.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>name</code></td>
+        <td><code>str</code></td>
+        <td><p>The name of the stack to fetch.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>KeyError</code></td>
+        <td><p>If no stack exists for the given name or one of the
+stacks components is not registered.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/repository.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Stack</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Fetches a stack.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: The name of the stack to fetch.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        KeyError: If no stack exists for the given name or one of the</span>
+<span class="sd">            stacks components is not registered.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Fetching stack with name &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">stacks</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Unable to find stack with name &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;. Available names: &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">stacks</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">stack_configuration</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">stacks</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+    <span class="n">stack_components</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="p">(</span>
+        <span class="n">component_type_name</span><span class="p">,</span>
+        <span class="n">component_name</span><span class="p">,</span>
+    <span class="p">)</span> <span class="ow">in</span> <span class="n">stack_configuration</span><span class="o">.</span><span class="n">dict</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">component_type</span> <span class="o">=</span> <span class="n">StackComponentType</span><span class="p">(</span><span class="n">component_type_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">component_name</span><span class="p">:</span>
+            <span class="c1"># optional component which is not set, continue</span>
+            <span class="k">continue</span>
+        <span class="n">component</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_stack_component</span><span class="p">(</span>
+            <span class="n">component_type</span><span class="o">=</span><span class="n">component_type</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">component_name</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">stack_components</span><span class="p">[</span><span class="n">component_type</span><span class="p">]</span> <span class="o">=</span> <span class="n">component</span>
+
+    <span class="k">return</span> <span class="n">Stack</span><span class="o">.</span><span class="n">from_components</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="n">stack_components</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.repository.Repository.get_stack_component" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_stack_component</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component_type</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Fetches a registered stack component.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>component_type</code></td>
+        <td><code>StackComponentType</code></td>
+        <td><p>The type of the component to fetch.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>name</code></td>
+        <td><code>str</code></td>
+        <td><p>The name of the component to fetch.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>KeyError</code></td>
+        <td><p>If no stack component exists for the given type and name.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/repository.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_stack_component</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">component_type</span><span class="p">:</span> <span class="n">StackComponentType</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackComponent</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Fetches a registered stack component.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        component_type: The type of the component to fetch.</span>
+<span class="sd">        name: The name of the component to fetch.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        KeyError: If no stack component exists for the given type and name.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+        <span class="s2">&quot;Fetching stack component of type &#39;</span><span class="si">%s</span><span class="s2">&#39; with name &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span>
+        <span class="n">component_type</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">components</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">stack_components</span><span class="p">[</span><span class="n">component_type</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">components</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Unable to find stack component (type: </span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2">) &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;with name &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;. Available names: </span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">components</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="kn">from</span> <span class="nn">zenml.stack.stack_component_class_registry</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="n">StackComponentClassRegistry</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">component_flavor</span> <span class="o">=</span> <span class="n">components</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+    <span class="n">component_class</span> <span class="o">=</span> <span class="n">StackComponentClassRegistry</span><span class="o">.</span><span class="n">get_class</span><span class="p">(</span>
+        <span class="n">component_type</span><span class="o">=</span><span class="n">component_type</span><span class="p">,</span> <span class="n">component_flavor</span><span class="o">=</span><span class="n">component_flavor</span>
+    <span class="p">)</span>
+    <span class="n">component_config_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_stack_component_config_path</span><span class="p">(</span>
+        <span class="n">component_type</span><span class="o">=</span><span class="n">component_type</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span>
+    <span class="p">)</span>
+    <span class="n">component_config</span> <span class="o">=</span> <span class="n">yaml_utils</span><span class="o">.</span><span class="n">read_yaml</span><span class="p">(</span><span class="n">component_config_path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">component_class</span><span class="o">.</span><span class="n">parse_obj</span><span class="p">(</span><span class="n">component_config</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.repository.Repository.get_stack_components" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_stack_components</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component_type</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Fetches all registered stack components of the given type.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/repository.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_stack_components</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">component_type</span><span class="p">:</span> <span class="n">StackComponentType</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">StackComponent</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Fetches all registered stack components of the given type.&quot;&quot;&quot;</span>
+    <span class="n">component_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">stack_components</span><span class="p">[</span><span class="n">component_type</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_stack_component</span><span class="p">(</span><span class="n">component_type</span><span class="o">=</span><span class="n">component_type</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">component_names</span>
+    <span class="p">]</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.repository.Repository.initialize" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">initialize</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-staticmethod"><code>staticmethod</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Inner decorator function.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/repository.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">inner_func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Inner decorator function.&quot;&quot;&quot;</span>
+    <span class="n">track_event</span><span class="p">(</span><span class="n">event_name</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.repository.Repository.is_repository_directory" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">is_repository_directory</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-staticmethod"><code>staticmethod</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Checks whether a ZenML repository exists at the given path.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/repository.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
+<span class="k">def</span> <span class="nf">is_repository_directory</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Checks whether a ZenML repository exists at the given path.&quot;&quot;&quot;</span>
+    <span class="n">config_dir</span> <span class="o">=</span> <span class="n">path</span> <span class="o">/</span> <span class="n">LOCAL_CONFIG_DIRECTORY_NAME</span>
+    <span class="k">return</span> <span class="n">fileio</span><span class="o">.</span><span class="n">is_dir</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">config_dir</span><span class="p">))</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.repository.Repository.register_stack" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">register_stack</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Inner decorator function.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/repository.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">inner_func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Inner decorator function.&quot;&quot;&quot;</span>
+    <span class="n">track_event</span><span class="p">(</span><span class="n">event_name</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.repository.Repository.register_stack_component" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">register_stack_component</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Registers a stack component.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>component</code></td>
+        <td><code>StackComponent</code></td>
+        <td><p>The component to register.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>StackComponentExistsError</code></td>
+        <td><p>If a stack component with the same type
+and name already exists.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/repository.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">register_stack_component</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">component</span><span class="p">:</span> <span class="n">StackComponent</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Registers a stack component.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        component: The component to register.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        StackComponentExistsError: If a stack component with the same type</span>
+<span class="sd">            and name already exists.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">components</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__config</span><span class="o">.</span><span class="n">stack_components</span><span class="p">[</span><span class="n">component</span><span class="o">.</span><span class="n">type</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">component</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">components</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">StackComponentExistsError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Unable to register stack component (type: </span><span class="si">{</span><span class="n">component</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s2">) &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;with name &#39;</span><span class="si">{</span><span class="n">component</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;: Found existing stack component &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;with this name.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># write the component configuration file</span>
+    <span class="n">component_config_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_stack_component_config_path</span><span class="p">(</span>
+        <span class="n">component_type</span><span class="o">=</span><span class="n">component</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">component</span><span class="o">.</span><span class="n">name</span>
+    <span class="p">)</span>
+    <span class="n">fileio</span><span class="o">.</span><span class="n">create_dir_recursive_if_not_exists</span><span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">component_config_path</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">yaml_utils</span><span class="o">.</span><span class="n">write_yaml</span><span class="p">(</span>
+        <span class="n">component_config_path</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">component</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+    <span class="p">)</span>
+
+    <span class="c1"># add the component to the repository configuration and write it to disk</span>
+    <span class="n">components</span><span class="p">[</span><span class="n">component</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">component</span><span class="o">.</span><span class="n">flavor</span><span class="o">.</span><span class="n">value</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_write_config</span><span class="p">()</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+        <span class="s2">&quot;Registered stack component with name &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="n">component</span><span class="o">.</span><span class="n">name</span>
+    <span class="p">)</span>
+
+    <span class="n">analytics_metadata</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="n">component</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+        <span class="s2">&quot;flavor&quot;</span><span class="p">:</span> <span class="n">component</span><span class="o">.</span><span class="n">flavor</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="n">track_event</span><span class="p">(</span>
+        <span class="n">AnalyticsEvent</span><span class="o">.</span><span class="n">REGISTERED_STACK_COMPONENT</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="o">=</span><span class="n">analytics_metadata</span><span class="p">,</span>
+    <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.repository.RepositoryConfiguration" class="doc doc-heading">
+        <code>
+RepositoryConfiguration            (<span title="pydantic.main.BaseModel">BaseModel</span>)
+        </code>
+
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-pydantic-model"><code>pydantic-model</code></small>
+  </span>
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Pydantic object used for serializing repository configuration options.</p>
+
+<p><strong>Attributes:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>version</code></td>
+        <td><code>str</code></td>
+        <td><p>Version of ZenML that was used to create the repository.</p></td>
+      </tr>
+      <tr>
+        <td><code>active_stack_name</code></td>
+        <td><code>Optional[str]</code></td>
+        <td><p>Optional name of the active stack.</p></td>
+      </tr>
+      <tr>
+        <td><code>stacks</code></td>
+        <td><code>Dict[str, zenml.repository.StackConfiguration]</code></td>
+        <td><p>Maps stack names to a configuration object containing the
+names and flavors of all stack components.</p></td>
+      </tr>
+      <tr>
+        <td><code>stack_components</code></td>
+        <td><code>DefaultDict[zenml.enums.StackComponentType, Dict[str, str]]</code></td>
+        <td><p>Contains names and flavors of all registered stack
+components.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/repository.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">RepositoryConfiguration</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Pydantic object used for serializing repository configuration options.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        version: Version of ZenML that was used to create the repository.</span>
+<span class="sd">        active_stack_name: Optional name of the active stack.</span>
+<span class="sd">        stacks: Maps stack names to a configuration object containing the</span>
+<span class="sd">            names and flavors of all stack components.</span>
+<span class="sd">        stack_components: Contains names and flavors of all registered stack</span>
+<span class="sd">            components.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">version</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">active_stack_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">stacks</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">StackConfiguration</span><span class="p">]</span>
+    <span class="n">stack_components</span><span class="p">:</span> <span class="n">DefaultDict</span><span class="p">[</span><span class="n">StackComponentType</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">empty_configuration</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;RepositoryConfiguration&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Helper method to create an empty configuration object.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">version</span><span class="o">=</span><span class="n">zenml</span><span class="o">.</span><span class="n">__version__</span><span class="p">,</span>
+            <span class="n">stacks</span><span class="o">=</span><span class="p">{},</span>
+            <span class="n">stack_components</span><span class="o">=</span><span class="p">{},</span>
+        <span class="p">)</span>
+
+    <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;stack_components&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_construct_defaultdict</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">stack_components</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">StackComponentType</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DefaultDict</span><span class="p">[</span><span class="n">StackComponentType</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Ensures that `stack_components` is a defaultdict so stack</span>
+<span class="sd">        components of a new component type can be added without issues.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="n">stack_components</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.repository.RepositoryConfiguration.empty_configuration" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">empty_configuration</span><span class="p">()</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-classmethod"><code>classmethod</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Helper method to create an empty configuration object.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/repository.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="k">def</span> <span class="nf">empty_configuration</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;RepositoryConfiguration&quot;</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Helper method to create an empty configuration object.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+        <span class="n">version</span><span class="o">=</span><span class="n">zenml</span><span class="o">.</span><span class="n">__version__</span><span class="p">,</span>
+        <span class="n">stacks</span><span class="o">=</span><span class="p">{},</span>
+        <span class="n">stack_components</span><span class="o">=</span><span class="p">{},</span>
+    <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="zenml.repository.StackConfiguration" class="doc doc-heading">
+        <code>
+StackConfiguration            (<span title="pydantic.main.BaseModel">BaseModel</span>)
+        </code>
+
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-pydantic-model"><code>pydantic-model</code></small>
+  </span>
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Pydantic object used for serializing stack configuration options.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/repository.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StackConfiguration</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Pydantic object used for serializing stack configuration options.&quot;&quot;&quot;</span>
+
+    <span class="n">orchestrator</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">metadata_store</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">artifact_store</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">container_registry</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">contains_component</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">component_type</span><span class="p">:</span> <span class="n">StackComponentType</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Checks if the stack contains a specific component.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">component_type</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="o">==</span> <span class="n">name</span>
+
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
+
+        <span class="n">allow_mutation</span> <span class="o">=</span> <span class="kc">False</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.repository.StackConfiguration.Config" class="doc doc-heading">
+        <code>
+Config        </code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Pydantic configuration class.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/repository.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Pydantic configuration class.&quot;&quot;&quot;</span>
+
+    <span class="n">allow_mutation</span> <span class="o">=</span> <span class="kc">False</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="zenml.repository.StackConfiguration.contains_component" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">contains_component</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component_type</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Checks if the stack contains a specific component.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/repository.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">contains_component</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">component_type</span><span class="p">:</span> <span class="n">StackComponentType</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Checks if the stack contains a specific component.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">component_type</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="o">==</span> <span class="n">name</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="../post_execution/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Post Execution" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Post Execution
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../runtime_configuration/" class="md-footer__link md-footer__link--next" aria-label="Next: Runtime Configuration" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Runtime Configuration
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2022 ZenML GmbH
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.22074ed6.min.js", "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.960e086b.min.js"></script>
+      
+    
+  </body>
+</html>
