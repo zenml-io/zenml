@@ -52,7 +52,6 @@ from zenml.steps.utils import (
     PARAM_ENABLE_CACHE,
     PARAM_PIPELINE_PARAMETER_NAME,
     SINGLE_RETURN_OUT_NAME,
-    STEP_INNER_FUNC_NAME,
     _ZenMLSimpleComponent,
     generate_component_class,
 )
@@ -85,7 +84,7 @@ class BaseStepMeta(type):
 
         # Get the signature of the step function
         step_function_signature = inspect.getfullargspec(
-            inspect.unwrap(getattr(cls, STEP_INNER_FUNC_NAME))
+            inspect.unwrap(cls.entrypoint)
         )
 
         if bases:
@@ -609,14 +608,13 @@ class BaseStep(metaclass=BaseStepMeta):
                 f"json serializable parameter values."
             ) from e
 
-        source_fn = getattr(self, STEP_INNER_FUNC_NAME)
         component_class = generate_component_class(
             step_name=self.name,
             step_module=self.__module__,
             input_spec=self.INPUT_SPEC,
             output_spec=self.OUTPUT_SPEC,
             execution_parameter_names=set(execution_parameters),
-            step_function=source_fn,
+            step_function=self.entrypoint,
             materializers=materializers,
         )
         self._component = component_class(
