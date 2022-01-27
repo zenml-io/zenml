@@ -110,7 +110,7 @@ def enable_mlflow_run(run: Callable[..., Any]) -> Callable[..., Any]:
             run_name: Optional name for the run.
         """
         with mlflow.start_run(run_name=run_name):
-            run(self, run_name)
+            run(self, run_name=run_name)
 
     return inner_decorator
 
