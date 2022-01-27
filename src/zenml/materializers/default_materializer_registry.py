@@ -82,8 +82,9 @@ class MaterializerRegistry:
                 raise KeyError(
                     f"Type {key} is subclassing more than one type, thus it "
                     f"maps to multiple materializers within the materializer "
-                    f"registry. Please specify which materializer you would "
-                    f"like to use explicitly in your step."
+                    f"registry: {compatible_subclasses}. Please specify which "
+                    f"of these materializers you would like to use "
+                    f"explicitly in your step."
                 )
         raise KeyError(
             f"Type {key} does not have a default `Materializer`! Please "
