@@ -21,7 +21,6 @@ RUN apt-get update && \
   libprotobuf-dev \
   python3 \
   python3-dev \
-  python-is-python3 \
   python3-venv \
   python3-pip \
   curl \
