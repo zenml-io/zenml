@@ -52,6 +52,7 @@ from tfx.types.channel import Channel
 from tfx.utils import json_utils
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.environment import Environment
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -343,13 +344,13 @@ class _FunctionExecutor(BaseExecutor):
                 f"{getattr(self, PARAM_STEP_NAME)}"
             )
 
-    def Do(
+    def _execute_step(
         self,
         input_dict: Dict[str, List[BaseArtifact]],
         output_dict: Dict[str, List[BaseArtifact]],
         exec_properties: Dict[str, Any],
     ) -> None:
-        """Main block for the execution of the step
+        """Executes a step and materializes the output artifacts.
 
         Args:
             input_dict: dictionary containing the input artifacts
@@ -433,3 +434,27 @@ class _FunctionExecutor(BaseExecutor):
                 self.resolve_output_artifact(
                     output_name, output_dict[output_name][0], return_value
                 )
+
+    def Do(
+        self,
+        input_dict: Dict[str, List[BaseArtifact]],
+        output_dict: Dict[str, List[BaseArtifact]],
+        exec_properties: Dict[str, Any],
+    ) -> None:
+        """Main block for the execution of the step
+
+        Args:
+            input_dict: dictionary containing the input artifacts
+            output_dict: dictionary containing the output artifacts
+            exec_properties: dictionary containing the execution parameters
+        """
+
+        Environment._Environment__currently_running_step = True
+        try:
+            self._execute_step(
+                input_dict=input_dict,
+                output_dict=output_dict,
+                exec_properties=exec_properties,
+            )
+        finally:
+            Environment._Environment__currently_running_step = False
