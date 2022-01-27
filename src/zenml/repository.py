@@ -22,6 +22,7 @@ from pydantic import BaseModel, validator
 import zenml
 from zenml.constants import ENV_ZENML_REPOSITORY_PATH
 from zenml.enums import StackComponentType
+from zenml.environment import Environment
 from zenml.exceptions import (
     InitializationException,
     RepositoryNotFoundError,
@@ -113,7 +114,16 @@ class Repository:
 
         Raises:
             RepositoryNotFoundError: If no ZenML repository directory is found.
+            RuntimeError: If trying to create a `Repository` instance while a
+                ZenML step is being executed.
         """
+        if Environment.currently_running_step():
+            raise RuntimeError(
+                "Unable to access repository during step execution. If you "
+                "require access to the artifact or metadata store, please use "
+                "a `StepContext` inside your step instead."
+            )
+
         self._root = Repository.find_repository(root)
 
         # load the repository configuration file if it exists, otherwise use

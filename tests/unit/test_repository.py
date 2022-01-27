@@ -189,6 +189,17 @@ def test_repo_without_configuration_file_falls_back_to_empty_config(tmp_path):
         _ = repo.active_stack
 
 
+def test_creating_repository_instance_during_step_execution_fails(mocker):
+    """Tests that creating a Repository instance while a step is being executed
+    fails."""
+    mocker.patch(
+        "zenml.environment.Environment.currently_running_step",
+        return_value=True,
+    )
+    with pytest.raises(RuntimeError):
+        Repository()
+
+
 def test_activating_nonexisting_stack_fails(clean_repo):
     """Tests that activating a stack name that isn't registered fails."""
     with pytest.raises(KeyError):
