@@ -54,7 +54,7 @@ def is_inside_repository(file_path: str) -> bool:
     """Returns whether a file is inside a zenml repository."""
     from zenml.repository import Repository
 
-    repo_path = Repository().root.resolve()
+    repo_path = Repository.find_repository().resolve()
     absolute_file_path = pathlib.Path(file_path).resolve()
     return repo_path in absolute_file_path.parents
 
