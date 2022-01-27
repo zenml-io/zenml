@@ -31,11 +31,11 @@ class ZenMLBaseException(Exception):
 
         Args:
             message: Message with details of exception. This message
-            will be appended with another message directing user to
-            `url` for more information. If `None`, then default
-            Exception behavior is used.
+                     will be appended with another message directing user to
+                     `url` for more information. If `None`, then default
+                     Exception behavior is used.
             url: URL to point to in exception message. If `None`, then no url
-            is appended.
+                 is appended.
         """
         if message:
             if url:
@@ -44,18 +44,24 @@ class ZenMLBaseException(Exception):
 
 
 class InitializationException(ZenMLBaseException):
-    """Raised when an error occurred during initialization of a ZenML
-    repository."""
+    """
+    Raised when an error occurred during initialization of a ZenML
+    repository.
+    """
 
 
 class RepositoryNotFoundError(ZenMLBaseException):
-    """Raised when no ZenML repository directory is found when creating a
-    ZenML repository instance."""
+    """
+    Raised when no ZenML repository directory is found when creating a
+    ZenML repository instance.
+    """
 
 
 class EmptyDatasourceException(ZenMLBaseException):
-    """Raises exception when a datasource data is accessed without running
-    an associated pipeline."""
+    """
+    Raises exception when a datasource data is accessed without running
+    an associated pipeline.
+    """
 
     def __init__(
         self,
@@ -69,16 +75,20 @@ class EmptyDatasourceException(ZenMLBaseException):
 
 
 class DoesNotExistException(ZenMLBaseException):
-    """Raises exception when the entity does not exist in the system but an
-    action is being done that requires it to be present."""
+    """
+    Raises exception when the entity does not exist in the system but an
+    action is being done that requires it to be present.
+    """
 
     def __init__(self, message: str):
         super().__init__(message)
 
 
 class AlreadyExistsException(ZenMLBaseException):
-    """Raises exception when the `name` already exist in the system but an
-    action is trying to create a resource with the same name."""
+    """
+    Raises exception when the `name` already exist in the system but an
+    action is trying to create a resource with the same name.
+    """
 
     def __init__(
         self,
@@ -92,8 +102,10 @@ class AlreadyExistsException(ZenMLBaseException):
 
 
 class PipelineNotSucceededException(ZenMLBaseException):
-    """Raises exception when trying to fetch artifacts from a not succeeded
-    pipeline."""
+    """
+    Raises exception when trying to fetch artifacts from a not succeeded
+    pipeline.
+    """
 
     def __init__(
         self,
@@ -116,33 +128,45 @@ class GitException(ZenMLBaseException):
 
 
 class StepInterfaceError(ZenMLBaseException):
-    """Raises exception when interacting with the Step interface
-    in an unsupported way."""
+    """
+    Raises exception when interacting with the Step interface
+    in an unsupported way.
+    """
 
 
 class StepContextError(ZenMLBaseException):
-    """Raises exception when interacting with a StepContext
-    in an unsupported way."""
+    """
+    Raises exception when interacting with a StepContext
+    in an unsupported way.
+    """
 
 
 class PipelineInterfaceError(ZenMLBaseException):
-    """Raises exception when interacting with the Pipeline interface
-    in an unsupported way."""
+    """
+    Raises exception when interacting with the Pipeline interface
+    in an unsupported way.
+    """
 
 
 class ArtifactInterfaceError(ZenMLBaseException):
-    """Raises exception when interacting with the Artifact interface
-    in an unsupported way."""
+    """
+    Raises exception when interacting with the Artifact interface
+    in an unsupported way.
+    """
 
 
 class PipelineConfigurationError(ZenMLBaseException):
-    """Raises exceptions when a pipeline configuration contains
-    invalid values."""
+    """
+    Raises exceptions when a pipeline configuration contains
+    invalid values.
+    """
 
 
 class MissingStepParameterError(ZenMLBaseException):
-    """Raises exceptions when a step parameter is missing when running a
-    pipeline."""
+    """
+    Raises exceptions when a step parameter is missing when running a
+    pipeline.
+    """
 
     def __init__(
         self,
@@ -155,10 +179,10 @@ class MissingStepParameterError(ZenMLBaseException):
 
         Args:
             step_name: Name of the step for which one or more parameters
-                are missing.
+                       are missing.
             missing_parameters: Names of all parameters which are missing.
             config_class: Class of the configuration object for which
-                the parameters are missing.
+                          the parameters are missing.
         """
         message = textwrap.fill(
             textwrap.dedent(
@@ -193,13 +217,17 @@ class DuplicateRunNameError(RuntimeError):
 
 
 class StackExistsError(ZenMLBaseException):
-    """Raised when trying to register a stack with a name that already
-    exists."""
+    """
+    Raised when trying to register a stack with a name that already
+    exists.
+    """
 
 
 class StackComponentExistsError(ZenMLBaseException):
-    """Raised when trying to register a stack component with a name that
-    already exists."""
+    """
+    Raised when trying to register a stack component with a name that
+    already exists.
+    """
 
 
 class StackValidationError(ZenMLBaseException):
@@ -207,5 +235,7 @@ class StackValidationError(ZenMLBaseException):
 
 
 class ProvisioningError(ZenMLBaseException):
-    """Raised when an error occurs when provisioning resources for a
-    StackComponent."""
+    """
+    Raised when an error occurs when provisioning resources for a
+    StackComponent.
+    """
