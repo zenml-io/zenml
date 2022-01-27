@@ -42,6 +42,7 @@ from typing import (
     Set,
     Type,
     Union,
+    cast,
 )
 
 from kfp import compiler, dsl, gcp
@@ -305,7 +306,7 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
 
             from zenml.utils import source_utils
 
-            main_module_file = sys.modules["__main__"].__file__
+            main_module_file = cast(str, sys.modules["__main__"].__file__)
             main_module = source_utils.get_module_source_from_file_path(
                 os.path.abspath(main_module_file)
             )
