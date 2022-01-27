@@ -344,13 +344,13 @@ class _FunctionExecutor(BaseExecutor):
                 f"{getattr(self, PARAM_STEP_NAME)}"
             )
 
-    def _execute_step(
+    def Do(
         self,
         input_dict: Dict[str, List[BaseArtifact]],
         output_dict: Dict[str, List[BaseArtifact]],
         exec_properties: Dict[str, Any],
     ) -> None:
-        """Executes a step and materializes the output artifacts.
+        """Main block for the execution of the step
 
         Args:
             input_dict: dictionary containing the input artifacts
@@ -406,7 +406,12 @@ class _FunctionExecutor(BaseExecutor):
                     input_dict[arg][0], arg_type
                 )
 
-        return_values = self._FUNCTION(**function_params)
+        Environment._Environment__currently_running_step = True  # type: ignore[attr-defined] # noqa
+        try:
+            return_values = self._FUNCTION(**function_params)
+        finally:
+            Environment._Environment__currently_running_step = False  # type: ignore[attr-defined] # noqa
+
         spec = inspect.getfullargspec(inspect.unwrap(self._FUNCTION))
         return_type: Type[Any] = spec.annotations.get("return", None)
         if return_type is not None:
@@ -434,27 +439,3 @@ class _FunctionExecutor(BaseExecutor):
                 self.resolve_output_artifact(
                     output_name, output_dict[output_name][0], return_value
                 )
-
-    def Do(
-        self,
-        input_dict: Dict[str, List[BaseArtifact]],
-        output_dict: Dict[str, List[BaseArtifact]],
-        exec_properties: Dict[str, Any],
-    ) -> None:
-        """Main block for the execution of the step
-
-        Args:
-            input_dict: dictionary containing the input artifacts
-            output_dict: dictionary containing the output artifacts
-            exec_properties: dictionary containing the execution parameters
-        """
-
-        Environment._Environment__currently_running_step = True  # type: ignore[attr-defined] # noqa
-        try:
-            self._execute_step(
-                input_dict=input_dict,
-                output_dict=output_dict,
-                exec_properties=exec_properties,
-            )
-        finally:
-            Environment._Environment__currently_running_step = False  # type: ignore[attr-defined] # noqa
