@@ -37,6 +37,7 @@ def pipeline(
     name: Optional[str] = None,
     enable_cache: bool = True,
     requirements_file: Optional[str] = None,
+    dockerignore_file: Optional[str] = None,
 ) -> Callable[[F], Type[BasePipeline]]:
     """Type annotations for step decorator in case of arguments."""
     ...
