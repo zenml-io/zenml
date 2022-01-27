@@ -42,7 +42,7 @@ These are the third-party integrations that ZenML currently supports:
 | scikit-learn | ✅ | Training |   | [caching chapter](https://docs.zenml.io/v/docs/guides/functional-api/caching) |
 | Seldon | ⛏ | Cloud | Looking for community implementors |   |
 | Tensorflow | ✅ | Training |   | [quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart) |
-| Whylogs | ✅ | Logging | Integration fully implemented for data logging | [whylogs](https://github.com/zenml-io/zenml/tree/main/examples/whylogs) |
+| whylogs | ✅ | Logging | Integration fully implemented for data logging | [whylogs](https://github.com/zenml-io/zenml/tree/main/examples/whylogs) |
 
 ✅ means the integration is already implemented.
 ⛏ means we are looking to implement the integration soon.
