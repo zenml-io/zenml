@@ -78,7 +78,7 @@ class MaterializerRegistry:
             }
             if len(compatible_subclasses) == 1:
                 return self.materializer_types[compatible_subclasses[0]]
-            else:
+            elif len(compatible_subclasses) > 1:
                 raise KeyError(
                     f"Type {key} is subclassing more than one type, thus it "
                     f"maps to multiple materializers within the materializer "
