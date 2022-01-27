@@ -481,11 +481,11 @@ def main() -> None:
     except RepositoryNotFoundError:
         raise RepositoryNotFoundError(
             "Unable to find ZenML repository in docker container. Make sure "
-            "your ZenML repository is not included in the dockerignore file "
-            "used when building the docker image to run this pipeline using "
-            "Kubeflow Pipelines. This dockerignore might be specified using "
-            "the `@pipeline` decorator or a file named '.dockerignore' at the "
-            "root of your local ZenML repository."
+            "your ZenML repository (.zen directory) is not included in the "
+            "dockerignore file used when building the docker image to run this "
+            "pipeline using Kubeflow Pipelines. This dockerignore might be "
+            "specified using the `@pipeline` decorator or a file named "
+            "'.dockerignore' at the root of your local ZenML repository."
         ) from None
 
     metadata_store = repo.active_stack.metadata_store
