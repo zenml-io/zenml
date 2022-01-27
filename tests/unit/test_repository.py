@@ -23,6 +23,7 @@ import zenml
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.enums import StackComponentType
 from zenml.exceptions import (
+    ForbiddenRepositoryAccessError,
     InitializationException,
     RepositoryNotFoundError,
     StackComponentExistsError,
@@ -196,7 +197,7 @@ def test_creating_repository_instance_during_step_execution_fails(mocker):
         "zenml.environment.Environment.currently_running_step",
         return_value=True,
     )
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ForbiddenRepositoryAccessError):
         Repository()
 
 
