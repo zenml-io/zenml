@@ -12,24 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from contextlib import ExitStack as does_not_raise
+import platform
 
-from zenml.utils.analytics_utils import (
-    AnalyticsEvent,
-    get_segment_key,
-    track_event,
-)
+from zenml.constants import VALID_OPERATING_SYSTEMS
+from zenml.environment import Environment
 
 
-def test_get_segment_key():
-    """Checks the get_segment_key method returns a value"""
-    with does_not_raise():
-        get_segment_key()
+def test_environment_platform_info_correctness():
+    """Checks that `Environment.get_system_info()` returns the correct
+    platform"""
+    system_id = platform.system()
 
+    if system_id == "Darwin":
+        system_id = "mac"
+    elif system_id not in VALID_OPERATING_SYSTEMS:
+        system_id = "unknown"
 
-def test_track_event_conditions():
-    """It should return true for the analytics events but false for everything
-    else."""
-    assert track_event(AnalyticsEvent.OPT_IN_ANALYTICS)
-    assert track_event(AnalyticsEvent.OPT_OUT_ANALYTICS)
-    assert not track_event(AnalyticsEvent.EVENT_TEST)
+    assert system_id.lower() == Environment.get_system_info()["os"]
