@@ -449,7 +449,7 @@ class _FunctionExecutor(BaseExecutor):
             exec_properties: dictionary containing the execution parameters
         """
 
-        Environment._Environment__currently_running_step = True
+        Environment._Environment__currently_running_step = True  # type: ignore[attr-defined] # noqa
         try:
             self._execute_step(
                 input_dict=input_dict,
@@ -457,4 +457,4 @@ class _FunctionExecutor(BaseExecutor):
                 exec_properties=exec_properties,
             )
         finally:
-            Environment._Environment__currently_running_step = False
+            Environment._Environment__currently_running_step = False  # type: ignore[attr-defined] # noqa
