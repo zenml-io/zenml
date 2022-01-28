@@ -100,7 +100,7 @@ class MaterializerRegistry:
 
     def is_registered(self, key: Type[Any]) -> bool:
         """Returns if a materializer class is registered for the given type."""
-        return any([issubclass(key, t) for t in self.materializer_types])
+        return any(issubclass(key, t) for t in self.materializer_types)
 
 
 default_materializer_registry = MaterializerRegistry()
