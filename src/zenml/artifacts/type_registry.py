@@ -44,7 +44,15 @@ class ArtifactTypeRegistry(object):
 
     def get_artifact_type(self, key: Type[Any]) -> List[Type["BaseArtifact"]]:
         """Method to extract the list of artifact types given the data type"""
-        return self._artifact_types[key]
+        if key in self._artifact_types:
+            return self._artifact_types[key]
+        else:
+            compatible_subclasses = [
+                self._artifact_types[t]
+                for t in self._artifact_types
+                if issubclass(key, t)
+            ]
+            return compatible_subclasses.pop()
 
 
 # Creating the global registry
