@@ -72,18 +72,18 @@ class MaterializerRegistry:
         if key in self.materializer_types:
             return self.materializer_types[key]
         else:
-            compatible_subclasses = {
+            compatible_superclasses = {
                 self.materializer_types[t]
                 for t in self.materializer_types
                 if issubclass(key, t)
             }
-            if len(compatible_subclasses) == 1:
-                return compatible_subclasses.pop()
-            elif len(compatible_subclasses) > 1:
+            if len(compatible_superclasses) == 1:
+                return compatible_superclasses.pop()
+            elif len(compatible_superclasses) > 1:
                 raise StepInterfaceError(
                     f"Type {key} is subclassing more than one type, thus it "
                     f"maps to multiple materializers within the materializer "
-                    f"registry: {compatible_subclasses}. Please specify which "
+                    f"registry: {compatible_superclasses}. Please specify which "
                     f"of these materializers you would like to use "
                     f"explicitly in your step."
                 )
