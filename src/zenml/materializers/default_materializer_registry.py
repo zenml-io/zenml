@@ -54,7 +54,7 @@ class MaterializerRegistry:
         """Registers a new materializer and also overwrites a default if set.
 
         Args:
-            key: Indicates the type of an object.
+            key: Indicates the type of object.
             type_: A BaseMaterializer subclass.
         """
         self.materializer_types[key] = type_
@@ -64,7 +64,7 @@ class MaterializerRegistry:
         """Get a single materializers based on the key.
 
         Args:
-            key: Indicates the type of an object.
+            key: Indicates the type of object.
 
         Returns:
             `BaseMaterializer` subclass that was registered for this key.
