@@ -20,22 +20,20 @@ class SingletonMetaClass(type):
 
     Use this metaclass to make any class into singleton:
 
-    .. highlight:: python
-    .. code-block:: python
+    ```python
+    class OneRing(metaclass=SingletonMetaClass):
+        def __init__(self, owner):
+            self._owner = owner
 
-        class OneRing(metaclass=SingletonMetaClass):
-            def __init__(self, owner):
-                self._owner = owner
+        @property
+        def owner(self):
+            return self._owner
 
-            @property
-            def owner(self):
-                return self._owner
-
-        the_one_ring = OneRing('Sauron')
-        the_lost_ring = OneRing('Frodo')
-        print(the_lost_ring.owner)  # Sauron
-        OneRing._clear() # ring destroyed
-
+    the_one_ring = OneRing('Sauron')
+    the_lost_ring = OneRing('Frodo')
+    print(the_lost_ring.owner)  # Sauron
+    OneRing._clear() # ring destroyed
+    ```
     """
 
     __single_instance: Optional["SingletonMetaClass"] = None
