@@ -88,7 +88,7 @@ def pipeline(
             name if name else func.__name__,
             (BasePipeline,),
             {
-                PIPELINE_INNER_FUNC_NAME: staticmethod(func),
+                PIPELINE_INNER_FUNC_NAME: staticmethod(func),  # type: ignore[arg-type] # noqa
                 INSTANCE_CONFIGURATION: {
                     PARAM_ENABLE_CACHE: enable_cache,
                     PARAM_REQUIREMENTS_FILE: requirements_file,

@@ -65,7 +65,7 @@ WhylogsVisualizer().visualize(whylogs_outputs)
 
 It produces the following visualization:
 
-![WhyLogs visualization](../../assets/whylogs/whylogs-visualizer.png)
+![whylogs visualization](../../assets/whylogs/whylogs-visualizer.png)
 
 ### Drift with [`evidently`](https://github.com/evidentlyai/evidently)
 

@@ -25,8 +25,6 @@ class BaseAnalyzerConfig(BaseStepConfig):
 class BaseAnalyzerStep(BaseStep):
     """Base step implementation for any analyzer step implementation on ZenML"""
 
-    STEP_INNER_FUNC_NAME = "entrypoint"
-
     @abstractmethod
     def entrypoint(  # type: ignore[override]
         self,

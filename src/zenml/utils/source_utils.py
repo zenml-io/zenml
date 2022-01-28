@@ -159,7 +159,7 @@ def get_absolute_path_from_module_source(module: str) -> str:
         module: A module e.g. `zenml.core.step`.
     """
     mod = importlib.import_module(module)
-    return mod.__path__[0]  # type: ignore[no-any-return, attr-defined]
+    return mod.__path__[0]
 
 
 def get_module_source_from_class(
