@@ -14,6 +14,7 @@
 
 from typing import TYPE_CHECKING, Any, Dict, Type
 
+from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -34,7 +35,7 @@ class MaterializerRegistry:
         """Registers a new materializer.
 
         Args:
-            key: Indicates the type of an object.
+            key: Indicates the type of object.
             type_: A BaseMaterializer subclass.
         """
         if key not in self.materializer_types:
@@ -79,14 +80,14 @@ class MaterializerRegistry:
             if len(compatible_subclasses) == 1:
                 return compatible_subclasses.pop()
             elif len(compatible_subclasses) > 1:
-                raise KeyError(
+                raise StepInterfaceError(
                     f"Type {key} is subclassing more than one type, thus it "
                     f"maps to multiple materializers within the materializer "
                     f"registry: {compatible_subclasses}. Please specify which "
                     f"of these materializers you would like to use "
                     f"explicitly in your step."
                 )
-        raise KeyError(
+        raise StepInterfaceError(
             f"Type {key} does not have a default `Materializer`! Please "
             f"specify your own `Materializer`."
         )
