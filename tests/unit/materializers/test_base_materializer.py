@@ -103,8 +103,8 @@ def test_setting_a_materializer_for_a_step_with_multiple_outputs():
     step_instance = some_step().with_return_materializers(BaseMaterializer)
     assert step_instance.get_materializers()["some_output"] is BaseMaterializer
     assert (
-            step_instance.get_materializers()["some_other_output"]
-            is BaseMaterializer
+        step_instance.get_materializers()["some_other_output"]
+        is BaseMaterializer
     )
 
 
@@ -124,8 +124,8 @@ def test_materializer_source_execution_parameter_changes_when_materializer_chang
 
     key = "zenml-output_materializer_source"
     assert (
-            step_1._internal_execution_parameters[key]
-            != step_2._internal_execution_parameters[key]
+        step_1._internal_execution_parameters[key]
+        != step_2._internal_execution_parameters[key]
     )
 
 
@@ -193,6 +193,7 @@ def test_materializer_with_conflicting_parameter_and_explicit_materializer():
     """Tests the case where the output parameter is inheriting from more than
     one baseclass which have different default materializers but the
     materializer is explicitly defined"""
+
     class MyFirstType:
         pass
 
