@@ -252,7 +252,7 @@ def get_source(value: Any) -> str:
                 ):
                     return inspect.getfile(member)
             else:
-                raise TypeError("Source for {!r} not found".format(object))
+                raise TypeError(f"Source for {object!r} not found.")
 
         # Monkey patch, compute source, then revert monkey patch.
         _old_getfile = inspect.getfile
