@@ -14,6 +14,7 @@
 
 from typing import TYPE_CHECKING, Any, Dict, List, Type
 
+from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -47,12 +48,29 @@ class ArtifactTypeRegistry(object):
         if key in self._artifact_types:
             return self._artifact_types[key]
         else:
-            compatible_subclasses = [
-                self._artifact_types[t]
+            compatible_subclasses = {
+                tuple(self._artifact_types[t])
                 for t in self._artifact_types
                 if issubclass(key, t)
-            ]
-            return compatible_subclasses.pop()
+            }
+            if len(compatible_subclasses) == 1:
+                return list(compatible_subclasses.pop())
+            elif len(compatible_subclasses) > 1:
+                raise StepInterfaceError(
+                    f"Type {key} is subclassing more than one type and these "
+                    f"types map to different materializers. These "
+                    f"materializers feature a different list associated "
+                    f"artifact types within the registry: "
+                    f"{compatible_subclasses}. Please specify which "
+                    f"of these artifact types you would like to use "
+                    f"explicitly in your step."
+                )
+
+        raise StepInterfaceError(
+            f"Type {key} does not have a default `Materializer` thus it does "
+            f"not have any associated `ArtifactType`s! Please specify your "
+            f"own `Materializer`."
+        )
 
 
 # Creating the global registry
