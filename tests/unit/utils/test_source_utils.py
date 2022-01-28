@@ -28,6 +28,11 @@ def test_is_third_party_module():
     assert not source_utils.is_third_party_module(non_third_party_file)
 
 
+def test_get_source():
+    """Tests if source of objects is gotten properly."""
+    assert source_utils.get_source(pytest.Cache)
+
+
 def test_get_hashed_source():
     """Tests if hash of objects is computed properly."""
     assert source_utils.get_hashed_source(pytest.Cache)

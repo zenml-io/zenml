@@ -44,7 +44,6 @@ from typing import Any, Callable, Optional, Type, Union
 from zenml import __version__
 from zenml.constants import APP_NAME
 from zenml.logger import get_logger
-from zenml.visualizers.base_step_visualizer import BaseStepVisualizer
 
 logger = get_logger(__name__)
 
@@ -200,7 +199,21 @@ def get_source(value: Any) -> str:
         TypeError: If source not found.
     """
     # This is to be replaced with Environment().running_in_notebook.
-    if BaseStepVisualizer.running_in_notebook():
+    def _running_in_notebook() -> bool:
+        """Detect whether we're running in a Jupyter notebook or not"""
+        try:
+            from IPython import get_ipython  # type: ignore
+
+            if get_ipython() is None:
+                # IPython is installed but not running from a notebook
+                return False
+            else:
+                return True
+        except ImportError:
+            # We do not even have IPython installed
+            return False
+
+    if _running_in_notebook():
         # Monkey patch inspect.getfile temporarily to make getsource work.
         # Source: https://stackoverflow.com/questions/51566497/
         def _new_getfile(
