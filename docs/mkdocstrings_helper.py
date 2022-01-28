@@ -77,8 +77,10 @@ def create_entity_docs(api_doc_file_dir: Path,
     """
     for item in sources_path.iterdir():
         if item.name not in ignored_modules:
+            is_python_file = item.is_file() and item.name.endswith(".py")
             is_non_empty_dir = (item.is_dir() and any(item.iterdir()))
-            if item.is_file() or is_non_empty_dir:
+
+            if is_python_file or is_non_empty_dir:
                 item_name = generate_title(item.stem)
 
                 # Extract zenml import path from sources path
