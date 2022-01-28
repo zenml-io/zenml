@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 
 import collections
-import hashlib
 import inspect
 import json
 import random
@@ -56,6 +55,7 @@ from zenml.steps.utils import (
     _ZenMLSimpleComponent,
     generate_component_class,
 )
+from zenml.utils.source_utils import get_hashed_source
 
 logger = get_logger(__name__)
 
@@ -317,11 +317,6 @@ class BaseStep(metaclass=BaseStepMeta):
             # Caching is enabled so we compute a hash of the step function code
             # and materializers to catch changes in the step behavior
 
-            def _get_hashed_source(value: Any) -> str:
-                """Returns a hash of the objects source code."""
-                source_code = inspect.getsource(value)
-                return hashlib.sha256(source_code.encode("utf-8")).hexdigest()
-
             # If the step was defined using the functional api, only track
             # changes to the entrypoint function. Otherwise track changes to
             # the entire step class.
@@ -330,11 +325,11 @@ class BaseStep(metaclass=BaseStepMeta):
                 if self._created_by_functional_api
                 else self.__class__
             )
-            parameters["step_source"] = _get_hashed_source(source_object)
+            parameters["step_source"] = get_hashed_source(source_object)
 
             for name, materializer in self.get_materializers().items():
                 key = f"{name}_materializer_source"
-                parameters[key] = _get_hashed_source(materializer)
+                parameters[key] = get_hashed_source(materializer)
         else:
             # Add a random string to the execution properties to disable caching
             random_string = f"{random.getrandbits(128):032x}"
