@@ -87,7 +87,7 @@ class FacetStatisticsVisualizer(BaseStepVisualizer):
         """Generate a Facet Overview
 
         Args:
-            h: HTML represented as a string.
+            html_: HTML represented as a string.
             magic: Whether to magically materialize facet in a notebook.
         """
         if magic:

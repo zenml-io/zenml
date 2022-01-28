@@ -31,11 +31,11 @@ class ZenMLBaseException(Exception):
 
         Args:
             message: Message with details of exception. This message
-            will be appended with another message directing user to
-            `url` for more information. If `None`, then default
-            Exception behavior is used.
+                     will be appended with another message directing user to
+                     `url` for more information. If `None`, then default
+                     Exception behavior is used.
             url: URL to point to in exception message. If `None`, then no url
-            is appended.
+                 is appended.
         """
         if message:
             if url:
@@ -155,10 +155,10 @@ class MissingStepParameterError(ZenMLBaseException):
 
         Args:
             step_name: Name of the step for which one or more parameters
-                are missing.
+                       are missing.
             missing_parameters: Names of all parameters which are missing.
             config_class: Class of the configuration object for which
-                the parameters are missing.
+                          the parameters are missing.
         """
         message = textwrap.fill(
             textwrap.dedent(

@@ -65,36 +65,48 @@ def create_entity_docs(api_doc_file_dir: Path,
                        sources_path: Path,
                        index_file_contents: Optional[List[str]]
                        ) -> Optional[List[str]]:
+    """ Create structure for mkdocs with separate md files for each top level
+    entity.
+
+    Args:
+        api_doc_file_dir: Directory in which to save teh api/docs
+        ignored_modules: List of entities to ignore
+        sources_path: Path to the zenml src directory
+        index_file_contents: Contents of the index file to append to
+
+    """
     for item in sources_path.iterdir():
         if item.name not in ignored_modules:
-            item_name = generate_title(item.stem)
+            is_non_empty_dir = (item.is_dir() and any(item.iterdir()))
+            if item.is_file() or is_non_empty_dir:
+                item_name = generate_title(item.stem)
 
-            # Extract zenml import path from sources path
-            # Example: src/zenml/cli/function.py ->  zenml.cli
-            zenml_import_path = '.'.join(item.parts[1:-1])
+                # Extract zenml import path from sources path
+                # Example: src/zenml/cli/function.py ->  zenml.cli
+                zenml_import_path = '.'.join(item.parts[1:-1])
 
-            module_md = f"# {item_name}\n\n" \
-                        f"::: {zenml_import_path}.{item.stem}\n" \
-                        f"    handler: python\n" \
-                        f"    rendering:\n" \
-                        f"      show_root_heading: true\n" \
-                        f"      show_source: true\n"
+                module_md = f"# {item_name}\n\n" \
+                            f"::: {zenml_import_path}.{item.stem}\n" \
+                            f"    handler: python\n" \
+                            f"    rendering:\n" \
+                            f"      show_root_heading: true\n" \
+                            f"      show_source: true\n"
 
-            to_md_file(
-                module_md,
-                item.stem,
-                out_path=api_doc_file_dir,
-            )
+                to_md_file(
+                    module_md,
+                    item.stem,
+                    out_path=api_doc_file_dir,
+                )
 
-            if index_file_contents:
-                index_entry = f"# [{item_name}]" \
-                              f"({api_doc_file_dir.name}/{item.stem})\n\n" \
-                              f"::: zenml.{item.stem}\n" \
-                              f"    handler: python\n" \
-                              f"    selection:\n" \
-                              f"        members: false\n"
+                if index_file_contents:
+                    index_entry = f"# [{item_name}]" \
+                                  f"({api_doc_file_dir.name}/{item.stem})\n\n" \
+                                  f"::: zenml.{item.stem}\n" \
+                                  f"    handler: python\n" \
+                                  f"    selection:\n" \
+                                  f"        members: false\n"
 
-                index_file_contents.append(index_entry)
+                    index_file_contents.append(index_entry)
 
     return index_file_contents
 
