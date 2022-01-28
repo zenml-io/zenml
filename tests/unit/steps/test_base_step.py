@@ -284,60 +284,6 @@ def test_access_step_component_after_calling():
         _ = step_instance.component
 
 
-def test_configure_step_with_wrong_materializer_class():
-    """Tests that passing a random class as a materializer raises a
-    StepInterfaceError."""
-
-    @step
-    def some_step() -> Output(some_output=int):
-        pass
-
-    with pytest.raises(StepInterfaceError):
-        some_step().with_return_materializers(str)  # noqa
-
-
-def test_configure_step_with_wrong_materializer_key():
-    """Tests that passing a materializer for a non-existent argument raises a
-    StepInterfaceError."""
-
-    @step
-    def some_step() -> Output(some_output=int):
-        pass
-
-    with pytest.raises(StepInterfaceError):
-        materializers = {"some_nonexistent_output": BaseMaterializer}
-        some_step().with_return_materializers(materializers)
-
-
-def test_configure_step_with_wrong_materializer_class_in_dict():
-    """Tests that passing a wrong class as materializer for a specific output
-    raises a StepInterfaceError."""
-
-    @step
-    def some_step() -> Output(some_output=int):
-        pass
-
-    materializers = {"some_output": "not_a_materializer_class"}
-    with pytest.raises(StepInterfaceError):
-        some_step().with_return_materializers(materializers)  # noqa
-
-
-def test_setting_a_materializer_for_a_step_with_multiple_outputs():
-    """Tests that setting a materializer for a step with multiple outputs
-    sets the materializer for all the outputs."""
-
-    @step
-    def some_step() -> Output(some_output=int, some_other_output=str):
-        pass
-
-    step_instance = some_step().with_return_materializers(BaseMaterializer)
-    assert step_instance.get_materializers()["some_output"] is BaseMaterializer
-    assert (
-        step_instance.get_materializers()["some_other_output"]
-        is BaseMaterializer
-    )
-
-
 def test_overwriting_step_materializers():
     """Tests that calling `with_return_materializers` multiple times allows
     overwriting of the step materializers."""
@@ -476,27 +422,6 @@ def test_step_source_execution_parameter_changes_when_function_body_changes():
     )
 
 
-def test_materializer_source_execution_parameter_changes_when_materializer_changes():
-    """Tests that changing the step materializer changes the materializer
-    source execution parameter."""
-
-    @step
-    def some_step() -> int:
-        return 1
-
-    class MyCustomMaterializer(BuiltInMaterializer):
-        pass
-
-    step_1 = some_step().with_return_materializers(BuiltInMaterializer)
-    step_2 = some_step().with_return_materializers(MyCustomMaterializer)
-
-    key = "zenml-output_materializer_source"
-    assert (
-        step_1._internal_execution_parameters[key]
-        != step_2._internal_execution_parameters[key]
-    )
-
-
 def test_call_step_with_args(int_step_output, step_with_two_int_inputs):
     """Test that a step can be called with args."""
     with does_not_raise():
@@ -575,39 +500,6 @@ def test_call_step_with_wrong_kwarg_type(
     """Test that calling a step fails when a kwarg has a wrong type."""
     with pytest.raises(StepInterfaceError):
         step_with_two_int_inputs()(input_1=1, input_2=int_step_output)
-
-
-def test_call_step_with_missing_materializer_for_type():
-    """Tests that calling a step with an output without registered
-    materializer raises a StepInterfaceError."""
-
-    class MyTypeWithoutMaterializer:
-        pass
-
-    @step
-    def some_step() -> MyTypeWithoutMaterializer:
-        return MyTypeWithoutMaterializer()
-
-    with pytest.raises(StepInterfaceError):
-        some_step()()
-
-
-def test_call_step_with_default_materializer_registered():
-    """Tests that calling a step with a registered default materializer for the
-    output works."""
-
-    class MyType:
-        pass
-
-    class MyTypeMaterializer(BaseMaterializer):
-        ASSOCIATED_TYPES = [MyType]
-
-    @step
-    def some_step() -> MyType:
-        return MyType()
-
-    with does_not_raise():
-        some_step()()
 
 
 def test_step_uses_config_class_default_values_if_no_config_is_passed():
