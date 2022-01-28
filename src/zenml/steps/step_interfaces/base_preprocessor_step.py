@@ -26,8 +26,6 @@ class BasePreprocessorStep(BaseStep):
     """Base step implementation for any Preprocessor step implementation on
     ZenML"""
 
-    STEP_INNER_FUNC_NAME = "entrypoint"
-
     @abstractmethod
     def entrypoint(  # type: ignore[override]
         self,

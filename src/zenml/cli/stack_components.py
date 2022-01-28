@@ -32,6 +32,7 @@ def _component_display_name(
     return name.replace("_", " ")
 
 
+@cli_utils.activate_integrations
 def _get_stack_component(
     component_type: StackComponentType,
     component_name: Optional[str] = None,
