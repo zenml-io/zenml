@@ -10,9 +10,7 @@ coverage:
       default:
         threshold: 1%   # allow coverage to drop by 1% before failing the PR
 
-    patch:
-      default:
-        threshold: 1%   # allow coverage to drop by 1% before failing the PR
+    patch: off
 
     # do not run coverage on changes
     changes: off
