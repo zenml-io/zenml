@@ -68,6 +68,11 @@ class MaterializerRegistry:
 
         Returns:
             `BaseMaterializer` subclass that was registered for this key.
+
+        Raises:
+            StepInterfaceError: If the key (or any of its superclasses) is not
+                registered or the key has more than one superclass with
+                different default materializers
         """
         if key in self.materializer_types:
             return self.materializer_types[key]

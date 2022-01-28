@@ -44,7 +44,19 @@ class ArtifactTypeRegistry(object):
         self._artifact_types[key] = type_
 
     def get_artifact_type(self, key: Type[Any]) -> List[Type["BaseArtifact"]]:
-        """Method to extract the list of artifact types given the data type"""
+        """Method to extract the list of artifact types given the data type
+
+        Args:
+            key: Indicates the type of object.
+
+        Returns:
+            A list of `Artifact` types that was registered for this key.
+
+        Raises:
+            StepInterfaceError: If the key (or any of its superclasses) is not
+                registered or the key has more than one superclass with
+                different default materializers/artifact types
+        """
         if key in self._artifact_types:
             return self._artifact_types[key]
         else:
