@@ -271,9 +271,7 @@ def get_hashed_source(value: Any) -> str:
         source_code = get_source(value)
     except TypeError:
         raise TypeError(
-            "Unable to compute the hash of the source code of the step. "
-            "This is unexpected behavior: Try running the pipeline with "
-            "`enable_cache` set to False."
+            f"Unable to compute the hash of source code of object: {object}."
         )
     return hashlib.sha256(source_code.encode("utf-8")).hexdigest()
 
