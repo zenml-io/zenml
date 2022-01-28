@@ -29,3 +29,38 @@ def test_environment_platform_info_correctness():
         system_id = "unknown"
 
     assert system_id.lower() == Environment.get_system_info()["os"]
+
+
+def test_environment_is_singleton():
+    """Tests that environment is a singleton."""
+    assert Environment() is Environment()
+
+
+def test_environment_contextmanager_to_set_attributes():
+    """Tests that the _set_attributes context manager can be used to
+    temporarily set attributes on the environment singleton."""
+    env = Environment()
+
+    assert env.currently_running_step is False
+
+    with Environment()._set_attributes(currently_running_step=True):
+        assert env.currently_running_step is True
+
+    assert env.currently_running_step is False
+
+
+def test_environment_nested_contextmanager():
+    """Tests that the `_set_attributes` context manager can be nested and used
+    to overwrite existing attributes from outer context managers."""
+    env = Environment()
+
+    assert env.currently_running_step is False
+    with Environment()._set_attributes(currently_running_step=True):
+        assert env.currently_running_step is True
+
+        with Environment()._set_attributes(currently_running_step=False):
+            assert env.currently_running_step is False
+
+        assert env.currently_running_step is True
+
+    assert env.currently_running_step is False
