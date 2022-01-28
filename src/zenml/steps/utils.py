@@ -409,11 +409,8 @@ class _FunctionExecutor(BaseExecutor):
                     input_dict[arg][0], arg_type
                 )
 
-        Environment._Environment__currently_running_step = True  # type: ignore[attr-defined] # noqa
-        try:
+        with Environment()._set_attributes(currently_running_step=True):
             return_values = self._FUNCTION(**function_params)
-        finally:
-            Environment._Environment__currently_running_step = False  # type: ignore[attr-defined] # noqa
 
         spec = inspect.getfullargspec(inspect.unwrap(self._FUNCTION))
         return_type: Type[Any] = spec.annotations.get("return", None)

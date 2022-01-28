@@ -13,20 +13,30 @@
 #  permissions and limitations under the License.
 import os
 import platform
-from typing import Any, Dict
+from contextlib import contextmanager
+from typing import Any, Dict, Iterator, Optional
 
 import distro
 
+from zenml.utils.singleton import SingletonMetaClass
 
-class Environment:
+
+class Environment(metaclass=SingletonMetaClass):
     """Provides environment information."""
 
-    __currently_running_step = False
+    def __init__(self) -> None:
+        """Initializes an Environment instance.
 
-    @classmethod
-    def currently_running_step(cls) -> bool:
+        Note: Environment is a singleton, which means this method will only
+        get called once. All following `Environment()` calls will return the
+        already existing instance.
+        """
+        self.__currently_running_step = False
+
+    @property
+    def currently_running_step(self) -> bool:
         """Returns if a step is currently running."""
-        return cls.__currently_running_step
+        return self.__currently_running_step
 
     @staticmethod
     def get_system_info() -> Dict[str, Any]:
@@ -91,3 +101,42 @@ class Environment:
         if "PAPERSPACE_NOTEBOOK_REPO_ID" in os.environ:
             return True
         return False
+
+    @contextmanager
+    def _set_attributes(
+        self, currently_running_step: Optional[bool] = None
+    ) -> Iterator["Environment"]:
+        """Sets attributes on the singleton instance.
+
+        These attributes will only be persisted for the active duration of this
+        contextmanager:
+        ```python
+        env = Environment()
+        print(env.currently_running_step)  # False
+
+        with Environment()._set_attributes(currently_running_step=True):
+            print(env.currently_running_step)  # True
+
+        print(env.currently_running_step)  # False
+        ```
+
+        Calls to this contextmanager can also be nested:
+        ```python
+        with Environment()._set_attributes(...):
+            # only attributes from outer context manager are set
+            with Environment()._set_attributes(...):
+                # attributes from outer and inner context manager are set
+                # (inner context manager can overwrite values from outer one)
+
+            # only attributes from outer context manager are set
+        ```
+        """
+        old_dict = self.__dict__.copy()
+
+        if currently_running_step is not None:
+            self.__currently_running_step = currently_running_step
+
+        try:
+            yield self
+        finally:
+            self.__dict__ = old_dict

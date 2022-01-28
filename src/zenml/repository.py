@@ -118,7 +118,7 @@ class Repository:
             ForbiddenRepositoryAccessError: If trying to create a `Repository`
                 instance while a ZenML step is being executed.
         """
-        if Environment.currently_running_step():
+        if Environment().currently_running_step:
             raise ForbiddenRepositoryAccessError(
                 "Unable to access repository during step execution. If you "
                 "require access to the artifact or metadata store, please use "

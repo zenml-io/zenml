@@ -714,11 +714,11 @@ def test_step_sets_global_execution_status_on_environment(
 
     @step
     def my_step():
-        assert Environment.currently_running_step() is True
+        assert Environment().currently_running_step is True
 
-    assert Environment.currently_running_step() is False
+    assert Environment().currently_running_step is False
     one_step_pipeline(my_step()).run()
-    assert Environment.currently_running_step() is False
+    assert Environment().currently_running_step is False
 
 
 def test_step_resets_global_execution_status_even_if_the_step_crashes(
@@ -731,7 +731,7 @@ def test_step_resets_global_execution_status_even_if_the_step_crashes(
     def my_step():
         raise RuntimeError()
 
-    assert Environment.currently_running_step() is False
+    assert Environment().currently_running_step is False
     with pytest.raises(RuntimeError):
         one_step_pipeline(my_step()).run()
-    assert Environment.currently_running_step() is False
+    assert Environment().currently_running_step is False
