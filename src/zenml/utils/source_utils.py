@@ -31,7 +31,15 @@ import pathlib
 import site
 import sys
 import types
-from typing import Any, Optional, Type, Union
+from types import (
+    CodeType,
+    FrameType,
+    FunctionType,
+    MethodType,
+    ModuleType,
+    TracebackType,
+)
+from typing import Any, Callable, Optional, Type, Union
 
 from zenml import __version__
 from zenml.constants import APP_NAME
@@ -192,11 +200,27 @@ def get_source(value: Any) -> str:
         TypeError: If source not found.
     """
     # This is to be replaced with Environment().running_in_notebook.
-    src = None
     if BaseStepVisualizer.running_in_notebook():
         # Monkey patch inspect.getfile temporarily to make getsource work.
         # Source: https://stackoverflow.com/questions/51566497/
-        def _new_getfile(object, _old_getfile=inspect.getfile):
+        def _new_getfile(
+            object: Any,
+            _old_getfile: Callable[
+                [
+                    Union[
+                        ModuleType,
+                        Type[Any],
+                        MethodType,
+                        FunctionType,
+                        TracebackType,
+                        FrameType,
+                        CodeType,
+                        Callable[..., Any],
+                    ]
+                ],
+                str,
+            ] = inspect.getfile,
+        ) -> Any:
             if not inspect.isclass(object):
                 return _old_getfile(object)
 
@@ -204,7 +228,7 @@ def get_source(value: Any) -> str:
             if hasattr(object, "__module__"):
                 object_ = sys.modules.get(object.__module__)
                 if hasattr(object_, "__file__"):
-                    return object_.__file__
+                    return object_.__file__  # type: ignore[union-attr]
 
             # If parent module is __main__, lookup by methods
             for name, member in inspect.getmembers(object):
