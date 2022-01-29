@@ -76,6 +76,8 @@ def get_environment() -> str:
         return "colab"
     elif Environment.in_paperspace_gradient():
         return "paperspace"
+    elif Environment.in_jupyter_notebook():
+        return "notebook"
     else:
         return "native"
 
