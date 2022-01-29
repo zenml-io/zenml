@@ -111,7 +111,7 @@ class Environment(metaclass=SingletonMetaClass):
 
     @classmethod
     @contextmanager
-    def _temporary_context(
+    def _layer(
         cls, step_is_running: Optional[bool] = None
     ) -> Iterator["Environment"]:
         """Contextmanager to temporarily set attributes on the singleton
@@ -123,7 +123,7 @@ class Environment(metaclass=SingletonMetaClass):
         env = Environment()
         print(env.step_is_running)  # False
 
-        with Environment._temporary_context(step_is_running=True):
+        with Environment._layer(step_is_running=True):
             print(env.step_is_running)  # True
 
         print(env.step_is_running)  # False
@@ -131,9 +131,9 @@ class Environment(metaclass=SingletonMetaClass):
 
         Calls to this contextmanager can also be nested:
         ```python
-        with Environment._temporary_context(...):
+        with Environment._layer(...):
             # only attributes from outer context manager are set
-            with Environment._temporary_context(...):
+            with Environment._layer(...):
                 # attributes from outer and inner context manager are set
                 # (inner context manager can overwrite values from outer one)
 

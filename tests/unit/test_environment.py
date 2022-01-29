@@ -37,28 +37,28 @@ def test_environment_is_singleton():
 
 
 def test_environment_contextmanager_to_set_attributes():
-    """Tests that the _set_attributes context manager can be used to
+    """Tests that the `_layer` context manager can be used to
     temporarily set attributes on the environment singleton."""
     env = Environment()
 
     assert env.step_is_running is False
 
-    with Environment._temporary_context(step_is_running=True):
+    with Environment._layer(step_is_running=True):
         assert env.step_is_running is True
 
     assert env.step_is_running is False
 
 
 def test_environment_nested_contextmanager():
-    """Tests that the `_set_attributes` context manager can be nested and used
+    """Tests that the `_layer` context manager can be nested and used
     to overwrite existing attributes from outer context managers."""
     env = Environment()
 
     assert env.step_is_running is False
-    with Environment._temporary_context(step_is_running=True):
+    with Environment._layer(step_is_running=True):
         assert env.step_is_running is True
 
-        with Environment._temporary_context(step_is_running=False):
+        with Environment._layer(step_is_running=False):
             assert env.step_is_running is False
 
         assert env.step_is_running is True
