@@ -18,7 +18,7 @@ from typing import Any, Optional, cast
 class SingletonMetaClass(type):
     """Singleton metaclass.
 
-    Use this metaclass to make any class into singleton:
+    Use this metaclass to make any class into a singleton class:
 
     ```python
     class OneRing(metaclass=SingletonMetaClass):
@@ -36,22 +36,20 @@ class SingletonMetaClass(type):
     ```
     """
 
-    __single_instance: Optional["SingletonMetaClass"] = None
+    def __init__(cls, *args: Any, **kwargs: Any) -> None:
+        """Initialize a singleton class."""
+        super().__init__(*args, **kwargs)
+        cls.__singleton_instance: Optional["SingletonMetaClass"] = None
 
     def __call__(cls, *args: Any, **kwargs: Any) -> "SingletonMetaClass":
         """Create or return the singleton instance."""
+        if not cls.__singleton_instance:
+            cls.__singleton_instance = cast(
+                "SingletonMetaClass", super().__call__(*args, **kwargs)
+            )
 
-        if cls.__single_instance:
-            return cls.__single_instance
-        single_obj = super().__call__(*args, **kwargs)
-        cls.__single_instance = single_obj
-        single_obj.__init__(*args, **kwargs)
-        return cast("SingletonMetaClass", single_obj)
+        return cls.__singleton_instance
 
     def _clear(cls) -> None:
         """Clear the singleton instance."""
-
-        try:
-            cls.__single_instance = None
-        except KeyError:
-            pass
+        cls.__singleton_instance = None
