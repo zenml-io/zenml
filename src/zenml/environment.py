@@ -31,12 +31,12 @@ class Environment(metaclass=SingletonMetaClass):
         only get called once. All following `Environment()` calls will return
         the previously initialized instance.
         """
-        self.__currently_running_step = False
+        self.__step_is_running = False
 
     @property
-    def currently_running_step(self) -> bool:
+    def step_is_running(self) -> bool:
         """Returns if a step is currently running."""
-        return self.__currently_running_step
+        return self.__step_is_running
 
     @staticmethod
     def get_system_info() -> Dict[str, Any]:
@@ -112,7 +112,7 @@ class Environment(metaclass=SingletonMetaClass):
     @classmethod
     @contextmanager
     def _temporary_context(
-        cls, currently_running_step: Optional[bool] = None
+        cls, step_is_running: Optional[bool] = None
     ) -> Iterator["Environment"]:
         """Contextmanager to temporarily set attributes on the singleton
         instance.
@@ -121,12 +121,12 @@ class Environment(metaclass=SingletonMetaClass):
         contextmanager:
         ```python
         env = Environment()
-        print(env.currently_running_step)  # False
+        print(env.step_is_running)  # False
 
-        with Environment._temporary_context(currently_running_step=True):
-            print(env.currently_running_step)  # True
+        with Environment._temporary_context(step_is_running=True):
+            print(env.step_is_running)  # True
 
-        print(env.currently_running_step)  # False
+        print(env.step_is_running)  # False
         ```
 
         Calls to this contextmanager can also be nested:
@@ -143,8 +143,8 @@ class Environment(metaclass=SingletonMetaClass):
         instance = cls()
         old_dict = instance.__dict__.copy()
 
-        if currently_running_step is not None:
-            instance.__currently_running_step = currently_running_step
+        if step_is_running is not None:
+            instance.__step_is_running = step_is_running
 
         try:
             yield instance

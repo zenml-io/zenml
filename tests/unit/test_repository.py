@@ -194,7 +194,7 @@ def test_creating_repository_instance_during_step_execution_fails(mocker):
     """Tests that creating a Repository instance while a step is being executed
     fails."""
     mocker.patch(
-        "zenml.environment.Environment.currently_running_step",
+        "zenml.environment.Environment.step_is_running",
         return_value=True,
     )
     with pytest.raises(ForbiddenRepositoryAccessError):
