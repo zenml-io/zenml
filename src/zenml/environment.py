@@ -90,10 +90,23 @@ class Environment(metaclass=SingletonMetaClass):
 
     @staticmethod
     def in_google_colab() -> bool:
-        """Returns: True if running in a Google Colab env, else False"""
-        if "COLAB_GPU" in os.environ:
-            return True
-        return False
+        """If the current python process is running in a Google Colab."""
+        return "COLAB_GPU" in os.environ
+
+    @staticmethod
+    def in_jupyter_notebook() -> bool:
+        """If the current python process is running in a Jupyter notebook."""
+        try:
+            from IPython import get_ipython  # type: ignore
+
+            if get_ipython() is None:
+                # IPython is installed but not running from a notebook
+                return False
+            else:
+                return True
+        except ImportError:
+            # We do not even have IPython installed
+            return False
 
     @staticmethod
     def in_paperspace_gradient() -> bool:

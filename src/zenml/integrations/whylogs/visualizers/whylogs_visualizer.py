@@ -18,6 +18,7 @@ from typing import Any, List, Optional
 from whylogs import DatasetProfile  # type: ignore
 from whylogs.viz import ProfileVisualizer, profile_viewer  # type: ignore
 
+from zenml.environment import Environment
 from zenml.logger import get_logger
 from zenml.post_execution import StepView
 from zenml.utils.enum_utils import StrEnum
@@ -113,7 +114,7 @@ class WhylogsVisualizer(BaseStepVisualizer):
             plots: optional list of whylogs plots to visualize. Defaults to
                 using all available plot types if not set
         """
-        if self.running_in_notebook():
+        if Environment.in_jupyter_notebook():
             from IPython.core.display import display
 
             if not plots:
