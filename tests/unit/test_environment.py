@@ -43,7 +43,7 @@ def test_environment_contextmanager_to_set_attributes():
 
     assert env.currently_running_step is False
 
-    with Environment()._set_attributes(currently_running_step=True):
+    with Environment._temporary_context(currently_running_step=True):
         assert env.currently_running_step is True
 
     assert env.currently_running_step is False
@@ -55,10 +55,10 @@ def test_environment_nested_contextmanager():
     env = Environment()
 
     assert env.currently_running_step is False
-    with Environment()._set_attributes(currently_running_step=True):
+    with Environment._temporary_context(currently_running_step=True):
         assert env.currently_running_step is True
 
-        with Environment()._set_attributes(currently_running_step=False):
+        with Environment._temporary_context(currently_running_step=False):
             assert env.currently_running_step is False
 
         assert env.currently_running_step is True

@@ -409,7 +409,7 @@ class _FunctionExecutor(BaseExecutor):
                     input_dict[arg][0], arg_type
                 )
 
-        with Environment()._set_attributes(currently_running_step=True):
+        with Environment._temporary_context(currently_running_step=True):
             return_values = self._FUNCTION(**function_params)
 
         spec = inspect.getfullargspec(inspect.unwrap(self._FUNCTION))

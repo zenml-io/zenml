@@ -109,11 +109,13 @@ class Environment(metaclass=SingletonMetaClass):
         """If the current python process is running in Paperspace Gradient."""
         return "PAPERSPACE_NOTEBOOK_REPO_ID" in os.environ
 
+    @classmethod
     @contextmanager
-    def _set_attributes(
-        self, currently_running_step: Optional[bool] = None
+    def _temporary_context(
+        cls, currently_running_step: Optional[bool] = None
     ) -> Iterator["Environment"]:
-        """Sets attributes on the singleton instance.
+        """Contextmanager to temporarily set attributes on the singleton
+        instance.
 
         These attributes will only be persisted for the active duration of this
         contextmanager:
@@ -121,7 +123,7 @@ class Environment(metaclass=SingletonMetaClass):
         env = Environment()
         print(env.currently_running_step)  # False
 
-        with Environment()._set_attributes(currently_running_step=True):
+        with Environment._temporary_context(currently_running_step=True):
             print(env.currently_running_step)  # True
 
         print(env.currently_running_step)  # False
@@ -129,21 +131,22 @@ class Environment(metaclass=SingletonMetaClass):
 
         Calls to this contextmanager can also be nested:
         ```python
-        with Environment()._set_attributes(...):
+        with Environment._temporary_context(...):
             # only attributes from outer context manager are set
-            with Environment()._set_attributes(...):
+            with Environment._temporary_context(...):
                 # attributes from outer and inner context manager are set
                 # (inner context manager can overwrite values from outer one)
 
             # only attributes from outer context manager are set
         ```
         """
-        old_dict = self.__dict__.copy()
+        instance = cls()
+        old_dict = instance.__dict__.copy()
 
         if currently_running_step is not None:
-            self.__currently_running_step = currently_running_step
+            instance.__currently_running_step = currently_running_step
 
         try:
-            yield self
+            yield instance
         finally:
-            self.__dict__ = old_dict
+            instance.__dict__ = old_dict
