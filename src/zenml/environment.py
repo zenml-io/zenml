@@ -27,9 +27,9 @@ class Environment(metaclass=SingletonMetaClass):
     def __init__(self) -> None:
         """Initializes an Environment instance.
 
-        Note: Environment is a singleton, which means this method will only
-        get called once. All following `Environment()` calls will return the
-        already existing instance.
+        Note: Environment is a singleton class, which means this method will
+        only get called once. All following `Environment()` calls will return
+        the previously initialized instance.
         """
         self.__currently_running_step = False
 
@@ -40,11 +40,7 @@ class Environment(metaclass=SingletonMetaClass):
 
     @staticmethod
     def get_system_info() -> Dict[str, Any]:
-        """Returns system info as a dict.
-
-        Returns:
-            A dict of system information.
-        """
+        """Information about the operating system."""
         system = platform.system()
 
         if system == "Windows":
@@ -79,7 +75,7 @@ class Environment(metaclass=SingletonMetaClass):
 
     @staticmethod
     def in_docker() -> bool:
-        """Returns: True if running in a Docker container, else False"""
+        """If the current python process is running in a docker container."""
         # TODO [ENG-167]: Make this more reliable and add test.
         try:
             with open("/proc/1/cgroup", "rt") as ifh:
@@ -110,10 +106,8 @@ class Environment(metaclass=SingletonMetaClass):
 
     @staticmethod
     def in_paperspace_gradient() -> bool:
-        """Returns: True if running in a Paperspace Gradient env, else False"""
-        if "PAPERSPACE_NOTEBOOK_REPO_ID" in os.environ:
-            return True
-        return False
+        """If the current python process is running in Paperspace Gradient."""
+        return "PAPERSPACE_NOTEBOOK_REPO_ID" in os.environ
 
     @contextmanager
     def _set_attributes(
