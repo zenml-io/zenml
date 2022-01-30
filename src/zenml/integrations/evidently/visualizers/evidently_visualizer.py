@@ -52,7 +52,7 @@ class EvidentlyVisualizer(BaseStepVisualizer):
         Args:
             html_: HTML represented as a string.
         """
-        if Environment.in_jupyter_notebook():
+        if Environment.in_notebook():
             from IPython.core.display import HTML, display
 
             display(HTML(html_))

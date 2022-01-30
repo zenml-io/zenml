@@ -114,7 +114,7 @@ class WhylogsVisualizer(BaseStepVisualizer):
             plots: optional list of whylogs plots to visualize. Defaults to
                 using all available plot types if not set
         """
-        if Environment.in_jupyter_notebook():
+        if Environment.in_notebook():
             from IPython.core.display import display
 
             if not plots:

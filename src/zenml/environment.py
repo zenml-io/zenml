@@ -90,8 +90,8 @@ class Environment(metaclass=SingletonMetaClass):
         return "COLAB_GPU" in os.environ
 
     @staticmethod
-    def in_jupyter_notebook() -> bool:
-        """If the current python process is running in a Jupyter notebook."""
+    def in_notebook() -> bool:
+        """If the current python process is running in a notebook."""
         try:
             from IPython import get_ipython  # type: ignore
 
