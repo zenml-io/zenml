@@ -24,7 +24,12 @@ logger = get_logger(__name__)
 
 
 class Environment(metaclass=SingletonMetaClass):
-    """Provides environment information."""
+    """Provides environment information.
+
+    Individual environment components can be registered separately to extend
+    the global Environment object with additional information (see
+    `BaseEnvironmentComponent`).
+    """
 
     def __init__(self) -> None:
         """Initializes an Environment instance.
@@ -239,9 +244,9 @@ class BaseEnvironmentComponent(metaclass=EnvironmentComponentMeta):
     All Environment components must inherit this class and provide a unique
     value for the `NAME` attribute.
 
-    Different parts of the core code, integrations and maybe even the user code
-    can independently contribute with information to the global Environment by
-    extending and instantiating this class.
+
+    Different code components can independently contribute with information to
+    the global Environment by extending and instantiating this class:
 
     ```python
     MY_ENV_NAME = "my_env"

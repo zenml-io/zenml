@@ -14,8 +14,11 @@
 
 import platform
 
+import pytest
+
 from zenml.constants import VALID_OPERATING_SYSTEMS
-from zenml.environment import Environment
+from zenml.environment import BaseEnvironmentComponent, Environment
+from zenml.steps import StepEnvironment
 
 
 def test_environment_platform_info_correctness():
@@ -36,31 +39,38 @@ def test_environment_is_singleton():
     assert Environment() is Environment()
 
 
-def test_environment_contextmanager_to_set_attributes():
-    """Tests that the `_layer` context manager can be used to
-    temporarily set attributes on the environment singleton."""
-    env = Environment()
+def test_step_is_running():
+    """Tests that the environment correctly reports when a step is running."""
 
-    assert env.step_is_running is False
+    assert Environment().step_is_running is False
 
-    with Environment._layer(step_is_running=True):
-        assert env.step_is_running is True
+    with StepEnvironment(
+        pipeline_name="pipeline",
+        pipeline_run_id="run_id",
+        step_name="step",
+    ):
+        assert Environment().step_is_running is True
 
-    assert env.step_is_running is False
+    assert Environment().step_is_running is False
 
 
-def test_environment_nested_contextmanager():
-    """Tests that the `_layer` context manager can be nested and used
-    to overwrite existing attributes from outer context managers."""
-    env = Environment()
+def test_environment_component_activation():
+    """Tests that environment components can be activated and deactivated."""
 
-    assert env.step_is_running is False
-    with Environment._layer(step_is_running=True):
-        assert env.step_is_running is True
+    class Foo(BaseEnvironmentComponent):
+        NAME = "foo"
 
-        with Environment._layer(step_is_running=False):
-            assert env.step_is_running is False
+    assert Environment().get_component("foo") is None
+    assert not Environment().has_component("foo")
+    with pytest.raises(KeyError):
+        Environment()["foo"]
 
-        assert env.step_is_running is True
+    with Foo() as f:
+        assert Environment().get_component("foo") is f
+        assert Environment().has_component("foo")
+        assert Environment()["foo"] is f
 
-    assert env.step_is_running is False
+    assert Environment().get_component("foo") is None
+    assert not Environment().has_component("foo")
+    with pytest.raises(KeyError):
+        Environment()["foo"]
