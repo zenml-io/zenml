@@ -13,15 +13,12 @@
 #  permissions and limitations under the License.
 """Analytics code for ZenML"""
 
-import os
-import platform
 from enum import Enum
 from typing import Any, Callable, Dict, Optional, Union
 
-import distro
-
 from zenml import __version__
 from zenml.constants import IS_DEBUG_ENV, SEGMENT_KEY_DEV, SEGMENT_KEY_PROD
+from zenml.environment import Environment
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -70,74 +67,17 @@ def get_segment_key() -> str:
         return SEGMENT_KEY_PROD
 
 
-def in_docker() -> bool:
-    """Returns: True if running in a Docker container, else False"""
-    # TODO [ENG-167]: Make this more reliable and add test.
-    try:
-        with open("/proc/1/cgroup", "rt") as ifh:
-            info = ifh.read()
-            return "docker" in info or "kubepod" in info
-    except (FileNotFoundError, Exception):
-        return False
-
-
-def in_google_colab() -> bool:
-    """Returns: True if running in a Google Colab env, else False"""
-    if "COLAB_GPU" in os.environ:
-        return True
-    return False
-
-
-def in_paperspace_gradient() -> bool:
-    """Returns: True if running in a Paperspace Gradient env, else False"""
-    if "PAPERSPACE_NOTEBOOK_REPO_ID" in os.environ:
-        return True
-    return False
-
-
-def get_system_info() -> Dict[str, Any]:
-    """Returns system info as a dict.
-
-    Returns:
-        A dict of system information.
-    """
-    system = platform.system()
-
-    if system == "Windows":
-        release, version, csd, ptype = platform.win32_ver()
-
-        return {
-            "os": "windows",
-            "windows_version_release": release,
-            "windows_version": version,
-            "windows_version_service_pack": csd,
-            "windows_version_os_type": ptype,
-        }
-
-    if system == "Darwin":
-        return {"os": "mac", "mac_version": platform.mac_ver()[0]}
-
-    if system == "Linux":
-        return {
-            "os": "linux",
-            "linux_distro": distro.id(),
-            "linux_distro_like": distro.like(),
-            "linux_distro_version": distro.version(),
-        }
-
-    # We don't collect data for any other system.
-    return {"os": "unknown"}
-
-
 def get_environment() -> str:
     """Returns a string representing the execution environment of the pipeline.
     Currently, one of `docker`, `paperspace`, 'colab', or `native`"""
-    if in_docker():
+    if Environment.in_docker():
         return "docker"
-    elif in_google_colab():
+    elif Environment.in_google_colab():
         return "colab"
-    elif in_paperspace_gradient():
+    elif Environment.in_paperspace_gradient():
         return "paperspace"
+    elif Environment.in_notebook():
+        return "notebook"
     else:
         return "native"
 
@@ -190,11 +130,11 @@ def track_event(
             metadata = {}
 
         # add basics
-        metadata.update(get_system_info())
+        metadata.update(Environment.get_system_info())
         metadata.update(
             {
                 "environment": get_environment(),
-                "python_version": platform.python_version(),
+                "python_version": Environment.python_version(),
                 "version": __version__,
             }
         )

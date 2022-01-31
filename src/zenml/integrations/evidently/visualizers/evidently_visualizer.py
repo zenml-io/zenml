@@ -19,6 +19,7 @@ from typing import Any
 
 import zenml.io.utils
 from zenml.artifacts import DataAnalysisArtifact
+from zenml.environment import Environment
 from zenml.logger import get_logger
 from zenml.post_execution import StepView
 from zenml.visualizers import BaseStepVisualizer
@@ -51,7 +52,7 @@ class EvidentlyVisualizer(BaseStepVisualizer):
         Args:
             html_: HTML represented as a string.
         """
-        if self.running_in_notebook():
+        if Environment.in_notebook():
             from IPython.core.display import HTML, display
 
             display(HTML(html_))

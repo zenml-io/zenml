@@ -53,19 +53,9 @@ class RepositoryNotFoundError(ZenMLBaseException):
     ZenML repository instance."""
 
 
-class EmptyDatasourceException(ZenMLBaseException):
-    """Raises exception when a datasource data is accessed without running
-    an associated pipeline."""
-
-    def __init__(
-        self,
-        message: str = "This datasource has not been used in "
-        "any pipelines, therefore the associated data has no "
-        "versions. Please use this datasource in any ZenML "
-        "pipeline with `pipeline.add_datasource("
-        "datasource)`",
-    ):
-        super().__init__(message)
+class ForbiddenRepositoryAccessError(ZenMLBaseException, RuntimeError):
+    """Raised when trying to access a ZenML repository instance while a step
+    is executed."""
 
 
 class DoesNotExistException(ZenMLBaseException):
