@@ -243,7 +243,10 @@ def get_source(value: Any) -> str:
         # Monkey patch, compute source, then revert monkey patch.
         _old_getfile = inspect.getfile
         inspect.getfile = _new_getfile
-        src = inspect.getsource(value)
+        try:
+            src = inspect.getsource(value)
+        finally:
+            inspect.getfile = _old_getfile
         inspect.getfile = _old_getfile
     else:
         # Use standard inspect if running outside a notebook
