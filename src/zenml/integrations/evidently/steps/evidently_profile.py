@@ -128,7 +128,6 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
             comparison_dataset: a Pandas dataframe of new data you wish to
                 compare against the reference data
             config: the configuration for the step
-            context: the context of the step
 
         Returns:
             profile: dictionary report extracted from an Evidently Profile

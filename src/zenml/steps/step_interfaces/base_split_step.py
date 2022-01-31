@@ -24,8 +24,6 @@ class BaseSplitStepConfig(BaseStepConfig):
 class BaseSplitStep(BaseStep):
     """Base step implementation for any split step implementation on ZenML"""
 
-    STEP_INNER_FUNC_NAME = "entrypoint"
-
     @abstractmethod
     def entrypoint(  # type: ignore[override]
         self,

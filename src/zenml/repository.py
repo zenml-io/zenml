@@ -22,7 +22,9 @@ from pydantic import BaseModel, validator
 import zenml
 from zenml.constants import ENV_ZENML_REPOSITORY_PATH
 from zenml.enums import StackComponentType
+from zenml.environment import Environment
 from zenml.exceptions import (
+    ForbiddenRepositoryAccessError,
     InitializationException,
     RepositoryNotFoundError,
     StackComponentExistsError,
@@ -113,7 +115,17 @@ class Repository:
 
         Raises:
             RepositoryNotFoundError: If no ZenML repository directory is found.
+            ForbiddenRepositoryAccessError: If trying to create a `Repository`
+                instance while a ZenML step is being executed.
         """
+        if Environment().step_is_running:
+            raise ForbiddenRepositoryAccessError(
+                "Unable to access repository during step execution. If you "
+                "require access to the artifact or metadata store, please use "
+                "a `StepContext` inside your step instead.",
+                url="https://docs.zenml.io/features/step-fixtures#using-the-stepcontext",
+            )
+
         self._root = Repository.find_repository(root)
 
         # load the repository configuration file if it exists, otherwise use
