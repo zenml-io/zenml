@@ -57,25 +57,28 @@ class ArtifactTypeRegistry(object):
                 registered or the key has more than one superclass with
                 different default materializers/artifact types
         """
+        # Check whether the type is registered
         if key in self._artifact_types:
             return self._artifact_types[key]
         else:
-            compatible_superclasses = {
+            # If the type is not registered, check for superclasses
+            artifact_types_for_compatible_superclasses = {
                 tuple(self._artifact_types[t])
                 for t in self._artifact_types
                 if issubclass(key, t)
             }
-            if len(compatible_superclasses) == 1:
-                return list(compatible_superclasses.pop())
-            elif len(compatible_superclasses) > 1:
+            # Make sure that there is only a single list of artifact types
+            if len(artifact_types_for_compatible_superclasses) == 1:
+                return list(artifact_types_for_compatible_superclasses.pop())
+            elif len(artifact_types_for_compatible_superclasses) > 1:
                 raise StepInterfaceError(
                     f"Type {key} is subclassing more than one type and these "
                     f"types map to different materializers. These "
                     f"materializers feature a different list associated "
                     f"artifact types within the registry: "
-                    f"{compatible_superclasses}. Please specify which "
-                    f"of these artifact types you would like to use "
-                    f"explicitly in your step."
+                    f"{artifact_types_for_compatible_superclasses}. Please "
+                    f"specify which of these artifact types you would like to "
+                    f"use explicitly in your step."
                 )
 
         raise StepInterfaceError(

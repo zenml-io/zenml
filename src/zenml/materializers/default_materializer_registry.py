@@ -74,23 +74,26 @@ class MaterializerRegistry:
                 registered or the key has more than one superclass with
                 different default materializers
         """
+        # Check whether the type is registered
         if key in self.materializer_types:
             return self.materializer_types[key]
         else:
-            compatible_superclasses = {
+            # If the type is not registered, check for superclasses
+            materializers_for_compatible_superclasses = {
                 self.materializer_types[t]
                 for t in self.materializer_types
                 if issubclass(key, t)
             }
-            if len(compatible_superclasses) == 1:
-                return compatible_superclasses.pop()
-            elif len(compatible_superclasses) > 1:
+            # Make sure that there is only a single materializer
+            if len(materializers_for_compatible_superclasses) == 1:
+                return materializers_for_compatible_superclasses.pop()
+            elif len(materializers_for_compatible_superclasses) > 1:
                 raise StepInterfaceError(
                     f"Type {key} is subclassing more than one type, thus it "
                     f"maps to multiple materializers within the materializer "
-                    f"registry: {compatible_superclasses}. Please specify which "
-                    f"of these materializers you would like to use "
-                    f"explicitly in your step."
+                    f"registry: {materializers_for_compatible_superclasses}. "
+                    f"Please specify which of these materializers you would "
+                    f"like to use explicitly in your step."
                 )
         raise StepInterfaceError(
             f"Type {key} does not have a default `Materializer`! Please "
