@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, Any, Dict, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, Iterable, Tuple, Type
 
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
@@ -34,7 +34,7 @@ class ArtifactTypeRegistry(object):
         ] = {}
 
     def register_integration(
-        self, key: Type[Any], type_: Tuple[Type["BaseArtifact"], ...]
+        self, key: Type[Any], type_: Iterable[Type["BaseArtifact"]]
     ) -> None:
         """Method to register an integration within the registry
 
@@ -43,7 +43,7 @@ class ArtifactTypeRegistry(object):
             type_: the list of artifact type that the given datatypes is
                 associated with
         """
-        self._artifact_types[key] = type_
+        self._artifact_types[key] = tuple(type_)
 
     def get_artifact_type(
         self, key: Type[Any]
