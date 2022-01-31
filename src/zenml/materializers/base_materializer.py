@@ -68,6 +68,13 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         """Initializes a materializer with the given artifact."""
         self.artifact = artifact
 
+    def _can_handle_type(self, data_type: Type[Any]) -> bool:
+        """Whether the materializer can read/write a certain type."""
+        return any(
+            issubclass(data_type, associated_type)
+            for associated_type in self.ASSOCIATED_TYPES
+        )
+
     def handle_input(self, data_type: Type[Any]) -> Any:
         """Write logic here to handle input of the step function.
 
@@ -77,12 +84,12 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             Any object that is to be passed into the relevant artifact in the
             step.
         """
-        # TODO [ENG-140]: Add type checking for materializer handle_input
-        # if data_type not in self.ASSOCIATED_TYPES:
-        #     raise ValueError(
-        #         f"Data type {data_type} not supported by materializer "
-        #         f"{self.__name__}. Supported types: {self.ASSOCIATED_TYPES}"
-        #     )
+        if not self._can_handle_type(data_type):
+            raise TypeError(
+                f"Unable to handle type {data_type}. {self.__class__.__name__} "
+                f"can only read artifacts to the following types: "
+                f"{self.ASSOCIATED_TYPES}."
+            )
 
     def handle_return(self, data: Any) -> None:
         """Write logic here to handle return of the step function.
@@ -90,10 +97,9 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         Args:
             data: Any object that is specified as an input artifact of the step.
         """
-        # TODO [ENG-141]: Put proper type checking
-        # if data_type not in self.ASSOCIATED_TYPES:
-        #     raise ValueError(
-        #         f"Data type {data_type} not supported by materializer "
-        #         f"{self.__class__.__name__}. Supported types: "
-        #         f"{self.ASSOCIATED_TYPES}"
-        #     )
+        data_type = type(data)
+        if not self._can_handle_type(data_type):
+            raise TypeError(
+                f"Unable to write {data_type}. {self.__class__.__name__} "
+                f"can only write the following types: {self.ASSOCIATED_TYPES}."
+            )
