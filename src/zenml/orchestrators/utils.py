@@ -20,6 +20,7 @@ from tfx.orchestration.portable import data_types, launcher
 
 from zenml.exceptions import DuplicateRunNameError
 from zenml.logger import get_logger
+from zenml.repository import Repository
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
@@ -50,6 +51,33 @@ def create_tfx_pipeline(
     )
 
 
+def is_cached_step(execution_info):
+    """Returns the caching status of a tfx step.
+
+    Args:
+        execution_info: The execution info of a tfx step.
+
+    Returns:
+        The caching status of a tfx step.
+    """
+    repository = Repository()
+    metadata_store = repository.get_stack(
+        repository.active_stack_name
+    ).metadata_store
+
+    step_name = execution_info.pipeline_node.node_info.id
+    pipeline_name = execution_info.pipeline_info.id
+    pipeline_run_name = execution_info.pipeline_run_id
+
+    status = (
+        metadata_store.get_pipeline(pipeline_name)
+        .get_run(pipeline_run_name)
+        .get_step(step_name)
+        .is_cached
+    )
+    return status
+
+
 def execute_step(
     tfx_launcher: launcher.Launcher,
 ) -> Optional[data_types.ExecutionInfo]:
@@ -66,6 +94,8 @@ def execute_step(
     logger.info(f"Step `{step_name}` has started.")
     try:
         execution_info = tfx_launcher.launch()
+        if is_cached_step(execution_info):
+            logger.info(f"Using cached version of `{step_name}` step.")
     except RuntimeError as e:
         if "execution has already succeeded" in str(e):
             # Hacky workaround to catch the error that a pipeline run with
