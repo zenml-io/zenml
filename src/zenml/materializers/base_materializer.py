@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
 
 from zenml.artifacts.type_registry import type_registry
+from zenml.exceptions import MaterializerInterfaceError
 from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
 )
@@ -36,10 +37,13 @@ class BaseMaterializerMeta(type):
             Type["BaseMaterializer"], super().__new__(mcs, name, bases, dct)
         )
         if name != "BaseMaterializer":
-            assert cls.ASSOCIATED_TYPES, (
-                "You should specify a list of ASSOCIATED_TYPES when creating a "
-                "Materializer!"
-            )
+            if not cls.ASSOCIATED_TYPES:
+                raise MaterializerInterfaceError(
+                    f"Invalid materializer class '{name}'. When creating a "
+                    f"custom materializer, make sure to specify at least one "
+                    f"type in its ASSOCIATED_TYPES class variable.",
+                    url="https://docs.zenml.io/guides/index/custom-materializer",
+                )
             for associated_type in cls.ASSOCIATED_TYPES:
                 default_materializer_registry.register_materializer_type(
                     associated_type, cls
