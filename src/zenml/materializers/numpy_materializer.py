@@ -32,8 +32,8 @@ DATA_VAR = "data_var"
 class NumpyMaterializer(BaseMaterializer):
     """Materializer to read data to and from pandas."""
 
-    ASSOCIATED_TYPES = [np.ndarray]
-    ASSOCIATED_ARTIFACT_TYPES = [DataArtifact]
+    ASSOCIATED_TYPES = (np.ndarray,)
+    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> np.ndarray:
         """Reads numpy array from parquet file."""

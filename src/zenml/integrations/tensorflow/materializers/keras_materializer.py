@@ -24,8 +24,8 @@ DEFAULT_FILENAME = "model.hdf5"
 class KerasMaterializer(BaseMaterializer):
     """Materializer to read/write Keras models."""
 
-    ASSOCIATED_TYPES = [keras.Model]
-    ASSOCIATED_ARTIFACT_TYPES = [ModelArtifact]
+    ASSOCIATED_TYPES = (keras.Model,)
+    ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> keras.Model:
         """Reads and returns a Keras model.

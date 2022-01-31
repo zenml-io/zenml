@@ -12,10 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, cast
 
 if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
+
 from zenml.artifacts.type_registry import type_registry
 from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
@@ -52,7 +53,7 @@ class BaseMaterializerMeta(type):
                     from zenml.artifacts.base_artifact import BaseArtifact
 
                     type_registry.register_integration(
-                        associated_type, [BaseArtifact]
+                        associated_type, (BaseArtifact,)
                     )
         return cls
 
@@ -60,8 +61,8 @@ class BaseMaterializerMeta(type):
 class BaseMaterializer(metaclass=BaseMaterializerMeta):
     """Base Materializer to realize artifact data."""
 
-    ASSOCIATED_ARTIFACT_TYPES: ClassVar[List[Type["BaseArtifact"]]] = []
-    ASSOCIATED_TYPES: ClassVar[List[Type[Any]]] = []
+    ASSOCIATED_ARTIFACT_TYPES: ClassVar[Tuple[Type["BaseArtifact"]]] = ()
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any]]] = ()
 
     def __init__(self, artifact: "BaseArtifact"):
         """Initializes a materializer with the given artifact."""

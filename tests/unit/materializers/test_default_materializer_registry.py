@@ -64,10 +64,10 @@ def test_materializer_with_parameter_with_more_than_one_conflicting_baseclass():
         pass
 
     class MyFirstMaterializer(BaseMaterializer):
-        ASSOCIATED_TYPES = [MyFirstType]
+        ASSOCIATED_TYPES = (MyFirstType,)
 
     class MySecondMaterializer(BaseMaterializer):
-        ASSOCIATED_TYPES = [MySecondType]
+        ASSOCIATED_TYPES = (MySecondType,)
 
     class MyConflictingType(MyFirstType, MySecondType):
         pass
@@ -92,10 +92,10 @@ def test_materializer_with_conflicting_parameter_and_explicit_materializer():
         pass
 
     class MyFirstMaterializer(BaseMaterializer):
-        ASSOCIATED_TYPES = [MyFirstType]
+        ASSOCIATED_TYPES = (MyFirstType,)
 
     class MySecondMaterializer(BaseMaterializer):
-        ASSOCIATED_TYPES = [MySecondType]
+        ASSOCIATED_TYPES = (MySecondType,)
 
     class MyConflictingType(MyFirstType, MySecondType):
         pass
