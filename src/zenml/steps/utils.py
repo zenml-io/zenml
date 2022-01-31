@@ -38,6 +38,7 @@ from typing import (
     KeysView,
     List,
     Optional,
+    Sequence,
     Set,
     Type,
     ValuesView,
@@ -52,6 +53,7 @@ from tfx.types.channel import Channel
 from tfx.utils import json_utils
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.environment import Environment
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -356,6 +358,8 @@ class _FunctionExecutor(BaseExecutor):
             output_dict: dictionary containing the output artifacts
             exec_properties: dictionary containing the execution parameters
         """
+        step_name = getattr(self, PARAM_STEP_NAME)
+
         # remove all ZenML internal execution properties
         exec_properties = {
             k: json.loads(v)
@@ -386,7 +390,7 @@ class _FunctionExecutor(BaseExecutor):
                     ]
 
                     raise MissingStepParameterError(
-                        getattr(self, PARAM_STEP_NAME),
+                        step_name,
                         missing_fields,
                         arg_type,
                     ) from None
@@ -394,7 +398,7 @@ class _FunctionExecutor(BaseExecutor):
             elif issubclass(arg_type, StepContext):
                 output_artifacts = {k: v[0] for k, v in output_dict.items()}
                 context = arg_type(
-                    step_name=getattr(self, PARAM_STEP_NAME),
+                    step_name=step_name,
                     output_materializers=self.materializers or {},
                     output_artifacts=output_artifacts,
                 )
@@ -405,7 +409,9 @@ class _FunctionExecutor(BaseExecutor):
                     input_dict[arg][0], arg_type
                 )
 
-        return_values = self._FUNCTION(**function_params)
+        with Environment._layer(step_is_running=True):
+            return_values = self._FUNCTION(**function_params)
+
         spec = inspect.getfullargspec(inspect.unwrap(self._FUNCTION))
         return_type: Type[Any] = spec.annotations.get("return", None)
         if return_type is not None:
@@ -419,6 +425,15 @@ class _FunctionExecutor(BaseExecutor):
             # return value as the return for that output
             if len(output_annotations) == 1:
                 return_values = [return_values]
+            elif not isinstance(return_values, Sequence):
+                # if the user defined multiple outputs, they return value must
+                # be a sequence
+                raise StepInterfaceError(
+                    f"Wrong step function output type for step '{step_name}: "
+                    f"Expected multiple outputs ({output_annotations}) but "
+                    f"the function did not return a sequence-like object "
+                    f"(actual return value: {return_values})."
+                )
 
             for return_value, (output_name, output_type) in zip(
                 return_values, output_annotations
@@ -426,8 +441,8 @@ class _FunctionExecutor(BaseExecutor):
                 if not isinstance(return_value, output_type):
                     raise StepInterfaceError(
                         f"Wrong type for output '{output_name}' of step "
-                        f"'{getattr(self, PARAM_STEP_NAME)}' (expected type: "
-                        f"{output_type}, actual type: {type(return_value)})."
+                        f"'{step_name}' (expected type: {output_type}, "
+                        f"actual type: {type(return_value)})."
                     )
 
                 self.resolve_output_artifact(

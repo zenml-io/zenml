@@ -17,6 +17,7 @@ from typing import Optional
 import pytest
 
 from zenml.artifacts import DataArtifact, ModelArtifact
+from zenml.environment import Environment
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -703,3 +704,34 @@ def test_calling_a_step_twice_raises_an_exception():
 
     with pytest.raises(StepInterfaceError):
         step_instance()
+
+
+def test_step_sets_global_execution_status_on_environment(
+    clean_repo, one_step_pipeline
+):
+    """Tests that the `Environment.step_is_running` value is set to
+    True during step execution."""
+
+    @step
+    def my_step():
+        assert Environment().step_is_running is True
+
+    assert Environment().step_is_running is False
+    one_step_pipeline(my_step()).run()
+    assert Environment().step_is_running is False
+
+
+def test_step_resets_global_execution_status_even_if_the_step_crashes(
+    clean_repo, one_step_pipeline
+):
+    """Tests that the `Environment.step_is_running` value is set to
+    False after step execution even if the step crashes."""
+
+    @step
+    def my_step():
+        raise RuntimeError()
+
+    assert Environment().step_is_running is False
+    with pytest.raises(RuntimeError):
+        one_step_pipeline(my_step()).run()
+    assert Environment().step_is_running is False

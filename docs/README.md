@@ -11,7 +11,9 @@ The documentation source files can be found in this repository at `docs/book`
 
 ## API Docs
 
-The ZenML API docs are generated from our python docstrings using [Sphinx](https://www.sphinx-doc.org/en/master/). The API docs will be automatically updated each release using a Github workflow and can be found at [https://apidocs.zenml.io](https://apidocs.zenml.io/).
+The ZenML API docs are generated from our python docstrings using [mkdocs](https://www.mkdocs.org/). 
+The API docs will be automatically updated each release using a Github workflow and can be found 
+at[https://apidocs.zenml.io](https://apidocs.zenml.io/).
 
 ### Building the API Docs locally
 
@@ -24,9 +26,13 @@ poetry install
 poetry run zenml integration install -f
 poetry run pip install click~=8.0.3 typing-extensions~=3.10.0.2
 ```
-* Run  `poetry run bash scripts/generate-docs.sh` from the repository root
+* Run  `poetry run bash scripts/serve_api_docs.sh` from the repository root - 
+running it from elsewhere can lead to unexpected errors. This script will compose the docs hierarchy
+and serve it (default location is http://127.0.0.1:8000/).
+* In case port 8000 is taken you can also manually go into the docs folder within your terminal and
+run `mkdocs serve` from there
 
-The generated HTML files will be inside the directory `docs/sphinx_docs/_build/html`
+The generated .md files will be inside the directory `docs/mkdocs/`
 
 ## Contributors
 

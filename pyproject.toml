@@ -65,7 +65,7 @@ rich = "^11.0.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"
-mypy = "^0.920"
+mypy = "^0.931"
 flake8 = "^3.9.2"
 black = "^21.7b0"
 interrogate = "^1.4.0"
@@ -76,9 +76,6 @@ autoflake = "^1.4"
 pyment = "^0.3.3"
 tox = "^3.24.3"
 hypothesis = "^6.23.0"
-Sphinx = "^4.2.0"
-furo = "^2021.10.9" # sphinx theme
-sphinx-copybutton = "^0.4.0"
 typing-extensions = ">=3.7.4"
 pytest-randomly = "^3.10.1"
 

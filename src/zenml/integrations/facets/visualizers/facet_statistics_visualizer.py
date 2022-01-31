@@ -26,6 +26,7 @@ from facets_overview.generic_feature_statistics_generator import (
 from IPython.core.display import HTML, display
 
 import zenml.io.utils
+from zenml.environment import Environment
 from zenml.logger import get_logger
 from zenml.post_execution import StepView
 from zenml.visualizers import BaseStepVisualizer
@@ -87,11 +88,11 @@ class FacetStatisticsVisualizer(BaseStepVisualizer):
         """Generate a Facet Overview
 
         Args:
-            h: HTML represented as a string.
+            html_: HTML represented as a string.
             magic: Whether to magically materialize facet in a notebook.
         """
         if magic:
-            if not self.running_in_notebook():
+            if not Environment.in_notebook():
                 raise EnvironmentError(
                     "The magic functions are only usable in a Jupyter notebook."
                 )
