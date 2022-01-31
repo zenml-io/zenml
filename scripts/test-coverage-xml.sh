@@ -13,6 +13,9 @@ export ZENML_DEBUG=1
 export ZENML_ANALYTICS_OPT_IN=false
 export EVIDENTLY_DISABLE_TELEMETRY=1
 
+# The '-n auto' flag ensures that tests run in parallel on
+# all available CPU cores.
+# The '-vv' flag enables pytest-clarity output when tests fail.
 if [ -n "$1" ]; then
     coverage run -m pytest $TEST_SRC --color=yes -n auto -vv
 else
