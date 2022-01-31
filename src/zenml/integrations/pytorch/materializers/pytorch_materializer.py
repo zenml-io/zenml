@@ -28,8 +28,8 @@ DEFAULT_FILENAME = "entire_model.pt"
 class PyTorchMaterializer(BaseMaterializer):
     """Materializer to read/write Pytorch models."""
 
-    ASSOCIATED_TYPES = [Module, TorchDict]
-    ASSOCIATED_ARTIFACT_TYPES = [ModelArtifact]
+    ASSOCIATED_TYPES = (Module, TorchDict)
+    ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> Union[Module, TorchDict]:
         """Reads and returns a PyTorch model.
