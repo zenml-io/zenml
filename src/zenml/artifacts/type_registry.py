@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, Any, Dict, List, Type
+from typing import TYPE_CHECKING, Any, Dict, Tuple, Type
 
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
@@ -29,10 +29,10 @@ class ArtifactTypeRegistry(object):
 
     def __init__(self) -> None:
         """Initialization with an empty registry"""
-        self._artifact_types: Dict[Type[Any], List[Type["BaseArtifact"]]] = {}
+        self._artifact_types: Dict[Type[Any], Tuple[Type["BaseArtifact"]]] = {}
 
     def register_integration(
-        self, key: Type[Any], type_: List[Type["BaseArtifact"]]
+        self, key: Type[Any], type_: Tuple[Type["BaseArtifact"]]
     ) -> None:
         """Method to register an integration within the registry
 
@@ -43,7 +43,7 @@ class ArtifactTypeRegistry(object):
         """
         self._artifact_types[key] = type_
 
-    def get_artifact_type(self, key: Type[Any]) -> List[Type["BaseArtifact"]]:
+    def get_artifact_type(self, key: Type[Any]) -> Tuple[Type["BaseArtifact"]]:
         """Method to extract the list of artifact types given the data type
 
         Args:
@@ -64,13 +64,12 @@ class ArtifactTypeRegistry(object):
             # If the type is not registered, check for superclasses
             artifact_types_for_compatible_superclasses = {
                 artifact_types
-                for registered_type, artifact_types
-                in self._artifact_types.items()
+                for registered_type, artifact_types in self._artifact_types.items()
                 if issubclass(key, registered_type)
             }
             # Make sure that there is only a single list of artifact types
             if len(artifact_types_for_compatible_superclasses) == 1:
-                return list(artifact_types_for_compatible_superclasses.pop())
+                return artifact_types_for_compatible_superclasses.pop()
             elif len(artifact_types_for_compatible_superclasses) > 1:
                 raise StepInterfaceError(
                     f"Type {key} is subclassing more than one type and these "

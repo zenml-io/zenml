@@ -81,8 +81,7 @@ class MaterializerRegistry:
             # If the type is not registered, check for superclasses
             materializers_for_compatible_superclasses = {
                 materializer
-                for registered_type, materializer
-                in self.materializer_types.items()
+                for registered_type, materializer in self.materializer_types.items()
                 if issubclass(key, registered_type)
             }
             # Make sure that there is only a single materializer
