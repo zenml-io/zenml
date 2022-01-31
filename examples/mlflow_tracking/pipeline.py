@@ -20,7 +20,6 @@ import os
 import tensorflow as tf
 
 from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
-from zenml.integrations.mlflow.mlflow_utils import local_mlflow_backend
 
 from zenml.pipelines import Schedule, pipeline
 from zenml.steps import BaseStepConfig, Output, step

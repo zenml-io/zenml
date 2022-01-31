@@ -13,12 +13,14 @@
 #  permissions and limitations under the License.
 import os
 import platform
-from contextlib import contextmanager
-from typing import Any, Dict, Iterator, Optional
+from typing import Any, Dict, Optional, Tuple, Type, cast
 
 import distro
 
+from zenml.logger import get_logger
 from zenml.utils.singleton import SingletonMetaClass
+
+logger = get_logger(__name__)
 
 
 class Environment(metaclass=SingletonMetaClass):
@@ -31,12 +33,16 @@ class Environment(metaclass=SingletonMetaClass):
         only get called once. All following `Environment()` calls will return
         the previously initialized instance.
         """
-        self.__step_is_running = False
+        self._components: Dict[str, "BaseEnvironmentComponent"] = {}
 
     @property
     def step_is_running(self) -> bool:
         """Returns if a step is currently running."""
-        return self.__step_is_running
+        from zenml.steps import STEP_ENVIRONMENT
+
+        # A step is considered to be running if there is an active step
+        # environment
+        return self.has_component(STEP_ENVIRONMENT)
 
     @staticmethod
     def get_system_info() -> Dict[str, Any]:
@@ -109,44 +115,229 @@ class Environment(metaclass=SingletonMetaClass):
         """If the current python process is running in Paperspace Gradient."""
         return "PAPERSPACE_NOTEBOOK_REPO_ID" in os.environ
 
-    @classmethod
-    @contextmanager
-    def _layer(
-        cls, step_is_running: Optional[bool] = None
-    ) -> Iterator["Environment"]:
-        """Contextmanager to temporarily set attributes on the singleton
-        instance.
+    def register_component(
+        self, name: str, component: "BaseEnvironmentComponent"
+    ) -> "BaseEnvironmentComponent":
+        """Registers an environment component.
 
-        These attributes will only be persisted for the active duration of this
-        contextmanager:
-        ```python
-        env = Environment()
-        print(env.step_is_running)  # False
+        Args:
+            name: the environment component name.
+            component: a BaseEnvironmentComponent instance.
 
-        with Environment._layer(step_is_running=True):
-            print(env.step_is_running)  # True
-
-        print(env.step_is_running)  # False
-        ```
-
-        Calls to this contextmanager can also be nested:
-        ```python
-        with Environment._layer(...):
-            # only attributes from outer context manager are set
-            with Environment._layer(...):
-                # attributes from outer and inner context manager are set
-                # (inner context manager can overwrite values from outer one)
-
-            # only attributes from outer context manager are set
-        ```
+        Returns:
+            The newly registered environment component, or the environment
+            component that was already registered under the given name.
         """
-        instance = cls()
-        old_dict = instance.__dict__.copy()
+        if name not in self._components:
+            self._components[name] = component
+            logger.debug(f"Registered environment component {name}")
+            return component
+        else:
+            logger.warning(
+                f"Ignoring attempt to overwrite an existing Environment "
+                f"component registered under the name {name}."
+            )
+            return self._components[name]
 
-        if step_is_running is not None:
-            instance.__step_is_running = step_is_running
+    def deregister_component(self, name: str) -> None:
+        """Deregisters an environment component.
 
-        try:
-            yield instance
-        finally:
-            instance.__dict__ = old_dict
+        Args:
+            name: the environment component name.
+        """
+        if name in self._components:
+            del self._components[name]
+            logger.debug(f"Deregistered environment component {name}")
+
+        else:
+            logger.warning(
+                f"Ignoring attempt to deregister an inexistent Environment "
+                f"component with the name {name}."
+            )
+
+    def get_component(self, name: str) -> Optional["BaseEnvironmentComponent"]:
+        """Get the environment component with a known name.
+
+        Args:
+            name: the environment component name.
+
+        Returns:
+            The environment component that is registered under the given name,
+            or None if no such component is registered.
+        """
+        return self._components.get(name)
+
+    def get_components(
+        self,
+    ) -> Dict[str, "BaseEnvironmentComponent"]:
+        """Get all registered environment components."""
+        return self._components.copy()
+
+    def has_component(self, name: str) -> bool:
+        """Check if the environment component with a known name is currently
+        available.
+
+        Args:
+            name: the environment component name.
+
+        Returns:
+            `True` if an environment component with the given name is
+            currently registered for the given name, `False` otherwise.
+
+        """
+        return name in self._components
+
+    def __getitem__(self, name: str) -> "BaseEnvironmentComponent":
+        """Get the environment component with the given name.
+
+        Args:
+            name: the environment component name.
+
+        Returns:
+            `BaseEnvironmentComponent` instance that was registered for the
+            given name.
+
+        Raises:
+            KeyError: if no environment component is registered for the given
+            name.
+        """
+        if name in self._components:
+            return self._components[name]
+        else:
+            raise KeyError(
+                f"No environment component with name {name} is currently "
+                f"registered. Make sure you're calling this in the context of a "
+                f"step function that has all relevant integrations enabled."
+            )
+
+
+_BASE_ENVIRONMENT_COMPONENT_NAME = "base_environment_component"
+
+
+class EnvironmentComponentMeta(type):
+    """Metaclass responsible for registering different EnvironmentComponent
+    instances in the global Environment"""
+
+    def __new__(
+        mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
+    ) -> "EnvironmentComponentMeta":
+        """Hook into creation of an BaseEnvironmentComponent class."""
+        cls = cast(
+            Type["BaseEnvironmentComponent"],
+            super().__new__(mcs, name, bases, dct),
+        )
+        if name != "BaseEnvironmentComponent":
+            assert (
+                cls.NAME and cls.NAME != _BASE_ENVIRONMENT_COMPONENT_NAME
+            ), "You should specify a unique NAME when creating an EnvironmentComponent !"
+        return cls
+
+
+class BaseEnvironmentComponent(metaclass=EnvironmentComponentMeta):
+    """Base Environment component class.
+
+    All Environment components must inherit this class and provide a unique
+    value for the `NAME` attribute.
+
+    Different parts of the core code, integrations and maybe even the user code
+    can independently contribute with information to the global Environment by
+    extending and instantiating this class.
+
+    ```python
+    MY_ENV_NAME = "my_env"
+
+    class MyEnvironmentComponent(BaseEnvironmentComponent):
+
+        NAME = MY_ENV_NAME
+
+        def __init__(self, my_env_attr: str) -> None:
+            super().__init__()
+            self._my_env_attr = my_env_attr
+
+        @property
+        def my_env_attr(self) -> str:
+            return self._my_env_attr
+
+    my_env = MyEnvironmentComponent()
+    ```
+
+
+    There are two ways to register and deregister a `BaseEnvironmentComponent`
+    instance with the global Environment:
+
+    1. by explicitly calling its `activate` and `deactivate` methods:
+
+    ```python
+    my_env.activate()
+
+    # ... environment component is active
+    # and registered in the global Environment
+
+    my_env.deactivate()
+
+    # ... environment component is not active
+    ```
+
+    2. by using the instance as a context:
+
+    ```python
+    with my_env:
+        # ... environment component is active
+        # and registered in the global Environment
+
+    # ... environment component is not active
+    ```
+
+    While active, environment components can be discovered and accessed from
+    the global environment:
+
+    ```python
+    from foo.bar.my_env import MY_ENV_NAME
+    from zenml.environment import Environment
+
+    my_env = Environment.get_component(MY_ENV_NAME)
+
+    # this works too, but throws an error if the component is not active:
+
+    my_env = Environment[MY_ENV_NAME]
+    ```
+
+    Attributes:
+        NAME: a unique name for this component. This name will be used to
+            register this component in the global Environment and to
+            subsequently retrieve it by calling `Environment().get_component`.
+    """
+
+    NAME: str = _BASE_ENVIRONMENT_COMPONENT_NAME
+
+    def __init__(self) -> None:
+        """Initialize an environment component."""
+        self._active = False
+
+    def activate(self) -> None:
+        if self._active:
+            raise RuntimeError(
+                f"Environment component {self.NAME} is already active."
+            )
+        Environment().register_component(self.NAME, self)
+        self._active = True
+
+    def deactivate(self) -> None:
+        if not self._active:
+            raise RuntimeError(
+                f"Environment component {self.NAME} is not active."
+            )
+        Environment().deregister_component(self.NAME)
+
+    def __enter__(self) -> "BaseEnvironmentComponent":
+        """Environment component context entry point.
+
+        Returns:
+            The BaseEnvironmentComponent instance.
+        """
+        self.activate()
+        return self
+
+    def __exit__(self, *args: Any) -> None:
+        """Environment component context exit point."""
+        self.deactivate()

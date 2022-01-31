@@ -14,7 +14,8 @@
 from datetime import datetime
 from datetime import datetime, timedelta
 
-from zenml.integrations.mlflow.mlflow_utils import local_mlflow_backend
+from zenml.environment import Environment
+from zenml.integrations.mlflow.mlflow_environment import MLFLOW_ENVIRONMENT
 
 from pipeline import (
     TrainerConfig,
@@ -46,9 +47,10 @@ if __name__ == "__main__":
     )
 
     run_2.run()
+    mlflow_env = Environment()[MLFLOW_ENVIRONMENT]
     print(
         "Now run \n "
-        f"    mlflow ui --backend-store-uri {local_mlflow_backend()}\n"
+        f"    mlflow ui --backend-store-uri {mlflow_env.tracking_uri}\n"
         "To inspect your experiment runs within the mlflow ui.\n"
         "You can find your runs tracked within the `mlflow_example_pipeline`"
         "experiment. Here you'll also be able to compare the two runs.)"

@@ -200,9 +200,10 @@ def test_run_mlflow(examples_dir: Path):
     import mlflow
     from mlflow.tracking import MlflowClient
 
-    from zenml.integrations.mlflow.mlflow_utils import local_mlflow_backend
+    from zenml.integrations.mlflow.mlflow_environment import MLFlowEnvironment
 
-    mlflow.set_tracking_uri(local_mlflow_backend(local_example.path))
+    # Create and activate the global MLflow environment
+    MLFlowEnvironment(local_example.path).activate()
 
     # fetch the MLflow experiment created for the pipeline runs
     mlflow_experiment = mlflow.get_experiment_by_name(pipeline.name)
