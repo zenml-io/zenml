@@ -51,27 +51,29 @@ def create_tfx_pipeline(
     )
 
 
-def is_cached_step(execution_info):
+def is_cached_step(execution_info: data_types.ExecutionInfo) -> bool:
     """Returns the caching status of a tfx step.
 
     Args:
         execution_info: The execution info of a tfx step.
 
     Returns:
-        The caching status of a tfx step.
+        The caching status of a tfx step as a boolean value.
     """
     repository = Repository()
     metadata_store = repository.get_stack(
         repository.active_stack_name
     ).metadata_store
 
-    step_name = execution_info.pipeline_node.node_info.id
-    pipeline_name = execution_info.pipeline_info.id
+    step_name = str(
+        execution_info.exec_properties["zenml-pipeline_parameter_name"]
+    )[1:-1]
+    pipeline_name = execution_info.pipeline_info.id  # type: ignore [attr-defined]
     pipeline_run_name = execution_info.pipeline_run_id
 
     status = (
-        metadata_store.get_pipeline(pipeline_name)
-        .get_run(pipeline_run_name)
+        metadata_store.get_pipeline(pipeline_name)  # type: ignore [union-attr]
+        .get_run(pipeline_run_name)  # type: ignore [arg-type]
         .get_step(step_name)
         .is_cached
     )
@@ -89,12 +91,12 @@ def execute_step(
     Returns:
         Optional execution info returned by the launcher.
     """
-    step_name = tfx_launcher._pipeline_node.node_info.id  # type: ignore[attr-defined] # noqa
+    step_name = tfx_launcher._pipeline_node.node_info.id  # type: ignore[attr-defined]
     start_time = time.time()
     logger.info(f"Step `{step_name}` has started.")
     try:
         execution_info = tfx_launcher.launch()
-        if is_cached_step(execution_info):
+        if is_cached_step(execution_info):  # type: ignore [arg-type]
             logger.info(f"Using cached version of `{step_name}` step.")
     except RuntimeError as e:
         if "execution has already succeeded" in str(e):
