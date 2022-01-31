@@ -63,9 +63,10 @@ class ArtifactTypeRegistry(object):
         else:
             # If the type is not registered, check for superclasses
             artifact_types_for_compatible_superclasses = {
-                tuple(self._artifact_types[t])
-                for t in self._artifact_types
-                if issubclass(key, t)
+                artifact_types
+                for registered_type, artifact_types
+                in self._artifact_types.items()
+                if issubclass(key, registered_type)
             }
             # Make sure that there is only a single list of artifact types
             if len(artifact_types_for_compatible_superclasses) == 1:
