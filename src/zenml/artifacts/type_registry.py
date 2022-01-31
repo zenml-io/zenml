@@ -29,10 +29,12 @@ class ArtifactTypeRegistry(object):
 
     def __init__(self) -> None:
         """Initialization with an empty registry"""
-        self._artifact_types: Dict[Type[Any], Tuple[Type["BaseArtifact"]]] = {}
+        self._artifact_types: Dict[
+            Type[Any], Tuple[Type["BaseArtifact"], ...]
+        ] = {}
 
     def register_integration(
-        self, key: Type[Any], type_: Tuple[Type["BaseArtifact"]]
+        self, key: Type[Any], type_: Tuple[Type["BaseArtifact"], ...]
     ) -> None:
         """Method to register an integration within the registry
 
@@ -43,7 +45,9 @@ class ArtifactTypeRegistry(object):
         """
         self._artifact_types[key] = type_
 
-    def get_artifact_type(self, key: Type[Any]) -> Tuple[Type["BaseArtifact"]]:
+    def get_artifact_type(
+        self, key: Type[Any]
+    ) -> Tuple[Type["BaseArtifact"], ...]:
         """Method to extract the list of artifact types given the data type
 
         Args:

@@ -61,8 +61,8 @@ class BaseMaterializerMeta(type):
 class BaseMaterializer(metaclass=BaseMaterializerMeta):
     """Base Materializer to realize artifact data."""
 
-    ASSOCIATED_ARTIFACT_TYPES: ClassVar[Tuple[Type["BaseArtifact"]]] = ()
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any]]] = ()
+    ASSOCIATED_ARTIFACT_TYPES: ClassVar[Tuple[Type["BaseArtifact"], ...]] = ()
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = ()
 
     def __init__(self, artifact: "BaseArtifact"):
         """Initializes a materializer with the given artifact."""
