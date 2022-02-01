@@ -205,8 +205,8 @@ def test_only_registered_output_artifact_types_are_allowed():
         pass
 
     class CustomTypeMaterializer(BaseMaterializer):
-        ASSOCIATED_TYPES = [CustomType]
-        ASSOCIATED_ARTIFACT_TYPES = [DataArtifact]
+        ASSOCIATED_TYPES = (CustomType,)
+        ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
     @step(output_types={"output": DataArtifact})
     def some_step() -> CustomType:
@@ -601,7 +601,7 @@ def test_call_step_with_default_materializer_registered():
         pass
 
     class MyTypeMaterializer(BaseMaterializer):
-        ASSOCIATED_TYPES = [MyType]
+        ASSOCIATED_TYPES = (MyType,)
 
     @step
     def some_step() -> MyType:
