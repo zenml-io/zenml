@@ -69,6 +69,8 @@ def get_cache_status(
     """
     status = False
     repository = Repository()
+    # TODO [HIGH]: Get the current running stack instead of just the active
+    #   stack
     metadata_store = repository.get_stack(
         repository.active_stack_name
     ).metadata_store
@@ -106,20 +108,20 @@ def execute_step(
     step_name_param = (
         INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_PIPELINE_PARAMETER_NAME
     )
-    step_name = tfx_launcher._pipeline_node.node_info.id  # type: ignore[attr-defined]
+    pipeline_step_name = tfx_launcher._pipeline_node.node_info.id  # type: ignore[attr-defined]
     start_time = time.time()
-    logger.info(f"Step `{step_name}` has started.")
+    logger.info(f"Step `{pipeline_step_name}` has started.")
     try:
         execution_info = tfx_launcher.launch()
         if execution_info and get_cache_status(execution_info):
             pipeline_run_id = execution_info.pipeline_run_id
             if execution_info.exec_properties:
-                pipeline_step_name = json.loads(
+                step_name = json.loads(
                     execution_info.exec_properties[step_name_param]
                 )
             else:
                 logger.error(
-                    f"No execution properties found for step `{step_name}`."
+                    f"No execution properties found for step `{pipeline_step_name}`."
                 )
             logger.info(
                 f"Using cached version of `{pipeline_step_name}` [`{step_name}`] from pipeline_run_id `{pipeline_run_id}`."
@@ -136,7 +138,7 @@ def execute_step(
     run_duration = time.time() - start_time
     logger.info(
         "Step `%s` has finished in %s.",
-        step_name,
+        pipeline_step_name,
         string_utils.get_human_readable_time(run_duration),
     )
     return execution_info
