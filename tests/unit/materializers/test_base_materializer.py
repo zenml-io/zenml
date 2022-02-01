@@ -15,11 +15,30 @@
 import pytest
 
 from zenml.artifacts import DataArtifact
+from zenml.exceptions import MaterializerInterfaceError
 from zenml.materializers.base_materializer import BaseMaterializer
 
 
 class TestMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (int,)
+
+
+def test_materializer_raises_an_exception_if_associated_types_are_no_classes():
+    """Tests that a materializer can only define classes as associated types."""
+    with pytest.raises(MaterializerInterfaceError):
+
+        class InvalidMaterializer(BaseMaterializer):
+            ASSOCIATED_TYPES = ("not_a_class",)
+
+
+def test_materializer_raises_an_exception_if_associated_artifact_types_are_no_artifacts():
+    """Tests that a materializer can only define `BaseArtifact` subclasses as
+    associated artifact types."""
+    with pytest.raises(MaterializerInterfaceError):
+
+        class InvalidMaterializer(BaseMaterializer):
+            ASSOCIATED_TYPES = (int,)
+            ASSOCIATED_ARTIFACT_TYPES = (DataArtifact, int, "not_a_class")
 
 
 def test_materializer_raises_an_exception_when_asked_to_read_unfamiliar_type():

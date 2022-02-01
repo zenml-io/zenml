@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+import inspect
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, cast
 
 if TYPE_CHECKING:
@@ -37,6 +37,8 @@ class BaseMaterializerMeta(type):
             Type["BaseMaterializer"], super().__new__(mcs, name, bases, dct)
         )
         if name != "BaseMaterializer":
+            from zenml.artifacts.base_artifact import BaseArtifact
+
             if not cls.ASSOCIATED_TYPES:
                 raise MaterializerInterfaceError(
                     f"Invalid materializer class '{name}'. When creating a "
@@ -44,21 +46,35 @@ class BaseMaterializerMeta(type):
                     f"type in its ASSOCIATED_TYPES class variable.",
                     url="https://docs.zenml.io/guides/index/custom-materializer",
                 )
+
+            for artifact_type in cls.ASSOCIATED_ARTIFACT_TYPES:
+                if not (
+                    inspect.isclass(artifact_type)
+                    and issubclass(artifact_type, BaseArtifact)
+                ):
+                    raise MaterializerInterfaceError(
+                        f"Associated artifact type {artifact_type} for "
+                        f"materializer {name} is not a `BaseArtifact` "
+                        f"subclass.",
+                        url="https://docs.zenml.io/guides/index/custom-materializer",
+                    )
+
+            artifact_types = cls.ASSOCIATED_ARTIFACT_TYPES or (BaseArtifact,)
             for associated_type in cls.ASSOCIATED_TYPES:
+                if not inspect.isclass(associated_type):
+                    raise MaterializerInterfaceError(
+                        f"Associated type {associated_type} for materializer "
+                        f"{name} is not a class.",
+                        url="https://docs.zenml.io/guides/index/custom-materializer",
+                    )
+
                 default_materializer_registry.register_materializer_type(
                     associated_type, cls
                 )
 
-                if cls.ASSOCIATED_ARTIFACT_TYPES:
-                    type_registry.register_integration(
-                        associated_type, cls.ASSOCIATED_ARTIFACT_TYPES
-                    )
-                else:
-                    from zenml.artifacts.base_artifact import BaseArtifact
-
-                    type_registry.register_integration(
-                        associated_type, (BaseArtifact,)
-                    )
+                type_registry.register_integration(
+                    associated_type, artifact_types
+                )
         return cls
 
 
