@@ -13,11 +13,11 @@
 #  permissions and limitations under the License.
 
 import os
-import sys
 from typing import TYPE_CHECKING, Any, Optional, Set
 
 import kfp
 import urllib3
+from kfp_server_api.exceptions import ApiException
 from kubernetes import config
 
 import zenml.io.utils
@@ -121,10 +121,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         image_name = self.get_docker_image_name(pipeline.name)
 
         requirements = {
-            "kubernetes",
-            *stack.requirements(
-                exclude_components={StackComponentType.ORCHESTRATOR}
-            ),
+            *stack.requirements(),
             *self._get_pipeline_requirements(pipeline),
         }
 
@@ -142,7 +139,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
             push_docker_image(image_name)
 
     def run_pipeline(
-        self, pipeline: "BasePipeline", stack: "Stack", run_name: str
+        self,
+        pipeline: "BasePipeline",
+        stack: "Stack",
+        runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
         """Runs a pipeline on Kubeflow Pipelines."""
         from zenml.integrations.kubeflow.docker_utils import get_image_digest
@@ -162,19 +162,25 @@ class KubeflowOrchestrator(BaseOrchestrator):
         runner.run(pipeline=pipeline, stack=stack)
 
         self._upload_and_run_pipeline(
+            pipeline_name=pipeline.name,
             pipeline_file_path=pipeline_file_path,
-            run_name=run_name,
+            runtime_configuration=runtime_configuration,
             enable_cache=pipeline.enable_cache,
         )
 
     def _upload_and_run_pipeline(
-        self, pipeline_file_path: str, run_name: str, enable_cache: bool
+        self,
+        pipeline_name: str,
+        pipeline_file_path: str,
+        runtime_configuration: "RuntimeConfiguration",
+        enable_cache: bool,
     ) -> None:
         """Tries to upload and run a KFP pipeline.
 
         Args:
+            pipeline_name: Name of the pipeline.
             pipeline_file_path: Path to the pipeline definition file.
-            run_name: A name for the pipeline run that will be started.
+            runtime_configuration: Runtime configuration of the pipeline run.
             enable_cache: Whether caching is enabled for this pipeline run.
         """
         try:
@@ -189,13 +195,50 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
             # upload the pipeline to Kubeflow and start it
             client = kfp.Client()
-            result = client.create_run_from_pipeline_package(
-                pipeline_file_path,
-                arguments={},
-                run_name=run_name,
-                enable_caching=enable_cache,
-            )
-            logger.info("Started pipeline run with ID '%s'.", result.run_id)
+            if runtime_configuration.schedule:
+                try:
+                    experiment = client.get_experiment(pipeline_name)
+                    logger.info(
+                        "A recurring run has already been created with this "
+                        "pipeline. Creating new recurring run now.."
+                    )
+                except (ValueError, ApiException):
+                    experiment = client.create_experiment(pipeline_name)
+                    logger.info(
+                        "Creating a new recurring run for pipeline '%s'.. ",
+                        pipeline_name,
+                    )
+                logger.info(
+                    "You can see all recurring runs under the '%s' experiment.'",
+                    pipeline_name,
+                )
+
+                schedule = runtime_configuration.schedule
+                result = client.create_recurring_run(
+                    experiment_id=experiment.id,
+                    job_name=runtime_configuration.run_name,
+                    pipeline_package_path=pipeline_file_path,
+                    enable_caching=enable_cache,
+                    start_time=schedule.utc_start_time,
+                    end_time=schedule.utc_end_time,
+                    interval_second=schedule.interval_second,
+                    no_catchup=not schedule.catchup,
+                )
+
+                logger.info("Started recurring run with ID '%s'.", result.id)
+            else:
+                logger.info(
+                    "No schedule detected. Creating a one-off pipeline run.."
+                )
+                result = client.create_run_from_pipeline_package(
+                    pipeline_file_path,
+                    arguments={},
+                    run_name=runtime_configuration.run_name,
+                    enable_caching=enable_cache,
+                )
+                logger.info(
+                    "Started one-off pipeline run with ID '%s'.", result.run_id
+                )
         except urllib3.exceptions.HTTPError as error:
             logger.warning(
                 "Failed to upload Kubeflow pipeline: %s. "
@@ -244,6 +287,17 @@ class KubeflowOrchestrator(BaseOrchestrator):
     def _k3d_registry_config_path(self) -> str:
         """Returns the path to the K3D registry config yaml."""
         return os.path.join(self.root_directory, "k3d_registry.yaml")
+
+    def _get_kfp_ui_daemon_port(self) -> int:
+        """Port to use for the KFP UI daemon."""
+        port = self.kubeflow_pipelines_ui_port
+        if port == DEFAULT_KFP_UI_PORT and not networking_utils.port_available(
+            port
+        ):
+            # if the user didn't specify a specific port and the default
+            # port is occupied, fallback to a random open port
+            port = networking_utils.find_available_port()
+        return port
 
     def list_manual_setup_steps(
         self, container_registry_name: str, container_registry_path: str
@@ -335,19 +389,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 kubernetes_context=kubernetes_context
             )
 
-            port = self.kubeflow_pipelines_ui_port
-            if (
-                port == DEFAULT_KFP_UI_PORT
-                and not networking_utils.port_available(port)
-            ):
-                # if the user didn't specify a specific port and the default
-                # port is occupied, fallback to a random open port
-                port = networking_utils.find_available_port()
-
             local_deployment_utils.start_kfp_ui_daemon(
                 pid_file_path=self._pid_file_path,
                 log_file_path=self.log_file,
-                port=port,
+                port=self._get_kfp_ui_daemon_port(),
             )
         except Exception as e:
             logger.error(e)
@@ -363,17 +408,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 cluster_name=self._k3d_cluster_name
             )
 
-        if fileio.file_exists(self._pid_file_path):
-            if sys.platform == "win32":
-                # Daemon functionality is not supported on Windows, so the PID
-                # file won't exist. This if clause exists just for mypy to not
-                # complain about missing functions
-                pass
-            else:
-                from zenml.utils import daemon
-
-                daemon.stop_daemon(self._pid_file_path, kill_children=True)
-                fileio.remove(self._pid_file_path)
+        local_deployment_utils.stop_kfp_ui_daemon(
+            pid_file_path=self._pid_file_path
+        )
 
         if fileio.file_exists(self.log_file):
             fileio.remove(self.log_file)
@@ -396,6 +433,16 @@ class KubeflowOrchestrator(BaseOrchestrator):
             cluster_name=self._k3d_cluster_name
         )
 
+        kubernetes_context = f"k3d-{self._k3d_cluster_name}"
+        local_deployment_utils.wait_until_kubeflow_pipelines_ready(
+            kubernetes_context=kubernetes_context
+        )
+        local_deployment_utils.start_kfp_ui_daemon(
+            pid_file_path=self._pid_file_path,
+            log_file_path=self.log_file,
+            port=self._get_kfp_ui_daemon_port(),
+        )
+
     def suspend(self) -> None:
         """Suspends the local k3d cluster."""
         if not self.is_running:
@@ -404,4 +451,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         local_deployment_utils.stop_k3d_cluster(
             cluster_name=self._k3d_cluster_name
+        )
+        local_deployment_utils.stop_kfp_ui_daemon(
+            pid_file_path=self._pid_file_path
         )

@@ -26,9 +26,11 @@ from zenml.enums import OrchestratorFlavor
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator, context_utils
 from zenml.orchestrators.utils import create_tfx_pipeline, execute_step
+from zenml.repository import Repository
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
+    from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -46,16 +48,24 @@ class LocalOrchestrator(BaseOrchestrator):
         return OrchestratorFlavor.LOCAL
 
     def run_pipeline(
-        self, pipeline: "BasePipeline", stack: "Stack", run_name: str
+        self,
+        pipeline_proto: "BasePipeline",
+        stack: "Stack",
+        runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
-        """Runs a pipeline locally."""
-        tfx_pipeline = create_tfx_pipeline(pipeline, stack=stack)
+        """Runs a pipeline locally"""
+
+        tfx_pipeline = create_tfx_pipeline(pipeline_proto, stack=stack)
+
+        if runtime_configuration is None:
+            runtime_configuration = RuntimeConfiguration()
 
         for component in tfx_pipeline.components:
             if isinstance(component, base_component.BaseComponent):
                 component._resolve_pip_dependencies(
                     tfx_pipeline.pipeline_info.pipeline_root
                 )
+
         c = compiler.Compiler()
         pipeline_proto = c.compile(tfx_pipeline)
 
@@ -63,21 +73,23 @@ class LocalOrchestrator(BaseOrchestrator):
         runtime_parameter_utils.substitute_runtime_parameter(
             pipeline_proto,
             {
-                PIPELINE_RUN_ID_PARAMETER_NAME: run_name,
+                PIPELINE_RUN_ID_PARAMETER_NAME: runtime_configuration.run_name,
             },
         )
 
         deployment_config = runner_utils.extract_local_deployment_config(
             pipeline_proto
         )
-        connection_config = deployment_config.metadata_connection_config  # type: ignore[attr-defined] # noqa
+        connection_config = (
+            Repository().active_stack.metadata_store.get_tfx_metadata_config()
+        )
 
         logger.debug(f"Using deployment config:\n {deployment_config}")
         logger.debug(f"Using connection config:\n {connection_config}")
 
         # Run each component. Note that the pipeline.components list is in
         # topological order.
-        for node in pipeline_proto.nodes:  # type:ignore[attr-defined]
+        for node in pipeline_proto.nodes:
             context = node.pipeline_node.contexts.contexts.add()
 
             context_utils.add_stack_as_context(context=context, stack=stack)
@@ -91,8 +103,9 @@ class LocalOrchestrator(BaseOrchestrator):
                 deployment_config, node_id
             )
 
-            p_info = pipeline_proto.pipeline_info  # type:ignore[attr-defined]
-            r_spec = pipeline_proto.runtime_spec  # type:ignore[attr-defined]
+            p_info = pipeline_proto.pipeline_info
+            r_spec = pipeline_proto.runtime_spec
+
             component_launcher = launcher.Launcher(
                 pipeline_node=pipeline_node,
                 mlmd_connection=metadata.Metadata(connection_config),

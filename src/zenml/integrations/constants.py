@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 AIRFLOW = "airflow"
+AWS = "aws"
 DASH = "dash"
 EVIDENTLY = "evidently"
 FACETS = "facets"

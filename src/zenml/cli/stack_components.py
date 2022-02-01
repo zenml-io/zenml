@@ -32,6 +32,7 @@ def _component_display_name(
     return name.replace("_", " ")
 
 
+@cli_utils.activate_integrations
 def _get_stack_component(
     component_type: StackComponentType,
     component_name: Optional[str] = None,
@@ -399,13 +400,15 @@ def register_single_stack_component_cli_commands(
     # zenml stack-component up
     up_command = generate_stack_component_up_command(component_type)
     command_group.command(
-        "up", help=f"Deploys the {singular_display_name} locally if possible."
+        "up",
+        help=f"Provisions or resumes local resources for the {singular_display_name} if possible.",
     )(up_command)
 
     # zenml stack-component down
     down_command = generate_stack_component_down_command(component_type)
     command_group.command(
-        "down", help=f"Stops the local {singular_display_name} deployment."
+        "down",
+        help=f"Suspends resources of the local {singular_display_name} deployment.",
     )(down_command)
 
     # zenml stack-component logs

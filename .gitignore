@@ -68,8 +68,9 @@ instance/
 # Scrapy stuff:
 .scrapy
 
-# Sphinx documentation
-docs/_build/
+# mkdocs documentation
+docs/mkdocs/api_docs
+docs/mkdocs/index.md
 
 # PyBuilder
 target/
@@ -169,6 +170,7 @@ temp/*
 local_test/
 .zen/
 !cloudbuild.yaml
+!cloudbuild-develop.yaml
 docs/book/_build/
 zenml_examples/
 

@@ -1,0 +1,30 @@
+site_name: ZenML API Reference
+site_url: https://apidocs.zenml.io/
+
+docs_dir: mkdocs
+
+theme:
+  name: material
+  locale: en
+  favicon: _assets/favicon.png
+
+repo_url: https://github.com/zenml-io/zenml
+edit_uri: https://github.com/zenml-io/zenml/docs/
+
+plugins:
+    - search
+    - awesome-pages
+    - mkdocstrings:
+        default_handler: python
+        handlers:
+          python:
+            rendering:
+              show_source: true
+        watch:
+          - ../src/zenml
+
+copyright: "Copyright &copy; 2022 ZenML GmbH"
+
+extra:
+  version:
+    provider: mike

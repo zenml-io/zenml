@@ -19,32 +19,46 @@ if TYPE_CHECKING:
     from zenml.steps import BaseStepConfig
 
 
-class InitializationException(Exception):
+class ZenMLBaseException(Exception):
+    """Base exception for all ZenML Exceptions."""
+
+    def __init__(
+        self,
+        message: Optional[str] = None,
+        url: Optional[str] = None,
+    ):
+        """BaseException used to format messages displayed to the user.
+
+        Args:
+            message: Message with details of exception. This message
+                     will be appended with another message directing user to
+                     `url` for more information. If `None`, then default
+                     Exception behavior is used.
+            url: URL to point to in exception message. If `None`, then no url
+                 is appended.
+        """
+        if message:
+            if url:
+                message += f" For more information, visit {url}."
+        super().__init__(message)
+
+
+class InitializationException(ZenMLBaseException):
     """Raised when an error occurred during initialization of a ZenML
     repository."""
 
 
-class RepositoryNotFoundError(Exception):
+class RepositoryNotFoundError(ZenMLBaseException):
     """Raised when no ZenML repository directory is found when creating a
     ZenML repository instance."""
 
 
-class EmptyDatasourceException(Exception):
-    """Raises exception when a datasource data is accessed without running
-    an associated pipeline."""
-
-    def __init__(
-        self,
-        message: str = "This datasource has not been used in "
-        "any pipelines, therefore the associated data has no "
-        "versions. Please use this datasource in any ZenML "
-        "pipeline with `pipeline.add_datasource("
-        "datasource)`",
-    ):
-        super().__init__(message)
+class ForbiddenRepositoryAccessError(ZenMLBaseException, RuntimeError):
+    """Raised when trying to access a ZenML repository instance while a step
+    is executed."""
 
 
-class DoesNotExistException(Exception):
+class DoesNotExistException(ZenMLBaseException):
     """Raises exception when the entity does not exist in the system but an
     action is being done that requires it to be present."""
 
@@ -52,7 +66,7 @@ class DoesNotExistException(Exception):
         super().__init__(message)
 
 
-class AlreadyExistsException(Exception):
+class AlreadyExistsException(ZenMLBaseException):
     """Raises exception when the `name` already exist in the system but an
     action is trying to create a resource with the same name."""
 
@@ -67,7 +81,7 @@ class AlreadyExistsException(Exception):
         super().__init__(message)
 
 
-class PipelineNotSucceededException(Exception):
+class PipelineNotSucceededException(ZenMLBaseException):
     """Raises exception when trying to fetch artifacts from a not succeeded
     pipeline."""
 
@@ -79,7 +93,7 @@ class PipelineNotSucceededException(Exception):
         super().__init__(message.format(name))
 
 
-class GitException(Exception):
+class GitException(ZenMLBaseException):
     """Raises exception when a problem occurs in git resolution."""
 
     def __init__(
@@ -91,32 +105,32 @@ class GitException(Exception):
         super().__init__(message)
 
 
-class StepInterfaceError(Exception):
+class StepInterfaceError(ZenMLBaseException):
     """Raises exception when interacting with the Step interface
     in an unsupported way."""
 
 
-class StepContextError(Exception):
+class StepContextError(ZenMLBaseException):
     """Raises exception when interacting with a StepContext
     in an unsupported way."""
 
 
-class PipelineInterfaceError(Exception):
+class PipelineInterfaceError(ZenMLBaseException):
     """Raises exception when interacting with the Pipeline interface
     in an unsupported way."""
 
 
-class ArtifactInterfaceError(Exception):
+class ArtifactInterfaceError(ZenMLBaseException):
     """Raises exception when interacting with the Artifact interface
     in an unsupported way."""
 
 
-class PipelineConfigurationError(Exception):
+class PipelineConfigurationError(ZenMLBaseException):
     """Raises exceptions when a pipeline configuration contains
     invalid values."""
 
 
-class MissingStepParameterError(Exception):
+class MissingStepParameterError(ZenMLBaseException):
     """Raises exceptions when a step parameter is missing when running a
     pipeline."""
 
@@ -131,10 +145,10 @@ class MissingStepParameterError(Exception):
 
         Args:
             step_name: Name of the step for which one or more parameters
-                are missing.
+                       are missing.
             missing_parameters: Names of all parameters which are missing.
             config_class: Class of the configuration object for which
-                the parameters are missing.
+                          the parameters are missing.
         """
         message = textwrap.fill(
             textwrap.dedent(
@@ -153,7 +167,7 @@ class MissingStepParameterError(Exception):
         super().__init__(message)
 
 
-class IntegrationError(Exception):
+class IntegrationError(ZenMLBaseException):
     """Raises exceptions when a requested integration can not be activated."""
 
 
@@ -168,20 +182,20 @@ class DuplicateRunNameError(RuntimeError):
         super().__init__(message)
 
 
-class StackExistsError(Exception):
+class StackExistsError(ZenMLBaseException):
     """Raised when trying to register a stack with a name that already
     exists."""
 
 
-class StackComponentExistsError(Exception):
+class StackComponentExistsError(ZenMLBaseException):
     """Raised when trying to register a stack component with a name that
     already exists."""
 
 
-class StackValidationError(Exception):
+class StackValidationError(ZenMLBaseException):
     """Raised when a stack configuration is not valid."""
 
 
-class ProvisioningError(Exception):
+class ProvisioningError(ZenMLBaseException):
     """Raised when an error occurs when provisioning resources for a
     StackComponent."""

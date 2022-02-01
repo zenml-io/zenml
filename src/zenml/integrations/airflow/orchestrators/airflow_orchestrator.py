@@ -269,7 +269,10 @@ class AirflowOrchestrator(BaseOrchestrator):
         logger.info("Airflow spun down.")
 
     def run_pipeline(
-        self, pipeline: "BasePipeline", stack: "Stack", run_name: str
+        self,
+        pipeline: "BasePipeline",
+        stack: "Stack",
+        runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
         """Schedules a pipeline to be run on Airflow.
 
@@ -286,4 +289,4 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         runner = AirflowDagRunner(AirflowPipelineConfig(self.airflow_config))
         tfx_pipeline = create_tfx_pipeline(pipeline, stack=stack)
-        return runner.run(tfx_pipeline, run_name=run_name)
+        return runner.run(tfx_pipeline, run_name=runtime_configuration.run_name)

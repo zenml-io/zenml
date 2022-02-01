@@ -100,7 +100,7 @@ def enable_mlflow_run(run: Callable[..., Any]) -> Callable[..., Any]:
     """
 
     def inner_decorator(
-        self: BasePipeline, run_name: Optional[str] = None
+        self: BasePipeline, *, run_name: Optional[str] = None, **kwargs: Any
     ) -> Any:
         """Inner decorator used to extend the run method of a pipeline.
         This ensures each pipeline run is run within a different mlflow context.
@@ -108,9 +108,10 @@ def enable_mlflow_run(run: Callable[..., Any]) -> Callable[..., Any]:
         Args:
             self: self of the original pipeline class
             run_name: Optional name for the run.
+            **kwargs: Additional kwargs passed to `pipeline.run()`
         """
         with mlflow.start_run(run_name=run_name):
-            run(self, run_name)
+            return run(self, run_name=run_name, **kwargs)
 
     return inner_decorator
 

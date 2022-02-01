@@ -27,7 +27,9 @@ NOT_SO_QUICKSTART = "not_so_quickstart"
 CACHING = "caching"
 DRIFT_DETECTION = "drift_detection"
 MLFLOW = "mlflow_tracking"
+CUSTOM_MATERIALIZER = "custom_materializer"
 WHYLOGS = "whylogs"
+FETCH_HISTORICAL_RUNS = "fetch_historical_runs"
 
 
 @pytest.fixture
@@ -56,7 +58,7 @@ def test_run_quickstart(examples_dir: Path):
     """Testing the functionality of the quickstart example
 
     Args:
-        Temporary folder containing all examples including the run_examples
+        examples_dir: Temporary folder containing all examples including the run_examples
         bash script.
     """
     local_example = LocalExample(examples_dir / QUICKSTART, name=QUICKSTART)
@@ -80,7 +82,7 @@ def test_run_not_so_quickstart(examples_dir: Path):
     """Testing the functionality of the not_so_quickstart example
 
     Args:
-        Temporary folder containing all examples including the run_examples
+        examples_dir: Temporary folder containing all examples including the run_examples
         bash script.
     """
     local_example = LocalExample(
@@ -106,7 +108,7 @@ def test_run_drift_detection(examples_dir: Path):
     """Testing the functionality of the drift_detection example
 
     Args:
-        Temporary folder containing all examples including the run_examples
+        examples_dir: Temporary folder containing all examples including the run_examples
         bash script.
     """
     local_example = LocalExample(
@@ -139,7 +141,7 @@ def test_run_caching(examples_dir: Path):
     """Testing the functionality of the caching example
 
     Args:
-        Temporary folder containing all examples including the run_examples
+        examples_dir: Temporary folder containing all examples including the run_examples
         bash script.
     """
     local_example = LocalExample(examples_dir / CACHING, name=CACHING)
@@ -172,7 +174,7 @@ def test_run_mlflow(examples_dir: Path):
     """Testing the functionality of the quickstart example
 
     Args:
-        Temporary folder containing all examples including the run_examples
+        examples_dir: Temporary folder containing all examples including the run_examples
         bash script.
     """
     local_example = LocalExample(examples_dir / MLFLOW, name=MLFLOW)
@@ -205,7 +207,7 @@ def test_whylogs_profiling(examples_dir: Path):
     """Testing the functionality of the whylogs example
 
     Args:
-        Temporary folder containing all examples including the run_examples
+        examples_dir: Temporary folder containing all examples including the run_examples
         bash script.
     """
     local_example = LocalExample(examples_dir / WHYLOGS, name=WHYLOGS)
@@ -237,3 +239,50 @@ def test_whylogs_profiling(examples_dir: Path):
     assert isinstance(output_obj, DatasetProfile)
     output_obj = run.get_step("test_data_profiler").output.read()
     assert isinstance(output_obj, DatasetProfile)
+
+
+def test_run_custom_materializer(examples_dir: Path):
+    """Testing the functionality of the custom materializer example.
+
+    Args:
+        examples_dir: Temporary folder containing all examples including the
+                      run_examples bash script.
+    """
+    local_example = LocalExample(
+        examples_dir / CUSTOM_MATERIALIZER, name=CUSTOM_MATERIALIZER
+    )
+    local_example.run_example(example_runner(examples_dir), force=True)
+
+    # Verify the example run was successful
+    repo = Repository(local_example.path)
+    pipeline = repo.get_pipelines()[0]
+    first_run = pipeline.runs[-1]
+
+    # Both runs should be completed
+    assert first_run.status == ExecutionStatus.COMPLETED
+
+
+def test_run_fetch_historical_runs(examples_dir: Path):
+    """Testing the functionality of the fetch_historical_runs example.
+
+    Args:
+        examples_dir: Temporary folder containing all examples including the
+                      run_examples bash script.
+    """
+    local_example = LocalExample(
+        examples_dir / FETCH_HISTORICAL_RUNS, name=FETCH_HISTORICAL_RUNS
+    )
+
+    local_example.run_example(example_runner(examples_dir), force=True)
+
+    # Verify the example run was successful
+    repo = Repository(local_example.path)
+    pipeline = repo.get_pipelines()[0]
+    assert pipeline.name == "mnist_pipeline"
+
+    pipeline_run = pipeline.runs[-1]
+
+    assert pipeline_run.status == ExecutionStatus.COMPLETED
+
+    for step in pipeline_run.steps:
+        assert step.status == ExecutionStatus.COMPLETED

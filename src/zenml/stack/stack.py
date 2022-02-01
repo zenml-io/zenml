@@ -30,7 +30,10 @@ from zenml.config.global_config import GlobalConfig
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.logger import get_logger
-from zenml.runtime_configuration import RuntimeConfiguration
+from zenml.runtime_configuration import (
+    RUN_NAME_OPTION_KEY,
+    RuntimeConfiguration,
+)
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
@@ -310,7 +313,9 @@ class Stack:
         for component in self.components.values():
             component.prepare_pipeline_run()
 
-        run_name = runtime_configuration.run_name or (
+        runtime_configuration[
+            RUN_NAME_OPTION_KEY
+        ] = runtime_configuration.run_name or (
             f"{pipeline.name}-"
             f'{datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")}'
         )
@@ -323,13 +328,13 @@ class Stack:
         start_time = time.time()
 
         return_value = self.orchestrator.run_pipeline(
-            pipeline, stack=self, run_name=run_name
+            pipeline, stack=self, runtime_configuration=runtime_configuration
         )
 
         run_duration = time.time() - start_time
         logger.info(
             "Pipeline run `%s` has finished in %s.",
-            run_name,
+            runtime_configuration.run_name,
             string_utils.get_human_readable_time(run_duration),
         )
 

@@ -23,11 +23,12 @@ These are the third-party integrations that ZenML currently supports:
 | ----------- | ------ | ---- | -------------------- | ------- |
 | Apache Airflow | ✅ | Orchestrator | Works for local environment | [airflow_local](https://github.com/zenml-io/zenml/tree/main/examples/airflow_local) |
 | Apache Beam | ✅ | Distributed Processing |   |   |
+| AWS | ✅ | Cloud | Use S3 buckets as ZenML artifact stores |   |
 | BentoML | ⛏ | Cloud | Looking for community implementors |   |
 | Dash | ✅ | Visualizer | For Pipeline and PipelineRun visualization objects. | [lineage](https://github.com/zenml-io/zenml/tree/main/examples/lineage) |
 | Evidently | ✅ | Monitoring | Allows for visualization of drift as well as export of a `Profile` object | [drift_detection](https://github.com/zenml-io/zenml/tree/release/0.5.7/examples/drift_detection) |
 | Facets | ✅ | Visualizer |   | [statistics](https://github.com/zenml-io/zenml/tree/main/examples/statistics) |
-| GCP | ✅ | Cloud |   |   |
+| GCP | ✅ | Cloud | Use Google Cloud Storage buckets as ZenML artifact stores |   |
 | Graphviz | ✅ | Visualizer | For Pipeline and PipelineRun visualization objects. | [dag_visualizer](https://github.com/zenml-io/zenml/tree/main/examples/dag_visualizer) |
 | Great Expectations | ⛏ | Data Validation | Looking for community implementors |   |
 | KServe | ⛏ | Inference | Looking for community implementors |   |
@@ -42,7 +43,7 @@ These are the third-party integrations that ZenML currently supports:
 | scikit-learn | ✅ | Training |   | [caching chapter](https://docs.zenml.io/v/docs/guides/functional-api/caching) |
 | Seldon | ⛏ | Cloud | Looking for community implementors |   |
 | Tensorflow | ✅ | Training |   | [quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart) |
-| Whylogs | ⛏ | Logging | Currently being implemented by the core team |   |
+| whylogs | ✅ | Logging | Integration fully implemented for data logging | [whylogs](https://github.com/zenml-io/zenml/tree/main/examples/whylogs) |
 
 ✅ means the integration is already implemented.
 ⛏ means we are looking to implement the integration soon.

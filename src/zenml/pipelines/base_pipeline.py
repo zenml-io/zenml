@@ -19,7 +19,6 @@ from typing import (
     Dict,
     NoReturn,
     Optional,
-    Set,
     Text,
     Tuple,
     Type,
@@ -38,6 +37,7 @@ from zenml.constants import (
 from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.pipelines.schedule import Schedule
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.steps import BaseStep
@@ -135,10 +135,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
 
         combined_steps = {}
-        step_cls_args: Set[Type[BaseStep]] = set()
+        step_classes: Dict[Type[BaseStep], str] = {}
 
         for i, step in enumerate(steps):
             step_class = type(step)
+            key = input_step_keys[i]
 
             if not isinstance(step, BaseStep):
                 raise PipelineInterfaceError(
@@ -149,18 +150,18 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"a pipeline."
                 )
 
-            if step_class in step_cls_args:
+            if step_class in step_classes:
+                previous_key = step_classes[step_class]
                 raise PipelineInterfaceError(
-                    f"Step object (`{step_class}`) has been used twice. Step "
-                    f"objects should be unique for each argument."
+                    f"Found multiple step objects of the same class "
+                    f"(`{step_class}`) for arguments '{previous_key}' and "
+                    f"'{key}' in pipeline '{self.name}'. Only one step object "
+                    f"per class is allowed inside a ZenML pipeline."
                 )
 
-            key = input_step_keys[i]
             step.pipeline_parameter_name = key
             combined_steps[key] = step
-            step_cls_args.add(step_class)
-
-        step_cls_kwargs: Dict[Type[BaseStep], str] = {}
+            step_classes[step_class] = key
 
         for key, step in kw_steps.items():
             step_class = type(step)
@@ -183,23 +184,18 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"a pipeline."
                 )
 
-            if step_class in step_cls_kwargs:
-                prev_key = step_cls_kwargs[step_class]
+            if step_class in step_classes:
+                previous_key = step_classes[step_class]
                 raise PipelineInterfaceError(
-                    f"Same step object (`{step_class}`) passed for arguments "
-                    f"'{key}' and '{prev_key}'. Step objects should be "
-                    f"unique for each argument."
-                )
-
-            if step_class in step_cls_args:
-                raise PipelineInterfaceError(
-                    f"Step object (`{step_class}`) has been used twice. Step "
-                    f"objects should be unique for each argument."
+                    f"Found multiple step objects of the same class "
+                    f"(`{step_class}`) for arguments '{previous_key}' and "
+                    f"'{key}' in pipeline '{self.name}'. Only one step object "
+                    f"per class is allowed inside a ZenML pipeline."
                 )
 
             step.pipeline_parameter_name = key
             combined_steps[key] = step
-            step_cls_kwargs[step_class] = key
+            step_classes[step_class] = key
 
         # check if there are any missing or unexpected steps
         expected_steps = set(self.STEP_SPEC.keys())
@@ -242,11 +238,17 @@ class BasePipeline(metaclass=BasePipelineMeta):
     # TODO [ENG-376]: Enable specifying runtime configuration options either using
     #  **kwargs here or by passing a `RuntimeConfiguration` object or a
     #  path to a config file.
-    def run(self, run_name: Optional[str] = None) -> Any:
+    def run(
+        self,
+        *,
+        run_name: Optional[str] = None,
+        schedule: Optional[Schedule] = None,
+    ) -> Any:
         """Runs the pipeline on the active stack of the current repository.
 
         Args:
             run_name: Name of the pipeline run.
+            schedule: Optional schedule of the pipeline.
         """
         if SHOULD_PREVENT_PIPELINE_EXECUTION:
             # An environment variable was set to stop the execution of
@@ -274,7 +276,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr] # noqa
         )
         runtime_configuration = RuntimeConfiguration(
-            run_name=run_name, dag_filepath=dag_filepath
+            run_name=run_name, dag_filepath=dag_filepath, schedule=schedule
         )
         stack = Repository().active_stack
 

@@ -54,7 +54,7 @@ def is_inside_repository(file_path: str) -> bool:
     """Returns whether a file is inside a zenml repository."""
     from zenml.repository import Repository
 
-    repo_path = Repository().root.resolve()
+    repo_path = Repository.find_repository().resolve()
     absolute_file_path = pathlib.Path(file_path).resolve()
     return repo_path in absolute_file_path.parents
 
@@ -128,7 +128,7 @@ def get_module_source_from_file_path(file_path: str) -> str:
     """
     from zenml.repository import Repository
 
-    repo_path = str(Repository().root)
+    repo_path = str(Repository.find_repository().resolve())
 
     # Replace repo_path with file_path to get relative path left over
     relative_file_path = file_path.replace(repo_path, "")[1:]
@@ -159,7 +159,7 @@ def get_absolute_path_from_module_source(module: str) -> str:
         module: A module e.g. `zenml.core.step`.
     """
     mod = importlib.import_module(module)
-    return mod.__path__[0]  # type: ignore[no-any-return, attr-defined]
+    return mod.__path__[0]
 
 
 def get_module_source_from_class(
