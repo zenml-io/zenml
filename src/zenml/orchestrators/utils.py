@@ -56,7 +56,9 @@ def create_tfx_pipeline(
     )
 
 
-def is_cached_step(execution_info: data_types.ExecutionInfo) -> bool:
+def get_cache_status(
+    execution_info: data_types.ExecutionInfo,
+) -> bool:
     """Returns the caching status of a step.
 
     Args:
@@ -106,8 +108,11 @@ def execute_step(
     logger.info(f"Step `{step_name}` has started.")
     try:
         execution_info = tfx_launcher.launch()
-        if is_cached_step(execution_info):  # type: ignore [arg-type]
-            logger.info(f"Using cached version of `{step_name}` step.")
+        if get_cache_status(execution_info):  # type: ignore [arg-type]
+            pipeline_run_id = execution_info.pipeline_run_id  # type: ignore [union-attr]
+            logger.info(
+                f"Using cached version of `{step_name}` from pipeline_run_id `{pipeline_run_id}`."
+            )
     except RuntimeError as e:
         if "execution has already succeeded" in str(e):
             # Hacky workaround to catch the error that a pipeline run with
