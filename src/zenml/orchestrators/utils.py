@@ -21,6 +21,10 @@ from tfx.orchestration.portable import data_types, launcher
 from zenml.exceptions import DuplicateRunNameError
 from zenml.logger import get_logger
 from zenml.repository import Repository
+from zenml.steps.utils import (
+    INTERNAL_EXECUTION_PARAMETER_PREFIX,
+    PARAM_PIPELINE_PARAMETER_NAME,
+)
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
@@ -52,7 +56,7 @@ def create_tfx_pipeline(
 
 
 def is_cached_step(execution_info: data_types.ExecutionInfo) -> bool:
-    """Returns the caching status of a tfx step.
+    """Returns the caching status of a step.
 
     Args:
         execution_info: The execution info of a tfx step.
@@ -65,9 +69,10 @@ def is_cached_step(execution_info: data_types.ExecutionInfo) -> bool:
         repository.active_stack_name
     ).metadata_store
 
-    step_name = str(
-        execution_info.exec_properties["zenml-pipeline_parameter_name"]
-    )[1:-1]
+    step_name_param = (
+        INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_PIPELINE_PARAMETER_NAME
+    )
+    step_name = str(execution_info.exec_properties[step_name_param])[1:-1]
     pipeline_name = execution_info.pipeline_info.id  # type: ignore [attr-defined]
     pipeline_run_name = execution_info.pipeline_run_id
 
