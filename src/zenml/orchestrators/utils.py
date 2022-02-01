@@ -137,8 +137,6 @@ def execute_step(
 
     run_duration = time.time() - start_time
     logger.info(
-        "Step `%s` has finished in %s.",
-        pipeline_step_name,
-        string_utils.get_human_readable_time(run_duration),
+        f"Step `{pipeline_step_name}` has finished in {string_utils.get_human_readable_time(run_duration)}."
     )
     return execution_info
