@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import json
 import time
 from typing import TYPE_CHECKING, Optional
 
@@ -64,6 +65,7 @@ def is_cached_step(execution_info: data_types.ExecutionInfo) -> bool:
     Returns:
         The caching status of a tfx step as a boolean value.
     """
+    status = False
     repository = Repository()
     metadata_store = repository.get_stack(
         repository.active_stack_name
@@ -72,16 +74,19 @@ def is_cached_step(execution_info: data_types.ExecutionInfo) -> bool:
     step_name_param = (
         INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_PIPELINE_PARAMETER_NAME
     )
-    step_name = str(execution_info.exec_properties[step_name_param])[1:-1]
-    pipeline_name = execution_info.pipeline_info.id  # type: ignore [attr-defined]
+    step_name = json.loads(execution_info.exec_properties[step_name_param])
+    if execution_info.pipeline_info:
+        pipeline_name = execution_info.pipeline_info.id
+    else:
+        raise KeyError(f"No pipeline info found for step `{step_name}`.")
     pipeline_run_name = execution_info.pipeline_run_id
-
-    status = (
-        metadata_store.get_pipeline(pipeline_name)  # type: ignore [union-attr]
-        .get_run(pipeline_run_name)  # type: ignore [arg-type]
-        .get_step(step_name)
-        .is_cached
-    )
+    pipeline = metadata_store.get_pipeline(pipeline_name)
+    if pipeline is None:
+        logger.error(f"Pipeline {pipeline_name} not found in Metadata Store.")
+    else:
+        status = (
+            pipeline.get_run(pipeline_run_name).get_step(step_name).is_cached
+        )
     return status
 
 
