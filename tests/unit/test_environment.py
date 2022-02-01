@@ -65,11 +65,16 @@ def test_environment_component_activation():
     with pytest.raises(KeyError):
         Environment()["foo"]
 
-    with Foo() as f:
+    f = Foo()
+    assert f.active is False
+
+    with f:
+        assert f.active is True
         assert Environment().get_component("foo") is f
         assert Environment().has_component("foo")
         assert Environment()["foo"] is f
 
+    assert f.active is False
     assert Environment().get_component("foo") is None
     assert not Environment().has_component("foo")
     with pytest.raises(KeyError):

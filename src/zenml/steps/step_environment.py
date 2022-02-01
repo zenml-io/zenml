@@ -28,11 +28,10 @@ class StepEnvironment(BaseEnvironmentComponent):
 
     ```python
     from zenml.environment import Environment
-    from zenml.steps.import STEP_ENVIRONMENT
 
     @step
     def my_step(...)
-        env = Environment[STEP_ENVIRONMENT]
+        env = Environment().step_environment
         do_something_with(env.pipeline_name, env.pipeline_run_id, env.step_name)
     ```
 

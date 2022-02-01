@@ -13,12 +13,15 @@
 #  permissions and limitations under the License.
 import os
 import platform
-from typing import Any, Dict, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
 
 import distro
 
 from zenml.logger import get_logger
 from zenml.utils.singleton import SingletonMetaClass
+
+if TYPE_CHECKING:
+    from zenml.steps import StepEnvironment
 
 logger = get_logger(__name__)
 
@@ -215,6 +218,19 @@ class Environment(metaclass=SingletonMetaClass):
                 f"step function that has all relevant integrations enabled."
             )
 
+    @property
+    def step_environment(self) -> "StepEnvironment":
+        """Get the current step environment component, if one is available.
+
+        This should only be called in the context of a step function.
+
+        Returns:
+            The `StepEnvironment` that describes the current step.
+        """
+        from zenml.steps import STEP_ENVIRONMENT, StepEnvironment
+
+        return cast(StepEnvironment, self[STEP_ENVIRONMENT])
+
 
 _BASE_ENVIRONMENT_COMPONENT_NAME = "base_environment_component"
 
@@ -249,6 +265,8 @@ class BaseEnvironmentComponent(metaclass=EnvironmentComponentMeta):
     the global Environment by extending and instantiating this class:
 
     ```python
+    from zenml.environment import BaseEnvironmentComponent
+
     MY_ENV_NAME = "my_env"
 
     class MyEnvironmentComponent(BaseEnvironmentComponent):
@@ -320,6 +338,12 @@ class BaseEnvironmentComponent(metaclass=EnvironmentComponentMeta):
         self._active = False
 
     def activate(self) -> None:
+        """Activate the environment component and register it in the global
+        Environment.
+
+        Raises:
+            RuntimeError: if the component is already active.
+        """
         if self._active:
             raise RuntimeError(
                 f"Environment component {self.NAME} is already active."
@@ -328,11 +352,23 @@ class BaseEnvironmentComponent(metaclass=EnvironmentComponentMeta):
         self._active = True
 
     def deactivate(self) -> None:
+        """Deactivate the environment component and deregister it from the
+        global Environment.
+
+        Raises:
+            RuntimeError: if the component is not active.
+        """
         if not self._active:
             raise RuntimeError(
                 f"Environment component {self.NAME} is not active."
             )
         Environment().deregister_component(self.NAME)
+        self._active = False
+
+    @property
+    def active(self) -> bool:
+        """Check if the environment component is currently active."""
+        return self._active
 
     def __enter__(self) -> "BaseEnvironmentComponent":
         """Environment component context entry point.

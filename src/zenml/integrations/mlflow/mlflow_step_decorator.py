@@ -17,7 +17,7 @@ from typing import Any, Callable, Optional, Type, TypeVar, Union, cast, overload
 from zenml.environment import Environment
 from zenml.integrations.mlflow.mlflow_utils import get_or_create_mlflow_run
 from zenml.logger import get_logger
-from zenml.steps import STEP_ENVIRONMENT, BaseStep, StepEnvironment
+from zenml.steps import BaseStep
 from zenml.steps.utils import STEP_INNER_FUNC_NAME
 
 logger = get_logger(__name__)
@@ -144,7 +144,7 @@ def mlflow_step_entrypoint(
                 "Setting up MLflow backend before running step entrypoint %s",
                 func.__name__,
             )
-            step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT])
+            step_env = Environment().step_environment
             experiment = experiment_name or step_env.pipeline_name
             with get_or_create_mlflow_run(
                 experiment_name=experiment, run_name=step_env.pipeline_run_id
