@@ -72,7 +72,7 @@ def generate_dockerfile_contents(
     if requirements:
         lines.extend(
             [
-                f"RUN pip install --no-cache {' '.join(requirements)}",
+                f"RUN pip install --no-cache {' '.join(sorted(requirements))}",
             ]
         )
 
