@@ -103,15 +103,26 @@ def execute_step(
     Returns:
         Optional execution info returned by the launcher.
     """
+    step_name_param = (
+        INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_PIPELINE_PARAMETER_NAME
+    )
     step_name = tfx_launcher._pipeline_node.node_info.id  # type: ignore[attr-defined]
     start_time = time.time()
     logger.info(f"Step `{step_name}` has started.")
     try:
         execution_info = tfx_launcher.launch()
-        if get_cache_status(execution_info):  # type: ignore [arg-type]
-            pipeline_run_id = execution_info.pipeline_run_id  # type: ignore [union-attr]
+        if execution_info and get_cache_status(execution_info):
+            pipeline_run_id = execution_info.pipeline_run_id
+            if execution_info.exec_properties:
+                pipeline_step_name = json.loads(
+                    execution_info.exec_properties[step_name_param]
+                )
+            else:
+                logger.error(
+                    f"No execution properties found for step `{step_name}`."
+                )
             logger.info(
-                f"Using cached version of `{step_name}` from pipeline_run_id `{pipeline_run_id}`."
+                f"Using cached version of `{pipeline_step_name}` [`{step_name}`] from pipeline_run_id `{pipeline_run_id}`."
             )
     except RuntimeError as e:
         if "execution has already succeeded" in str(e):
