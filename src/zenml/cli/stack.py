@@ -19,6 +19,7 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
+from zenml.cli.utils import print_stack_configuration
 from zenml.enums import StackComponentType
 from zenml.repository import Repository
 from zenml.stack import Stack
@@ -153,16 +154,11 @@ def describe_stack(stack_name: Optional[str]) -> None:
         cli_utils.error(f"Stack `{stack_name}` does not exist.")
         return
 
-    cli_utils.title("Stack:")
-
-    if stack_name == active_stack_name:
-        cli_utils.declare("**ACTIVE**\n")
-    else:
-        cli_utils.declare("")
-
-    cli_utils.declare(f"NAME: {stack_name}")
-    for key, value in stack_configuration.dict().items():
-        cli_utils.declare(f"{key.upper()}: {value}")
+    print_stack_configuration(
+        stack_configuration,
+        active=stack_name == active_stack_name,
+        stack_name=stack_name,
+    )
 
 
 @stack.command("delete")

@@ -32,8 +32,10 @@ from dateutil import tz
 from rich import box, table
 from rich.text import Text
 
+from zenml.cli import utils as cli_utils
 from zenml.console import console
 from zenml.logger import get_logger
+from zenml.repository import StackConfiguration
 from zenml.stack import StackComponent
 
 logger = get_logger(__name__)
@@ -173,8 +175,29 @@ def print_stack_component_list(
     print_table(configurations)
 
 
-def print_active_stack() -> None:
-    """Does something."""
+def print_stack_configuration(
+    component: StackConfiguration, active: bool, stack_name: str
+) -> None:
+    """Prints the configuration options of a stack."""
+    cli_utils.title("Stack:")
+
+    if active:
+        cli_utils.declare("**ACTIVE**\n")
+    else:
+        cli_utils.declare("")
+    cli_utils.declare(f"NAME: {stack_name}")
+
+    items = component.dict().items()
+    configuration = [
+        {
+            **{key.upper(): str(value) for key, value in items},
+        }
+    ]
+    print_table(configuration)
+
+    # cli_utils.declare(f"NAME: {stack_name}")
+    # for key, value in stack_configuration.dict().items():
+    #     cli_utils.declare(f"{key.upper()}: {value}")
 
 
 def print_stack_component_configuration(component: StackComponent) -> None:
