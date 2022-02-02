@@ -15,7 +15,7 @@ from datetime import datetime
 from datetime import datetime, timedelta
 
 from zenml.environment import Environment
-from zenml.integrations.mlflow.mlflow_environment import MLFLOW_ENVIRONMENT
+from zenml.integrations.mlflow.mlflow_environment import MLFLOW_ENVIRONMENT_NAME
 
 from zenml.pipelines import Schedule
 
@@ -55,7 +55,7 @@ if __name__ == "__main__":
     )
 
     run_2.run(schedule=schedule)
-    mlflow_env = Environment()[MLFLOW_ENVIRONMENT]
+    mlflow_env = Environment()[MLFLOW_ENVIRONMENT_NAME]
     print(
         "Now run \n "
         f"    mlflow ui --backend-store-uri {mlflow_env.tracking_uri}\n"

@@ -14,7 +14,7 @@
 
 from zenml.environment import BaseEnvironmentComponent
 
-STEP_ENVIRONMENT = "step_environment"
+STEP_ENVIRONMENT_NAME = "step_environment"
 
 
 class StepEnvironment(BaseEnvironmentComponent):
@@ -37,7 +37,7 @@ class StepEnvironment(BaseEnvironmentComponent):
 
     """
 
-    NAME = STEP_ENVIRONMENT
+    NAME = STEP_ENVIRONMENT_NAME
 
     def __init__(
         self,

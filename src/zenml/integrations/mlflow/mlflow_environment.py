@@ -23,7 +23,7 @@ from zenml.repository import Repository
 
 logger = get_logger(__name__)
 
-MLFLOW_ENVIRONMENT = "mlflow"
+MLFLOW_ENVIRONMENT_NAME = "mlflow"
 
 
 class MLFlowEnvironment(BaseEnvironmentComponent):
@@ -33,18 +33,18 @@ class MLFlowEnvironment(BaseEnvironmentComponent):
 
     ```python
     from zenml.environment import Environment
-    from zenml.integrations.mlflow.mlflow_environment import MLFLOW_ENVIRONMENT
+    from zenml.integrations.mlflow.mlflow_environment import MLFLOW_ENVIRONMENT_NAME
 
 
     @step
     def my_step(...)
-        env = Environment[MLFLOW_ENVIRONMENT]
+        env = Environment[MLFLOW_ENVIRONMENT_NAME]
         do_something_with(env.mlflow_tracking_uri)
     ```
 
     """
 
-    NAME = MLFLOW_ENVIRONMENT
+    NAME = MLFLOW_ENVIRONMENT_NAME
 
     def __init__(self, repo_root: Optional[Path] = None):
         """Initialize a MLflow environment component.
@@ -78,7 +78,7 @@ class MLFlowEnvironment(BaseEnvironmentComponent):
         local_mlflow_backend_uri = os.path.join(artifact_store.path, "mlruns")
         if not os.path.exists(local_mlflow_backend_uri):
             os.makedirs(local_mlflow_backend_uri)
-            # TODO [MEDIUM]: safely access (possibly non-existent) artifact stores
+            # TODO [medium]: safely access (possibly non-existent) artifact stores
         return "file:" + local_mlflow_backend_uri
 
     def activate(self) -> None:

@@ -46,11 +46,11 @@ class Environment(metaclass=SingletonMetaClass):
     @property
     def step_is_running(self) -> bool:
         """Returns if a step is currently running."""
-        from zenml.steps import STEP_ENVIRONMENT
+        from zenml.steps import STEP_ENVIRONMENT_NAME
 
         # A step is considered to be running if there is an active step
         # environment
-        return self.has_component(STEP_ENVIRONMENT)
+        return self.has_component(STEP_ENVIRONMENT_NAME)
 
     @staticmethod
     def get_system_info() -> Dict[str, Any]:
@@ -124,7 +124,7 @@ class Environment(metaclass=SingletonMetaClass):
         return "PAPERSPACE_NOTEBOOK_REPO_ID" in os.environ
 
     def register_component(
-        self, name: str, component: "BaseEnvironmentComponent"
+        self, component: "BaseEnvironmentComponent"
     ) -> "BaseEnvironmentComponent":
         """Registers an environment component.
 
@@ -136,31 +136,33 @@ class Environment(metaclass=SingletonMetaClass):
             The newly registered environment component, or the environment
             component that was already registered under the given name.
         """
-        if name not in self._components:
-            self._components[name] = component
-            logger.debug(f"Registered environment component {name}")
+        if component.NAME not in self._components:
+            self._components[component.NAME] = component
+            logger.debug(f"Registered environment component {component.NAME}")
             return component
         else:
             logger.warning(
                 f"Ignoring attempt to overwrite an existing Environment "
-                f"component registered under the name {name}."
+                f"component registered under the name {component.NAME}."
             )
-            return self._components[name]
+            return self._components[component.NAME]
 
-    def deregister_component(self, name: str) -> None:
+    def deregister_component(
+        self, component: "BaseEnvironmentComponent"
+    ) -> None:
         """Deregisters an environment component.
 
         Args:
-            name: the environment component name.
+            component: a BaseEnvironmentComponent instance.
         """
-        if name in self._components:
-            del self._components[name]
-            logger.debug(f"Deregistered environment component {name}")
+        if self._components.get(component.NAME) is component:
+            del self._components[component.NAME]
+            logger.debug(f"Deregistered environment component {component.NAME}")
 
         else:
             logger.warning(
                 f"Ignoring attempt to deregister an inexistent Environment "
-                f"component with the name {name}."
+                f"component with the name {component.NAME}."
             )
 
     def get_component(self, name: str) -> Optional["BaseEnvironmentComponent"]:
@@ -227,9 +229,9 @@ class Environment(metaclass=SingletonMetaClass):
         Returns:
             The `StepEnvironment` that describes the current step.
         """
-        from zenml.steps import STEP_ENVIRONMENT, StepEnvironment
+        from zenml.steps import STEP_ENVIRONMENT_NAME, StepEnvironment
 
-        return cast(StepEnvironment, self[STEP_ENVIRONMENT])
+        return cast(StepEnvironment, self[STEP_ENVIRONMENT_NAME])
 
 
 _BASE_ENVIRONMENT_COMPONENT_NAME = "base_environment_component"
@@ -348,7 +350,7 @@ class BaseEnvironmentComponent(metaclass=EnvironmentComponentMeta):
             raise RuntimeError(
                 f"Environment component {self.NAME} is already active."
             )
-        Environment().register_component(self.NAME, self)
+        Environment().register_component(self)
         self._active = True
 
     def deactivate(self) -> None:
@@ -362,7 +364,7 @@ class BaseEnvironmentComponent(metaclass=EnvironmentComponentMeta):
             raise RuntimeError(
                 f"Environment component {self.NAME} is not active."
             )
-        Environment().deregister_component(self.NAME)
+        Environment().deregister_component(self)
         self._active = False
 
     @property
