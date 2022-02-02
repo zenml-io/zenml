@@ -152,6 +152,7 @@ def describe_stack(stack_name: Optional[str]) -> None:
     except KeyError:
         cli_utils.error(f"Stack `{stack_name}` does not exist.")
         return
+
     cli_utils.title("Stack:")
 
     if stack_name == active_stack_name:

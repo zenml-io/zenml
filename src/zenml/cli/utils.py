@@ -173,10 +173,14 @@ def print_stack_component_list(
     print_table(configurations)
 
 
+def print_active_stack() -> None:
+    """Does something."""
+
+
 def print_stack_component_configuration(component: StackComponent) -> None:
     """Prints the configuration options of a stack component."""
-    declare(f"NAME: {component.name}")
-    for key, value in component.dict(exclude={"name"}).items():
+    # declare(f"NAME: {component.name}")
+    for key, value in component.dict().items():
         declare(f"{key.upper()}: {value}")
 
 
