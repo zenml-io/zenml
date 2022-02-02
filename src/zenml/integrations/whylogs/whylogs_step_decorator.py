@@ -69,19 +69,18 @@ def enable_whylogs(
     field that facilitates access to the whylogs dataset profiling API,
     like so:
 
-    .. highlight:: python
-    .. code-block:: python
-
-        @enable_whylogs
-        @step(enable_cache=True)
-        def data_loader(
-            context: StepContext,
-        ) -> Output(data=pd.DataFrame, profile=DatasetProfile,):
-            ...
-            data = pd.DataFrame(...)
-            profile = context.whylogs.profile_dataframe(data, dataset_name="input_data")
-            ...
-            return data, profile
+    ```python
+    @enable_whylogs
+    @step(enable_cache=True)
+    def data_loader(
+        context: StepContext,
+    ) -> Output(data=pd.DataFrame, profile=DatasetProfile,):
+        ...
+        data = pd.DataFrame(...)
+        profile = context.whylogs.profile_dataframe(data, dataset_name="input_data")
+        ...
+        return data, profile
+    ```
 
     Args:
         _step: The decorated step class.

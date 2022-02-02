@@ -15,7 +15,7 @@ will train a classifier using [Tensorflow (Keras)](https://www.tensorflow.org/).
 We will run two experiments with different parameters (epochs and learning rate)
 and log these experiments into a local mlflow backend.
 
-This example is uses an mlflow setup that is based on the local filesystem for
+This example uses an mlflow setup that is based on the local filesystem for
 things like the artifact store. See the [mlflow
 documentation](https://www.mlflow.org/docs/latest/tracking.html#scenario-1-mlflow-on-localhost) 
 for details.
