@@ -11,20 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from datetime import datetime
-from datetime import datetime, timedelta
-
-from zenml.environment import Environment
-from zenml.integrations.mlflow.mlflow_environment import MLFLOW_ENVIRONMENT
 
 from pipeline import (
     TrainerConfig,
-    mlflow_example_pipeline,
     importer_mnist,
+    mlflow_example_pipeline,
     normalizer,
-    tf_trainer,
     tf_evaluator,
+    tf_trainer,
 )
+
+from zenml.environment import Environment
+from zenml.integrations.mlflow.mlflow_environment import MLFLOW_ENVIRONMENT
 
 if __name__ == "__main__":
 

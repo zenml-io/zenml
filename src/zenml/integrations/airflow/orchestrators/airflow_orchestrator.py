@@ -15,7 +15,7 @@
 import datetime
 import os
 import time
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict
 
 from pydantic import root_validator
 
@@ -28,6 +28,7 @@ from zenml.integrations.airflow.orchestrators.airflow_dag_runner import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.repository import Repository
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
@@ -52,7 +53,6 @@ class AirflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
 
     airflow_home: str = ""
-    airflow_config: Optional[Dict[str, Any]] = {}
     schedule_interval_minutes: int = 1
     supports_local_execution = True
     supports_remote_execution = False
@@ -243,7 +243,7 @@ class AirflowOrchestrator(BaseOrchestrator):
                 command.run,
                 pid_file=self.pid_file,
                 log_file=self.log_file,
-                working_directory=zenml.io.utils.get_zenml_dir(),
+                working_directory=str(Repository().root),
             )
             while not self.is_running:
                 # Wait until the daemon started all the relevant airflow
@@ -257,7 +257,7 @@ class AirflowOrchestrator(BaseOrchestrator):
                 "want to start it manually, use the commands described in the "
                 "official Airflow quickstart guide for running Airflow locally."
             )
-            self.down()
+            self.deprovision()
 
     def deprovision(self) -> None:
         """Stops the airflow daemon if necessary and tears down resources."""
@@ -278,7 +278,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         Returns:
             An Airflow DAG object that corresponds to the ZenML pipeline.
         """
-        self.airflow_config = {
+        airflow_config = {
             "schedule_interval": datetime.timedelta(
                 minutes=self.schedule_interval_minutes
             ),
@@ -286,7 +286,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             "start_date": datetime.datetime(2019, 1, 1),
         }
 
-        runner = AirflowDagRunner(AirflowPipelineConfig(self.airflow_config))
+        runner = AirflowDagRunner(AirflowPipelineConfig(airflow_config))
 
         return runner.run(
             pipeline=pipeline,
