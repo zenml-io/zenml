@@ -17,7 +17,14 @@ if [ -n "$1" ]; then
     coverage run -m pytest $TEST_SRC --color=yes
 else
     coverage run -m pytest tests/unit --color=yes
-    coverage run -m pytest tests/integration --color=yes
+    # the following two commands are run separately as our example integration
+    # tests mess with the dependencies installed inside the main testing
+    # environment which causes tests inside test_integration_stack_components.py
+    # to fail. Replace the following two calls by
+    # `coverage run -m pytest test/integration --color=yes`
+    # once we fix this.
+    coverage run -m pytest test/integration/test_integration_stack_components.py --color=yes
+    coverage run -m pytest tests/integration --color=yes --ignore=tests/integration/test_integration_stack_components.py
 fi
 coverage combine
 coverage report --show-missing
