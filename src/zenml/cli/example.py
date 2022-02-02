@@ -22,14 +22,13 @@ import click
 from git.exc import GitCommandError, InvalidGitRepositoryError, NoSuchPathError
 from git.repo.base import Repo
 from packaging.version import Version, parse
-from rich import box, table
 from rich.markdown import Markdown
 from rich.text import Text
 
 import zenml.io.utils
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
-from zenml.cli.utils import confirmation, declare, error, warning
+from zenml.cli.utils import confirmation, declare, error, print_table, warning
 from zenml.console import console
 from zenml.constants import GIT_REPO_URL
 from zenml.io import fileio
@@ -427,13 +426,11 @@ def example() -> None:
 def list(git_examples_handler: GitExamplesHandler) -> None:
     """List all available examples."""
     check_for_version_mismatch(git_examples_handler)
-
-    # use a rich table to print the examples
-    rich_table = table.Table(box=box.HEAVY_EDGE)
-    rich_table.add_column("EXAMPLE_NAME")
-    for example in git_examples_handler.get_examples():
-        rich_table.add_row(example.name)
-    console.print(rich_table)
+    examples = [
+        {"example_name": example.name}
+        for example in git_examples_handler.get_examples()
+    ]
+    print_table(examples)
 
     declare("\n" + "To pull the examples, type: ")
     text = Text("zenml example pull EXAMPLE_NAME", style="markdown.code_block")
