@@ -32,7 +32,6 @@ from dateutil import tz
 from rich import box, table
 from rich.text import Text
 
-from zenml.cli import utils as cli_utils
 from zenml.console import console
 from zenml.logger import get_logger
 from zenml.repository import StackConfiguration
@@ -125,7 +124,6 @@ def print_table(obj: List[Dict[str, Any]]) -> None:
         rich_table.add_row(*list(item.values()))
     if len(rich_table.columns) > 1:
         rich_table.columns[0].justify = "right"
-    # breakpoint()
     console.print(rich_table)
 
 
@@ -179,25 +177,26 @@ def print_stack_configuration(
     component: StackConfiguration, active: bool, stack_name: str
 ) -> None:
     """Prints the configuration options of a stack."""
-    cli_utils.title("Stack:")
-
+    stack_caption = f"'{stack_name}' stack"
     if active:
-        cli_utils.declare("**ACTIVE**\n")
-    else:
-        cli_utils.declare("")
-    cli_utils.declare(f"NAME: {stack_name}")
-
+        stack_caption += " (ACTIVE)"
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title="Stack Configuration",
+        caption=stack_caption,
+        show_lines=True,
+    )
+    rich_table.add_column("COMPONENT_TYPE")
+    rich_table.add_column("COMPONENT_NAME")
     items = component.dict().items()
-    configuration = [
-        {
-            **{key.upper(): str(value) for key, value in items},
-        }
-    ]
-    print_table(configuration)
+    for item in items:
+        rich_table.add_row(*list(item))
 
-    # cli_utils.declare(f"NAME: {stack_name}")
-    # for key, value in stack_configuration.dict().items():
-    #     cli_utils.declare(f"{key.upper()}: {value}")
+    # capitalize entries in first column
+    rich_table.columns[0]._cells = [
+        component.upper() for component in rich_table.columns[0]._cells  # type: ignore[union-attr]
+    ]
+    console.print(rich_table)
 
 
 def print_stack_component_configuration(component: StackComponent) -> None:
