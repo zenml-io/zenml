@@ -121,6 +121,9 @@ def print_table(obj: List[Dict[str, Any]]) -> None:
         rich_table.add_column(key.upper())
     for item in obj:
         rich_table.add_row(*list(item.values()))
+    if len(rich_table.columns) > 1:
+        rich_table.columns[0].justify = "right"
+    # breakpoint()
     console.print(rich_table)
 
 
