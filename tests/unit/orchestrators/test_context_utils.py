@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.enums import ContextTypes
+from zenml.enums import ContextTypes, StackComponentType
 from zenml.repository import Repository
 from zenml.steps import step
 
@@ -38,6 +38,15 @@ def test_pipeline_storing_stack_in_the_metadata_store(
 
     assert len(stack_contexts) == 1
 
-    assert "orchestrator" in stack_contexts[0].custom_properties
-    assert "artifact_store" in stack_contexts[0].custom_properties
-    assert "metadata_store" in stack_contexts[0].custom_properties
+    assert (
+        StackComponentType.ORCHESTRATOR.value
+        in stack_contexts[0].custom_properties
+    )
+    assert (
+        StackComponentType.ARTIFACT_STORE.value
+        in stack_contexts[0].custom_properties
+    )
+    assert (
+        StackComponentType.METADATA_STORE.value
+        in stack_contexts[0].custom_properties
+    )
