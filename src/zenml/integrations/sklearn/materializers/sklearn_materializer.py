@@ -39,7 +39,7 @@ DEFAULT_FILENAME = "model"
 class SklearnMaterializer(BaseMaterializer):
     """Materializer to read data to and from sklearn."""
 
-    ASSOCIATED_TYPES = [
+    ASSOCIATED_TYPES = (
         BaseEstimator,
         ClassifierMixin,
         ClusterMixin,
@@ -50,8 +50,8 @@ class SklearnMaterializer(BaseMaterializer):
         MultiOutputMixin,
         DensityMixin,
         TransformerMixin,
-    ]
-    ASSOCIATED_ARTIFACT_TYPES = [ModelArtifact]
+    )
+    ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
     def handle_input(
         self, data_type: Type[Any]

@@ -240,6 +240,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
     #  path to a config file.
     def run(
         self,
+        *,
         run_name: Optional[str] = None,
         schedule: Optional[Schedule] = None,
     ) -> Any:

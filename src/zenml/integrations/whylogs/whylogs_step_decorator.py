@@ -97,7 +97,7 @@ def enable_whylogs(
 
     def inner_decorator(_step: S) -> S:
 
-        source_fn = getattr(_step, STEP_INNER_FUNC_NAME)
+        source_fn = _step.entrypoint
         return cast(
             S,
             type(  # noqa

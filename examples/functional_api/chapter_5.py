@@ -41,7 +41,7 @@ class Floats(Base):
 class SQLALchemyMaterializerForSQLite(BaseMaterializer):
     """Read/Write float to sqlalchemy table."""
 
-    ASSOCIATED_TYPES = [float]
+    ASSOCIATED_TYPES = (float,)
 
     def __init__(self, artifact):
         super().__init__(artifact)

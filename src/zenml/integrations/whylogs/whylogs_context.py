@@ -64,9 +64,6 @@ class WhylogsContext:
     ) -> Session:
         """Get the whylogs session associated with the current step.
 
-        Args:
-            None
-
         Returns:
             The whylogs Session instance associated with the current step
         """

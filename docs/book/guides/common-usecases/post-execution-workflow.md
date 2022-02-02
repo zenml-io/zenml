@@ -104,4 +104,4 @@ FacetStatisticsVisualizer().visualize(output)
 
 It produces the following visualization:
 
-![Statistics for boston housing dataset](../../.gitbook/assets/statistics\_boston\_housing.png)
+![Statistics for boston housing dataset](../../assets/statistics-boston-housing.png)
