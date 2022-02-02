@@ -31,22 +31,20 @@ def test_pipeline_storing_stack_in_the_metadata_store(
 
     repo = Repository()
 
-    md_store = repo.get_stack(repo.active_stack_name).metadata_store
-    stack_contexts = md_store.store.get_contexts_by_type(
+    stack = repo.get_stack(repo.active_stack_name)
+    metadata_store = stack.metadata_store
+    stack_contexts = metadata_store.store.get_contexts_by_type(
         ContextTypes.STACK.value
     )
 
     assert len(stack_contexts) == 1
 
-    assert (
+    assert stack_contexts[0].custom_properties[
         StackComponentType.ORCHESTRATOR.value
-        in stack_contexts[0].custom_properties
-    )
-    assert (
+    ].string_value == stack.orchestrator.json(sort_keys=True)
+    assert stack_contexts[0].custom_properties[
         StackComponentType.ARTIFACT_STORE.value
-        in stack_contexts[0].custom_properties
-    )
-    assert (
+    ].string_value == stack.artifact_store.json(sort_keys=True)
+    assert stack_contexts[0].custom_properties[
         StackComponentType.METADATA_STORE.value
-        in stack_contexts[0].custom_properties
-    )
+    ].string_value == stack.metadata_store.json(sort_keys=True)
