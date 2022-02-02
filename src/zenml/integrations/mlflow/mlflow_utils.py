@@ -35,10 +35,10 @@ def get_or_create_mlflow_run(experiment_name: str, run_name: str) -> ActiveRun:
     and different IDs are created.
 
     Args:
-        experiment_name (str): the experiment name under which this runs will
+        experiment_name: the experiment name under which this runs will
             be tracked. If no MLflow experiment with this name exists, one will
             be created.
-        run_name (str): the name of the MLflow run. If a run with this name
+        run_name: the name of the MLflow run. If a run with this name
             does not exist, one will be created, otherwise the existing run
             will be reused
 
@@ -50,7 +50,7 @@ def get_or_create_mlflow_run(experiment_name: str, run_name: str) -> ActiveRun:
     set_experiment(experiment_name)
     mlflow_experiment = get_experiment_by_name(experiment_name)
 
-    # TODO [medium]: find a solution to avoid race-conditions while creating
+    # TODO [MEDIUM]: find a solution to avoid race-conditions while creating
     #   the same MLflow run from parallel steps
     runs = search_runs(
         experiment_ids=[mlflow_experiment.experiment_id],

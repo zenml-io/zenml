@@ -257,7 +257,7 @@ class EnvironmentComponentMeta(type):
 class BaseEnvironmentComponent(metaclass=EnvironmentComponentMeta):
     """Base Environment component class.
 
-    All Environment components must inherit this class and provide a unique
+    All Environment components must inherit from this class and provide a unique
     value for the `NAME` attribute.
 
 

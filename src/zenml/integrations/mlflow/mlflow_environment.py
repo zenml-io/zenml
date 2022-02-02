@@ -78,7 +78,7 @@ class MLFlowEnvironment(BaseEnvironmentComponent):
         local_mlflow_backend_uri = os.path.join(artifact_store.path, "mlruns")
         if not os.path.exists(local_mlflow_backend_uri):
             os.makedirs(local_mlflow_backend_uri)
-            # TODO [medium]: safely access (possibly non-existent) artifact stores
+            # TODO [MEDIUM]: safely access (possibly non-existent) artifact stores
         return "file:" + local_mlflow_backend_uri
 
     def activate(self) -> None:
