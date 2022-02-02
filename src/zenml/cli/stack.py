@@ -109,15 +109,14 @@ def list_stacks() -> None:
         cli_utils.warning("No stacks registered!")
         return
 
-    cli_utils.title("Stacks:")
     active_stack_name = repo.active_stack_name
 
     stack_dicts = []
     for stack_name, stack_configuration in repo.stack_configurations.items():
         is_active = stack_name == active_stack_name
         stack_config = {
-            "ACTIVE": "*" if is_active else "",
-            "NAME": stack_name,
+            "ACTIVE": ":white_check_mark:" if is_active else "",
+            "STACK NAME": stack_name,
             **{
                 key.upper(): value
                 for key, value in stack_configuration.dict().items()

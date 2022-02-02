@@ -28,7 +28,7 @@ from typing import (
 
 import click
 from dateutil import tz
-from rich import table
+from rich import box, table
 
 from zenml.console import console
 from zenml.logger import get_logger
@@ -114,7 +114,7 @@ def print_table(obj: List[Dict[str, Any]]) -> None:
     Args:
       obj: A List containing dictionaries.
     """
-    rich_table = table.Table()
+    rich_table = table.Table(box=box.HEAVY_EDGE)
     for key, _ in obj[0].items():
         rich_table.add_column(key.upper(), [row[key] for row in obj])  # type: ignore[arg-type]
     for item in obj:
