@@ -29,19 +29,11 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-def reset_step_flags(zenml_pipeline: "BasePipeline") -> None:
-    """Reset the _has_been_called flag ahead of a pipeline run, to make sure
-    a pipeline instance can be called more than once."""
-    for step in zenml_pipeline.steps.values():
-        step._has_been_called = False
-
-
 def create_tfx_pipeline(
-        zenml_pipeline: "BasePipeline", stack: "Stack"
+    zenml_pipeline: "BasePipeline", stack: "Stack"
 ) -> tfx_pipeline.Pipeline:
     """Creates a tfx pipeline from a ZenML pipeline."""
     # Connect the inputs/outputs of all steps in the pipeline
-    reset_step_flags(zenml_pipeline)
     zenml_pipeline.connect(**zenml_pipeline.steps)
 
     tfx_components = [step.component for step in zenml_pipeline.steps.values()]
@@ -59,7 +51,7 @@ def create_tfx_pipeline(
 
 
 def execute_step(
-        tfx_launcher: launcher.Launcher,
+    tfx_launcher: launcher.Launcher,
 ) -> Optional[data_types.ExecutionInfo]:
     """Executes a tfx component.
 
