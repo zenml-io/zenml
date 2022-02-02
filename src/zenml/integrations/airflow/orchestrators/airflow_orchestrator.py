@@ -28,7 +28,6 @@ from zenml.integrations.airflow.orchestrators.airflow_dag_runner import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.orchestrators.utils import create_tfx_pipeline
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
@@ -283,10 +282,14 @@ class AirflowOrchestrator(BaseOrchestrator):
             "schedule_interval": datetime.timedelta(
                 minutes=self.schedule_interval_minutes
             ),
-            # We set this in the past and turn catchup off and then it works
+            # We set this in the past and turn catchup off, and then it works
             "start_date": datetime.datetime(2019, 1, 1),
         }
 
         runner = AirflowDagRunner(AirflowPipelineConfig(self.airflow_config))
-        tfx_pipeline = create_tfx_pipeline(pipeline, stack=stack)
-        return runner.run(tfx_pipeline, run_name=runtime_configuration.run_name)
+
+        return runner.run(
+            pipeline=pipeline,
+            stack=stack,
+            runtime_configuration=runtime_configuration,
+        )
