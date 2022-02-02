@@ -50,7 +50,7 @@ def get_or_create_mlflow_run(experiment_name: str, run_name: str) -> ActiveRun:
     set_experiment(experiment_name)
     mlflow_experiment = get_experiment_by_name(experiment_name)
 
-    # TODO [MEDIUM]: find a solution to avoid race-conditions while creating
+    # TODO [ENG-458]: find a solution to avoid race-conditions while creating
     #   the same MLflow run from parallel steps
     runs = search_runs(
         experiment_ids=[mlflow_experiment.experiment_id],
