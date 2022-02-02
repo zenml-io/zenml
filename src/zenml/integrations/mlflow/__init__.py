@@ -25,5 +25,15 @@ class MlflowIntegration(Integration):
     NAME = MLFLOW
     REQUIREMENTS = ["mlflow>=1.2.0"]
 
+    @staticmethod
+    def activate() -> None:
+        """Activate the MLflow integration."""
+        from zenml.integrations.mlflow.mlflow_environment import (
+            MLFlowEnvironment,
+        )
+
+        # Create and activate the global MLflow environment
+        MLFlowEnvironment().activate()
+
 
 MlflowIntegration.check_installation()
