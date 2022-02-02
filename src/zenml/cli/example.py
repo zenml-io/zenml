@@ -425,8 +425,8 @@ def example() -> None:
 def list(git_examples_handler: GitExamplesHandler) -> None:
     """List all available examples."""
     check_for_version_mismatch(git_examples_handler)
-    declare("Listing examples: \n")
 
+    # use a rich table to print the examples
     for example in git_examples_handler.get_examples():
         declare(f"{example.name}")
 
