@@ -23,7 +23,7 @@ else
     # to fail. Replace the following two calls by
     # `coverage run -m pytest test/integration --color=yes`
     # once we fix this.
-    coverage run -m pytest test/integration/test_integration_stack_components.py --color=yes
+    coverage run -m pytest tests/integration/test_integration_stack_components.py --color=yes
     coverage run -m pytest tests/integration --color=yes --ignore=tests/integration/test_integration_stack_components.py
 fi
 coverage combine
