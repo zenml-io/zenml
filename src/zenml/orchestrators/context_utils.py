@@ -34,7 +34,7 @@ def add_stack_as_context(
         context: a context proto message within a pipeline node
     """
     # Adding the type of context
-    context.type.name = ContextTypes.STACK.name  # type:ignore[attr-defined]
+    context.type.name = ContextTypes.STACK.value  # type:ignore[attr-defined]
 
     # Converting the stack into a dict to prepare for hashing
     stack_dict = stack.dict()
