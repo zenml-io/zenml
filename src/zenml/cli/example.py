@@ -22,7 +22,9 @@ import click
 from git.exc import GitCommandError, InvalidGitRepositoryError, NoSuchPathError
 from git.repo.base import Repo
 from packaging.version import Version, parse
+from rich import box, table
 from rich.markdown import Markdown
+from rich.text import Text
 
 import zenml.io.utils
 from zenml import __version__ as zenml_version_installed
@@ -427,11 +429,15 @@ def list(git_examples_handler: GitExamplesHandler) -> None:
     check_for_version_mismatch(git_examples_handler)
 
     # use a rich table to print the examples
+    rich_table = table.Table(box=box.HEAVY_EDGE)
+    rich_table.add_column("EXAMPLE_NAME")
     for example in git_examples_handler.get_examples():
-        declare(f"{example.name}")
+        rich_table.add_row(example.name)
+    console.print(rich_table)
 
     declare("\n" + "To pull the examples, type: ")
-    declare("zenml example pull EXAMPLE_NAME")
+    text = Text("zenml example pull EXAMPLE_NAME", style="markdown.code_block")
+    declare(text)
 
 
 @click.option(

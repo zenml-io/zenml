@@ -23,12 +23,14 @@ from typing import (
     List,
     Tuple,
     TypeVar,
+    Union,
     cast,
 )
 
 import click
 from dateutil import tz
 from rich import box, table
+from rich.text import Text
 
 from zenml.console import console
 from zenml.logger import get_logger
@@ -64,7 +66,7 @@ def confirmation(text: str, *args: Any, **kwargs: Any) -> bool:
     return click.confirm(click.style(text, fg="yellow"), *args, **kwargs)
 
 
-def declare(text: str) -> None:
+def declare(text: Union[str, Text]) -> None:
     """Echo a declaration on the CLI.
 
     Args:
