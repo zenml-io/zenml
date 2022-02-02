@@ -118,7 +118,7 @@ def print_table(obj: List[Dict[str, Any]]) -> None:
     """
     rich_table = table.Table(box=box.HEAVY_EDGE)
     for key, _ in obj[0].items():
-        rich_table.add_column(key.upper(), [row[key] for row in obj])  # type: ignore[arg-type]
+        rich_table.add_column(key.upper())
     for item in obj:
         rich_table.add_row(*list(item.values()))
     console.print(rich_table)
@@ -160,14 +160,13 @@ def print_stack_component_list(
     for component in components:
         is_active = component.name == active_component_name
         component_config = {
-            "ACTIVE": "*" if is_active else "",
+            "ACTIVE": ":point_right:" if is_active else "",
             **{
                 key.upper(): str(value)
                 for key, value in component.dict().items()
             },
         }
         configurations.append(component_config)
-
     print_table(configurations)
 
 

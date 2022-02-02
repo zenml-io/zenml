@@ -115,7 +115,7 @@ def list_stacks() -> None:
     for stack_name, stack_configuration in repo.stack_configurations.items():
         is_active = stack_name == active_stack_name
         stack_config = {
-            "ACTIVE": ":white_check_mark:" if is_active else "",
+            "ACTIVE": ":point_right:" if is_active else "",
             "STACK NAME": stack_name,
             **{
                 key.upper(): value

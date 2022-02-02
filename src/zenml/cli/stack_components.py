@@ -135,15 +135,16 @@ def generate_stack_component_list_command(
         if len(components) == 0:
             cli_utils.warning(f"No {display_name} registered.")
             return
+        try:
+            active_component_name = repo.active_stack.components[
+                component_type
+            ].name
 
-        active_component_name = repo.active_stack.components[
-            component_type
-        ].name
-
-        cli_utils.title(f"{display_name}:")
-        cli_utils.print_stack_component_list(
-            components, active_component_name=active_component_name
-        )
+            cli_utils.print_stack_component_list(
+                components, active_component_name=active_component_name
+            )
+        except KeyError:
+            cli_utils.error(f"No available {component_type}.")
 
     return list_stack_components_command
 
