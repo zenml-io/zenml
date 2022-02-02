@@ -35,8 +35,9 @@ def reset_step_flags(zenml_pipeline: "BasePipeline") -> None:
     for step in zenml_pipeline.steps.values():
         step._has_been_called = False
 
+
 def create_tfx_pipeline(
-    zenml_pipeline: "BasePipeline", stack: "Stack"
+        zenml_pipeline: "BasePipeline", stack: "Stack"
 ) -> tfx_pipeline.Pipeline:
     """Creates a tfx pipeline from a ZenML pipeline."""
     # Connect the inputs/outputs of all steps in the pipeline
@@ -58,7 +59,7 @@ def create_tfx_pipeline(
 
 
 def execute_step(
-    tfx_launcher: launcher.Launcher,
+        tfx_launcher: launcher.Launcher,
 ) -> Optional[data_types.ExecutionInfo]:
     """Executes a tfx component.
 
