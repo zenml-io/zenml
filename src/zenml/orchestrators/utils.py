@@ -62,10 +62,14 @@ def get_cache_status(
     """Returns the caching status of a step.
 
     Args:
-        execution_info: The execution info of a tfx step.
+        execution_info: The execution info of a `tfx` step.
+
+    Raises:
+        AttributeError: If the execution info is `None`.
+        KeyError: If no pipeline info is found in the `execution_info`.
 
     Returns:
-        The caching status of a tfx step as a boolean value.
+        The caching status of a `tfx` step as a boolean value.
     """
     status = False
     repository = Repository()
@@ -114,18 +118,18 @@ def execute_step(
     try:
         execution_info = tfx_launcher.launch()
         if execution_info and get_cache_status(execution_info):
-            pipeline_run_id = execution_info.pipeline_run_id
             if execution_info.exec_properties:
+                pipeline_run_id = execution_info.pipeline_run_id
                 step_name = json.loads(
                     execution_info.exec_properties[step_name_param]
+                )
+                logger.info(
+                    f"Using cached version of `{pipeline_step_name}` [`{step_name}`] from pipeline_run_id `{pipeline_run_id}`."
                 )
             else:
                 logger.error(
                     f"No execution properties found for step `{pipeline_step_name}`."
                 )
-            logger.info(
-                f"Using cached version of `{pipeline_step_name}` [`{step_name}`] from pipeline_run_id `{pipeline_run_id}`."
-            )
     except RuntimeError as e:
         if "execution has already succeeded" in str(e):
             # Hacky workaround to catch the error that a pipeline run with
