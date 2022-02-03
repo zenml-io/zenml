@@ -182,3 +182,7 @@ zenml_examples/
 
 # Docs
 docs/sphinx_docs/_build
+
+# mutmut / hammet incidental files
+.hammett-db
+.mutmut-cache
