@@ -20,6 +20,7 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.cli.utils import print_stack_configuration
+from zenml.console import console
 from zenml.enums import StackComponentType
 from zenml.repository import Repository
 from zenml.stack import Stack
@@ -74,31 +75,34 @@ def register_stack(
     container_registry_name: Optional[str] = None,
 ) -> None:
     """Register a stack."""
+    with console.status(f"Registering stack `{stack_name}`..."):
+        repo = Repository()
 
-    repo = Repository()
+        stack_components = {
+            StackComponentType.METADATA_STORE: repo.get_stack_component(
+                StackComponentType.METADATA_STORE, name=metadata_store_name
+            ),
+            StackComponentType.ARTIFACT_STORE: repo.get_stack_component(
+                StackComponentType.ARTIFACT_STORE, name=artifact_store_name
+            ),
+            StackComponentType.ORCHESTRATOR: repo.get_stack_component(
+                StackComponentType.ORCHESTRATOR, name=orchestrator_name
+            ),
+        }
 
-    stack_components = {
-        StackComponentType.METADATA_STORE: repo.get_stack_component(
-            StackComponentType.METADATA_STORE, name=metadata_store_name
-        ),
-        StackComponentType.ARTIFACT_STORE: repo.get_stack_component(
-            StackComponentType.ARTIFACT_STORE, name=artifact_store_name
-        ),
-        StackComponentType.ORCHESTRATOR: repo.get_stack_component(
-            StackComponentType.ORCHESTRATOR, name=orchestrator_name
-        ),
-    }
+        if container_registry_name:
+            stack_components[
+                StackComponentType.CONTAINER_REGISTRY
+            ] = repo.get_stack_component(
+                StackComponentType.CONTAINER_REGISTRY,
+                name=container_registry_name,
+            )
 
-    if container_registry_name:
-        stack_components[
-            StackComponentType.CONTAINER_REGISTRY
-        ] = repo.get_stack_component(
-            StackComponentType.CONTAINER_REGISTRY, name=container_registry_name
+        stack_ = Stack.from_components(
+            name=stack_name, components=stack_components
         )
-
-    stack_ = Stack.from_components(name=stack_name, components=stack_components)
-    repo.register_stack(stack_)
-    cli_utils.declare(f"Stack `{stack_name}` successfully registered!")
+        repo.register_stack(stack_)
+        cli_utils.declare(f"Stack `{stack_name}` successfully registered!")
 
 
 @stack.command("list")
@@ -165,22 +169,25 @@ def describe_stack(stack_name: Optional[str]) -> None:
 @click.argument("stack_name", type=str)
 def delete_stack(stack_name: str) -> None:
     """Delete a stack."""
-    Repository().deregister_stack(stack_name)
-    cli_utils.declare(f"Deleted stack {stack_name}.")
+    with console.status(f"Deleting stack `{stack_name}`...\n"):
+        Repository().deregister_stack(stack_name)
+        cli_utils.declare(f"Deleted stack {stack_name}.")
 
 
 @stack.command("set")
 @click.argument("stack_name", type=str)
 def set_active_stack(stack_name: str) -> None:
     """Sets a stack active."""
-    Repository().activate_stack(stack_name)
-    cli_utils.declare(f"Active stack: {stack_name}")
+    with console.status(f"Setting the active stack to `{stack_name}`..."):
+        Repository().activate_stack(stack_name)
+        cli_utils.declare(f"Active stack: {stack_name}")
 
 
 @stack.command("get")
 def get_active_stack() -> None:
     """Gets the active stack."""
-    cli_utils.declare(f"Active stack: {Repository().active_stack_name}")
+    with console.status("Getting the active stack..."):
+        cli_utils.declare(f"Active stack: {Repository().active_stack_name}")
 
 
 @stack.command("up")
