@@ -14,11 +14,11 @@
 import pytest
 
 from zenml.exceptions import StepInterfaceError
-from zenml.steps import BaseStepConfig, Output, StepContext, step
+from zenml.steps import Output, step
 
 
 def test_returning_an_object_of_the_wrong_type_raises_an_error(
-        clean_repo, one_step_pipeline
+    clean_repo, one_step_pipeline
 ):
     """Tests that returning an object of a type that wasn't specified (either
     directly or as part of the `Output` tuple annotation) raises an error."""
@@ -43,7 +43,7 @@ def test_returning_an_object_of_the_wrong_type_raises_an_error(
 
 
 def test_returning_wrong_amount_of_objects_raises_an_error(
-        clean_repo, one_step_pipeline
+    clean_repo, one_step_pipeline
 ):
     """Tests that returning a different amount of objects than defined (either
     directly or as part of the `Output` tuple annotation) raises an error."""
@@ -76,8 +76,15 @@ def test_returning_wrong_amount_of_objects_raises_an_error(
     def some_step_7() -> Output(a=list, b=int):
         return [2, 1]
 
-    steps = [some_step_1, some_step_2, some_step_3, some_step_4, some_step_5,
-             some_step_6, some_step_7]
+    steps = [
+        some_step_1,
+        some_step_2,
+        some_step_3,
+        some_step_4,
+        some_step_5,
+        some_step_6,
+        some_step_7,
+    ]
 
     for step_function in steps:
         pipeline_ = one_step_pipeline(step_function())
