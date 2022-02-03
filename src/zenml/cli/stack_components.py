@@ -116,9 +116,9 @@ def generate_stack_component_describe_command(
 
         component = _get_stack_component(component_type, component_name=name)
         is_active = active_component_name == component.name
-        cli_utils.title(f"{singular_display_name}:")
-        cli_utils.declare("**ACTIVE**\n" if is_active else "")
-        cli_utils.print_stack_component_configuration(component)
+        cli_utils.print_stack_component_configuration(
+            component, singular_display_name, is_active
+        )
 
     return describe_stack_component_command
 

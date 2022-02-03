@@ -199,11 +199,34 @@ def print_stack_configuration(
     console.print(rich_table)
 
 
-def print_stack_component_configuration(component: StackComponent) -> None:
+def print_stack_component_configuration(
+    component: StackComponent, display_name: str, active_status: bool
+) -> None:
     """Prints the configuration options of a stack component."""
-    # declare(f"NAME: {component.name}")
-    for key, value in component.dict().items():
-        declare(f"{key.upper()}: {value}")
+    title = f"{component.type.value.upper()} Component Configuration"
+    if active_status:
+        title += " (ACTIVE)"
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title=title,
+        show_lines=True,
+    )
+    rich_table.add_column("COMPONENT_PROPERTY")
+    rich_table.add_column("VALUE")
+    items = component.dict().items()
+    for item in items:
+        rich_table.add_row(*[str(elem) for elem in item])
+
+    # capitalize entries in first column
+    rich_table.columns[0]._cells = [
+        component.upper() for component in rich_table.columns[0]._cells  # type: ignore[union-attr]
+    ]
+    console.print(rich_table)
+
+    # title(f"{display_name}:")
+    # declare("**ACTIVE**\n" if active_status else "")
+    # for key, value in component.dict().items():
+    #     declare(f"{key.upper()}: {value}")
 
 
 def format_date(
