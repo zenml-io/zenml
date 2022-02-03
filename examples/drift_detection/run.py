@@ -111,7 +111,7 @@ if __name__ == "__main__":
     pipeline.run()
 
     repo = Repository()
-    pipeline = repo.get_pipelines()[0]
+    pipeline = repo.get_pipeline("drift_detection_pipeline")
     last_run = pipeline.runs[-1]
     drift_analysis_step = last_run.get_step(name="drift_analyzer")
     print(f"Data drift detected: {drift_analysis_step.output.read()}")
