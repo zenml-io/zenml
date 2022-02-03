@@ -40,7 +40,10 @@ class ZenAzure(Filesystem):
     def _ensure_filesystem_set(cls) -> None:
         """Ensures that the filesystem is set."""
         if cls.fs is None:
-            cls.fs = adlfs.AzureBlobFileSystem(use_listings_cache=False)
+            cls.fs = adlfs.AzureBlobFileSystem(
+                anon=False,
+                use_listings_cache=False,
+            )
 
     @classmethod
     def _split_path(cls, path: PathType) -> Tuple[str, str]:
