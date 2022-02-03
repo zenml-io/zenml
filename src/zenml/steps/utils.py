@@ -448,8 +448,8 @@ class _FunctionExecutor(BaseExecutor):
                     f"(actual return value: {return_values})."
                 )
             elif len(output_annotations) != len(return_values):
-                # if the user defined multiple outputs, but returns a
-                # different amount of outputs
+                # if the user defined multiple outputs, the amount of actual
+                # outputs must be the same
                 raise StepInterfaceError(
                     f"Wrong amount of step function outputs for step "
                     f"'{step_name}: Expected {len(output_annotations)} outputs "
