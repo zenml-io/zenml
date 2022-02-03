@@ -314,20 +314,44 @@ def import_class_by_path(class_path: str) -> Type[Any]:
     return getattr(mod, classname)  # type: ignore[no-any-return]
 
 
+class ModuleContextManager:
+    """Simple context manager to help import module within the repo"""
+
+    def __init__(self, path: str) -> None:
+        """Initializing the manager object"""
+        self.path = path
+
+    def __enter__(self) -> None:
+        """Entering the with statement"""
+        sys.path.insert(0, self.path)
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:  # type: ignore[no-untyped-def]
+        """Exiting the with statement"""
+        try:
+            sys.path.remove(self.path)
+        except ValueError:
+            pass
+
+
 def load_source_path_class(source: str) -> Type[Any]:
     """Loads a Python class from the source.
 
     Args:
         source: class_source e.g. this.module.Class[@sha]
     """
+    from zenml.repository import Repository
+
+    repo_path = str(Repository.find_repository())
+
     if "@" in source:
         source = source.split("@")[0]
     logger.debug(
         "Unpinned step found with no git sha. Attempting to "
         "load class from current repository state."
     )
-    class_ = import_class_by_path(source)
-    return class_
+
+    with ModuleContextManager(repo_path):
+        return import_class_by_path(source)
 
 
 def import_python_file(file_path: str) -> types.ModuleType:
