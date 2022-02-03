@@ -123,7 +123,7 @@ def print_table(obj: List[Dict[str, Any]]) -> None:
     for item in obj:
         rich_table.add_row(*list(item.values()))
     if len(rich_table.columns) > 1:
-        rich_table.columns[0].justify = "right"
+        rich_table.columns[0].justify = "center"
     console.print(rich_table)
 
 
@@ -135,8 +135,6 @@ def format_integration_list(
     list_of_dicts = []
     for name, integration_impl in integrations:
         is_installed = integration_impl.check_installation()  # type: ignore[attr-defined]
-        # TODO [ENG-253]: Make the installed column right-aligned once we
-        #  add rich or some other similar dependency
         list_of_dicts.append(
             {
                 "INSTALLED": ":white_check_mark:" if is_installed else "",
