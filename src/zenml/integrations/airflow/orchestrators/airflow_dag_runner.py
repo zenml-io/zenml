@@ -153,7 +153,9 @@ class AirflowDagRunner:
 
         for node in pipeline.nodes:
             context = node.pipeline_node.contexts.contexts.add()
-            context_utils.add_stack_as_context(context=context, stack=stack)
+            context_utils.add_stack_as_metadata_context(
+                context=context, stack=stack
+            )
 
             pipeline_node = node.pipeline_node
             node_id = pipeline_node.node_info.id

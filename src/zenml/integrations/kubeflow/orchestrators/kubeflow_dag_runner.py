@@ -302,7 +302,9 @@ class KubeflowDagRunner:
 
         for node in tfx_ir.nodes:  # type:ignore[attr-defined]
             context = node.pipeline_node.contexts.contexts.add()
-            context_utils.add_stack_as_context(context=context, stack=stack)
+            context_utils.add_stack_as_metadata_context(
+                context=context, stack=stack
+            )
 
         # Assumption: There is a partial ordering of components in the list,
         # i.e. if component A depends on component B and C, then A appears

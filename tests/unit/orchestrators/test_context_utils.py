@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.enums import ContextTypes, StackComponentType
+from zenml.enums import MetadataContextTypes, StackComponentType
 from zenml.repository import Repository
 from zenml.steps import step
 
@@ -34,7 +34,7 @@ def test_pipeline_storing_stack_in_the_metadata_store(
     stack = repo.get_stack(repo.active_stack_name)
     metadata_store = stack.metadata_store
     stack_contexts = metadata_store.store.get_contexts_by_type(
-        ContextTypes.STACK.value
+        MetadataContextTypes.STACK.value
     )
 
     assert len(stack_contexts) == 1

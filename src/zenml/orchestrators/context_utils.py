@@ -14,7 +14,7 @@
 import json
 from typing import TYPE_CHECKING
 
-from zenml.enums import ContextTypes
+from zenml.enums import MetadataContextTypes
 
 if TYPE_CHECKING:
     from tfx.proto.orchestration import pipeline_pb2
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from zenml.stack import Stack
 
 
-def add_stack_as_context(
+def add_stack_as_metadata_context(
     stack: "Stack",
     context: "pipeline_pb2.ContextSpec",  # type: ignore[valid-type]
 ) -> None:
@@ -34,7 +34,9 @@ def add_stack_as_context(
         context: a context proto message within a pipeline node
     """
     # Adding the type of context
-    context.type.name = ContextTypes.STACK.value  # type:ignore[attr-defined]
+    context.type.name = (  # type:ignore[attr-defined]
+        MetadataContextTypes.STACK.value
+    )
 
     # Converting the stack into a dict to prepare for hashing
     stack_dict = stack.dict()

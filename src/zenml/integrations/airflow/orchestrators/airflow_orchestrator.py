@@ -108,7 +108,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         # check the DAG folder every 10 seconds for new files
         os.environ["AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL"] = "10"
 
-    def _copy_to_dag_directory_if_necessary(self, dag_filepath: str):
+    def _copy_to_dag_directory_if_necessary(self, dag_filepath: str) -> None:
         """Copies the DAG module to the airflow DAGs directory if it's not
         already located there.
 
@@ -133,8 +133,8 @@ class AirflowOrchestrator(BaseOrchestrator):
                 )
             fileio.copy(dag_filepath, destination_path, overwrite=True)
 
-    def _log_webserver_credentials(self):
-        """Logs URL and credentials to login to the airflow webserver.
+    def _log_webserver_credentials(self) -> None:
+        """Logs URL and credentials to log in to the airflow webserver.
 
         Raises:
             FileNotFoundError: If the password file does not exist.
