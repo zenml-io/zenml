@@ -29,6 +29,12 @@ from zenml.io.filesystem import Filesystem, PathType
 class ZenAzure(Filesystem):
     """Filesystem that delegates to Azure storage using adlfs.
 
+    To authenticate with an Azure Data Lake storage, make sure to set a
+    combination of the following environment variables:
+    - AZURE_STORAGE_CONNECTION_STRING
+    - AZURE_STORAGE_ACCOUNT_NAME and one of
+      [AZURE_STORAGE_ACCOUNT_KEY, AZURE_STORAGE_SAS_TOKEN]
+
     **Note**: To allow TFX to check for various error conditions, we need to
     raise their custom `NotFoundError` instead of the builtin python
     FileNotFoundError."""
