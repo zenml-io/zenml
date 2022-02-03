@@ -128,7 +128,7 @@ class ZenAzure(Filesystem):
         ZenAzure._ensure_filesystem_set()
 
         prefix, _ = ZenAzure._split_path(pattern)
-        return [f"{prefix}{path}" for path in ZenAzure.fs.glob(path=pattern)]  # type: ignore[no-any-return]
+        return [f"{prefix}{path}" for path in ZenAzure.fs.glob(path=pattern)]
 
     @staticmethod
     def isdir(path: PathType) -> bool:
