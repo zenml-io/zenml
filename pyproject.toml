@@ -185,6 +185,7 @@ module = [
     "absl.*",
     "gcsfs.*",
     "s3fs.*",
+    "adlfs.*",
     "fsspec.*",
     "torch.*",
     "pytorch_lightning.*",
