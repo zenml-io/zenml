@@ -15,6 +15,7 @@
 from typing import Optional, Tuple
 
 import click
+from rich.progress import track
 
 from zenml.cli.cli import cli
 from zenml.cli.utils import (
@@ -120,8 +121,11 @@ def install(integrations: Tuple[str], force: bool = False) -> None:
             f"{requirements}"
         )
     ):
-        for requirement in requirements:
-            install_package(requirement)
+        for n in track(
+            range(len(requirements)),
+            description="Installing integrations...\n",
+        ):
+            install_package(requirements[n])
 
         for integration_name in integrations_to_install:
             track_event(
@@ -166,11 +170,16 @@ def uninstall(integrations: Tuple[str], force: bool = False) -> None:
         except KeyError:
             warning(f"Unable to find integration '{integration_name}'.")
 
-    if requirements:
-        if force or confirmation(
+    if requirements and (
+        force
+        or confirmation(
             "Are you sure you want to uninstall the following "
             "packages from the current environment?\n"
             f"{requirements}"
+        )
+    ):
+        for n in track(
+            range(len(requirements)),
+            description="Uninstalling integrations...",
         ):
-            for requirement in requirements:
-                uninstall_package(requirement)
+            uninstall_package(requirements[n])

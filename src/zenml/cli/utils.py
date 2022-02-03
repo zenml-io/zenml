@@ -302,12 +302,28 @@ def activate_integrations(func: F) -> F:
 def install_package(package: str) -> None:
     """Installs pypi package into the current environment with pip"""
     subprocess.check_call(
-        [sys.executable, "-m", "pip", "install", "-q", package]
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "-qqq",
+            "--no-warn-conflicts",
+            package,
+        ]
     )
 
 
 def uninstall_package(package: str) -> None:
     """Uninstalls pypi package from the current environment with pip"""
     subprocess.check_call(
-        [sys.executable, "-m", "pip", "uninstall", "-q", "-y", package]
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "uninstall",
+            "-qqq",
+            "-y",
+            package,
+        ]
     )
