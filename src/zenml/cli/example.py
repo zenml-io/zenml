@@ -84,7 +84,7 @@ class LocalExample:
 
     @property
     def executable_python_example(self) -> str:
-        """Return the python file for the example"""
+        """Return the Python file for the example"""
         if self.has_single_python_file:
             return self.python_files_in_dir[0]
         elif self.has_any_python_file:
@@ -100,7 +100,7 @@ class LocalExample:
             )
 
     def is_present(self) -> bool:
-        """Checks if the example is installed at the given path."""
+        """Checks if the example exists at the given path."""
         return fileio.file_exists(str(self.path)) and fileio.is_dir(
             str(self.path)
         )
@@ -207,7 +207,7 @@ class ExamplesRepo:
     @property
     def active_version(self) -> Optional[str]:
         """In case a release branch is checked out, this property returns
-        that version, else None is returned"""
+        that version, else `None` is returned"""
         for branch in self.repo.heads:
             branch_name = cast(str, branch.name)
             if (
@@ -248,7 +248,7 @@ class ExamplesRepo:
         return os.path.join(self.examples_dir, EXAMPLES_RUN_SCRIPT)
 
     def clone(self) -> None:
-        """Clones repo to cloning_path.
+        """Clones repo to `cloning_path`.
 
         If you break off the operation with a `KeyBoardInterrupt` before the
         cloning is completed, this method will delete whatever was partially
@@ -274,7 +274,7 @@ class ExamplesRepo:
             )
 
     def checkout(self, branch: str) -> None:
-        """Checks out a specific branch or tag of the examples repository
+        """Checks out a specific branch or tag of the examples repository.
 
         Raises:
             GitCommandError: if branch doesn't exist.
@@ -288,7 +288,7 @@ class ExamplesRepo:
 
 
 class GitExamplesHandler(object):
-    """Class for the GitExamplesHandler that interfaces with the CLI tool."""
+    """Class for the `GitExamplesHandler` that interfaces with the CLI tool."""
 
     def __init__(self) -> None:
         """Create a new GitExamplesHandler instance."""
@@ -300,7 +300,7 @@ class GitExamplesHandler(object):
 
     @property
     def examples(self) -> List[Example]:
-        """Property that contains a list of examples"""
+        """Property that contains a list of examples."""
         return [
             Example(
                 name, Path(os.path.join(self.examples_repo.examples_dir, name))

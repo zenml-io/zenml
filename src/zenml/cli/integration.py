@@ -47,27 +47,6 @@ def list_integrations() -> None:
         list(integration_registry.integrations.items())
     )
     print_table(formatted_table)
-    # title("Integrations:\n")
-
-    # table_rows = []
-    # for name, integration_impl in integration_registry.integrations.items():
-    #     is_installed = integration_impl.check_installation()
-    #     table_rows.append(
-    #         {
-    #             "INSTALLED": "*" if is_installed else "",
-    #             "INTEGRATION": name,
-    #             "PYTHON REQUIREMENTS": integration_impl.REQUIREMENTS,
-    #             "SYSTEM REQUIREMENTS": list(
-    #                 integration_impl.SYSTEM_REQUIREMENTS.keys()
-    #             ),
-    #         }
-    #     )
-    # print_table(table_rows)
-
-    # warning(
-    #     "\n" + "To install the dependencies of a specific integration, type: "
-    # )
-    # warning("zenml integration install EXAMPLE_NAME")
 
 
 @integration.command(
@@ -85,9 +64,7 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
     else:
         if requirements:
             title(
-                f"Requirements for "
-                f"{integration_name if integration_name else 'all integrations'}"
-                f":\n"
+                f'Requirements for {integration_name or "all integrations"}:\n'
             )
             declare(f"{requirements}")
             warning(
@@ -135,20 +112,22 @@ def install(integrations: Tuple[str], force: bool = False) -> None:
         except KeyError:
             warning(f"Unable to find integration '{integration_name}'.")
 
-    if requirements:
-        if force or confirmation(
+    if requirements and (
+        force
+        or confirmation(
             "Are you sure you want to install the following "
             "packages to the current environment?\n"
             f"{requirements}"
-        ):
-            for requirement in requirements:
-                install_package(requirement)
+        )
+    ):
+        for requirement in requirements:
+            install_package(requirement)
 
-            for integration_name in integrations_to_install:
-                track_event(
-                    AnalyticsEvent.INSTALL_INTEGRATION,
-                    {"integration_name": integration_name},
-                )
+        for integration_name in integrations_to_install:
+            track_event(
+                AnalyticsEvent.INSTALL_INTEGRATION,
+                {"integration_name": integration_name},
+            )
 
 
 @integration.command(
