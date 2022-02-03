@@ -386,7 +386,7 @@ class Stack:
             ProvisioningError: If any stack component is missing provisioned
                 resources.
         """
-        logger.info("Resuming provisioned resources for stack '%s'.", self.name)
+        logger.info(f"Resuming provisioned resources for stack '{self.name}'.")
         for component in self.components.values():
             if component.is_running:
                 # the component is already running, no need to resume anything
@@ -403,7 +403,7 @@ class Stack:
     def suspend(self) -> None:
         """Suspends the provisioned local resources of the stack."""
         logger.info(
-            "Suspending provisioned resources for stack '%s'.", self.name
+            f"Suspending provisioned resources for stack '{self.name}'."
         )
         for component in self.components.values():
             if component.is_running:
