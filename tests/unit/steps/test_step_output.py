@@ -72,8 +72,12 @@ def test_returning_wrong_amount_of_objects_raises_an_error(
     def some_step_6() -> Output(out1=tuple, out2=tuple):
         return (1, 2), (3, 4), (5, 6)
 
+    @step
+    def some_step_7() -> Output(a=list, b=int):
+        return [2, 1]
+
     steps = [some_step_1, some_step_2, some_step_3, some_step_4, some_step_5,
-             some_step_6]
+             some_step_6, some_step_7]
 
     for step_function in steps:
         pipeline_ = one_step_pipeline(step_function())
