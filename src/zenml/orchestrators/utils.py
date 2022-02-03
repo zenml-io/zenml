@@ -71,6 +71,10 @@ def get_cache_status(
     Returns:
         The caching status of a `tfx` step as a boolean value.
     """
+    if execution_info is None:
+        logger.warn("No execution info found when checking for cache status.")
+        return
+
     status = False
     repository = Repository()
     # TODO [HIGH]: Get the current running stack instead of just the active

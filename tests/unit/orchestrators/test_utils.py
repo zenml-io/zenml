@@ -17,6 +17,9 @@ import pytest
 from zenml.orchestrators.utils import get_cache_status
 
 
-def test_get_cache_status_raises_error_when_none_passed():
-    with pytest.raises(AttributeError):
+def test_get_cache_status_raises_no_error_when_none_passed():
+    """Ensure get_cache_status raises no error when None is passed."""
+    try:
         get_cache_status(None)
+    except AttributeError:
+        pytest.fail("`get_cache_status()` raised an `AttributeError`")
