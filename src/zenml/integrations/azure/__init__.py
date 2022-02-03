@@ -30,8 +30,8 @@ class AzureIntegration(Integration):
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        from zenml.integrations.aws import artifact_stores  # noqa
-        from zenml.integrations.aws import io  # noqa
+        from zenml.integrations.azure import artifact_stores  # noqa
+        from zenml.integrations.azure import io  # noqa
 
 
 AzureIntegration.check_installation()
