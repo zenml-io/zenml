@@ -42,6 +42,26 @@ class ZenAzure(Filesystem):
         if cls.fs is None:
             cls.fs = adlfs.AzureBlobFileSystem()
 
+    @classmethod
+    def _split_path(cls, path: PathType) -> Tuple[str, str]:
+        """Splits a path into the filesystem prefix and remainder.
+
+        Example:
+        ```python
+        prefix, remainder = ZenAzure._split_path("az://my_container/test.txt")
+        print(prefix, remainder)  # "az://" "my_container/test.txt"
+        ```
+        """
+        path = convert_to_str(path)
+        prefix = ""
+        for potential_prefix in cls.SUPPORTED_SCHEMES:
+            if path.startswith(potential_prefix):
+                prefix = potential_prefix
+                path = path[len(potential_prefix) :]
+                break
+
+        return prefix, path
+
     @staticmethod
     def open(path: PathType, mode: str = "r") -> Any:
         """Open a file at the given path.
@@ -107,13 +127,7 @@ class ZenAzure(Filesystem):
         """
         ZenAzure._ensure_filesystem_set()
 
-        prefix = ""
-        pattern = convert_to_str(pattern)
-        for potential_prefix in ZenAzure.SUPPORTED_SCHEMES:
-            if pattern.startswith(potential_prefix):
-                prefix = potential_prefix
-                break
-
+        prefix, _ = ZenAzure._split_path(pattern)
         return [f"{prefix}{path}" for path in ZenAzure.fs.glob(path=pattern)]  # type: ignore[no-any-return]
 
     @staticmethod
@@ -127,13 +141,7 @@ class ZenAzure(Filesystem):
         """Return a list of files in a directory."""
         ZenAzure._ensure_filesystem_set()
 
-        # remove azure prefix if given so we can remove the directory later as
-        # this method is expected to only return filenames
-        path = convert_to_str(path)
-        for prefix in ZenAzure.SUPPORTED_SCHEMES:
-            if path.startswith(prefix):
-                path = path[len(prefix) :]
-                break
+        _, path = ZenAzure._split_path(path)
 
         def _extract_basename(file_dict: Dict[str, Any]) -> str:
             """Extracts the basename from a file info dict returned by the Azure
@@ -236,12 +244,6 @@ class ZenAzure(Filesystem):
         """
         ZenAzure._ensure_filesystem_set()
         # TODO [ENG-153]: Additional params
-        prefix = ""
-        top = convert_to_str(top)
-        for potential_prefix in ZenAzure.SUPPORTED_SCHEMES:
-            if top.startswith(potential_prefix):
-                prefix = potential_prefix
-                break
-
+        prefix, _ = ZenAzure._split_path(top)
         for directory, subdirectories, files in ZenAzure.fs.walk(path=top):
             yield f"{prefix}{directory}", subdirectories, files
