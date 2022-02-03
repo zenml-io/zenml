@@ -123,15 +123,33 @@ class ArtifactView:
         Returns:
               The materialized data.
         """
+
         if not materializer_class:
-            materializer_class = source_utils.load_source_path_class(
-                self._materializer
-            )
+            try:
+                materializer_class = source_utils.load_source_path_class(
+                    self._materializer
+                )
+            except (ModuleNotFoundError, AttributeError) as e:
+                logger.error(
+                    f"ZenML can not locate and import the materializer module "
+                    f"{self._materializer} which was used to write this "
+                    f"artifact. If you want to read from it, please provide "
+                    f"a 'materializer_class'."
+                )
+                raise ModuleNotFoundError(e) from e
 
         if not output_data_type:
-            output_data_type = source_utils.load_source_path_class(
-                self._data_type
-            )
+            try:
+                output_data_type = source_utils.load_source_path_class(
+                    self._data_type
+                )
+            except (ModuleNotFoundError, AttributeError) as e:
+                logger.error(
+                    f"ZenML can not locate and import the data type of this "
+                    f"artifact {self._data_type}. If you want to read "
+                    f"from it, please provide a 'materializer_class'."
+                )
+                raise ModuleNotFoundError(e) from e
 
         logger.debug(
             "Using '%s' to read '%s' (uri: %s).",
