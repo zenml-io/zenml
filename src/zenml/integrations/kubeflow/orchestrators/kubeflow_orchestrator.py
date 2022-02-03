@@ -159,7 +159,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
             config=runner_config, output_path=pipeline_file_path
         )
 
-        runner.run(pipeline=pipeline, stack=stack)
+        runner.run(pipeline=pipeline, stack=stack,
+                   runtime_configuration=runtime_configuration)
 
         self._upload_and_run_pipeline(
             pipeline_name=pipeline.name,

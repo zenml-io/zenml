@@ -29,6 +29,7 @@
 #  permissions and limitations under the License.
 
 from typing import TYPE_CHECKING, Any
+from pydantic import BaseModel
 
 from tfx.dsl.compiler import compiler
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
@@ -75,6 +76,11 @@ class LocalOrchestrator(BaseOrchestrator):
         if runtime_configuration is None:
             runtime_configuration = RuntimeConfiguration()
 
+        if runtime_configuration.schedule:
+            logger.warning("Local Orchestrator currently does not support the"
+                           "use of schedules. The `schedule` will be ignored "
+                           "and the pipeline will be run directly")
+
         for component in tfx_pipeline.components:
             if isinstance(component, base_component.BaseComponent):
                 component._resolve_pip_dependencies(
@@ -109,6 +115,16 @@ class LocalOrchestrator(BaseOrchestrator):
             context_utils.add_stack_as_metadata_context(
                 context=context, stack=stack
             )
+
+            # Add all pydantic objects from runtime_configuration to the
+            # context
+            for k, v in runtime_configuration.items():
+                if v and issubclass(type(v), BaseModel):
+                    context = node.pipeline_node.contexts.contexts.add()
+                    logger.debug("Adding %s to context", k)
+                    context_utils.add_pydantic_object_as_metadata_context(
+                        context=context, obj=v
+                    )
 
             pipeline_node = node.pipeline_node
             node_id = pipeline_node.node_info.id
