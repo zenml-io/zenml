@@ -17,7 +17,7 @@ It inherits from the base Filesystem created by TFX and overwrites the
 corresponding functions thanks to adlfs.
 """
 
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, cast
 
 import adlfs
 from tfx.dsl.io.fileio import NotFoundError
@@ -106,7 +106,15 @@ class ZenAzure(Filesystem):
             A list of paths that match the given glob pattern.
         """
         ZenAzure._ensure_filesystem_set()
-        return ZenAzure.fs.glob(path=pattern)  # type: ignore[no-any-return]
+
+        prefix = ""
+        pattern = convert_to_str(pattern)
+        for potential_prefix in ZenAzure.SUPPORTED_SCHEMES:
+            if pattern.startswith(potential_prefix):
+                prefix = potential_prefix
+                break
+
+        return [f"{prefix}{path}" for path in ZenAzure.fs.glob(path=pattern)]  # type: ignore[no-any-return]
 
     @staticmethod
     def isdir(path: PathType) -> bool:
@@ -119,8 +127,26 @@ class ZenAzure(Filesystem):
         """Return a list of files in a directory."""
         ZenAzure._ensure_filesystem_set()
 
+        # remove azure prefix if given so we can remove the directory later as
+        # this method is expected to only return filenames
+        path = convert_to_str(path)
+        for prefix in ZenAzure.SUPPORTED_SCHEMES:
+            if path.startswith(prefix):
+                path = path[len(prefix) :]
+                break
+
+        def _extract_basename(file_dict: Dict[str, Any]) -> str:
+            """Extracts the basename from a file info dict returned by the Azure
+            filesystem."""
+            file_path = cast(str, file_dict["name"])
+            base_name = file_path[len(path) :]
+            return base_name.lstrip("/")
+
         try:
-            return ZenAzure.fs.listdir(path=path)  # type: ignore[no-any-return]
+            return [
+                _extract_basename(dict_)
+                for dict_ in ZenAzure.fs.listdir(path=path)
+            ]
         except FileNotFoundError as e:
             raise NotFoundError() from e
 
@@ -210,4 +236,12 @@ class ZenAzure(Filesystem):
         """
         ZenAzure._ensure_filesystem_set()
         # TODO [ENG-153]: Additional params
-        return ZenAzure.fs.walk(path=top)  # type: ignore[no-any-return]
+        prefix = ""
+        top = convert_to_str(top)
+        for potential_prefix in ZenAzure.SUPPORTED_SCHEMES:
+            if top.startswith(potential_prefix):
+                prefix = potential_prefix
+                break
+
+        for directory, subdirectories, files in ZenAzure.fs.walk(path=top):
+            yield f"{prefix}{directory}", subdirectories, files
