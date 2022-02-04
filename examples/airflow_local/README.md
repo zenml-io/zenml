@@ -16,9 +16,7 @@ In order to run this example, you need to install and initialize ZenML and Airfl
 pip install zenml
 
 # install ZenML integrations
-zenml integration install airflow
-zenml integration install tensorflow
-zenml integration install sklearn
+zenml integration install airflow sklearn
 
 # pull example
 zenml example pull airflow_local
@@ -43,7 +41,7 @@ zenml stack set airflow_stack
 ZenML takes care of configuring Airflow, all we need to do is run:
 
 ```bash
-zenml orchestrator up
+zenml stack up
 ```
 
 This will bootstrap Airflow, start up all the necessary components and run them in the background.
@@ -69,10 +67,10 @@ python run.py
 After a few seconds, you should be able to see the executed dag [here](http://0.0.0.0:8080/tree?dag_id=mnist_pipeline)
 
 ### Clean up
-In order to clean up, shut down the airflow orchestrator and delete the remaining zenml references.
+In order to clean up, tear down the airflow stack and delete the remaining zenml references.
 
 ```shell
-zenml orchestrator down
+zenml stack down --force
 rm -rf zenml_examples
 ```
 ## SuperQuick `airflow_local` run

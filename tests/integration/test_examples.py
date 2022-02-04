@@ -197,10 +197,50 @@ def test_run_mlflow(examples_dir: Path):
     for step in second_run.steps:
         assert step.status == ExecutionStatus.COMPLETED
 
-    # TODO [ENG-359]: Add some mlflow specific assertions.
-    #  Currently this is a bit difficult as the mlruns do not end up in the
-    #  expected location within the temporary fixtures. This needs to be
-    #  investigated
+    import mlflow
+    from mlflow.tracking import MlflowClient
+
+    from zenml.integrations.mlflow.mlflow_environment import MLFlowEnvironment
+
+    # Create and activate the global MLflow environment
+    MLFlowEnvironment(local_example.path).activate()
+
+    # fetch the MLflow experiment created for the pipeline runs
+    mlflow_experiment = mlflow.get_experiment_by_name(pipeline.name)
+    assert mlflow_experiment is not None
+
+    # fetch all MLflow runs created for the pipeline
+    mlflow_runs = mlflow.search_runs(
+        experiment_ids=[mlflow_experiment.experiment_id], output_format="list"
+    )
+    assert len(mlflow_runs) == 2
+
+    # fetch the MLflow run created for the first pipeline run
+    mlflow_runs = mlflow.search_runs(
+        experiment_ids=[mlflow_experiment.experiment_id],
+        filter_string=f'tags.mlflow.runName = "{first_run.name}"',
+        output_format="list",
+    )
+    assert len(mlflow_runs) == 1
+    first_mlflow_run = mlflow_runs[0]
+
+    # fetch the MLflow run created for the second pipeline run
+    mlflow_runs = mlflow.search_runs(
+        experiment_ids=[mlflow_experiment.experiment_id],
+        filter_string=f'tags.mlflow.runName = "{second_run.name}"',
+        output_format="list",
+    )
+    assert len(mlflow_runs) == 1
+    second_mlflow_run = mlflow_runs[0]
+
+    client = MlflowClient()
+    # fetch the MLflow artifacts logged during the first pipeline run
+    artifacts = client.list_artifacts(first_mlflow_run.info.run_id)
+    assert len(artifacts) == 3
+
+    # fetch the MLflow artifacts logged during the second pipeline run
+    artifacts = client.list_artifacts(second_mlflow_run.info.run_id)
+    assert len(artifacts) == 3
 
 
 def test_whylogs_profiling(examples_dir: Path):
