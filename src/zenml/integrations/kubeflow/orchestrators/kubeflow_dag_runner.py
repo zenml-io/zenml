@@ -26,13 +26,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """The below code is copied from the TFX source repo with minor changes.
-All credits goes to  the TFX team for the core implementation"""
+All credits go to the TFX team for the core implementation"""
 
 import collections
 import copy
 import os
 import sys
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
@@ -52,7 +53,6 @@ from tfx.dsl.components.base import base_component as tfx_base_component
 from tfx.dsl.components.base import base_node
 from tfx.orchestration import data_types
 from tfx.orchestration import pipeline as tfx_pipeline
-from tfx.orchestration import tfx_runner
 from tfx.orchestration.config import pipeline_config
 from tfx.orchestration.launcher import (
     base_component_launcher,
@@ -66,10 +66,16 @@ from zenml.integrations.kubeflow.orchestrators.kubeflow_component import (
     KubeflowComponent,
 )
 from zenml.logger import get_logger
+from zenml.orchestrators import context_utils
+from zenml.orchestrators.utils import create_tfx_pipeline
+
+if TYPE_CHECKING:
+    from zenml.pipelines.base_pipeline import BasePipeline
+    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
-# OpFunc represents the type of a function that takes as input a
+# OpFunc represents the type of function that takes as input a
 # dsl.ContainerOp and returns the same object. Common operations such as adding
 # k8s secrets, mounting volumes, specifying the use of TPUs and so on can be
 # specified as an OpFunc.
@@ -183,11 +189,11 @@ class KubeflowDagRunnerConfig(pipeline_config.PipelineConfig):
           )
         Args:
           image: The docker image to use in the pipeline.
-          pipeline_operator_funcs: A list of ContainerOp modifying functions that
-            will be applied to every container step in the pipeline.
-          supported_launcher_classes: A list of component launcher classes that are
-            supported by the current pipeline. List sequence determines the order in
-            which launchers are chosen for each component being run.
+          pipeline_operator_funcs: A list of ContainerOp modifying functions
+            that will be applied to every container step in the pipeline.
+          supported_launcher_classes: A list of component launcher classes that
+            are supported by the current pipeline. List sequence determines the
+            order in which launchers are chosen for each component being run.
           metadata_ui_path: File location for metadata-ui-metadata.json file.
           **kwargs: keyword args for PipelineConfig.
         """
@@ -205,9 +211,9 @@ class KubeflowDagRunnerConfig(pipeline_config.PipelineConfig):
         self.metadata_ui_path = metadata_ui_path
 
 
-class KubeflowDagRunner(tfx_runner.TfxRunner):
-    """Kubeflow Pipelines runner.
-    Constructs a pipeline definition YAML file based on the TFX logical pipeline.
+class KubeflowDagRunner:
+    """Kubeflow Pipelines runner. Constructs a pipeline definition YAML file
+    based on the TFX logical pipeline.
     """
 
     def __init__(
@@ -222,13 +228,13 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
             configuration when running the pipeline under Kubeflow.
           output_path: Path where the pipeline definition file will be stored.
           pod_labels_to_attach: Optional set of pod labels to attach to GKE pod
-            spinned up for this pipeline. Default to the 3 labels:
+            spun up for this pipeline. Default to the 3 labels:
             1. add-pod-env: true,
             2. pipeline SDK type,
             3. pipeline unique ID,
             where 2 and 3 are instrumentation of usage tracking.
         """
-        super().__init__(config)
+        self._config = config or pipeline_config.PipelineConfig()
         self._kubeflow_config = config
         self._output_path = output_path
         self._compiler = compiler.Compiler()
@@ -242,12 +248,17 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
             pod_labels_to_attach or get_default_pod_labels()
         )
 
+    @property
+    def config(self) -> pipeline_config.PipelineConfig:
+        """The config property"""
+        return self._config
+
     def _parse_parameter_from_component(
         self, component: tfx_base_component.BaseComponent
     ) -> None:
         """Extract embedded RuntimeParameter placeholders from a component.
-        Extract embedded RuntimeParameter placeholders from a component, then append
-        the corresponding dsl.PipelineParam to KubeflowDagRunner.
+        Extract embedded RuntimeParameter placeholders from a component, then
+        append the corresponding dsl.PipelineParam to KubeflowDagRunner.
         Args:
           component: a TFX component.
         """
@@ -280,15 +291,20 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
             self._parse_parameter_from_component(component)
 
     def _construct_pipeline_graph(
-        self, pipeline: tfx_pipeline.Pipeline
+        self, pipeline: tfx_pipeline.Pipeline, stack: "Stack"
     ) -> None:
         """Constructs a Kubeflow Pipeline graph.
         Args:
           pipeline: The logical TFX pipeline to base the construction on.
-          pipeline_root: dsl.PipelineParam representing the pipeline root.
         """
         component_to_kfp_op: Dict[base_node.BaseNode, dsl.ContainerOp] = {}
         tfx_ir = self._generate_tfx_ir(pipeline)
+
+        for node in tfx_ir.nodes:  # type:ignore[attr-defined]
+            context = node.pipeline_node.contexts.contexts.add()
+            context_utils.add_stack_as_metadata_context(
+                context=context, stack=stack
+            )
 
         # Assumption: There is a partial ordering of components in the list,
         # i.e. if component A depends on component B and C, then A appears
@@ -369,39 +385,42 @@ class KubeflowDagRunner(tfx_runner.TfxRunner):
 
     def _generate_tfx_ir(
         self, pipeline: tfx_pipeline.Pipeline
-    ) -> Optional[pipeline_pb2.Pipeline]:  # type: ignore[valid-type]
+    ) -> pipeline_pb2.Pipeline:  # type: ignore[valid-type]
         """Generate the TFX IR from the logical TFX pipeline."""
         result = self._tfx_compiler.compile(pipeline)
         return result
 
-    def run(self, pipeline: tfx_pipeline.Pipeline) -> None:
+    def run(self, pipeline: "BasePipeline", stack: "Stack") -> None:
         """Compiles and outputs a Kubeflow Pipeline YAML definition file.
         Args:
           pipeline: The logical TFX pipeline to use when building the Kubeflow
             pipeline.
+          stack: The ZenML stack that the pipeline is running on
         """
-        for component in pipeline.components:
+        t_pipeline = create_tfx_pipeline(pipeline, stack=stack)
+
+        for component in t_pipeline.components:
             # TODO(b/187122662): Pass through pip dependencies as a first-class
             # component flag.
             if isinstance(component, tfx_base_component.BaseComponent):
                 component._resolve_pip_dependencies(
                     # pylint: disable=protected-access
-                    pipeline.pipeline_info.pipeline_root
+                    t_pipeline.pipeline_info.pipeline_root
                 )
 
         def _construct_pipeline() -> None:
             """Creates Kubeflow ContainerOps for each TFX component
             encountered in the pipeline definition."""
-            self._construct_pipeline_graph(pipeline)
+            self._construct_pipeline_graph(t_pipeline, stack)
 
         # Need to run this first to get self._params populated. Then KFP
         # compiler can correctly match default value with PipelineParam.
-        self._parse_parameter_from_pipeline(pipeline)
+        self._parse_parameter_from_pipeline(t_pipeline)
         # Create workflow spec and write out to package.
         self._compiler._create_and_write_workflow(
             # pylint: disable=protected-access
             pipeline_func=_construct_pipeline,
-            pipeline_name=pipeline.pipeline_info.pipeline_name,
+            pipeline_name=t_pipeline.pipeline_info.pipeline_name,
             params_list=self._params,
             package_path=self._output_path,
         )
