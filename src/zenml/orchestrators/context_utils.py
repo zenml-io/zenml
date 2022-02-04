@@ -63,7 +63,9 @@ def add_pydantic_object_as_metadata_context(
         obj: an instance of a pydantic object
         context: a context proto message within a pipeline node
     """
-    context.type.name = obj.__repr_name__().lower()  # type: ignore[valid-type]
+    context.type.name = (  # type: ignore[attr-defined]
+        obj.__repr_name__().lower()
+    )
     # Setting the name of the context
     name = str(hash(obj.json(sort_keys=True)))
     context.name.field_value.string_value = name  # type:ignore[attr-defined]
