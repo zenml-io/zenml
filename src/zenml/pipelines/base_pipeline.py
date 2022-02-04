@@ -249,7 +249,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         *,
         run_name: Optional[str] = None,
         schedule: Optional[Schedule] = None,
-        **additional_parameters,
+        **additional_parameters: Any,
     ) -> Any:
         """Runs the pipeline on the active stack of the current repository.
 
