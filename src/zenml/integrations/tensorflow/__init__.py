@@ -24,7 +24,6 @@ class TensorflowIntegration(Integration):
         "keras==2.6.0",
         "tensorflow_estimator==2.6.0",
         "tensorboard==2.6.0",
-        "numpy==1.19.5",
     ]
 
     @classmethod
