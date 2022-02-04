@@ -29,8 +29,8 @@
 #  permissions and limitations under the License.
 
 from typing import TYPE_CHECKING, Any
-from pydantic import BaseModel
 
+from pydantic import BaseModel
 from tfx.dsl.compiler import compiler
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
 from tfx.dsl.components.base import base_component
@@ -77,9 +77,11 @@ class LocalOrchestrator(BaseOrchestrator):
             runtime_configuration = RuntimeConfiguration()
 
         if runtime_configuration.schedule:
-            logger.warning("Local Orchestrator currently does not support the"
-                           "use of schedules. The `schedule` will be ignored "
-                           "and the pipeline will be run directly")
+            logger.warning(
+                "Local Orchestrator currently does not support the"
+                "use of schedules. The `schedule` will be ignored "
+                "and the pipeline will be run directly"
+            )
 
         for component in tfx_pipeline.components:
             if isinstance(component, base_component.BaseComponent):

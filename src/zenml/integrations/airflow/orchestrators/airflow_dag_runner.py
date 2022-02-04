@@ -18,8 +18,8 @@ import os
 import typing
 import warnings
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union, cast
-from pydantic import BaseModel
 
+from pydantic import BaseModel
 from tfx.dsl.compiler import compiler
 from tfx.dsl.components.base import base_component, base_node
 from tfx.orchestration.config import pipeline_config
@@ -28,10 +28,10 @@ from tfx.orchestration.local import runner_utils
 from tfx.orchestration.portable import runtime_parameter_utils
 from tfx.utils.json_utils import json  # type: ignore[attr-defined]
 
+from zenml.logger import get_logger
 from zenml.orchestrators import context_utils
 from zenml.orchestrators.utils import create_tfx_pipeline
 from zenml.repository import Repository
-from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     import airflow

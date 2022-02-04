@@ -19,7 +19,7 @@ import requests
 from sklearn.base import ClassifierMixin
 from sklearn.linear_model import LogisticRegression
 
-from zenml.pipelines import pipeline, Schedule
+from zenml.pipelines import Schedule, pipeline
 from zenml.steps import BaseStepConfig, Output, step
 
 
@@ -33,7 +33,7 @@ def get_X_y_from_api(n_days: int = 1, is_train: bool = True):
         "/mnist_handwritten_train.json"
         if is_train
         else "https://storage.googleapis.com/zenml-public-bucket/mnist"
-             "/mnist_handwritten_test.json"
+        "/mnist_handwritten_test.json"
     )
     df = pd.DataFrame(requests.get(url).json())
     X = df["image"].map(lambda x: np.array(x)).values
@@ -110,9 +110,11 @@ scikit_p = mnöst_pipeline(
 )
 
 # Run the new pipeline on a Schedule
-DAG = scikit_p.run(schedule=Schedule(
-    start_time=datetime.now(),
-    end_time=datetime.now() + timedelta(minutes=9),
-    interval_second=180,
-    catchup=False
-))
+DAG = scikit_p.run(
+    schedule=Schedule(
+        start_time=datetime.now(),
+        end_time=datetime.now() + timedelta(minutes=9),
+        interval_second=180,
+        catchup=False,
+    )
+)

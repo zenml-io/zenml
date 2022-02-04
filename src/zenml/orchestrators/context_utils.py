@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 import json
 from typing import TYPE_CHECKING
+
 from pydantic import BaseModel
 
 from zenml.enums import MetadataContextTypes
-from zenml.pipelines import Schedule
 
 if TYPE_CHECKING:
     from tfx.proto.orchestration import pipeline_pb2
@@ -54,8 +54,8 @@ def add_stack_as_metadata_context(
 
 
 def add_pydantic_object_as_metadata_context(
-        obj: "BaseModel",
-        context: "pipeline_pb2.ContextSpec",  # type: ignore[valid-type]
+    obj: "BaseModel",
+    context: "pipeline_pb2.ContextSpec",  # type: ignore[valid-type]
 ) -> None:
     """
 

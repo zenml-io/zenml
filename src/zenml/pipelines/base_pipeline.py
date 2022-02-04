@@ -249,7 +249,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         *,
         run_name: Optional[str] = None,
         schedule: Optional[Schedule] = None,
-        **additional_parameters
+        **additional_parameters,
     ) -> Any:
         """Runs the pipeline on the active stack of the current repository.
 
@@ -286,7 +286,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             run_name=run_name,
             dag_filepath=dag_filepath,
             schedule=schedule,
-            **additional_parameters
+            **additional_parameters,
         )
         stack = Repository().active_stack
 

@@ -283,11 +283,11 @@ class AirflowOrchestrator(BaseOrchestrator):
                     seconds=runtime_configuration.schedule.interval_second
                 ),
                 "start_date": runtime_configuration.schedule.start_time,
-                "end_date": runtime_configuration.schedule.end_time
+                "end_date": runtime_configuration.schedule.end_time,
             }
         else:
             airflow_config = {
-                "schedule_interval": '@once',
+                "schedule_interval": "@once",
                 # Scheduled in the past to make sure it runs immediately
                 "start_date": datetime.datetime.now() - datetime.timedelta(7),
             }
