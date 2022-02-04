@@ -25,6 +25,7 @@ from .example_validations import (
     caching_example_validation,
     drift_detection_example_validation,
     generate_basic_validation_function,
+    mlflow_deployment_example_validation,
     mlflow_tracking_example_validation,
     whylogs_example_validation,
 )
@@ -114,6 +115,10 @@ examples = [
     ExampleIntegrationTestConfiguration(
         name="mlflow_tracking",
         validation_function=mlflow_tracking_example_validation,
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="mlflow_deployment",
+        validation_function=mlflow_deployment_example_validation,
     ),
     # TODO [HIGH]: Enable running the whylogs example on kubeflow
     ExampleIntegrationTestConfiguration(

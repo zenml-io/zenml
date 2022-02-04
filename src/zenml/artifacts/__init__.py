@@ -32,6 +32,7 @@ from zenml.artifacts.data_analysis_artifact import DataAnalysisArtifact
 from zenml.artifacts.data_artifact import DataArtifact
 from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.artifacts.schema_artifact import SchemaArtifact
+from zenml.artifacts.service_artifact import ServiceArtifact
 from zenml.artifacts.statistics_artifact import StatisticsArtifact
 
 __all__ = [
@@ -39,5 +40,6 @@ __all__ = [
     "DataArtifact",
     "ModelArtifact",
     "SchemaArtifact",
+    "ServiceArtifact",
     "StatisticsArtifact",
 ]

@@ -214,8 +214,11 @@ class Environment(metaclass=SingletonMetaClass):
         else:
             raise KeyError(
                 f"No environment component with name {name} is currently "
-                f"registered. Make sure you're calling this in the context of a "
-                f"step function that has all relevant integrations enabled."
+                f"registered. This could happen for example if you're trying "
+                f"to access an environment component that is only available "
+                f"in the context of a step function, or, in the case of "
+                f"globally available environment components, if a relevant "
+                f"integration has not been activated yet."
             )
 
     @property
