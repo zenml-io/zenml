@@ -110,6 +110,11 @@ class StepInterfaceError(ZenMLBaseException):
     in an unsupported way."""
 
 
+class MaterializerInterfaceError(ZenMLBaseException):
+    """Raises exception when interacting with the Materializer interface
+    in an unsupported way."""
+
+
 class StepContextError(ZenMLBaseException):
     """Raises exception when interacting with a StepContext
     in an unsupported way."""
