@@ -41,11 +41,11 @@ class MaterializerRegistry:
         if key not in self.materializer_types:
             self.materializer_types[key] = type_
             logger.debug(f"Registered materializer {type_} for {key}")
-
         else:
             logger.debug(
-                f"{key} already registered with "
-                f"{self.materializer_types[key]}. Cannot register {type_}."
+                f"Found existing materializer class for {key}: "
+                f"{self.materializer_types[key]}. Skipping registration of "
+                f"{type_}."
             )
 
     def register_and_overwrite_type(
@@ -93,11 +93,15 @@ class MaterializerRegistry:
                     f"maps to multiple materializers within the materializer "
                     f"registry: {materializers_for_compatible_superclasses}. "
                     f"Please specify which of these materializers you would "
-                    f"like to use explicitly in your step."
+                    f"like to use explicitly in your step.",
+                    url="https://docs.zenml.io/guides/index/custom-materializer",
                 )
         raise StepInterfaceError(
-            f"Type {key} does not have a default `Materializer`! Please "
-            f"specify your own `Materializer`."
+            f"No materializer registered for class {key}. You can register a "
+            f"default materializer for specific types by subclassing "
+            f"`BaseMaterializer` and setting its `ASSOCIATED_TYPES` class"
+            f" variable.",
+            url="https://docs.zenml.io/guides/index/custom-materializer",
         )
 
     def get_materializer_types(
