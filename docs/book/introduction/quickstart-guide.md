@@ -65,8 +65,8 @@ def importer() -> Output(
 
 @step
 def trainer(
-        x_train: np.ndarray,
-        y_train: np.ndarray,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
 ) -> tf.keras.Model:
     """A simple Keras Model to train on the data."""
     model = tf.keras.Sequential()
@@ -79,32 +79,32 @@ def trainer(
         metrics=["accuracy"],
     )
 
-    model.fit(x_train, y_train)
+    model.fit(X_train, y_train)
 
     return model
 
 
 @step
 def evaluator(
-        x_test: np.ndarray,
-        y_test: np.ndarray,
-        model: tf.keras.Model,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    model: tf.keras.Model,
 ) -> Output(loss=float, acc=float):
     """Calculate the accuracy on the test set"""
-    loss, acc = model.evaluate(x_test, y_test, verbose=1)
+    loss, acc = model.evaluate(X_test, y_test, verbose=1)
     return loss, acc
 
 
 @pipeline
 def mnist_pipeline(
-        importer,
-        trainer,
-        evaluator,
+    importer,
+    trainer,
+    evaluator,
 ):
     """Links all the steps together in a pipeline"""
-    x_train, y_train, x_test, y_test = importer()
-    model = trainer(x_train=x_train, y_train=y_train)
-    evaluator(x_test=x_test, y_test=y_test, model=model)
+    X_train, y_train, X_test, y_test = importer()
+    model = trainer(X_train=X_train, y_train=y_train)
+    evaluator(X_test=X_test, y_test=y_test, model=model)
 
 
 if __name__ == "__main__":
