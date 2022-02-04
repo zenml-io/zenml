@@ -1,2 +1,7 @@
 mlflow>=1.2.0
 tensorflow==2.6.0
+keras==2.6.0
+tensorflow_estimator==2.6.0
+tensorboard==2.6.0
+numpy==1.19.5
+click==8.0.3
