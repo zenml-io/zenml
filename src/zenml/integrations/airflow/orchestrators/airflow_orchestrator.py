@@ -28,7 +28,6 @@ from zenml.integrations.airflow.orchestrators.airflow_dag_runner import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.orchestrators.utils import create_tfx_pipeline
 from zenml.repository import Repository
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
@@ -109,7 +108,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         # check the DAG folder every 10 seconds for new files
         os.environ["AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL"] = "10"
 
-    def _copy_to_dag_directory_if_necessary(self, dag_filepath: str):
+    def _copy_to_dag_directory_if_necessary(self, dag_filepath: str) -> None:
         """Copies the DAG module to the airflow DAGs directory if it's not
         already located there.
 
@@ -134,8 +133,8 @@ class AirflowOrchestrator(BaseOrchestrator):
                 )
             fileio.copy(dag_filepath, destination_path, overwrite=True)
 
-    def _log_webserver_credentials(self):
-        """Logs URL and credentials to login to the airflow webserver.
+    def _log_webserver_credentials(self) -> None:
+        """Logs URL and credentials to log in to the airflow webserver.
 
         Raises:
             FileNotFoundError: If the password file does not exist.
@@ -283,10 +282,14 @@ class AirflowOrchestrator(BaseOrchestrator):
             "schedule_interval": datetime.timedelta(
                 minutes=self.schedule_interval_minutes
             ),
-            # We set this in the past and turn catchup off and then it works
+            # We set this in the past and turn catchup off, and then it works
             "start_date": datetime.datetime(2019, 1, 1),
         }
 
         runner = AirflowDagRunner(AirflowPipelineConfig(airflow_config))
-        tfx_pipeline = create_tfx_pipeline(pipeline, stack=stack)
-        return runner.run(tfx_pipeline, run_name=runtime_configuration.run_name)
+
+        return runner.run(
+            pipeline=pipeline,
+            stack=stack,
+            runtime_configuration=runtime_configuration,
+        )
