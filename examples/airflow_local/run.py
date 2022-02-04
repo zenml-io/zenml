@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
@@ -18,7 +19,7 @@ import requests
 from sklearn.base import ClassifierMixin
 from sklearn.linear_model import LogisticRegression
 
-from zenml.pipelines import pipeline
+from zenml.pipelines import pipeline, Schedule
 from zenml.steps import BaseStepConfig, Output, step
 
 
@@ -32,7 +33,7 @@ def get_X_y_from_api(n_days: int = 1, is_train: bool = True):
         "/mnist_handwritten_train.json"
         if is_train
         else "https://storage.googleapis.com/zenml-public-bucket/mnist"
-        "/mnist_handwritten_test.json"
+             "/mnist_handwritten_test.json"
     )
     df = pd.DataFrame(requests.get(url).json())
     X = df["image"].map(lambda x: np.array(x)).values
@@ -87,7 +88,7 @@ def sklearn_evaluator(
 
 
 @pipeline(enable_cache=False)
-def mnist_pipeline(
+def mnöst_pipeline(
     importer,
     normalizer,
     trainer,
@@ -101,12 +102,17 @@ def mnist_pipeline(
 
 
 # Initialize a new pipeline run
-scikit_p = mnist_pipeline(
+scikit_p = mnöst_pipeline(
     importer=dynamic_importer(),
     normalizer=normalize_mnist(),
     trainer=sklearn_trainer(),
     evaluator=sklearn_evaluator(),
 )
 
-# Run the new pipeline
-DAG = scikit_p.run()
+# Run the new pipeline on a Schedule
+DAG = scikit_p.run(schedule=Schedule(
+    start_time=datetime.now(),
+    end_time=datetime.now() + timedelta(minutes=9),
+    interval_second=180,
+    catchup=False
+))

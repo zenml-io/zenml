@@ -53,37 +53,6 @@ def add_stack_as_metadata_context(
         c_property.field_value.string_value = v
 
 
-def add_schedule_as_metadata_context(
-        schedule: Schedule,
-        context: "pipeline_pb2.ContextSpec",  # type: ignore[valid-type]
-) -> None:
-    """
-
-    Args:
-        schedule: an instance of a Zenml Schedule object
-        context: a context proto message within a pipeline node
-    """
-    context.type.name = (   # type:ignore[attr-defined]
-        MetadataContextTypes.SCHEDULE.value
-    )
-
-    # Setting the name of the context
-    name = str(hash(schedule.json(sort_keys=True)))
-    context.name.field_value.string_value = name  # type:ignore[attr-defined]
-
-    # Setting the properties of the context
-    for k, v in schedule.dict().items():
-        c_property = context.properties[k]  # type:ignore[attr-defined]
-        if isinstance(v, int):
-            c_property.field_value.int_value = v
-        elif isinstance(v, float):
-            c_property.field_value.double_value = v
-        elif isinstance(v, str):
-            c_property.field_value.string_value = v
-        else:
-            c_property.field_value.string_value = str(v)
-
-
 def add_pydantic_object_as_metadata_context(
         obj: "BaseModel",
         context: "pipeline_pb2.ContextSpec",  # type: ignore[valid-type]

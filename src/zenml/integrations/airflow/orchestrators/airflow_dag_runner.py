@@ -113,6 +113,11 @@ class AirflowDagRunner:
         # Merge airflow-specific configs with pipeline args
         pipeline = create_tfx_pipeline(pipeline, stack=stack)
 
+        if runtime_configuration.schedule:
+            catchup = runtime_configuration.schedule.catchup
+        else:
+            catchup = False
+
         airflow_dag = airflow.DAG(
             dag_id=pipeline.pipeline_info.pipeline_name,
             **(
@@ -121,7 +126,7 @@ class AirflowDagRunner:
                 ).airflow_dag_config
             ),
             is_paused_upon_creation=False,
-            catchup=False,  # no backfill
+            catchup=catchup,
         )
         if "tmp_dir" not in pipeline.additional_pipeline_args:
             tmp_dir = os.path.join(
