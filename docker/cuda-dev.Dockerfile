@@ -1,4 +1,4 @@
-ARG TENSORFLOW_VERSION=2.6.0
+ARG TENSORFLOW_VERSION=2.6.1
 FROM tensorflow/tensorflow:${TENSORFLOW_VERSION}-gpu
 ARG TENSORFLOW_VERSION
 
@@ -43,7 +43,7 @@ RUN python -m venv $VIRTUAL_ENV
 RUN pip install --no-cache-dir --upgrade --pre pip
 
 # install dependencies but don't install zenml yet
-# this improves caching as the dependencies don't have to be reinstalled everytime a src file changes
+# this improves caching as the dependencies don't have to be reinstalled every time a src file changes
 RUN poetry install --no-root
 
 COPY . /zenml
