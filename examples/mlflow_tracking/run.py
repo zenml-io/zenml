@@ -22,7 +22,7 @@ from pipeline import (
 )
 
 from zenml.environment import Environment
-from zenml.integrations.mlflow.mlflow_environment import MLFLOW_ENVIRONMENT
+from zenml.integrations.mlflow.mlflow_environment import MLFLOW_ENVIRONMENT_NAME
 
 if __name__ == "__main__":
 
@@ -45,7 +45,7 @@ if __name__ == "__main__":
     )
 
     run_2.run()
-    mlflow_env = Environment()[MLFLOW_ENVIRONMENT]
+    mlflow_env = Environment()[MLFLOW_ENVIRONMENT_NAME]
     print(
         "Now run \n "
         f"    mlflow ui --backend-store-uri {mlflow_env.tracking_uri}\n"
