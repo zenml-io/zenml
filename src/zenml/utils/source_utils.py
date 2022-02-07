@@ -40,7 +40,7 @@ from types import (
     ModuleType,
     TracebackType,
 )
-from typing import Any, Callable, Optional, Type, Union
+from typing import Any, Callable, Optional, Type, Union, Iterator
 
 from zenml import __version__
 from zenml.constants import APP_NAME
@@ -315,8 +315,8 @@ def import_class_by_path(class_path: str) -> Type[Any]:
     return getattr(mod, classname)  # type: ignore[no-any-return]
 
 
-@contextmanager  # type:ignore[arg-type, misc]
-def prepend_python_path(path: str) -> None:
+@contextmanager
+def prepend_python_path(path: str) -> Iterator[None]:
     """Simple context manager to help import module within the repo"""
     try:
         # Entering the with statement
