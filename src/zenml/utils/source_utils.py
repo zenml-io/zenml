@@ -31,6 +31,7 @@ import pathlib
 import site
 import sys
 import types
+from contextlib import contextmanager
 from types import (
     CodeType,
     FrameType,
@@ -314,23 +315,16 @@ def import_class_by_path(class_path: str) -> Type[Any]:
     return getattr(mod, classname)  # type: ignore[no-any-return]
 
 
-class ModuleContextManager:
+@contextmanager  # type:ignore[arg-type, misc]
+def prepend_python_path(path: str) -> None:
     """Simple context manager to help import module within the repo"""
-
-    def __init__(self, path: str) -> None:
-        """Initializing the manager object"""
-        self.path = path
-
-    def __enter__(self) -> None:
-        """Entering the with statement"""
-        sys.path.insert(0, self.path)
-
-    def __exit__(self, exc_type, exc_value, traceback) -> None:  # type: ignore[no-untyped-def]
-        """Exiting the with statement"""
-        try:
-            sys.path.remove(self.path)
-        except ValueError:
-            pass
+    try:
+        # Entering the with statement
+        sys.path.insert(0, path)
+        yield
+    finally:
+        # Exiting the with statement
+        sys.path.remove(path)
 
 
 def load_source_path_class(source: str) -> Type[Any]:
@@ -350,7 +344,7 @@ def load_source_path_class(source: str) -> Type[Any]:
         "load class from current repository state."
     )
 
-    with ModuleContextManager(repo_path):
+    with prepend_python_path(repo_path):
         return import_class_by_path(source)
 
 
