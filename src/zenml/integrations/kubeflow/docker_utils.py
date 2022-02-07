@@ -120,7 +120,7 @@ def create_custom_build_context(
     else:
         logger.info(
             "No explicit dockerignore specified and no file called "
-            ".dockerignore exists at the build context root (%s)."
+            ".dockerignore exists at the build context root (%s). "
             "Creating docker build context with all files inside the build "
             "context root directory.",
             build_context_path,

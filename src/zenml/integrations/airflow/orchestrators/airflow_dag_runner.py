@@ -19,20 +19,24 @@ import typing
 import warnings
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union, cast
 
-import tfx.orchestration.pipeline as tfx_pipeline
 from tfx.dsl.compiler import compiler
 from tfx.dsl.components.base import base_component, base_node
-from tfx.orchestration import tfx_runner
 from tfx.orchestration.config import pipeline_config
 from tfx.orchestration.data_types import RuntimeParameter
 from tfx.orchestration.local import runner_utils
 from tfx.orchestration.portable import runtime_parameter_utils
 from tfx.utils.json_utils import json  # type: ignore[attr-defined]
 
+from zenml.orchestrators import context_utils
+from zenml.orchestrators.utils import create_tfx_pipeline
 from zenml.repository import Repository
 
 if TYPE_CHECKING:
     import airflow
+
+    from zenml.pipelines.base_pipeline import BasePipeline
+    from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.stack import Stack
 
 
 class AirflowPipelineConfig(pipeline_config.PipelineConfig):
@@ -54,7 +58,7 @@ class AirflowPipelineConfig(pipeline_config.PipelineConfig):
         self.airflow_dag_config = airflow_dag_config or {}
 
 
-class AirflowDagRunner(tfx_runner.TfxRunner):
+class AirflowDagRunner:
     """Tfx runner on Airflow."""
 
     def __init__(
@@ -67,23 +71,32 @@ class AirflowDagRunner(tfx_runner.TfxRunner):
           config: Optional Airflow pipeline config for customizing the
                   launching of each component.
         """
+        self._config = config or pipeline_config.PipelineConfig()
+
         if isinstance(config, dict):
             warnings.warn(
                 "Pass config as a dict type is going to deprecated in 0.1.16. "
                 "Use AirflowPipelineConfig type instead.",
                 PendingDeprecationWarning,
             )
-            config = AirflowPipelineConfig(airflow_dag_config=config)
-        super().__init__(config)
+            self._config = AirflowPipelineConfig(airflow_dag_config=config)
+
+    @property
+    def config(self) -> pipeline_config.PipelineConfig:
+        return self._config
 
     def run(
-        self, pipeline: tfx_pipeline.Pipeline, run_name: str = ""
+        self,
+        pipeline: "BasePipeline",
+        stack: "Stack",
+        runtime_configuration: "RuntimeConfiguration",
     ) -> "airflow.DAG":
         """Deploys given logical pipeline on Airflow.
 
         Args:
           pipeline: Logical pipeline containing pipeline args and comps.
-          run_name: Optional name for the run.
+          stack: The current stack that ZenML is running on
+          runtime_configuration: The configuration of the run
 
         Returns:
           An Airflow DAG.
@@ -94,6 +107,7 @@ class AirflowDagRunner(tfx_runner.TfxRunner):
         from zenml.integrations.airflow.orchestrators import airflow_component
 
         # Merge airflow-specific configs with pipeline args
+        pipeline = create_tfx_pipeline(pipeline, stack=stack)
 
         airflow_dag = airflow.DAG(
             dag_id=pipeline.pipeline_info.pipeline_name,
@@ -125,7 +139,7 @@ class AirflowDagRunner(tfx_runner.TfxRunner):
         runtime_parameter_utils.substitute_runtime_parameter(
             pipeline,
             {
-                "pipeline-run-id": run_name,
+                "pipeline-run-id": runtime_configuration.run_name,
             },
         )
         deployment_config = runner_utils.extract_local_deployment_config(
@@ -138,6 +152,11 @@ class AirflowDagRunner(tfx_runner.TfxRunner):
         component_impl_map = {}
 
         for node in pipeline.nodes:
+            context = node.pipeline_node.contexts.contexts.add()
+            context_utils.add_stack_as_metadata_context(
+                context=context, stack=stack
+            )
+
             pipeline_node = node.pipeline_node
             node_id = pipeline_node.node_info.id
             executor_spec = runner_utils.extract_executor_spec(
