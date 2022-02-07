@@ -26,7 +26,6 @@ jobs:
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
           curl -LO "https://dl.k8s.io/release/v1.22.4/bin/linux/amd64/kubectl"
           sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-          kubectl version
 
       - name: Install kfp
         run: |
