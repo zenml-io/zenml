@@ -31,7 +31,7 @@ jobs:
           JIRA_USERNAME: codemonkey@zenml.io
           JIRA_API_TOKEN: ${{ secrets.JIRA_ACCESS_TOKEN }}
           JIRA_BOARD_ID: 10004
-          JIRA_ISSUE_TYPE_ID: 10017
+          JIRA_ISSUE_TYPE_ID: 10027
           JIRA_DONE_STATUS_CATEGORY_ID: 3
           JIRA_ISSUE_LABEL: todo_comment
           JIRA_REMOVED_TODO_LABEL: todo_removed
