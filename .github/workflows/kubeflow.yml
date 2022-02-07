@@ -1,0 +1,47 @@
+name: Testing
+
+# Controls when the action will run. Triggers the workflow on push of a tag
+on:
+  push:
+    branches:
+      - feature/ENG-455-kubeflow-integration-tests
+
+jobs:
+  integration_tests:
+    runs-on: ubuntu-latest
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install K3D and kubectl
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+      - name: Install poetry
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "poetry"
+
+      - name: Install Dependencies
+        run: |
+          python -m poetry install
+          python -m poetry run zenml integration install kubeflow -f
+
+      - name: Setup stack
+        run: |
+          python -m poetry run zenml orchestrator register kubeflow_orchestrator --type=kubeflow
+          python -m poetry run zenml container-registry register local_registry --type=default --uri=localhost:5000
+          python -m poetry run zenml stack register local_kubeflow_stack -m local_metadata_store -a local_artifact_store -o kubeflow_orchestrator -c local_registry
+          python -m poetry run zenml stack set local_kubeflow_stack
+          python -m poetry run zenml stack up
+      
