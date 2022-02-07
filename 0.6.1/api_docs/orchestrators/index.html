@@ -641,13 +641,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#zenml.orchestrators.utils.get_cache_status" class="md-nav__link">
-    get_cache_status()
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -1137,13 +1130,6 @@
           <li class="md-nav__item">
   <a href="#zenml.orchestrators.utils.execute_step" class="md-nav__link">
     execute_step()
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#zenml.orchestrators.utils.get_cache_status" class="md-nav__link">
-    get_cache_status()
   </a>
   
 </li>
@@ -2119,27 +2105,11 @@ LocalOrchestrator            (<a title="zenml.orchestrators.base_orchestrator.Ba
 <span class="sd">    Returns:</span>
 <span class="sd">        Optional execution info returned by the launcher.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">step_name_param</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">INTERNAL_EXECUTION_PARAMETER_PREFIX</span> <span class="o">+</span> <span class="n">PARAM_PIPELINE_PARAMETER_NAME</span>
-    <span class="p">)</span>
-    <span class="n">pipeline_step_name</span> <span class="o">=</span> <span class="n">tfx_launcher</span><span class="o">.</span><span class="n">_pipeline_node</span><span class="o">.</span><span class="n">node_info</span><span class="o">.</span><span class="n">id</span>  <span class="c1"># type: ignore[attr-defined]</span>
+    <span class="n">step_name</span> <span class="o">=</span> <span class="n">tfx_launcher</span><span class="o">.</span><span class="n">_pipeline_node</span><span class="o">.</span><span class="n">node_info</span><span class="o">.</span><span class="n">id</span>  <span class="c1"># type: ignore[attr-defined] # noqa</span>
     <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step `</span><span class="si">{</span><span class="n">pipeline_step_name</span><span class="si">}</span><span class="s2">` has started.&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step `</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">` has started.&quot;</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">execution_info</span> <span class="o">=</span> <span class="n">tfx_launcher</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">execution_info</span> <span class="ow">and</span> <span class="n">get_cache_status</span><span class="p">(</span><span class="n">execution_info</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">execution_info</span><span class="o">.</span><span class="n">exec_properties</span><span class="p">:</span>
-                <span class="n">pipeline_run_id</span> <span class="o">=</span> <span class="n">execution_info</span><span class="o">.</span><span class="n">pipeline_run_id</span>
-                <span class="n">step_name</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span>
-                    <span class="n">execution_info</span><span class="o">.</span><span class="n">exec_properties</span><span class="p">[</span><span class="n">step_name_param</span><span class="p">]</span>
-                <span class="p">)</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Using cached version of `</span><span class="si">{</span><span class="n">pipeline_step_name</span><span class="si">}</span><span class="s2">` [`</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">`] from pipeline_run_id `</span><span class="si">{</span><span class="n">pipeline_run_id</span><span class="si">}</span><span class="s2">`.&quot;</span>
-                <span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;No execution properties found for step `</span><span class="si">{</span><span class="n">pipeline_step_name</span><span class="si">}</span><span class="s2">`.&quot;</span>
-                <span class="p">)</span>
     <span class="k">except</span> <span class="ne">RuntimeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">if</span> <span class="s2">&quot;execution has already succeeded&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
             <span class="c1"># Hacky workaround to catch the error that a pipeline run with</span>
@@ -2151,130 +2121,11 @@ LocalOrchestrator            (<a title="zenml.orchestrators.base_orchestrator.Ba
 
     <span class="n">run_duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;Step `</span><span class="si">{</span><span class="n">pipeline_step_name</span><span class="si">}</span><span class="s2">` has finished in </span><span class="si">{</span><span class="n">string_utils</span><span class="o">.</span><span class="n">get_human_readable_time</span><span class="p">(</span><span class="n">run_duration</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="s2">&quot;Step `</span><span class="si">%s</span><span class="s2">` has finished in </span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span>
+        <span class="n">step_name</span><span class="p">,</span>
+        <span class="n">string_utils</span><span class="o">.</span><span class="n">get_human_readable_time</span><span class="p">(</span><span class="n">run_duration</span><span class="p">),</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">execution_info</span>
-</code></pre></div>
-        </details>
-    </div>
-
-  </div>
-
-
-
-  <div class="doc doc-object doc-function">
-
-
-
-<h4 id="zenml.orchestrators.utils.get_cache_status" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">get_cache_status</span><span class="p">(</span><span class="n">execution_info</span><span class="p">)</span></code>
-
-
-</h4>
-
-    <div class="doc doc-contents ">
-
-      <p>Returns the caching status of a step.</p>
-
-<p><strong>Parameters:</strong></p>
-<table>
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Type</th>
-      <th>Description</th>
-      <th>Default</th>
-    </tr>
-  </thead>
-  <tbody>
-      <tr>
-        <td><code>execution_info</code></td>
-        <td><code>ExecutionInfo</code></td>
-        <td><p>The execution info of a <code>tfx</code> step.</p></td>
-        <td><em>required</em></td>
-      </tr>
-  </tbody>
-</table>
-<p><strong>Exceptions:</strong></p>
-<table>
-  <thead>
-    <tr>
-      <th>Type</th>
-      <th>Description</th>
-    </tr>
-  </thead>
-  <tbody>
-      <tr>
-        <td><code>AttributeError</code></td>
-        <td><p>If the execution info is <code>None</code>.</p></td>
-      </tr>
-      <tr>
-        <td><code>KeyError</code></td>
-        <td><p>If no pipeline info is found in the <code>execution_info</code>.</p></td>
-      </tr>
-  </tbody>
-</table>
-<p><strong>Returns:</strong></p>
-<table>
-  <thead>
-    <tr>
-      <th>Type</th>
-      <th>Description</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><code>bool</code></td>
-      <td><p>The caching status of a <code>tfx</code> step as a boolean value.</p></td>
-    </tr>
-  </tbody>
-</table>
-        <details class="quote">
-          <summary>Source code in <code>zenml/orchestrators/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_cache_status</span><span class="p">(</span>
-    <span class="n">execution_info</span><span class="p">:</span> <span class="n">data_types</span><span class="o">.</span><span class="n">ExecutionInfo</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the caching status of a step.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        execution_info: The execution info of a `tfx` step.</span>
-
-<span class="sd">    Raises:</span>
-<span class="sd">        AttributeError: If the execution info is `None`.</span>
-<span class="sd">        KeyError: If no pipeline info is found in the `execution_info`.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        The caching status of a `tfx` step as a boolean value.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">execution_info</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;No execution info found when checking for cache status.&quot;</span><span class="p">)</span>
-        <span class="k">return</span>
-
-    <span class="n">status</span> <span class="o">=</span> <span class="kc">False</span>
-    <span class="n">repository</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">()</span>
-    <span class="c1"># TODO [HIGH]: Get the current running stack instead of just the active</span>
-    <span class="c1">#   stack</span>
-    <span class="n">metadata_store</span> <span class="o">=</span> <span class="n">repository</span><span class="o">.</span><span class="n">get_stack</span><span class="p">(</span>
-        <span class="n">repository</span><span class="o">.</span><span class="n">active_stack_name</span>
-    <span class="p">)</span><span class="o">.</span><span class="n">metadata_store</span>
-
-    <span class="n">step_name_param</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">INTERNAL_EXECUTION_PARAMETER_PREFIX</span> <span class="o">+</span> <span class="n">PARAM_PIPELINE_PARAMETER_NAME</span>
-    <span class="p">)</span>
-    <span class="n">step_name</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">execution_info</span><span class="o">.</span><span class="n">exec_properties</span><span class="p">[</span><span class="n">step_name_param</span><span class="p">])</span>
-    <span class="k">if</span> <span class="n">execution_info</span><span class="o">.</span><span class="n">pipeline_info</span><span class="p">:</span>
-        <span class="n">pipeline_name</span> <span class="o">=</span> <span class="n">execution_info</span><span class="o">.</span><span class="n">pipeline_info</span><span class="o">.</span><span class="n">id</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No pipeline info found for step `</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">`.&quot;</span><span class="p">)</span>
-    <span class="n">pipeline_run_name</span> <span class="o">=</span> <span class="n">execution_info</span><span class="o">.</span><span class="n">pipeline_run_id</span>
-    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">metadata_store</span><span class="o">.</span><span class="n">get_pipeline</span><span class="p">(</span><span class="n">pipeline_name</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">pipeline</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Pipeline </span><span class="si">{</span><span class="n">pipeline_name</span><span class="si">}</span><span class="s2"> not found in Metadata Store.&quot;</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">status</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">pipeline</span><span class="o">.</span><span class="n">get_run</span><span class="p">(</span><span class="n">pipeline_run_name</span><span class="p">)</span><span class="o">.</span><span class="n">get_step</span><span class="p">(</span><span class="n">step_name</span><span class="p">)</span><span class="o">.</span><span class="n">is_cached</span>
-        <span class="p">)</span>
-    <span class="k">return</span> <span class="n">status</span>
 </code></pre></div>
         </details>
     </div>
