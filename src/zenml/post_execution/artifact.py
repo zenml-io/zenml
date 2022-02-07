@@ -147,7 +147,7 @@ class ArtifactView:
                 logger.error(
                     f"ZenML can not locate and import the data type of this "
                     f"artifact {self._data_type}. If you want to read "
-                    f"from it, please provide a 'materializer_class'."
+                    f"from it, please provide a 'output_data_type'."
                 )
                 raise ModuleNotFoundError(e) from e
 
