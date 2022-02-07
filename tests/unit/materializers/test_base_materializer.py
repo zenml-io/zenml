@@ -19,7 +19,7 @@ from zenml.exceptions import MaterializerInterfaceError
 from zenml.materializers.base_materializer import BaseMaterializer
 
 
-class TestMaterializer(BaseMaterializer):
+class StubMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (int,)
 
 
@@ -44,7 +44,7 @@ def test_materializer_raises_an_exception_if_associated_artifact_types_are_no_ar
 def test_materializer_raises_an_exception_when_asked_to_read_unfamiliar_type():
     """Tests that a materializer fails if it's asked to read the artifact to a
     non-associated type."""
-    materializer = TestMaterializer(artifact=DataArtifact())
+    materializer = StubMaterializer(artifact=DataArtifact())
 
     with pytest.raises(TypeError):
         materializer.handle_input(data_type=str)
@@ -53,7 +53,7 @@ def test_materializer_raises_an_exception_when_asked_to_read_unfamiliar_type():
 def test_materializer_raises_an_exception_when_asked_to_write_unfamiliar_type():
     """Tests that a materializer fails if it's asked to write data of a
     non-associated type."""
-    materializer = TestMaterializer(artifact=DataArtifact())
+    materializer = StubMaterializer(artifact=DataArtifact())
 
     with pytest.raises(TypeError):
         materializer.handle_return(data="some_string")
