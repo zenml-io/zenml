@@ -27,8 +27,6 @@ class BaseDriftDetectionStep(BaseStep):
     """Base step implementation for any drift detection step implementation
     on ZenML"""
 
-    STEP_INNER_FUNC_NAME = "entrypoint"
-
     @abstractmethod
     def entrypoint(  # type: ignore[override]
         self,

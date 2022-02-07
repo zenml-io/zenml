@@ -1,3 +1,45 @@
+# 0.6.1
+
+ZenML 0.6.1 is out and it's all about the cloud ☁️! We have improved AWS integration and a brand-new [Azure](https://github.com/zenml-io/zenml/tree/0.6.1/src/zenml/integrations/azure) integration! Run your pipelines on AWS and Azure now and let us know how it went on our [Slack](https://zenml.io/slack-invite).
+
+Smaller changes that you'll notice include much-awaited updates and fixes, including the first iterations of scheduling pipelines and tracking more reproducibility-relevant data in the metadata store.
+
+For a detailed look at what's changed, see below.
+
+## Whats changed
+
+* Add MVP for scheduling by @htahir1 in https://github.com/zenml-io/zenml/pull/354
+* Add S3 artifact store and filesystem by @schustmi in https://github.com/zenml-io/zenml/pull/359
+* Update 0.6.0 release notes by @alex-zenml in https://github.com/zenml-io/zenml/pull/362
+* Fix cuda-dev base container image by @stefannica in https://github.com/zenml-io/zenml/pull/361
+* Mark ZenML as typed package by @schustmi in https://github.com/zenml-io/zenml/pull/360
+* Improve error message if ZenML repo is missing inside kubeflow container entrypoint by @schustmi in https://github.com/zenml-io/zenml/pull/363
+* Spell whylogs and WhyLabs correctly in our docs by @stefannica in https://github.com/zenml-io/zenml/pull/369
+* Feature/add readme for mkdocs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/372
+* Cleaning up the assets pushed by gitbook automatically by @bcdurak in https://github.com/zenml-io/zenml/pull/371
+* Turn codecov off for patch updates by @htahir1 in https://github.com/zenml-io/zenml/pull/376
+* Minor changes and fixes by @schustmi in https://github.com/zenml-io/zenml/pull/365
+* Only include python files when building local docs by @schustmi in https://github.com/zenml-io/zenml/pull/377
+* Prevent access to repo during step execution by @schustmi in https://github.com/zenml-io/zenml/pull/370
+* Removed duplicated Section within docs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/379
+* Fixing the materializer registry to spot sub-classes of defined types by @bcdurak in https://github.com/zenml-io/zenml/pull/368
+* Computing hash of step and materializer works in notebooks by @htahir1 in https://github.com/zenml-io/zenml/pull/375
+* Sort requirements to improve docker build caching by @schustmi in https://github.com/zenml-io/zenml/pull/383
+* Make sure the s3 artifact store is registered when the integration is activated by @schustmi in https://github.com/zenml-io/zenml/pull/382
+* Make MLflow integration work with kubeflow and scheduled pipelines by @stefannica in https://github.com/zenml-io/zenml/pull/374
+* Reset _has_been_called to False ahead of pipeline.connect by @AlexejPenner in https://github.com/zenml-io/zenml/pull/385
+* Fix local airflow example by @schustmi in https://github.com/zenml-io/zenml/pull/366
+* Improve and extend base materializer error messages by @schustmi in https://github.com/zenml-io/zenml/pull/380
+* Windows CI issue by @schustmi in https://github.com/zenml-io/zenml/pull/389
+* Add the ability to attach custom properties to the Metadata Store by @bcdurak in https://github.com/zenml-io/zenml/pull/355
+* Handle case when return values do not match output by @AlexejPenner in https://github.com/zenml-io/zenml/pull/386
+* Quickstart code in docs fixed by @AlexejPenner in https://github.com/zenml-io/zenml/pull/387
+* Fix mlflow tracking example by @stefannica in https://github.com/zenml-io/zenml/pull/393
+* Implement azure artifact store and fileio plugin by @schustmi in https://github.com/zenml-io/zenml/pull/388
+* Create todo issues with separate issue type by @schustmi in https://github.com/zenml-io/zenml/pull/394
+* Log that steps are cached while running pipeline by @alex-zenml in https://github.com/zenml-io/zenml/pull/381
+* Schedule added to context for all orchestrators by @AlexejPenner in https://github.com/zenml-io/zenml/pull/391
+
 # 0.6.0
 
 ZenML 0.6.0 is out now. We've made some big changes under the hood, but our biggest public-facing addition is our new integration to support all your data logging needs: [`whylogs`](https://github.com/whylabs/whylogs). Our core architecture was [thoroughly reworked](https://github.com/zenml-io/zenml/pull/305) and is now in a much better place to support our ongoing development needs.

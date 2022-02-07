@@ -14,6 +14,7 @@
 
 from typing import TYPE_CHECKING, Any, Dict, Type
 
+from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -34,17 +35,17 @@ class MaterializerRegistry:
         """Registers a new materializer.
 
         Args:
-            key: Indicates the type of an object.
+            key: Indicates the type of object.
             type_: A BaseMaterializer subclass.
         """
         if key not in self.materializer_types:
             self.materializer_types[key] = type_
             logger.debug(f"Registered materializer {type_} for {key}")
-
         else:
             logger.debug(
-                f"{key} already registered with "
-                f"{self.materializer_types[key]}. Cannot register {type_}."
+                f"Found existing materializer class for {key}: "
+                f"{self.materializer_types[key]}. Skipping registration of "
+                f"{type_}."
             )
 
     def register_and_overwrite_type(
@@ -53,7 +54,7 @@ class MaterializerRegistry:
         """Registers a new materializer and also overwrites a default if set.
 
         Args:
-            key: Indicates the type of an object.
+            key: Indicates the type of object.
             type_: A BaseMaterializer subclass.
         """
         self.materializer_types[key] = type_
@@ -63,18 +64,45 @@ class MaterializerRegistry:
         """Get a single materializers based on the key.
 
         Args:
-            key: Indicates the type of an object.
+            key: Indicates the type of object.
 
         Returns:
             `BaseMaterializer` subclass that was registered for this key.
+
+        Raises:
+            StepInterfaceError: If the key (or any of its superclasses) is not
+                registered or the key has more than one superclass with
+                different default materializers
         """
+        # Check whether the type is registered
         if key in self.materializer_types:
             return self.materializer_types[key]
         else:
-            raise KeyError(
-                f"Type {key} does not have a default `Materializer`! Please "
-                f"specify your own `Materializer`."
-            )
+            # If the type is not registered, check for superclasses
+            materializers_for_compatible_superclasses = {
+                materializer
+                for registered_type, materializer in self.materializer_types.items()
+                if issubclass(key, registered_type)
+            }
+            # Make sure that there is only a single materializer
+            if len(materializers_for_compatible_superclasses) == 1:
+                return materializers_for_compatible_superclasses.pop()
+            elif len(materializers_for_compatible_superclasses) > 1:
+                raise StepInterfaceError(
+                    f"Type {key} is subclassing more than one type, thus it "
+                    f"maps to multiple materializers within the materializer "
+                    f"registry: {materializers_for_compatible_superclasses}. "
+                    f"Please specify which of these materializers you would "
+                    f"like to use explicitly in your step.",
+                    url="https://docs.zenml.io/guides/index/custom-materializer",
+                )
+        raise StepInterfaceError(
+            f"No materializer registered for class {key}. You can register a "
+            f"default materializer for specific types by subclassing "
+            f"`BaseMaterializer` and setting its `ASSOCIATED_TYPES` class"
+            f" variable.",
+            url="https://docs.zenml.io/guides/index/custom-materializer",
+        )
 
     def get_materializer_types(
         self,
@@ -84,7 +112,7 @@ class MaterializerRegistry:
 
     def is_registered(self, key: Type[Any]) -> bool:
         """Returns if a materializer class is registered for the given type."""
-        return key in self.materializer_types
+        return any(issubclass(key, t) for t in self.materializer_types)
 
 
 default_materializer_registry = MaterializerRegistry()

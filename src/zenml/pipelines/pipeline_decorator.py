@@ -37,6 +37,7 @@ def pipeline(
     name: Optional[str] = None,
     enable_cache: bool = True,
     requirements_file: Optional[str] = None,
+    dockerignore_file: Optional[str] = None,
 ) -> Callable[[F], Type[BasePipeline]]:
     """Type annotations for step decorator in case of arguments."""
     ...
@@ -87,7 +88,7 @@ def pipeline(
             name if name else func.__name__,
             (BasePipeline,),
             {
-                PIPELINE_INNER_FUNC_NAME: staticmethod(func),
+                PIPELINE_INNER_FUNC_NAME: staticmethod(func),  # type: ignore[arg-type] # noqa
                 INSTANCE_CONFIGURATION: {
                     PARAM_ENABLE_CACHE: enable_cache,
                     PARAM_REQUIREMENTS_FILE: requirements_file,

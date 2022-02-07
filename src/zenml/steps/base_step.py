@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 
 import collections
-import hashlib
 import inspect
 import json
 import random
@@ -52,10 +51,10 @@ from zenml.steps.utils import (
     PARAM_ENABLE_CACHE,
     PARAM_PIPELINE_PARAMETER_NAME,
     SINGLE_RETURN_OUT_NAME,
-    STEP_INNER_FUNC_NAME,
     _ZenMLSimpleComponent,
     generate_component_class,
 )
+from zenml.utils.source_utils import get_hashed_source
 
 logger = get_logger(__name__)
 
@@ -85,7 +84,7 @@ class BaseStepMeta(type):
 
         # Get the signature of the step function
         step_function_signature = inspect.getfullargspec(
-            inspect.unwrap(getattr(cls, STEP_INNER_FUNC_NAME))
+            inspect.unwrap(cls.entrypoint)
         )
 
         if bases:
@@ -301,7 +300,7 @@ class BaseStep(metaclass=BaseStepMeta):
                         f"registering a default materializer for specific "
                         f"types by subclassing `BaseMaterializer` and setting "
                         f"its `ASSOCIATED_TYPES` class variable.",
-                        url="https://docs.zenml.io/guides/common-usecases/custom-materializer",
+                        url="https://docs.zenml.io/guides/index/custom-materializer",
                     )
 
         return materializers
@@ -317,11 +316,6 @@ class BaseStep(metaclass=BaseStepMeta):
             # Caching is enabled so we compute a hash of the step function code
             # and materializers to catch changes in the step behavior
 
-            def _get_hashed_source(value: Any) -> str:
-                """Returns a hash of the objects source code."""
-                source_code = inspect.getsource(value)
-                return hashlib.sha256(source_code.encode("utf-8")).hexdigest()
-
             # If the step was defined using the functional api, only track
             # changes to the entrypoint function. Otherwise track changes to
             # the entire step class.
@@ -330,11 +324,11 @@ class BaseStep(metaclass=BaseStepMeta):
                 if self._created_by_functional_api
                 else self.__class__
             )
-            parameters["step_source"] = _get_hashed_source(source_object)
+            parameters["step_source"] = get_hashed_source(source_object)
 
             for name, materializer in self.get_materializers().items():
                 key = f"{name}_materializer_source"
-                parameters[key] = _get_hashed_source(materializer)
+                parameters[key] = get_hashed_source(materializer)
         else:
             # Add a random string to the execution properties to disable caching
             random_string = f"{random.getrandbits(128):032x}"
@@ -609,14 +603,13 @@ class BaseStep(metaclass=BaseStepMeta):
                 f"json serializable parameter values."
             ) from e
 
-        source_fn = getattr(self, STEP_INNER_FUNC_NAME)
         component_class = generate_component_class(
             step_name=self.name,
             step_module=self.__module__,
             input_spec=self.INPUT_SPEC,
             output_spec=self.OUTPUT_SPEC,
             execution_parameter_names=set(execution_parameters),
-            step_function=source_fn,
+            step_function=self.entrypoint,
             materializers=materializers,
         )
         self._component = component_class(

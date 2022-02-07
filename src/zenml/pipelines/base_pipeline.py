@@ -235,13 +235,21 @@ class BasePipeline(metaclass=BasePipelineMeta):
         """
         raise PipelineInterfaceError("Cannot set steps manually!")
 
-    # TODO [ENG-376]: Enable specifying runtime configuration options either using
-    #  **kwargs here or by passing a `RuntimeConfiguration` object or a
+    def _reset_step_flags(self) -> None:
+        """Reset the _has_been_called flag at the beginning of a pipeline run,
+        to make sure a pipeline instance can be called more than once."""
+        for step in self.steps.values():
+            step._has_been_called = False
+
+    # TODO [ENG-376]: Enable specifying runtime configuration options either
+    #  using **kwargs here or by passing a `RuntimeConfiguration` object or a
     #  path to a config file.
     def run(
         self,
+        *,
         run_name: Optional[str] = None,
         schedule: Optional[Schedule] = None,
+        **additional_parameters: Any,
     ) -> Any:
         """Runs the pipeline on the active stack of the current repository.
 
@@ -275,7 +283,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
             inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr] # noqa
         )
         runtime_configuration = RuntimeConfiguration(
-            run_name=run_name, dag_filepath=dag_filepath, schedule=schedule
+            run_name=run_name,
+            dag_filepath=dag_filepath,
+            schedule=schedule,
+            **additional_parameters,
         )
         stack = Repository().active_stack
 
@@ -285,6 +296,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 "total_steps": len(self.steps),
             },
         )
+
+        self._reset_step_flags()
 
         return stack.deploy_pipeline(
             self, runtime_configuration=runtime_configuration

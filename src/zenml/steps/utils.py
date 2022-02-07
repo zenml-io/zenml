@@ -38,6 +38,7 @@ from typing import (
     KeysView,
     List,
     Optional,
+    Sequence,
     Set,
     Type,
     ValuesView,
@@ -57,6 +58,7 @@ from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
+from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.step_output import Output
 from zenml.utils import source_utils
 
@@ -356,6 +358,8 @@ class _FunctionExecutor(BaseExecutor):
             output_dict: dictionary containing the output artifacts
             exec_properties: dictionary containing the execution parameters
         """
+        step_name = getattr(self, PARAM_STEP_NAME)
+
         # remove all ZenML internal execution properties
         exec_properties = {
             k: json.loads(v)
@@ -386,7 +390,7 @@ class _FunctionExecutor(BaseExecutor):
                     ]
 
                     raise MissingStepParameterError(
-                        getattr(self, PARAM_STEP_NAME),
+                        step_name,
                         missing_fields,
                         arg_type,
                     ) from None
@@ -394,7 +398,7 @@ class _FunctionExecutor(BaseExecutor):
             elif issubclass(arg_type, StepContext):
                 output_artifacts = {k: v[0] for k, v in output_dict.items()}
                 context = arg_type(
-                    step_name=getattr(self, PARAM_STEP_NAME),
+                    step_name=step_name,
                     output_materializers=self.materializers or {},
                     output_artifacts=output_artifacts,
                 )
@@ -405,7 +409,22 @@ class _FunctionExecutor(BaseExecutor):
                     input_dict[arg][0], arg_type
                 )
 
-        return_values = self._FUNCTION(**function_params)
+        if self._context is None:
+            raise RuntimeError(
+                "No TFX context is set for the currently running pipeline. "
+                "Cannot retrieve pipeline runtime information."
+            )
+        # Wrap the execution of the step function in a step environment
+        # that the step function code can access to retrieve information about
+        # the pipeline runtime, such as the current step name and the current
+        # pipeline run ID
+        with StepEnvironment(
+            pipeline_name=self._context.pipeline_info.id,  # type: ignore[attr-defined]
+            pipeline_run_id=self._context.pipeline_run_id,
+            step_name=getattr(self, PARAM_STEP_NAME),
+        ):
+            return_values = self._FUNCTION(**function_params)
+
         spec = inspect.getfullargspec(inspect.unwrap(self._FUNCTION))
         return_type: Type[Any] = spec.annotations.get("return", None)
         if return_type is not None:
@@ -419,6 +438,24 @@ class _FunctionExecutor(BaseExecutor):
             # return value as the return for that output
             if len(output_annotations) == 1:
                 return_values = [return_values]
+            elif not isinstance(return_values, Sequence):
+                # if the user defined multiple outputs, the return value must
+                # be a sequence
+                raise StepInterfaceError(
+                    f"Wrong step function output type for step '{step_name}: "
+                    f"Expected multiple outputs ({output_annotations}) but "
+                    f"the function did not return a sequence-like object "
+                    f"(actual return value: {return_values})."
+                )
+            elif len(output_annotations) != len(return_values):
+                # if the user defined multiple outputs, the amount of actual
+                # outputs must be the same
+                raise StepInterfaceError(
+                    f"Wrong amount of step function outputs for step "
+                    f"'{step_name}: Expected {len(output_annotations)} outputs "
+                    f"but the function returned {len(return_values)} outputs"
+                    f"(return values: {return_values})."
+                )
 
             for return_value, (output_name, output_type) in zip(
                 return_values, output_annotations
@@ -426,8 +463,8 @@ class _FunctionExecutor(BaseExecutor):
                 if not isinstance(return_value, output_type):
                     raise StepInterfaceError(
                         f"Wrong type for output '{output_name}' of step "
-                        f"'{getattr(self, PARAM_STEP_NAME)}' (expected type: "
-                        f"{output_type}, actual type: {type(return_value)})."
+                        f"'{step_name}' (expected type: {output_type}, "
+                        f"actual type: {type(return_value)})."
                     )
 
                 self.resolve_output_artifact(
