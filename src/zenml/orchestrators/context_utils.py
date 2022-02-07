@@ -12,7 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import json
+import logging
 from typing import TYPE_CHECKING
+import uuid
 
 from pydantic import BaseModel
 
@@ -67,7 +69,17 @@ def add_pydantic_object_as_metadata_context(
         obj.__repr_name__().lower()
     )
     # Setting the name of the context
-    name = str(hash(obj.json(sort_keys=True)))
+    try:
+        hashable = obj.json(sort_keys=True)
+    except TypeError as e:
+        name = obj.__class__.__name__
+        logging.info(
+            "Cannot convert %s to json, generating uuid instead. Error: %s",
+            name,
+            e,
+        )
+        hashable = f"{name}_{uuid.uuid1()}"
+    name = str(hash(hashable))
     context.name.field_value.string_value = name  # type:ignore[attr-defined]
 
     # Setting the properties of the context
@@ -80,4 +92,12 @@ def add_pydantic_object_as_metadata_context(
         elif isinstance(v, str):
             c_property.field_value.string_value = v
         else:
-            c_property.field_value.string_value = str(v)
+            try:
+                c_property.field_value.string_value = json.dumps(v)
+            except TypeError as e:
+                logging.info(
+                    "Skipping adding field '%s' to metadata context as "
+                    "it cannot be serialized due to %s.",
+                    k,
+                    e,
+                )
