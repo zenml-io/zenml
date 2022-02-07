@@ -19,6 +19,7 @@ import typing
 import warnings
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union, cast
 
+from pydantic import BaseModel
 from tfx.dsl.compiler import compiler
 from tfx.dsl.components.base import base_component, base_node
 from tfx.orchestration.config import pipeline_config
@@ -27,6 +28,7 @@ from tfx.orchestration.local import runner_utils
 from tfx.orchestration.portable import runtime_parameter_utils
 from tfx.utils.json_utils import json  # type: ignore[attr-defined]
 
+from zenml.logger import get_logger
 from zenml.orchestrators import context_utils
 from zenml.orchestrators.utils import create_tfx_pipeline
 from zenml.repository import Repository
@@ -37,6 +39,8 @@ if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack
+
+logger = get_logger(__name__)
 
 
 class AirflowPipelineConfig(pipeline_config.PipelineConfig):
@@ -109,6 +113,11 @@ class AirflowDagRunner:
         # Merge airflow-specific configs with pipeline args
         pipeline = create_tfx_pipeline(pipeline, stack=stack)
 
+        if runtime_configuration.schedule:
+            catchup = runtime_configuration.schedule.catchup
+        else:
+            catchup = False
+
         airflow_dag = airflow.DAG(
             dag_id=pipeline.pipeline_info.pipeline_name,
             **(
@@ -117,7 +126,7 @@ class AirflowDagRunner:
                 ).airflow_dag_config
             ),
             is_paused_upon_creation=False,
-            catchup=False,  # no backfill
+            catchup=catchup,
         )
         if "tmp_dir" not in pipeline.additional_pipeline_args:
             tmp_dir = os.path.join(
@@ -156,6 +165,16 @@ class AirflowDagRunner:
             context_utils.add_stack_as_metadata_context(
                 context=context, stack=stack
             )
+
+            # Add all pydantic objects from runtime_configuration to the
+            # context
+            for k, v in runtime_configuration.items():
+                if v and issubclass(type(v), BaseModel):
+                    context = node.pipeline_node.contexts.contexts.add()
+                    logger.debug("Adding %s to context", k)
+                    context_utils.add_pydantic_object_as_metadata_context(
+                        context=context, obj=v
+                    )
 
             pipeline_node = node.pipeline_node
             node_id = pipeline_node.node_info.id

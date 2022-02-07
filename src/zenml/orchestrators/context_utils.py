@@ -14,6 +14,8 @@
 import json
 from typing import TYPE_CHECKING
 
+from pydantic import BaseModel
+
 from zenml.enums import MetadataContextTypes
 
 if TYPE_CHECKING:
@@ -49,3 +51,33 @@ def add_stack_as_metadata_context(
     for k, v in stack_dict.items():
         c_property = context.properties[k]  # type:ignore[attr-defined]
         c_property.field_value.string_value = v
+
+
+def add_pydantic_object_as_metadata_context(
+    obj: "BaseModel",
+    context: "pipeline_pb2.ContextSpec",  # type: ignore[valid-type]
+) -> None:
+    """
+
+    Args:
+        obj: an instance of a pydantic object
+        context: a context proto message within a pipeline node
+    """
+    context.type.name = (  # type: ignore[attr-defined]
+        obj.__repr_name__().lower()
+    )
+    # Setting the name of the context
+    name = str(hash(obj.json(sort_keys=True)))
+    context.name.field_value.string_value = name  # type:ignore[attr-defined]
+
+    # Setting the properties of the context
+    for k, v in obj.dict().items():
+        c_property = context.properties[k]  # type:ignore[attr-defined]
+        if isinstance(v, int):
+            c_property.field_value.int_value = v
+        elif isinstance(v, float):
+            c_property.field_value.double_value = v
+        elif isinstance(v, str):
+            c_property.field_value.string_value = v
+        else:
+            c_property.field_value.string_value = str(v)
