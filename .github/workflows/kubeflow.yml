@@ -29,7 +29,7 @@ jobs:
 
       - name: Install kfp
         run: |
-          k3d cluster create test-cluster
+          k3d cluster create test-cluster --image rancher/k3s:v1.21.7-k3s1
           kubectl apply -k "github.com/kubeflow/pipelines/manifests/kustomize/cluster-scoped-resources?ref=1.7.1"
           kubectl wait --timeout=60s --for condition=established crd/applications.app.k8s.io
           kubectl apply -k "github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic-pns?ref=1.7.1"
