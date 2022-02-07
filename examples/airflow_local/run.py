@@ -88,7 +88,7 @@ def sklearn_evaluator(
 
 
 @pipeline(enable_cache=False)
-def mnöst_pipeline(
+def mnist_pipeline(
     importer,
     normalizer,
     trainer,
@@ -102,7 +102,7 @@ def mnöst_pipeline(
 
 
 # Initialize a new pipeline run
-scikit_p = mnöst_pipeline(
+scikit_p = mnist_pipeline(
     importer=dynamic_importer(),
     normalizer=normalize_mnist(),
     trainer=sklearn_trainer(),
