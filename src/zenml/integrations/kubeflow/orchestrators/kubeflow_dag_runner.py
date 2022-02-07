@@ -417,8 +417,8 @@ class KubeflowDagRunner:
         Args:
           pipeline: The logical TFX pipeline to use when building the Kubeflow
             pipeline.
-          stack: The ZenML stack that the pipeline is running on
-          runtime_configuration: The runtime configuration
+          stack: The ZenML stack that the pipeline is running on.
+          runtime_configuration: The runtime configuration.
         """
         t_pipeline = create_tfx_pipeline(pipeline, stack=stack)
 
