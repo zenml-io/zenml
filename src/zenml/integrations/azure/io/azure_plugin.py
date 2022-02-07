@@ -29,7 +29,7 @@ from zenml.io.filesystem import Filesystem, PathType
 class ZenAzure(Filesystem):
     """Filesystem that delegates to Azure storage using adlfs.
 
-    To authenticate with an Azure Data Lake storage, make sure to set a
+    To authenticate with Azure Blob Storage, make sure to set a
     combination of the following environment variables:
     - AZURE_STORAGE_CONNECTION_STRING
     - AZURE_STORAGE_ACCOUNT_NAME and one of

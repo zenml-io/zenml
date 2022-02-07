@@ -14,7 +14,7 @@
 """
 The Azure integration submodule provides a way to run ZenML pipelines in a cloud
 environment. Specifically, it allows the use of cloud artifact stores,
-and an `io` module to handle file operations on Azure Data Lakes .
+and an `io` module to handle file operations on Azure Blob Storage.
 """
 
 from zenml.integrations.constants import AZURE
@@ -25,7 +25,7 @@ class AzureIntegration(Integration):
     """Definition of Azure integration for ZenML."""
 
     NAME = AZURE
-    REQUIREMENTS = ["adlfs"]
+    REQUIREMENTS = ["adlfs==2021.10.0"]
 
     @classmethod
     def activate(cls) -> None:

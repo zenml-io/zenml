@@ -43,7 +43,7 @@ class AzureArtifactStore(BaseArtifactStore):
         if not any(path.startswith(prefix) for prefix in path_prefixes):
             raise ValueError(
                 f"Path '{path}' specified for AzureArtifactStore is not a "
-                f"valid Azure Data Lake path, i.e., starting with one of "
+                f"valid Azure Blob Storage path, i.e., starting with one of "
                 f"{path_prefixes}."
             )
         return path
